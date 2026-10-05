@@ -15,6 +15,8 @@ interface AuthContextValue {
   /** 구글 ID 토큰으로 로그인한다. 실패하면 ApiError를 던진다. */
   loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** 서버가 돌려준 최신 사용자 정보로 바꾼다(닉네임 변경 직후 헤더에 바로 반영). 로그인 상태는 바꾸지 않는다. */
+  updateUser: (user: UserResponse) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -77,9 +79,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const updateUser = useCallback((next: UserResponse) => setUser(next), []);
+
   const value = useMemo(
-    () => ({ status, user, loginWithGoogle, logout }),
-    [status, user, loginWithGoogle, logout],
+    () => ({ status, user, loginWithGoogle, logout, updateUser }),
+    [status, user, loginWithGoogle, logout, updateUser],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

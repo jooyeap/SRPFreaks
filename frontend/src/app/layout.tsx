@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Chakra_Petch, Noto_Sans_KR } from "next/font/google";
 import type { ReactNode } from "react";
+import { NicknameNotice } from "@/components/NicknameNotice";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { themeInitScript } from "@/lib/theme";
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-full flex-col bg-page font-sans text-fg">
         <Providers>
           <SiteHeader />
+          <NicknameNotice />
           <main className="mx-auto w-full max-w-[980px] flex-1 px-4 py-6">{children}</main>
           <SiteFooter />
         </Providers>
