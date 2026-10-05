@@ -15,9 +15,11 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** 닉네임 변경: 본인만, 규칙에 맞을 때만, 빈 값은 닉네임 없음. */
+/** 닉네임 변경(본인만, 규칙에 맞을 때만, 빈 값은 닉네임 없음)과 탈퇴(본인 행 삭제). */
 @ExtendWith(MockitoExtension.class)
 class UserProfileServiceTest {
 
@@ -71,5 +73,23 @@ class UserProfileServiceTest {
         assertThatThrownBy(() -> service.updateNickname(1L, "たろう"))
                 .isInstanceOfSatisfying(ApiException.class,
                         e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Test
+    void 탈퇴하면_본인_사용자_행을_삭제한다() {
+        User user = existingUser(null);
+
+        service.withdraw(1L);
+
+        verify(userRepository).delete(user);
+    }
+
+    @Test
+    void 없는_사용자의_탈퇴는_인증_오류이고_아무것도_지우지_않는다() {
+        when(userRepository.findById(9L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.withdraw(9L))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+        verify(userRepository, never()).delete(org.mockito.ArgumentMatchers.any(User.class));
     }
 }
