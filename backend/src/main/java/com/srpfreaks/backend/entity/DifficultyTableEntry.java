@@ -117,19 +117,6 @@ public class DifficultyTableEntry extends BaseTimeEntity {
     }
 
     /**
-     * 주어진 값과 지금 값이 같은가(값은 changeXxx가 저장하는 형태로 맞춰서 비교한다).
-     * CSV 미리보기가 "바뀌는 항목"을 세려고 쓴다. 저장 없이 비교만 하므로 엔티티를 바꾸지 않는다.
-     */
-    public boolean hasValues(BigDecimal tier, boolean tierUncertain, Recommend recommend, boolean recommendUncertain,
-                             PatternType patternType, boolean patternUncertain) {
-        boolean sameTier = tier == null ? this.tierLabel == null
-                : this.tierLabel != null && this.tierLabel.compareTo(tier) == 0;
-        return sameTier && this.tierUncertain == tierUncertain
-                && this.recommend == recommend && this.recommendUncertain == (recommend != null && recommendUncertain)
-                && this.patternType == patternType && this.patternUncertain == (patternType != null && patternUncertain);
-    }
-
-    /**
      * 레이팅 대상인가: 기준 난이도와 속성이 모두 있고, 속성이 '레이팅 제외'가 아니어야 한다.
      * 하나라도 없으면 레이팅 목록에서 빼고 기록만 남긴다(D18).
      */

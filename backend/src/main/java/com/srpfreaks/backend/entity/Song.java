@@ -14,7 +14,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 곡 마스터. ROOT가 CSV로만 늘린다(자동 등록 금지). 노트 수/BPM/버전 등 메타데이터는 비어 있어도 된다.
+ * 곡 마스터. ROOT·ADMIN이 직접 등록한다(자동 등록 금지). 노트 수/BPM/버전 등 메타데이터는 비어 있어도 된다.
  * 삭제는 소프트 삭제(deleted)라서, 조회할 때 Repository에서 deleted=false로 명시적으로 거른다.
  */
 @Getter

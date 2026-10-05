@@ -8,9 +8,7 @@ import com.srpfreaks.backend.entity.Role;
 import com.srpfreaks.backend.dto.DifficultyTableRequest;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.service.DifficultyTableService;
-import com.srpfreaks.backend.service.MasterCsvExportService;
 import com.srpfreaks.backend.service.SongAdminService;
-import com.srpfreaks.backend.service.SongImportService;
 import com.srpfreaks.backend.service.SongQueryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,8 +25,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-
-import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
 
@@ -57,16 +53,10 @@ class SongControllerAuthorizationTest {
 
         @Bean SongController songController(SongQueryService q, SongAdminService a) { return new SongController(q, a); }
 
-        @Bean SongImportService songImportService() { return Mockito.mock(SongImportService.class); }
-
-        @Bean SongImportController songImportController(SongImportService s) { return new SongImportController(s); }
-
         @Bean DifficultyTableService difficultyTableService() { return Mockito.mock(DifficultyTableService.class); }
 
-        @Bean MasterCsvExportService masterCsvExportService() { return Mockito.mock(MasterCsvExportService.class); }
-
-        @Bean DifficultyTableController difficultyTableController(DifficultyTableService t, MasterCsvExportService e, SongImportService i) {
-            return new DifficultyTableController(t, e, i);
+        @Bean DifficultyTableController difficultyTableController(DifficultyTableService t) {
+            return new DifficultyTableController(t);
         }
 
         @Bean DifficultyController difficultyController(SongAdminService a) { return new DifficultyController(a); }
@@ -141,36 +131,17 @@ class SongControllerAuthorizationTest {
     }
 
     @Test
-    void CSV_일괄_등록은_USER가_할_수_없고_ADMIN_ROOT는_할_수_있다() {
-        SongImportController importController = context.getBean(SongImportController.class);
-        MockMultipartFile file = new MockMultipartFile("file", "songs.csv", "text/csv", "title\n".getBytes());
-
-        AuthenticatedUser user = loginAs(Role.USER);
-        assertThatThrownBy(() -> importController.importCsv(user, file, false)).isInstanceOf(AccessDeniedException.class);
-
-        for (Role role : new Role[]{Role.ADMIN, Role.ROOT}) {
-            AuthenticatedUser privileged = loginAs(role);
-            assertThatCode(() -> importController.importCsv(privileged, file, false)).doesNotThrowAnyException();
-        }
-    }
-
-    @Test
-    void 서열표_목록은_USER도_보지만_만들기_내려받기_가져오기는_ADMIN_이상이다() {
+    void 서열표_목록은_USER도_보지만_만들기는_ADMIN_이상이다() {
         DifficultyTableController tables = context.getBean(DifficultyTableController.class);
         DifficultyTableRequest request = new DifficultyTableRequest("표", null, NoteOption.SUPER_RANDOM_PLUS);
-        MockMultipartFile file = new MockMultipartFile("file", "m.csv", "text/csv", "title\n".getBytes());
 
         AuthenticatedUser user = loginAs(Role.USER);
         assertThatCode(tables::list).doesNotThrowAnyException();
         assertThatThrownBy(() -> tables.create(user, request)).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> tables.export(1L)).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> tables.importCsv(user, 1L, file, false)).isInstanceOf(AccessDeniedException.class);
 
         for (Role role : new Role[]{Role.ADMIN, Role.ROOT}) {
             AuthenticatedUser privileged = loginAs(role);
             assertThatCode(() -> tables.create(privileged, request)).doesNotThrowAnyException();
-            assertThatCode(() -> tables.export(1L)).doesNotThrowAnyException();
-            assertThatCode(() -> tables.importCsv(privileged, 1L, file, false)).doesNotThrowAnyException();
         }
     }
 }

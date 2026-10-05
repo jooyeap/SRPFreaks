@@ -21,7 +21,7 @@ import java.text.Normalizer;
 import java.util.Locale;
 
 /**
- * 곡명 표기(로마자/가타카나/한국어/별칭). 검색과 CSV 곡명 매칭에 쓴다.
+ * 곡명 표기(로마자/가타카나/한국어/별칭). 검색에 쓴다.
  * 비교는 항상 normalized_title로 한다: NFKC 정규화 → 공백/줄바꿈 제거 → 소문자.
  */
 @Getter

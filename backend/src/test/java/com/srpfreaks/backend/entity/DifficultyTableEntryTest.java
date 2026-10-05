@@ -102,22 +102,6 @@ class DifficultyTableEntryTest {
     }
 
     @Test
-    void hasValues는_저장_형태로_맞춰_비교하고_엔티티를_바꾸지_않는다() {
-        entry.changeTier(new BigDecimal("6.1"), true, 2);
-        entry.changeRecommend(Recommend.MIDDLE, false);
-        entry.changePattern(PatternType.SINGLE, false);
-
-        assertThat(entry.hasValues(new BigDecimal("6.10"), true, Recommend.MIDDLE, false, PatternType.SINGLE, false)).isTrue();
-        assertThat(entry.hasValues(new BigDecimal("6.2"), true, Recommend.MIDDLE, false, PatternType.SINGLE, false)).isFalse();
-        assertThat(entry.hasValues(new BigDecimal("6.1"), true, Recommend.LOW, false, PatternType.SINGLE, false)).isFalse();
-        assertThat(entry.hasValues(null, true, Recommend.MIDDLE, false, PatternType.SINGLE, false)).isFalse();
-        // 값이 없는 추천도에 붙은 불확실 표시는 저장되지 않으므로 같은 값으로 본다
-        entry.changeRecommend(null, true);
-        assertThat(entry.hasValues(new BigDecimal("6.1"), true, null, true, PatternType.SINGLE, false)).isTrue();
-        assertThat(entry.getTierLabel()).isEqualByComparingTo("6.1");
-    }
-
-    @Test
     void 기준_난이도가_음수이거나_소수_둘째_자리면_거부한다() {
         assertThatThrownBy(() -> entry.changeTier(new BigDecimal("-0.1"), false, null))
                 .isInstanceOf(IllegalArgumentException.class);

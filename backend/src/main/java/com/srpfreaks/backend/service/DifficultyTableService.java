@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
-/** 서열표(난이도표) 만들기와 목록. 표의 내용은 CSV로 채운다(SongImportService.importTable). */
+/** 서열표(난이도표) 만들기와 목록. 표의 내용(항목)은 초기 시드 SQL로 넣는다(docs/DESIGN.md 시드 입력). */
 @Service
 @RequiredArgsConstructor
 public class DifficultyTableService {
