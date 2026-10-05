@@ -9,6 +9,7 @@ import java.util.List;
 /**
  * CSV 일괄 등록 결과. 미리보기(confirm=false)와 저장(confirm=true)이 같은 형식이다.
  * 개수는 미리보기에서는 "저장하면 이렇게 된다", 저장 후에는 "이렇게 되었다"는 뜻이다.
+ * 서열표 가져오기에서는 서열표 항목 개수(newEntries/updatedEntries/unchangedEntries)도 채워지고, 곡만 올릴 때는 0이다.
  * applied는 실제로 DB에 반영했는지다(오류 행이 있으면 저장하지 않는다).
  */
 public record SongImportResponse(
@@ -19,6 +20,9 @@ public record SongImportResponse(
         int newDifficulties,
         int unchangedDifficulties,
         int skippedDeleted,
+        int newEntries,
+        int updatedEntries,
+        int unchangedEntries,
         int levelChangeCount,
         List<LevelChange> levelChanges,
         int errorCount,

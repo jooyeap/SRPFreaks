@@ -4,18 +4,23 @@ import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.SongImportResponse;
 import com.srpfreaks.backend.entity.AuditLog;
+import com.srpfreaks.backend.entity.DifficultyTable;
+import com.srpfreaks.backend.entity.DifficultyTableEntry;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
 import com.srpfreaks.backend.repository.AuditLogRepository;
+import com.srpfreaks.backend.repository.DifficultyTableEntryRepository;
+import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.SongDifficultyRepository;
 import com.srpfreaks.backend.repository.SongRepository;
 import com.srpfreaks.backend.repository.SongTitleRepository;
 import com.srpfreaks.backend.repository.UserRepository;
 import com.srpfreaks.backend.service.SongCsvParser.ImportRow;
 import com.srpfreaks.backend.service.SongCsvParser.ParseResult;
+import com.srpfreaks.backend.service.SongCsvParser.TableValues;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -32,11 +37,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 곡 마스터 CSV 일괄 등록: 미리보기 → 저장.
+ * 마스터 CSV 일괄 등록: 미리보기 → 저장. 두 가지 모드가 있다.
+ *  - importCsv: 곡·채보만 반영한다(서열표 열은 무시).
+ *  - importTable: 곡·채보에 더해 지정한 서열표의 값(기준 난이도, 추천도, 속성)까지 반영한다.
+ *    사이트에서 내려받은 CSV(MasterCsvExportService)를 고쳐 다시 올리는 용도이고, 파일이 그 표의 전체 내용이다.
+ *    (파일에 없는 행은 건드리지도 지우지도 않는다. 삭제는 곡/채보 관리 API로 한다)
  *
- * 같은 서비스가 두 모드를 처리한다. 미리보기(confirm=false)는 계산만 하고 DB에 쓰지 않는다.
- * 저장(confirm=true)은 파일을 다시 읽어 같은 계산을 한 뒤 반영한다. 서버가 미리보기 상태를 들고 있지 않아서
- * (세션/임시 저장 없음) 단순하고, 미리보기와 저장 사이에 마스터가 바뀌어도 저장 시점 기준으로 다시 계산된다.
+ * 미리보기(confirm=false)는 계산만 하고 DB에 쓰지 않는다. 저장(confirm=true)은 파일을 다시 읽어 같은 계산을 한 뒤 반영한다.
+ * 서버가 미리보기 상태를 들고 있지 않아서(세션/임시 저장 없음) 단순하고, 저장 시점의 마스터를 기준으로 다시 계산된다.
+ * 주의: 미리보기 경로에서는 영속 상태의 엔티티를 절대 바꾸지 않는다(트랜잭션이 끝날 때 변경이 자동 저장되기 때문이다).
  *
  * 멱등 업서트: 키는 (정규화된 곡명, 파트, 난이도). 같은 파일을 여러 번 올려도 결과가 같다.
  * 오류 행이 하나라도 있으면 저장하지 않는다(일부만 들어가서 어디까지 반영됐는지 모르는 상태를 막는다).
@@ -50,6 +59,8 @@ public class SongImportService {
     private final SongRepository songRepository;
     private final SongTitleRepository songTitleRepository;
     private final SongDifficultyRepository songDifficultyRepository;
+    private final DifficultyTableRepository difficultyTableRepository;
+    private final DifficultyTableEntryRepository difficultyTableEntryRepository;
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
 
@@ -57,9 +68,22 @@ public class SongImportService {
     private record SongGroup(String normalizedTitle, List<ImportRow> rows, Song existing) {
     }
 
+    /** 곡·채보만 반영한다. */
     @Transactional
     public SongImportResponse importCsv(Long actorId, byte[] content, boolean confirm) {
-        ParseResult parsed = SongCsvParser.parse(content);
+        return run(actorId, null, content, confirm);
+    }
+
+    /** 곡·채보와 서열표 값까지 반영한다. */
+    @Transactional
+    public SongImportResponse importTable(Long actorId, Long tableId, byte[] content, boolean confirm) {
+        DifficultyTable table = difficultyTableRepository.findById(tableId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        return run(actorId, table, content, confirm);
+    }
+
+    private SongImportResponse run(Long actorId, DifficultyTable table, byte[] content, boolean confirm) {
+        ParseResult parsed = SongCsvParser.parse(content, table != null);
         List<SongImportResponse.RowError> errors = parsed.errors().stream()
                 .map(e -> new SongImportResponse.RowError(e.line(), e.message()))
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -67,7 +91,7 @@ public class SongImportService {
         Map<String, List<ImportRow>> byTitle = new LinkedHashMap<>();
         Set<String> seenCharts = new HashSet<>();
         for (ImportRow row : parsed.rows()) {
-            // 파일 안에서 같은 채보가 두 번 나오면 어느 쪽 레벨이 맞는지 알 수 없으므로 오류로 돌려준다
+            // 파일 안에서 같은 채보가 두 번 나오면 어느 쪽 값이 맞는지 알 수 없으므로 오류로 돌려준다
             if (!seenCharts.add(row.normalizedTitle() + "|" + row.part() + "|" + row.type())) {
                 errors.add(new SongImportResponse.RowError(row.line(), "파일 안에 같은 채보가 중복되어 있습니다."));
                 continue;
@@ -114,14 +138,24 @@ public class SongImportService {
                 existingCharts.put(chartKey(d.getSong().getId(), d.getInstrumentPart(), d.getDifficultyType()), d);
             }
         }
+        // 서열표 모드: 이 표의 기존 항목(채보 ID → 항목)
+        Map<Long, DifficultyTableEntry> entriesByChart = new HashMap<>();
+        if (table != null) {
+            for (DifficultyTableEntry e : difficultyTableEntryRepository.findAllByDifficultyTableId(table.getId())) {
+                entriesByChart.put(e.getSongDifficulty().getId(), e);
+            }
+        }
 
         boolean apply = confirm && errors.isEmpty();
         int newSongs = 0;
         int updatedSongs = 0;
         int newDifficulties = 0;
         int unchanged = 0;
-        List<SongImportResponse.LevelChange> levelChanges = new ArrayList<>();
+        int newEntries = 0;
+        int updatedEntries = 0;
+        int unchangedEntries = 0;
         int levelChangeCount = 0;
+        List<SongImportResponse.LevelChange> levelChanges = new ArrayList<>();
 
         for (SongGroup group : groups) {
             ImportRow first = group.rows().get(0);
@@ -149,13 +183,17 @@ public class SongImportService {
             for (ImportRow row : group.rows()) {
                 SongDifficulty chart = song == null || song.getId() == null ? null
                         : existingCharts.get(chartKey(song.getId(), row.part(), row.type()));
+                if (chart != null && chart.isDeleted()) {
+                    skippedDeleted++;
+                    continue;   // 삭제된 채보는 서열표 값도 건드리지 않는다
+                }
                 if (chart == null) {
                     newDifficulties++;
                     if (apply) {
-                        songDifficultyRepository.save(SongDifficulty.create(song, row.part(), row.type(), row.level()));
+                        SongDifficulty created = SongDifficulty.create(song, row.part(), row.type(), row.level());
+                        songDifficultyRepository.save(created);
+                        chart = created;
                     }
-                } else if (chart.isDeleted()) {
-                    skippedDeleted++;
                 } else if (chart.getLevel().compareTo(row.level()) == 0) {
                     unchanged++;
                 } else {
@@ -168,25 +206,69 @@ public class SongImportService {
                         chart.changeLevel(row.level());
                     }
                 }
+
+                if (table != null) {
+                    TableValues v = row.tableValues();
+                    DifficultyTableEntry entry = chart == null || chart.getId() == null ? null
+                            : entriesByChart.get(chart.getId());
+                    if (entry == null) {
+                        newEntries++;
+                        if (apply) {
+                            entry = DifficultyTableEntry.create(table, chart);
+                            applyValues(entry, v);
+                            difficultyTableEntryRepository.save(entry);
+                        }
+                    } else if (entry.hasValues(v.tier(), v.tierUncertain(), v.recommend(), v.recommendUncertain(),
+                            v.pattern(), v.patternUncertain())) {
+                        unchangedEntries++;
+                    } else {
+                        updatedEntries++;
+                        if (apply) {
+                            applyValues(entry, v);
+                        }
+                    }
+                }
             }
         }
 
         if (apply) {
+            if (table != null && newEntries + updatedEntries > 0) {
+                table.bumpRevision();   // 표 내용이 바뀌었음을 표시(변경 추적용)
+            }
             try {
                 // 동시에 다른 관리자가 같은 곡/채보를 등록하면 유니크 키 위반이 나므로 여기서 바로 반영해 409로 바꾼다
                 songDifficultyRepository.flush();
             } catch (DataIntegrityViolationException e) {
                 throw new ApiException(ErrorCode.CONFLICT);
             }
-            auditLogRepository.save(AuditLog.record(userRepository.getReferenceById(actorId), "SONG_IMPORT", "SONG", null,
-                    Map.of("rows", parsed.totalRows(), "newSongs", newSongs, "updatedSongs", updatedSongs,
-                            "newDifficulties", newDifficulties, "levelChanges", levelChangeCount)));
+            Map<String, Object> detail = new LinkedHashMap<>();
+            detail.put("rows", parsed.totalRows());
+            detail.put("newSongs", newSongs);
+            detail.put("updatedSongs", updatedSongs);
+            detail.put("newDifficulties", newDifficulties);
+            detail.put("levelChanges", levelChangeCount);
+            if (table != null) {
+                detail.put("newEntries", newEntries);
+                detail.put("updatedEntries", updatedEntries);
+            }
+            auditLogRepository.save(AuditLog.record(userRepository.getReferenceById(actorId),
+                    table == null ? "SONG_IMPORT" : "DIFFICULTY_TABLE_IMPORT",
+                    table == null ? "SONG" : "DIFFICULTY_TABLE",
+                    table == null ? null : String.valueOf(table.getId()), detail));
         }
 
         List<SongImportResponse.RowError> listedErrors = errors.size() > MAX_LISTED
                 ? errors.subList(0, MAX_LISTED) : errors;
         return new SongImportResponse(apply, parsed.totalRows(), newSongs, updatedSongs, newDifficulties, unchanged,
-                skippedDeleted, levelChangeCount, levelChanges, errors.size(), listedErrors);
+                skippedDeleted, newEntries, updatedEntries, unchangedEntries, levelChangeCount, levelChanges,
+                errors.size(), listedErrors);
+    }
+
+    /** CSV 값을 항목에 반영한다. tier_order(표 안 정렬 순서)는 CSV에 없으므로 기존 값을 유지한다. */
+    private static void applyValues(DifficultyTableEntry entry, TableValues v) {
+        entry.changeTier(v.tier(), v.tierUncertain(), entry.getTierOrder());
+        entry.changeRecommend(v.recommend(), v.recommendUncertain());
+        entry.changePattern(v.pattern(), v.patternUncertain());
     }
 
     /**

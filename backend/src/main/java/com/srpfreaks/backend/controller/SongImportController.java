@@ -1,7 +1,5 @@
 package com.srpfreaks.backend.controller;
 
-import com.srpfreaks.backend.common.error.ApiException;
-import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.SongImportResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.SongImportService;
@@ -24,19 +22,12 @@ import java.io.IOException;
 @PreAuthorize("hasRole('ADMIN')")
 public class SongImportController {
 
-    /** 시드(465곡·669채보)가 약 50KB라 여유를 두고 2MB로 제한한다. 서버 설정(multipart)에도 같은 상한을 둔다. */
-    static final long MAX_FILE_BYTES = 2L * 1024 * 1024;
-
     private final SongImportService songImportService;
 
     @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public SongImportResponse importCsv(@AuthenticationPrincipal AuthenticatedUser actor,
                                         @RequestParam("file") MultipartFile file,
                                         @RequestParam(defaultValue = "false") boolean confirm) throws IOException {
-        if (file.isEmpty() || file.getSize() > MAX_FILE_BYTES) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
-        }
-        // 파일 이름과 Content-Type은 사용자가 마음대로 보낼 수 있어 믿지 않는다. 내용만 UTF-8 CSV로 검증한다.
-        return songImportService.importCsv(actor.id(), file.getBytes(), confirm);
+        return songImportService.importCsv(actor.id(), CsvUploads.read(file), confirm);
     }
 }

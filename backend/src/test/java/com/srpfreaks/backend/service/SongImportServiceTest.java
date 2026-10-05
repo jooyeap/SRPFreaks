@@ -1,7 +1,14 @@
 package com.srpfreaks.backend.service;
 
 import com.srpfreaks.backend.dto.SongImportResponse;
+import com.srpfreaks.backend.common.error.ApiException;
+import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.entity.AuditLog;
+import com.srpfreaks.backend.entity.DifficultyTable;
+import com.srpfreaks.backend.entity.DifficultyTableEntry;
+import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.PatternType;
+import com.srpfreaks.backend.entity.Recommend;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.Song;
@@ -9,6 +16,8 @@ import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
 import com.srpfreaks.backend.entity.TitleKind;
 import com.srpfreaks.backend.repository.AuditLogRepository;
+import com.srpfreaks.backend.repository.DifficultyTableEntryRepository;
+import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.SongDifficultyRepository;
 import com.srpfreaks.backend.repository.SongRepository;
 import com.srpfreaks.backend.repository.SongTitleRepository;
@@ -43,6 +52,8 @@ class SongImportServiceTest {
     @Mock SongRepository songRepository;
     @Mock SongTitleRepository songTitleRepository;
     @Mock SongDifficultyRepository songDifficultyRepository;
+    @Mock DifficultyTableRepository difficultyTableRepository;
+    @Mock DifficultyTableEntryRepository difficultyTableEntryRepository;
     @Mock AuditLogRepository auditLogRepository;
     @Mock UserRepository userRepository;
 
@@ -50,14 +61,16 @@ class SongImportServiceTest {
     final List<Song> songs = new ArrayList<>();
     final List<SongTitle> titles = new ArrayList<>();
     final List<SongDifficulty> difficulties = new ArrayList<>();
+    final List<DifficultyTableEntry> entries = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
         service = new SongImportService(songRepository, songTitleRepository, songDifficultyRepository,
-                auditLogRepository, userRepository);
+                difficultyTableRepository, difficultyTableEntryRepository, auditLogRepository, userRepository);
         lenient().when(songRepository.findAll()).thenReturn(songs);
         lenient().when(songTitleRepository.findAll()).thenReturn(titles);
         lenient().when(songDifficultyRepository.findBySongIdIn(any())).thenReturn(difficulties);
+        lenient().when(difficultyTableEntryRepository.findAllByDifficultyTableId(any())).thenReturn(entries);
         lenient().when(songRepository.save(any(Song.class))).thenAnswer(i -> {
             Song s = i.getArgument(0);
             ReflectionTestUtils.setField(s, "id", 100L + songs.size());
@@ -232,5 +245,141 @@ class SongImportServiceTest {
 
         assertThat(r.errorCount()).isEqualTo(2);
         assertThat(r.applied()).isFalse();
+    }
+
+    // ---------------------------------------------------------------- 서열표 모드
+
+    private static final String TABLE_HEADER = "title,part,difficulty,level,added_version,tier_label,tier_uncertain,"
+            + "recommend,recommend_uncertain,pattern_type,pattern_uncertain,source\n";
+
+    private DifficultyTable table() {
+        DifficultyTable table = DifficultyTable.create("SRN+ 서열표", null, NoteOption.SUPER_RANDOM_PLUS);
+        ReflectionTestUtils.setField(table, "id", 5L);
+        lenient().when(difficultyTableRepository.findById(5L)).thenReturn(java.util.Optional.of(table));
+        return table;
+    }
+
+    private SongImportResponse runTable(String body, boolean confirm) {
+        return service.importTable(ACTOR, 5L, (TABLE_HEADER + body).getBytes(StandardCharsets.UTF_8), confirm);
+    }
+
+    private DifficultyTableEntry existingEntry(DifficultyTable table, SongDifficulty chart, String tier, Recommend rec,
+                                               PatternType pattern) {
+        ReflectionTestUtils.setField(chart, "id", 50L + entries.size());
+        DifficultyTableEntry entry = DifficultyTableEntry.create(table, chart);
+        entry.changeTier(new BigDecimal(tier), false, 3);
+        entry.changeRecommend(rec, false);
+        entry.changePattern(pattern, false);
+        entries.add(entry);
+        return entry;
+    }
+
+    @Test
+    void 서열표_저장은_새_항목을_만들고_표_버전을_올린다() {
+        DifficultyTable table = table();
+
+        SongImportResponse r = runTable("Saiph,GUITAR,MASTER,9.99,V4,6.1,,중,,단일,,sheet\nStargazer,BASS,MASTER,9,V5,,1,,,레이팅 제외,,sheet\n", true);
+
+        assertThat(r.applied()).isTrue();
+        assertThat(r.newEntries()).isEqualTo(2);
+        ArgumentCaptor<DifficultyTableEntry> captor = ArgumentCaptor.forClass(DifficultyTableEntry.class);
+        verify(difficultyTableEntryRepository, times(2)).save(captor.capture());
+        DifficultyTableEntry first = captor.getAllValues().get(0);
+        assertThat(first.getTierLabel()).isEqualByComparingTo("6.1");
+        assertThat(first.getRecommend()).isEqualTo(Recommend.MIDDLE);
+        assertThat(first.getPatternType()).isEqualTo(PatternType.SINGLE);
+        DifficultyTableEntry second = captor.getAllValues().get(1);
+        assertThat(second.getTierLabel()).isNull();           // 기준 난이도 "?"만 있는 채보
+        assertThat(second.isTierUncertain()).isTrue();
+        assertThat(second.getPatternType()).isEqualTo(PatternType.EXCLUDED);
+        assertThat(table.getRevision()).isEqualTo(2);
+        ArgumentCaptor<AuditLog> audit = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogRepository).save(audit.capture());
+        assertThat(audit.getValue().getAction()).isEqualTo("DIFFICULTY_TABLE_IMPORT");
+        assertThat(audit.getValue().getTargetId()).isEqualTo("5");
+    }
+
+    @Test
+    void 서열표_미리보기는_항목을_저장하지도_기존_항목을_바꾸지도_않는다() {
+        DifficultyTable table = table();
+        Song saiph = existingSong(1L, "Saiph");
+        SongDifficulty chart = existingChart(saiph, InstrumentPart.GUITAR, DifficultyType.MASTER, "9.99");
+        DifficultyTableEntry entry = existingEntry(table, chart, "6.0", Recommend.LOW, PatternType.DOUBLE);
+
+        SongImportResponse r = runTable("Saiph,GUITAR,MASTER,9.99,,6.5,,상,,단일,,\n", false);
+
+        assertThat(r.applied()).isFalse();
+        assertThat(r.updatedEntries()).isEqualTo(1);
+        verify(difficultyTableEntryRepository, never()).save(any());
+        // 미리보기에서 영속 엔티티를 바꾸면 트랜잭션이 끝날 때 몰래 저장된다
+        assertThat(entry.getTierLabel()).isEqualByComparingTo("6.0");
+        assertThat(entry.getRecommend()).isEqualTo(Recommend.LOW);
+        assertThat(entry.getPatternType()).isEqualTo(PatternType.DOUBLE);
+        assertThat(table.getRevision()).isEqualTo(1);
+    }
+
+    @Test
+    void 서열표_저장은_바뀐_항목만_갱신하고_표시_순서_tier_order는_유지한다() {
+        DifficultyTable table = table();
+        Song saiph = existingSong(1L, "Saiph");
+        SongDifficulty changedChart = existingChart(saiph, InstrumentPart.GUITAR, DifficultyType.MASTER, "9.99");
+        SongDifficulty sameChart = existingChart(saiph, InstrumentPart.BASS, DifficultyType.MASTER, "9.00");
+        DifficultyTableEntry changed = existingEntry(table, changedChart, "6.0", Recommend.LOW, PatternType.DOUBLE);
+        existingEntry(table, sameChart, "5.5", Recommend.HIGH, PatternType.SINGLE);
+
+        SongImportResponse r = runTable("Saiph,GUITAR,MASTER,9.99,,6.5,,상,,단일,,\nSaiph,BASS,MASTER,9,,5.5,,상,,단일,,\n", true);
+
+        assertThat(r.updatedEntries()).isEqualTo(1);
+        assertThat(r.unchangedEntries()).isEqualTo(1);
+        assertThat(r.newEntries()).isZero();
+        assertThat(changed.getTierLabel()).isEqualByComparingTo("6.5");
+        assertThat(changed.getRecommend()).isEqualTo(Recommend.HIGH);
+        assertThat(changed.getPatternType()).isEqualTo(PatternType.SINGLE);
+        assertThat(changed.getTierOrder()).isEqualTo(3);
+        assertThat(table.getRevision()).isEqualTo(2);
+    }
+
+    @Test
+    void 서열표_값을_비우면_미정으로_반영된다() {
+        DifficultyTable table = table();
+        Song saiph = existingSong(1L, "Saiph");
+        SongDifficulty chart = existingChart(saiph, InstrumentPart.GUITAR, DifficultyType.MASTER, "9.99");
+        DifficultyTableEntry entry = existingEntry(table, chart, "6.0", Recommend.LOW, PatternType.DOUBLE);
+
+        runTable("Saiph,GUITAR,MASTER,9.99,,,,,,,,\n", true);
+
+        assertThat(entry.getTierLabel()).isNull();
+        assertThat(entry.getRecommend()).isNull();
+        assertThat(entry.getPatternType()).isNull();
+    }
+
+    @Test
+    void 서열표_열의_잘못된_값은_오류이고_저장하지_않는다() {
+        table();
+
+        SongImportResponse r = runTable("A,GUITAR,MASTER,9,,6.55,,최상,,없음,,\nB,GUITAR,MASTER,9,,6,x,,,,,\n", true);
+
+        assertThat(r.applied()).isFalse();
+        assertThat(r.errorCount()).isEqualTo(4);   // 2행: 기준 난이도·추천도·속성, 3행: 불확실 표시
+        verify(difficultyTableEntryRepository, never()).save(any());
+        verify(songRepository, never()).save(any());
+    }
+
+    @Test
+    void 없는_서열표는_404다() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> service.importTable(ACTOR, 99L, (TABLE_HEADER).getBytes(StandardCharsets.UTF_8), false))
+                .isInstanceOfSatisfying(ApiException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    @Test
+    void 곡만_올릴_때는_서열표_열을_검증하지도_반영하지도_않는다() {
+        SongImportResponse r = service.importCsv(ACTOR,
+                (TABLE_HEADER + "A,GUITAR,MASTER,9,,아무거나,,최상,,없음,,\n").getBytes(StandardCharsets.UTF_8), true);
+
+        assertThat(r.errorCount()).isZero();
+        assertThat(r.newEntries()).isZero();
+        verify(difficultyTableEntryRepository, never()).save(any());
     }
 }

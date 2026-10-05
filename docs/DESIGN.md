@@ -443,7 +443,10 @@ com.srpfreaks.backend
 | 서열표 | GET `/difficulty-tables/{id}/entries?mine=true` (본인 기록과 연결, 목록은 묶음/페이지 단위) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |
 | 곡 일괄 등록 (CSV) | POST `/admin/songs/import` (multipart `file`, `confirm=false`면 미리보기 / `true`면 저장. 오류 행이 있으면 저장하지 않음) | ROOT·ADMIN |
-| 서열표 CSV 가져오기 | POST `/admin/difficulty-tables/{id}/import` (미리보기 → 확정) | ROOT·ADMIN |
+| 서열표 목록 | GET `/difficulty-tables` | USER+ |
+| 서열표 만들기 | POST `/admin/difficulty-tables` (이름, 파트(선택), 기준 옵션) | ROOT·ADMIN |
+| 마스터 CSV 내려받기 | GET `/admin/difficulty-tables/{id}/export` (곡·채보 전체 + 이 표의 값. 고쳐서 그대로 다시 올릴 수 있음) | ROOT·ADMIN |
+| 서열표 CSV 가져오기 | POST `/admin/difficulty-tables/{id}/import` (multipart `file`, `confirm=false` 미리보기 / `true` 저장. 곡·채보와 서열표 값을 함께 반영) | ROOT·ADMIN |
 | 타인 파일의 달성률 일괄 입력 | POST `/admin/records/import-csv` (곡명·난이도·파트로 매칭, 옵션 지정 필수, 매칭 실패는 목록으로 반환) | **지정된 ADMIN 1명 + ROOT** |
 | 설정 | GET/PATCH `/admin/settings` | ROOT |
 | 역할 | PATCH `/admin/users/{id}/role` | ROOT |
@@ -583,6 +586,10 @@ com.srpfreaks.backend
 - **구현 결정(2026-10-05)**: 열 이름은 시드 CSV 그대로 `title, part, difficulty, level, added_version, source`를 읽고(필수는 앞의 4개), 서열표 열(`tier_label` 등)은 곡 등록에서 무시한다(서열표 가져오기에서 읽는다). 파트는 `GUITAR/G`, `BASS/B`, 난이도는 `BASIC/ADVANCED/EXTREME/MASTER`와 약어(`BAS/ADV/EXT/MAS`), 레벨은 0.00~9.99(소수 둘째 자리). 업로드는 2MB, 5,000행까지.
 - 미리보기와 저장은 같은 API다. **서버가 미리보기를 저장해 두지 않고** 저장 요청 때 파일을 다시 읽어 같은 계산을 한다. **오류 행이 하나라도 있으면 저장하지 않는다**(일부만 반영되는 상태 방지). 같은 채보가 파일 안에 두 번 있거나, 같은 곡의 초출 버전이 행마다 다르거나, 같은 이름으로 곡이 둘 이상 찾아지면 오류다.
 - 곡 매칭은 곡명과 곡명 표기/별칭(`song_titles`)의 정규화 값으로 한다. **삭제된 곡·채보는 되살리지 않고 건너뛰며** 개수만 알려 준다. 기존 곡은 초출 버전만 갱신하고 BPM 등 메타데이터는 지우지 않는다. 레벨이 바뀐 채보는 갱신하고 "레벨 변경" 목록(최대 100건)으로 돌려준다.
+- **내려받기 → 고치기 → 올리기(2026-10-05 결정)**: 서열표가 앞으로도 바뀌므로, 사이트가 **현재 DB 내용을 CSV로 만들어 주고**(`GET .../export`) 관리자가 그 파일을 고쳐 다시 올린다(`POST .../import`). 열 구성과 순서는 시드 CSV와 같다(`title, part, difficulty, level, added_version, tier_label, tier_uncertain, recommend, recommend_uncertain, pattern_type, pattern_uncertain, source`). **곡·채보와 서열표 값이 한 파일**이다(서열표 모드는 표를 지정해서 올린다). 아티스트·타이틀 폴더·BPM·노트 수는 이 CSV에 넣지 않고 관리자가 초기 등록 때나 곡 수정 API로 입력한다.
+- 서열표 모드에서 **파일은 그 표의 전체 내용**이다: 값 칸을 비우면 비운 값(미정)으로 반영되고, 서열표에 없던 채보가 파일에 있으면 새 항목으로 추가된다. 파일에 없는 행은 건드리지도 지우지도 않는다(삭제는 곡/채보 관리 API). 값이 바뀐 항목이 있으면 표의 `revision`을 올리고, 감사 로그는 `DIFFICULTY_TABLE_IMPORT`로 남긴다. `tier_order`는 CSV에 없으므로 기존 값을 유지한다.
+- **수식 주입 방어**: 칸이 `= + - @`(또는 탭/줄바꿈)로 시작하면 내려받을 때 앞에 `'`를 붙이고, 올릴 때 같은 규칙으로 뗀다(`'`로 시작하고 바로 뒤가 위 글자일 때만). 엑셀이 곡명을 수식으로 실행하는 것을 막는다. 내려받는 파일은 UTF-8 + BOM(엑셀에서 한글이 깨지지 않게).
+- 서열표 열의 값: 기준 난이도 0.0~99.9(소수 첫째 자리), 추천도 `상/중/하`, 속성 `단일/복합/이중/삼중/레이팅 제외`, 불확실 표시는 `1` 또는 빈 칸. **기준 난이도가 `?`뿐인 채보는 `tier_label` 빈 칸 + `tier_uncertain=1`** 로 저장한다(엔티티 `changeTier`가 값이 없어도 불확실 표시를 유지하도록 고쳤다).
 - 인코딩은 UTF-8(BOM 허용). 엑셀에서 열 때 글자가 깨져 보여도 파일 자체는 정상일 수 있다.
 - 올리면 **미리보기(매칭/신규/오류 개수)** 를 먼저 보여주고, 확인한 뒤에 저장한다. 매칭 실패는 버리지 않고 목록으로 돌려준다.
 - 시드 마스터(2026-10-02 취합, `docs/seed/songs-master.csv`): 최신 시트 2개(628채보) + 이전 v1.1 시트의 하위 난이도 41채보 = **465곡, 669채보**(레벨 5.65~9.99, 기타 474 · 베이스 195, MAS 538 · EXT 125 · ADV 6). 기준 난이도 없음 220, 속성 없음 274, 추천도 미정 65., 그중 기준 난이도 값이 있는 채보 445, 없는 채보(미정) 224. 낮은 레벨 채보는 시트에 없으므로 마스터 확장(위)으로 채운다.
@@ -625,6 +632,7 @@ com.srpfreaks.backend
 ## 17. 변경 이력
 | 날짜 | 내용 |
 |---|---|
+| 2026-10-05 | 마스터 CSV 왕복(사이트가 CSV를 만들어 주고 고쳐서 다시 올림), 서열표 만들기·내려받기·가져오기 API, 수식 주입 방어를 곡 일괄 등록 규칙에 기록 |
 | 2026-10-05 | 곡 CSV 일괄 등록 구현 결정(미리보기/저장 방식, 열 규칙, 오류 시 미저장)을 곡 일괄 등록 규칙에 기록 |
 | 2026-10-05 | **D22 추가.** 곡/채보 관리(등록·수정·삭제, CSV)를 ROOT와 ADMIN 둘 다에게 열고, ROOT·ADMIN도 USER 기능을 쓰는 것으로 정리. 5장 권한표, 10장 API 권한, 곡 마스터 규칙 반영
 | 2026-10-02 | **D19~D21 추가.** Google 로그인만 사용(자체 비밀번호·잠금 없음, `users` 컬럼 변경, API `/auth/google`). access 토큰 15분, 탈퇴는 완전 삭제, 같은 서버 배포, 동점은 먼저 달성한 사람이 위, 레이팅은 SRN+만. 재킷 이미지는 운영자가 수집해 사용(위험 인지). 프로젝트명을 SRPFreaks로 변경, 플레이어 티어 영문 표기. 16장 미결 항목 정리 |
