@@ -108,7 +108,7 @@ public class SecurityConfig {
 
     /** ROOT > ADMIN > USER. 상위 권한은 하위 권한이 가능한 일을 모두 할 수 있다 (D22). */
     @Bean
-    static RoleHierarchy roleHierarchy() {
+    public static RoleHierarchy roleHierarchy() {
         return RoleHierarchyImpl.fromHierarchy("""
                 ROLE_ROOT > ROLE_ADMIN
                 ROLE_ADMIN > ROLE_USER
@@ -117,7 +117,7 @@ public class SecurityConfig {
 
     /** @PreAuthorize(hasRole 등)에도 같은 계층을 적용한다. static이어야 설정 클래스보다 먼저 만들어진다. */
     @Bean
-    static MethodSecurityExpressionHandler methodSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
+    public static MethodSecurityExpressionHandler methodSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
         DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
         handler.setRoleHierarchy(roleHierarchy);
         return handler;

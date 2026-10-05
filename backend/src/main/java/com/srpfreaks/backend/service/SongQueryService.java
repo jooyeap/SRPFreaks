@@ -76,7 +76,7 @@ public class SongQueryService {
     }
 
     /** LIKE 패턴: 키워드의 %, _, !는 문자 그대로 찾도록 이스케이프한다('!'가 이스케이프 문자). */
-    static String likePattern(String keyword) {
+    public static String likePattern(String keyword) {
         String escaped = keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_");
         return "%" + escaped + "%";
     }
