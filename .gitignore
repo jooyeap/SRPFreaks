@@ -27,3 +27,6 @@ replay_pid*
 # Local secrets
 .env
 application-local.yml
+
+# 1회성 시드 SQL (데이터라 커밋하지 않는다, D23)
+scripts/seed/out/
