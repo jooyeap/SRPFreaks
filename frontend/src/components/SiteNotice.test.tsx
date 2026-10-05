@@ -1,11 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { AuthProvider } from "@/components/AuthProvider";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 
 describe("고지 문구", () => {
   it("상단에 '비공식 팬 프로젝트'를 보여 준다", () => {
-    render(<SiteHeader />);
+    render(
+      <AuthProvider>
+        <SiteHeader />
+      </AuthProvider>,
+    );
     expect(screen.getByText("비공식 팬 프로젝트")).toBeInTheDocument();
   });
 
