@@ -37,19 +37,18 @@ export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRe
         </span>
         <RecommendBadge value={entry.recommend} uncertain={entry.recommendUncertain} />
       </div>
-      <div className="flex items-center justify-between gap-1">
-        {stage ? <StageBadge stage={stage} /> : <span />}
-        <span className="flex items-center gap-1 text-[10px] text-fg-dim">
-          <DifficultyBadge difficulty={entry.difficulty} />
-          {entry.pattern ?? EMPTY_MARK}
-        </span>
+      {/* 칸 폭이 좁아서(약 90px) 단계·난이도·속성을 한 줄에 두면 속성이 잘린다: 배지는 한 줄(넘치면 줄바꿈), 속성은 아래 줄 */}
+      <div className="flex flex-wrap items-center gap-1">
+        {stage ? <StageBadge stage={stage} /> : null}
+        <DifficultyBadge difficulty={entry.difficulty} />
       </div>
+      <p className="text-[10px] text-fg-dim">속성 {entry.pattern ?? EMPTY_MARK}</p>
       {onRecord ? (
         <button
           type="button"
           onClick={() => onRecord(entry)}
           aria-label={`${entry.title} 기록 입력`}
-          className="rounded-full border border-chip-line py-0.5 text-[11px] text-fg-sub hover:text-fg"
+          className="mt-auto rounded-full border border-chip-line py-0.5 text-[11px] text-fg-sub hover:text-fg"
         >
           기록
         </button>
