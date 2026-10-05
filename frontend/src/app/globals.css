@@ -23,6 +23,8 @@
   --disabled: #4a5368;
   --chip-line: #3a4358;
   --jacket: #3b4660;
+  /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
+  --part-guitar: #f9a8d4; --part-bass: #5eead4;
   --chip-on-bg: #eef0f6;
   --chip-on-fg: #0f1218;
   --danger: #ff8f8f;
@@ -64,6 +66,8 @@
   --disabled: #9aa3b5;
   --chip-line: #b5bdcd;
   --jacket: #c8d0df;
+  /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
+  --part-guitar: #be185d; --part-bass: #0f766e;
   --chip-on-bg: #12151c;
   --chip-on-fg: #f3f5f9;
 
@@ -91,6 +95,8 @@
     --disabled: #9aa3b5;
     --chip-line: #b5bdcd;
     --jacket: #c8d0df;
+    /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
+    --part-guitar: #be185d; --part-bass: #0f766e;
     --chip-on-bg: #12151c;
     --chip-on-fg: #f3f5f9;
     --danger: #b91c1c;
@@ -151,6 +157,11 @@ body {
 .stage-name { color: var(--st-name); }
 .stage-tint { background-image: linear-gradient(90deg, var(--st-tint), transparent 65%); }
 .stage-chip { background: var(--st-chip); color: var(--stage-chip-fg); }
+
+/* 파트 배지: 글자와 테두리 색만 파트별로 다르다. 배경은 채우지 않아 난이도·단계 배지(채움)와 구분된다 */
+[data-part="GUITAR"] { --part: var(--part-guitar); }
+[data-part="BASS"] { --part: var(--part-bass); }
+.part-chip { color: var(--part); border-color: var(--part); }
 
 /* 난이도 / 추천 배지 */
 [data-difficulty="BASIC"] { --diff: var(--diff-bas); }

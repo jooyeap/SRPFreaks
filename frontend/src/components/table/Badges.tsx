@@ -14,12 +14,15 @@ export function DifficultyBadge({ difficulty }: { difficulty: DifficultyType }) 
 }
 
 /**
- * 파트 배지 (Guitar / Bass). 글자로 구분하고 색은 쓰지 않는다 (색만으로 의미를 전달하지 않는다).
- * 곡 상세, 서열표, 레이팅, 기록 시트에서 같은 모양으로 쓴다.
+ * 파트 배지 (Guitar / Bass). 파트마다 글자와 테두리 색이 다르지만 글자(Guitar/Bass)를 항상 같이 적어서
+ * 색만으로 구분하지 않는다. 색은 data-part에 따라 globals.css가 정한다. 곡 상세, 서열표, 레이팅, 기록 시트에서 같은 모양으로 쓴다.
  */
 export function PartBadge({ part }: { part: InstrumentPart }) {
   return (
-    <span className="inline-block rounded border border-chip-line px-1.5 py-px text-[11px] font-bold leading-4 text-fg-sub">
+    <span
+      data-part={part}
+      className="part-chip inline-block rounded border px-1.5 py-px text-[11px] font-bold leading-4"
+    >
       {partLabel(part)}
     </span>
   );
