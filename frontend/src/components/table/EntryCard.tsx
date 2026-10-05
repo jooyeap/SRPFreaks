@@ -16,13 +16,26 @@ export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRe
   const ringed = stage === "FC" || stage === "EXC";
   return (
     <li data-stage={stage ?? undefined} className="flex min-w-0 flex-col gap-1 md:hidden">
-      <SongTile songId={entry.songId} title={entry.title} className={`aspect-square rounded ${ringed ? "stage-ring" : ""}`}>
-        <span className="absolute left-1 top-1 rounded bg-page/70 px-1 font-num text-[10px] text-fg">
-          {formatLevel(entry.level)}
-        </span>
-        <span className="absolute right-1 top-1 rounded bg-page/70 px-1 text-[10px] font-bold text-fg">{partLabel(entry.part)}</span>
-        <span data-difficulty={entry.difficulty} className="diff-band absolute inset-x-0 bottom-0 h-1" aria-hidden="true" />
-      </SongTile>
+      {/* 재킷 칸은 장식(aria-hidden)이라 버튼을 그 안에 넣지 않고, 같은 크기의 상자로 감싸 모서리에 겹쳐 둔다 */}
+      <div className="relative">
+        <SongTile songId={entry.songId} title={entry.title} className={`aspect-square rounded-lg ${ringed ? "stage-ring" : ""}`}>
+          <span className="absolute left-1 top-1 rounded bg-page/70 px-1 font-num text-[10px] text-fg">
+            {formatLevel(entry.level)}
+          </span>
+          <span className="absolute right-1 top-1 rounded bg-page/70 px-1 text-[10px] font-bold text-fg">{partLabel(entry.part)}</span>
+          <span data-difficulty={entry.difficulty} className="diff-band absolute inset-x-0 bottom-0 h-1" aria-hidden="true" />
+        </SongTile>
+        {onRecord ? (
+          <button
+            type="button"
+            onClick={() => onRecord(entry)}
+            aria-label={`${entry.title} 기록 입력`}
+            className="absolute bottom-2 right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-page/80 text-base leading-none text-fg hover:bg-page"
+          >
+            +
+          </button>
+        ) : null}
+      </div>
       <Link
         href={tableDetailHref(entry)}
         className={`line-clamp-2 text-[11px] leading-tight hover:underline ${ringed && stage === "EXC" ? "stage-name" : "text-fg"}`}
@@ -41,16 +54,6 @@ export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRe
         <DifficultyBadge difficulty={entry.difficulty} />
       </div>
       <p className="text-[10px] text-fg-dim">속성 {entry.pattern ?? EMPTY_MARK}</p>
-      {onRecord ? (
-        <button
-          type="button"
-          onClick={() => onRecord(entry)}
-          aria-label={`${entry.title} 기록 입력`}
-          className="mt-auto rounded-full border border-chip-line py-0.5 text-[11px] text-fg-sub hover:text-fg"
-        >
-          기록
-        </button>
-      ) : null}
     </li>
   );
 }
