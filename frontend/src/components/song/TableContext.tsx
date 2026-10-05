@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { RecommendBadge } from "@/components/table/Badges";
+import { PartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
-import { EMPTY_MARK, difficultyLabel, formatLevel, formatTier, partLabel } from "@/lib/format";
+import { EMPTY_MARK, difficultyLabel, formatLevel, formatTier } from "@/lib/format";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import { neighbors } from "@/lib/songs";
 
@@ -79,7 +79,9 @@ export function OtherCharts({ charts }: { charts: readonly TableEntryResponse[] 
               href={tableDetailHref(c)}
               className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-fg hover:bg-table-head"
             >
-              <span className="w-12 text-fg-sub">{partLabel(c.part)}</span>
+              <span className="w-14">
+                <PartBadge part={c.part} />
+              </span>
               <span className="font-num text-fg-sub">
                 {difficultyLabel(c.difficulty)} {formatLevel(c.level)}
               </span>
@@ -127,7 +129,7 @@ function NeighborItem({ label, entry }: { label: string; entry: TableEntryRespon
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold text-fg">{entry.title}</span>
         <span className="block text-[11px] text-fg-dim">
-          {partLabel(entry.part)} {difficultyLabel(entry.difficulty)} <span className="font-num">{formatLevel(entry.level)}</span>
+          <PartBadge part={entry.part} /> {difficultyLabel(entry.difficulty)} <span className="font-num">{formatLevel(entry.level)}</span>
         </span>
       </span>
       {entry.mine ? <StageBadge stage={entry.mine.stage} /> : <span className="text-[11px] text-fg-faint">기록 없음</span>}

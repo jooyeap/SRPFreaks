@@ -1,6 +1,6 @@
-import { DifficultyBadge } from "@/components/table/Badges";
+import { DifficultyBadge, PartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
-import { EMPTY_MARK, formatRate, formatScore, formatTier, partLabel } from "@/lib/format";
+import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
 import type { SkillEntryResponse } from "@/lib/api-types";
 
 /**
@@ -31,9 +31,7 @@ export function RatingEntryCard({ entry }: { entry: SkillEntryResponse }) {
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-1.5">
           <DifficultyBadge difficulty={entry.difficulty} />
-          <span className="rounded border border-chip-line px-1.5 py-px text-[11px] leading-4 text-fg-sub">
-            {partLabel(entry.part)}
-          </span>
+          <PartBadge part={entry.part} />
           <StageBadge stage={entry.stage} />
         </p>
       </div>

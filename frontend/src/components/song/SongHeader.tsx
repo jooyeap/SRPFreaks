@@ -1,4 +1,5 @@
-import { difficultyLabel, formatLevel, partLabel } from "@/lib/format";
+import { PartBadge } from "@/components/table/Badges";
+import { difficultyLabel, formatLevel } from "@/lib/format";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 
 const CHIP = "rounded-full border border-chip-line px-2 py-0.5 text-xs font-bold text-fg-sub";
@@ -50,7 +51,7 @@ export function SongHeader({
               >
                 {difficultyLabel(chart.difficultyType)} {formatLevel(chart.level)}
               </span>
-              <span className={CHIP}>{partLabel(chart.instrumentPart)}</span>
+              <PartBadge part={chart.instrumentPart} />
             </>
           ) : null}
         </p>

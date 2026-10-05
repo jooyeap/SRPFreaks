@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { DifficultyBadge, RecommendBadge } from "@/components/table/Badges";
+import { DifficultyBadge, PartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { tableDetailHref } from "@/components/song/TableContext";
-import { EMPTY_MARK, formatLevel, formatRate, partLabel } from "@/lib/format";
+import { EMPTY_MARK, formatLevel, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 
 /** 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. */
@@ -51,7 +51,9 @@ export function EntryRow({ entry, onRecord }: { entry: TableEntryResponse; onRec
         </Link>
         {stage ? <StageBadge stage={stage} /> : null}
       </span>
-      <span className="text-fg-sub">{partLabel(entry.part)}</span>
+      <span>
+        <PartBadge part={entry.part} />
+      </span>
       <span>
         <DifficultyBadge difficulty={entry.difficulty} />
       </span>

@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { DifficultyBadge, RecommendBadge } from "@/components/table/Badges";
-import { EMPTY_MARK, formatLevel, formatTier, partLabel } from "@/lib/format";
+import { DifficultyBadge, PartBadge, RecommendBadge } from "@/components/table/Badges";
+import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
 import type { SongChartResponse, SongDetailResponse, TierGroupResponse } from "@/lib/api-types";
 import { findChart, formatBpm, formatNoteCount, sortCharts } from "@/lib/songs";
 
@@ -68,7 +68,9 @@ export function LevelTable({
                 }`}
               >
                 <span className={`h-6 w-1 rounded ${selected ? "bg-chip-on-bg" : "bg-transparent"}`} aria-hidden="true" />
-                <span className="text-fg-sub">{partLabel(chart.instrumentPart)}</span>
+                <span>
+                  <PartBadge part={chart.instrumentPart} />
+                </span>
                 <span>
                   <DifficultyBadge difficulty={chart.difficultyType} />
                 </span>

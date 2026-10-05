@@ -22,7 +22,7 @@ export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRe
         <span className="absolute left-1 top-1 rounded bg-page/70 px-1 font-num text-[10px] text-fg">
           {formatLevel(entry.level)}
         </span>
-        <span className="absolute right-1 top-1 rounded bg-page/70 px-1 text-[10px] text-fg">{partLabel(entry.part)}</span>
+        <span className="absolute right-1 top-1 rounded bg-page/70 px-1 text-[10px] font-bold text-fg">{partLabel(entry.part)}</span>
         <span className="diff-band absolute inset-x-0 bottom-0 h-1" aria-hidden="true" />
       </div>
       <Link
