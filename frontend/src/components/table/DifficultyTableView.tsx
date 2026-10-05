@@ -26,6 +26,17 @@ const PART_OPTIONS: readonly ChipOption<InstrumentPart>[] = [
 const RECOMMEND_CHIPS: readonly ChipOption<string>[] = RECOMMEND_OPTIONS.map((v) => ({ value: v, label: v }));
 const PATTERN_CHIPS: readonly ChipOption<string>[] = PATTERN_OPTIONS.map((v) => ({ value: v, label: v }));
 
+/** 접힌 필터 줄에 보여 줄 요약. 걸린 필터가 없으면 "전체". */
+function filterSummary(filters: TableFilters, includeZero: boolean): string {
+  const picked = [
+    filters.part ? PART_OPTIONS.find((o) => o.value === filters.part)?.label : null,
+    filters.recommend ? `추천 ${filters.recommend}` : null,
+    filters.pattern ? `속성 ${filters.pattern}` : null,
+  ].filter((v): v is string => Boolean(v));
+  const average = includeZero ? "평균 0% 포함" : "평균 0% 미포함";
+  return `${picked.length > 0 ? picked.join(" · ") : "전체"} · ${average}`;
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof ApiError ? error.message : "서열표를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
 }
@@ -38,6 +49,7 @@ export function DifficultyTableView({ userId }: { userId: number }) {
   const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(0);
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
+  const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
   const [recordTarget, setRecordTarget] = useState<TableEntryResponse | null>(null); // 기록 입력창을 연 채보
 
   const tables = useQuery({
@@ -78,7 +90,24 @@ export function DifficultyTableView({ userId }: { userId: number }) {
         <p className="mt-1 text-sm text-fg-sub">속성은 SRN, SRN+ 옵션 사용 기준</p>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-lg border border-line bg-card p-3">
+      {/* 모바일: 접힌 상태에서도 지금 걸린 필터를 한 줄로 보여 준다. 데스크톱(md 이상)은 버튼 없이 항상 펼친다 */}
+      <button
+        type="button"
+        aria-expanded={filtersOpen}
+        aria-controls="table-filters"
+        onClick={() => setFiltersOpen((open) => !open)}
+        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-card px-4 py-2.5 text-left text-sm md:hidden"
+      >
+        <span className="font-semibold text-fg">필터</span>
+        <span className="min-w-0 flex-1 truncate text-xs text-fg-dim">{filterSummary(filters, includeZero)}</span>
+        <span aria-hidden="true" className="text-fg-dim">
+          {filtersOpen ? "▴" : "▾"}
+        </span>
+      </button>
+      <div
+        id="table-filters"
+        className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-xl border border-line bg-card p-3 md:flex`}
+      >
         <FilterChips label="파트" options={PART_OPTIONS} selected={filters.part} onChange={(part) => changeFilter({ part })} />
         <FilterChips
           label="추천"

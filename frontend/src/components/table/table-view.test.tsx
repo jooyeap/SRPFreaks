@@ -181,6 +181,23 @@ describe("DifficultyTableView", () => {
     expect(entryParams(2).get("page")).toBe("0");
   });
 
+  it("필터는 접었다 펼 수 있고, 접힌 줄에 걸린 필터를 요약한다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    );
+    renderView();
+    const toggle = await screen.findByRole("button", { name: /^필터/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveTextContent("전체 · 평균 0% 미포함");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Guitar" }));
+    fireEvent.click(screen.getByRole("button", { name: "상" }));
+    fireEvent.click(screen.getByRole("button", { name: "0% 포함" }));
+    expect(toggle).toHaveTextContent("Guitar · 추천 상 · 평균 0% 포함");
+  });
+
   it("평균 토글은 서버를 다시 부르지 않고 표시만 바꾼다", async () => {
     fetchMock.mockImplementation((input) =>
       Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
