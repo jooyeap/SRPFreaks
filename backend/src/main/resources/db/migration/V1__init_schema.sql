@@ -120,7 +120,7 @@ CREATE TABLE difficulty_table_entries (
     difficulty_table_entry_id BIGINT       NOT NULL AUTO_INCREMENT,
     difficulty_table_id       BIGINT       NOT NULL,
     song_difficulty_id        BIGINT       NOT NULL,
-    tier_label                DECIMAL(3,1) NULL,            -- 기준 난이도(✋). NULL = 미정 (레이팅 계산에서 제외)
+    tier_label                DECIMAL(3,1) NULL,            -- 기준 난이도. NULL = 미정 (레이팅 계산에서 제외)
     tier_uncertain            BOOLEAN      NOT NULL DEFAULT FALSE,
     tier_order                INT          NULL,
     recommend                 VARCHAR(10)  NULL,            -- 상 / 중 / 하
@@ -182,7 +182,7 @@ CREATE TABLE app_settings (
     CONSTRAINT fk_app_settings_updated_by FOREIGN KEY (updated_by) REFERENCES users (user_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 레이팅 수식 계수 (7장): R = ✋ > pivot ? high_slope*✋ - high_offset : low_slope*✋ - low_offset
+-- 레이팅 수식 계수 (7장): R = T > pivot ? high_slope*T - high_offset : low_slope*T - low_offset  (T = 기준 난이도)
 --                       V = R*min(A, cap_rate)/100 + bonus*min(max(A - cap_rate, 0), max_rate - cap_rate)/(max_rate - cap_rate), 점수 = V * score_multiplier
 INSERT INTO app_settings (setting_key, setting_value, updated_by, updated_at) VALUES
     ('rating.pivot',            '6.0', NULL, UTC_TIMESTAMP(6)),
