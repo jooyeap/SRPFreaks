@@ -383,12 +383,17 @@ com.srpfreaks.backend
 - **Refresh Rotation**: 재발급마다 새 토큰 발급, 기존 토큰 폐기. 폐기된 토큰이 다시 오면 같은 `family_id` 전체를 폐기한다.
 - JWT 서명 키는 환경변수. 알고리즘을 고정한다.
 
-**현재 코드에서 먼저 고칠 것 (보안 선행 작업)**
-1. Access/Refresh 토큰이 같은 키와 형식이라 **refresh 토큰으로 API 호출이 가능하다.** 토큰에 종류(`typ`) 클레임을 넣고, 필터는 access 토큰만 받는다.
-2. Refresh 토큰이 JSON 본문으로 내려간다. httpOnly 쿠키로 옮긴다.
-3. 재발급 API와 로테이션이 없다.
-4. 공통 에러 처리가 없다. (아이디 중복, 로그인 실패 시 응답 형태 통제)
-5. CORS, Rate Limit, 로그인 실패 잠금, Role이 없다.
+**구현 결정 (2026-10, 구글 로그인·JWT 구현 기준)**
+- **Access Token**: HS256 고정 JWT. 클레임은 `sub`(사용자 ID), `typ=access`, `iss`, 만료뿐이고 **역할과 차단 여부는 넣지 않는다.** 요청마다 DB에서 읽으므로 역할 변경·차단이 이미 발급된 토큰에도 바로 반영된다. 키는 32바이트 미만이면 서버가 시작하지 않는다.
+- **Refresh Token은 JWT가 아니다.** 32바이트 난수(Base64url) 불투명 문자열이고 DB에는 SHA-256 해시(CHAR(64))만 저장한다. Access Token과 형식이 달라 refresh 토큰으로 API를 호출할 수 없다. (`typ` 검사는 이중 방어)
+- **재사용 탐지**: 폐기된 토큰이 오면 같은 family 전체를 폐기한다. 조회는 `PESSIMISTIC_WRITE`로 동시 재발급을 직렬화하고, 폐기가 롤백되지 않도록 `noRollbackFor = ApiException`을 쓴다.
+- **쿠키**: `refresh_token`, httpOnly, Secure(`COOKIE_SECURE`, 로컬 http에서만 false), SameSite=Strict, Path=`/api/v1/auth`. 재발급·로그아웃은 추가로 `Origin` 헤더가 허용 목록에 있어야 한다.
+- **인증 실패 응답**: 구글 토큰 오류, 만료·재사용된 refresh, 차단된 계정은 모두 `AUTH_FAILED` 하나로 응답한다.
+- **ROOT 부트스트랩**: `ROOT_EMAIL`과 같은 이메일(대소문자 무시)로 **처음 가입하는 계정만**, 그리고 ROOT가 아직 없을 때만 ROOT가 된다. 기존 계정은 승격하지 않고, 같은 이메일이라도 `google_sub`가 다르면 로그인을 거부한다(계정 탈취 방지).
+- **공개 경로**: `POST /api/v1/auth/google|refresh|logout` 뿐이다. `/api/v1/**`는 인증 필요, 나머지(`/error`, 문서 경로 포함)는 모두 막는다. springdoc을 쓰려면 개발 환경에서만 열도록 따로 설정해야 한다.
+- **Rate Limit**: `/api/v1/auth/**`에 IP별 1분 10회(`app.rate-limit.auth-per-minute`), 서버 메모리 방식(EC2 1대 기준. 서버를 늘리면 공유 저장소 필요).
+- **보안 헤더**: CSP(`default-src 'none'; frame-ancestors 'none'`), Referrer-Policy, Permissions-Policy, X-Frame-Options, Cache-Control(no-store), HSTS(https 요청).
+- **아직 안 한 것**: 만료·폐기된 refresh_tokens 정리 작업(배치), 회원 탈퇴 API.
 
 ### 9.2 접근 제어
 - 기본 정책은 **deny all**, 공개 경로만 `permitAll`.

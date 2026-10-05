@@ -28,7 +28,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **노트 옵션별로** 저장하고, 
 ## 개발 명령어 (backend 폴더에서)
 - 실행: `./gradlew bootRun` (Windows: `gradlew.bat bootRun`)
 - 테스트: `./gradlew test`
-- 환경변수: `DB_PASSWORD`, `JWT_SECRET` (값은 저장소에 두지 않는다)
+- 환경변수: `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상), `GOOGLE_CLIENT_ID`, `ROOT_EMAIL`, `CORS_ALLOWED_ORIGINS`, `COOKIE_SECURE`(로컬 http에서만 false). 값은 저장소에 두지 않는다. 목록은 `.env.example` 참고
 - 로컬 DB: `docker compose up -d` (루트 `docker-compose.yml`, MySQL 8.4. `.env.example`을 `.env`로 복사해 `DB_ROOT_PASSWORD`, `DB_PASSWORD` 입력). 초기화: `docker compose down -v`
 - 프론트(생성 후): `npm run dev`, `npm run lint`, `npm run build`
 
