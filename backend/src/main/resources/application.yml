@@ -14,6 +14,9 @@ spring:
           time_zone: UTC   # 시간은 UTC로 저장하고 화면에서 Asia/Seoul로 변환한다
 
   servlet:
+    multipart:
+      max-file-size: 2MB      # CSV 일괄 등록용. 컨트롤러의 상한과 같게 둔다
+      max-request-size: 2MB
     encoding:
       charset: UTF-8
       enabled: true

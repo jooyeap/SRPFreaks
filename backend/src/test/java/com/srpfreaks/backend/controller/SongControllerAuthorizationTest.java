@@ -6,6 +6,7 @@ import com.srpfreaks.backend.dto.SongRequest;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.entity.Role;
 import com.srpfreaks.backend.service.SongAdminService;
+import com.srpfreaks.backend.service.SongImportService;
 import com.srpfreaks.backend.service.SongQueryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+
+import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
 
@@ -49,6 +52,10 @@ class SongControllerAuthorizationTest {
         @Bean SongAdminService songAdminService() { return Mockito.mock(SongAdminService.class); }
 
         @Bean SongController songController(SongQueryService q, SongAdminService a) { return new SongController(q, a); }
+
+        @Bean SongImportService songImportService() { return Mockito.mock(SongImportService.class); }
+
+        @Bean SongImportController songImportController(SongImportService s) { return new SongImportController(s); }
 
         @Bean DifficultyController difficultyController(SongAdminService a) { return new DifficultyController(a); }
     }
@@ -119,5 +126,19 @@ class SongControllerAuthorizationTest {
     void 로그인하지_않으면_관리_메서드를_호출할_수_없다() {
         assertThatThrownBy(() -> songController.delete(null, 1L))
                 .isInstanceOfAny(AuthenticationCredentialsNotFoundException.class, AccessDeniedException.class);
+    }
+
+    @Test
+    void CSV_일괄_등록은_USER가_할_수_없고_ADMIN_ROOT는_할_수_있다() {
+        SongImportController importController = context.getBean(SongImportController.class);
+        MockMultipartFile file = new MockMultipartFile("file", "songs.csv", "text/csv", "title\n".getBytes());
+
+        AuthenticatedUser user = loginAs(Role.USER);
+        assertThatThrownBy(() -> importController.importCsv(user, file, false)).isInstanceOf(AccessDeniedException.class);
+
+        for (Role role : new Role[]{Role.ADMIN, Role.ROOT}) {
+            AuthenticatedUser privileged = loginAs(role);
+            assertThatCode(() -> importController.importCsv(privileged, file, false)).doesNotThrowAnyException();
+        }
     }
 }
