@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthProvider } from "@/components/AuthProvider";
 import { DifficultyTableView } from "@/components/table/DifficultyTableView";
 import { StageBadge } from "@/components/table/StageBadge";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
@@ -195,10 +196,30 @@ describe("DifficultyTableView", () => {
   });
 
   it("줄의 기록 버튼을 누르면 그 채보의 기록 등록 창이 열린다", async () => {
-    fetchMock.mockImplementation((input) =>
-      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    // 기록 창 안의 "내 기록 목록"이 로그인 정보(useAuth)를 쓰므로 AuthProvider로 감싼다
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) {
+        return Promise.resolve(
+          json({
+            accessToken: "t",
+            tokenType: "Bearer",
+            expiresIn: 900,
+            user: { id: 1, email: "a@example.com", nickname: null, role: "USER", createdAt: "2026-10-01T00:00:00Z" },
+          }),
+        );
+      }
+      if (url.includes("/records?")) return Promise.resolve(json(page([]) as unknown));
+      return Promise.resolve(url.includes("/entries") ? json(page([group()])) : json([table]));
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <DifficultyTableView userId={1} />
+        </AuthProvider>
+      </QueryClientProvider>,
     );
-    renderView();
     await screen.findByRole("heading", { name: /5\.8/ });
     expect(screen.queryByRole("heading", { name: "기록 등록" })).toBeNull();
 

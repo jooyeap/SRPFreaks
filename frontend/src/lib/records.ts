@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import type { PageResponse } from "@/lib/api-types";
 import { formatPlayedDate, toHundredths } from "@/lib/format";
 import type { RecordFormValues } from "@/lib/record-schema";
 import type { DifficultyType, InstrumentPart, NoteOption, AchievementStage } from "@/lib/types";
@@ -66,4 +67,40 @@ export function toRecordRequest(songDifficultyId: number, values: RecordFormValu
 
 export function createRecord(body: RecordRequestBody): Promise<RecordResponse> {
   return apiFetch<RecordResponse>("/records", { method: "POST", body });
+}
+
+export function updateRecord(recordId: number, body: RecordRequestBody): Promise<RecordResponse> {
+  return apiFetch<RecordResponse>(`/records/${recordId}`, { method: "PUT", body });
+}
+
+export function deleteRecord(recordId: number): Promise<void> {
+  return apiFetch(`/records/${recordId}`, { method: "DELETE" });
+}
+
+/** 한 채보에 내가 남긴 기록 목록(최근 순). 한 페이지(최대 20건)만 가져온다. */
+export const RECORDS_PER_CHART = 20;
+
+export function fetchRecordsOfChart(songDifficultyId: number, signal?: AbortSignal): Promise<PageResponse<RecordResponse>> {
+  return apiFetch<PageResponse<RecordResponse>>("/records", {
+    query: { songDifficultyId, size: RECORDS_PER_CHART, sort: "recent" },
+    signal,
+  });
+}
+
+/** 내 기록 쿼리 키. 사용자 id를 넣어 계정이 바뀌어도 이전 사용자의 캐시를 보지 않게 한다. */
+export const recordKeys = {
+  ofChart: (userId: number, songDifficultyId: number) => ["records", userId, songDifficultyId] as const,
+};
+
+/** 기록을 바꾼 뒤 화면에 영향을 받는 캐시(서열표, 이 채보의 기록 목록)를 무효화할 때 쓰는 키들. */
+export const AFFECTED_QUERY_KEYS = [["difficulty-tables"], ["records"], ["skill"]] as const;
+
+/** 기존 기록 -> 폼 초기값. 달성률은 입력칸에 쓰는 문자열(소수 둘째 자리)로 만든다. */
+export function recordToFormValues(record: RecordResponse): RecordFormValues {
+  return {
+    achievementRate: record.achievementRate.toFixed(2),
+    fullCombo: record.fullCombo,
+    playedDate: record.playedAt ? formatPlayedDate(record.playedAt) : todaySeoul(),
+    memo: record.memo ?? "",
+  };
 }

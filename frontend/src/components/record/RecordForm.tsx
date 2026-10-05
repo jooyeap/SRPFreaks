@@ -2,14 +2,24 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { StageBadge } from "@/components/table/StageBadge";
 import { DifficultyBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
 import { formatLevel, partLabel } from "@/lib/format";
 import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
-import { createRecord, isMaxRate, toRecordRequest, todaySeoul, type RecordResponse } from "@/lib/records";
+import {
+  AFFECTED_QUERY_KEYS,
+  createRecord,
+  deleteRecord,
+  isMaxRate,
+  recordToFormValues,
+  toRecordRequest,
+  todaySeoul,
+  updateRecord,
+  type RecordResponse,
+} from "@/lib/records";
 import { achievementStage } from "@/lib/stage";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 
@@ -30,25 +40,34 @@ function isFieldName(name: string): name is FieldName {
 }
 
 /**
- * 기록 등록 폼. React Hook Form이 입력 상태를, Zod가 검사를 맡는다.
+ * 기록 등록/수정 폼. record가 있으면 수정(같은 화면, 저장은 PUT, "이 기록 삭제"가 붙는다), 없으면 등록이다 (DESIGN-UI 10장).
+ * 수정에서는 채보를 바꿀 수 없다. 잘못 골랐으면 삭제 후 다시 입력한다 (서버 규칙). React Hook Form이 입력 상태를, Zod가 검사를 맡는다.
  * 달성 단계 미리보기는 입력값에서 계산해서 보여 줄 뿐이고, 단계는 저장하지 않는다 (D9, D24).
  */
 export function RecordForm({
   chart,
+  record,
   onSaved,
+  onDeleted,
   onCancel,
 }: {
   chart: RecordChart;
+  record?: RecordResponse;
   onSaved: (saved: RecordResponse) => void;
+  onDeleted?: () => void;
   onCancel: () => void;
 }) {
   const queryClient = useQueryClient();
   // 스키마와 기본값은 한 번만 만든다 ("오늘"은 폼을 연 시점 기준)
   const schema = useMemo(() => makeRecordSchema(todaySeoul), []);
   const defaultValues = useMemo<RecordFormValues>(
-    () => ({ achievementRate: "", fullCombo: false, playedDate: todaySeoul(), memo: "" }),
-    [],
+    () =>
+      record
+        ? recordToFormValues(record)
+        : { achievementRate: "", fullCombo: false, playedDate: todaySeoul(), memo: "" },
+    [record],
   );
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const {
     register,
@@ -67,10 +86,13 @@ export function RecordForm({
   const stage = rateNumber === null || Number.isNaN(rateNumber) ? null : achievementStage(rateNumber, fullCombo);
 
   const mutation = useMutation({
-    mutationFn: (values: RecordFormValues) => createRecord(toRecordRequest(chart.songDifficultyId, values)),
+    mutationFn: (values: RecordFormValues) => {
+      const body = toRecordRequest(chart.songDifficultyId, values);
+      return record ? updateRecord(record.id, body) : createRecord(body);
+    },
     onSuccess: async (saved) => {
-      // 서열표(내 기록, 칩, 평균)가 바로 바뀌도록 서열표 캐시를 무효화한다
-      await queryClient.invalidateQueries({ queryKey: ["difficulty-tables"] });
+      // 서열표(내 기록, 칩, 평균)와 기록 목록이 바로 바뀌도록 관련 캐시를 무효화한다
+      await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onSaved(saved);
     },
     onError: (error) => {
@@ -85,10 +107,19 @@ export function RecordForm({
     },
   });
 
+  const removal = useMutation({
+    mutationFn: () => (record ? deleteRecord(record.id) : Promise.resolve()),
+    onSuccess: async () => {
+      await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+      onDeleted?.();
+    },
+  });
+
+  const failure = mutation.error ?? removal.error;
   const serverMessage =
-    mutation.error instanceof ApiError && !mutation.error.fieldErrors
-      ? mutation.error.message
-      : mutation.error
+    failure instanceof ApiError && !failure.fieldErrors
+      ? failure.message
+      : failure
         ? "저장하지 못했습니다. 잠시 후 다시 시도해 주세요."
         : null;
 
@@ -185,6 +216,35 @@ export function RecordForm({
         <p role="alert" className="text-sm text-fg">
           {serverMessage}
         </p>
+      ) : null}
+
+      {record ? (
+        <div className="flex flex-wrap items-center gap-2 border-t border-row-line pt-3">
+          {confirmingDelete ? (
+            <>
+              <span className="text-sm text-fg">이 기록을 삭제할까요? 되돌릴 수 없습니다.</span>
+              <button
+                type="button"
+                onClick={() => removal.mutate()}
+                disabled={removal.isPending}
+                className="rounded-full border border-danger px-3 py-1 text-sm font-semibold text-danger disabled:opacity-60"
+              >
+                {removal.isPending ? "삭제 중" : "삭제"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+              >
+                취소
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={() => setConfirmingDelete(true)} className="text-sm text-danger underline">
+              이 기록 삭제
+            </button>
+          )}
+        </div>
       ) : null}
 
       <div className="flex justify-end gap-2">

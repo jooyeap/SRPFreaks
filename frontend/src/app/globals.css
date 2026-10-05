@@ -25,6 +25,7 @@
   --jacket: #3b4660;
   --chip-on-bg: #eef0f6;
   --chip-on-fg: #0f1218;
+  --danger: #ff8f8f;
 
   /* 단계 (docs/DESIGN-UI.md 2·4장). bar = 행 막대, text = 달성률 숫자, name = 곡명(EXC/FC만 다름), tint = 행 배경 틴트 */
   --stage-chip-fg: #10131a;
@@ -92,6 +93,7 @@
     --jacket: #c8d0df;
     --chip-on-bg: #12151c;
     --chip-on-fg: #f3f5f9;
+    --danger: #b91c1c;
 
     --stage-s-bar: #16a34a; --stage-s-text: #15803d;
     --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
@@ -119,6 +121,7 @@
   --color-jacket: var(--jacket);
   --color-chip-on-bg: var(--chip-on-bg);
   --color-chip-on-fg: var(--chip-on-fg);
+  --color-danger: var(--danger);
 
   /* 본문은 Noto Sans KR, 숫자/영문 라벨은 Chakra Petch (DESIGN-UI 1장) */
   --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
