@@ -142,6 +142,7 @@ export function DifficultyTableView({ userId }: { userId: number }) {
       <RecordDialog
         chart={
           recordTarget && {
+            songId: recordTarget.songId,
             songDifficultyId: recordTarget.songDifficultyId,
             title: recordTarget.title,
             part: recordTarget.part,

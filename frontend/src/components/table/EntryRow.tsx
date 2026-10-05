@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DifficultyBadge, PartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
+import { SongTile } from "@/components/SongTile";
 import { tableDetailHref } from "@/components/song/TableContext";
 import { EMPTY_MARK, formatLevel, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
@@ -41,7 +42,7 @@ export function EntryRow({ entry, onRecord }: { entry: TableEntryResponse; onRec
       className={`hidden border-t border-row-line px-3 py-2 text-sm md:grid ${ROW_GRID} ${stage ? "stage-tint" : ""}`}
     >
       <span className={`h-8 w-1 rounded ${stage ? "stage-bar" : "bg-transparent"}`} aria-hidden="true" />
-      <span className="h-10 w-10 rounded bg-jacket" aria-hidden="true" />
+      <SongTile songId={entry.songId} className="h-10 w-10 rounded" />
       <span className="flex min-w-0 items-center gap-2">
         <Link
           href={tableDetailHref(entry)}

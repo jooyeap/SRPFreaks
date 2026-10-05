@@ -1,3 +1,4 @@
+import { SongTile } from "@/components/SongTile";
 import { DifficultyBadge, PartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
@@ -20,7 +21,7 @@ export function RatingEntryCard({ entry }: { entry: SkillEntryResponse }) {
       <span className="w-6 shrink-0 text-center font-num text-xs text-fg-dim" aria-label={`${entry.rank}위`}>
         {entry.rank}
       </span>
-      <span className="h-14 w-14 shrink-0 rounded bg-jacket" aria-hidden="true" />
+      <SongTile songId={entry.songId} className="h-14 w-14 rounded" />
       <div className="min-w-0 flex-1">
         <p className={`truncate text-sm ${entry.stage === "EXC" || entry.stage === "FC" ? "stage-name" : "text-fg"}`}>
           {entry.title}

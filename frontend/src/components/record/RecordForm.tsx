@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { SongTile } from "@/components/SongTile";
 import { StageBadge } from "@/components/table/StageBadge";
 import { DifficultyBadge, PartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
@@ -25,6 +26,7 @@ import type { DifficultyType, InstrumentPart } from "@/lib/types";
 
 /** 기록을 입력할 채보 정보 (서열표 줄에서 넘어온다). */
 export interface RecordChart {
+  songId: number;
   songDifficultyId: number;
   title: string;
   part: InstrumentPart;
@@ -126,7 +128,7 @@ export function RecordForm({
   return (
     <form onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <div className="h-11 w-11 shrink-0 rounded-[9px] bg-jacket" aria-hidden="true" />
+        <SongTile songId={chart.songId} className="h-11 w-11 rounded-[9px]" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-bold text-fg">{chart.title}</p>
           <p className="mt-1 flex items-center gap-2 text-xs text-fg-sub">

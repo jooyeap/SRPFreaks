@@ -7,7 +7,7 @@ import type { RecordChart } from "@/components/record/RecordForm";
 import { clearAccessToken } from "@/lib/auth-token";
 import type { RecordResponse } from "@/lib/records";
 
-const chart: RecordChart = { songDifficultyId: 42, title: "테스트곡", part: "GUITAR", difficulty: "MASTER", level: 9.5 };
+const chart: RecordChart = { songId: 7, songDifficultyId: 42, title: "테스트곡", part: "GUITAR", difficulty: "MASTER", level: 9.5 };
 const AUTH = {
   accessToken: "t",
   tokenType: "Bearer",

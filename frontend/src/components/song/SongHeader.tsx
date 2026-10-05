@@ -1,3 +1,4 @@
+import { SongTile } from "@/components/SongTile";
 import { PartBadge } from "@/components/table/Badges";
 import { difficultyLabel, formatLevel } from "@/lib/format";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
@@ -5,7 +6,7 @@ import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 const CHIP = "rounded-full border border-chip-line px-2 py-0.5 text-xs font-bold text-fg-sub";
 
 /**
- * 곡 정보 헤더 (시안 "곡 상세"): 큰 재킷 칸(단색) + 곡명, 아티스트, 칩 줄(버전, 파트, `MAS 9.80`).
+ * 곡 정보 헤더 (시안 "곡 상세"): 큰 재킷 칸(생성 타일) + 곡명, 아티스트, 칩 줄(버전, 파트, `MAS 9.80`).
  * 재킷 칸 아래쪽 띠는 선택된 채보의 난이도 색이다 (색만이 아니라 칩의 글자로도 난이도를 적는다).
  * 속성 칩은 서열표에서 들어온 화면에만 두고(pattern을 넘길 때만), 값이 없으면 숨긴다 (DESIGN-UI 6장).
  */
@@ -21,13 +22,9 @@ export function SongHeader({
 }) {
   return (
     <section aria-label="곡 정보" className="flex items-stretch gap-3.5">
-      <div
-        data-difficulty={chart?.difficultyType}
-        className="relative h-[124px] w-[124px] shrink-0 overflow-hidden rounded-[18px] bg-jacket"
-        aria-hidden="true"
-      >
-        {chart ? <span className="diff-band absolute inset-x-0 bottom-0 h-1.5" /> : null}
-      </div>
+      <SongTile songId={song.id} title={song.title} className="h-[124px] w-[124px] rounded-[18px]">
+        {chart ? <span data-difficulty={chart.difficultyType} className="diff-band absolute inset-x-0 bottom-0 h-1.5" /> : null}
+      </SongTile>
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-1.5 py-0.5">
         {/* 속성 칩 자리는 값이 없어도 높이를 잡아 둬서, 속성 유무로 곡명 위치가 흔들리지 않게 한다 */}
         <div className="flex min-h-[26px] justify-end">

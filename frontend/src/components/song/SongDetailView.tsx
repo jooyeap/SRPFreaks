@@ -157,6 +157,7 @@ export function SongDetailView({
         chart={
           recordOpen && chart
             ? {
+                songId: data.id,
                 songDifficultyId: chart.id,
                 title: data.title,
                 part: chart.instrumentPart,

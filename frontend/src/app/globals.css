@@ -50,6 +50,13 @@
   --rec-high-bg: #ff9f43; --rec-high-fg: #1a0e05;
   --rec-mid-line: var(--fg-sub); --rec-low-line: var(--fg-faint);
   --diff-bas: #6fd08c; --diff-adv: #f2c94c; --diff-ext: #ff8f8f; --diff-mas: #c4a3ff; --diff-fg: #12151c;
+
+  /* 생성 타일 색 쌍 5종 (임시 값, 8장). 다크/라이트 모두 같은 값을 쓴다 */
+  --tile-0-from: #4f46e5; --tile-0-to: #9333ea;
+  --tile-1-from: #0f766e; --tile-1-to: #65a30d;
+  --tile-2-from: #e11d48; --tile-2-to: #f59e0b;
+  --tile-3-from: #a21caf; --tile-3-to: #f43f5e;
+  --tile-4-from: #0369a1; --tile-4-to: #38bdf8;
 }
 
 :root[data-theme="light"] {
@@ -157,6 +164,19 @@ body {
 .stage-name { color: var(--st-name); }
 .stage-tint { background-image: linear-gradient(90deg, var(--st-tint), transparent 65%); }
 .stage-chip { background: var(--st-chip); color: var(--stage-chip-fg); }
+
+/* 생성 타일: 색 쌍은 data-palette, 무늬는 data-pattern, 각도는 --tile-angle로 정한다. 흰색 반투명 무늬를 색 쌍 위에 겹친다 */
+.song-tile { --tile-base: linear-gradient(var(--tile-angle), var(--tile-from), var(--tile-to)); background: var(--tile-base); }
+.song-tile[data-palette="0"] { --tile-from: var(--tile-0-from); --tile-to: var(--tile-0-to); }
+.song-tile[data-palette="1"] { --tile-from: var(--tile-1-from); --tile-to: var(--tile-1-to); }
+.song-tile[data-palette="2"] { --tile-from: var(--tile-2-from); --tile-to: var(--tile-2-to); }
+.song-tile[data-palette="3"] { --tile-from: var(--tile-3-from); --tile-to: var(--tile-3-to); }
+.song-tile[data-palette="4"] { --tile-from: var(--tile-4-from); --tile-to: var(--tile-4-to); }
+.song-tile[data-pattern="stripes"] { background: repeating-linear-gradient(calc(var(--tile-angle) + 90deg), rgb(255 255 255 / 0.16) 0 4px, transparent 4px 10px), var(--tile-base); }
+.song-tile[data-pattern="rings"] { background: repeating-radial-gradient(circle at 78% 22%, rgb(255 255 255 / 0.2) 0 3px, transparent 3px 8px), var(--tile-base); }
+.song-tile[data-pattern="dots"] { background: radial-gradient(rgb(255 255 255 / 0.38) 1.2px, transparent 1.8px) 0 0 / 8px 8px, var(--tile-base); }
+.song-tile[data-pattern="split"] { background: linear-gradient(var(--tile-angle), transparent 50%, rgb(0 0 0 / 0.22) 50%), var(--tile-base); }
+.song-tile[data-pattern="beams"] { background: repeating-conic-gradient(from var(--tile-angle) at 18% 92%, rgb(255 255 255 / 0.18) 0 7deg, transparent 7deg 20deg), var(--tile-base); }
 
 /* 파트 배지: 글자와 테두리 색만 파트별로 다르다. 배경은 채우지 않아 난이도·단계 배지(채움)와 구분된다 */
 [data-part="GUITAR"] { --part: var(--part-guitar); }
