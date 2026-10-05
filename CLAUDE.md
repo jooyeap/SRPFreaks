@@ -16,7 +16,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 - 백엔드: Java 17, Spring Boot 4.1.1 (**Gradle**), Spring Web MVC, Spring Security + JJWT, Spring Validation, Spring Data JPA, Flyway, Lombok
 - 추가 예정: MyBatis, springdoc(Swagger), Testcontainers. **Spring Boot 4.1.1과 호환되는 버전인지 확인한 뒤** 추가한다. 호환이 불확실하면 추가하기 전에 알린다.
 - DB: MySQL 8.x (로컬은 Docker)
-- 프론트: React, Next.js(App Router), TypeScript, TanStack Query, React Hook Form + Zod, Tailwind CSS
+- 프론트: React, Next.js(App Router), TypeScript, TanStack Query, React Hook Form + Zod, Tailwind CSS. 테스트는 Vitest + Testing Library
 - 배포: GitHub Actions → AWS EC2 (로컬 검증 후)
 
 ## 폴더 구조
@@ -30,7 +30,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 - 테스트: `./gradlew test`
 - 환경변수: `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상), `GOOGLE_CLIENT_ID`, `ROOT_EMAIL`, `CORS_ALLOWED_ORIGINS`, `COOKIE_SECURE`(로컬 http에서만 false). 값은 저장소에 두지 않는다. 목록은 `.env.example` 참고
 - 로컬 DB: `docker compose up -d` (루트 `docker-compose.yml`, MySQL 8.4. `.env.example`을 `.env`로 복사해 `DB_ROOT_PASSWORD`, `DB_PASSWORD` 입력). 초기화: `docker compose down -v`
-- 프론트(생성 후): `npm run dev`, `npm run lint`, `npm run build`
+- 프론트(frontend 폴더에서): `npm run dev`, `npm run lint`, `npm run typecheck`, `npm test`(Vitest), `npm run build`
 
 ## DB / Flyway 규칙
 - **첫 배포 전까지는 `V1__init_schema.sql` 한 파일을 직접 고친다.** 고친 뒤에는 로컬 DB를 비우고(`docker compose down -v`) 다시 적용한다. **첫 배포 이후부터** 적용된 파일은 수정하지 않고 새 `V{n}__설명.sql`로 추가한다.
