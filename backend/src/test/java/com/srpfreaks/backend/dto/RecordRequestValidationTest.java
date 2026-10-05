@@ -33,18 +33,19 @@ class RecordRequestValidationTest {
     }
 
     @Test
-    void 달성률과_노트_옵션은_필수다() {
-        RecordRequest noRate = new RecordRequest(1L, NoteOption.NORMAL, null, false, null, null, null);
+    void 달성률은_필수고_노트_옵션은_비워도_된다() {
+        RecordRequest noRate = new RecordRequest(1L, NoteOption.SUPER_RANDOM_PLUS, null, false, null, null, null);
         RecordRequest noOption = new RecordRequest(1L, null, new BigDecimal("90.00"), false, null, null, null);
 
         assertThat(validator.validate(noRate)).extracting(v -> v.getMessage()).contains("달성률은 필수입니다.");
-        assertThat(validator.validate(noOption)).extracting(v -> v.getMessage()).contains("노트 옵션은 필수입니다.");
+        // 비우면 서비스가 SRN+로 저장한다 (D25)
+        assertThat(validator.validate(noOption)).isEmpty();
     }
 
     @Test
     void 메모는_255자까지다() {
-        RecordRequest ok = new RecordRequest(1L, NoteOption.NORMAL, BigDecimal.TEN, false, null, null, "가".repeat(255));
-        RecordRequest tooLong = new RecordRequest(1L, NoteOption.NORMAL, BigDecimal.TEN, false, null, null, "가".repeat(256));
+        RecordRequest ok = new RecordRequest(1L, NoteOption.SUPER_RANDOM_PLUS, BigDecimal.TEN, false, null, null, "가".repeat(255));
+        RecordRequest tooLong = new RecordRequest(1L, NoteOption.SUPER_RANDOM_PLUS, BigDecimal.TEN, false, null, null, "가".repeat(256));
 
         assertThat(validator.validate(ok)).isEmpty();
         assertThat(validator.validate(tooLong)).isNotEmpty();

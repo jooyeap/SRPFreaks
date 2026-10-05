@@ -122,8 +122,31 @@ class OptionRecordServiceTest {
     }
 
     @Test
+    void 노트_옵션을_비우면_SRN_플러스로_저장한다() {
+        when(difficultyRepository.findByIdAndDeletedFalse(200L)).thenReturn(Optional.of(chart));
+        RecordRequest noOption = new RecordRequest(200L, null, new BigDecimal("90.00"), false, null, null, null);
+
+        assertThat(service.create(ME, noOption).noteOption()).isEqualTo(NoteOption.SUPER_RANDOM_PLUS);
+    }
+
+    @Test
+    void SRN_플러스가_아닌_옵션은_등록과_수정_모두_거부한다() {
+        when(difficultyRepository.findByIdAndDeletedFalse(200L)).thenReturn(Optional.of(chart));
+        when(recordRepository.findDetailByIdAndUserId(1L, ME)).thenReturn(Optional.of(record("90.00")));
+
+        for (NoteOption other : new NoteOption[]{NoteOption.NORMAL, NoteOption.RANDOM, NoteOption.SUPER_RANDOM,
+                NoteOption.RANDOM_PLUS}) {
+            RecordRequest request = new RecordRequest(200L, other, new BigDecimal("90.00"), false, null, null, null);
+            assertThatThrownBy(() -> service.create(ME, request)).isInstanceOfSatisfying(ApiException.class,
+                    e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR));
+            assertThatThrownBy(() -> service.update(ME, 1L, request)).isInstanceOf(ApiException.class);
+        }
+        verify(recordRepository, never()).save(any());
+    }
+
+    @Test
     void 채보_id가_없으면_거부한다() {
-        RecordRequest noChart = new RecordRequest(null, NoteOption.NORMAL, BigDecimal.TEN, false, null, null, null);
+        RecordRequest noChart = new RecordRequest(null, NoteOption.SUPER_RANDOM_PLUS, BigDecimal.TEN, false, null, null, null);
 
         assertThatThrownBy(() -> service.create(ME, noChart))
                 .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR));
@@ -132,9 +155,9 @@ class OptionRecordServiceTest {
     @Test
     void 너무_먼_미래의_플레이_시각은_거부하고_가까운_미래는_허용한다() {
         when(difficultyRepository.findByIdAndDeletedFalse(200L)).thenReturn(Optional.of(chart));
-        RecordRequest farFuture = new RecordRequest(200L, NoteOption.NORMAL, BigDecimal.TEN, false,
+        RecordRequest farFuture = new RecordRequest(200L, NoteOption.SUPER_RANDOM_PLUS, BigDecimal.TEN, false,
                 Instant.now().plusSeconds(3600), null, null);
-        RecordRequest soon = new RecordRequest(200L, NoteOption.NORMAL, BigDecimal.TEN, false,
+        RecordRequest soon = new RecordRequest(200L, NoteOption.SUPER_RANDOM_PLUS, BigDecimal.TEN, false,
                 Instant.now().plusSeconds(60), null, null);
 
         assertThatThrownBy(() -> service.create(ME, farFuture)).isInstanceOf(ApiException.class);
@@ -145,8 +168,8 @@ class OptionRecordServiceTest {
     void 공백뿐인_메모는_null로_저장하고_앞뒤_공백을_뗀다() {
         when(difficultyRepository.findByIdAndDeletedFalse(200L)).thenReturn(Optional.of(chart));
 
-        RecordRequest blank = new RecordRequest(200L, NoteOption.NORMAL, BigDecimal.TEN, false, null, null, "   ");
-        RecordRequest padded = new RecordRequest(200L, NoteOption.NORMAL, BigDecimal.TEN, false, null, null, "  메모 ");
+        RecordRequest blank = new RecordRequest(200L, NoteOption.SUPER_RANDOM_PLUS, BigDecimal.TEN, false, null, null, "   ");
+        RecordRequest padded = new RecordRequest(200L, NoteOption.SUPER_RANDOM_PLUS, BigDecimal.TEN, false, null, null, "  메모 ");
 
         assertThat(service.create(ME, blank).memo()).isNull();
         assertThat(service.create(ME, padded).memo()).isEqualTo("메모");
