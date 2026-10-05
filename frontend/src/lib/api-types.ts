@@ -137,3 +137,30 @@ export interface SkillResponse {
   single: SkillEntryResponse[];
   other: SkillEntryResponse[];
 }
+
+// ---- 곡 (백엔드 SongDetailResponse / DifficultyResponse) ----------------------------------
+
+export type TitleKind = "ROMAJI" | "KANA" | "KO" | "ALIAS";
+
+/** 곡의 채보 하나. noteCount는 비어 있을 수 있다(없어도 기능이 돌아가야 한다). */
+export interface SongChartResponse {
+  id: number;
+  songId: number;
+  instrumentPart: InstrumentPart;
+  difficultyType: DifficultyType;
+  level: number;
+  noteCount: number | null;
+}
+
+export interface SongDetailResponse {
+  id: number;
+  title: string;
+  artist: string | null;
+  addedVersion: string | null;
+  titleFolder: string | null;
+  bpmMin: number | null;
+  bpmMax: number | null;
+  source: string | null;
+  titles: { kind: TitleKind; title: string }[];
+  difficulties: SongChartResponse[];
+}

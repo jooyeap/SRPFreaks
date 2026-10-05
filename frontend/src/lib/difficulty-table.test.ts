@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DifficultyTableResponse, TierGroupResponse } from "@/lib/api-types";
-import { EMPTY_FILTERS, fetchTableEntries, groupAverage, pickRatingTable } from "@/lib/difficulty-table";
+import { EMPTY_FILTERS, fetchAllTierGroups, fetchTableEntries, groupAverage, pickRatingTable } from "@/lib/difficulty-table";
 
 function table(over: Partial<DifficultyTableResponse>): DifficultyTableResponse {
   return {
@@ -78,5 +78,36 @@ describe("fetchTableEntries", () => {
     await fetchTableEntries(1, EMPTY_FILTERS, 0);
     const params = new URL(String(fetchMock.mock.calls[0][0]), "http://x").searchParams;
     expect([...params.keys()].sort()).toEqual(["mine", "page"]);
+  });
+});
+
+describe("fetchAllTierGroups", () => {
+  const fetchMock = vi.fn<typeof fetch>();
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const page = (groups: unknown[], pageNo: number, totalPages: number) =>
+    new Response(JSON.stringify({ content: groups, page: pageNo, size: 20, totalElements: 3, totalPages }), { status: 200 });
+
+  it("마지막 페이지까지 이어 받아 순서대로 합친다", async () => {
+    fetchMock.mockResolvedValueOnce(page([{ tier: 6.0 }, { tier: 5.9 }], 0, 2));
+    fetchMock.mockResolvedValueOnce(page([{ tier: null }], 1, 2));
+    const groups = await fetchAllTierGroups(3);
+    expect(groups.map((g) => g.tier)).toEqual([6.0, 5.9, null]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const params = new URL(String(fetchMock.mock.calls[1][0]), "http://x").searchParams;
+    expect(params.get("page")).toBe("1");
+    expect(params.get("size")).toBe("20");
+    expect(params.get("mine")).toBe("true");
+  });
+
+  it("서버가 totalPages를 터무니없이 크게 줘도 정해진 횟수에서 멈춘다", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(page([{ tier: 5 }], 0, 999999)));
+    const groups = await fetchAllTierGroups(1);
+    expect(fetchMock).toHaveBeenCalledTimes(10);
+    expect(groups).toHaveLength(10);
   });
 });

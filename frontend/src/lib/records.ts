@@ -90,7 +90,17 @@ export function fetchRecordsOfChart(songDifficultyId: number, signal?: AbortSign
 /** 내 기록 쿼리 키. 사용자 id를 넣어 계정이 바뀌어도 이전 사용자의 캐시를 보지 않게 한다. */
 export const recordKeys = {
   ofChart: (userId: number, songDifficultyId: number) => ["records", userId, songDifficultyId] as const,
+  bestOfChart: (userId: number, songDifficultyId: number) => ["records", userId, songDifficultyId, "best"] as const,
 };
+
+/** 한 채보에서 달성률이 가장 높은 내 기록 1건 (없으면 null). 곡 상세의 "내 기록" 날짜에 쓴다. */
+export async function fetchBestRecord(songDifficultyId: number, signal?: AbortSignal): Promise<RecordResponse | null> {
+  const page = await apiFetch<PageResponse<RecordResponse>>("/records", {
+    query: { songDifficultyId, sort: "rate", size: 1 },
+    signal,
+  });
+  return page.content[0] ?? null;
+}
 
 /** 기록을 바꾼 뒤 화면에 영향을 받는 캐시(서열표, 이 채보의 기록 목록)를 무효화할 때 쓰는 키들. */
 export const AFFECTED_QUERY_KEYS = [["difficulty-tables"], ["records"], ["skill"]] as const;

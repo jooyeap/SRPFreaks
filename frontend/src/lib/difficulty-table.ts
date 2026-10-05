@@ -55,3 +55,32 @@ export function fetchTableEntries(
     signal,
   });
 }
+
+/** 서열표 전체(모든 묶음)를 담은 쿼리 키. "difficulty-tables"로 시작하므로 기록을 바꾸면 함께 무효화된다. */
+export const allGroupsKey = (userId: number, tableId: number) =>
+  ["difficulty-tables", tableId, "all", userId] as const;
+
+/** 서버가 한 번에 주는 묶음 수의 최대값(DifficultyTableViewService.MAX_PAGE_SIZE). */
+const GROUPS_PER_REQUEST = 20;
+/** 서버가 이상한 totalPages를 줘도 무한히 돌지 않게 하는 안전장치 (실제 묶음은 약 21개라 2번이면 끝난다). */
+const MAX_PAGES = 10;
+
+/**
+ * 서열표의 모든 묶음을 이어 받아 하나의 배열로 합친다 (곡 상세가 곡 하나의 서열표 정보를 찾는 데 쓴다).
+ * 서버는 묶음 단위로 페이지를 나누므로(채보 669개를 한 번에 주지 않는다) 마지막 페이지까지 순서대로 요청한다.
+ * 묶음 순서(높은 기준 난이도 먼저, 미정 맨 뒤)와 묶음 안 순서(레벨 높은 순)는 서버가 준 그대로 유지한다.
+ */
+export async function fetchAllTierGroups(tableId: number, signal?: AbortSignal): Promise<TierGroupResponse[]> {
+  const groups: TierGroupResponse[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const result = await apiFetch<PageResponse<TierGroupResponse>>(`/difficulty-tables/${tableId}/entries`, {
+      query: { mine: true, page, size: GROUPS_PER_REQUEST },
+      signal,
+    });
+    groups.push(...result.content);
+    if (page + 1 >= result.totalPages) {
+      break;
+    }
+  }
+  return groups;
+}
