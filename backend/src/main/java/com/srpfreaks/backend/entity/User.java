@@ -10,6 +10,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
+
+import java.text.Normalizer;
+import java.util.regex.Pattern;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -24,7 +27,19 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseTimeEntity {
 
-    public static final int NICKNAME_MAX_LENGTH = 30;
+    /** 닉네임 길이는 글자(코드 포인트) 수로 센다. 12자 제한은 여기서 검사하고, DB 컬럼은 30으로 둬서 제한만 바꿀 때 스키마를 건드리지 않는다. */
+    public static final int NICKNAME_MIN_LENGTH = 2;
+    public static final int NICKNAME_MAX_LENGTH = 12;
+    public static final int NICKNAME_COLUMN_LENGTH = 30;
+
+    /**
+     * 허용 문자: 영문, 숫자, 히라가나, 가타카나, 한자, 그리고 ー ・ 々 〆 〇 _ - (한글과 공백은 불가).
+     * ー(장음), ・(가운뎃점), 々 〆 〇(한자 반복·기호)는 문자 종류가 "공통"으로 분류돼 스크립트 검사에 안 걸리므로 따로 적었다.
+     * 々는 佐々木처럼 일본어 이름에 흔해서 빠지면 안 된다(처음에는 빠져서 거부되는 것을 확인하고 추가했다).
+     * 자바 정규식은 코드 포인트 단위로 동작해서 𠮷 같은 드문 한자(UTF-16 두 칸)도 한 글자로 본다.
+     */
+    private static final Pattern NICKNAME_PATTERN =
+            Pattern.compile("^[A-Za-z0-9_\\-ー・々〆〇\\p{IsHiragana}\\p{IsKatakana}\\p{IsHan}]+$");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +52,7 @@ public class User extends BaseTimeEntity {
     @Column(name = "email", nullable = false, length = 255)
     private String email;
 
-    @Column(name = "nickname", length = NICKNAME_MAX_LENGTH)
+    @Column(name = "nickname", length = NICKNAME_COLUMN_LENGTH)
     private String nickname;
 
     // @Enumerated(STRING)만 쓰면 Hibernate가 MySQL에서 네이티브 ENUM 타입을 기대해 validate가 실패한다.
@@ -114,10 +129,19 @@ public class User extends BaseTimeEntity {
         if (nickname == null || nickname.isBlank()) {
             return null;
         }
-        String trimmed = nickname.strip();
-        if (trimmed.length() > NICKNAME_MAX_LENGTH) {
-            throw new IllegalArgumentException("닉네임은 " + NICKNAME_MAX_LENGTH + "자 이하여야 합니다.");
+        // NFKC: 반각 가타카나(ｶﾀｶﾅ)는 전각으로, 전각 영문·숫자(Ａ１)는 반각으로 맞춘다.
+        // 모양만 다른 같은 닉네임이 여러 개 생기는 것을 막는다.
+        String normalized = Normalizer.normalize(nickname, Normalizer.Form.NFKC).strip();
+        // String.length()는 UTF-16 단위라 드문 한자를 2로 센다. 사용자가 보는 글자 수와 맞추려고 코드 포인트로 센다.
+        int length = normalized.codePointCount(0, normalized.length());
+        if (length < NICKNAME_MIN_LENGTH || length > NICKNAME_MAX_LENGTH) {
+            throw new IllegalArgumentException(
+                    "닉네임은 " + NICKNAME_MIN_LENGTH + "자 이상 " + NICKNAME_MAX_LENGTH + "자 이하여야 합니다.");
         }
-        return trimmed;
+        if (!NICKNAME_PATTERN.matcher(normalized).matches()) {
+            throw new IllegalArgumentException(
+                    "닉네임은 영문, 숫자, 일본어(히라가나·가타카나·한자)와 ー ・ _ - 만 사용할 수 있습니다.");
+        }
+        return normalized;
     }
 }
