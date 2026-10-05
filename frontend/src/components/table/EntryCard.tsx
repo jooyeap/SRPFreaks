@@ -8,7 +8,7 @@ import type { TableEntryResponse } from "@/lib/api-types";
  * 재킷 칸(단색): 왼쪽 위 레벨, 오른쪽 위 파트, 아래 난이도 색 띠. FC/EXC는 칸 테두리를 단계 색으로 둔다.
  * 그 아래: 곡명(2줄 말줄임), 달성률 + 추천, 단계 표시, 속성. 재킷 이미지는 쓰지 않는다 (DESIGN.md 15장).
  */
-export function EntryCard({ entry }: { entry: TableEntryResponse }) {
+export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRecord?: (entry: TableEntryResponse) => void }) {
   const stage = entry.mine?.stage ?? null;
   const ringed = stage === "FC" || stage === "EXC";
   return (
@@ -39,6 +39,16 @@ export function EntryCard({ entry }: { entry: TableEntryResponse }) {
           {entry.pattern ?? EMPTY_MARK}
         </span>
       </div>
+      {onRecord ? (
+        <button
+          type="button"
+          onClick={() => onRecord(entry)}
+          aria-label={`${entry.title} 기록 입력`}
+          className="rounded-full border border-chip-line py-0.5 text-[11px] text-fg-sub hover:text-fg"
+        >
+          기록
+        </button>
+      ) : null}
     </li>
   );
 }

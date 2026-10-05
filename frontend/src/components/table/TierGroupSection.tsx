@@ -2,7 +2,7 @@ import { EntryCard } from "@/components/table/EntryCard";
 import { EntryRow, TableHeadRow } from "@/components/table/EntryRow";
 import { groupAverage } from "@/lib/difficulty-table";
 import { EMPTY_MARK, formatTier } from "@/lib/format";
-import type { TierGroupResponse } from "@/lib/api-types";
+import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import type { AchievementStage } from "@/lib/types";
 
 interface ChipSpec {
@@ -34,7 +34,15 @@ function formatAverage(value: number | null): string {
  * 0개인 칩은 흐리게 하되 글자는 그대로 둔다(색만으로 의미를 전달하지 않는다).
  * 칩과 평균은 서버가 계산한 값을 그대로 보여 준다. 화면에서 다시 세지 않는다.
  */
-export function TierGroupSection({ group, includeZero }: { group: TierGroupResponse; includeZero: boolean }) {
+export function TierGroupSection({
+  group,
+  includeZero,
+  onRecord,
+}: {
+  group: TierGroupResponse;
+  includeZero: boolean;
+  onRecord?: (entry: TableEntryResponse) => void;
+}) {
   const title = formatTier(group.tier);
   return (
     <section aria-label={`기준 난이도 ${title}`} className="overflow-hidden rounded-lg border border-line bg-card">
@@ -69,10 +77,10 @@ export function TierGroupSection({ group, includeZero }: { group: TierGroupRespo
       {/* 모바일: 4열 카드 격자 / 데스크톱: 표 (각 항목이 md 기준으로 서로를 숨긴다) */}
       <ul className="grid grid-cols-4 gap-2 px-3 pb-3 md:block md:p-0">
         {group.entries.map((entry) => (
-          <EntryCard key={`card-${entry.entryId}`} entry={entry} />
+          <EntryCard key={`card-${entry.entryId}`} entry={entry} onRecord={onRecord} />
         ))}
         {group.entries.map((entry) => (
-          <EntryRow key={`row-${entry.entryId}`} entry={entry} />
+          <EntryRow key={`row-${entry.entryId}`} entry={entry} onRecord={onRecord} />
         ))}
       </ul>
     </section>

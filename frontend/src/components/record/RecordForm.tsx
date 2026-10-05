@@ -1,0 +1,208 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { StageBadge } from "@/components/table/StageBadge";
+import { DifficultyBadge } from "@/components/table/Badges";
+import { ApiError } from "@/lib/api";
+import { formatLevel, partLabel } from "@/lib/format";
+import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
+import { createRecord, isMaxRate, toRecordRequest, todaySeoul, type RecordResponse } from "@/lib/records";
+import { achievementStage } from "@/lib/stage";
+import type { DifficultyType, InstrumentPart } from "@/lib/types";
+
+/** 기록을 입력할 채보 정보 (서열표 줄에서 넘어온다). */
+export interface RecordChart {
+  songDifficultyId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+}
+
+const FIELD_NAMES = ["achievementRate", "fullCombo", "playedDate", "memo"] as const;
+type FieldName = (typeof FIELD_NAMES)[number];
+
+function isFieldName(name: string): name is FieldName {
+  return (FIELD_NAMES as readonly string[]).includes(name);
+}
+
+/**
+ * 기록 등록 폼. React Hook Form이 입력 상태를, Zod가 검사를 맡는다.
+ * 달성 단계 미리보기는 입력값에서 계산해서 보여 줄 뿐이고, 단계는 저장하지 않는다 (D9, D24).
+ */
+export function RecordForm({
+  chart,
+  onSaved,
+  onCancel,
+}: {
+  chart: RecordChart;
+  onSaved: (saved: RecordResponse) => void;
+  onCancel: () => void;
+}) {
+  const queryClient = useQueryClient();
+  // 스키마와 기본값은 한 번만 만든다 ("오늘"은 폼을 연 시점 기준)
+  const schema = useMemo(() => makeRecordSchema(todaySeoul), []);
+  const defaultValues = useMemo<RecordFormValues>(
+    () => ({ achievementRate: "", fullCombo: false, playedDate: todaySeoul(), memo: "" }),
+    [],
+  );
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setError,
+    formState: { errors },
+  } = useForm<RecordFormValues>({ resolver: zodResolver(schema), defaultValues, mode: "onTouched" });
+
+  // useWatch: 입력이 바뀔 때마다 이 컴포넌트를 다시 그려서 미리보기를 갱신한다 (watch는 React 컴파일러와 맞지 않는다)
+  const rate = useWatch({ control, name: "achievementRate" });
+  const fullComboChecked = useWatch({ control, name: "fullCombo" });
+  const maxRate = isMaxRate(rate);
+  const fullCombo = maxRate || fullComboChecked; // 100.00이면 풀콤보를 자동으로 켠다 (DESIGN-UI 10장)
+  const rateNumber = rate.trim() === "" ? null : Number(rate.trim());
+  const stage = rateNumber === null || Number.isNaN(rateNumber) ? null : achievementStage(rateNumber, fullCombo);
+
+  const mutation = useMutation({
+    mutationFn: (values: RecordFormValues) => createRecord(toRecordRequest(chart.songDifficultyId, values)),
+    onSuccess: async (saved) => {
+      // 서열표(내 기록, 칩, 평균)가 바로 바뀌도록 서열표 캐시를 무효화한다
+      await queryClient.invalidateQueries({ queryKey: ["difficulty-tables"] });
+      onSaved(saved);
+    },
+    onError: (error) => {
+      // 서버가 필드별 오류를 주면 해당 입력칸 아래에 보여 준다
+      if (error instanceof ApiError && error.fieldErrors) {
+        for (const [field, message] of Object.entries(error.fieldErrors)) {
+          if (isFieldName(field)) {
+            setError(field, { message });
+          }
+        }
+      }
+    },
+  });
+
+  const serverMessage =
+    mutation.error instanceof ApiError && !mutation.error.fieldErrors
+      ? mutation.error.message
+      : mutation.error
+        ? "저장하지 못했습니다. 잠시 후 다시 시도해 주세요."
+        : null;
+
+  return (
+    <form onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate className="flex flex-col gap-4">
+      <div className="rounded-lg border border-line bg-table-head p-3">
+        <p className="text-sm font-semibold text-fg">{chart.title}</p>
+        <p className="mt-1 flex items-center gap-2 text-xs text-fg-sub">
+          <span>{partLabel(chart.part)}</span>
+          <DifficultyBadge difficulty={chart.difficulty} />
+          <span className="font-num">{formatLevel(chart.level)}</span>
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="achievementRate" className="text-sm text-fg-sub">
+          달성률
+        </label>
+        <div className="flex items-center gap-3">
+          <input
+            id="achievementRate"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            placeholder="0.00 ~ 100.00"
+            aria-invalid={errors.achievementRate ? true : undefined}
+            aria-describedby={errors.achievementRate ? "achievementRate-error" : undefined}
+            className="w-36 rounded border border-chip-line bg-page px-3 py-2 font-num text-fg"
+            {...register("achievementRate")}
+          />
+          <span aria-live="polite" className="flex items-center gap-2 text-sm text-fg-sub">
+            달성 표시 {stage ? <StageBadge stage={stage} /> : <span className="text-fg-faint">–</span>}
+          </span>
+        </div>
+        {errors.achievementRate ? (
+          <p id="achievementRate-error" role="alert" className="text-sm text-fg">
+            {errors.achievementRate.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="flex items-center gap-2 text-sm text-fg">
+          <input
+            type="checkbox"
+            checked={fullCombo}
+            disabled={maxRate}
+            {...register("fullCombo")}
+          />
+          풀콤보(0 miss)
+        </label>
+        {maxRate ? <p className="text-xs text-fg-dim">달성률 100.00이면 풀콤보로 저장됩니다.</p> : null}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="playedDate" className="text-sm text-fg-sub">
+          플레이 날짜
+        </label>
+        <input
+          id="playedDate"
+          type="date"
+          max={todaySeoul()}
+          aria-invalid={errors.playedDate ? true : undefined}
+          className="w-44 rounded border border-chip-line bg-page px-3 py-2 font-num text-fg"
+          {...register("playedDate")}
+        />
+        {errors.playedDate ? (
+          <p role="alert" className="text-sm text-fg">
+            {errors.playedDate.message}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label htmlFor="memo" className="text-sm text-fg-sub">
+          메모 (선택)
+        </label>
+        <textarea
+          id="memo"
+          rows={2}
+          className="rounded border border-chip-line bg-page px-3 py-2 text-fg"
+          {...register("memo")}
+        />
+        {errors.memo ? (
+          <p role="alert" className="text-sm text-fg">
+            {errors.memo.message}
+          </p>
+        ) : null}
+      </div>
+
+      <p className="text-xs text-fg-dim">기록은 SRN+ 옵션으로 저장됩니다. 기록은 본인만 등록·수정·삭제할 수 있습니다.</p>
+
+      {serverMessage ? (
+        <p role="alert" className="text-sm text-fg">
+          {serverMessage}
+        </p>
+      ) : null}
+
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+        >
+          취소
+        </button>
+        <button
+          type="submit"
+          disabled={mutation.isPending}
+          className="rounded-full bg-chip-on-bg px-4 py-1.5 text-sm font-semibold text-chip-on-fg disabled:opacity-60"
+        >
+          {mutation.isPending ? "저장 중" : "저장"}
+        </button>
+      </div>
+    </form>
+  );
+}

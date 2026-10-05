@@ -5,7 +5,7 @@ import type { TableEntryResponse } from "@/lib/api-types";
 
 /** 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. */
 export const ROW_GRID =
-  "md:grid md:grid-cols-[4px_40px_minmax(0,1fr)_56px_44px_52px_64px_44px_52px_72px] md:items-center md:gap-x-3";
+  "md:grid md:grid-cols-[4px_40px_minmax(0,1fr)_56px_44px_52px_64px_44px_52px_72px_48px] md:items-center md:gap-x-3";
 
 /** 데스크톱 표의 머리 행 (모바일에서는 보이지 않는다). */
 export function TableHeadRow() {
@@ -21,6 +21,7 @@ export function TableHeadRow() {
       <span>추천</span>
       <span>속성</span>
       <span>버전</span>
+      <span />
     </div>
   );
 }
@@ -30,7 +31,7 @@ export function TableHeadRow() {
  * 기록이 있으면 data-stage를 붙여서 왼쪽 4px 막대, 행 배경 틴트, 곡명 옆 단계 표시, 달성률 숫자 색을 같은 단계 색으로 맞춘다.
  * 기록이 없으면 data-stage가 없으므로 단계 색이 하나도 적용되지 않는다 (달성률 `–`).
  */
-export function EntryRow({ entry }: { entry: TableEntryResponse }) {
+export function EntryRow({ entry, onRecord }: { entry: TableEntryResponse; onRecord?: (entry: TableEntryResponse) => void }) {
   const stage = entry.mine?.stage ?? null;
   return (
     <li
@@ -58,6 +59,18 @@ export function EntryRow({ entry }: { entry: TableEntryResponse }) {
         {entry.pattern ? `${entry.pattern}${entry.patternUncertain ? "?" : ""}` : EMPTY_MARK}
       </span>
       <span className="truncate text-fg-dim">{entry.addedVersion ?? EMPTY_MARK}</span>
+      <span>
+        {onRecord ? (
+          <button
+            type="button"
+            onClick={() => onRecord(entry)}
+            aria-label={`${entry.title} 기록 입력`}
+            className="rounded-full border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
+          >
+            기록
+          </button>
+        ) : null}
+      </span>
     </li>
   );
 }

@@ -193,4 +193,18 @@ describe("DifficultyTableView", () => {
     expect(screen.getByRole("button", { name: "0% 포함" })).toHaveAttribute("aria-pressed", "true");
     expect(fetchMock.mock.calls.length).toBe(callsBefore);
   });
+
+  it("줄의 기록 버튼을 누르면 그 채보의 기록 등록 창이 열린다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    );
+    renderView();
+    await screen.findByRole("heading", { name: /5\.8/ });
+    expect(screen.queryByRole("heading", { name: "기록 등록" })).toBeNull();
+
+    // 모바일 카드와 데스크톱 줄에 버튼이 하나씩 있다. 어느 쪽이 보일지는 화면 폭(CSS)이 정한다.
+    fireEvent.click(screen.getAllByRole("button", { name: "테스트곡 기록 입력" })[0]);
+    expect(await screen.findByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
+    expect(screen.getByLabelText("달성률")).toBeInTheDocument();
+  });
 });

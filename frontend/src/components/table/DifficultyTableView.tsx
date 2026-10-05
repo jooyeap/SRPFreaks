@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { RecordDialog } from "@/components/record/RecordDialog";
 import { Chip, FilterChips, type ChipOption } from "@/components/table/FilterChips";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
@@ -15,6 +16,7 @@ import {
   tableKeys,
   type TableFilters,
 } from "@/lib/difficulty-table";
+import type { TableEntryResponse } from "@/lib/api-types";
 import type { InstrumentPart } from "@/lib/types";
 
 const PART_OPTIONS: readonly ChipOption<InstrumentPart>[] = [
@@ -36,6 +38,7 @@ export function DifficultyTableView({ userId }: { userId: number }) {
   const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(0);
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
+  const [recordTarget, setRecordTarget] = useState<TableEntryResponse | null>(null); // 기록 입력창을 연 채보
 
   const tables = useQuery({
     queryKey: tableKeys.list,
@@ -110,7 +113,7 @@ export function DifficultyTableView({ userId }: { userId: number }) {
         <>
           <div className="flex flex-col gap-4">
             {data.content.map((group) => (
-              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} />
+              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} onRecord={setRecordTarget} />
             ))}
           </div>
           <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">
@@ -136,6 +139,18 @@ export function DifficultyTableView({ userId }: { userId: number }) {
           </nav>
         </>
       )}
+      <RecordDialog
+        chart={
+          recordTarget && {
+            songDifficultyId: recordTarget.songDifficultyId,
+            title: recordTarget.title,
+            part: recordTarget.part,
+            difficulty: recordTarget.difficulty,
+            level: recordTarget.level,
+          }
+        }
+        onClose={() => setRecordTarget(null)}
+      />
     </div>
   );
 }
