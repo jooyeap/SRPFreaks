@@ -5,6 +5,13 @@ import { AuthControls } from "@/components/AuthControls";
 import { apiFetch, setAuthLostHandler } from "@/lib/api";
 import type { AuthResponse } from "@/lib/api-types";
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
+import { loadGoogleIdentity } from "@/lib/google";
+
+// 실제 구글 스크립트를 불러오지 않도록 가짜로 바꾼다
+const disableAutoSelect = vi.fn();
+vi.mock("@/lib/google", () => ({
+  loadGoogleIdentity: vi.fn(() => Promise.resolve({ disableAutoSelect })),
+}));
 
 const AUTH: AuthResponse = {
   accessToken: "access-1",
@@ -81,6 +88,24 @@ describe("AuthProvider", () => {
     fireEvent.click(await screen.findByRole("button", { name: "로그아웃" }));
     await waitFor(() => expect(screen.getByRole("link", { name: "로그인" })).toBeInTheDocument());
     expect(getAccessToken()).toBeNull();
+  });
+
+  it("로그아웃하면 구글 자동 로그인 선택도 끈다 (공용 PC에서 이전 계정으로 바로 로그인되지 않게)", async () => {
+    disableAutoSelect.mockClear();
+    fetchMock.mockResolvedValueOnce(json(AUTH)); // 시작 복구
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 })); // 로그아웃 호출
+    render(<AuthProvider><AuthControls /></AuthProvider>);
+    fireEvent.click(await screen.findByRole("button", { name: "로그아웃" }));
+    await waitFor(() => expect(disableAutoSelect).toHaveBeenCalledTimes(1));
+  });
+
+  it("구글 스크립트를 못 불러와도 로그아웃은 정상 완료된다", async () => {
+    vi.mocked(loadGoogleIdentity).mockRejectedValueOnce(new Error("offline"));
+    fetchMock.mockResolvedValueOnce(json(AUTH)); // 시작 복구
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    render(<AuthProvider><AuthControls /></AuthProvider>);
+    fireEvent.click(await screen.findByRole("button", { name: "로그아웃" }));
+    await waitFor(() => expect(screen.getByRole("link", { name: "로그인" })).toBeInTheDocument());
   });
 
   it("재발급까지 실패해 로그인이 풀리면 화면도 로그아웃 상태가 된다", async () => {

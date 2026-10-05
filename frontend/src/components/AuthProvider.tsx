@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { apiFetch, refreshSession, setAuthLostHandler } from "@/lib/api";
 import type { AuthResponse, UserResponse } from "@/lib/api-types";
 import { clearAccessToken, setAccessToken } from "@/lib/auth-token";
+import { loadGoogleIdentity } from "@/lib/google";
 
 /** loading: 새로고침 직후 Refresh 쿠키로 복구를 시도하는 중. 이 동안은 로그인/로그아웃 버튼을 보여 주지 않는다. */
 export type AuthStatus = "loading" | "authenticated" | "anonymous";
@@ -68,6 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearAccessToken();
       setUser(null);
       setStatus("anonymous");
+      // 구글 쪽의 "자동 로그인" 선택도 끈다. 안 그러면 공용 PC에서 로그아웃해도 다음 사람이 버튼 한 번으로 이전 계정에 로그인될 수 있다.
+      // 로그아웃 자체는 이미 끝났으니 기다리지 않고, 스크립트를 못 불러와도(오프라인 등) 오류로 만들지 않는다.
+      void loadGoogleIdentity()
+        .then((google) => google.disableAutoSelect())
+        .catch(() => undefined);
     }
   }, []);
 
