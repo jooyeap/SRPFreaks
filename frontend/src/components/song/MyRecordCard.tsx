@@ -63,7 +63,7 @@ export function MyRecordCard({
         type="button"
         onClick={onRecord}
         disabled={!chart}
-        className="self-start rounded-full bg-chip-on-bg px-4 py-1.5 text-sm font-semibold text-chip-on-fg disabled:opacity-50"
+        className="h-11 w-full rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-50"
       >
         기록 등록
       </button>
