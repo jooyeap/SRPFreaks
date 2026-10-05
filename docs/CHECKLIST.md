@@ -8,9 +8,13 @@
 - [ ] `docker compose down -v` -> `docker compose up -d` (MySQL 8.4, 포트 3307)
 - [ ] 환경변수: `DB_PASSWORD`, `JWT_SECRET`(32바이트 이상), `GOOGLE_CLIENT_ID`, `ROOT_EMAIL`, `CORS_ALLOWED_ORIGINS`, `COOKIE_SECURE=false`(로컬 http일 때만)
 - [ ] 줄바꿈 정리 커밋을 먼저 할지 확인 (CLAUDE.md 유의사항: 작업 트리 수정 다수가 줄바꿈 차이)
+- [ ] JDK 17 설치 확인 (`build.gradle` toolchain 17. 21만 있으면 `No matching toolchains found`)
+- [ ] **Docker를 켜 둔다**: Testcontainers 테스트 4개(`SchemaMappingTest`, `SongRepositoryTest`, `SkillMapperTest`, `BackendApplicationTests`)는 Docker가 없으면 건너뛰지 않고 실패한다
 
 ## 1. 컴파일 (`cd backend && ./gradlew compileJava compileTestJava`)
 컴파일 오류가 나기 쉬운 곳(코드는 기억 기반이라 확인되지 않은 부분):
+- [ ] 의존성 해석: `mybatis-spring-boot-starter:4.1.0`, `springdoc-openapi-starter-webmvc-ui:3.1.1` 버전이 **실제로 존재하는지**(없으면 `Could not find ...`로 빌드가 멈춤. 알려진 Boot 4 호환 기준은 mybatis 4.0.x, springdoc 3.0.x)
+- [ ] (2026-10-05 수정함, 확인만) `SecurityConfig.roleHierarchy` 등 3개 static 메서드를 public으로 바꿔 `compileTestJava` 오류 해소
 - [ ] **MyBatis** `mybatis-spring-boot-starter:4.1.0`이 Spring Boot 4.1.1과 호환되는지, `SkillMapper`(`@Mapper`)가 인식되는지
 - [ ] **springdoc** `springdoc-openapi-starter-webmvc-ui:3.1.1` 호환
 - [ ] **Boot 4 테스트 패키지 이름**: `DataJpaTest`(`org.springframework.boot.data.jpa.test.autoconfigure`), `AutoConfigureTestDatabase`(`org.springframework.boot.jdbc.test.autoconfigure`), Testcontainers 2.x `org.testcontainers.mysql.MySQLContainer`
@@ -21,6 +25,8 @@
 - [ ] Docker 없이 도는 테스트 먼저: `./gradlew test --tests "*ServiceTest" --tests "*Test"` 중 Docker 필요한 것 제외
 - [ ] Docker 필요(Testcontainers): `SchemaMappingTest`, `SongRepositoryTest`, `SkillMapperTest`
 - [ ] 전체 `./gradlew test` 통과
+
+- [ ] `BackendApplicationTests.contextLoads`가 Testcontainers로 기동되는지 (2026-10-05 변경: 환경변수 없이 돌도록 더미 값 사용)
 
 ## 3. 실행과 스키마
 - [ ] `./gradlew bootRun` 기동, Flyway `V1__init_schema.sql` 적용, `ddl-auto: validate` 통과(엔티티와 스키마 일치)
@@ -85,6 +91,19 @@
 - [ ] 기록 창(모바일): 아래 시트 + 손잡이 막대, 큰 달성률 입력과 `달성 표시` 미리보기, 풀콤보(0 miss) 줄 전체 토글, 취소/저장 버튼 배치
 - [ ] 의심 지점: 서열표 줄의 모바일 카드/데스크톱 줄은 둘 다 그려지고 CSS로 숨기므로(`md:hidden`) 화면 폭에 따라 한쪽만 보이는지, `<dialog>`의 Esc 닫기와 바깥 클릭 닫기
 
+- [ ] 로그인이 자꾸 풀리면: `CORS_ALLOWED_ORIGINS`에 **접속한 주소와 똑같은 값**이 있는지 (`localhost:3000`과 `127.0.0.1:3000`은 다르다). 재발급이 403(`ORIGIN_NOT_ALLOWED`)이어도 화면에는 로그아웃처럼만 보인다. 네트워크 탭에서 `/auth/refresh` 상태 코드 확인
+- [ ] 첫 기동 로그: `JSON` 컬럼(`option_records`, `audit_logs`) 매핑 오류 여부 (jjwt-jackson이 Jackson 2를 끌어오고 Boot 4는 Jackson 3를 씀)
+
 ## 8. 끝나면
 - [ ] 통과한 항목 체크, 실패한 항목은 로그를 알려 주기 (수정은 한 가지씩 별도 커밋)
 - [ ] 별개 알림: 2026-10-09 금요일 10:00 `claude/push-test` 원격 브랜치 삭제
+
+## 9. 배포 전에 필요한 것 (2026-10-05 전체 검토 결과, 검증 통과 후 기능별로 진행)
+- [ ] 회원 탈퇴 `DELETE /users/me` (D20, 사용자·기록·refresh 완전 삭제, 쿠키 삭제 응답 포함)
+- [ ] `application-prod.yml`: DB URL 환경변수화, `useSSL`/`allowPublicKeyRetrieval` 정리, SQL 디버그 로그 끄기, `CORS_ALLOWED_ORIGINS` 기본값 제거, springdoc 끄기
+- [ ] 헬스체크(actuator `/actuator/health`만 공개). **의존성 추가이므로 먼저 확인**
+- [ ] Dockerfile(백엔드·프론트), 운영 compose, nginx(HTTPS, `/api`는 백엔드로 직접, `X-Forwarded-For`/`Origin` 전달, 프론트 보안 헤더·CSP), GitHub Actions
+- [ ] 프론트 `next.config` `output: "standalone"`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`는 빌드 시점에 주입 (`BACKEND_URL`도 빌드에 고정될 수 있어 운영은 nginx가 `/api` 처리)
+- [ ] 구글 OAuth 클라이언트에 운영 도메인을 승인된 JavaScript 원본으로 추가, `COOKIE_SECURE=true`
+- [ ] 프론트 개선: 재발급 실패 중 401만 로그아웃 처리(500/429/403은 구분), 로그아웃 시 구글 `disableAutoSelect()` 호출
+- [ ] 정리 후보: `frontend/public/*.svg` 5개, `docs/table.sql`, 중복 `docs/CLAUDE.md`, README의 `&amp;`·Bass 누락, `.gitignore`에 `.env.*`·`*.pem`·`application-prod.yml` 추가
