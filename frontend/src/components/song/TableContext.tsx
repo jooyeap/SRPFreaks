@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SongTile } from "@/components/SongTile";
+import { SongJacket } from "@/components/SongJacket";
 import { PartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { EMPTY_MARK, difficultyLabel, formatLevel, formatTier } from "@/lib/format";
@@ -126,7 +126,7 @@ function NeighborItem({ label, entry }: { label: string; entry: TableEntryRespon
       className="flex items-center gap-2.5 border-t border-row-line px-3.5 py-2.5 first:border-t-0 hover:bg-table-head"
     >
       <span className="w-[30px] text-[11px] text-fg-dim">{label}</span>
-      <SongTile songId={entry.songId} className="h-8 w-8 rounded-[7px]" />
+      <SongJacket className="h-8 w-8 rounded-[7px]" />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold text-fg">{entry.title}</span>
         <span className="block text-[11px] text-fg-dim">
