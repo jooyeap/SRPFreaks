@@ -29,7 +29,7 @@ export function PartBadge({ part }: { part: InstrumentPart }) {
 }
 
 /**
- * 추천도 배지. 상 = 주황 채움, 중 = 밝은 외곽선, 하 = 흐린 외곽선 (DESIGN-UI 3장).
+ * 추천도 배지. 상 = 주황 윤곽 + 연한 배경(채우지 않아 달성 단계 배지보다 튀지 않는다), 중 = 밝은 외곽선, 하 = 흐린 외곽선 (DESIGN-UI 3장).
  * 파랑/금색은 SS, EXC와 헷갈려서 쓰지 않는다. 값이 없으면 아무것도 그리지 않는다.
  * uncertain이면 값이 확정되지 않았다는 뜻으로 `?`를 붙인다.
  */
@@ -39,7 +39,7 @@ export function RecommendBadge({ value, uncertain }: { value: string | null; unc
   }
   const style =
     value === "상"
-      ? "bg-[var(--rec-high-bg)] text-[var(--rec-high-fg)] border-transparent"
+      ? "border-[var(--rec-high-line)] bg-[var(--rec-high-tint)] text-[var(--rec-high-text)]"
       : value === "중"
         ? "border-[var(--rec-mid-line)] text-fg-sub"
         : "border-[var(--rec-low-line)] text-fg-faint";
