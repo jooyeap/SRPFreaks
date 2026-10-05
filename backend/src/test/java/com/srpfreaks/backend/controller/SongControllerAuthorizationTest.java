@@ -8,6 +8,7 @@ import com.srpfreaks.backend.entity.Role;
 import com.srpfreaks.backend.dto.DifficultyTableRequest;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.service.DifficultyTableService;
+import com.srpfreaks.backend.service.DifficultyTableViewService;
 import com.srpfreaks.backend.service.SongAdminService;
 import com.srpfreaks.backend.service.SongQueryService;
 import org.junit.jupiter.api.AfterEach;
@@ -55,8 +56,12 @@ class SongControllerAuthorizationTest {
 
         @Bean DifficultyTableService difficultyTableService() { return Mockito.mock(DifficultyTableService.class); }
 
-        @Bean DifficultyTableController difficultyTableController(DifficultyTableService t) {
-            return new DifficultyTableController(t);
+        @Bean DifficultyTableViewService difficultyTableViewService() {
+            return Mockito.mock(DifficultyTableViewService.class);
+        }
+
+        @Bean DifficultyTableController difficultyTableController(DifficultyTableService t, DifficultyTableViewService v) {
+            return new DifficultyTableController(t, v);
         }
 
         @Bean DifficultyController difficultyController(SongAdminService a) { return new DifficultyController(a); }
@@ -137,6 +142,7 @@ class SongControllerAuthorizationTest {
 
         AuthenticatedUser user = loginAs(Role.USER);
         assertThatCode(tables::list).doesNotThrowAnyException();
+        assertThatCode(() -> tables.entries(user, 1L, null, null, null, true, 0, 10)).doesNotThrowAnyException();
         assertThatThrownBy(() -> tables.create(user, request)).isInstanceOf(AccessDeniedException.class);
 
         for (Role role : new Role[]{Role.ADMIN, Role.ROOT}) {

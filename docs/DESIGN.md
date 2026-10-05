@@ -440,7 +440,7 @@ com.srpfreaks.backend
 | 사진 인식 | POST `/records/recognize` (multipart, 인식 결과만 반환하고 저장하지 않는다. 일일 한도) | USER+ |
 | 스킬 추이 | GET `/skills/me/history` (Phase 2) | USER+ |
 | 난이도표 | GET `/difficulty-tables` / POST·PATCH | USER+ / ADMIN+ |
-| 서열표 | GET `/difficulty-tables/{id}/entries?mine=true` (본인 기록과 연결, 목록은 묶음/페이지 단위) | USER+ |
+| 서열표 | GET `/difficulty-tables/{id}/entries?mine=true&part=&recommend=&pattern=&page=&size=` (기준 난이도 묶음 단위 페이지(기본 10, 최대 20), 묶음마다 칩 개수·평균(0% 미포함/포함 둘 다), 항목마다 본인 최고 기록과 단계. 쿼리 2번 고정: 항목 fetch join + 본인 최고 기록 group by. 본인 기록은 표의 기준 옵션(SRN+)만, 채보의 최고 달성률과 FC 여부(하나라도 FC면 FC)로 계산) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |
 | 서열표 목록 | GET `/difficulty-tables` | USER+ |
 | 서열표 만들기 | POST `/admin/difficulty-tables` (이름, 파트(선택), 기준 옵션) | ROOT·ADMIN |
