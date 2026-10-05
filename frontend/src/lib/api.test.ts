@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch, ApiError, refreshSession, setAuthLostHandler } from "@/lib/api";
+import { apiFetch, ApiError, refreshSession, refreshSessionOutcome, setAuthLostHandler } from "@/lib/api";
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/auth-token";
 import type { AuthResponse } from "@/lib/api-types";
 
@@ -185,6 +185,29 @@ describe("401 -> 재발급 -> 재시도", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2); // 원래 요청 + 재발급. 재시도는 하지 않는다
   });
 
+  it("재발급이 일시적으로 안 되면(5xx, 429, 403, 네트워크) 로그인 상태를 지우지 않고 원래 오류만 던진다", async () => {
+    const unauthorized = () => json({ code: "UNAUTHORIZED", message: "로그인이 필요합니다." }, 401);
+    const cases: Array<() => Promise<Response>> = [
+      () => Promise.resolve(json({ code: "INTERNAL_ERROR", message: "x" }, 500)),
+      () => Promise.resolve(json({ code: "TOO_MANY_REQUESTS", message: "x" }, 429)),
+      () => Promise.resolve(json({ code: "ORIGIN_NOT_ALLOWED", message: "x" }, 403)),
+      () => Promise.reject(new TypeError("Failed to fetch")),
+    ];
+    for (const refreshResult of cases) {
+      fetchMock.mockReset();
+      setAccessToken("old");
+      const lost = vi.fn();
+      setAuthLostHandler(lost);
+      fetchMock.mockResolvedValueOnce(unauthorized()).mockImplementationOnce(refreshResult);
+
+      const error = (await apiFetch("/users/me").catch((e: unknown) => e)) as ApiError;
+
+      expect(error.status).toBe(401);
+      expect(getAccessToken()).toBe("old"); // 쿠키가 아직 유효할 수 있으니 지우지 않는다
+      expect(lost).not.toHaveBeenCalled();
+    }
+  });
+
   it("재시도도 401이면 더 반복하지 않는다 (무한 반복 방지)", async () => {
     setAccessToken("old");
     const unauthorized = () => json({ code: "UNAUTHORIZED", message: "로그인이 필요합니다." }, 401);
@@ -244,6 +267,27 @@ describe("refreshSession", () => {
 
     fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
     expect(await refreshSession()).toBeNull();
+  });
+});
+
+describe("refreshSessionOutcome", () => {
+  it("401은 rejected, 그 밖의 실패와 네트워크 오류는 unavailable로 구분한다", async () => {
+    fetchMock.mockResolvedValueOnce(json({ code: "AUTH_FAILED", message: "x" }, 401));
+    expect(await refreshSessionOutcome()).toEqual({ kind: "rejected" });
+
+    for (const status of [403, 429, 500]) {
+      fetchMock.mockResolvedValueOnce(json({ code: "X", message: "x" }, status));
+      expect(await refreshSessionOutcome()).toEqual({ kind: "unavailable" });
+    }
+
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    expect(await refreshSessionOutcome()).toEqual({ kind: "unavailable" });
+  });
+
+  it("성공하면 ok와 응답을 돌려준다", async () => {
+    fetchMock.mockResolvedValue(json(authResponse("fresh")));
+    const outcome = await refreshSessionOutcome();
+    expect(outcome.kind).toBe("ok");
   });
 });
 
