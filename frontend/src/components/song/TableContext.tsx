@@ -23,12 +23,12 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
     { label: "S", stage: "S", count: group.s },
   ] as const;
   return (
-    <section aria-label="서열표 정보" className="flex flex-col gap-3 rounded-lg border border-line bg-card p-4">
-      <h2 className="text-sm font-semibold text-fg-sub">서열표 정보</h2>
-      <dl className="grid grid-cols-3 gap-2 text-sm">
+    <section aria-label="서열표 정보" className="flex flex-col gap-3 rounded-[14px] border border-line bg-card px-4 py-3.5">
+      <h2 className="sr-only">서열표 정보</h2>
+      <dl className="grid grid-cols-3 gap-2.5 text-sm">
         <div>
           <dt className="text-xs text-fg-dim">기준 난이도</dt>
-          <dd className="font-num text-fg">
+          <dd className="font-num text-[22px] font-bold leading-tight text-fg">
             {formatTier(group.tier)}
             {entry.tierUncertain ? "?" : ""}
           </dd>
@@ -45,23 +45,18 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
         </div>
         <div>
           <dt className="text-xs text-fg-dim">레벨</dt>
-          <dd className="font-num text-fg">{formatLevel(entry.level)}</dd>
+          <dd className="font-num text-[22px] font-bold leading-tight text-fg">{formatLevel(entry.level)}</dd>
         </div>
       </dl>
-      <p className="text-sm text-fg-sub">
+      <p className="border-t border-row-line pt-2.5 text-xs text-fg-dim">
         <span className="font-num text-fg">{formatTier(group.tier)}</span> 묶음 {group.total}개 · 내 평균{" "}
         <span className="font-num text-fg">{average}</span>
       </p>
-      <ul className="flex flex-wrap gap-1.5" aria-label="묶음 안의 내 달성 현황">
+      <ul className="flex flex-wrap items-center gap-1.5 text-[11px]" aria-label="묶음 안의 내 달성 현황">
         {counts.map((c) => (
-          <li
-            key={c.label}
-            data-stage={c.stage}
-            className={`rounded-full border border-chip-line px-2 py-0.5 text-xs ${
-              c.count === 0 ? "text-fg-faint" : "stage-text"
-            }`}
-          >
-            {c.label} <span className="font-num">{c.count}</span>
+          <li key={c.label} className={c.count === 0 ? "opacity-60" : undefined}>
+            {/* 단계 배지는 글자(EXC/FC/SS/S)가 같이 있으므로 색만으로 구분하지 않는다 */}
+            <StageBadge stage={c.stage} /> <span className="font-num text-fg-sub">{c.count}</span>
           </li>
         ))}
       </ul>
@@ -101,9 +96,12 @@ export function OtherCharts({ charts }: { charts: readonly TableEntryResponse[] 
 export function NeighborLinks({ group, index }: { group: TierGroupResponse; index: number }) {
   const { prev, next } = neighbors(group, index);
   return (
-    <section aria-label="같은 묶음의 곡" className="flex flex-col gap-2 rounded-lg border border-line bg-card p-4">
-      <h2 className="text-sm font-semibold text-fg-sub">같은 묶음의 곡</h2>
-      <div className="grid gap-2 sm:grid-cols-2">
+    <section aria-label="같은 묶음의 곡" className="flex flex-col gap-2">
+      <h2 className="flex items-baseline justify-between px-1 font-num text-[17px] font-bold text-fg">
+        같은 묶음의 곡
+        <span className="font-sans text-[11px] font-normal text-fg-dim">이전 / 다음</span>
+      </h2>
+      <div className="overflow-hidden rounded-[14px] border border-line bg-card">
         <NeighborItem label="이전" entry={prev} />
         <NeighborItem label="다음" entry={next} />
       </div>
@@ -114,21 +112,25 @@ export function NeighborLinks({ group, index }: { group: TierGroupResponse; inde
 function NeighborItem({ label, entry }: { label: string; entry: TableEntryResponse | null }) {
   if (!entry) {
     return (
-      <div className="rounded border border-row-line px-3 py-2 text-sm text-fg-faint">
+      <div className="border-t border-row-line px-3.5 py-2.5 text-sm text-fg-faint first:border-t-0">
         {label} <span className="ml-1">없음</span>
       </div>
     );
   }
   return (
-    <Link href={tableDetailHref(entry)} className="flex flex-col gap-1 rounded border border-line px-3 py-2 hover:bg-table-head">
-      <span className="text-xs text-fg-dim">{label}</span>
-      <span className="truncate text-sm text-fg">{entry.title}</span>
-      <span className="flex items-center gap-2 text-xs text-fg-sub">
-        {partLabel(entry.part)} {difficultyLabel(entry.difficulty)} <span className="font-num">{formatLevel(entry.level)}</span>
-        <span className="ml-auto">
-          {entry.mine ? <StageBadge stage={entry.mine.stage} /> : <span className="text-fg-faint">기록 없음</span>}
+    <Link
+      href={tableDetailHref(entry)}
+      className="flex items-center gap-2.5 border-t border-row-line px-3.5 py-2.5 first:border-t-0 hover:bg-table-head"
+    >
+      <span className="w-[30px] text-[11px] text-fg-dim">{label}</span>
+      <span className="h-8 w-8 shrink-0 rounded-[7px] bg-jacket" aria-hidden="true" />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold text-fg">{entry.title}</span>
+        <span className="block text-[11px] text-fg-dim">
+          {partLabel(entry.part)} {difficultyLabel(entry.difficulty)} <span className="font-num">{formatLevel(entry.level)}</span>
         </span>
       </span>
+      {entry.mine ? <StageBadge stage={entry.mine.stage} /> : <span className="text-[11px] text-fg-faint">기록 없음</span>}
     </Link>
   );
 }
