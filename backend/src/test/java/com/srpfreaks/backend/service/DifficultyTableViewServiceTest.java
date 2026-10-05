@@ -119,7 +119,7 @@ class DifficultyTableViewServiceTest {
             list.add(simple("t" + i, "9.0" + i, "6.0"));
         }
         when(entryRepository.findAllForView(1L)).thenReturn(list);
-        // 채보 1: EXC, 2: FC(96%), 3: SS, 4: S, 5: 70%(단계 없음), 6: 기록 없음
+        // 채보 1: EXC, 2: FC(96%), 3: SS, 4: S, 5: 70%(B), 6: 기록 없음(미플레이)
         when(recordRepository.findBestByTable(7L, NoteOption.SUPER_RANDOM_PLUS, 1L)).thenReturn(List.of(
                 new RecordBest(1L, new BigDecimal("100.00"), true),
                 new RecordBest(2L, new BigDecimal("96.00"), true),
@@ -135,10 +135,24 @@ class DifficultyTableViewServiceTest {
         assertThat(g.fc()).isEqualTo(1);
         assertThat(g.ss()).isEqualTo(1);
         assertThat(g.s()).isEqualTo(1);
-        // 칩 합(4) <= 기록 수(5): 80 미만은 어느 칩에도 안 들어간다
-        assertThat(g.exc() + g.fc() + g.ss() + g.s()).isLessThanOrEqualTo(g.recorded());
+        // 70%는 S 미만 칩에 들어가고, 기록 없는 채보(미플레이)는 어느 칩에도 안 들어간다
+        assertThat(g.belowS()).isEqualTo(1);
+        assertThat(g.exc() + g.fc() + g.ss() + g.s() + g.belowS()).isEqualTo(g.recorded());
         assertThat(g.entries()).filteredOn(e -> e.songDifficultyId() == 2L)
                 .singleElement().satisfies(e -> assertThat(e.mine().stage()).isEqualTo(AchievementStage.FC));
+    }
+
+    @Test
+    void 달성률_0인_기록도_플레이한_기록이라_S_미만에_센다() {
+        when(entryRepository.findAllForView(1L)).thenReturn(List.of(simple("a", "9.00", "6.0"), simple("b", "9.10", "6.0")));
+        when(recordRepository.findBestByTable(7L, NoteOption.SUPER_RANDOM_PLUS, 1L))
+                .thenReturn(List.of(new RecordBest(1L, new BigDecimal("0.00"), false)));
+
+        TierGroupResponse g = call(true, 0, 10).content().get(0);
+
+        assertThat(g.recorded()).isEqualTo(1);
+        assertThat(g.belowS()).isEqualTo(1);   // 기록 없는 b는 세지 않는다
+        assertThat(g.entries().get(1).mine()).isNull();
     }
 
     @Test

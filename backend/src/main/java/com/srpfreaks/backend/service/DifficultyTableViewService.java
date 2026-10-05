@@ -103,7 +103,7 @@ public class DifficultyTableViewService {
                         .thenComparing(DifficultyTableEntry::getId))
                 .toList();
 
-        int exc = 0, fc = 0, ss = 0, s = 0, recorded = 0;
+        int exc = 0, fc = 0, ss = 0, s = 0, belowS = 0, recorded = 0;
         BigDecimal sum = BigDecimal.ZERO;
         List<TableEntryResponse> rows = new java.util.ArrayList<>();
         for (DifficultyTableEntry e : sorted) {
@@ -114,14 +114,14 @@ public class DifficultyTableViewService {
                 mineRecord = new MyRecord(best.bestRate(), best.fullCombo(), stage);
                 recorded++;
                 sum = sum.add(best.bestRate());
-                // 단계는 가장 높은 하나만 센다. 80 미만(stage null)은 어느 칩에도 넣지 않는다.
-                if (stage != null) {
-                    switch (stage) {
-                        case EXC -> exc++;
-                        case FC -> fc++;
-                        case SS -> ss++;
-                        case S -> s++;
-                    }
+                // 단계는 가장 높은 하나만 센다. 기록이 있으면 단계가 항상 있으므로(C 이상)
+                // S에 못 미친 A/B/C는 "S 미만" 칩 하나로 합친다. 기록 없는 채보는 여기까지 오지 않는다(D24).
+                switch (stage) {
+                    case EXC -> exc++;
+                    case FC -> fc++;
+                    case SS -> ss++;
+                    case S -> s++;
+                    case A, B, C -> belowS++;
                 }
             }
             rows.add(TableEntryResponse.of(e, mineRecord));
@@ -130,7 +130,7 @@ public class DifficultyTableViewService {
         BigDecimal avgRecorded = recorded == 0 ? null : sum.divide(BigDecimal.valueOf(recorded), 2, RoundingMode.HALF_UP);
         BigDecimal avgWithZero = total == 0 ? BigDecimal.ZERO.setScale(2)
                 : sum.divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
-        return new TierGroupResponse(tier, total, recorded, exc, fc, ss, s, avgRecorded, avgWithZero, rows);
+        return new TierGroupResponse(tier, total, recorded, exc, fc, ss, s, belowS, avgRecorded, avgWithZero, rows);
     }
 
     private static <E extends Enum<E> & LabeledEnum> E parseLabel(Class<E> type, String label) {

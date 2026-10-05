@@ -14,7 +14,7 @@ public record TableEntryResponse(Long entryId, Long songDifficultyId, Long songI
                                  boolean tierUncertain, String recommend, boolean recommendUncertain,
                                  String pattern, boolean patternUncertain, MyRecord mine) {
 
-    /** 내 최고 기록. 기록이 없으면 mine 자체가 null. stage는 80 미만이면 null. */
+    /** 내 최고 기록. 기록이 없으면 mine 자체가 null. 기록이 있으면 stage는 항상 있다(C 이상, D24). */
     public record MyRecord(BigDecimal rate, boolean fullCombo, AchievementStage stage) {
     }
 
