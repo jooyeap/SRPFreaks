@@ -37,7 +37,7 @@ export function SongHeader({
           ) : null}
         </div>
         <div className="flex flex-col gap-1">
-          <h1 className="break-all font-num text-[26px] font-bold leading-[1.15] text-fg">{song.title}</h1>
+          <h1 className="break-words font-num text-[26px] font-bold leading-[1.15] text-fg">{song.title}</h1>
           {song.artist ? <p className="text-[13px] text-fg-dim">{song.artist}</p> : null}
         </div>
         <p className="flex flex-wrap items-center gap-1.5">
