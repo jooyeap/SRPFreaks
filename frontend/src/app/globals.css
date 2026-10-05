@@ -162,3 +162,46 @@ body {
 
 /* FC/EXC는 재킷 칸에 테두리를 둔다 (DESIGN-UI 2장). 색은 단계의 달성률 숫자 색을 쓴다. */
 .stage-ring { outline: 2px solid var(--st-text); outline-offset: -2px; }
+
+/*
+ * 플레이어 티어 색 (docs/DESIGN-UI.md 5장). 티어별 구체 색은 시안 보드에서 정하는데 이 저장소에는 값이 없어서
+ * 이름에서 정한 임시 값이다. 값만 바꾸면 모든 화면에 반영된다.
+ * --tier-fill: 칩 배경 / 카드 테두리, --tier-glow: Bronze 이상의 글로우(위로 갈수록 강하게).
+ * 칩 글자색은 모든 티어에서 어두운 색으로 같게 둔다 (밝은 배경 위 대비).
+ */
+[data-tier="WHITE"] { --tier-fill: #e5e7eb; }
+[data-tier="WHITE_GRADIENT"] { --tier-fill: linear-gradient(90deg, #e5e7eb, #9ca3af); }
+[data-tier="ORANGE"] { --tier-fill: #fb923c; }
+[data-tier="ORANGE_GRADIENT"] { --tier-fill: linear-gradient(90deg, #fb923c, #fde68a); }
+[data-tier="YELLOW"] { --tier-fill: #facc15; }
+[data-tier="YELLOW_GRADIENT"] { --tier-fill: linear-gradient(90deg, #facc15, #bef264); }
+[data-tier="GREEN"] { --tier-fill: #4ade80; }
+[data-tier="GREEN_GRADIENT"] { --tier-fill: linear-gradient(90deg, #4ade80, #67e8f9); }
+[data-tier="BLUE"] { --tier-fill: #60a5fa; }
+[data-tier="BLUE_GRADIENT"] { --tier-fill: linear-gradient(90deg, #60a5fa, #c4b5fd); }
+[data-tier="PURPLE"] { --tier-fill: #c084fc; }
+[data-tier="PURPLE_GRADIENT"] { --tier-fill: linear-gradient(90deg, #c084fc, #f9a8d4); }
+[data-tier="RED"] { --tier-fill: #f87171; }
+[data-tier="RED_GRADIENT"] { --tier-fill: linear-gradient(90deg, #f87171, #fdba74); }
+[data-tier="BRONZE"] { --tier-fill: linear-gradient(90deg, #b45309, #f59e0b); --tier-glow: 0 0 10px rgb(245 158 11 / 0.35); }
+[data-tier="SILVER"] { --tier-fill: linear-gradient(90deg, #cbd5e1, #f8fafc); --tier-glow: 0 0 12px rgb(203 213 225 / 0.45); }
+[data-tier="GOLD"] { --tier-fill: linear-gradient(90deg, #fcd34d, #f59e0b); --tier-glow: 0 0 14px rgb(252 211 77 / 0.55); }
+[data-tier="RAINBOW"] { --tier-fill: linear-gradient(90deg, #fca5a5, #fde68a, #86efac, #93c5fd, #d8b4fe); --tier-glow: 0 0 16px rgb(147 197 253 / 0.55); }
+[data-tier="RAINBOW_GRADIENT"] { --tier-fill: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bff95, #6bd5ff, #c084fc, #ff6bd6); --tier-glow: 0 0 20px rgb(192 132 252 / 0.65); }
+[data-tier="HASUBONG"] { --tier-fill: linear-gradient(90deg, #ffe27a, #ff7eb6, #c084fc, #22d3ee); --tier-glow: 0 0 26px rgb(255 126 182 / 0.75); }
+
+.tier-chip { background: var(--tier-fill); color: var(--stage-chip-fg); }
+.tier-bar { background: var(--tier-fill); }
+
+/* 레이팅 카드 테두리: 기본 1px. Bronze 이상은 2px 그라데이션 테두리 + 글로우 */
+.tier-card { border: 1px solid var(--line); }
+[data-tier="BRONZE"].tier-card,
+[data-tier="SILVER"].tier-card,
+[data-tier="GOLD"].tier-card,
+[data-tier="RAINBOW"].tier-card,
+[data-tier="RAINBOW_GRADIENT"].tier-card,
+[data-tier="HASUBONG"].tier-card {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill) border-box;
+  box-shadow: var(--tier-glow);
+}

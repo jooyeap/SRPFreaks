@@ -94,3 +94,46 @@ export interface TierGroupResponse {
   averageWithZero: number;
   entries: TableEntryResponse[];
 }
+
+// ---- 레이팅 (백엔드 SkillResponse / SkillEntryResponse) --------------------------------------
+
+/** 플레이어 티어. nextDisplayName/nextMinScore는 더 올라갈 구간이 없으면(최고 티어) null. */
+export interface PlayerTierResponse {
+  key: string;
+  displayName: string;
+  minScore: number;
+  nextDisplayName: string | null;
+  nextMinScore: number | null;
+}
+
+/** 레이팅 목록의 한 채보. 점수(score)는 서버가 소수 둘째 자리로 반올림해 내린 값이다. */
+export interface SkillEntryResponse {
+  rank: number; // 그룹(단일/그 외) 안의 순위, 1부터
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  tier: number; // 서열표 기준 난이도 T
+  pattern: string | null;
+  achievementRate: number;
+  fullCombo: boolean;
+  stage: AchievementStage;
+  ratingConstant: number; // R
+  value: number; // V
+  score: number; // V x 20
+}
+
+/** 내 레이팅 목록 (SRN+ 하나, 단일 15 + 그 외 25). 목록이 모자라면 있는 만큼만 들어 있다. */
+export interface SkillResponse {
+  noteOption: NoteOption;
+  totalScore: number;
+  singleScore: number;
+  otherScore: number;
+  tier: PlayerTierResponse;
+  singleLimit: number;
+  otherLimit: number;
+  single: SkillEntryResponse[];
+  other: SkillEntryResponse[];
+}
