@@ -156,3 +156,6 @@ body {
 [data-difficulty="MASTER"] { --diff: var(--diff-mas); }
 .diff-chip { background: var(--diff); color: var(--diff-fg); }
 .diff-band { background: var(--diff); }
+
+/* FC/EXC는 재킷 칸에 테두리를 둔다 (DESIGN-UI 2장). 색은 단계의 달성률 숫자 색을 쓴다. */
+.stage-ring { outline: 2px solid var(--st-text); outline-offset: -2px; }

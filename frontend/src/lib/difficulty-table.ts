@@ -34,8 +34,9 @@ export const PATTERN_OPTIONS = ["단일", "복합", "이중", "삼중"] as const
 /** TanStack Query 키. 필터나 페이지가 바뀌면 키가 달라져서 새로 가져오고, 같으면 캐시를 쓴다. */
 export const tableKeys = {
   list: ["difficulty-tables"] as const,
-  entries: (tableId: number, filters: TableFilters, page: number) =>
-    ["difficulty-tables", tableId, "entries", filters, page] as const,
+  // 내 기록이 들어 있으므로 사용자 id를 키에 넣어, 계정이 바뀌어도 이전 사용자의 캐시를 보지 않게 한다.
+  entries: (userId: number, tableId: number, filters: TableFilters, page: number) =>
+    ["difficulty-tables", tableId, "entries", userId, filters, page] as const,
 };
 
 export function fetchDifficultyTables(signal?: AbortSignal): Promise<DifficultyTableResponse[]> {

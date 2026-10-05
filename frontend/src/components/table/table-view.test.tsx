@@ -1,0 +1,196 @@
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DifficultyTableView } from "@/components/table/DifficultyTableView";
+import { StageBadge } from "@/components/table/StageBadge";
+import { TierGroupSection } from "@/components/table/TierGroupSection";
+import type { DifficultyTableResponse, PageResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
+
+function entry(over: Partial<TableEntryResponse> = {}): TableEntryResponse {
+  return {
+    entryId: 1,
+    songDifficultyId: 10,
+    songId: 100,
+    title: "테스트곡",
+    addedVersion: "V1",
+    part: "GUITAR",
+    difficulty: "MASTER",
+    level: 9.5,
+    tierUncertain: false,
+    recommend: "상",
+    recommendUncertain: false,
+    pattern: "단일",
+    patternUncertain: false,
+    mine: { rate: 96.5, fullCombo: false, stage: "SS" },
+    ...over,
+  };
+}
+
+function group(over: Partial<TierGroupResponse> = {}): TierGroupResponse {
+  return {
+    tier: 5.8,
+    total: 4,
+    recorded: 3,
+    exc: 1,
+    fc: 0,
+    ss: 1,
+    s: 0,
+    belowS: 1,
+    averageRecorded: 90,
+    averageWithZero: 67.5,
+    entries: [entry()],
+    ...over,
+  };
+}
+
+describe("StageBadge", () => {
+  it("단계 글자를 항상 표시한다 (색만으로 구분하지 않는다)", () => {
+    render(<StageBadge stage="EXC" />);
+    expect(screen.getByLabelText("달성 단계 EXC")).toHaveTextContent("EXC");
+  });
+});
+
+describe("TierGroupSection", () => {
+  it("제목, 칩 5개, 기록 n/전체, 미포함 평균을 보여 준다", () => {
+    render(<TierGroupSection group={group()} includeZero={false} />);
+    expect(screen.getByRole("heading", { name: /5\.8\s*4개/ })).toBeInTheDocument();
+    const chips = within(screen.getByRole("list", { name: "내 달성 현황" })).getAllByRole("listitem");
+    expect(chips.map((c) => c.textContent)).toEqual(["EXC 1", "FC 0", "SS 1", "S 0", "S 미만 1"]);
+    expect(screen.getByText("기록 3/4")).toBeInTheDocument();
+    expect(screen.getByText("90.00%")).toBeInTheDocument();
+  });
+
+  it("'0% 포함'이면 서버가 준 0% 포함 평균을 보여 준다", () => {
+    render(<TierGroupSection group={group()} includeZero />);
+    expect(screen.getByText("67.50%")).toBeInTheDocument();
+  });
+
+  it("기록이 하나도 없는 묶음은 미포함 평균을 `–`로 보여 준다", () => {
+    render(
+      <TierGroupSection
+        group={group({ recorded: 0, exc: 0, ss: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries: [entry({ mine: null })] })}
+        includeZero={false}
+      />,
+    );
+    expect(screen.getByText("기록 0/4")).toBeInTheDocument();
+    // `–`는 줄마다 달성률 자리에도 나오므로 평균 문구 안에서만 확인한다
+    expect(screen.getByText(/^평균/)).toHaveTextContent("평균 –");
+  });
+
+  it("기준 난이도가 없는 묶음은 `미정`이라고 쓴다", () => {
+    render(<TierGroupSection group={group({ tier: null })} includeZero={false} />);
+    expect(screen.getByRole("heading", { name: /미정/ })).toBeInTheDocument();
+  });
+
+  it("기록이 있는 줄은 단계 표시와 달성률을, 없는 줄은 단계 없이 `–`를 보여 준다", () => {
+    render(
+      <TierGroupSection
+        group={group({
+          entries: [
+            entry({ entryId: 1, title: "기록있음", mine: { rate: 100, fullCombo: true, stage: "EXC" } }),
+            entry({ entryId: 2, title: "기록없음", mine: null }),
+          ],
+        })}
+        includeZero={false}
+      />,
+    );
+    // 모바일 카드와 데스크톱 줄이 둘 다 DOM에 있어 곡명이 두 번씩 나온다 (보이는 쪽은 CSS가 정한다)
+    expect(screen.getAllByText("기록있음")).toHaveLength(2);
+    expect(screen.getAllByLabelText("달성 단계 EXC").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("MAX").length).toBeGreaterThan(0);
+    expect(screen.queryAllByLabelText(/달성 단계/)).toHaveLength(2); // 기록 있는 곡의 카드 + 줄 하나씩, 기록 없는 곡은 없음
+  });
+});
+
+describe("DifficultyTableView", () => {
+  const fetchMock = vi.fn<typeof fetch>();
+  const table: DifficultyTableResponse = {
+    id: 3,
+    name: "SRN+ 서열표",
+    instrumentPart: "GUITAR",
+    noteOption: "SUPER_RANDOM_PLUS",
+    status: "ACTIVE",
+    revision: 1,
+  };
+
+  function json(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  }
+  function page(groups: TierGroupResponse[], over: Partial<PageResponse<TierGroupResponse>> = {}) {
+    return { content: groups, page: 0, size: 10, totalElements: groups.length, totalPages: 1, ...over };
+  }
+  function renderView() {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+      <QueryClientProvider client={client}>
+        <DifficultyTableView userId={1} />
+      </QueryClientProvider>,
+    );
+  }
+  /** 호출된 URL 중 entries 요청의 쿼리 값을 읽는다 */
+  function entryParams(index: number): URLSearchParams {
+    const urls = fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("/entries"));
+    return new URL(urls[index], "http://x").searchParams;
+  }
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("SRN+ 서열표를 골라 묶음을 보여 준다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    );
+    renderView();
+    expect(await screen.findByRole("heading", { name: "SRN+ 서열표" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /5\.8/ })).toBeInTheDocument();
+    expect(String(fetchMock.mock.calls.find((c) => String(c[0]).includes("/entries"))?.[0])).toContain(
+      "/difficulty-tables/3/entries",
+    );
+  });
+
+  it("SRN+ 서열표가 없으면 안내 문구를 보여 준다", async () => {
+    fetchMock.mockResolvedValue(json([{ ...table, noteOption: "NORMAL" }]));
+    renderView();
+    expect(await screen.findByText("SRN+ 서열표가 아직 없습니다.")).toBeInTheDocument();
+  });
+
+  it("서버 오류는 서버가 준 문구로 알려 준다", async () => {
+    fetchMock.mockResolvedValue(json({ code: "INTERNAL", message: "서버에 문제가 생겼습니다.", timestamp: "t" }, 500));
+    renderView();
+    expect(await screen.findByRole("alert")).toHaveTextContent("서버에 문제가 생겼습니다.");
+  });
+
+  it("필터를 바꾸면 해당 값으로 다시 요청하고 첫 페이지로 돌아간다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(
+        String(input).includes("/entries") ? json(page([group()], { page: 0, totalPages: 3 })) : json([table]),
+      ),
+    );
+    renderView();
+    await screen.findByRole("heading", { name: /5\.8/ });
+
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    await waitFor(() => expect(entryParams(1).get("page")).toBe("1"));
+
+    fireEvent.click(within(screen.getByRole("group", { name: "파트" })).getByRole("button", { name: "Bass" }));
+    await waitFor(() => expect(entryParams(2).get("part")).toBe("BASS"));
+    expect(entryParams(2).get("page")).toBe("0");
+  });
+
+  it("평균 토글은 서버를 다시 부르지 않고 표시만 바꾼다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    );
+    renderView();
+    await screen.findByText("90.00%");
+    const callsBefore = fetchMock.mock.calls.length;
+
+    fireEvent.click(screen.getByRole("button", { name: "0% 포함" }));
+    expect(screen.getByText("67.50%")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "0% 포함" })).toHaveAttribute("aria-pressed", "true");
+    expect(fetchMock.mock.calls.length).toBe(callsBefore);
+  });
+});

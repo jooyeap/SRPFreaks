@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AuthControls } from "@/components/AuthControls";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -7,7 +8,16 @@ export function SiteHeader() {
     <header className="border-b border-line bg-card">
       <p className="bg-table-head px-4 py-1 text-center text-xs text-fg-sub">비공식 팬 프로젝트</p>
       <div className="mx-auto flex w-full max-w-[980px] items-center justify-between px-4 py-3">
-        <span className="font-num text-lg font-semibold tracking-wide text-fg">SRPFreaks</span>
+        <div className="flex items-center gap-4">
+          <Link href="/" className="font-num text-lg font-semibold tracking-wide text-fg">
+            SRPFreaks
+          </Link>
+          <nav aria-label="주요 메뉴">
+            <Link href="/table" className="text-sm text-fg-sub hover:text-fg">
+              서열표
+            </Link>
+          </nav>
+        </div>
         <div className="flex items-center gap-2">
           <AuthControls />
           <ThemeToggle />

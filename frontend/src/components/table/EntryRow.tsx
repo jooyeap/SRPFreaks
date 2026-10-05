@@ -1,0 +1,63 @@
+import { DifficultyBadge, RecommendBadge } from "@/components/table/Badges";
+import { StageBadge } from "@/components/table/StageBadge";
+import { EMPTY_MARK, formatLevel, formatRate, partLabel } from "@/lib/format";
+import type { TableEntryResponse } from "@/lib/api-types";
+
+/** 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. */
+export const ROW_GRID =
+  "md:grid md:grid-cols-[4px_40px_minmax(0,1fr)_56px_44px_52px_64px_44px_52px_72px] md:items-center md:gap-x-3";
+
+/** 데스크톱 표의 머리 행 (모바일에서는 보이지 않는다). */
+export function TableHeadRow() {
+  return (
+    <div className={`hidden bg-table-head px-3 py-2 text-xs text-fg-dim ${ROW_GRID}`} aria-hidden="true">
+      <span />
+      <span />
+      <span>곡명</span>
+      <span>파트</span>
+      <span>난이도</span>
+      <span>레벨</span>
+      <span>달성률</span>
+      <span>추천</span>
+      <span>속성</span>
+      <span>버전</span>
+    </div>
+  );
+}
+
+/**
+ * 서열표 한 줄 (데스크톱 표형).
+ * 기록이 있으면 data-stage를 붙여서 왼쪽 4px 막대, 행 배경 틴트, 곡명 옆 단계 표시, 달성률 숫자 색을 같은 단계 색으로 맞춘다.
+ * 기록이 없으면 data-stage가 없으므로 단계 색이 하나도 적용되지 않는다 (달성률 `–`).
+ */
+export function EntryRow({ entry }: { entry: TableEntryResponse }) {
+  const stage = entry.mine?.stage ?? null;
+  return (
+    <li
+      data-stage={stage ?? undefined}
+      className={`hidden border-t border-row-line px-3 py-2 text-sm md:grid ${ROW_GRID} ${stage ? "stage-tint" : ""}`}
+    >
+      <span className={`h-8 w-1 rounded ${stage ? "stage-bar" : "bg-transparent"}`} aria-hidden="true" />
+      <span className="h-10 w-10 rounded bg-jacket" aria-hidden="true" />
+      <span className="flex min-w-0 items-center gap-2">
+        <span className={`truncate ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}>{entry.title}</span>
+        {stage ? <StageBadge stage={stage} /> : null}
+      </span>
+      <span className="text-fg-sub">{partLabel(entry.part)}</span>
+      <span>
+        <DifficultyBadge difficulty={entry.difficulty} />
+      </span>
+      <span className="font-num text-fg-sub">{formatLevel(entry.level)}</span>
+      <span className={`font-num font-semibold ${stage ? "stage-text" : "text-fg-faint"}`}>
+        {formatRate(entry.mine?.rate)}
+      </span>
+      <span>
+        <RecommendBadge value={entry.recommend} uncertain={entry.recommendUncertain} />
+      </span>
+      <span className="text-fg-sub" title={entry.patternUncertain ? "확정되지 않은 값" : undefined}>
+        {entry.pattern ? `${entry.pattern}${entry.patternUncertain ? "?" : ""}` : EMPTY_MARK}
+      </span>
+      <span className="truncate text-fg-dim">{entry.addedVersion ?? EMPTY_MARK}</span>
+    </li>
+  );
+}
