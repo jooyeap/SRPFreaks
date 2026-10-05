@@ -412,7 +412,8 @@ com.srpfreaks.backend
 - **공개 경로**: `POST /api/v1/auth/google|refresh|logout` 뿐이다. `/api/v1/**`는 인증 필요, 나머지(`/error`, 문서 경로 포함)는 모두 막는다. springdoc을 쓰려면 개발 환경에서만 열도록 따로 설정해야 한다.
 - **Rate Limit**: `/api/v1/auth/**`에 IP별 1분 10회(`app.rate-limit.auth-per-minute`), 서버 메모리 방식(EC2 1대 기준. 서버를 늘리면 공유 저장소 필요).
 - **보안 헤더**: CSP(`default-src 'none'; frame-ancestors 'none'`), Referrer-Policy, Permissions-Policy, X-Frame-Options, Cache-Control(no-store), HSTS(https 요청).
-- **아직 안 한 것**: 만료·폐기된 refresh_tokens 정리 작업(배치), 회원 탈퇴 API.
+- **회원 탈퇴 (구현됨, 로컬 검증 전)**: `DELETE /users/me` → 204. `users` 행 하나만 지우고 나머지는 FK가 처리한다(기록·refresh 토큰은 CASCADE, 감사 로그·곡 등록자·설정 수정자는 SET NULL). 응답의 Set-Cookie로 refresh 쿠키도 지운다. ROOT도 막지 않는다(같은 ROOT_EMAIL로 다시 가입하면 ROOT가 된다). 화면은 `/settings/withdraw`(되돌릴 수 없다는 안내 + 확인 체크 후 버튼 활성).
+- **아직 안 한 것**: 만료·폐기된 refresh_tokens 정리 작업(배치).
 
 ### 9.2 접근 제어
 - 기본 정책은 **deny all**, 공개 경로만 `permitAll`.

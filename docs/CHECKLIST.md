@@ -62,6 +62,7 @@
 - [ ] **refresh 토큰을 Authorization으로 보내 API 호출 -> 거부**
 - [ ] refresh 재발급(Rotation), 이전 토큰 재사용 시 해당 계열 전체 폐기
 - [ ] 다른 사용자의 기록 id로 조회·수정·삭제 -> 404
+- [ ] 회원 탈퇴 `DELETE /api/v1/users/me`(테스트 계정으로): 204와 `Set-Cookie: refresh_token=; Max-Age=0`, 이후 DB에서 `users`·`option_records`·`refresh_tokens`의 해당 행이 없고 `audit_logs.actor_id`는 NULL, 같은 토큰으로 `/users/me` -> 401
 - [ ] `/api/v1/auth/**` 1분에 11번째 요청 -> 429
 - [ ] CORS: 허용 Origin만, 그 외 거부. 응답 헤더(CSP, Referrer-Policy 등)
 - [ ] 로그에 토큰·비밀번호·요청 본문이 남지 않는지
@@ -91,6 +92,7 @@
 - [ ] 곡 상세 `/songs/{id}`: 제목 줄바꿈(긴 제목), BPM 등 정보 카드 잘림, 서열표에서 들어왔을 때 같은 묶음/이전·다음 채보 이동, 목록에서 들어왔을 때와 차이
 - [ ] 기록 창(모바일): 아래 시트 + 손잡이 막대, 큰 달성률 입력과 `달성 표시` 미리보기, 풀콤보(0 miss) 줄 전체 토글, 취소/저장 버튼 배치
 - [ ] 닉네임(2026-10-05 추가): 로그인 직후 닉네임이 없으면 헤더 아래 `닉네임을 설정해 주세요. 설정하기` 안내가 뜨고(다른 화면은 막지 않음), `/settings`에서 저장하면 안내가 사라지고 헤더 이름이 바뀌는지. 모바일에서는 헤더에 이름 대신 `설정`이 보임. 한글 입력 시 오류 문구, 반각 가타카나 입력 후 저장하면 전각으로 바뀌는지
+- [ ] 설정·탈퇴(2026-10-05 추가): `/settings`에 계정·닉네임·로그아웃·탈퇴 카드가 보이고, `탈퇴하기` -> `/settings/withdraw`에서 체크 전에는 버튼이 꺼져 있는지. 테스트 계정으로 탈퇴하면 첫 화면으로 가고 로그아웃 상태가 되며 같은 구글 계정으로 다시 로그인하면 새 계정(기록 없음)인지
 - [ ] 의심 지점: 서열표 줄의 모바일 카드/데스크톱 줄은 둘 다 그려지고 CSS로 숨기므로(`md:hidden`) 화면 폭에 따라 한쪽만 보이는지, `<dialog>`의 Esc 닫기와 바깥 클릭 닫기
 
 - [ ] 로그인이 자꾸 풀리면: `CORS_ALLOWED_ORIGINS`에 **접속한 주소와 똑같은 값**이 있는지 (`localhost:3000`과 `127.0.0.1:3000`은 다르다). 재발급이 403(`ORIGIN_NOT_ALLOWED`)이어도 화면에는 로그아웃처럼만 보인다. 네트워크 탭에서 `/auth/refresh` 상태 코드 확인
@@ -101,7 +103,7 @@
 - [ ] 별개 알림: 2026-10-09 금요일 10:00 `claude/push-test` 원격 브랜치 삭제
 
 ## 9. 배포 전에 필요한 것 (2026-10-05 전체 검토 결과, 검증 통과 후 기능별로 진행)
-- [ ] 회원 탈퇴 `DELETE /users/me` (D20, 사용자·기록·refresh 완전 삭제, 쿠키 삭제 응답 포함)
+- [x] 회원 탈퇴 `DELETE /users/me` 구현(D20, 사용자·기록·refresh 완전 삭제, 쿠키 삭제 응답 포함). **로컬 검증은 아직**: 7장의 확인 목록에 아래 항목을 더해 확인한다
 - [ ] `application-prod.yml`: DB URL 환경변수화, `useSSL`/`allowPublicKeyRetrieval` 정리, SQL 디버그 로그 끄기, `CORS_ALLOWED_ORIGINS` 기본값 제거, springdoc 끄기
 - [ ] 헬스체크(actuator `/actuator/health`만 공개). **의존성 추가이므로 먼저 확인**
 - [ ] Dockerfile(백엔드·프론트), 운영 compose, nginx(HTTPS, `/api`는 백엔드로 직접, `X-Forwarded-For`/`Origin` 전달, 프론트 보안 헤더·CSP), GitHub Actions
