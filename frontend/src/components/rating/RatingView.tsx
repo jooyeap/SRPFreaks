@@ -1,0 +1,95 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
+import { RatingSummary } from "@/components/rating/RatingSummary";
+import { ApiError } from "@/lib/api";
+import type { SkillEntryResponse } from "@/lib/api-types";
+import { fetchMySkill, skillKeys } from "@/lib/rating";
+
+function Group({
+  title,
+  entries,
+  limit,
+  emptyText,
+}: {
+  title: string;
+  entries: SkillEntryResponse[];
+  limit: number;
+  emptyText: string;
+}) {
+  return (
+    <section aria-label={title} className="flex flex-col gap-2">
+      <h2 className="text-base font-semibold text-fg">
+        {title}{" "}
+        <span className="font-num text-sm font-normal text-fg-sub">
+          {entries.length}/{limit}
+        </span>
+      </h2>
+      {entries.length === 0 ? (
+        <p className="text-sm text-fg-sub">{emptyText}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {entries.map((entry) => (
+            <RatingEntryCard key={entry.songDifficultyId} entry={entry} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/**
+ * 레이팅 화면 본문. 합계와 목록은 모두 서버가 계산한 값을 그대로 보여 준다 (화면에서 다시 계산하지 않는다).
+ * 로그인한 사용자만 이 컴포넌트를 그린다. 서버는 항상 토큰의 사용자 본인 목록만 돌려준다.
+ */
+export function RatingView({ userId }: { userId: number }) {
+  const { data, isPending, isError, error } = useQuery({
+    queryKey: skillKeys.me(userId),
+    queryFn: ({ signal }) => fetchMySkill(signal),
+  });
+
+  if (isPending) {
+    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+  }
+  if (isError) {
+    return (
+      <p role="alert" className="text-sm text-fg">
+        {error instanceof ApiError ? error.message : "레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
+      </p>
+    );
+  }
+
+  const empty = data.single.length === 0 && data.other.length === 0;
+  return (
+    <div className="flex flex-col gap-5">
+      <h1 className="text-xl font-semibold text-fg">레이팅</h1>
+      <RatingSummary skill={data} />
+      {empty ? (
+        <p className="text-sm text-fg-sub">
+          레이팅에 들어갈 기록이 아직 없습니다.{" "}
+          <Link href="/table" className="underline">
+            서열표
+          </Link>
+          에서 기록을 입력해 주세요.
+        </p>
+      ) : null}
+      <Group
+        title="단일"
+        entries={data.single}
+        limit={data.singleLimit}
+        emptyText="속성이 단일인 채보의 기록이 아직 없습니다."
+      />
+      <Group
+        title="그 외 (복합·이중·삼중)"
+        entries={data.other}
+        limit={data.otherLimit}
+        emptyText="속성이 복합·이중·삼중인 채보의 기록이 아직 없습니다."
+      />
+      <p className="text-xs text-fg-dim">
+        기준 난이도와 속성이 없는 채보는 레이팅에서 제외됩니다. 같은 곡의 다른 채보는 각각 계산합니다.
+      </p>
+    </div>
+  );
+}
