@@ -105,5 +105,5 @@
 - [ ] Dockerfile(백엔드·프론트), 운영 compose, nginx(HTTPS, `/api`는 백엔드로 직접, `X-Forwarded-For`/`Origin` 전달, 프론트 보안 헤더·CSP), GitHub Actions
 - [ ] 프론트 `next.config` `output: "standalone"`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`는 빌드 시점에 주입 (`BACKEND_URL`도 빌드에 고정될 수 있어 운영은 nginx가 `/api` 처리)
 - [ ] 구글 OAuth 클라이언트에 운영 도메인을 승인된 JavaScript 원본으로 추가, `COOKIE_SECURE=true`
-- [ ] 프론트 개선: 재발급 실패 중 401만 로그아웃 처리(500/429/403은 구분), 로그아웃 시 구글 `disableAutoSelect()` 호출
+- [x] 프론트 개선 (2026-10-05 완료): 재발급 실패 중 401만 로그아웃 처리(500/429/403은 구분), 로그아웃 시 구글 `disableAutoSelect()` 호출. 실제 브라우저에서 동작 확인만 남음
 - [ ] 정리 후보: `frontend/public/*.svg` 5개, `docs/table.sql`, 중복 `docs/CLAUDE.md`, README의 `&amp;`·Bass 누락, `.gitignore`에 `.env.*`·`*.pem`·`application-prod.yml` 추가
