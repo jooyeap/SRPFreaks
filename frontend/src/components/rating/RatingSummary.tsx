@@ -13,7 +13,7 @@ export function RatingSummary({ skill }: { skill: SkillResponse }) {
     <section
       aria-label="내 레이팅"
       data-tier={skill.tier.key}
-      className="tier-card flex flex-col gap-3 rounded-lg bg-card p-4"
+      className="tier-card flex flex-col gap-3 rounded-[14px] bg-card p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>

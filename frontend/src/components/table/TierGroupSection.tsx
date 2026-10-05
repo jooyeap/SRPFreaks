@@ -45,7 +45,7 @@ export function TierGroupSection({
 }) {
   const title = formatTier(group.tier);
   return (
-    <section aria-label={`기준 난이도 ${title}`} className="overflow-hidden rounded-lg border border-line bg-card">
+    <section aria-label={`기준 난이도 ${title}`} className="overflow-hidden rounded-[14px] border border-line bg-card">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-3">
         <h2 className="font-num text-lg font-semibold text-fg">
           {title} <span className="ml-1 text-sm font-normal text-fg-sub">{group.total}개</span>

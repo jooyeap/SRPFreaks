@@ -42,7 +42,7 @@ export function EntryRow({ entry, onRecord }: { entry: TableEntryResponse; onRec
       className={`hidden border-t border-row-line px-3 py-2 text-sm md:grid ${ROW_GRID} ${stage ? "stage-tint" : ""}`}
     >
       <span className={`h-8 w-1 rounded ${stage ? "stage-bar" : "bg-transparent"}`} aria-hidden="true" />
-      <SongTile songId={entry.songId} className="h-10 w-10 rounded" />
+      <SongTile songId={entry.songId} className="h-10 w-10 rounded-lg" />
       <span className="flex min-w-0 items-center gap-2">
         <Link
           href={tableDetailHref(entry)}

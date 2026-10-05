@@ -21,7 +21,7 @@ function Group({
 }) {
   return (
     <section aria-label={title} className="flex flex-col gap-2">
-      <h2 className="text-base font-semibold text-fg">
+      <h2 className="font-num text-[17px] font-bold text-fg">
         {title}{" "}
         <span className="font-num text-sm font-normal text-fg-sub">
           {entries.length}/{limit}

@@ -13,7 +13,7 @@ export function RatingEntryCard({ entry }: { entry: SkillEntryResponse }) {
   return (
     <li
       data-stage={entry.stage}
-      className={`relative flex items-center gap-3 overflow-hidden rounded-lg border border-line bg-card py-2 pl-4 pr-3 ${
+      className={`relative flex items-center gap-3 overflow-hidden rounded-xl border border-line bg-card py-2 pl-4 pr-3 ${
         accent ? "stage-tint" : ""
       }`}
     >
@@ -21,7 +21,7 @@ export function RatingEntryCard({ entry }: { entry: SkillEntryResponse }) {
       <span className="w-6 shrink-0 text-center font-num text-xs text-fg-dim" aria-label={`${entry.rank}위`}>
         {entry.rank}
       </span>
-      <SongTile songId={entry.songId} className="h-14 w-14 rounded" />
+      <SongTile songId={entry.songId} className="h-14 w-14 rounded-lg" />
       <div className="min-w-0 flex-1">
         <p className={`truncate text-sm ${entry.stage === "EXC" || entry.stage === "FC" ? "stage-name" : "text-fg"}`}>
           {entry.title}
