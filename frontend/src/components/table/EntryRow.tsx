@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { DifficultyBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
+import { tableDetailHref } from "@/components/song/TableContext";
 import { EMPTY_MARK, formatLevel, formatRate, partLabel } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 
@@ -41,7 +43,12 @@ export function EntryRow({ entry, onRecord }: { entry: TableEntryResponse; onRec
       <span className={`h-8 w-1 rounded ${stage ? "stage-bar" : "bg-transparent"}`} aria-hidden="true" />
       <span className="h-10 w-10 rounded bg-jacket" aria-hidden="true" />
       <span className="flex min-w-0 items-center gap-2">
-        <span className={`truncate ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}>{entry.title}</span>
+        <Link
+          href={tableDetailHref(entry)}
+          className={`truncate hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
+        >
+          {entry.title}
+        </Link>
         {stage ? <StageBadge stage={stage} /> : null}
       </span>
       <span className="text-fg-sub">{partLabel(entry.part)}</span>

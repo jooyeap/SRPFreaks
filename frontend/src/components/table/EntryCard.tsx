@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { DifficultyBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
+import { tableDetailHref } from "@/components/song/TableContext";
 import { EMPTY_MARK, formatLevel, formatRate, partLabel } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 
@@ -23,9 +25,12 @@ export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRe
         <span className="absolute right-1 top-1 rounded bg-page/70 px-1 text-[10px] text-fg">{partLabel(entry.part)}</span>
         <span className="diff-band absolute inset-x-0 bottom-0 h-1" aria-hidden="true" />
       </div>
-      <p className={`line-clamp-2 text-[11px] leading-tight ${ringed && stage === "EXC" ? "stage-name" : "text-fg"}`}>
+      <Link
+        href={tableDetailHref(entry)}
+        className={`line-clamp-2 text-[11px] leading-tight hover:underline ${ringed && stage === "EXC" ? "stage-name" : "text-fg"}`}
+      >
         {entry.title}
-      </p>
+      </Link>
       <div className="flex items-center justify-between gap-1">
         <span className={`font-num text-xs font-semibold ${stage ? "stage-text" : "text-fg-faint"}`}>
           {formatRate(entry.mine?.rate)}

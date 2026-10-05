@@ -205,3 +205,6 @@ body {
   background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill) border-box;
   box-shadow: var(--tier-glow);
 }
+
+/* 곡 상세의 내 기록: FC/EXC 달성률 숫자를 단계 그라데이션 글자로 (DESIGN-UI 6장) */
+.stage-grad-text { background: var(--st-bar); -webkit-background-clip: text; background-clip: text; color: transparent; }

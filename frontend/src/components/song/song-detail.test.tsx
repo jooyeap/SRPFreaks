@@ -1,0 +1,237 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthProvider } from "@/components/AuthProvider";
+import { SongDetailView } from "@/components/song/SongDetailView";
+import type {
+  DifficultyTableResponse,
+  SongDetailResponse,
+  TableEntryResponse,
+  TierGroupResponse,
+} from "@/lib/api-types";
+import { clearAccessToken } from "@/lib/auth-token";
+import type { SongDetailOrigin } from "@/lib/songs";
+
+const back = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ back, push: vi.fn(), replace: vi.fn() }) }));
+
+const table: DifficultyTableResponse = {
+  id: 3,
+  name: "SRN+ 서열표",
+  instrumentPart: "GUITAR",
+  noteOption: "SUPER_RANDOM_PLUS",
+  status: "ACTIVE",
+  revision: 1,
+};
+
+const song: SongDetailResponse = {
+  id: 1,
+  title: "테스트곡",
+  artist: "아티스트",
+  addedVersion: "V5",
+  titleFolder: null,
+  bpmMin: 120,
+  bpmMax: 180,
+  source: null,
+  titles: [],
+  difficulties: [
+    { id: 10, songId: 1, instrumentPart: "GUITAR", difficultyType: "MASTER", level: 9.8, noteCount: 1234 },
+    { id: 11, songId: 1, instrumentPart: "GUITAR", difficultyType: "EXTREME", level: 7.2, noteCount: null },
+    { id: 12, songId: 1, instrumentPart: "BASS", difficultyType: "MASTER", level: 8.5, noteCount: 900 },
+  ],
+};
+
+function entry(over: Partial<TableEntryResponse> & { songDifficultyId: number }): TableEntryResponse {
+  return {
+    entryId: over.songDifficultyId,
+    songId: 1,
+    title: "테스트곡",
+    addedVersion: "V5",
+    part: "GUITAR",
+    difficulty: "MASTER",
+    level: 9.8,
+    tierUncertain: false,
+    recommend: "상",
+    recommendUncertain: false,
+    pattern: "복합",
+    patternUncertain: false,
+    mine: null,
+    ...over,
+  };
+}
+
+const prevEntry = entry({ songDifficultyId: 90, songId: 9, title: "앞곡", level: 9.9, mine: { rate: 91, fullCombo: false, stage: "S" } });
+const mainEntry = entry({ songDifficultyId: 10, mine: { rate: 100, fullCombo: true, stage: "EXC" } });
+const nextEntry = entry({ songDifficultyId: 91, songId: 8, title: "뒷곡", level: 9.5, mine: null });
+const groups: TierGroupResponse[] = [
+  {
+    tier: 5.8,
+    total: 3,
+    recorded: 2,
+    exc: 1,
+    fc: 0,
+    ss: 0,
+    s: 1,
+    belowS: 0,
+    averageRecorded: 95.5,
+    averageWithZero: 63.67,
+    entries: [prevEntry, mainEntry, nextEntry],
+  },
+  {
+    tier: 5.1,
+    total: 2,
+    recorded: 0,
+    exc: 0,
+    fc: 0,
+    ss: 0,
+    s: 0,
+    belowS: 0,
+    averageRecorded: null,
+    averageWithZero: 0,
+    entries: [
+      entry({ songDifficultyId: 11, difficulty: "EXTREME", level: 7.2, recommend: "하", pattern: "단일" }),
+      entry({ songDifficultyId: 12, part: "BASS", level: 8.5, recommend: null, pattern: null }),
+    ],
+  },
+];
+
+const AUTH = {
+  accessToken: "t",
+  tokenType: "Bearer",
+  expiresIn: 900,
+  user: { id: 1, email: "a@example.com", nickname: null, role: "USER", createdAt: "2026-10-01T00:00:00Z" },
+};
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+}
+
+describe("SongDetailView", () => {
+  const fetchMock = vi.fn<typeof fetch>();
+  let tables: DifficultyTableResponse[];
+  let songResponse: () => Response;
+
+  beforeEach(() => {
+    clearAccessToken();
+    back.mockReset();
+    fetchMock.mockReset();
+    tables = [table];
+    songResponse = () => json(song);
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
+      if (url.includes("/difficulty-tables/") && url.includes("/entries")) {
+        return Promise.resolve(json({ content: groups, page: 0, size: 20, totalElements: 2, totalPages: 1 }));
+      }
+      if (url.endsWith("/difficulty-tables")) return Promise.resolve(json(tables));
+      if (url.includes("/songs/")) return Promise.resolve(songResponse());
+      if (url.includes("/records?")) {
+        return Promise.resolve(
+          json({
+            content: [{ id: 5, songDifficultyId: 10, achievementRate: 100, fullCombo: true, stage: "EXC", playedAt: "2026-10-04T15:00:00Z" }],
+            page: 0,
+            size: 1,
+            totalElements: 1,
+            totalPages: 1,
+          }),
+        );
+      }
+      return Promise.resolve(json({}, 404));
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  function renderView(origin: SongDetailOrigin, chartId: number | null, wrapAuth = false) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = <SongDetailView songId={1} chartId={chartId} origin={origin} userId={1} />;
+    return render(<QueryClientProvider client={client}>{wrapAuth ? <AuthProvider>{view}</AuthProvider> : view}</QueryClientProvider>);
+  }
+
+  it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 묶음의 이전/다음 곡, 다른 채보를 보여 준다", async () => {
+    renderView("table", 10);
+    expect(await screen.findByRole("heading", { name: "테스트곡" })).toBeInTheDocument();
+    expect(await screen.findByText("속성 복합")).toBeInTheDocument();
+    expect(screen.getByText(/SRN\+ 서열표 ·/)).toHaveTextContent("5.8");
+
+    const info = await screen.findByRole("region", { name: "서열표 정보" });
+    expect(within(info).getByText(/묶음 3개/)).toHaveTextContent("5.8 묶음 3개 · 내 평균 95.50%");
+    expect(within(info).getByRole("list", { name: "묶음 안의 내 달성 현황" }).textContent).toBe("EXC 1FC 0SS 0S 1");
+
+    const mine = screen.getByRole("region", { name: "내 기록" });
+    expect(within(mine).getByText("MAX")).toBeInTheDocument();
+    expect(within(mine).getByLabelText("달성 단계 EXC")).toBeInTheDocument();
+    expect(within(mine).getByText("2026-10-05")).toBeInTheDocument(); // UTC 15:00 = 서울 다음 날 00:00
+    expect(within(mine).getByText("SRN+")).toBeInTheDocument();
+    expect(within(mine).getByText("서열표는 SRN+ 기준입니다.")).toBeInTheDocument();
+
+    const neighbors = screen.getByRole("region", { name: "같은 묶음의 곡" });
+    expect(within(neighbors).getByRole("link", { name: /앞곡/ })).toHaveAttribute("href", "/songs/9?from=table&chart=90");
+    expect(within(neighbors).getByRole("link", { name: /뒷곡/ })).toHaveAttribute("href", "/songs/8?from=table&chart=91");
+    expect(within(neighbors).getByText("기록 없음")).toBeInTheDocument();
+
+    expect(screen.getByText("이 곡의 다른 채보 2개")).toBeInTheDocument();
+  });
+
+  it("서열표에서: EXC 기록의 달성률 숫자는 그라데이션 글자로 나온다", async () => {
+    renderView("table", 10);
+    const mine = await screen.findByRole("region", { name: "내 기록" });
+    await waitFor(() => expect(within(mine).getByText("MAX")).toHaveClass("stage-grad-text"));
+  });
+
+  it("곡 목록에서: BPM·노트 수·버전 카드와 레벨 정보 표를 보여 주고 속성은 보여 주지 않는다", async () => {
+    renderView("songs", 10);
+    const cards = await screen.findByRole("list", { name: "곡 정보 요약" });
+    expect(within(cards).getByText("120~180")).toBeInTheDocument();
+    expect(within(cards).getByText("1,234")).toBeInTheDocument(); // 선택된 채보(MAS 9.80)의 노트 수
+    expect(within(cards).getByText("V5")).toBeInTheDocument();
+
+    const table = screen.getByRole("region", { name: "레벨 정보" });
+    const rows = await within(table).findAllByRole("link");
+    expect(rows).toHaveLength(3);
+    // Guitar EXT 7.20 -> Guitar MAS 9.80 -> Bass MAS 8.50 순서, 기준 난이도와 추천이 서열표에서 채워진다
+    expect(rows[0]).toHaveTextContent("Guitar");
+    await waitFor(() => expect(rows[0]).toHaveTextContent("5.1"));
+    expect(rows[1]).toHaveTextContent("5.8");
+    expect(rows[1]).toHaveAttribute("aria-current", "true");
+    expect(rows[1]).toHaveAttribute("href", "/songs/1?from=songs&chart=10");
+    expect(rows[2]).toHaveTextContent("–");
+
+    expect(screen.queryByText(/속성/)).toBeNull();
+    expect(screen.queryByRole("region", { name: "같은 묶음의 곡" })).toBeNull();
+  });
+
+  it("chart 값이 이 곡의 채보가 아니면 레벨이 가장 높은 채보를 고른다", async () => {
+    renderView("songs", 99999);
+    const table = await screen.findByRole("region", { name: "레벨 정보" });
+    await waitFor(() => expect(within(table).getAllByRole("link")[1]).toHaveAttribute("aria-current", "true"));
+  });
+
+  it("곡이 없으면(404) 안내 문구를 보여 준다", async () => {
+    songResponse = () => json({ code: "NOT_FOUND", message: "찾을 수 없습니다.", timestamp: "t" }, 404);
+    renderView("songs", null);
+    expect(await screen.findByRole("alert")).toHaveTextContent("곡을 찾을 수 없습니다.");
+  });
+
+  it("서열표가 없어도 곡 정보와 기록 등록 버튼은 쓸 수 있다", async () => {
+    tables = [];
+    renderView("table", 10);
+    expect(await screen.findByRole("heading", { name: "테스트곡" })).toBeInTheDocument();
+    expect(await screen.findByText("이 채보는 서열표에 없습니다.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "기록 등록" })).toBeEnabled();
+    expect(screen.queryByText(/^속성/)).toBeNull();
+  });
+
+  it("뒤로 버튼은 이전 화면으로 돌아간다", async () => {
+    renderView("songs", 10);
+    fireEvent.click(await screen.findByRole("button", { name: "뒤로" }));
+    expect(back).toHaveBeenCalled();
+  });
+
+  it("기록 등록 버튼을 누르면 이 채보의 기록 창이 열린다", async () => {
+    renderView("songs", 10, true);
+    fireEvent.click(await screen.findByRole("button", { name: "기록 등록" }));
+    expect(await screen.findByRole("heading", { name: "기록 등록", level: 2 })).toBeInTheDocument();
+    expect(screen.getByLabelText("달성률")).toBeInTheDocument();
+  });
+});
