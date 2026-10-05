@@ -14,6 +14,6 @@ public interface LabeledEnum {
                 return constant;
             }
         }
-        throw new IllegalArgumentException("알 수 없는 값: " + label);
+        throw new IllegalArgumentException("알 수 없는 값입니다: " + label);
     }
 }

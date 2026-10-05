@@ -62,7 +62,7 @@ public class RefreshToken {
 
     public static RefreshToken issue(User user, String familyId, String tokenHash, Instant expiresAt) {
         if (user == null || familyId == null || tokenHash == null || expiresAt == null) {
-            throw new IllegalArgumentException("user, familyId, tokenHash, expiresAt은 필수다.");
+            throw new IllegalArgumentException("사용자, 토큰 묶음, 해시, 만료 시각은 필수입니다.");
         }
         return new RefreshToken(user, familyId, tokenHash, expiresAt);
     }

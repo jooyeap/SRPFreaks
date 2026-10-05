@@ -92,7 +92,7 @@ public class OptionRecord extends BaseTimeEntity {
                                       BigDecimal achievementRate, boolean fullCombo,
                                       Instant playedAt, Platform platform, String memo) {
         if (user == null || songDifficulty == null) {
-            throw new IllegalArgumentException("user와 songDifficulty는 필수다.");
+            throw new IllegalArgumentException("사용자와 채보는 필수입니다.");
         }
         OptionRecord record = new OptionRecord(user, songDifficulty);
         record.apply(noteOption, achievementRate, fullCombo, playedAt, platform, memo);
@@ -117,11 +117,11 @@ public class OptionRecord extends BaseTimeEntity {
     private void apply(NoteOption noteOption, BigDecimal rate, boolean fullCombo,
                        Instant playedAt, Platform platform, String memo) {
         if (noteOption == null) {
-            throw new IllegalArgumentException("노트 옵션은 필수다.");
+            throw new IllegalArgumentException("노트 옵션은 필수입니다.");
         }
         BigDecimal normalized = normalizeRate(rate);
         if (memo != null && memo.length() > MEMO_MAX_LENGTH) {
-            throw new IllegalArgumentException("메모는 " + MEMO_MAX_LENGTH + "자 이하여야 한다.");
+            throw new IllegalArgumentException("메모는 " + MEMO_MAX_LENGTH + "자 이하여야 합니다.");
         }
         this.noteOption = noteOption;
         this.achievementRate = normalized;
@@ -138,14 +138,14 @@ public class OptionRecord extends BaseTimeEntity {
      */
     static BigDecimal normalizeRate(BigDecimal rate) {
         if (rate == null) {
-            throw new IllegalArgumentException("달성률은 필수다.");
+            throw new IllegalArgumentException("달성률은 필수입니다.");
         }
         if (rate.stripTrailingZeros().scale() > 2) {
-            throw new IllegalArgumentException("달성률은 소수 둘째 자리까지만 입력할 수 있다.");
+            throw new IllegalArgumentException("달성률은 소수 둘째 자리까지만 입력할 수 있습니다.");
         }
         BigDecimal scaled = rate.setScale(2);
         if (scaled.compareTo(MIN_RATE) < 0 || scaled.compareTo(MAX_RATE) > 0) {
-            throw new IllegalArgumentException("달성률은 0.00 ~ 100.00 사이여야 한다.");
+            throw new IllegalArgumentException("달성률은 0.00 ~ 100.00 사이여야 합니다.");
         }
         return scaled;
     }

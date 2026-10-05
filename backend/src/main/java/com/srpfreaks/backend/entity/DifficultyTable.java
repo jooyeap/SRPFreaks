@@ -62,10 +62,10 @@ public class DifficultyTable extends BaseTimeEntity {
 
     public static DifficultyTable create(String name, InstrumentPart instrumentPart, NoteOption noteOption) {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("표 이름은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("표 이름은 비워 둘 수 없습니다.");
         }
         if (noteOption == null) {
-            throw new IllegalArgumentException("기준 옵션은 필수다.");
+            throw new IllegalArgumentException("기준 옵션은 필수입니다.");
         }
         return new DifficultyTable(name, instrumentPart, noteOption);
     }

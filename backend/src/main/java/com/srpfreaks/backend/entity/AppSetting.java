@@ -47,7 +47,7 @@ public class AppSetting {
 
     public static AppSetting create(String key, String value, User updatedBy) {
         if (key == null || key.isBlank()) {
-            throw new IllegalArgumentException("설정 키는 비어 있을 수 없다.");
+            throw new IllegalArgumentException("설정 키는 비워 둘 수 없습니다.");
         }
         requireValue(value);
         return new AppSetting(key, value, updatedBy);
@@ -67,7 +67,7 @@ public class AppSetting {
 
     private static void requireValue(String value) {
         if (value == null) {
-            throw new IllegalArgumentException("설정 값은 null일 수 없다.");
+            throw new IllegalArgumentException("설정 값은 비워 둘 수 없습니다.");
         }
     }
 }

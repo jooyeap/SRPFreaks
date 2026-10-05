@@ -76,7 +76,7 @@ public class DifficultyTableEntry extends BaseTimeEntity {
 
     public static DifficultyTableEntry create(DifficultyTable difficultyTable, SongDifficulty songDifficulty) {
         if (difficultyTable == null || songDifficulty == null) {
-            throw new IllegalArgumentException("difficultyTable과 songDifficulty는 필수다.");
+            throw new IllegalArgumentException("난이도표와 채보는 필수입니다.");
         }
         return new DifficultyTableEntry(difficultyTable, songDifficulty);
     }
@@ -86,7 +86,7 @@ public class DifficultyTableEntry extends BaseTimeEntity {
         if (tierLabel != null) {
             BigDecimal stripped = tierLabel.stripTrailingZeros();
             if (tierLabel.signum() < 0 || stripped.scale() > 1 || tierLabel.compareTo(new BigDecimal("99.9")) > 0) {
-                throw new IllegalArgumentException("기준 난이도는 0.0 이상, 소수 첫째 자리까지여야 한다.");
+                throw new IllegalArgumentException("기준 난이도는 0.0 이상, 소수 첫째 자리까지 입력할 수 있습니다.");
             }
             tierLabel = tierLabel.setScale(1);
         }
@@ -107,7 +107,7 @@ public class DifficultyTableEntry extends BaseTimeEntity {
 
     public void changeComment(String comment) {
         if (comment != null && comment.length() > COMMENT_MAX_LENGTH) {
-            throw new IllegalArgumentException("코멘트는 " + COMMENT_MAX_LENGTH + "자 이하여야 한다.");
+            throw new IllegalArgumentException("코멘트는 " + COMMENT_MAX_LENGTH + "자 이하여야 합니다.");
         }
         this.comment = comment;
     }

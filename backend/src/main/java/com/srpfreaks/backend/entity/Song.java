@@ -85,7 +85,7 @@ public class Song extends BaseTimeEntity {
 
     public void changeMeta(String addedVersion, String titleFolder, Integer bpmMin, Integer bpmMax) {
         if (bpmMin != null && bpmMax != null && bpmMin > bpmMax) {
-            throw new IllegalArgumentException("bpmMin은 bpmMax보다 클 수 없다.");
+            throw new IllegalArgumentException("최소 BPM은 최대 BPM보다 클 수 없습니다.");
         }
         this.addedVersion = addedVersion;
         this.titleFolder = titleFolder;
@@ -107,7 +107,7 @@ public class Song extends BaseTimeEntity {
 
     private static void requireTitle(String title) {
         if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("곡명은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("곡명은 비워 둘 수 없습니다.");
         }
     }
 }

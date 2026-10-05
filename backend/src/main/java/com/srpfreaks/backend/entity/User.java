@@ -68,13 +68,13 @@ public class User extends BaseTimeEntity {
     /** 역할을 지정해서 만든다. ROOT 초기 계정을 환경변수로 만들 때 쓴다. */
     public static User create(String googleSub, String email, String nickname, Role role) {
         if (googleSub == null || googleSub.isBlank()) {
-            throw new IllegalArgumentException("googleSub는 비어 있을 수 없다.");
+            throw new IllegalArgumentException("구글 계정 ID는 비워 둘 수 없습니다.");
         }
         if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("email은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("이메일은 비워 둘 수 없습니다.");
         }
         if (role == null) {
-            throw new IllegalArgumentException("role은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("권한은 비워 둘 수 없습니다.");
         }
         return new User(googleSub, email, nickname, role);
     }
@@ -86,14 +86,14 @@ public class User extends BaseTimeEntity {
     /** 구글 쪽 이메일이 바뀌었을 때 로그인 시점에 동기화한다. */
     public void changeEmail(String email) {
         if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("email은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("이메일은 비워 둘 수 없습니다.");
         }
         this.email = email;
     }
 
     public void changeRole(Role role) {
         if (role == null) {
-            throw new IllegalArgumentException("role은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("권한은 비워 둘 수 없습니다.");
         }
         this.role = role;
     }
@@ -116,7 +116,7 @@ public class User extends BaseTimeEntity {
         }
         String trimmed = nickname.strip();
         if (trimmed.length() > NICKNAME_MAX_LENGTH) {
-            throw new IllegalArgumentException("닉네임은 " + NICKNAME_MAX_LENGTH + "자 이하여야 한다.");
+            throw new IllegalArgumentException("닉네임은 " + NICKNAME_MAX_LENGTH + "자 이하여야 합니다.");
         }
         return trimmed;
     }

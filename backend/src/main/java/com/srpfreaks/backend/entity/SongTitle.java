@@ -59,10 +59,10 @@ public class SongTitle {
 
     public static SongTitle create(Song song, TitleKind kind, String title) {
         if (song == null || kind == null) {
-            throw new IllegalArgumentException("song과 kind는 필수다.");
+            throw new IllegalArgumentException("곡과 표기 종류는 필수입니다.");
         }
         if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("곡명은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("곡명은 비워 둘 수 없습니다.");
         }
         return new SongTitle(song, kind, title);
     }

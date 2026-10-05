@@ -39,10 +39,10 @@ public class PlayerTier {
 
     public void change(String displayName, int minScore) {
         if (displayName == null || displayName.isBlank()) {
-            throw new IllegalArgumentException("표시 이름은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("표시 이름은 비워 둘 수 없습니다.");
         }
         if (minScore < 0) {
-            throw new IllegalArgumentException("시작 점수는 음수일 수 없다.");
+            throw new IllegalArgumentException("시작 점수는 0 이상이어야 합니다.");
         }
         this.displayName = displayName;
         this.minScore = minScore;

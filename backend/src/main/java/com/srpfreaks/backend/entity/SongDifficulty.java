@@ -67,7 +67,7 @@ public class SongDifficulty extends BaseTimeEntity {
 
     public static SongDifficulty create(Song song, InstrumentPart part, DifficultyType type, BigDecimal level) {
         if (song == null || part == null || type == null) {
-            throw new IllegalArgumentException("song, part, type은 필수다.");
+            throw new IllegalArgumentException("곡, 파트, 난이도 종류는 필수입니다.");
         }
         requireLevel(level);
         return new SongDifficulty(song, part, type, level);
@@ -80,7 +80,7 @@ public class SongDifficulty extends BaseTimeEntity {
 
     public void changeNoteCount(Integer noteCount) {
         if (noteCount != null && noteCount < 0) {
-            throw new IllegalArgumentException("노트 수는 음수일 수 없다.");
+            throw new IllegalArgumentException("노트 수는 0 이상이어야 합니다.");
         }
         this.noteCount = noteCount;
     }
@@ -95,7 +95,7 @@ public class SongDifficulty extends BaseTimeEntity {
 
     private static void requireLevel(BigDecimal level) {
         if (level == null || level.signum() < 0 || level.compareTo(new BigDecimal("9.99")) > 0 || level.scale() > 2) {
-            throw new IllegalArgumentException("레벨은 0.00 ~ 9.99, 소수 둘째 자리까지여야 한다.");
+            throw new IllegalArgumentException("레벨은 0.00 ~ 9.99 사이, 소수 둘째 자리까지 입력할 수 있습니다.");
         }
     }
 }

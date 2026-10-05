@@ -66,7 +66,7 @@ public class AuditLog {
     public static AuditLog record(User actor, String action, String targetType, String targetId,
                                   Map<String, Object> detail) {
         if (action == null || action.isBlank()) {
-            throw new IllegalArgumentException("action은 비어 있을 수 없다.");
+            throw new IllegalArgumentException("작업 종류는 비워 둘 수 없습니다.");
         }
         return new AuditLog(actor, action, targetType, targetId, detail);
     }
