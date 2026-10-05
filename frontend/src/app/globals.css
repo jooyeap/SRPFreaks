@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+/*
+ * 색 변수 (docs/DESIGN-UI.md 4장). 색 값은 이 파일에서만 정의하고, 컴포넌트에는 직접 쓰지 않는다.
+ * 컴포넌트는 아래 @theme 블록이 만든 유틸리티(bg-page, text-fg, border-line ...)만 쓴다.
+ *
+ * 테마 결정 순서
+ *  1) <html data-theme="light|dark">  : 사용자가 버튼으로 고른 값 (localStorage에서 읽어 페이지가 그려지기 전에 붙인다)
+ *  2) 위가 없으면 브라우저 설정(prefers-color-scheme)
+ * 기본(:root)은 다크이고, 라이트 값은 "명시적으로 라이트" / "설정 없음 + 시스템이 라이트" 두 곳에 같은 값을 둔다.
+ */
+:root {
+  color-scheme: dark;
+  --page: #0f1218;
+  --card: #181d27;
+  --table-head: #1b2130;
+  --line: #2a3142;
+  --row-line: #202737;
+  --fg: #eef0f6;
+  --fg-sub: #c5cbda;
+  --fg-dim: #a0a9bc;
+  --fg-faint: #8a94a8;
+  --disabled: #4a5368;
+  --chip-line: #3a4358;
+  --jacket: #3b4660;
+  --chip-on-bg: #eef0f6;
+  --chip-on-fg: #0f1218;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page: #f3f5f9;
+  --card: #ffffff;
+  --table-head: #eaeef5;
+  --line: #d8dde8;
+  --row-line: #e4e8f0;
+  --fg: #12151c;
+  --fg-sub: #3b4559;
+  --fg-dim: #586277;
+  --fg-faint: #667086;
+  --disabled: #9aa3b5;
+  --chip-line: #b5bdcd;
+  --jacket: #c8d0df;
+  --chip-on-bg: #12151c;
+  --chip-on-fg: #f3f5f9;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --page: #f3f5f9;
+    --card: #ffffff;
+    --table-head: #eaeef5;
+    --line: #d8dde8;
+    --row-line: #e4e8f0;
+    --fg: #12151c;
+    --fg-sub: #3b4559;
+    --fg-dim: #586277;
+    --fg-faint: #667086;
+    --disabled: #9aa3b5;
+    --chip-line: #b5bdcd;
+    --jacket: #c8d0df;
+    --chip-on-bg: #12151c;
+    --chip-on-fg: #f3f5f9;
+  }
+}
+
+/* 변수 -> Tailwind 유틸리티 (예: bg-page, text-fg-sub, border-line, font-num) */
+@theme inline {
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-table-head: var(--table-head);
+  --color-line: var(--line);
+  --color-row-line: var(--row-line);
+  --color-fg: var(--fg);
+  --color-fg-sub: var(--fg-sub);
+  --color-fg-dim: var(--fg-dim);
+  --color-fg-faint: var(--fg-faint);
+  --color-disabled: var(--disabled);
+  --color-chip-line: var(--chip-line);
+  --color-jacket: var(--jacket);
+  --color-chip-on-bg: var(--chip-on-bg);
+  --color-chip-on-fg: var(--chip-on-fg);
+
+  /* 본문은 Noto Sans KR, 숫자/영문 라벨은 Chakra Petch (DESIGN-UI 1장) */
+  --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
+  --font-num: var(--font-chakra-petch), system-ui, sans-serif;
+}
+
+body {
+  background: var(--page);
+  color: var(--fg);
+}
