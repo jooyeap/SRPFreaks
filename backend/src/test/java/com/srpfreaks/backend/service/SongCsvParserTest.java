@@ -121,4 +121,62 @@ class SongCsvParserTest {
         assertThat(result.rows()).isEmpty();
         assertThat(result.errors()).hasSize(1);
     }
+
+    // ---------------------------------------------------------------- 서열표 열
+
+    private static final String TABLE_HEADER = "title,part,difficulty,level,added_version,tier_label,tier_uncertain,"
+            + "recommend,recommend_uncertain,pattern_type,pattern_uncertain,source\n";
+
+    private ParseResult parseTable(String rows) {
+        return SongCsvParser.parse((TABLE_HEADER + rows).getBytes(StandardCharsets.UTF_8), true);
+    }
+
+    @Test
+    void 서열표_모드는_기준_난이도_추천도_속성과_불확실_표시를_읽는다() {
+        ParseResult result = parseTable("Saiph,GUITAR,MASTER,9.99,V4,6,1,중,,복합,1,s\n");
+
+        assertThat(result.errors()).isEmpty();
+        var v = result.rows().get(0).tableValues();
+        assertThat(v.tier()).isEqualByComparingTo("6.0");
+        assertThat(v.tierUncertain()).isTrue();
+        assertThat(v.recommend()).isEqualTo(com.srpfreaks.backend.entity.Recommend.MIDDLE);
+        assertThat(v.recommendUncertain()).isFalse();
+        assertThat(v.pattern()).isEqualTo(com.srpfreaks.backend.entity.PatternType.COMPOUND);
+        assertThat(v.patternUncertain()).isTrue();
+    }
+
+    @Test
+    void 서열표_값이_비어_있으면_미정이고_물음표만_있는_기준_난이도는_불확실_표시만_남는다() {
+        ParseResult result = parseTable("R#1,GUITAR,MASTER,9,V4,,1,,,,,s\n");
+
+        var v = result.rows().get(0).tableValues();
+        assertThat(v.tier()).isNull();
+        assertThat(v.tierUncertain()).isTrue();
+        assertThat(v.recommend()).isNull();
+        assertThat(v.pattern()).isNull();
+    }
+
+    @Test
+    void 서열표_값의_잘못된_형식은_행_번호와_함께_오류다() {
+        ParseResult result = parseTable("A,GUITAR,MASTER,9,,-1,,,,,,\nB,GUITAR,MASTER,9,,6.55,,,,,,\nC,GUITAR,MASTER,9,,100,,,,,,\n"
+                + "D,GUITAR,MASTER,9,,abc,,,,,,\nE,GUITAR,MASTER,9,,,,최상,,,,\nF,GUITAR,MASTER,9,,,,,,없음,,\nG,GUITAR,MASTER,9,,,yes,,,,,\n");
+
+        assertThat(result.rows()).isEmpty();
+        assertThat(result.errors()).extracting(e -> e.line()).containsExactly(2, 3, 4, 5, 6, 7, 8);
+    }
+
+    @Test
+    void 곡만_읽는_모드는_서열표_열의_잘못된_값을_무시한다() {
+        ParseResult result = parse(TABLE_HEADER + "A,GUITAR,MASTER,9,,abc,x,최상,,없음,,\n");
+
+        assertThat(result.errors()).isEmpty();
+        assertThat(result.rows().get(0).tableValues()).isNull();
+    }
+
+    @Test
+    void 수식_방어용_작은따옴표는_떼고_그_밖의_작은따옴표는_그대로_둔다() {
+        ParseResult result = parse(HEADER + "'=SUM(A1),GUITAR,MASTER,9,,,,\n'-Fantasy-,GUITAR,EXTREME,9,,,,\n'Hello,BASS,MASTER,9,,,,\n");
+
+        assertThat(result.rows()).extracting(r -> r.title()).containsExactly("=SUM(A1)", "-Fantasy-", "'Hello");
+    }
 }
