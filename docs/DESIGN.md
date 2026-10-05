@@ -189,9 +189,17 @@ com.srpfreaks.backend
 | id | BIGINT PK AI | |
 | google_sub | VARCHAR(64) | UNIQUE. Google 계정 고유 ID (로그인 식별자, D19) |
 | email | VARCHAR(255) | Google 이메일. 표시와 연락용 (UNIQUE) |
-| nickname | VARCHAR(30) | 표시용. NULL 허용 |
+| nickname | VARCHAR(30) | 표시용. NULL 허용(가입 직후는 NULL). 규칙은 아래 "닉네임 규칙" |
 | role | VARCHAR(20) | ROOT / ADMIN / USER, 기본 USER |
 | status | VARCHAR(20) | ACTIVE / BLOCKED (ADMIN이 막음). 탈퇴는 행을 지운다 (D20) |
+
+**닉네임 규칙** (서버 `User.normalizeNickname`과 프론트 `lib/nickname.ts`가 같은 규칙을 쓴다)
+- 길이는 **2~12자**이고 1자는 1로 센다(코드 포인트 기준. 히라가나·가타카나·한자·영문 모두 1자, 폭은 따지지 않는다). 12자 제한은 코드에서 검사하고 DB 컬럼은 30으로 둔다(스키마 변경 없이 제한을 바꿀 수 있게).
+- 허용: 영문(A-Z a-z), 숫자, 히라가나, 가타카나, 한자와 기호 `ー` `・` `_` `-`. **한글과 공백은 허용하지 않는다.**
+- 저장 전에 NFKC로 정규화한다(반각 가타카나 → 전각, 전각 영문·숫자 → 반각). 앞뒤 공백은 지우고, 빈 값은 NULL(닉네임 없음)로 저장한다.
+- 중복은 **허용**한다. 랭킹을 다시 켤 때(18장) 유니크 여부를 다시 정한다.
+- 가입 직후 닉네임은 NULL이다. 로그인 후 설정을 **안내만** 하고 다른 화면을 막지 않는다. 닉네임이 없으면 화면에는 이메일을 보인다.
+- 닉네임 변경 API(`PATCH /users/me`)와 설정 화면은 아직 없다.
 
 ### refresh_tokens
 | 컬럼 | 타입 | 비고 |
