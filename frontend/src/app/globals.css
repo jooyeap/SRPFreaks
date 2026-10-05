@@ -25,6 +25,28 @@
   --jacket: #3b4660;
   --chip-on-bg: #eef0f6;
   --chip-on-fg: #0f1218;
+
+  /* 단계 (docs/DESIGN-UI.md 2·4장). bar = 행 막대, text = 달성률 숫자, name = 곡명(EXC/FC만 다름), tint = 행 배경 틴트 */
+  --stage-chip-fg: #10131a;
+  --stage-c-bar: #7d869a; --stage-c-text: var(--fg-dim);
+  --stage-b-bar: #8b93a8; --stage-b-text: var(--fg-dim);
+  --stage-a-bar: #98a0b4; --stage-a-text: var(--fg-sub);
+  --stage-s-bar: #4ade80; --stage-s-text: #86efac;
+  --stage-ss-bar: #6ea0ff; --stage-ss-text: #b3c9ff;
+  --stage-fc-bar: linear-gradient(180deg, #22d3ee, #c084fc); --stage-fc-text: #67e8f9; --stage-fc-name: #d9f3ff;
+  --stage-exc-bar: linear-gradient(180deg, #ffe27a, #ffb347, #ff7eb6); --stage-exc-text: #ffd84d; --stage-exc-name: #ffe48a;
+  --stage-c-tint: transparent; --stage-b-tint: transparent; --stage-a-tint: transparent;
+  --stage-s-tint: rgb(74 222 128 / 0.1); --stage-ss-tint: rgb(110 160 255 / 0.1);
+  --stage-fc-tint: rgb(34 211 238 / 0.12); --stage-exc-tint: rgb(255 194 77 / 0.14);
+  --stage-c-chip: #98a0b4; --stage-b-chip: #a9b0c2; --stage-a-chip: #bcc2d1;
+  --stage-s-chip: #4ade80; --stage-ss-chip: #6ea0ff;
+  --stage-fc-chip: linear-gradient(90deg, #22d3ee, #c084fc);
+  --stage-exc-chip: linear-gradient(90deg, #ffe27a, #ffb347, #ff7eb6);
+
+  /* 추천도 / 난이도 (3장) */
+  --rec-high-bg: #ff9f43; --rec-high-fg: #1a0e05;
+  --rec-mid-line: var(--fg-sub); --rec-low-line: var(--fg-faint);
+  --diff-bas: #6fd08c; --diff-adv: #f2c94c; --diff-ext: #ff8f8f; --diff-mas: #c4a3ff; --diff-fg: #12151c;
 }
 
 :root[data-theme="light"] {
@@ -43,6 +65,14 @@
   --jacket: #c8d0df;
   --chip-on-bg: #12151c;
   --chip-on-fg: #f3f5f9;
+
+  --stage-s-bar: #16a34a; --stage-s-text: #15803d;
+  --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
+  --stage-fc-bar: linear-gradient(180deg, #0891b2, #9333ea); --stage-fc-text: #0e7490; --stage-fc-name: #0c4a6e;
+  --stage-exc-bar: linear-gradient(180deg, #f5b301, #f97316, #ec4899); --stage-exc-text: #b45309; --stage-exc-name: #92400e;
+  --stage-c-bar: #7d869a; --stage-b-bar: #6f788d; --stage-a-bar: #626b80;
+  --stage-s-tint: rgb(22 163 74 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
+  --stage-fc-tint: rgb(8 145 178 / 0.09); --stage-exc-tint: rgb(245 179 1 / 0.12);
 }
 
 @media (prefers-color-scheme: light) {
@@ -62,6 +92,14 @@
     --jacket: #c8d0df;
     --chip-on-bg: #12151c;
     --chip-on-fg: #f3f5f9;
+
+    --stage-s-bar: #16a34a; --stage-s-text: #15803d;
+    --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
+    --stage-fc-bar: linear-gradient(180deg, #0891b2, #9333ea); --stage-fc-text: #0e7490; --stage-fc-name: #0c4a6e;
+    --stage-exc-bar: linear-gradient(180deg, #f5b301, #f97316, #ec4899); --stage-exc-text: #b45309; --stage-exc-name: #92400e;
+    --stage-c-bar: #7d869a; --stage-b-bar: #6f788d; --stage-a-bar: #626b80;
+    --stage-s-tint: rgb(22 163 74 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
+    --stage-fc-tint: rgb(8 145 178 / 0.09); --stage-exc-tint: rgb(245 179 1 / 0.12);
   }
 }
 
@@ -91,3 +129,30 @@ body {
   background: var(--page);
   color: var(--fg);
 }
+
+/*
+ * 단계 표시용 유틸리티. 요소에 data-stage="EXC" 처럼 붙이면 아래 변수가 그 단계 값으로 정해지고,
+ * 컴포넌트는 단계 이름을 모른 채 .stage-bar / .stage-text / .stage-tint / .stage-chip 클래스만 쓴다.
+ * 색 값은 위 변수 한 곳에서만 정의한다 (컴포넌트에 색을 직접 쓰지 않는 규칙).
+ */
+[data-stage="C"] { --st-bar: var(--stage-c-bar); --st-text: var(--stage-c-text); --st-name: var(--fg); --st-tint: var(--stage-c-tint); --st-chip: var(--stage-c-chip); }
+[data-stage="B"] { --st-bar: var(--stage-b-bar); --st-text: var(--stage-b-text); --st-name: var(--fg); --st-tint: var(--stage-b-tint); --st-chip: var(--stage-b-chip); }
+[data-stage="A"] { --st-bar: var(--stage-a-bar); --st-text: var(--stage-a-text); --st-name: var(--fg); --st-tint: var(--stage-a-tint); --st-chip: var(--stage-a-chip); }
+[data-stage="S"] { --st-bar: var(--stage-s-bar); --st-text: var(--stage-s-text); --st-name: var(--fg); --st-tint: var(--stage-s-tint); --st-chip: var(--stage-s-chip); }
+[data-stage="SS"] { --st-bar: var(--stage-ss-bar); --st-text: var(--stage-ss-text); --st-name: var(--fg); --st-tint: var(--stage-ss-tint); --st-chip: var(--stage-ss-chip); }
+[data-stage="FC"] { --st-bar: var(--stage-fc-bar); --st-text: var(--stage-fc-text); --st-name: var(--stage-fc-name); --st-tint: var(--stage-fc-tint); --st-chip: var(--stage-fc-chip); }
+[data-stage="EXC"] { --st-bar: var(--stage-exc-bar); --st-text: var(--stage-exc-text); --st-name: var(--stage-exc-name); --st-tint: var(--stage-exc-tint); --st-chip: var(--stage-exc-chip); }
+
+.stage-bar { background: var(--st-bar); }
+.stage-text { color: var(--st-text); }
+.stage-name { color: var(--st-name); }
+.stage-tint { background-image: linear-gradient(90deg, var(--st-tint), transparent 65%); }
+.stage-chip { background: var(--st-chip); color: var(--stage-chip-fg); }
+
+/* 난이도 / 추천 배지 */
+[data-difficulty="BASIC"] { --diff: var(--diff-bas); }
+[data-difficulty="ADVANCED"] { --diff: var(--diff-adv); }
+[data-difficulty="EXTREME"] { --diff: var(--diff-ext); }
+[data-difficulty="MASTER"] { --diff: var(--diff-mas); }
+.diff-chip { background: var(--diff); color: var(--diff-fg); }
+.diff-band { background: var(--diff); }
