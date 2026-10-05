@@ -37,7 +37,7 @@ export function RecordList({
         {data.content.map((record) => (
           <li
             key={record.id}
-            className="flex items-center gap-3 rounded border border-line px-3 py-2 text-sm"
+            className="flex items-center gap-3 rounded border border-line px-3 py-1.5 text-sm"
           >
             <span className="font-num font-semibold text-fg">{formatRate(record.achievementRate)}</span>
             <StageBadge stage={record.stage} />

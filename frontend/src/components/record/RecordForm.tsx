@@ -125,51 +125,65 @@ export function RecordForm({
 
   return (
     <form onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate className="flex flex-col gap-4">
-      <div className="rounded-lg border border-line bg-table-head p-3">
-        <p className="text-sm font-semibold text-fg">{chart.title}</p>
-        <p className="mt-1 flex items-center gap-2 text-xs text-fg-sub">
-          <span>{partLabel(chart.part)}</span>
-          <DifficultyBadge difficulty={chart.difficulty} />
-          <span className="font-num">{formatLevel(chart.level)}</span>
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="achievementRate" className="text-sm text-fg-sub">
-          달성률
-        </label>
-        <div className="flex items-center gap-3">
-          <input
-            id="achievementRate"
-            type="text"
-            inputMode="decimal"
-            autoComplete="off"
-            placeholder="0.00 ~ 100.00"
-            aria-invalid={errors.achievementRate ? true : undefined}
-            aria-describedby={errors.achievementRate ? "achievementRate-error" : undefined}
-            className="w-36 rounded border border-chip-line bg-page px-3 py-2 font-num text-fg"
-            {...register("achievementRate")}
-          />
-          <span aria-live="polite" className="flex items-center gap-2 text-sm text-fg-sub">
-            달성 표시 {stage ? <StageBadge stage={stage} /> : <span className="text-fg-faint">–</span>}
-          </span>
-        </div>
-        {errors.achievementRate ? (
-          <p id="achievementRate-error" role="alert" className="text-sm text-fg">
-            {errors.achievementRate.message}
+      <div className="flex items-center gap-3">
+        <div className="h-11 w-11 shrink-0 rounded-[9px] bg-jacket" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-bold text-fg">{chart.title}</p>
+          <p className="mt-1 flex items-center gap-2 text-xs text-fg-sub">
+            <span>{partLabel(chart.part)}</span>
+            <DifficultyBadge difficulty={chart.difficulty} />
+            <span className="font-num">{formatLevel(chart.level)}</span>
           </p>
-        ) : null}
+        </div>
       </div>
 
+      <div className="flex items-stretch gap-2.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <label htmlFor="achievementRate" className="text-xs font-bold text-fg-dim">
+            달성률
+          </label>
+          <div className="flex h-[54px] items-center justify-between rounded-xl border-2 border-chip-on-bg bg-card px-3.5">
+            <input
+              id="achievementRate"
+              type="text"
+              inputMode="decimal"
+              autoComplete="off"
+              placeholder="0.00 ~ 100.00"
+              aria-invalid={errors.achievementRate ? true : undefined}
+              aria-describedby={errors.achievementRate ? "achievementRate-error" : undefined}
+              className="w-full min-w-0 bg-transparent font-num text-[26px] font-bold text-fg outline-none placeholder:text-base placeholder:font-normal placeholder:text-fg-faint"
+              {...register("achievementRate")}
+            />
+            <span className="text-sm text-fg-dim" aria-hidden="true">
+              %
+            </span>
+          </div>
+          <p className="text-[11px] text-fg-faint">0.00 ~ 100.00 · 소수점 둘째 자리까지</p>
+        </div>
+        <div className="flex w-28 shrink-0 flex-col gap-1.5">
+          <span className="text-xs font-bold text-fg-dim">달성 표시</span>
+          <div aria-live="polite" className="flex h-[54px] items-center justify-center rounded-xl border border-line bg-card">
+            {stage ? <StageBadge stage={stage} /> : <span className="text-fg-faint">–</span>}
+          </div>
+          <p className="text-[11px] text-fg-faint">자동 계산</p>
+        </div>
+      </div>
+      {errors.achievementRate ? (
+        <p id="achievementRate-error" role="alert" className="-mt-2 text-sm text-fg">
+          {errors.achievementRate.message}
+        </p>
+      ) : null}
+
       <div className="flex flex-col gap-1">
-        <label className="flex items-center gap-2 text-sm text-fg">
+        <label className="flex h-[46px] items-center justify-between rounded-xl border border-line bg-card px-3.5 text-sm font-bold text-fg">
+          풀콤보(0 miss)
           <input
             type="checkbox"
             checked={fullCombo}
             disabled={maxRate}
+            className="h-5 w-5"
             {...register("fullCombo")}
           />
-          풀콤보(0 miss)
         </label>
         {maxRate ? <p className="text-xs text-fg-dim">달성률 100.00이면 풀콤보로 저장됩니다.</p> : null}
       </div>
@@ -183,7 +197,7 @@ export function RecordForm({
           type="date"
           max={todaySeoul()}
           aria-invalid={errors.playedDate ? true : undefined}
-          className="w-44 rounded border border-chip-line bg-page px-3 py-2 font-num text-fg"
+          className="w-44 rounded-[10px] border border-line bg-card px-3 py-2 font-num text-fg"
           {...register("playedDate")}
         />
         {errors.playedDate ? (
@@ -200,7 +214,7 @@ export function RecordForm({
         <textarea
           id="memo"
           rows={2}
-          className="rounded border border-chip-line bg-page px-3 py-2 text-fg"
+          className="rounded-[10px] border border-line bg-card px-3 py-2 text-fg"
           {...register("memo")}
         />
         {errors.memo ? (
@@ -247,18 +261,18 @@ export function RecordForm({
         </div>
       ) : null}
 
-      <div className="flex justify-end gap-2">
+      <div className="flex gap-2.5">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+          className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
         >
           취소
         </button>
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="rounded-full bg-chip-on-bg px-4 py-1.5 text-sm font-semibold text-chip-on-fg disabled:opacity-60"
+          className="h-12 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-60"
         >
           {mutation.isPending ? "저장 중" : "저장"}
         </button>

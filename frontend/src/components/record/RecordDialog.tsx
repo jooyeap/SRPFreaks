@@ -53,11 +53,12 @@ export function RecordDialog({ chart, onClose }: { chart: RecordChart | null; on
           onClose();
         }
       }}
-      className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-xl border border-line bg-card p-4 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
+      className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-[20px] border border-line bg-card px-5 pb-5 pt-2.5 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
     >
       {chart ? (
         <>
-          <h2 id="record-dialog-title" className="mb-3 text-lg font-semibold">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
+          <h2 id="record-dialog-title" className="mb-3 text-lg font-extrabold">
             {editing ? "기록 수정" : "기록 등록"}
           </h2>
           <RecordList songDifficultyId={chart.songDifficultyId} editingId={editing?.id ?? null} onEdit={setEditing} />
