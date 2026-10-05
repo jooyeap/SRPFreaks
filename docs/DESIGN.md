@@ -31,6 +31,7 @@
 | D19 | 2026-10-02 | **로그인은 Google 로그인만 쓴다.** 자체 아이디·비밀번호 가입은 만들지 않는다. 프론트가 Google ID 토큰을 받아 `POST /auth/google`로 보내면 서버가 검증하고(`google_sub`로 사용자 식별) 자체 Access/Refresh 토큰을 발급한다. 비밀번호 저장, 비밀번호 복구, 로그인 실패 잠금은 필요 없어진다. 이메일을 수집한다 (9.6) |
 | D20 | 2026-10-02 | **운영 결정 묶음**: (1) access 토큰 만료 **15분** (2) **탈퇴 = 완전 삭제**(사용자, 옵션 기록, refresh 토큰. 감사 로그는 사용자 식별만 지움) (3) 배포는 **같은 서버, 같은 도메인**(리버스 프록시로 `/api`를 백엔드에) → refresh 쿠키는 SameSite=Strict 유지 (4) 스킬 동점은 **먼저 달성한 사람이 위** (7장) (5) 레이팅은 **SRN+ 옵션만**, 다른 옵션 기록은 저장만 한다 (6) 시트는 운영자가 직접 보관하고 저장소에 올리지 않는다 (7) 곡 등록 요청(Phase 3)도 구현한다 (8) 서열표 달성률 열 비교는 SRN+ 기준 (9) 기준 난이도는 **높을수록 어렵다** |
 | D21 | 2026-10-02 | **재킷 이미지**: 운영자가 다른 사이트처럼 곡 재킷을 수집해 쓰기로 했다(사용자 결정). 다른 사이트가 쓴다고 해서 권리자 허락이 생기는 것은 아니므로 **위험을 알고 쓰는 선택**이다. 완화책: 설정 `ui.show_song_images`로 언제든 끌 수 있게 하고, 외부 주소 직접 불러오기는 하지 않으며, 삭제 요청이 오면 즉시 내린다. 15장 운영 원칙은 이 결정에 맞춰 고친다 |
+| D22 | 2026-10-05 | **곡/채보 관리 권한을 ROOT와 ADMIN 둘 다에게 연다.** (1) 곡/채보 등록·수정·삭제, CSV 일괄 등록, 노트 수·메타데이터 입력, 곡 등록 요청 승인을 ROOT와 ADMIN이 한다 (D6의 "ROOT만" 개정) (2) 역할 변경, 설정 변경, 감사 로그 조회는 ROOT만 유지 (3) ROOT와 ADMIN도 USER 기능을 그대로 쓴다 (RoleHierarchy) (4) ADMIN의 관리 작업은 전부 감사 로그에 남긴다 |
 ---
 
 ## 1. 목적과 범위
@@ -148,8 +149,8 @@ com.srpfreaks.backend
 
 | 역할 | 설명 | 인원 |
 |---|---|---|
-| ROOT | 서비스 운영자. 곡/채보 등록, 역할 변경, 설정 변경, 모든 권한 | 1명 |
-| ADMIN | 난이도표 설계/수정/보완 | 소수 |
+| ROOT | 서비스 운영자. 역할 변경, 설정 변경, 감사 로그 조회, 모든 권한 | 1명 |
+| ADMIN | 곡/채보 관리(D22), 난이도표 설계/수정/보완 | 소수 |
 | USER | 기록 입력/조회 | 다수 |
 
 | 기능 | ROOT | ADMIN | USER |
@@ -157,16 +158,18 @@ com.srpfreaks.backend
 | 회원가입/로그인 | O | O | O |
 | 내 기록 CRUD, 가져오기, 스킬 조회 | O | O | O |
 | 곡/채보 조회 | O | O | O |
-| 곡/채보 등록·수정·삭제 | O | X | X |
+| 곡/채보 등록·수정·삭제, CSV 일괄 등록 (D22) | O | O | X |
 | 난이도표 조회 | O | O | O |
 | 난이도표 생성·수정 | O | O | X |
-| 노트 수·메타데이터 입력, 대기열 곡 승인 | O | X | X |
+| 노트 수·메타데이터 입력, 곡 등록 요청 승인 (D22) | O | O | X |
 | 서열표 CSV 일괄 입력 (타인 정리 파일의 달성률 → 옵션 기록) | O | **지정 1명만** | X |
 | 유저 역할 변경, 설정(`app_settings`) 변경 | O | X | X |
 | 감사 로그 조회 | O | X | X |
 
 - ROOT는 환경변수 `ROOT_EMAIL`의 이메일이 **처음 Google 로그인할 때** 만든다. 코드/DB 시드에 계정 정보를 넣지 않는다.
 - ROOT는 1명 유지. API로 ROOT를 새로 지정하는 기능은 만들지 않는다.
+- ROOT와 ADMIN도 USER의 기능(본인 기록 입력·수정·삭제, 곡 목록, 서열표, 레이팅)을 그대로 쓴다. RoleHierarchy로 상위 권한이 하위 권한을 포함한다 (D22).
+- ADMIN의 곡/채보 관리(등록·수정·삭제·CSV)는 모두 `audit_logs`에 남기고, 삭제는 소프트 삭제라 ROOT가 되살릴 수 있다. 역할 변경과 ADMIN 지정은 ROOT만 한다 (권한 상승 방지).
 - 본인 기록만 수정/삭제 가능. 소유자 검증은 서비스 계층에서 한다.
 
 ---
@@ -209,7 +212,7 @@ com.srpfreaks.backend
 | bpm_min / bpm_max | INT NULL | BPM. 고정 BPM이면 두 값이 같다 |
 | image_url | VARCHAR(500) NULL | **기본 NULL.** 이미지 칸 확장용 (D7). 값이 있어도 설정이 꺼져 있으면 쓰지 않는다 |
 | source | VARCHAR(100) NULL | 곡 정보의 출처 (예: `own_sheet_v1.1`). 15장 |
-| created_by | BIGINT FK(users) | ROOT |
+| created_by | BIGINT FK(users) | ROOT 또는 ADMIN |
 
 - 중복 검사(title + artist, 공백/대소문자 정규화)는 서비스 계층에서 한다. (소프트 삭제 때문에 DB UNIQUE만으로는 부족)
 
@@ -236,7 +239,7 @@ com.srpfreaks.backend
 | difficulty_type | VARCHAR(20) | BASIC / ADVANCED / EXTREME / MASTER |
 | level | DECIMAL(3,2) | 예: 5.50 |
 
-- 추가 컬럼: `note_count INT NULL` (노트 수는 채보마다 다르다. **직접 입력**: CSV 열 또는 ROOT 화면에서 표처럼 연달아 입력. 비어 있어도 된다)
+- 추가 컬럼: `note_count INT NULL` (노트 수는 채보마다 다르다. **직접 입력**: CSV 열 또는 관리자 화면에서 표처럼 연달아 입력. 비어 있어도 된다)
 - UNIQUE(song_id, instrument_part, difficulty_type)
 - 레벨은 현재 값만 저장한다. 버전별 레벨 이력이 필요해지면 컬럼/테이블을 추가한다.
 
@@ -425,7 +428,7 @@ com.srpfreaks.backend
 | 인증 | POST `/auth/google`(Google ID 토큰 교환), `/auth/refresh`, `/auth/logout` | 공개/인증 |
 | 내 정보 | GET/PATCH/DELETE `/users/me` (DELETE = 탈퇴, 완전 삭제) | USER+ |
 | 곡 | GET `/songs`(검색), GET `/songs/{id}` | USER+ |
-| 곡/채보 관리 | POST/PATCH/DELETE `/songs`, `/difficulties` | ROOT |
+| 곡/채보 관리 | POST/PATCH/DELETE `/songs`, `/difficulties` | ROOT·ADMIN |
 | 옵션 기록 | POST/GET/PATCH/DELETE `/records` | USER+ (본인) |
 | 옵션별 최고 | GET `/difficulties/{id}/my-bests` | USER+ |
 | 스킬 목록 | GET `/skills/me` (SRN+ 40곡 + 합계 + 플레이어 티어. 이후 scope 파라미터 확장 가능) | USER+ |
@@ -434,7 +437,7 @@ com.srpfreaks.backend
 | 난이도표 | GET `/difficulty-tables` / POST·PATCH | USER+ / ADMIN+ |
 | 서열표 | GET `/difficulty-tables/{id}/entries?mine=true` (본인 기록과 연결, 목록은 묶음/페이지 단위) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |
-| 곡 일괄 등록 (CSV) | POST `/admin/songs/import` (미리보기 → 확정) | ROOT |
+| 곡 일괄 등록 (CSV) | POST `/admin/songs/import` (미리보기 → 확정) | ROOT·ADMIN |
 | 서열표 CSV 가져오기 | POST `/admin/difficulty-tables/{id}/import` (미리보기 → 확정) | ROOT·ADMIN |
 | 타인 파일의 달성률 일괄 입력 | POST `/admin/records/import-csv` (곡명·난이도·파트로 매칭, 옵션 지정 필수, 매칭 실패는 목록으로 반환) | **지정된 ADMIN 1명 + ROOT** |
 | 설정 | GET/PATCH `/admin/settings` | ROOT |
@@ -459,7 +462,7 @@ com.srpfreaks.backend
 6. 내 통계, 스킬 추이 (Phase 2)
 7. (보류) 공식 기록 가져오기 / 확장 연동 (18.4)
 8. **서열표** (SRN+): 기준 난이도 묶음, 본인 기록 연결, 달성 표시(S/SS/FC/EXC), 카드형(모바일)/표형(데스크톱) (`DESIGN-UI.md` 2~3장)
-9. 관리: 곡/채보 등록(ROOT), 설정(ROOT), 난이도표 편집(ADMIN), 유저 역할(ROOT)
+9. 관리: 곡/채보 등록(ROOT·ADMIN), 설정(ROOT), 난이도표 편집(ROOT·ADMIN), 유저 역할(ROOT)
 
 ---
 
@@ -507,7 +510,7 @@ com.srpfreaks.backend
 | 단계 | 내용 |
 |---|---|
 | Phase 0 | 줄바꿈/`.gitattributes` 정리, `docker-compose.yml`(MySQL 8.4), **새 V1 스키마**(D1·D2·D18 반영), 공통 에러 처리, CI 기본 |
-| Phase 1 | 인증 보안 보강(9.1 선행 작업, Role, 재발급), 곡/채보 등록(ROOT, **CSV 일괄 등록**), 옵션 기록 CRUD(`is_full_combo` 포함), 옵션별 최고 기록 조회, 모바일 UI(다크/라이트) |
+| Phase 1 | 인증 보안 보강(9.1 선행 작업, Role, 재발급), 곡/채보 등록(ROOT·ADMIN, **CSV 일괄 등록**), 옵션 기록 CRUD(`is_full_combo` 포함), 옵션별 최고 기록 조회, 모바일 UI(다크/라이트) |
 | Phase 1.5 | **스킬 목록 계산(전체/SRN/SRN+)**, `app_settings`, 역할 관리, **SRN+ 서열표**(ADMIN 편집 + 본인 기록 연결), 곡 상세, ADMIN 지정 1명용 CSV 달성률 입력, 감사 로그 |
 | Phase 2 | **사진 입력(D16)**, 스킬 추이, 통계 (공식 기록 가져오기는 보류, 18.4) |
 | Phase 3 | 곡 등록 요청 (랭킹·유저 간 비교는 보류, 18장) |
@@ -545,7 +548,7 @@ com.srpfreaks.backend
 | 재킷 이미지 | 저작물이며 상표 요소를 포함한다. 운영자는 다른 사이트처럼 수집해 쓰기로 했다(D21, 위험을 알고 쓰는 선택). 외부 주소에서 직접 불러오기(hotlink)는 하지 않는다 |
 
 ### 운영 원칙
-1. **곡 데이터는 직접 정리한 스프레드시트를 기준**으로 한다 (서열표 v1.1). ROOT가 CSV로 일괄 등록하고, `songs.source`에 출처를 남긴다.
+1. **곡 데이터는 직접 정리한 스프레드시트를 기준**으로 한다 (서열표 v1.1). ROOT·ADMIN이 CSV로 일괄 등록하고, `songs.source`에 출처를 남긴다.
 2. 음원, 채보, 재킷, 로고, 게임 화면을 쓰지 않는다. 공식 사이트에서 곡 목록을 자동 수집하지 않는다.
 3. 화면에 "비공식 팬 프로젝트 / KONAMI와 무관" 문구를 유지한다. 비영리로 운영한다.
 4. **삭제 요청 연락처**(eyoung071212@gmail.com)를 푸터에 둔다. 값은 설정 `contact.takedown_email`로 두고 코드에 박지 않는다.
@@ -553,8 +556,8 @@ com.srpfreaks.backend
 6. 외부 데이터를 쓰게 되면 출처와 라이선스를 이 문서에 기록한다.
 
 ### 곡 마스터 확장 (D13)
-1. **씨앗**: 시트를 ROOT가 CSV로 일괄 등록한다 (아래 규칙).
-2. **성장 (D18 개정)**: 가져오기를 보류했으므로 마스터는 **ROOT가 CSV를 다시 올려서만** 늘린다. 사진 입력에서 곡을 못 찾으면 사용자가 직접 곡을 고르고, 마스터에 없는 곡은 "곡 등록 요청"(Phase 3)으로 ROOT에게 알린다. 자동 등록은 하지 않는다 (가짜 곡 방지). (원래 `import_unmatched` 설계는 18.4)
+1. **씨앗**: 시트를 ROOT·ADMIN이 CSV로 일괄 등록한다 (아래 규칙).
+2. **성장 (D18 개정)**: 가져오기를 보류했으므로 마스터는 **ROOT·ADMIN이 CSV를 다시 올려서만** 늘린다. 사진 입력에서 곡을 못 찾으면 사용자가 직접 곡을 고르고, 마스터에 없는 곡은 "곡 등록 요청"(Phase 3)으로 ROOT·ADMIN에게 알린다. 자동 등록은 하지 않는다 (가짜 곡 방지). (원래 `import_unmatched` 설계는 18.4)
 4. **메타데이터**: 아티스트, BPM, 노트 수, 곡명 표기는 곡 목록 세팅 때 CSV로 넣는다. 비어 있어도 된다. 노트 수는 직접 입력한다.
 5. (가져오기 대기열은 보류. 18.4)
 
@@ -565,12 +568,12 @@ com.srpfreaks.backend
 - **`?` 처리(2026-10-02 확정):** 추천도가 `?`뿐이면 **미정**(NULL)으로 둔다. 기준 난이도가 `?`뿐이면 **그대로 둔다**(`tier_label` NULL, `uncertain = true`). 속성 값의 오타(`복하`)는 `복합`으로 고쳤다. 기준 난이도가 비어 있는 채보는 비어 있는 채로 등록한다(NULL = 미정). **속성이 비어 있는 채보는 `레이팅 제외`로 채워 등록한다** (2026-10-02 개정, 시드 274채보).
 
 ### 확장 원칙 (채보는 앞으로 더 늘어난다)
-- **시드는 데이터 마이그레이션이 아니라 ROOT의 CSV 일괄 등록으로 넣는다.** Flyway는 테이블 구조만 만들고, 곡·채보는 `POST /admin/songs/import`(미리보기 → 확정)로 올린다. 새 채보가 생기면 같은 방식으로 CSV를 다시 올리면 된다.
+- **시드는 데이터 마이그레이션이 아니라 ROOT·ADMIN의 CSV 일괄 등록으로 넣는다.** Flyway는 테이블 구조만 만들고, 곡·채보는 `POST /admin/songs/import`(미리보기 → 확정)로 올린다. 새 채보가 생기면 같은 방식으로 CSV를 다시 올리면 된다.
 - **멱등 업서트:** 키는 `normalized_title + part + difficulty`다. 이미 있는 채보는 레벨·메타데이터만 갱신하고(레벨이 바뀌면 "레벨 변경 후보"로 표시), 없으면 추가한다. 같은 파일을 여러 번 올려도 결과가 같다.
 - **값 종류는 DB enum을 쓰지 않는다.** `instrument_part`, `difficulty_type`, `recommend`, `pattern_type`은 `VARCHAR`로 두고 허용 값은 애플리케이션 코드와 설정에서 검증한다. 새 파트, 난이도(BASIC은 이미 허용), 속성 이름이 생겨도 스키마 변경 없이 값만 추가한다.
 - 서열표 값(`tier_label`, `recommend`, `pattern_type`, `uncertain`)은 채보 테이블이 아니라 `difficulty_table_entries`에 두어서, 서열표가 늘어나거나 값이 바뀌어도 채보 마스터는 그대로다 (D8).
 - 채보에 열을 더 붙여야 할 때(노트 수, BPM 등)는 NULL 허용 열로 추가하고, CSV는 **알려진 열만 읽고 모르는 열은 무시**한다. 그래서 새 열이 있는 파일도 옛 시드와 같이 쓸 수 있다.
-- 파일은 `docs/seed/`에 원본으로 보관한다 (코드 리소스로 넣지 않는다). 새 환경은 이 파일을 ROOT 화면에서 올려 채운다.
+- 파일은 `docs/seed/`에 원본으로 보관한다 (코드 리소스로 넣지 않는다). 새 환경은 이 파일을 관리자 화면에서 올려 채운다.
 - 곡명은 정규화한다 (유니코드 NFKC, 앞뒤 공백/줄바꿈 제거, 대소문자 무시)하고 `normalized_title`로 비교한다. 곡명이 같고 파트/난이도가 다르면 같은 곡의 다른 채보다.
 - 인코딩은 UTF-8(BOM 허용). 엑셀에서 열 때 글자가 깨져 보여도 파일 자체는 정상일 수 있다.
 - 올리면 **미리보기(매칭/신규/오류 개수)** 를 먼저 보여주고, 확인한 뒤에 저장한다. 매칭 실패는 버리지 않고 목록으로 돌려준다.
@@ -614,6 +617,7 @@ com.srpfreaks.backend
 ## 17. 변경 이력
 | 날짜 | 내용 |
 |---|---|
+| 2026-10-05 | **D22 추가.** 곡/채보 관리(등록·수정·삭제, CSV)를 ROOT와 ADMIN 둘 다에게 열고, ROOT·ADMIN도 USER 기능을 쓰는 것으로 정리. 5장 권한표, 10장 API 권한, 곡 마스터 규칙 반영
 | 2026-10-02 | **D19~D21 추가.** Google 로그인만 사용(자체 비밀번호·잠금 없음, `users` 컬럼 변경, API `/auth/google`). access 토큰 15분, 탈퇴는 완전 삭제, 같은 서버 배포, 동점은 먼저 달성한 사람이 위, 레이팅은 SRN+만. 재킷 이미지는 운영자가 수집해 사용(위험 인지). 프로젝트명을 SRPFreaks로 변경, 플레이어 티어 영문 표기. 16장 미결 항목 정리 |
 | 2026-10-01 | 최초 작성 |
 | 2026-10-01 | 현재 코드(Gradle, Boot 4.1.1, 계층형 패키지, Flyway)에 맞춰 개정. D1~D6 결정 반영, 스킬 계산 규칙과 공식 기록 가져오기 설계 추가 |
