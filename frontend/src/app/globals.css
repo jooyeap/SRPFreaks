@@ -75,6 +75,8 @@
   --rec-high-text: #b45309; --rec-high-line: #d97706; --rec-high-tint: rgb(217 119 6 / 0.10);
   --chip-on-bg: #12151c;
   --chip-on-fg: #f3f5f9;
+  /* 라이트에서 --danger를 빼먹으면 다크용 연한 색(#ff8f8f)이 흰 배경에 남아 대비가 2.19까지 떨어진다 */
+  --danger: #b91c1c;
 
   --stage-s-bar: #16a34a; --stage-s-text: #15803d;
   --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
