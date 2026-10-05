@@ -62,7 +62,7 @@
 ## 7. 프론트 (`cd frontend`, 백엔드와 DB를 띄운 뒤)
 프론트 코드는 클라우드에서 타입 검사·린트·Vitest(`npm run typecheck`, `npm run lint`, `npm test`)만 통과했고,
 **실제 브라우저로 본 적이 없다**. 구글 폰트는 클라우드에서 받을 수 없어 `next build`도 돌려 보지 못했다.
-- [ ] 환경변수 파일 `frontend/.env.local`: `NEXT_PUBLIC_GOOGLE_CLIENT_ID`(백엔드와 같은 값), `BACKEND_URL`(기본 `http://localhost:8080`). `.env.example`은 `.gitignore`의 `.env*`에 걸려 저장소에 없으므로 직접 만든다
+- [ ] 환경변수 파일: `NEXT_PUBLIC_GOOGLE_CLIENT_ID`(백엔드와 같은 값), `BACKEND_URL`(기본 `http://localhost:8080`). `frontend/.env.example`을 `frontend/.env.local`로 복사해서 값을 채운다 (`.env.local`은 `.gitignore`로 제외돼 있다)
 - [ ] 구글 클라이언트의 "승인된 JavaScript 원본"에 `http://localhost:3000` 추가
 - [ ] `npm install` 후 `npm run dev`, `npm run build` (폰트 다운로드가 되는 환경에서 통과하는지)
 - [ ] 글꼴: 본문 Noto Sans KR, 숫자·영문 Chakra Petch가 적용되는지
