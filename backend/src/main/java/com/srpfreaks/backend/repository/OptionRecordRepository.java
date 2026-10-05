@@ -14,12 +14,44 @@ import org.springframework.data.repository.query.Param;
 public interface OptionRecordRepository extends JpaRepository<OptionRecord, Long> {
 
     /**
+     * 본인 기록 한 건 + 채보 + 곡을 fetch join 한 번으로 가져온다(응답에 곡 이름이 필요해서).
+     * 소유자 조건을 함께 걸어, 타인의 기록이면 "없음"과 똑같이 비게 한다 -> 서비스가 404로 응답(존재 여부 비노출).
+     */
+    @Query("""
+            select r from OptionRecord r
+            join fetch r.songDifficulty d join fetch d.song
+            where r.id = :recordId and r.user.id = :userId
+            """)
+    Optional<OptionRecord> findDetailByIdAndUserId(@Param("recordId") Long recordId, @Param("userId") Long userId);
+
+    /**
+     * 본인 기록 목록(페이지). noteOption / songDifficultyId는 null이면 조건에서 뺀다.
+     * join fetch + 페이징은 컬렉션이 아니라 to-one(ManyToOne)만 fetch하므로 안전하다(메모리 페이징 경고 없음).
+     * countQuery는 fetch join 없이 따로 둔다(count에 fetch join을 쓰면 오류).
+     * 정렬은 Pageable의 Sort로 받는다. 화이트리스트 검증은 서비스에서 한다.
+     */
+    @Query(value = """
+            select r from OptionRecord r
+            join fetch r.songDifficulty d join fetch d.song
+            where r.user.id = :userId
+              and (:noteOption is null or r.noteOption = :noteOption)
+              and (:songDifficultyId is null or d.id = :songDifficultyId)
+            """,
+            countQuery = """
+            select count(r) from OptionRecord r
+            where r.user.id = :userId
+              and (:noteOption is null or r.noteOption = :noteOption)
+              and (:songDifficultyId is null or r.songDifficulty.id = :songDifficultyId)
+            """)
+    Page<OptionRecord> findMine(@Param("userId") Long userId, @Param("noteOption") NoteOption noteOption,
+                                @Param("songDifficultyId") Long songDifficultyId, Pageable pageable);
+
+    /**
      * 기록 id와 소유자를 함께 조건으로 건다.
      * 타인의 기록이면 "없음"과 똑같이 비어 있게 되므로, 서비스는 이 결과로 404를 응답해 존재 여부를 숨긴다.
      */
     Optional<OptionRecord> findByIdAndUserId(Long optionRecordId, Long userId);
 
-    Page<OptionRecord> findByUserId(Long userId, Pageable pageable);
 
     /**
      * 서열표에 올라간 채보들에 대한 본인의 최고 기록을 한 번에 가져온다(채보마다 쿼리하면 N+1이 된다).

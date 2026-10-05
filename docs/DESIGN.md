@@ -434,7 +434,7 @@ com.srpfreaks.backend
 | 내 정보 | GET/PATCH/DELETE `/users/me` (DELETE = 탈퇴, 완전 삭제) | USER+ |
 | 곡 | GET `/songs`(검색), GET `/songs/{id}` | USER+ |
 | 곡/채보 관리 | POST `/songs`, PUT/DELETE `/songs/{id}`, POST `/songs/{id}/difficulties`, PUT/DELETE `/difficulties/{id}` (PUT은 보낸 값으로 교체, 삭제는 소프트 삭제, 모든 변경은 `audit_logs`) | ROOT·ADMIN |
-| 옵션 기록 | POST/GET/PATCH/DELETE `/records` | USER+ (본인) |
+| 옵션 기록 | POST `/records`, GET `/records?noteOption=&songDifficultyId=&sort=recent\|rate`, GET/PUT/DELETE `/records/{id}` (PUT은 보낸 값으로 교체, 채보는 변경 불가, 타인 기록은 404, 플레이 시각은 현재+5분까지, 삭제는 완전 삭제) | USER+ (본인) |
 | 옵션별 최고 | GET `/difficulties/{id}/my-bests` | USER+ |
 | 스킬 목록 | GET `/skills/me` (SRN+ 40곡 + 합계 + 플레이어 티어. 이후 scope 파라미터 확장 가능) | USER+ |
 | 사진 인식 | POST `/records/recognize` (multipart, 인식 결과만 반환하고 저장하지 않는다. 일일 한도) | USER+ |
