@@ -19,7 +19,8 @@ export function AuthControls() {
   }
   return (
     <div className="flex items-center gap-2">
-      <span className="max-w-[10rem] truncate text-sm text-fg-sub">{user.nickname ?? user.email}</span>
+      {/* 좁은 화면(모바일)에서는 이름을 숨겨 헤더가 한 줄에 들어가게 한다. 로그아웃 버튼은 항상 보인다 */}
+      <span className="hidden max-w-[10rem] truncate text-sm text-fg-sub sm:inline">{user.nickname ?? user.email}</span>
       <button
         type="button"
         onClick={() => void logout()}
