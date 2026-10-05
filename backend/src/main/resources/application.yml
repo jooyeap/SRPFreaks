@@ -21,11 +21,25 @@ spring:
 
 server:
   port: 8080
+  # 앞단 리버스 프록시(nginx)가 붙이는 X-Forwarded-For를 신뢰할 수 있는 내부 프록시에서 온 경우에만 반영한다. Rate Limit이 실제 클라이언트 IP를 보게 하기 위해서다
+  forward-headers-strategy: native
 
 jwt:
-    secret: ${JWT_SECRET}
-    access-token-validity: 900000
-    refresh-token-validity: 1209600000
+  secret: ${JWT_SECRET}               # 32바이트 이상, 환경변수로만 주입
+  issuer: srpfreaks
+  access-token-validity: 900000       # 15분
+  refresh-token-validity: 1209600000  # 14일
+
+app:
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}    # Google ID 토큰 aud 검증용
+  root-email: ${ROOT_EMAIL:}          # 이 이메일의 첫 로그인 계정만 ROOT (비우면 ROOT 자동 생성 없음)
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}   # 쉼표로 여러 개. * 금지
+  cookie:
+    secure: ${COOKIE_SECURE:true}     # 로컬 http 개발에서만 false로 내린다
+  rate-limit:
+    auth-per-minute: 10
 
 logging:
   level:
