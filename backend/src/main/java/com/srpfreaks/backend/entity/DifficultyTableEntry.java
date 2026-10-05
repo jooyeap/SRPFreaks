@@ -81,7 +81,11 @@ public class DifficultyTableEntry extends BaseTimeEntity {
         return new DifficultyTableEntry(difficultyTable, songDifficulty);
     }
 
-    /** 기준 난이도를 정한다. null이면 미정으로 돌린다. */
+    /**
+     * 기준 난이도를 정한다. null이면 미정이다.
+     * 값 없이 "?"만 있는 경우(DESIGN.md 곡 일괄 등록 규칙)를 표현하려고 값이 null이어도 uncertain=true를 그대로 둔다.
+     * (미정으로 되돌릴 때는 uncertain=false로 호출한다)
+     */
     public void changeTier(BigDecimal tierLabel, boolean uncertain, Integer tierOrder) {
         if (tierLabel != null) {
             BigDecimal stripped = tierLabel.stripTrailingZeros();
@@ -91,7 +95,7 @@ public class DifficultyTableEntry extends BaseTimeEntity {
             tierLabel = tierLabel.setScale(1);
         }
         this.tierLabel = tierLabel;
-        this.tierUncertain = tierLabel != null && uncertain;
+        this.tierUncertain = uncertain;
         this.tierOrder = tierOrder;
     }
 
@@ -110,6 +114,19 @@ public class DifficultyTableEntry extends BaseTimeEntity {
             throw new IllegalArgumentException("코멘트는 " + COMMENT_MAX_LENGTH + "자 이하여야 합니다.");
         }
         this.comment = comment;
+    }
+
+    /**
+     * 주어진 값과 지금 값이 같은가(값은 changeXxx가 저장하는 형태로 맞춰서 비교한다).
+     * CSV 미리보기가 "바뀌는 항목"을 세려고 쓴다. 저장 없이 비교만 하므로 엔티티를 바꾸지 않는다.
+     */
+    public boolean hasValues(BigDecimal tier, boolean tierUncertain, Recommend recommend, boolean recommendUncertain,
+                             PatternType patternType, boolean patternUncertain) {
+        boolean sameTier = tier == null ? this.tierLabel == null
+                : this.tierLabel != null && this.tierLabel.compareTo(tier) == 0;
+        return sameTier && this.tierUncertain == tierUncertain
+                && this.recommend == recommend && this.recommendUncertain == (recommend != null && recommendUncertain)
+                && this.patternType == patternType && this.patternUncertain == (patternType != null && patternUncertain);
     }
 
     /**

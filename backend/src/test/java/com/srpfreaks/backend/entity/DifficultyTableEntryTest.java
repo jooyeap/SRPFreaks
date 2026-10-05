@@ -83,13 +83,38 @@ class DifficultyTableEntryTest {
     }
 
     @Test
-    void 기준_난이도를_미정으로_돌리면_불확실_표시도_꺼진다() {
+    void 기준_난이도를_미정으로_돌릴_때_불확실_표시를_끄면_꺼진다() {
         entry.changeTier(new BigDecimal("6.0"), true, 1);
 
-        entry.changeTier(null, true, null);
+        entry.changeTier(null, false, null);
 
         assertThat(entry.getTierLabel()).isNull();
         assertThat(entry.isTierUncertain()).isFalse();
+    }
+
+    @Test
+    void 값_없이_물음표만_있는_기준_난이도는_미정이면서_불확실로_저장한다() {
+        entry.changeTier(null, true, null);
+
+        assertThat(entry.getTierLabel()).isNull();
+        assertThat(entry.isTierUncertain()).isTrue();
+        assertThat(entry.isRatable()).isFalse();
+    }
+
+    @Test
+    void hasValues는_저장_형태로_맞춰_비교하고_엔티티를_바꾸지_않는다() {
+        entry.changeTier(new BigDecimal("6.1"), true, 2);
+        entry.changeRecommend(Recommend.MIDDLE, false);
+        entry.changePattern(PatternType.SINGLE, false);
+
+        assertThat(entry.hasValues(new BigDecimal("6.10"), true, Recommend.MIDDLE, false, PatternType.SINGLE, false)).isTrue();
+        assertThat(entry.hasValues(new BigDecimal("6.2"), true, Recommend.MIDDLE, false, PatternType.SINGLE, false)).isFalse();
+        assertThat(entry.hasValues(new BigDecimal("6.1"), true, Recommend.LOW, false, PatternType.SINGLE, false)).isFalse();
+        assertThat(entry.hasValues(null, true, Recommend.MIDDLE, false, PatternType.SINGLE, false)).isFalse();
+        // 값이 없는 추천도에 붙은 불확실 표시는 저장되지 않으므로 같은 값으로 본다
+        entry.changeRecommend(null, true);
+        assertThat(entry.hasValues(new BigDecimal("6.1"), true, null, true, PatternType.SINGLE, false)).isTrue();
+        assertThat(entry.getTierLabel()).isEqualByComparingTo("6.1");
     }
 
     @Test
