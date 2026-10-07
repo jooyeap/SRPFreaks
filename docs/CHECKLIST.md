@@ -102,7 +102,8 @@
 - [ ] 통과한 항목 체크, 실패한 항목은 로그를 알려 주기 (수정은 한 가지씩 별도 커밋)
 - [ ] 별개 알림: 2026-10-09 금요일 10:00 `claude/push-test` 원격 브랜치 삭제
 
-## 9. 배포 전에 필요한 것 (2026-10-05 전체 검토 결과, 검증 통과 후 기능별로 진행)
+## 9. 배포 전에 필요한 것
+배포 방향과 비용 합의는 `docs/DEPLOY-PLAN.md`(t3.small 1대, 1차 범위, 나중 단계)를 따른다. (2026-10-05 전체 검토 결과, 검증 통과 후 기능별로 진행)
 - [x] 회원 탈퇴 `DELETE /users/me` 구현(D20, 사용자·기록·refresh 완전 삭제, 쿠키 삭제 응답 포함). **로컬 검증은 아직**: 7장의 확인 목록에 아래 항목을 더해 확인한다
 - [ ] `application-prod.yml`: DB URL 환경변수화, `useSSL`/`allowPublicKeyRetrieval` 정리, SQL 디버그 로그 끄기, `CORS_ALLOWED_ORIGINS` 기본값 제거, springdoc 끄기
 - [ ] 헬스체크(actuator `/actuator/health`만 공개). **의존성 추가이므로 먼저 확인**
