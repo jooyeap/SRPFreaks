@@ -152,6 +152,14 @@ describe("DifficultyTableView", () => {
     );
   });
 
+  it("서열표 화면 상단에 정보 제공자 표기와 X 링크를 보여 준다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    );
+    renderView();
+    expect(await screen.findByRole("link", { name: /イズニャン/ })).toHaveAttribute("href", "https://x.com/trist_is");
+  });
+
   it("SRN+ 서열표가 없으면 안내 문구를 보여 준다", async () => {
     fetchMock.mockResolvedValue(json([{ ...table, noteOption: "NORMAL" }]));
     renderView();

@@ -19,4 +19,14 @@ describe("고지 문구", () => {
     expect(screen.getByText(/KONAMI와 무관/)).toBeInTheDocument();
     expect(screen.getByText(/모든 저작권과 상표 등 권리는 KONAMI에 있습니다/)).toBeInTheDocument();
   });
+
+  it("하단에 서열표 정보 제공자(イズニャン)와 X 링크를 보여 준다", () => {
+    render(<SiteFooter />);
+    const link = screen.getByRole("link", { name: /イズニャン/ });
+    expect(link).toHaveAttribute("href", "https://x.com/trist_is");
+    expect(link).toHaveTextContent("@trist_is");
+    // 외부 링크: 새 탭 + opener 차단
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link.getAttribute("rel")).toContain("noopener");
+  });
 });

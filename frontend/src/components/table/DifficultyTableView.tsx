@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { Chip, FilterChips, type ChipOption } from "@/components/table/FilterChips";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
@@ -88,6 +89,7 @@ export function DifficultyTableView({ userId }: { userId: number }) {
       <div>
         <h1 className="text-xl font-semibold text-fg">{table.name}</h1>
         <p className="mt-1 text-sm text-fg-sub">속성은 SRN, SRN+ 옵션 사용 기준</p>
+        <TableCredit className="mt-1 text-xs text-fg-dim" />
       </div>
 
       {/* 모바일: 접힌 상태에서도 지금 걸린 필터를 한 줄로 보여 준다. 데스크톱(md 이상)은 버튼 없이 항상 펼친다 */}
