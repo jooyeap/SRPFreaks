@@ -6,9 +6,8 @@ import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { SongJacket } from "@/components/SongJacket";
 import { StageBadge } from "@/components/table/StageBadge";
-import { DifficultyBadge, PartBadge } from "@/components/table/Badges";
+import { ChartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
-import { formatLevel } from "@/lib/format";
 import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
 import {
   AFFECTED_QUERY_KEYS,
@@ -131,9 +130,7 @@ export function RecordForm({
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-bold text-fg">{chart.title}</p>
           <p className="mt-1 flex items-center gap-2 text-xs text-fg-sub">
-            <PartBadge part={chart.part} />
-            <DifficultyBadge difficulty={chart.difficulty} />
-            <span className="font-num">{formatLevel(chart.level)}</span>
+            <ChartBadge part={chart.part} difficulty={chart.difficulty} level={chart.level} />
           </p>
         </div>
       </div>

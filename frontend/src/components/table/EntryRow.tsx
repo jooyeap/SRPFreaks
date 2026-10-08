@@ -1,14 +1,14 @@
 import Link from "next/link";
-import { DifficultyBadge, PartBadge, RecommendBadge } from "@/components/table/Badges";
+import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { SongJacket } from "@/components/SongJacket";
 import { tableDetailHref } from "@/components/song/TableContext";
-import { EMPTY_MARK, formatLevel, formatRate } from "@/lib/format";
+import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 
-/** 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. */
+/** 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. 채보 열(116px)은 파트·난이도·레벨 알약 하나다. */
 export const ROW_GRID =
-  "md:grid md:grid-cols-[4px_40px_minmax(0,1fr)_56px_44px_52px_64px_44px_52px_72px_48px] md:items-center md:gap-x-3";
+  "md:grid md:grid-cols-[4px_40px_minmax(0,1fr)_116px_64px_44px_52px_72px_48px] md:items-center md:gap-x-3";
 
 /** 데스크톱 표의 머리 행 (모바일에서는 보이지 않는다). */
 export function TableHeadRow() {
@@ -17,9 +17,7 @@ export function TableHeadRow() {
       <span />
       <span />
       <span>곡명</span>
-      <span>파트</span>
-      <span>난이도</span>
-      <span>레벨</span>
+      <span>채보</span>
       <span>달성률</span>
       <span>추천</span>
       <span>속성</span>
@@ -53,12 +51,8 @@ export function EntryRow({ entry, onRecord }: { entry: TableEntryResponse; onRec
         {stage ? <StageBadge stage={stage} /> : null}
       </span>
       <span>
-        <PartBadge part={entry.part} />
+        <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
       </span>
-      <span>
-        <DifficultyBadge difficulty={entry.difficulty} />
-      </span>
-      <span className="font-num text-fg-sub">{formatLevel(entry.level)}</span>
       <span className={`font-num font-semibold ${stage ? "stage-text" : "text-fg-faint"}`}>
         {formatRate(entry.mine?.rate)}
       </span>

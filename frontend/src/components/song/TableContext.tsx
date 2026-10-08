@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { SongJacket } from "@/components/SongJacket";
-import { PartBadge, RecommendBadge } from "@/components/table/Badges";
+import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
-import { EMPTY_MARK, difficultyLabel, formatLevel, formatTier } from "@/lib/format";
+import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import { neighbors } from "@/lib/songs";
 
@@ -80,12 +80,7 @@ export function OtherCharts({ charts }: { charts: readonly TableEntryResponse[] 
               href={tableDetailHref(c)}
               className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-fg hover:bg-table-head"
             >
-              <span className="w-14">
-                <PartBadge part={c.part} />
-              </span>
-              <span className="font-num text-fg-sub">
-                {difficultyLabel(c.difficulty)} {formatLevel(c.level)}
-              </span>
+              <ChartBadge part={c.part} difficulty={c.difficulty} level={c.level} />
               <span className="ml-auto">{c.mine ? <StageBadge stage={c.mine.stage} /> : <span className="text-xs text-fg-faint">기록 없음</span>}</span>
             </Link>
           </li>
@@ -129,8 +124,8 @@ function NeighborItem({ label, entry }: { label: string; entry: TableEntryRespon
       <SongJacket className="h-8 w-8 rounded-[7px]" />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold text-fg">{entry.title}</span>
-        <span className="block text-[11px] text-fg-dim">
-          <PartBadge part={entry.part} /> {difficultyLabel(entry.difficulty)} <span className="font-num">{formatLevel(entry.level)}</span>
+        <span className="mt-0.5 block">
+          <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
         </span>
       </span>
       {entry.mine ? <StageBadge stage={entry.mine.stage} /> : <span className="text-[11px] text-fg-faint">기록 없음</span>}

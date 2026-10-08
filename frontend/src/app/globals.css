@@ -52,6 +52,8 @@
   --rec-high-bg: #ff9f43; --rec-high-fg: #1a0e05;
   --rec-mid-line: var(--fg-sub); --rec-low-line: var(--fg-faint);
   --diff-bas: #6fd08c; --diff-adv: #f2c94c; --diff-ext: #ff8f8f; --diff-mas: #c4a3ff; --diff-fg: #12151c;
+  /* 파트·난이도 알약의 왼쪽 글자색: 옅은 난이도 색 배경 위에 올라가는 글자다. 다크에서는 난이도 색 그대로 대비가 충분하다 */
+  --diff-text-bas: var(--diff-bas); --diff-text-adv: var(--diff-adv); --diff-text-ext: var(--diff-ext); --diff-text-mas: var(--diff-mas);
 
 }
 
@@ -77,6 +79,8 @@
   --chip-on-fg: #f3f5f9;
   /* 라이트에서 --danger를 빼먹으면 다크용 연한 색(#ff8f8f)이 흰 배경에 남아 대비가 2.19까지 떨어진다 */
   --danger: #b91c1c;
+  /* 라이트에서는 난이도 색(연한 파스텔)이 흰 배경에서 글자로 읽히지 않아 더 진한 글자색을 따로 둔다 */
+  --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
 
   --stage-s-bar: #16a34a; --stage-s-text: #15803d;
   --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
@@ -109,6 +113,7 @@
     --chip-on-bg: #12151c;
     --chip-on-fg: #f3f5f9;
     --danger: #b91c1c;
+    --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
 
     --stage-s-bar: #16a34a; --stage-s-text: #15803d;
     --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
@@ -173,12 +178,24 @@ body {
 .part-chip { color: var(--part); border-color: var(--part); }
 
 /* 난이도 / 추천 배지 */
-[data-difficulty="BASIC"] { --diff: var(--diff-bas); }
-[data-difficulty="ADVANCED"] { --diff: var(--diff-adv); }
-[data-difficulty="EXTREME"] { --diff: var(--diff-ext); }
-[data-difficulty="MASTER"] { --diff: var(--diff-mas); }
+[data-difficulty="BASIC"] { --diff: var(--diff-bas); --diff-text: var(--diff-text-bas); }
+[data-difficulty="ADVANCED"] { --diff: var(--diff-adv); --diff-text: var(--diff-text-adv); }
+[data-difficulty="EXTREME"] { --diff: var(--diff-ext); --diff-text: var(--diff-text-ext); }
+[data-difficulty="MASTER"] { --diff: var(--diff-mas); --diff-text: var(--diff-text-mas); }
 .diff-chip { background: var(--diff); color: var(--diff-fg); }
 .diff-band { background: var(--diff); }
+
+/*
+ * 파트·난이도·레벨 알약 (ChartBadge). 한 덩어리 안에서 왼쪽 = 파트(옅은 난이도 색 배경 + 진한 글자 + 안쪽 윤곽),
+ * 오른쪽 = 난이도와 레벨(난이도 색으로 채움 + 어두운 글자). 파트 글자(Guitar/Bass)를 항상 적어서 색만으로 구분하지 않는다.
+ * 옅은 배경은 투명도로 깔아서 카드/표 어느 배경 위에서도 같은 느낌이 난다.
+ */
+.chart-chip-part {
+  background: color-mix(in srgb, var(--diff) 20%, transparent);
+  color: var(--diff-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--diff) 40%, transparent);
+}
+.chart-chip-diff { background: var(--diff); color: var(--diff-fg); }
 
 /* FC/EXC는 재킷 칸에 테두리를 둔다 (DESIGN-UI 2장). 색은 단계의 달성률 숫자 색을 쓴다. */
 .stage-ring { outline: 2px solid var(--st-text); outline-offset: -2px; }

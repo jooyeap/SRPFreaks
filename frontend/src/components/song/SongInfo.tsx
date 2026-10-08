@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { DifficultyBadge, PartBadge, RecommendBadge } from "@/components/table/Badges";
-import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
+import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
+import { EMPTY_MARK, formatTier } from "@/lib/format";
 import type { SongChartResponse, SongDetailResponse, TierGroupResponse } from "@/lib/api-types";
 import { findChart, formatBpm, formatNoteCount, sortCharts } from "@/lib/songs";
 
@@ -29,7 +29,7 @@ export function InfoCards({ song, chart }: { song: SongDetailResponse; chart: So
 }
 
 /**
- * 레벨 정보 표: 파트 · 난이도 · 레벨 · 기준 난이도(서열표 값) · 추천. 곡의 모든 채보를 보여 주고,
+ * 레벨 정보 표: 채보(파트 · 난이도 · 레벨 알약) · 기준 난이도(서열표 값) · 추천. 곡의 모든 채보를 보여 주고,
  * 선택된 채보는 왼쪽 막대와 배경으로 강조한다 (강조는 aria-current로도 알린다). 속성은 표시하지 않는다 (DESIGN-UI 6장).
  * 서열표 정보가 아직 없거나 서열표에 없는 채보는 `–`로 둔다.
  */
@@ -46,11 +46,9 @@ export function LevelTable({
   return (
     <section aria-label="레벨 정보" className="overflow-hidden rounded-lg border border-line bg-card">
       <h2 className="px-4 py-3 text-sm font-semibold text-fg-sub">레벨 정보</h2>
-      <div className="grid grid-cols-[4px_56px_52px_56px_1fr_44px] items-center gap-x-2 bg-table-head px-3 py-2 text-xs text-fg-dim" aria-hidden="true">
+      <div className="grid grid-cols-[4px_116px_1fr_44px] items-center gap-x-2 bg-table-head px-3 py-2 text-xs text-fg-dim" aria-hidden="true">
         <span />
-        <span>파트</span>
-        <span>난이도</span>
-        <span>레벨</span>
+        <span>채보</span>
         <span>기준 난이도</span>
         <span>추천</span>
       </div>
@@ -63,18 +61,14 @@ export function LevelTable({
               <Link
                 href={songsDetailHref(song.id, chart.id)}
                 aria-current={selected ? "true" : undefined}
-                className={`grid grid-cols-[4px_56px_52px_56px_1fr_44px] items-center gap-x-2 px-3 py-2 text-sm ${
+                className={`grid grid-cols-[4px_116px_1fr_44px] items-center gap-x-2 px-3 py-2 text-sm ${
                   selected ? "bg-table-head" : "hover:bg-table-head"
                 }`}
               >
                 <span className={`h-6 w-1 rounded ${selected ? "bg-chip-on-bg" : "bg-transparent"}`} aria-hidden="true" />
                 <span>
-                  <PartBadge part={chart.instrumentPart} />
+                  <ChartBadge part={chart.instrumentPart} difficulty={chart.difficultyType} level={chart.level} />
                 </span>
-                <span>
-                  <DifficultyBadge difficulty={chart.difficultyType} />
-                </span>
-                <span className="font-num text-fg-sub">{formatLevel(chart.level)}</span>
                 <span className="font-num text-fg-sub">
                   {found ? `${formatTier(found.group.tier)}${found.entry.tierUncertain ? "?" : ""}` : EMPTY_MARK}
                 </span>

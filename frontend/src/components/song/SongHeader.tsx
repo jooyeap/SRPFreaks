@@ -1,12 +1,11 @@
 import { SongJacket } from "@/components/SongJacket";
-import { PartBadge } from "@/components/table/Badges";
-import { difficultyLabel, formatLevel } from "@/lib/format";
+import { ChartBadge } from "@/components/table/Badges";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 
 const CHIP = "rounded-full border border-chip-line px-2 py-0.5 text-xs font-bold text-fg-sub";
 
 /**
- * 곡 정보 헤더 (시안 "곡 상세"): 큰 재킷 칸(단색) + 곡명, 아티스트, 칩 줄(버전, 파트, `MAS 9.80`).
+ * 곡 정보 헤더 (시안 "곡 상세"): 큰 재킷 칸(단색) + 곡명, 아티스트, 칩 줄(버전, `Guitar | MAS 9.80` 알약).
  * 재킷 칸 아래쪽 띠는 선택된 채보의 난이도 색이다 (색만이 아니라 칩의 글자로도 난이도를 적는다).
  * 속성 칩은 서열표에서 들어온 화면에만 두고(pattern을 넘길 때만), 값이 없으면 숨긴다 (DESIGN-UI 6장).
  */
@@ -40,17 +39,7 @@ export function SongHeader({
         </div>
         <p className="flex flex-wrap items-center gap-1.5">
           {song.addedVersion ? <span className={`${CHIP} font-num`}>{song.addedVersion}</span> : null}
-          {chart ? (
-            <>
-              <span
-                data-difficulty={chart.difficultyType}
-                className="diff-chip rounded-md px-1.5 py-px font-num text-[11px] font-bold leading-normal"
-              >
-                {difficultyLabel(chart.difficultyType)} {formatLevel(chart.level)}
-              </span>
-              <PartBadge part={chart.instrumentPart} />
-            </>
-          ) : null}
+          {chart ? <ChartBadge part={chart.instrumentPart} difficulty={chart.difficultyType} level={chart.level} /> : null}
         </p>
       </div>
     </section>
