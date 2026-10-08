@@ -152,7 +152,9 @@ class DifficultyTableViewServiceTest {
 
         assertThat(g.recorded()).isEqualTo(1);
         assertThat(g.belowS()).isEqualTo(1);   // 기록 없는 b는 세지 않는다
-        assertThat(g.entries().get(1).mine()).isNull();
+        // 묶음 안은 레벨 높은 순으로 정렬되므로(b=9.10이 앞) 위치가 아니라 곡명으로 찾는다.
+        assertThat(g.entries()).filteredOn(r -> r.title().equals("b")).singleElement()
+                .satisfies(r -> assertThat(r.mine()).isNull());
     }
 
     @Test
