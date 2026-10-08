@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -21,6 +22,10 @@ export default function LoginPage() {
       <h1 className="text-xl font-semibold text-fg">로그인</h1>
       <p className="text-center text-sm text-fg-sub">Google 계정으로 로그인합니다. 비밀번호는 저장하지 않습니다.</p>
       <GoogleLoginButton />
+      <p className="text-center text-xs text-fg-dim">
+        로그인하면 <Link href="/privacy" className="underline underline-offset-2 hover:text-fg">개인정보 처리방침</Link>에 따라
+        이메일과 닉네임, 기록이 저장되는 것에 동의한 것으로 봅니다.
+      </p>
     </section>
   );
 }

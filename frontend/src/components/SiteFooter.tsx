@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ContactLine } from "@/components/ContactLine";
 import { TableCredit } from "@/components/TableCredit";
 
@@ -11,6 +12,11 @@ export function SiteFooter() {
         <p>곡·음원·게임 화면·명칭 등 모든 저작권과 상표 등 권리는 KONAMI에 있습니다.</p>
         <TableCredit />
         <ContactLine />
+        <p>
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-fg">
+            개인정보 처리방침
+          </Link>
+        </p>
       </div>
     </footer>
   );
