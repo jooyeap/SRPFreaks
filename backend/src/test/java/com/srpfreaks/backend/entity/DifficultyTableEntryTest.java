@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** 레이팅 대상 판단: 기준 난이도와 속성이 모두 있고 '레이팅 제외'가 아닌 채보만. */
+/** 레이팅 대상 판단: 스위치가 켜져 있고, 기준 난이도와 속성이 모두 있고 '레이팅 제외'가 아닌 채보만. */
 class DifficultyTableEntryTest {
 
     private DifficultyTableEntry entry;
@@ -19,6 +19,29 @@ class DifficultyTableEntryTest {
         Song song = Song.create("Sample", "Artist", "test", null);
         SongDifficulty difficulty = SongDifficulty.create(song, InstrumentPart.GUITAR, DifficultyType.MASTER, new BigDecimal("9.50"));
         entry = DifficultyTableEntry.create(table, difficulty);
+    }
+
+    @Test
+    void 새_줄은_레이팅_반영이_꺼진_상태로_시작한다() {
+        entry.changeTier(new BigDecimal("6.0"), false, 1);
+        entry.changePattern(PatternType.SINGLE, false);
+
+        assertThat(entry.isRatingEnabled()).isFalse();
+        assertThat(entry.isRatable()).isFalse();
+    }
+
+    @Test
+    void 스위치를_끄면_기준_난이도와_속성이_있어도_대상이_아니다() {
+        entry.changeTier(new BigDecimal("6.0"), false, 1);
+        entry.changePattern(PatternType.SINGLE, false);
+        entry.changeRatingEnabled(true);
+        assertThat(entry.isRatable()).isTrue();
+
+        entry.changeRatingEnabled(false);
+
+        assertThat(entry.isRatable()).isFalse();
+        assertThat(entry.isSingleGroup()).isFalse();
+        assertThat(entry.isOtherGroup()).isFalse();
     }
 
     @Test
@@ -54,6 +77,7 @@ class DifficultyTableEntryTest {
 
     @Test
     void 단일은_단일_그룹에_들어간다() {
+        entry.changeRatingEnabled(true);
         entry.changeTier(new BigDecimal("6.0"), false, 1);
         entry.changePattern(PatternType.SINGLE, false);
 
@@ -64,6 +88,7 @@ class DifficultyTableEntryTest {
 
     @Test
     void 복합_이중_삼중은_그_외_그룹에_들어간다() {
+        entry.changeRatingEnabled(true);
         entry.changeTier(new BigDecimal("6.0"), false, 1);
 
         for (PatternType type : new PatternType[]{PatternType.COMPOUND, PatternType.DOUBLE, PatternType.TRIPLE}) {

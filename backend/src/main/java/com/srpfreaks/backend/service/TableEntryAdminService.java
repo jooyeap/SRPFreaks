@@ -67,6 +67,10 @@ public class TableEntryAdminService {
                 : LabeledEnum.fromLabel(Recommend.class, request.recommend()), false);
         entry.changePattern(request.pattern() == null ? null
                 : LabeledEnum.fromLabel(PatternType.class, request.pattern()), false);
+        // 레이팅 반영 스위치: 값이 오면 그대로, 안 오면 기존 값을 둔다(새 줄은 create()의 기본값인 꺼짐)
+        if (request.ratingEnabled() != null) {
+            entry.changeRatingEnabled(request.ratingEnabled());
+        }
 
         if (created) {
             try {
@@ -97,6 +101,7 @@ public class TableEntryAdminService {
         values.put("tier", entry.getTierLabel() == null ? null : entry.getTierLabel().toPlainString());
         values.put("recommend", entry.getRecommend() == null ? null : entry.getRecommend().getLabel());
         values.put("pattern", entry.getPatternType() == null ? null : entry.getPatternType().getLabel());
+        values.put("ratingEnabled", entry.isRatingEnabled());
         return values;
     }
 }

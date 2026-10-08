@@ -66,6 +66,13 @@ public class DifficultyTableEntry extends BaseTimeEntity {
     @Column(name = "pattern_uncertain", nullable = false)
     private boolean patternUncertain;
 
+    /**
+     * 레이팅 반영 스위치(ROOT·ADMIN이 켜고 끈다). 꺼져 있으면 기준 난이도·속성이 있어도 레이팅에서 뺀다.
+     * 새로 만드는 줄은 꺼짐으로 시작한다(운영자가 확인하고 켠다). 기존 줄은 DB 마이그레이션(V2)에서 켜짐으로 두었다.
+     */
+    @Column(name = "rating_enabled", nullable = false)
+    private boolean ratingEnabled;
+
     @Column(name = "comment", length = COMMENT_MAX_LENGTH)
     private String comment;
 
@@ -109,6 +116,10 @@ public class DifficultyTableEntry extends BaseTimeEntity {
         this.patternUncertain = patternType != null && uncertain;
     }
 
+    public void changeRatingEnabled(boolean ratingEnabled) {
+        this.ratingEnabled = ratingEnabled;
+    }
+
     public void changeComment(String comment) {
         if (comment != null && comment.length() > COMMENT_MAX_LENGTH) {
             throw new IllegalArgumentException("코멘트는 " + COMMENT_MAX_LENGTH + "자 이하여야 합니다.");
@@ -117,11 +128,11 @@ public class DifficultyTableEntry extends BaseTimeEntity {
     }
 
     /**
-     * 레이팅 대상인가: 기준 난이도와 속성이 모두 있고, 속성이 '레이팅 제외'가 아니어야 한다.
-     * 하나라도 없으면 레이팅 목록에서 빼고 기록만 남긴다(D18).
+     * 레이팅 대상인가: 레이팅 반영 스위치가 켜져 있고, 기준 난이도와 속성이 모두 있고, 속성이 '레이팅 제외'가 아니어야 한다.
+     * 하나라도 아니면 레이팅 목록에서 빼고 기록만 남긴다(D18).
      */
     public boolean isRatable() {
-        return tierLabel != null && patternType != null && patternType != PatternType.EXCLUDED;
+        return ratingEnabled && tierLabel != null && patternType != null && patternType != PatternType.EXCLUDED;
     }
 
     /** 단일 15 그룹에 들어가는가. */

@@ -26,6 +26,7 @@ public interface SkillMapper {
      * - tier_label IS NOT NULL: 기준 난이도가 없는 채보(미정)는 레이팅 대상이 아니다.
      * - pattern_type IS NOT NULL AND <> #{excludedPattern}: 속성이 없거나 '레이팅 제외'인 채보는 어느 그룹에도 안 들어간다.
      *   '레이팅 제외' 문자열은 SQL에 박지 않고 enum 라벨을 바인딩한다.
+     * - rating_enabled: 관리자가 "레이팅 반영"을 끈 채보는 어느 조건이 맞아도 제외한다.
      * - 삭제된(소프트 삭제) 곡·채보는 제외한다.
      * - achievedAt: 그 최고 달성률을 "처음" 기록한 시각(같은 점수를 여러 번 냈으면 가장 이른 것). 유저 목록 동점 처리용(D26).
      */
@@ -62,6 +63,7 @@ public interface SkillMapper {
                 AND e.difficulty_table_id = #{tableId}
             WHERE d.is_deleted = FALSE
               AND s.is_deleted = FALSE
+              AND e.rating_enabled = TRUE
               AND e.tier_label IS NOT NULL
               AND e.pattern_type IS NOT NULL
               AND e.pattern_type <> #{excludedPattern}

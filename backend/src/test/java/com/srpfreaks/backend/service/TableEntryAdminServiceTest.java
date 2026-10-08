@@ -212,4 +212,62 @@ class TableEntryAdminServiceTest {
                 .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.CONFLICT));
         verify(auditLogRepository, never()).save(any());
     }
+    private TableEntryUpdateRequest requestWithSwitch(Boolean ratingEnabled) {
+        return new TableEntryUpdateRequest(new BigDecimal("5.8"), "상", "단일", ratingEnabled);
+    }
+
+    @Test
+    void 새_줄은_스위치를_보내지_않으면_꺼진_채로_추가한다() {
+        givenTableAndChart();
+        when(entryRepository.findByDifficultyTableIdAndSongDifficultyId(1L, 10L)).thenReturn(Optional.empty());
+
+        TableEntryResponse response = service.upsert(1L, 1L, 10L, requestWithSwitch(null));
+
+        assertThat(response.ratingEnabled()).isFalse();
+    }
+
+    @Test
+    void 새_줄도_스위치를_켜서_보내면_켜진_채로_추가한다() {
+        givenTableAndChart();
+        when(entryRepository.findByDifficultyTableIdAndSongDifficultyId(1L, 10L)).thenReturn(Optional.empty());
+
+        TableEntryResponse response = service.upsert(1L, 1L, 10L, requestWithSwitch(true));
+
+        assertThat(response.ratingEnabled()).isTrue();
+    }
+
+    @Test
+    void 스위치를_보내지_않으면_기존_값을_그대로_둔다() {
+        givenTableAndChart();
+        DifficultyTableEntry entry = existingEntry();
+        entry.changeRatingEnabled(true);
+        when(entryRepository.findByDifficultyTableIdAndSongDifficultyId(1L, 10L)).thenReturn(Optional.of(entry));
+
+        TableEntryResponse response = service.upsert(1L, 1L, 10L, requestWithSwitch(null));
+
+        assertThat(response.ratingEnabled()).isTrue();
+        assertThat(entry.isRatingEnabled()).isTrue();
+    }
+
+    @Test
+    void 스위치를_끄면_저장되고_감사_로그에_이전_값과_바뀐_값이_남는다() {
+        givenTableAndChart();
+        DifficultyTableEntry entry = existingEntry();
+        entry.changeRatingEnabled(true);
+        when(entryRepository.findByDifficultyTableIdAndSongDifficultyId(1L, 10L)).thenReturn(Optional.of(entry));
+
+        TableEntryResponse response = service.upsert(1L, 1L, 10L, requestWithSwitch(false));
+
+        assertThat(response.ratingEnabled()).isFalse();
+        ArgumentCaptor<AuditLog> log = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogRepository).save(log.capture());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> detail = (Map<String, Object>) ReflectionTestUtils.getField(log.getValue(), "detail");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> before = (Map<String, Object>) detail.get("before");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> after = (Map<String, Object>) detail.get("after");
+        assertThat(before.get("ratingEnabled")).isEqualTo(true);
+        assertThat(after.get("ratingEnabled")).isEqualTo(false);
+    }
 }

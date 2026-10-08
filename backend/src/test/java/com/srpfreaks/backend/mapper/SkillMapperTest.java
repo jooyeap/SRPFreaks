@@ -73,6 +73,7 @@ class SkillMapperTest {
         DifficultyTableEntry e = DifficultyTableEntry.create(table, d);
         e.changeTier(tier == null ? null : new BigDecimal(tier), false, null);
         e.changePattern(pattern, false);
+        e.changeRatingEnabled(true); // 새 줄은 꺼짐으로 시작하므로, 계산 대상으로 쓰려면 켠다
         persist(e);
         return d;
     }
@@ -163,6 +164,23 @@ class SkillMapperTest {
     }
 
     @Test
+    void 레이팅_반영을_끈_채보는_기준_난이도와_속성이_있어도_빠진다() {
+        SongDifficulty on = chart("6.0", PatternType.SINGLE);
+        // 스위치를 켜지 않은 줄(새 줄의 기본값 = 꺼짐). 기준 난이도와 속성은 다 있다.
+        Song song = persist(Song.create("스위치 꺼진 곡", null, "test", null));
+        SongDifficulty off = persist(SongDifficulty.create(song, InstrumentPart.GUITAR, DifficultyType.MASTER, new BigDecimal("9.50")));
+        DifficultyTableEntry e = DifficultyTableEntry.create(table, off);
+        e.changeTier(new BigDecimal("6.0"), false, null);
+        e.changePattern(PatternType.SINGLE, false);
+        persist(e);
+        for (SongDifficulty d : List.of(on, off)) {
+            record(userA, d, NoteOption.SUPER_RANDOM_PLUS, "90.00", false);
+        }
+
+        assertThat(query(userA)).extracting(RatingCandidate::songDifficultyId).containsExactly(on.getId());
+    }
+
+    @Test
     void 서열표에_없는_채보와_다른_표의_항목은_빠진다() {
         SongDifficulty notInTable = persist(SongDifficulty.create(
                 persist(Song.create("표에 없음", null, "test", null)),
@@ -175,6 +193,7 @@ class SkillMapperTest {
         DifficultyTableEntry e = DifficultyTableEntry.create(otherTable, inOtherTable);
         e.changeTier(new BigDecimal("6.0"), false, null);
         e.changePattern(PatternType.SINGLE, false);
+        e.changeRatingEnabled(true);
         persist(e);
         record(userA, inOtherTable, NoteOption.SUPER_RANDOM_PLUS, "90.00", false);
 
@@ -204,6 +223,7 @@ class SkillMapperTest {
             DifficultyTableEntry e = DifficultyTableEntry.create(table, d);
             e.changeTier(new BigDecimal("6.0"), false, null);
             e.changePattern(PatternType.SINGLE, false);
+            e.changeRatingEnabled(true);
             persist(e);
             record(userA, d, NoteOption.SUPER_RANDOM_PLUS, "90.00", false);
         }

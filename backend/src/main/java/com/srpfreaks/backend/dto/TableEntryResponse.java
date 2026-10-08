@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 public record TableEntryResponse(Long entryId, Long songDifficultyId, Long songId, String title, String addedVersion,
                                  InstrumentPart part, DifficultyType difficulty, BigDecimal level,
                                  boolean tierUncertain, String recommend, boolean recommendUncertain,
-                                 String pattern, boolean patternUncertain, MyRecord mine) {
+                                 String pattern, boolean patternUncertain, boolean ratingEnabled, MyRecord mine) {
 
     /** 내 최고 기록. 기록이 없으면 mine 자체가 null. 기록이 있으면 stage는 항상 있다(C 이상, D24). */
     public record MyRecord(BigDecimal rate, boolean fullCombo, AchievementStage stage) {
@@ -24,6 +24,6 @@ public record TableEntryResponse(Long entryId, Long songDifficultyId, Long songI
                 d.getSong().getAddedVersion(), d.getInstrumentPart(), d.getDifficultyType(), d.getLevel(),
                 e.isTierUncertain(),
                 e.getRecommend() == null ? null : e.getRecommend().getLabel(), e.isRecommendUncertain(),
-                e.getPatternType() == null ? null : e.getPatternType().getLabel(), e.isPatternUncertain(), mine);
+                e.getPatternType() == null ? null : e.getPatternType().getLabel(), e.isPatternUncertain(), e.isRatingEnabled(), mine);
     }
 }
