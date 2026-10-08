@@ -6,6 +6,7 @@ import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { SongHeader } from "@/components/song/SongHeader";
+import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
 import { InfoCards, LevelTable } from "@/components/song/SongInfo";
 import { NeighborLinks, OtherCharts, TableInfoCard } from "@/components/song/TableContext";
 import { ApiError } from "@/lib/api";
@@ -33,14 +34,18 @@ export function SongDetailView({
   chartId,
   origin,
   userId,
+  canEditTable = false,
 }: {
   songId: number;
   chartId: number | null;
   origin: SongDetailOrigin;
   userId: number;
+  /** ROOT·ADMIN이면 true. 서열표 값(기준 난이도·추천도·속성) 수정 버튼을 보여 준다. 서버도 권한을 다시 검사한다. */
+  canEditTable?: boolean;
 }) {
   const router = useRouter();
   const [recordOpen, setRecordOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<TableEntryTarget | null>(null);
 
   const song = useQuery({
     queryKey: songKeys.detail(songId),
@@ -68,6 +73,24 @@ export function SongDetailView({
     queryFn: ({ signal }) => fetchBestRecord(chart?.id ?? 0, signal),
     enabled: chart !== null,
   });
+
+  // 서열표를 받은 뒤에만 수정할 수 있다 (표 id와 현재 값이 필요하다). 표에 없는 채보는 "추가"가 된다.
+  const openTableEdit = () => {
+    if (!chart || !song.data || tableId === null) {
+      return;
+    }
+    setEditTarget({
+      tableId,
+      songDifficultyId: chart.id,
+      title: song.data.title,
+      part: chart.instrumentPart,
+      difficulty: chart.difficultyType,
+      level: chart.level,
+      tier: found?.group.tier ?? null,
+      entry: found?.entry ?? null,
+    });
+  };
+  const canShowTableEdit = canEditTable && chart !== null && tableId !== null && !groupsQuery.isPending;
 
   const backBar = (
     <div className="flex items-center justify-between gap-3">
@@ -127,6 +150,15 @@ export function SongDetailView({
       <div className="grid gap-4 md:grid-cols-2 md:items-start">
         <div className="flex flex-col gap-4">
           <SongHeader song={data} chart={chart} pattern={isTable ? (found?.entry.pattern ?? null) : null} />
+          {canShowTableEdit ? (
+            <button
+              type="button"
+              onClick={openTableEdit}
+              className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+            >
+              {found ? "서열표 값 수정" : "서열표에 추가"}
+            </button>
+          ) : null}
           {isTable ? (
             <>
               {found ? (
@@ -167,6 +199,7 @@ export function SongDetailView({
         }
         onClose={() => setRecordOpen(false)}
       />
+      <TableEntryEditDialog target={editTarget} onClose={() => setEditTarget(null)} />
     </div>
   );
 }

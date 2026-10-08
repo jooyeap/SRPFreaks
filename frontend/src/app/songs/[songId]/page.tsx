@@ -43,6 +43,7 @@ function SongDetailPage() {
       chartId={parseId(search.get("chart"))}
       origin={parseOrigin(search.get("from"))}
       userId={user.id}
+      canEditTable={user.role !== "USER"}
     />
   );
 }

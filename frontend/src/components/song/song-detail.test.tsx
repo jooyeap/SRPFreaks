@@ -142,9 +142,9 @@ describe("SongDetailView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  function renderView(origin: SongDetailOrigin, chartId: number | null, wrapAuth = false) {
+  function renderView(origin: SongDetailOrigin, chartId: number | null, wrapAuth = false, canEditTable = false) {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const view = <SongDetailView songId={1} chartId={chartId} origin={origin} userId={1} />;
+    const view = <SongDetailView songId={1} chartId={chartId} origin={origin} userId={1} canEditTable={canEditTable} />;
     return render(<QueryClientProvider client={client}>{wrapAuth ? <AuthProvider>{view}</AuthProvider> : view}</QueryClientProvider>);
   }
 
@@ -205,6 +205,41 @@ describe("SongDetailView", () => {
     renderView("songs", 99999);
     const table = await screen.findByRole("region", { name: "레벨 정보" });
     await waitFor(() => expect(within(table).getAllByRole("link")[1]).toHaveAttribute("aria-current", "true"));
+  });
+
+  it("일반 사용자에게는 서열표 값 수정 버튼이 없다", async () => {
+    renderView("table", 10);
+    await screen.findByRole("region", { name: "서열표 정보" });
+    expect(screen.queryByRole("button", { name: "서열표 값 수정" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "서열표에 추가" })).toBeNull();
+  });
+
+  it("ROOT·ADMIN(canEditTable)이면 서열표 값 수정 창이 열리고 지금 값이 채워져 있다", async () => {
+    renderView("table", 10, false, true);
+    fireEvent.click(await screen.findByRole("button", { name: "서열표 값 수정" }));
+
+    expect(screen.getByLabelText("기준 난이도")).toHaveValue("5.8");
+    expect(screen.getByLabelText("추천도")).toHaveValue("상");
+    expect(screen.getByLabelText("속성")).toHaveValue("복합");
+  });
+
+  it("ROOT·ADMIN이면 곡 목록에서 들어온 곡 상세에서도 수정 버튼이 보인다", async () => {
+    renderView("songs", 10, false, true);
+    expect(await screen.findByRole("button", { name: "서열표 값 수정" })).toBeInTheDocument();
+  });
+
+  it("서열표에 없는 채보는 '서열표에 추가' 버튼이 보인다", async () => {
+    // 13번 채보(Bass EXT)는 서열표 데이터에 없다
+    songResponse = () =>
+      json({
+        ...song,
+        difficulties: [
+          ...song.difficulties,
+          { id: 13, songId: 1, instrumentPart: "BASS", difficultyType: "EXTREME", level: 6.1, noteCount: null },
+        ],
+      });
+    renderView("table", 13, false, true);
+    expect(await screen.findByRole("button", { name: "서열표에 추가" })).toBeInTheDocument();
   });
 
   it("곡이 없으면(404) 안내 문구를 보여 준다", async () => {
