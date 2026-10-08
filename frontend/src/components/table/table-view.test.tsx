@@ -160,9 +160,14 @@ describe("DifficultyTableView", () => {
       </QueryClientProvider>,
     );
   }
-  /** 호출된 URL 중 entries 요청의 쿼리 값을 읽는다 */
+  /**
+   * 호출된 URL 중 서열표 본문의 entries 요청의 쿼리 값을 읽는다.
+   * 난이도 바로가기용 전체 묶음 요청(size 지정)은 따로 가므로 센다고 순서가 밀리지 않게 뺀다.
+   */
   function entryParams(index: number): URLSearchParams {
-    const urls = fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("/entries"));
+    const urls = fetchMock.mock.calls
+      .map((c) => String(c[0]))
+      .filter((u) => u.includes("/entries") && !new URL(u, "http://x").searchParams.has("size"));
     return new URL(urls[index], "http://x").searchParams;
   }
 

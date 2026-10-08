@@ -7,9 +7,12 @@ import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { Chip, FilterChips, type ChipOption } from "@/components/table/FilterChips";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
+import { TierQuickNav } from "@/components/table/TierQuickNav";
 import { ApiError } from "@/lib/api";
 import {
+  allGroupsKey,
   EMPTY_FILTERS,
+  fetchAllTierGroups,
   fetchDifficultyTables,
   fetchTableEntries,
   PATTERN_OPTIONS,
@@ -68,6 +71,13 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
     placeholderData: keepPreviousData, // 페이지/필터를 바꾸는 동안 이전 화면을 유지한다 (깜빡임 방지)
   });
 
+  // 난이도 바로가기용 전체 묶음. 홈·곡 상세·묶음 페이지와 같은 키라 캐시를 함께 쓴다. 실패해도 서열표 본문은 그대로 보여 준다
+  const allGroups = useQuery({
+    queryKey: allGroupsKey(userId, table?.id ?? 0),
+    queryFn: ({ signal }) => fetchAllTierGroups(table?.id ?? 0, signal),
+    enabled: table !== null,
+  });
+
   // 필터를 바꾸면 첫 페이지부터 다시 본다 (이전 필터의 3페이지가 새 결과에는 없을 수 있다)
   function changeFilter(next: Partial<TableFilters>) {
     setFilters((current) => ({ ...current, ...next }));
@@ -96,6 +106,8 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
         {/* ROOT·ADMIN만: 곡과 채보를 등록하면서 이 서열표에도 추가한다 */}
         {canRegister ? <SongCreateButton tableId={table.id} /> : null}
       </div>
+
+      {allGroups.data ? <TierQuickNav groups={allGroups.data} /> : null}
 
       {/* 모바일: 접힌 상태에서도 지금 걸린 필터를 한 줄로 보여 준다. 데스크톱(md 이상)은 버튼 없이 항상 펼친다 */}
       <button
