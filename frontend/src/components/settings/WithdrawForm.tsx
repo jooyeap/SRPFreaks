@@ -51,10 +51,10 @@ export function WithdrawForm() {
         </ul>
       </section>
 
-      <section className="flex flex-col gap-1.5 rounded-[14px] border border-line bg-card p-4" aria-label="남는 내용">
-        <h2 className="text-sm font-bold text-fg-sub">남는 것</h2>
+      <section className="flex flex-col gap-1.5 rounded-[14px] border border-line bg-card p-4" aria-label="삭제 범위">
+        <h2 className="text-sm font-bold text-fg-sub">삭제 범위</h2>
         <p className="text-xs leading-relaxed text-fg-sub">
-          없습니다. 운영자의 관리 작업 기록에 남아 있던 이 계정의 식별 정보도 지워집니다. 같은 Google 계정으로 다시 가입하면 새 계정으로 시작합니다.
+          이 서비스에 저장된 회원님의 모든 정보가 삭제됩니다. 운영자의 관리 작업 기록에 남아 있던 이 계정의 식별 정보도 지워집니다. 같은 Google 계정으로 다시 가입하면 새 계정으로 시작합니다.
         </p>
       </section>
 
