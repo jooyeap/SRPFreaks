@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
+import { SongDeleteControl } from "@/components/song/SongDeleteControl";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { SongHeader } from "@/components/song/SongHeader";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
@@ -11,7 +12,7 @@ import { InfoCards, LevelTable } from "@/components/song/SongInfo";
 import { GroupSongList, OtherCharts, TableInfoCard } from "@/components/song/TableContext";
 import { ApiError } from "@/lib/api";
 import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
-import { formatTier } from "@/lib/format";
+import { difficultyLabel, formatTier, partLabel } from "@/lib/format";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
 
@@ -161,6 +162,18 @@ export function SongDetailView({
             >
               {found ? "서열표 값 수정" : "서열표에 추가"}
             </button>
+          ) : null}
+          {canEditTable ? (
+            <SongDeleteControl
+              songId={data.id}
+              songTitle={data.title}
+              chartId={chart?.id ?? null}
+              chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
+              onDeleted={(target) => {
+                // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
+                router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
+              }}
+            />
           ) : null}
           {isTable ? (
             <>

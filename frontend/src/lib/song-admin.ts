@@ -131,3 +131,23 @@ export async function registerSong(values: SongCreateValues, tableId: number | n
 
 /** 등록하면 곡 목록·서열표·곡 상세·검색이 바뀐다. 레이팅은 기록이 없는 새 채보라 바뀌지 않지만 서열표 값이 들어가면 후보가 될 수 있어 함께 새로 받는다. */
 export const SONG_CREATE_AFFECTED_KEYS = [["song-list"], ["difficulty-tables"], ["songs"], ["skill"]] as const;
+
+/** 곡 삭제(소프트 삭제, ROOT·ADMIN). 서버가 곡의 채보도 보이지 않게 하고 관리 기록에 남긴다. */
+export function deleteSong(songId: number): Promise<void> {
+  return apiFetch<void>(`/songs/${songId}`, { method: "DELETE" });
+}
+
+/** 채보 하나만 삭제(소프트 삭제, ROOT·ADMIN). */
+export function deleteChart(chartId: number): Promise<void> {
+  return apiFetch<void>(`/difficulties/${chartId}`, { method: "DELETE" });
+}
+
+/** 삭제하면 곡 목록·서열표·곡 상세·레이팅·내 기록·유저 목록(총점)이 바뀐다. */
+export const SONG_DELETE_AFFECTED_KEYS = [
+  ["song-list"],
+  ["difficulty-tables"],
+  ["songs"],
+  ["skill"],
+  ["records"],
+  ["players"],
+] as const;
