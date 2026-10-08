@@ -104,7 +104,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 
 ## 범위와 기록 규칙 (D15)
 - **보류 추가(D18)**: 공식 사이트 가져오기 전체 (D5, D17, `official_records`, `import_tokens`, `import_unmatched`). 다시 켤 때까지 만들지 않는다.
-- **유저 목록(D26)은 만든다**: 본인이 공개를 선택(`users.profile_public`, 기본 비공개)한 유저의 닉네임·티어·총점 목록과 읽기 전용 유저 상세. 이메일·역할·Google ID는 내보내지 않는다. 설계는 `docs/DESIGN.md` 18.2.
+- **유저 목록(D26)은 만든다(구현 예정, 설계만 확정)**: 본인이 공개를 선택(`users.profile_public`, 기본 비공개)한 유저의 닉네임·티어·총점 목록과 읽기 전용 유저 상세. 이메일·역할·Google ID는 내보내지 않는다. 설계는 `docs/DESIGN.md` 18.2.
 - **보류(만들지 않는다)**: 곡별 랭킹, 두 유저 비교 화면, 증빙 사진·인증·이의제기·신고(D14), 노트 성향 그래프(D11). 설계 원문은 `docs/DESIGN.md` 18장, 화면 규칙은 `docs/DESIGN-UI.md` 13장. 다시 켤 때까지 `source`·`verification` 컬럼, `record_evidence`·`record_disputes`·`difficulty_profiles` 테이블, 관련 API·설정을 만들지 않는다.
 - 기록은 **본인이 직접 입력**하고 **본인만 수정·삭제**한다 (수정에 제한 없음). 다른 사용자의 기록은 ADMIN/ROOT도 고치지 않는다. 모든 기록은 같은 취급이고 인증 구분이 없다.
 - 화면 문구와 오류 메시지는 일반적인 안내 문구(존댓말)로 쓴다 (예: "달성률은 필수입니다.", "곡명을 입력해 주세요."). 칩·버튼 같은 짧은 라벨은 명사형. 문구는 사용자가 직접 쓰기도 하므로 임의로 다듬지 않는다.
