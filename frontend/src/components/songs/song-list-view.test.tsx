@@ -88,6 +88,13 @@ describe("SongListView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it("채보 행에는 버전을 보이지 않는다(버전은 필터로만 쓴다)", async () => {
+    renderView({ ...EMPTY_SONG_FILTERS, q: "검색" });
+    const rowTitle = await screen.findByText("검색곡");
+    // 행의 addedVersion은 V5지만 행 안에 나오지 않는다 (버전 필터의 선택지 V5와는 별개다)
+    expect(rowTitle.closest("li")).not.toHaveTextContent("V5");
+  });
+
   it("곡 등록 버튼은 canRegister(ROOT·ADMIN)일 때만 보인다", async () => {
     const { unmount } = renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
