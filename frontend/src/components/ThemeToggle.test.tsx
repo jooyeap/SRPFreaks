@@ -50,9 +50,20 @@ describe("ThemeToggle", () => {
     }
   });
 
-  it("버튼 글자는 항상 같다 (서버와 브라우저 화면이 달라지지 않게)", () => {
+  it("해·달 아이콘이 있는 스위치이고, 마크업은 테마와 상관없이 항상 같다 (하이드레이션 오류 방지)", () => {
     root().setAttribute("data-theme", "light");
+    const { container, rerender } = render(<ThemeToggle />);
+    const lightHtml = container.innerHTML;
+    expect(container.querySelector(".theme-sun")).not.toBeNull();
+    expect(container.querySelector(".theme-moon")).not.toBeNull();
+
+    root().setAttribute("data-theme", "dark");
+    rerender(<ThemeToggle />);
+    expect(container.innerHTML).toBe(lightHtml);
+  });
+
+  it("글자 없는 아이콘 버튼이라 접근 가능한 이름(aria-label)으로 구분한다", () => {
     render(<ThemeToggle />);
-    expect(screen.getByRole("button")).toHaveTextContent("테마");
+    expect(screen.getByRole("button", { name: "다크/라이트 테마 전환" })).toBeInTheDocument();
   });
 });

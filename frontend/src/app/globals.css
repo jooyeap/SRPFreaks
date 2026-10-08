@@ -245,3 +245,20 @@ body {
 
 /* 곡 상세의 내 기록: FC/EXC 달성률 숫자를 단계 그라데이션 글자로 (DESIGN-UI 6장) */
 .stage-grad-text { background: var(--st-bar); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* 테마 스위치 (ThemeToggle): 마크업은 항상 같고, 손잡이 위치와 아이콘 색만 테마에 따라 CSS로 바꾼다.
+   서버 렌더링 결과와 브라우저 화면이 달라지지 않게 하려는 것이다. 기본 = 다크(손잡이가 달 쪽). 라이트 선택자는 위 변수 블록과 같은 두 곳. */
+.theme-thumb { transform: translateX(26px); transition: transform 0.15s ease; }
+.theme-switch .theme-sun { color: var(--fg-sub); }
+.theme-switch .theme-moon { color: var(--chip-on-fg); }
+:root[data-theme="light"] .theme-thumb { transform: translateX(0); }
+:root[data-theme="light"] .theme-switch .theme-sun { color: var(--chip-on-fg); }
+:root[data-theme="light"] .theme-switch .theme-moon { color: var(--fg-sub); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .theme-thumb { transform: translateX(0); }
+  :root:not([data-theme]) .theme-switch .theme-sun { color: var(--chip-on-fg); }
+  :root:not([data-theme]) .theme-switch .theme-moon { color: var(--fg-sub); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-thumb { transition: none; }
+}
