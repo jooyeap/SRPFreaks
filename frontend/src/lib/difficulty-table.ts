@@ -19,6 +19,52 @@ export function groupAverage(group: TierGroupResponse, includeZero: boolean): nu
   return includeZero ? group.averageWithZero : group.averageRecorded;
 }
 
+/**
+ * 묶음(기준 난이도) 하나를 가리키는 주소 조각. `/table/folder/5.8`, 기준 난이도가 없는 묶음은 `/table/folder/undecided`.
+ * 소수 첫째 자리로 맞춰서(5.8 → "5.8", 6 → "6.0") 서버 값(0.1 단위)과 주소 값을 문자열로 비교한다.
+ * 숫자로 바꿔 비교하면 부동소수 오차가 낄 수 있어 문자열을 기준으로 삼는다.
+ */
+export function tierParam(tier: number | null): string {
+  return tier === null ? "undecided" : tier.toFixed(1);
+}
+
+/** 서열표 전체에서 주소 조각에 해당하는 묶음을 찾는다. 없으면 null (잘못된 주소 포함). */
+export function findGroupByParam(groups: readonly TierGroupResponse[], param: string): TierGroupResponse | null {
+  return groups.find((g) => tierParam(g.tier) === param) ?? null;
+}
+
+/** 묶음 페이지 주소. */
+export function folderHref(tier: number | null): string {
+  return `/table/folder/${tierParam(tier)}`;
+}
+
+/** 대시보드의 서열표 진행도. 서버가 준 묶음별 개수를 합치기만 한다(채보를 화면에서 다시 세지 않는다). */
+export interface TableProgress {
+  total: number;
+  recorded: number;
+  exc: number;
+  fc: number;
+  ss: number;
+  s: number;
+  belowS: number;
+  /** 묶음별 (서열표 순서 그대로: 높은 기준 난이도 먼저, 미정 맨 뒤) */
+  groups: { tier: number | null; total: number; recorded: number }[];
+}
+
+export function tableProgress(groups: readonly TierGroupResponse[]): TableProgress {
+  const sum = (pick: (g: TierGroupResponse) => number) => groups.reduce((acc, g) => acc + pick(g), 0);
+  return {
+    total: sum((g) => g.total),
+    recorded: sum((g) => g.recorded),
+    exc: sum((g) => g.exc),
+    fc: sum((g) => g.fc),
+    ss: sum((g) => g.ss),
+    s: sum((g) => g.s),
+    belowS: sum((g) => g.belowS),
+    groups: groups.map((g) => ({ tier: g.tier, total: g.total, recorded: g.recorded })),
+  };
+}
+
 /** 서열표 필터. 값이 null이면 "전체". recommend/pattern은 서버가 쓰는 한글 값 그대로다. */
 export interface TableFilters {
   part: InstrumentPart | null;

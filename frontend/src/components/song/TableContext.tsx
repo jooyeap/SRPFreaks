@@ -1,10 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useRef, type RefObject } from "react";
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
-import { neighbors } from "@/lib/songs";
+import { folderHref } from "@/lib/difficulty-table";
 
 /** 서열표에서 들어온 곡 상세 주소. */
 export function tableDetailHref(entry: Pick<TableEntryResponse, "songId" | "songDifficultyId">): string {
@@ -89,46 +92,73 @@ export function OtherCharts({ charts }: { charts: readonly TableEntryResponse[] 
   );
 }
 
-/** 같은 묶음의 곡: 서열표 순서의 이전 / 다음 곡. 눌러서 이동한다. 묶음의 처음/끝에서는 없는 쪽을 흐리게 둔다. */
-export function NeighborLinks({ group, index }: { group: TierGroupResponse; index: number }) {
-  const { prev, next } = neighbors(group, index);
+/**
+ * 같은 묶음의 곡: 묶음 안의 모든 채보를 서열표 순서(레벨 높은 순)로 보여 준다. 눌러서 이동한다.
+ * 지금 보는 채보는 강조하고(aria-current) 목록이 길면(48개 등) 목록 안에서만 스크롤하며, 열릴 때 현재 채보 위치로 맞춘다.
+ * 아래 링크로 묶음 페이지(/table/folder/…)에서 묶음 전체를 크게 볼 수 있다.
+ */
+export function GroupSongList({ group, index }: { group: TierGroupResponse; index: number }) {
+  const listRef = useRef<HTMLUListElement>(null);
+  const currentRef = useRef<HTMLLIElement>(null);
+
+  // 현재 채보가 목록 가운데쯤 오게 스크롤한다. 페이지 전체가 아니라 목록 상자만 움직이려고 scrollTop을 직접 쓴다
+  // (scrollIntoView는 페이지 스크롤까지 건드린다).
+  useEffect(() => {
+    const list = listRef.current;
+    const current = currentRef.current;
+    if (list && current) {
+      list.scrollTop = Math.max(current.offsetTop - list.clientHeight / 2 + current.clientHeight / 2, 0);
+    }
+  }, [group, index]);
+
   return (
     <section aria-label="같은 묶음의 곡" className="flex flex-col gap-2">
       <h2 className="flex items-baseline justify-between px-1 font-num text-[17px] font-bold text-fg">
-        같은 묶음의 곡
-        <span className="font-sans text-[11px] font-normal text-fg-dim">이전 / 다음</span>
+        <span>
+          같은 묶음의 곡 <span className="font-sans text-xs font-normal text-fg-dim">{group.entries.length}개</span>
+        </span>
+        <Link href={folderHref(group.tier)} className="font-sans text-xs font-normal text-fg-sub hover:text-fg">
+          묶음 전체 보기
+        </Link>
       </h2>
-      <div className="overflow-hidden rounded-[14px] border border-line bg-card">
-        <NeighborItem label="이전" entry={prev} />
-        <NeighborItem label="다음" entry={next} />
-      </div>
+      <ul ref={listRef} className="relative max-h-[22rem] overflow-y-auto rounded-[14px] border border-line bg-card">
+        {group.entries.map((entry, i) => (
+          <GroupSongItem key={entry.entryId} entry={entry} current={i === index} itemRef={i === index ? currentRef : undefined} />
+        ))}
+      </ul>
     </section>
   );
 }
 
-function NeighborItem({ label, entry }: { label: string; entry: TableEntryResponse | null }) {
-  if (!entry) {
-    return (
-      <div className="border-t border-row-line px-3.5 py-2.5 text-sm text-fg-faint first:border-t-0">
-        {label} <span className="ml-1">없음</span>
-      </div>
-    );
-  }
+function GroupSongItem({
+  entry,
+  current,
+  itemRef,
+}: {
+  entry: TableEntryResponse;
+  current: boolean;
+  itemRef?: RefObject<HTMLLIElement | null>;
+}) {
   return (
-    <Link
-      href={tableDetailHref(entry)}
-      className="flex items-center gap-2.5 border-t border-row-line px-3.5 py-2.5 first:border-t-0 hover:bg-table-head"
-    >
-      <span className="w-[30px] text-[11px] text-fg-dim">{label}</span>
-      {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
-      {/* <SongJacket className="h-8 w-8 rounded-[7px]" /> */}
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold text-fg">{entry.title}</span>
-        <span className="mt-0.5 block">
-          <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
+    <li ref={itemRef} aria-current={current ? "true" : undefined} className="border-t border-row-line first:border-t-0">
+      <Link
+        href={tableDetailHref(entry)}
+        className={`flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-table-head ${current ? "bg-table-head" : ""}`}
+      >
+        {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
+        {/* <SongJacket className="h-8 w-8 rounded-[7px]" /> */}
+        <span className="min-w-0 flex-1">
+          <span className={`block truncate text-sm ${current ? "font-bold text-fg" : "text-fg"}`}>
+            {entry.title}
+            {/* 색만으로 구분하지 않도록 현재 곡에는 글자 표시를 같이 둔다 */}
+            {current ? <span className="ml-1.5 text-[11px] font-normal text-fg-dim">보는 중</span> : null}
+          </span>
+          <span className="mt-0.5 block">
+            <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
+          </span>
         </span>
-      </span>
-      {entry.mine ? <StageBadge stage={entry.mine.stage} /> : <span className="text-[11px] text-fg-faint">기록 없음</span>}
-    </Link>
+        {entry.mine ? <StageBadge stage={entry.mine.stage} /> : <span className="text-[11px] text-fg-faint">기록 없음</span>}
+      </Link>
+    </li>
   );
 }

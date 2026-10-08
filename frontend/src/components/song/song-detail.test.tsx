@@ -148,7 +148,7 @@ describe("SongDetailView", () => {
     return render(<QueryClientProvider client={client}>{wrapAuth ? <AuthProvider>{view}</AuthProvider> : view}</QueryClientProvider>);
   }
 
-  it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 묶음의 이전/다음 곡, 다른 채보를 보여 준다", async () => {
+  it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 묶음의 곡 목록, 다른 채보를 보여 준다", async () => {
     renderView("table", 10);
     expect(await screen.findByRole("heading", { name: "테스트곡" })).toBeInTheDocument();
     expect(await screen.findByText("속성 복합")).toBeInTheDocument();
@@ -169,6 +169,12 @@ describe("SongDetailView", () => {
     expect(within(neighbors).getByRole("link", { name: /앞곡/ })).toHaveAttribute("href", "/songs/9?from=table&chart=90");
     expect(within(neighbors).getByRole("link", { name: /뒷곡/ })).toHaveAttribute("href", "/songs/8?from=table&chart=91");
     expect(within(neighbors).getByText("기록 없음")).toBeInTheDocument();
+    // 묶음 전체 목록: 지금 보는 곡은 강조(aria-current)와 글자("보는 중")로 표시하고, 묶음 페이지로 가는 링크가 있다
+    const current = within(neighbors).getAllByRole("listitem").filter((li) => li.getAttribute("aria-current") === "true");
+    expect(current).toHaveLength(1);
+    expect(current[0]).toHaveTextContent("보는 중");
+    expect(within(neighbors).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(neighbors).getByRole("link", { name: "묶음 전체 보기" })).toHaveAttribute("href", "/table/folder/5.8");
 
     expect(screen.getByText("이 곡의 다른 채보 2개")).toBeInTheDocument();
   });

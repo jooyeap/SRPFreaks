@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DifficultyTableResponse, TierGroupResponse } from "@/lib/api-types";
-import { EMPTY_FILTERS, fetchAllTierGroups, fetchTableEntries, groupAverage, pickRatingTable } from "@/lib/difficulty-table";
+import {
+  EMPTY_FILTERS,
+  fetchAllTierGroups,
+  fetchTableEntries,
+  findGroupByParam,
+  folderHref,
+  groupAverage,
+  pickRatingTable,
+  tierParam,
+} from "@/lib/difficulty-table";
 
 function table(over: Partial<DifficultyTableResponse>): DifficultyTableResponse {
   return {
@@ -34,6 +43,25 @@ describe("pickRatingTable", () => {
     const input = [table({ id: 8 }), table({ id: 2 })];
     pickRatingTable(input);
     expect(input.map((t) => t.id)).toEqual([8, 2]);
+  });
+});
+
+describe("묶음 주소 (tierParam / findGroupByParam / folderHref)", () => {
+  it("기준 난이도는 소수 첫째 자리 문자열, 없으면 undecided", () => {
+    expect(tierParam(5.8)).toBe("5.8");
+    expect(tierParam(6)).toBe("6.0");
+    expect(tierParam(null)).toBe("undecided");
+    expect(folderHref(5.8)).toBe("/table/folder/5.8");
+    expect(folderHref(null)).toBe("/table/folder/undecided");
+  });
+
+  it("주소 조각으로 묶음을 찾고, 없는 값이면 null", () => {
+    const groups = [{ tier: 6 }, { tier: 5.8 }, { tier: null }] as TierGroupResponse[];
+    expect(findGroupByParam(groups, "6.0")).toBe(groups[0]);
+    expect(findGroupByParam(groups, "5.8")).toBe(groups[1]);
+    expect(findGroupByParam(groups, "undecided")).toBe(groups[2]);
+    expect(findGroupByParam(groups, "5.80")).toBeNull();
+    expect(findGroupByParam(groups, "abc")).toBeNull();
   });
 });
 

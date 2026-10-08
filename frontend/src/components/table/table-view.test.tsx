@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { DifficultyTableView } from "@/components/table/DifficultyTableView";
 import { StageBadge } from "@/components/table/StageBadge";
-import { TierGroupSection } from "@/components/table/TierGroupSection";
+import { TierGroupSection, groupStage } from "@/components/table/TierGroupSection";
 import type { DifficultyTableResponse, PageResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 
 function entry(over: Partial<TableEntryResponse> = {}): TableEntryResponse {
@@ -51,7 +51,38 @@ describe("StageBadge", () => {
   });
 });
 
+describe("groupStage (묶음 전체 달성 단계)", () => {
+  const all = (over: Partial<TierGroupResponse>) => group({ total: 4, recorded: 4, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, ...over });
+
+  it("모든 곡이 EXC면 EXC", () => {
+    expect(groupStage(all({ exc: 4 }))).toBe("EXC");
+  });
+  it("모든 곡이 같은 단계 '이상'이면 가장 낮은 그 단계 (EXC 1 + FC 1 + SS 2 → SS)", () => {
+    expect(groupStage(all({ exc: 1, fc: 1, ss: 2 }))).toBe("SS");
+    expect(groupStage(all({ exc: 1, fc: 3 }))).toBe("FC");
+    expect(groupStage(all({ ss: 1, s: 3 }))).toBe("S");
+  });
+  it("한 곡이라도 S 미만이거나 기록이 없으면 없음", () => {
+    expect(groupStage(all({ exc: 3, belowS: 1 }))).toBeNull();
+    expect(groupStage(all({ exc: 3, recorded: 3 }))).toBeNull(); // 미플레이 1곡
+  });
+  it("곡이 0개인 묶음은 없음", () => {
+    expect(groupStage(all({ total: 0, recorded: 0 }))).toBeNull();
+  });
+});
+
 describe("TierGroupSection", () => {
+  it("묶음 전체가 한 단계 이상이면 머리에 단계 효과(막대)가 붙고, 아니면 붙지 않는다", () => {
+    const { container, rerender } = render(
+      <TierGroupSection group={group({ total: 4, recorded: 4, exc: 1, fc: 0, ss: 3, s: 0, belowS: 0 })} includeZero={false} />,
+    );
+    expect(container.querySelector("header[data-group-stage='SS']")).not.toBeNull();
+    expect(container.querySelector("header .stage-bar")).not.toBeNull();
+    rerender(<TierGroupSection group={group()} includeZero={false} />);
+    expect(container.querySelector("header[data-group-stage]")).toBeNull();
+    expect(container.querySelector("header .stage-bar")).toBeNull();
+  });
+
   it("제목, 칩 5개, 기록 n/전체, 미포함 평균을 보여 준다", () => {
     render(<TierGroupSection group={group()} includeZero={false} />);
     expect(screen.getByRole("heading", { name: /5\.8\s*4개/ })).toBeInTheDocument();
