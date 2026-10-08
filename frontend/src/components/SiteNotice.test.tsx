@@ -5,12 +5,17 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 
 describe("고지 문구", () => {
-  it("상단에 '비공식 팬 프로젝트'를 보여 준다", () => {
+  it("상단에는 고지를 두지 않고, 고지는 하단에서 보여 준다", () => {
     render(
       <AuthProvider>
         <SiteHeader />
       </AuthProvider>,
     );
+    expect(screen.queryByText("비공식 팬 프로젝트")).not.toBeInTheDocument();
+  });
+
+  it("하단에 '비공식 팬 프로젝트' 고지를 보여 준다", () => {
+    render(<SiteFooter />);
     expect(screen.getByText("비공식 팬 프로젝트")).toBeInTheDocument();
   });
 
