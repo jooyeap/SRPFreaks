@@ -38,7 +38,7 @@ CREATE TABLE songs (
     song_id       BIGINT       NOT NULL AUTO_INCREMENT,
     title         VARCHAR(255) NOT NULL,
     artist        VARCHAR(255) NULL,
-    added_version VARCHAR(30)  NULL,                        -- 초출 버전. 표시·분류용
+    added_version VARCHAR(30)  NULL,                        -- 버전. 표시·분류용
     title_folder  VARCHAR(5)   NULL,                        -- 게임 안 타이틀 폴더(초성)
     bpm_min       INT          NULL,
     bpm_max       INT          NULL,
