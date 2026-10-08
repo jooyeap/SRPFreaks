@@ -65,7 +65,7 @@ export type SongCreateValues = z.infer<typeof songCreateSchema>;
 export type ChartValues = SongCreateValues["charts"][number];
 
 export function emptyChart(): ChartValues {
-  return { part: "GUITAR", difficulty: "MASTER", level: "", tier: "", recommend: "", pattern: "" };
+  return { part: "GUITAR", difficulty: "MASTER", level: "", tier: "", recommend: "", pattern: "", ratingEnabled: false };
 }
 
 export function emptySongCreate(): SongCreateValues {

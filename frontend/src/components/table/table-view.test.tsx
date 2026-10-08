@@ -22,6 +22,7 @@ function entry(over: Partial<TableEntryResponse> = {}): TableEntryResponse {
     recommendUncertain: false,
     pattern: "단일",
     patternUncertain: false,
+    ratingEnabled: true,
     mine: { rate: 96.5, fullCombo: false, stage: "SS" },
     ...over,
   };

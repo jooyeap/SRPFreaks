@@ -74,6 +74,8 @@ export interface TableEntryResponse {
   /** 단일 / 복합 / 이중 / 삼중 / 레이팅 제외 (없으면 null) */
   pattern: string | null;
   patternUncertain: boolean;
+  /** 레이팅 반영 스위치(D28). 꺼져 있으면 기준 난이도·속성이 있어도 레이팅에서 빠진다. */
+  ratingEnabled: boolean;
   mine: MyRecord | null;
 }
 

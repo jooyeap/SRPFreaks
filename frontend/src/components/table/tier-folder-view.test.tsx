@@ -28,6 +28,7 @@ function entry(id: number, title: string): TableEntryResponse {
     recommendUncertain: false,
     pattern: "단일",
     patternUncertain: false,
+    ratingEnabled: true,
     mine: null,
   };
 }

@@ -18,6 +18,7 @@ const entry: TableEntryResponse = {
   recommendUncertain: false,
   pattern: "단일",
   patternUncertain: false,
+  ratingEnabled: true,
   mine: null,
 };
 
@@ -86,7 +87,7 @@ describe("TableEntryEditDialog", () => {
     const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(String(url)).toBe("/api/v1/admin/difficulty-tables/3/entries/10");
     expect(init?.method).toBe("PUT");
-    expect(sentBody()).toEqual({ tierLabel: 6.1, recommend: "상", pattern: "레이팅 제외" });
+    expect(sentBody()).toEqual({ tierLabel: 6.1, recommend: "상", pattern: "레이팅 제외", ratingEnabled: true });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["difficulty-tables"] });
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["skill"] });
   });
@@ -101,7 +102,7 @@ describe("TableEntryEditDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(sentBody()).toEqual({ tierLabel: null, recommend: null, pattern: null });
+    expect(sentBody()).toEqual({ tierLabel: null, recommend: null, pattern: null, ratingEnabled: true });
   });
 
   it("표에 없는 채보는 제목이 '서열표에 추가'이고 비어 있는 채로 시작한다", () => {
@@ -110,6 +111,57 @@ describe("TableEntryEditDialog", () => {
     expect(screen.getByLabelText("기준 난이도")).toHaveValue("");
     expect(screen.getByLabelText("추천도")).toHaveValue("");
     expect(screen.getByRole("button", { name: "추가" })).toBeInTheDocument();
+  });
+
+  describe("레이팅 반영 스위치", () => {
+    const toggle = () => screen.getByRole("switch", { name: "레이팅 반영" });
+
+    it("저장된 값대로 켜짐/꺼짐을 글자와 aria-checked로 보여 준다", () => {
+      const { unmount } = renderDialog(existing);
+      expect(toggle()).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByText("켜짐")).toBeInTheDocument();
+      unmount();
+
+      renderDialog({ ...existing, entry: { ...entry, ratingEnabled: false } });
+      expect(toggle()).toHaveAttribute("aria-checked", "false");
+      expect(screen.getByText("꺼짐")).toBeInTheDocument();
+    });
+
+    it("표에 없던 채보를 추가할 때는 꺼진 채로 시작한다", () => {
+      renderDialog({ ...existing, tier: null, entry: null });
+      expect(toggle()).toHaveAttribute("aria-checked", "false");
+    });
+
+    it("끄고 저장하면 ratingEnabled: false를 보낸다", async () => {
+      fetchMock.mockResolvedValue(json({ ...entry, ratingEnabled: false }));
+      renderDialog(existing);
+
+      fireEvent.click(toggle());
+      expect(toggle()).toHaveAttribute("aria-checked", "false");
+      fireEvent.click(screen.getByRole("button", { name: "저장" }));
+
+      await waitFor(() => expect(onClose).toHaveBeenCalled());
+      expect(sentBody()).toMatchObject({ ratingEnabled: false });
+    });
+
+    it("켜 두었는데 기준 난이도나 속성이 없으면 계산에 안 들어간다고 알려 준다", () => {
+      renderDialog({ ...existing, tier: null, entry: { ...entry, ratingEnabled: true, pattern: null } });
+      expect(screen.getByRole("status")).toHaveTextContent("계산에 들어가지 않습니다");
+
+      fireEvent.change(screen.getByLabelText("기준 난이도"), { target: { value: "6.0" } });
+      fireEvent.change(screen.getByLabelText("속성"), { target: { value: "단일" } });
+      expect(screen.queryByRole("status")).toBeNull();
+    });
+
+    it("속성이 레이팅 제외이면 켜 두어도 안내를 보여 준다", () => {
+      renderDialog({ ...existing, entry: { ...entry, pattern: "레이팅 제외" } });
+      expect(screen.getByRole("status")).toHaveTextContent("계산에 들어가지 않습니다");
+    });
+
+    it("꺼져 있으면 값이 없어도 안내를 보여 주지 않는다", () => {
+      renderDialog({ ...existing, tier: null, entry: { ...entry, ratingEnabled: false, pattern: null } });
+      expect(screen.queryByRole("status")).toBeNull();
+    });
   });
 
   it("검사에 실패하면 서버에 보내지 않고 입력칸 아래에 문구를 보여 준다", async () => {

@@ -35,6 +35,8 @@ export const tableEntrySchema = z.object({
     }),
   recommend: z.enum(["", ...RECOMMEND_CHOICES]),
   pattern: z.enum(["", ...PATTERN_CHOICES]),
+  /** 레이팅 반영 스위치(D28). 꺼져 있으면 기준 난이도·속성이 있어도 레이팅에서 뺀다. */
+  ratingEnabled: z.boolean(),
 });
 
 export type TableEntryFormValues = z.infer<typeof tableEntrySchema>;
@@ -44,6 +46,7 @@ export interface TableEntryUpdateBody {
   tierLabel: number | null;
   recommend: string | null;
   pattern: string | null;
+  ratingEnabled: boolean;
 }
 
 export function toTableEntryBody(values: TableEntryFormValues): TableEntryUpdateBody {
@@ -52,6 +55,7 @@ export function toTableEntryBody(values: TableEntryFormValues): TableEntryUpdate
     tierLabel: tier === "" ? null : Number(tier),
     recommend: values.recommend === "" ? null : values.recommend,
     pattern: values.pattern === "" ? null : values.pattern,
+    ratingEnabled: values.ratingEnabled,
   };
 }
 
@@ -59,7 +63,8 @@ export function toTableEntryBody(values: TableEntryFormValues): TableEntryUpdate
 export function tableEntryToFormValues(tier: number | null, entry: TableEntryResponse | null): TableEntryFormValues {
   const recommend = RECOMMEND_CHOICES.find((value) => value === entry?.recommend) ?? "";
   const pattern = PATTERN_CHOICES.find((value) => value === entry?.pattern) ?? "";
-  return { tier: tier === null ? "" : tier.toFixed(1), recommend, pattern };
+  // 표에 없던 채보(새 줄)는 꺼짐으로 시작한다. 서버의 새 줄 기본값(D28)과 같다.
+  return { tier: tier === null ? "" : tier.toFixed(1), recommend, pattern, ratingEnabled: entry?.ratingEnabled ?? false };
 }
 
 export function saveTableEntry(

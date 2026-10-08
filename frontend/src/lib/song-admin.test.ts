@@ -137,8 +137,8 @@ describe("registerSong", () => {
       "POST /songs/77/difficulties",
       "PUT /admin/difficulty-tables/3/entries/102",
     ]);
-    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ tierLabel: 5.8, recommend: "상", pattern: "단일" });
-    expect(JSON.parse(String(fetchMock.mock.calls[4][1]?.body))).toEqual({ tierLabel: null, recommend: null, pattern: null });
+    expect(JSON.parse(String(fetchMock.mock.calls[2][1]?.body))).toEqual({ tierLabel: 5.8, recommend: "상", pattern: "단일", ratingEnabled: false });
+    expect(JSON.parse(String(fetchMock.mock.calls[4][1]?.body))).toEqual({ tierLabel: null, recommend: null, pattern: null, ratingEnabled: false });
   });
 
   it("중간에 실패해도 다시 부르면 이미 만든 곡·채보는 건너뛰고 남은 것만 보낸다 (곡이 두 번 만들어지지 않는다)", async () => {

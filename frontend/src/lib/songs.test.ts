@@ -30,6 +30,7 @@ function entry(over: Partial<TableEntryResponse> & { songDifficultyId: number })
     recommendUncertain: false,
     pattern: null,
     patternUncertain: false,
+    ratingEnabled: true,
     mine: null,
     ...over,
   };

@@ -63,6 +63,7 @@ function entry(over: Partial<TableEntryResponse> & { songDifficultyId: number })
     recommendUncertain: false,
     pattern: "복합",
     patternUncertain: false,
+    ratingEnabled: true,
     mine: null,
     ...over,
   };

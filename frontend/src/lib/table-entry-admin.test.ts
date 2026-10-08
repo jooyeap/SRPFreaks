@@ -16,11 +16,12 @@ const entry: TableEntryResponse = {
   recommendUncertain: true,
   pattern: "복합",
   patternUncertain: false,
+  ratingEnabled: true,
   mine: null,
 };
 
 function check(tier: string, recommend = "", pattern = "") {
-  return tableEntrySchema.safeParse({ tier, recommend, pattern });
+  return tableEntrySchema.safeParse({ tier, recommend, pattern, ratingEnabled: false });
 }
 
 describe("tableEntrySchema", () => {
@@ -54,31 +55,44 @@ describe("tableEntrySchema", () => {
 
 describe("toTableEntryBody", () => {
   it("값이 있으면 숫자와 한글 값 그대로, 비웠으면 null로 보낸다", () => {
-    expect(toTableEntryBody({ tier: "5.8", recommend: "상", pattern: "레이팅 제외" })).toEqual({
+    expect(toTableEntryBody({ tier: "5.8", recommend: "상", pattern: "레이팅 제외", ratingEnabled: false })).toEqual({
       tierLabel: 5.8,
       recommend: "상",
       pattern: "레이팅 제외",
+      ratingEnabled: false,
     });
-    expect(toTableEntryBody({ tier: " ", recommend: "", pattern: "" })).toEqual({
+    expect(toTableEntryBody({ tier: " ", recommend: "", pattern: "", ratingEnabled: false })).toEqual({
       tierLabel: null,
       recommend: null,
       pattern: null,
+      ratingEnabled: false,
     });
+  });
+
+  it("레이팅 반영 스위치 값을 그대로 보낸다", () => {
+    expect(toTableEntryBody({ tier: "6.0", recommend: "", pattern: "단일", ratingEnabled: true }).ratingEnabled).toBe(true);
   });
 });
 
 describe("tableEntryToFormValues", () => {
   it("지금 값으로 초기값을 만든다 (기준 난이도는 소수 첫째 자리 문자열)", () => {
-    expect(tableEntryToFormValues(6, entry)).toEqual({ tier: "6.0", recommend: "상", pattern: "복합" });
+    expect(tableEntryToFormValues(6, entry)).toEqual({ tier: "6.0", recommend: "상", pattern: "복합", ratingEnabled: true });
   });
 
   it("표에 없는 채보나 값이 없는 줄은 비운 채로 시작한다", () => {
-    expect(tableEntryToFormValues(null, null)).toEqual({ tier: "", recommend: "", pattern: "" });
-    expect(tableEntryToFormValues(null, { ...entry, recommend: null, pattern: null })).toEqual({
+    // 새 줄은 레이팅 반영이 꺼진 채로 시작한다 (서버 기본값과 같다, D28)
+    expect(tableEntryToFormValues(null, null)).toEqual({ tier: "", recommend: "", pattern: "", ratingEnabled: false });
+    expect(tableEntryToFormValues(null, { ...entry, recommend: null, pattern: null, ratingEnabled: false })).toEqual({
       tier: "",
       recommend: "",
       pattern: "",
+      ratingEnabled: false,
     });
+  });
+
+  it("표에 있는 줄은 저장된 스위치 값을 그대로 보여 준다", () => {
+    expect(tableEntryToFormValues(6, { ...entry, ratingEnabled: false }).ratingEnabled).toBe(false);
+    expect(tableEntryToFormValues(6, { ...entry, ratingEnabled: true }).ratingEnabled).toBe(true);
   });
 
   it("알 수 없는 문자열은 빈 값으로 둔다 (선택 목록에 없는 값을 넣지 않는다)", () => {

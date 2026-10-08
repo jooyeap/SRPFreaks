@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { ChartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
 import type { TableEntryResponse } from "@/lib/api-types";
@@ -102,8 +102,18 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
     register,
     handleSubmit,
     setError,
+    setValue,
+    control,
     formState: { errors },
   } = useForm<TableEntryFormValues>({ resolver: zodResolver(tableEntrySchema), defaultValues, mode: "onTouched" });
+
+  // 레이팅 반영 스위치는 입력칸이 아니라 켜짐/꺼짐 버튼이라 register 대신 useWatch/setValue로 다룬다
+  // (watch 대신 useWatch: React Compiler 린트가 watch를 허용하지 않는다)
+  const ratingEnabled = useWatch({ control, name: "ratingEnabled" });
+  const tierValue = useWatch({ control, name: "tier" }).trim();
+  const patternValue = useWatch({ control, name: "pattern" });
+  // 스위치를 켜도 기준 난이도·속성이 없거나 속성이 '레이팅 제외'이면 계산에 들어가지 않는다 (서버 규칙과 같다)
+  const switchIneffective = ratingEnabled && (tierValue === "" || patternValue === "" || patternValue === "레이팅 제외");
 
   const mutation = useMutation({
     mutationFn: (values: TableEntryFormValues) =>
@@ -205,6 +215,44 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
             </p>
           ) : null}
         </div>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3">
+          <span id="entry-rating-label" className="text-sm text-fg-sub">
+            레이팅 반영
+          </span>
+          <span className="flex items-center gap-2">
+            {/* 색만으로 구분하지 않도록 켜짐/꺼짐 글자를 같이 보여 준다 */}
+            <span className="font-num text-xs font-semibold text-fg">{ratingEnabled ? "켜짐" : "꺼짐"}</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={ratingEnabled}
+              aria-labelledby="entry-rating-label"
+              aria-describedby="entry-rating-hint"
+              onClick={() => setValue("ratingEnabled", !ratingEnabled, { shouldDirty: true })}
+              className={`relative h-6 w-11 shrink-0 rounded-full border border-chip-line transition-colors ${
+                ratingEnabled ? "bg-chip-on-bg" : "bg-table-head"
+              }`}
+            >
+              <span
+                aria-hidden="true"
+                className={`absolute top-0.5 h-4.5 w-4.5 rounded-full transition-all ${
+                  ratingEnabled ? "left-5.5 bg-chip-on-fg" : "left-0.5 bg-fg-dim"
+                }`}
+              />
+            </button>
+          </span>
+        </div>
+        <p id="entry-rating-hint" className="text-[11px] text-fg-faint">
+          꺼 두면 기준 난이도와 속성이 있어도 모든 사용자의 레이팅에서 빠지고, 기록은 그대로 남습니다.
+        </p>
+        {switchIneffective ? (
+          <p role="status" className="text-sm text-fg">
+            지금 값으로는 계산에 들어가지 않습니다. 기준 난이도와 속성(레이팅 제외 아님)이 필요합니다.
+          </p>
+        ) : null}
       </div>
 
       <p className="text-xs text-fg-dim">
