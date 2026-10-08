@@ -1,13 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  chartEditSchema,
   emptyChart,
   emptySongCreate,
   MAX_CHARTS,
   newProgress,
   registerSong,
   songCreateSchema,
+  songToEditValues,
   toChartBody,
   toSongBody,
+  toSongUpdateBody,
   type SongCreateValues,
 } from "@/lib/song-admin";
 
@@ -153,5 +156,37 @@ describe("registerSong", () => {
     fetchMock.mockResolvedValueOnce(json({ id: 102 }, 201));
     await expect(registerSong(twoCharts(), null, progress)).resolves.toBe(77);
     expect(calls()).toEqual(["POST /songs/77/difficulties"]); // 곡과 첫 채보는 다시 만들지 않는다
+  });
+});
+
+describe("수정 본문", () => {
+  const song = {
+    id: 7,
+    title: "곡",
+    artist: null,
+    addedVersion: null,
+    titleFolder: "ㄱ",
+    bpmMin: 100,
+    bpmMax: null,
+    source: null,
+    titles: [],
+    difficulties: [],
+  };
+
+  it("songToEditValues: null은 빈 문자열이 된다", () => {
+    expect(songToEditValues(song)).toEqual({ title: "곡", artist: "", addedVersion: "" });
+  });
+
+  it("toSongUpdateBody: 빈 칸은 null, 화면에 없는 값은 지금 값 그대로, titles는 생략한다", () => {
+    const body = toSongUpdateBody(song, { title: " 새 ", artist: " ", addedVersion: "V3" });
+    expect(body).toEqual({ title: "새", artist: null, addedVersion: "V3", titleFolder: "ㄱ", bpmMin: 100, bpmMax: null });
+    expect("titles" in body).toBe(false);
+  });
+
+  it("chartEditSchema: 레벨 형식", () => {
+    expect(chartEditSchema.safeParse({ level: "9.5" }).success).toBe(true);
+    expect(chartEditSchema.safeParse({ level: "" }).success).toBe(false);
+    expect(chartEditSchema.safeParse({ level: "10.00" }).success).toBe(false);
+    expect(chartEditSchema.safeParse({ level: "9.555" }).success).toBe(false);
   });
 });

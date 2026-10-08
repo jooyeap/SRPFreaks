@@ -19,27 +19,34 @@ export const SONG_SOURCE = "admin-manual";
 /** 정수 1자리 + 선택적 소수 1~2자리 → 0.00 ~ 9.99 (서버의 DecimalMin/Max, Digits와 같은 범위). */
 const LEVEL_FORMAT = /^\d(\.\d{1,2})?$/;
 
+const levelField = z
+  .string()
+  .trim()
+  .superRefine((value, ctx) => {
+    if (value === "") {
+      ctx.addIssue({ code: "custom", message: "레벨을 입력해 주세요." });
+    } else if (!LEVEL_FORMAT.test(value)) {
+      ctx.addIssue({ code: "custom", message: "레벨은 0.00 ~ 9.99 사이의 숫자로 입력해 주세요. (소수 둘째 자리까지)" });
+    }
+  });
+
+/** 곡 정보 칸(등록·수정이 같은 규칙을 쓴다). */
+const songFields = {
+  title: z.string().trim().min(1, "곡명을 입력해 주세요.").max(255, "곡명은 255자 이하여야 합니다."),
+  artist: z.string().trim().max(255, "아티스트는 255자 이하여야 합니다."),
+  addedVersion: z.string().trim().max(30, "버전은 30자 이하여야 합니다."),
+};
+
 /** 채보 한 줄. 서열표 값(기준 난이도·추천도·속성)은 서열표 화면에서 열었을 때만 쓰고, 곡 목록에서 열면 비워 둔 채로 무시한다. */
 const chartSchema = tableEntrySchema.extend({
   part: z.enum(["GUITAR", "BASS"]),
   difficulty: z.enum(["BASIC", "ADVANCED", "EXTREME", "MASTER"]),
-  level: z
-    .string()
-    .trim()
-    .superRefine((value, ctx) => {
-      if (value === "") {
-        ctx.addIssue({ code: "custom", message: "레벨을 입력해 주세요." });
-      } else if (!LEVEL_FORMAT.test(value)) {
-        ctx.addIssue({ code: "custom", message: "레벨은 0.00 ~ 9.99 사이의 숫자로 입력해 주세요. (소수 둘째 자리까지)" });
-      }
-    }),
+  level: levelField,
 });
 
 export const songCreateSchema = z
   .object({
-    title: z.string().trim().min(1, "곡명을 입력해 주세요.").max(255, "곡명은 255자 이하여야 합니다."),
-    artist: z.string().trim().max(255, "아티스트는 255자 이하여야 합니다."),
-    addedVersion: z.string().trim().max(30, "버전은 30자 이하여야 합니다."),
+    ...songFields,
     charts: z.array(chartSchema).min(1, "채보를 하나 이상 입력해 주세요.").max(MAX_CHARTS, `채보는 ${MAX_CHARTS}개까지 입력할 수 있습니다.`),
   })
   .superRefine((value, ctx) => {
@@ -151,3 +158,45 @@ export const SONG_DELETE_AFFECTED_KEYS = [
   ["records"],
   ["players"],
 ] as const;
+
+// ---- 수정 (PUT /songs/{id}, PUT /difficulties/{id}) ------------------------------------------------
+
+export const songEditSchema = z.object(songFields);
+export type SongEditValues = z.infer<typeof songEditSchema>;
+
+export const chartEditSchema = z.object({ level: levelField });
+export type ChartEditValues = z.infer<typeof chartEditSchema>;
+
+export function songToEditValues(song: SongDetailResponse): SongEditValues {
+  return { title: song.title, artist: song.artist ?? "", addedVersion: song.addedVersion ?? "" };
+}
+
+/**
+ * PUT /songs/{id} 본문. 서버 수정은 "보낸 값으로 교체"라서 화면에 없는 값(타이틀 폴더, BPM)은 지금 값을 그대로 보내야 지워지지 않는다.
+ * titles(곡명 표기)는 보내지 않으면(생략) 서버가 기존 표기를 그대로 둔다. 출처(source)는 서버가 수정 때 바꾸지 않는다.
+ */
+export function toSongUpdateBody(song: SongDetailResponse, values: SongEditValues) {
+  return {
+    title: values.title.trim(),
+    artist: blankToNull(values.artist),
+    addedVersion: blankToNull(values.addedVersion),
+    titleFolder: song.titleFolder,
+    bpmMin: song.bpmMin,
+    bpmMax: song.bpmMax,
+  };
+}
+
+export function updateSong(song: SongDetailResponse, values: SongEditValues): Promise<SongDetailResponse> {
+  return apiFetch<SongDetailResponse>(`/songs/${song.id}`, { method: "PUT", body: toSongUpdateBody(song, values) });
+}
+
+/** PUT /difficulties/{id} 본문. 노트 수는 화면에 없으므로 지금 값을 그대로 보낸다. 파트·난이도는 서버가 바꾸지 못하게 한다. */
+export function updateChart(chart: SongChartResponse, values: ChartEditValues): Promise<SongChartResponse> {
+  return apiFetch<SongChartResponse>(`/difficulties/${chart.id}`, {
+    method: "PUT",
+    body: { level: Number(values.level), noteCount: chart.noteCount },
+  });
+}
+
+/** 수정하면 곡 상세·곡 목록·서열표·레이팅(레벨이 점수에 쓰이진 않지만 표시가 바뀐다)이 바뀐다. */
+export const SONG_EDIT_AFFECTED_KEYS = SONG_DELETE_AFFECTED_KEYS;

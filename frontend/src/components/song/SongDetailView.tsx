@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
+import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongDeleteControl } from "@/components/song/SongDeleteControl";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { SongHeader } from "@/components/song/SongHeader";
@@ -47,6 +48,7 @@ export function SongDetailView({
   const router = useRouter();
   const [recordOpen, setRecordOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<TableEntryTarget | null>(null);
+  const [songEdit, setSongEdit] = useState<SongEditTarget | null>(null);
 
   const song = useQuery({
     queryKey: songKeys.detail(songId),
@@ -164,6 +166,26 @@ export function SongDetailView({
             </button>
           ) : null}
           {canEditTable ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setSongEdit({ kind: "song", song: data })}
+                className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+              >
+                곡 정보 수정
+              </button>
+              {chart ? (
+                <button
+                  type="button"
+                  onClick={() => setSongEdit({ kind: "chart", song: data, chart })}
+                  className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                >
+                  채보 수정
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {canEditTable ? (
             <SongDeleteControl
               songId={data.id}
               songTitle={data.title}
@@ -216,6 +238,7 @@ export function SongDetailView({
         onClose={() => setRecordOpen(false)}
       />
       <TableEntryEditDialog target={editTarget} onClose={() => setEditTarget(null)} />
+      <SongEditDialog target={songEdit} onClose={() => setSongEdit(null)} />
     </div>
   );
 }
