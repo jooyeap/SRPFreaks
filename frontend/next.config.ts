@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { buildContentSecurityPolicy } from "./src/lib/csp";
 
 /**
  * 개발 중 /api/* 요청을 백엔드로 넘긴다 (rewrite).
@@ -15,6 +16,17 @@ const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8080";
 const nextConfig: NextConfig = {
   // 배포용: 실행에 필요한 파일만 .next/standalone 에 모아 준다. Docker 이미지에 node_modules 전체를 넣지 않아도 된다.
   output: "standalone",
+  // 모든 화면 응답에 CSP를 붙인다 (정책 내용과 이유는 src/lib/csp.ts)
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: buildContentSecurityPolicy(process.env.NODE_ENV !== "production") },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }];
   },
