@@ -2,6 +2,7 @@ import Link from "next/link";
 
 /** 관리 메뉴. 새 관리 화면이 생기면 여기에 한 줄 추가한다. */
 const ITEMS: { href: string; title: string; description: string }[] = [
+  { href: "/admin/settings", title: "설정", description: "레이팅 계수, 재킷 표시, 연락처를 바꿉니다." },
   { href: "/admin/audit-logs", title: "감사 로그", description: "관리 작업 기록을 최근 순으로 봅니다." },
 ];
 

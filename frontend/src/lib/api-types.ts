@@ -239,3 +239,11 @@ export interface AuditLogResponse {
   detail: Record<string, unknown> | null;
   createdAt: string;
 }
+
+/** 운영 설정 한 줄(백엔드 SettingResponse). updatedByNickname이 null이면 처음 값이거나 바꾼 사람이 탈퇴한 것이다. */
+export interface SettingResponse {
+  key: string;
+  value: string;
+  updatedByNickname: string | null;
+  updatedAt: string;
+}
