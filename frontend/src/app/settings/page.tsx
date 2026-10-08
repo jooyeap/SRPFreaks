@@ -45,6 +45,17 @@ export default function SettingsPage() {
       <section aria-label="유저 목록 공개 설정" className={card}>
         <ProfileVisibilityForm user={user} />
       </section>
+      {user.role === "ROOT" ? (
+        <section aria-label="관리" className={card}>
+          <h2 className="text-xs font-bold text-fg-sub">관리</h2>
+          <Link
+            href="/admin"
+            className="flex h-11 items-center justify-center rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+          >
+            관리 화면
+          </Link>
+        </section>
+      ) : null}
       <section aria-label="로그인 상태" className={card}>
         <h2 className="text-xs font-bold text-fg-sub">로그인 상태</h2>
         <button

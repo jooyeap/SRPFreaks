@@ -650,6 +650,7 @@ com.srpfreaks.backend
 ## 17. 변경 이력
 | 날짜 | 내용 |
 |---|---|
+| 2026-10-08 | **감사 로그 조회 구현.** `GET /admin/audit-logs?page=&size=`(ROOT 전용, 최근 순, 기본 30건·최대 100건). 응답에는 작업한 사람의 id와 닉네임만 있고 이메일·Google ID는 없다. 화면은 DESIGN-UI 16장 |
 | 2026-10-08 | **D27 추가.** 곡 상세에서 ROOT·ADMIN이 서열표 값(기준 난이도·추천도·속성)을 수정하거나 표에 없는 채보를 추가하는 API와 화면. `PUT /admin/difficulty-tables/{id}/entries/{songDifficultyId}`, 감사 로그, `?` 해제 |
 | 2026-10-08 | **D26 추가.** 유저 목록(닉네임·티어·총점, 본인이 공개를 선택)과 유저 상세(읽기 전용 레이팅 목록)를 구현 대상으로 하고 D15의 랭킹·유저 간 비교 보류를 일부 해제. `users.profile_public`, `/players` API, 설정의 공개 여부, 화면 항목, 개인정보 안내 추가. 곡별 랭킹·유저 비교는 계속 보류 |
 | 2026-10-08 | **곡 목록 화면 API 추가.** `GET /songs/chart-folders`, `GET /songs/charts`(레벨 폴더 통계, 폴더 안 채보·검색·필터 결과). **유저 목록 동점을 달성 시각 기준으로 변경**(`user_id` 단독 → 가장 늦은 달성 시각이 이른 쪽, 같으면 `user_id`). 7장·18.2 |

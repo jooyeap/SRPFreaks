@@ -225,3 +225,17 @@ export interface ChartRowResponse {
   level: number;
   mine: MyRecord | null;
 }
+
+// ---- 관리 (ROOT 전용, 백엔드 AuditLogResponse) ----------------------------------------------------
+
+/** 감사 로그 한 줄. 작업한 사람이 탈퇴했으면 actorId·actorNickname이 null이다. detail은 작업마다 모양이 달라 읽기만 한다. */
+export interface AuditLogResponse {
+  id: number;
+  actorId: number | null;
+  actorNickname: string | null;
+  action: string;
+  targetType: string | null;
+  targetId: string | null;
+  detail: Record<string, unknown> | null;
+  createdAt: string;
+}
