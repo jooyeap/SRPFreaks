@@ -26,6 +26,10 @@ replay_pid*
 
 # Local secrets
 .env
+# 운영용 .env.prod 등 실제 값이 든 환경변수 파일은 모두 제외하고, 값이 없는 예시 파일만 올린다
+.env.*
+!.env.example
+!.env.prod.example
 application-local.yml
 
 # 1회성 시드 SQL (데이터라 커밋하지 않는다, D23)
