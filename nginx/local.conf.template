@@ -1,0 +1,9 @@
+# 로컬 테스트 전용(HTTP만). 인증서 없이 compose가 정상 동작하는지 확인할 때만 쓴다. 운영에서는 쓰지 않는다.
+server {
+    listen 80;
+    server_name _;
+
+    client_max_body_size 1m;
+
+    include /etc/nginx/snippets/locations.conf;
+}
