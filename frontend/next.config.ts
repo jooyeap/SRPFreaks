@@ -13,6 +13,8 @@ import type { NextConfig } from "next";
 const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8080";
 
 const nextConfig: NextConfig = {
+  // 배포용: 실행에 필요한 파일만 .next/standalone 에 모아 준다. Docker 이미지에 node_modules 전체를 넣지 않아도 된다.
+  output: "standalone",
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }];
   },
