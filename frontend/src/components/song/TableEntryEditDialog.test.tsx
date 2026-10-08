@@ -145,6 +145,19 @@ describe("TableEntryEditDialog", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it("창 바깥을 누르면 닫지만, 창 안쪽 여백을 누르면 닫지 않는다", () => {
+    const { container } = renderDialog(existing);
+    const dialog = container.querySelector("dialog");
+    expect(dialog).not.toBeNull();
+    // jsdom은 레이아웃이 없어 getBoundingClientRect가 모두 0이다: (0, 0)은 창 안, 그 밖의 좌표는 창 바깥(::backdrop)이다
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue(new DOMRect(100, 100, 200, 200));
+    fireEvent.click(dialog as HTMLDialogElement, { clientX: 150, clientY: 150 });
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.click(dialog as HTMLDialogElement, { clientX: 10, clientY: 10 });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
+  });
+
   it("취소를 누르면 저장하지 않고 닫는다", () => {
     renderDialog(existing);
     fireEvent.click(screen.getByRole("button", { name: "취소" }));

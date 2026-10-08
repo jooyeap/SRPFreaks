@@ -66,8 +66,16 @@ export function TableEntryEditDialog({ target, onClose }: { target: TableEntryTa
       ref={ref}
       aria-labelledby="table-entry-dialog-title"
       onClose={onClose}
+      // 창 바깥(::backdrop)을 눌렀을 때만 닫는다. 창 안쪽 여백을 눌러도 target이 dialog 자신이라서 좌표로 구분한다
+      // (입력 중에 여백을 잘못 눌러 내용이 사라지지 않게).
       onClick={(event) => {
-        if (event.target === ref.current) {
+        if (event.target !== ref.current) {
+          return;
+        }
+        const rect = ref.current.getBoundingClientRect();
+        const inside =
+          event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+        if (!inside) {
           onClose();
         }
       }}

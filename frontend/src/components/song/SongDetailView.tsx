@@ -90,7 +90,8 @@ export function SongDetailView({
       entry: found?.entry ?? null,
     });
   };
-  const canShowTableEdit = canEditTable && chart !== null && tableId !== null && !groupsQuery.isPending;
+  // isSuccess: 서열표를 못 받았을 때(오류)는 found가 null이라 "추가"로 보이는데, 저장하면 이미 있는 줄을 빈 값으로 덮어쓸 수 있어서 숨긴다.
+  const canShowTableEdit = canEditTable && chart !== null && tableId !== null && groupsQuery.isSuccess;
 
   const backBar = (
     <div className="flex items-center justify-between gap-3">

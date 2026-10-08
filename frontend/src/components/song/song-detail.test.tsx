@@ -228,6 +228,20 @@ describe("SongDetailView", () => {
     expect(await screen.findByRole("button", { name: "서열표 값 수정" })).toBeInTheDocument();
   });
 
+  it("서열표를 받지 못하면(오류) 수정·추가 버튼을 숨긴다 (이미 있는 줄을 빈 값으로 덮어쓰지 않게)", async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
+      if (url.includes("/entries")) return Promise.resolve(json({ code: "INTERNAL_ERROR", message: "x", timestamp: "t" }, 500));
+      if (url.endsWith("/difficulty-tables")) return Promise.resolve(json(tables));
+      if (url.includes("/songs/")) return Promise.resolve(json(song));
+      return Promise.resolve(json({}, 404));
+    });
+    renderView("table", 10, false, true);
+    expect(await screen.findByText("이 채보는 서열표에 없습니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /서열표/ })).toBeNull();
+  });
+
   it("서열표에 없는 채보는 '서열표에 추가' 버튼이 보인다", async () => {
     // 13번 채보(Bass EXT)는 서열표 데이터에 없다
     songResponse = () =>
