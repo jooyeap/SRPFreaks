@@ -18,8 +18,13 @@ export function PlayerDetailView({ viewerId, playerId }: { viewerId: number; pla
   });
 
   const back = (
-    <Link href="/players" className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
-      유저 목록으로
+    <Link
+      href="/players"
+      aria-label="유저 목록으로"
+      title="유저 목록으로"
+      className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+    >
+      <span aria-hidden="true">←</span>
     </Link>
   );
 

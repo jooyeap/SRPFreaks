@@ -25,7 +25,7 @@ function errorMessage(error: unknown): string {
 /**
  * 곡 상세. 어디서 들어왔는지(origin)에 따라 구성이 다르다 (DESIGN-UI 6장).
  *  - table: 서열표 정보, 속성 칩, 이 곡의 다른 채보, 같은 묶음의 곡 목록
- *  - songs: 정보 카드(BPM·노트 수·버전), 레벨 정보 표 (속성은 표시하지 않는다)
+ *  - songs: 정보 카드(버전), 레벨 정보 표 (속성은 표시하지 않는다)
  * 서열표 전체는 한 번만 받아서(묶음 단위 페이지를 이어 붙임) 기준 난이도, 추천, 내 기록, 묶음 통계를 모두 여기서 꺼낸다.
  * 서열표를 못 받아도(서열표가 없거나 오류) 곡 정보와 기록 등록은 그대로 쓸 수 있게, 서열표 쪽 칸만 비워 둔다.
  */
@@ -98,9 +98,11 @@ export function SongDetailView({
       <button
         type="button"
         onClick={() => router.back()}
+        aria-label="뒤로"
+        title="뒤로"
         className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
       >
-        뒤로
+        <span aria-hidden="true">←</span>
       </button>
       <span className="text-sm font-semibold text-fg">곡 상세</span>
       {origin === "table" && found ? (
@@ -175,7 +177,7 @@ export function SongDetailView({
             </>
           ) : (
             <>
-              <InfoCards song={data} chart={chart} />
+              <InfoCards song={data} />
               <LevelTable song={data} selectedId={chart?.id ?? null} groups={groups} />
             </>
           )}

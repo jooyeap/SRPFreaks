@@ -19,7 +19,7 @@ export function MyRecordCard({
   mine: MyRecord | null;
   best: RecordResponse | null;
   chart: { part: InstrumentPart; difficulty: DifficultyType; level: number } | null;
-  /** 서열표에서 들어온 화면: SRN+ 줄을 강조하고 "서열표는 SRN+ 기준"이라고 적는다 */
+  /** 서열표에서 들어온 화면: SRN+ 줄을 강조하고 "서열표는 SRN+, Premium Free 기준"이라고 적는다 */
   emphasizeSrn: boolean;
   onRecord: () => void;
 }) {
@@ -57,7 +57,7 @@ export function MyRecordCard({
         </span>
       </div>
 
-      {emphasizeSrn ? <p className="text-xs text-fg-dim">서열표는 SRN+ 기준입니다.</p> : null}
+      {emphasizeSrn ? <p className="text-xs text-fg-dim">서열표는 SRN+, Premium Free 기준입니다.</p> : null}
 
       <button
         type="button"

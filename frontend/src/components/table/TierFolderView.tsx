@@ -44,8 +44,13 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
   });
 
   const back = (
-    <Link href="/table" className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
-      서열표로
+    <Link
+      href="/table"
+      aria-label="서열표로"
+      title="서열표로"
+      className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+    >
+      <span aria-hidden="true">←</span>
     </Link>
   );
 

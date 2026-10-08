@@ -163,7 +163,7 @@ describe("SongDetailView", () => {
     expect(within(mine).getByLabelText("달성 단계 EXC")).toBeInTheDocument();
     expect(within(mine).getByText("2026-10-05")).toBeInTheDocument(); // UTC 15:00 = 서울 다음 날 00:00
     expect(within(mine).getByText("SRN+")).toBeInTheDocument();
-    expect(within(mine).getByText("서열표는 SRN+ 기준입니다.")).toBeInTheDocument();
+    expect(within(mine).getByText("서열표는 SRN+, Premium Free 기준입니다.")).toBeInTheDocument();
 
     const neighbors = screen.getByRole("region", { name: "같은 묶음의 곡" });
     expect(within(neighbors).getByRole("link", { name: /앞곡/ })).toHaveAttribute("href", "/songs/9?from=table&chart=90");
@@ -185,12 +185,15 @@ describe("SongDetailView", () => {
     await waitFor(() => expect(within(mine).getByText("MAX")).toHaveClass("stage-grad-text"));
   });
 
-  it("곡 목록에서: BPM·노트 수·버전 카드와 레벨 정보 표를 보여 주고 속성은 보여 주지 않는다", async () => {
+  it("곡 목록에서: 버전 카드와 레벨 정보 표를 보여 주고 BPM·노트 수·속성은 보여 주지 않는다", async () => {
     renderView("songs", 10);
     const cards = await screen.findByRole("list", { name: "곡 정보 요약" });
-    expect(within(cards).getByText("120~180")).toBeInTheDocument();
-    expect(within(cards).getByText("1,234")).toBeInTheDocument(); // 선택된 채보(MAS 9.80)의 노트 수
     expect(within(cards).getByText("V5")).toBeInTheDocument();
+    // BPM과 노트 수는 화면에서 뺐다
+    expect(within(cards).queryByText("BPM")).toBeNull();
+    expect(within(cards).queryByText("노트 수")).toBeNull();
+    expect(screen.queryByText("120~180")).toBeNull();
+    expect(screen.queryByText("1,234")).toBeNull();
 
     const table = screen.getByRole("region", { name: "레벨 정보" });
     const rows = await within(table).findAllByRole("link");

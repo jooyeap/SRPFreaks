@@ -1,23 +1,22 @@
 import Link from "next/link";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { EMPTY_MARK, formatTier } from "@/lib/format";
-import type { SongChartResponse, SongDetailResponse, TierGroupResponse } from "@/lib/api-types";
-import { findChart, formatBpm, formatNoteCount, sortCharts } from "@/lib/songs";
+import type { SongDetailResponse, TierGroupResponse } from "@/lib/api-types";
+import { findChart, sortCharts } from "@/lib/songs";
 
 /** 곡 목록에서 들어온 곡 상세 주소. */
 export function songsDetailHref(songId: number, chartId: number): string {
   return `/songs/${songId}?from=songs&chart=${chartId}`;
 }
 
-/** 정보 카드 3개: BPM · 노트 수 · 버전. 노트 수는 채보마다 다르므로 선택된 채보 기준이다. */
-export function InfoCards({ song, chart }: { song: SongDetailResponse; chart: SongChartResponse | null }) {
-  const items = [
-    { label: "BPM", value: formatBpm(song.bpmMin, song.bpmMax) },
-    { label: "노트 수", value: formatNoteCount(chart?.noteCount) },
-    { label: "버전", value: song.addedVersion ?? EMPTY_MARK },
-  ];
+/**
+ * 정보 카드: 버전. BPM과 노트 수는 화면에 보이지 않는다(2026-10-08). 값은 서버가 계속 주므로
+ * 다시 보이게 할 때는 여기에 항목만 더하면 된다(lib/songs.ts의 formatBpm, formatNoteCount를 그대로 쓸 수 있다).
+ */
+export function InfoCards({ song }: { song: SongDetailResponse }) {
+  const items = [{ label: "버전", value: song.addedVersion ?? EMPTY_MARK }];
   return (
-    <ul className="grid grid-cols-3 gap-2" aria-label="곡 정보 요약">
+    <ul className="grid grid-cols-1 gap-2" aria-label="곡 정보 요약">
       {items.map((item) => (
         <li key={item.label} className="rounded-xl border border-line bg-card px-3 py-2.5">
           <p className="text-xs text-fg-dim">{item.label}</p>
