@@ -24,6 +24,16 @@ server:
   # 앞단 리버스 프록시(nginx)가 붙이는 X-Forwarded-For를 신뢰할 수 있는 내부 프록시에서 온 경우에만 반영한다. Rate Limit이 실제 클라이언트 IP를 보게 하기 위해서다
   forward-headers-strategy: native
 
+# 헬스체크: health 하나만 노출하고 상세(DB 종류 등)는 숨긴다. 나머지 actuator 엔드포인트는 만들지 않는다
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
 jwt:
   secret: ${JWT_SECRET}               # 32바이트 이상, 환경변수로만 주입
   issuer: srpfreaks

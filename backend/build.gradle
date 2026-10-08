@@ -26,6 +26,8 @@ dependencies {
 	// 구글 ID 토큰 검증(JWKS 서명 검증). 버전은 Spring Boot가 관리한다
 	implementation 'org.springframework.security:spring-security-oauth2-jose'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	// 헬스체크(/actuator/health 하나만 연다). Docker·nginx·배포 파이프라인이 서버가 살아 있는지 확인하는 데 쓴다
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'com.mysql:mysql-connector-j'

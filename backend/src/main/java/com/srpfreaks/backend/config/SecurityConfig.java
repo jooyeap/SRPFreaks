@@ -74,9 +74,11 @@ public class SecurityConfig {
                 .accessDeniedHandler((request, response, e) ->
                         JsonErrorWriter.write(response, ErrorCode.FORBIDDEN, clock.instant())))
             .authorizeHttpRequests(auth -> auth
-                // 공개 경로는 이 세 개뿐이다. 로그인 전에 불러야 하기 때문이다.
+                // 공개 API 경로는 이 세 개뿐이다. 로그인 전에 불러야 하기 때문이다.
                 .requestMatchers(HttpMethod.POST,
                         "/api/v1/auth/google", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
+                // 헬스체크(서버 생존 여부만 응답한다). 운영에서는 nginx가 바깥 요청을 막고 내부(Docker)만 부른다
+                .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                 .requestMatchers("/api/v1/**").authenticated()
                 // 그 밖의 모든 경로(/error, 문서 경로 포함)는 막는다
                 .anyRequest().denyAll())
