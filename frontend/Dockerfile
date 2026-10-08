@@ -37,7 +37,8 @@ COPY --from=build --chown=node:node /app/public ./public
 USER node
 EXPOSE 3000
 
+# localhost는 alpine에서 IPv6(::1)로 먼저 풀리는데 Next 서버는 IPv4(0.0.0.0)만 열어서 연결이 거부된다. 그래서 127.0.0.1로 부른다
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    CMD wget -q -O /dev/null http://localhost:3000/ || exit 1
+    CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1
 
 CMD ["node", "server.js"]
