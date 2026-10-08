@@ -139,8 +139,18 @@ describe("RatingView", () => {
       expect(card).toHaveClass("stage-tint");
       expect(card?.querySelector(".stage-bar")).not.toBeNull();
     }
-    expect(screen.getByText("에스곡")).not.toHaveClass("stage-name");
-    expect(screen.getByText("에프씨곡")).toHaveClass("stage-name");
+    // 곡명은 링크 안에 있고, 색 클래스는 감싼 문단에 붙는다
+    expect(screen.getByText("에스곡").closest("p")).not.toHaveClass("stage-name");
+    expect(screen.getByText("에프씨곡").closest("p")).toHaveClass("stage-name");
+  });
+
+  it("곡명을 누르면 그 채보의 곡 상세(서열표 기준)로 갈 수 있다", async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(skill({ single: [entry({ songId: 100, songDifficultyId: 10, title: "링크곡" })], other: [entry({ songId: 200, songDifficultyId: 20, title: "복합링크곡" })] })),
+    );
+    renderView();
+    expect(await screen.findByRole("link", { name: "링크곡" })).toHaveAttribute("href", "/songs/100?from=table&chart=10");
+    expect(screen.getByRole("link", { name: "복합링크곡" })).toHaveAttribute("href", "/songs/200?from=table&chart=20");
   });
 
   it("기록이 하나도 없으면 안내와 서열표 링크를 보여 준다", async () => {
