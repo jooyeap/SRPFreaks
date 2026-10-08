@@ -13,6 +13,12 @@ export function SiteHeader() {
         </Link>
         <nav aria-label="주요 메뉴" className="order-last flex w-full gap-1.5 sm:order-none sm:w-auto sm:gap-3">
           <Link
+            href="/songs"
+            className="flex-1 whitespace-nowrap rounded-xl border border-line py-1.5 text-center text-sm font-semibold text-fg-sub hover:text-fg sm:flex-none sm:border-0 sm:py-0 sm:font-normal"
+          >
+            곡 목록
+          </Link>
+          <Link
             href="/table"
             className="flex-1 whitespace-nowrap rounded-xl border border-line py-1.5 text-center text-sm font-semibold text-fg-sub hover:text-fg sm:flex-none sm:border-0 sm:py-0 sm:font-normal"
           >
@@ -23,6 +29,12 @@ export function SiteHeader() {
             className="flex-1 whitespace-nowrap rounded-xl border border-line py-1.5 text-center text-sm font-semibold text-fg-sub hover:text-fg sm:flex-none sm:border-0 sm:py-0 sm:font-normal"
           >
             레이팅
+          </Link>
+          <Link
+            href="/players"
+            className="flex-1 whitespace-nowrap rounded-xl border border-line py-1.5 text-center text-sm font-semibold text-fg-sub hover:text-fg sm:flex-none sm:border-0 sm:py-0 sm:font-normal"
+          >
+            유저
           </Link>
         </nav>
         <div className="ml-auto flex items-center gap-2 whitespace-nowrap">

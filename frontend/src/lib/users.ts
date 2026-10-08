@@ -10,3 +10,11 @@ export function updateMyNickname(nickname: string | null): Promise<UserResponse>
 export function withdrawMyAccount(): Promise<void> {
   return apiFetch<void>("/users/me", { method: "DELETE" });
 }
+
+/**
+ * 유저 목록 공개 여부 변경(D26). 닉네임이 없으면 서버가 400으로 거부한다(화면에서도 먼저 막는다).
+ * 닉네임 변경 API와 따로 둔 이유: 닉네임 요청은 값이 비면 "닉네임 삭제"라서 공개 값만 보내면 닉네임이 지워질 수 있다.
+ */
+export function updateMyVisibility(profilePublic: boolean): Promise<UserResponse> {
+  return apiFetch<UserResponse>("/users/me/visibility", { method: "PATCH", body: { profilePublic } });
+}

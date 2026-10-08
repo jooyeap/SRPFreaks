@@ -9,6 +9,8 @@ export interface UserResponse {
   email: string;
   nickname: string | null;
   role: Role;
+  /** 유저 목록·상세에 공개할지(D26). 기본 false. 닉네임이 없으면 켤 수 없다. */
+  profilePublic: boolean;
   createdAt: string; // ISO 8601, UTC
 }
 
@@ -164,3 +166,22 @@ export interface SongDetailResponse {
   titles: { kind: TitleKind; title: string }[];
   difficulties: SongChartResponse[];
 }
+
+// ---- 유저 목록 / 유저 상세 (백엔드 PlayerSummaryResponse / PlayerDetailResponse, D26) ----------
+
+/** 유저 목록의 한 줄. 이메일·역할 등은 서버가 내려 주지 않는다. userId는 상세 주소에 쓰는 식별자다(닉네임은 중복될 수 있다). */
+export interface PlayerSummaryResponse {
+  userId: number;
+  rank: number;
+  nickname: string;
+  tier: PlayerTierResponse;
+  totalScore: number;
+}
+
+/** 유저 상세(읽기 전용): 닉네임과 그 유저의 레이팅 목록. 내 레이팅(/skills/me)과 같은 모양이다. */
+export interface PlayerDetailResponse {
+  userId: number;
+  nickname: string;
+  skill: SkillResponse;
+}
+

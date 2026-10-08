@@ -17,7 +17,7 @@ const AUTH: AuthResponse = {
   accessToken: "access-1",
   tokenType: "Bearer",
   expiresIn: 900,
-  user: { id: 1, email: "a@example.com", nickname: "tester", role: "USER", createdAt: "2026-10-01T00:00:00Z" },
+  user: { id: 1, email: "a@example.com", nickname: "tester", role: "USER", profilePublic: false, createdAt: "2026-10-01T00:00:00Z" },
 };
 
 function json(body: unknown, status = 200): Response {

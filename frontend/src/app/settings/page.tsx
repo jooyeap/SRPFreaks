@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { NicknameForm } from "@/components/settings/NicknameForm";
+import { ProfileVisibilityForm } from "@/components/settings/ProfileVisibilityForm";
 
-/** 설정 화면: 계정 정보, 닉네임, 로그아웃, 탈퇴로 가는 링크. 내 정보이므로 로그인이 필요하다. */
+/** 설정 화면: 계정 정보, 닉네임, 유저 목록 공개 여부, 로그아웃, 탈퇴로 가는 링크. 내 정보이므로 로그인이 필요하다. */
 export default function SettingsPage() {
   const { status, user, logout } = useAuth();
 
@@ -40,6 +41,9 @@ export default function SettingsPage() {
       </section>
       <section aria-label="닉네임 설정" className={card}>
         <NicknameForm initialNickname={user.nickname} />
+      </section>
+      <section aria-label="유저 목록 공개 설정" className={card}>
+        <ProfileVisibilityForm user={user} />
       </section>
       <section aria-label="로그인 상태" className={card}>
         <h2 className="text-xs font-bold text-fg-sub">로그인 상태</h2>
