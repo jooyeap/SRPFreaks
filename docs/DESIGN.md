@@ -600,7 +600,7 @@ com.srpfreaks.backend
 5. (가져오기 대기열은 보류. 18.4)
 
 ### 시드 데이터 규칙 (1회성 SQL, D23)
-- 스프레드시트 열 → 컬럼: 곡명 → `songs.title`, 초출 Ver → `songs.added_version`, 파트(G/B) → GUITAR/BASS, 난이도(ADV/EXT/MAS) → ADVANCED/EXTREME/MASTER, 레벨 → `song_difficulties.level`
+- 스프레드시트 열 → 컬럼: 곡명 → `songs.title`, 버전 → `songs.added_version`, 파트(G/B) → GUITAR/BASS, 난이도(ADV/EXT/MAS) → ADVANCED/EXTREME/MASTER, 레벨 → `song_difficulties.level`
 - 서열표 값: 기준 난이도 → `tier_label`, 추천도(상/중/하) → `recommend`, 패턴 주 속성 → `pattern_type`, 값 뒤의 `?` → `uncertain = true` (값에서는 `?`를 뗀다)
 - 시트의 달성률 열은 **개인 기록**이므로 곡/서열표 마스터에 넣지 않는다.
 - **`?` 처리(2026-10-02 확정):** 추천도가 `?`뿐이면 **미정**(NULL)으로 둔다. 기준 난이도가 `?`뿐이면 **그대로 둔다**(`tier_label` NULL, `uncertain = true`). 속성 값의 오타(`복하`)는 `복합`으로 고쳤다. 기준 난이도가 비어 있는 채보는 비어 있는 채로 등록한다(NULL = 미정). **속성이 비어 있는 채보는 `레이팅 제외`로 채워 등록한다** (2026-10-02 개정, 시드 274채보).
@@ -613,7 +613,7 @@ com.srpfreaks.backend
 - 값 종류는 DB enum을 쓰지 않는다. `instrument_part`, `difficulty_type`, `recommend`, `pattern_type`은 `VARCHAR`로 두고 허용 값은 애플리케이션 코드에서 검증한다. 서열표 값은 채보 테이블이 아니라 `difficulty_table_entries`에 둔다 (D8).
 - 곡명은 정규화한다 (유니코드 NFKC, 앞뒤 공백/줄바꿈 제거, 대소문자 무시)하고 `normalized_title`로 비교한다. 곡명이 같고 파트/난이도가 다르면 같은 곡의 다른 채보다.
 - 시드 마스터(2026-10-02 취합): 최신 시트 2개(628채보) + 이전 v1.1 시트의 하위 난이도 41채보 = **465곡, 669채보**(레벨 5.65~9.99, 기타 474 · 베이스 195, MAS 538 · EXT 125 · ADV 6). 기준 난이도 없음 220, 속성 없음 274, 추천도 미정 65, 그중 기준 난이도 값이 있는 채보 445, 없는 채보(미정) 224. 낮은 레벨 채보는 시트에 없으므로 이후 관리 API로 채운다.
-- 시트의 **초출 Ver가 채보마다 다른 곡이 6곡** 있다 (月暈, Ouroboros, ENCOUNT, Anathema, Six String Proof, Dragon Killer). **확정(2026-10-02): 곡 단위 `songs.added_version` 하나만 두고, 이 6곡은 가장 이른(구) 버전으로 통일한다.** 채보별 `added_version` 컬럼은 만들지 않는다. 시드 CSV에는 통일한 값만 있다.
+- 시트의 **버전이 채보마다 다른 곡이 6곡** 있다 (月暈, Ouroboros, ENCOUNT, Anathema, Six String Proof, Dragon Killer). **확정(2026-10-02): 곡 단위 `songs.added_version` 하나만 두고, 이 6곡은 가장 이른(구) 버전으로 통일한다.** 채보별 `added_version` 컬럼은 만들지 않는다. 시드 CSV에는 통일한 값만 있다.
 
 ### 기록 입력 (CSV 일괄 입력 없음, D23)
 - 달성률 CSV 일괄 입력은 만들지 않는다. 기록은 사용자가 한 건씩 입력한다(빠른 입력 화면: 직전 옵션/파트를 기본값으로 유지, 10장).
@@ -628,9 +628,9 @@ com.srpfreaks.backend
 - [x] access 토큰 만료 → 15분 (D20, `application.yml` 900000 적용)
 - [x] 탈퇴 시 기록 처리 → 완전 삭제 (D20)
 - [x] 프론트 배포 위치 → 같은 서버, 같은 도메인 (D20)
-- [x] 초출 Ver가 채보마다 다른 곡 6곡 → 가장 이른 버전으로 통일, 곡 단위 하나만 (확정)
+- [x] 버전이 채보마다 다른 곡 6곡 → 가장 이른 버전으로 통일, 곡 단위 하나만 (확정)
 - [x] (보류, 18.4) 공식 페이지 링크에 곡 고유 ID가 있는지 (2026-10-02 점검: 상세 링크의 `sid`/`index`는 곡 ID가 아닌 것으로 보임, 곡명 매칭 전제)
-- [x] `released_at` → 초출 Ver(`added_version`)로 충분해서 **컬럼을 뺀다** (운영자 결정)
+- [x] `released_at` → 버전(`added_version`)으로 충분해서 **컬럼을 뺀다** (운영자 결정)
 - [x] 기준 난이도 열 → 높을수록 어렵다, 0.1 단위 (운영자 확인)
 - [x] 재킷 이미지 → 운영자가 수집해 사용하기로 함, 위험을 알고 쓰는 선택 (D21)
 - [x] 삭제 요청 연락처 → eyoung071212@gmail.com (설정 `contact.takedown_email`, 푸터에 표시)
