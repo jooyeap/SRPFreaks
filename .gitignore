@@ -32,5 +32,10 @@ replay_pid*
 !.env.prod.example
 application-local.yml
 
+# 서버 접속용 개인 키(SSH .pem 등). 폴더와 상관없이 확장자로 막는다. 절대 커밋하지 않는다
+*.pem
+*.ppk
+*.key
+
 # 1회성 시드 SQL (데이터라 커밋하지 않는다, D23)
 scripts/seed/out/
