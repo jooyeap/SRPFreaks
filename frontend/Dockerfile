@@ -8,12 +8,15 @@ RUN npm ci
 # ---------- 2단계: 빌드 ----------
 FROM node:22-alpine AS build
 WORKDIR /app
-# 아래 두 값은 "빌드할 때" 코드에 고정된다. 실행 중 환경변수로는 바꿀 수 없다.
+# 아래 세 값은 "빌드할 때" 코드에 고정된다. 실행 중 환경변수로는 바꿀 수 없다.
 # - NEXT_PUBLIC_GOOGLE_CLIENT_ID: 브라우저 코드에 들어간다 (공개돼도 되는 값)
+# - NEXT_PUBLIC_CONTACT_EMAIL: 푸터에 보이는 문의 메일 (비어 있으면 숨김)
 # - BACKEND_URL: /api 요청을 넘길 백엔드 주소. compose 안에서는 서비스 이름으로 부른다
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ARG NEXT_PUBLIC_CONTACT_EMAIL=
 ARG BACKEND_URL=http://backend:8080
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID \
+    NEXT_PUBLIC_CONTACT_EMAIL=$NEXT_PUBLIC_CONTACT_EMAIL \
     BACKEND_URL=$BACKEND_URL \
     NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules node_modules
