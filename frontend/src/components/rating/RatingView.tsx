@@ -2,31 +2,42 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { ApiError } from "@/lib/api";
-import type { SkillEntryResponse } from "@/lib/api-types";
+import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
+import { formatScore } from "@/lib/format";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
 
 function Group({
   title,
   entries,
   limit,
+  score,
   emptyText,
 }: {
   title: string;
   entries: SkillEntryResponse[];
   limit: number;
+  /** 이 구역 채보의 점수 합계 (서버가 계산한 singleScore/otherScore) */
+  score: number;
   emptyText: string;
 }) {
   return (
     <section aria-label={title} className="flex flex-col gap-2">
-      <h2 className="font-num text-[17px] font-bold text-fg">
-        {title}{" "}
-        <span className="font-num text-sm font-normal text-fg-sub">
-          {entries.length}/{limit}
-        </span>
-      </h2>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-num text-[17px] font-bold text-fg">
+          {title}{" "}
+          <span className="font-num text-sm font-normal text-fg-sub">
+            {entries.length}/{limit}
+          </span>
+        </h2>
+        {/* 구역 합산: 위 요약 카드의 단일/복합·이중·삼중 소계와 같은 값이다 */}
+        <p className="shrink-0 text-xs text-fg-dim">
+          합산 <span className="font-num text-sm font-semibold text-fg">{formatScore(score)}</span>
+        </p>
+      </div>
       {entries.length === 0 ? (
         <p className="text-sm text-fg-sub">{emptyText}</p>
       ) : (
@@ -41,8 +52,39 @@ function Group({
 }
 
 /**
- * 레이팅 화면 본문. 합계와 목록은 모두 서버가 계산한 값을 그대로 보여 준다 (화면에서 다시 계산하지 않는다).
- * 로그인한 사용자만 이 컴포넌트를 그린다. 서버는 항상 토큰의 사용자 본인 목록만 돌려준다.
+ * 레이팅 본문(요약 카드 + 단일 / 복합·이중·삼중 목록 + 안내). 내 레이팅 화면과 유저 상세(읽기 전용)가 함께 쓴다.
+ * 합계와 목록은 모두 서버가 계산한 값을 그대로 보여 준다 (화면에서 다시 계산하지 않는다).
+ * emptyHint: 목록이 모두 비었을 때의 안내. 내 화면은 서열표 링크, 남의 화면은 단순 문구를 넘긴다.
+ */
+export function RatingBody({ skill, emptyHint }: { skill: SkillResponse; emptyHint: ReactNode }) {
+  const empty = skill.single.length === 0 && skill.other.length === 0;
+  return (
+    <>
+      <RatingSummary skill={skill} />
+      {empty ? <p className="text-sm text-fg-sub">{emptyHint}</p> : null}
+      <Group
+        title="단일"
+        entries={skill.single}
+        limit={skill.singleLimit}
+        score={skill.singleScore}
+        emptyText="속성이 단일인 채보의 기록이 아직 없습니다."
+      />
+      <Group
+        title="복합·이중·삼중"
+        entries={skill.other}
+        limit={skill.otherLimit}
+        score={skill.otherScore}
+        emptyText="속성이 복합·이중·삼중인 채보의 기록이 아직 없습니다."
+      />
+      <p className="text-xs text-fg-dim">
+        기준 난이도와 속성이 없는 채보는 레이팅에서 제외됩니다. 같은 곡의 다른 채보는 각각 계산합니다.
+      </p>
+    </>
+  );
+}
+
+/**
+ * 레이팅 화면. 로그인한 사용자만 이 컴포넌트를 그린다. 서버는 항상 토큰의 사용자 본인 목록만 돌려준다.
  */
 export function RatingView({ userId }: { userId: number }) {
   const { data, isPending, isError, error } = useQuery({
@@ -61,35 +103,21 @@ export function RatingView({ userId }: { userId: number }) {
     );
   }
 
-  const empty = data.single.length === 0 && data.other.length === 0;
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-xl font-semibold text-fg">레이팅</h1>
-      <RatingSummary skill={data} />
-      {empty ? (
-        <p className="text-sm text-fg-sub">
-          레이팅에 들어갈 기록이 아직 없습니다.{" "}
-          <Link href="/table" className="underline">
-            서열표
-          </Link>
-          에서 기록을 입력해 주세요.
-        </p>
-      ) : null}
-      <Group
-        title="단일"
-        entries={data.single}
-        limit={data.singleLimit}
-        emptyText="속성이 단일인 채보의 기록이 아직 없습니다."
+      <RatingBody
+        skill={data}
+        emptyHint={
+          <>
+            레이팅에 들어갈 기록이 아직 없습니다.{" "}
+            <Link href="/table" className="underline">
+              서열표
+            </Link>
+            에서 기록을 입력해 주세요.
+          </>
+        }
       />
-      <Group
-        title="복합·이중·삼중"
-        entries={data.other}
-        limit={data.otherLimit}
-        emptyText="속성이 복합·이중·삼중인 채보의 기록이 아직 없습니다."
-      />
-      <p className="text-xs text-fg-dim">
-        기준 난이도와 속성이 없는 채보는 레이팅에서 제외됩니다. 같은 곡의 다른 채보는 각각 계산합니다.
-      </p>
     </div>
   );
 }

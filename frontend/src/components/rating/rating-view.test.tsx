@@ -108,6 +108,41 @@ describe("RatingView", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/skills/me");
   });
 
+  it("각 구역 제목 오른쪽에 그 구역의 점수 합산을 보여 준다", async () => {
+    fetchMock.mockResolvedValueOnce(json(skill({ singleScore: 700.25, otherScore: 425.5 })));
+    renderView();
+    const single = await screen.findByRole("region", { name: "단일" });
+    expect(within(single).getByText(/합산/)).toHaveTextContent("합산 700.25");
+    const other = screen.getByRole("region", { name: "복합·이중·삼중" });
+    expect(within(other).getByText(/합산/)).toHaveTextContent("합산 425.50");
+  });
+
+  it("모든 단계(S 포함)의 카드에 단계 효과(왼쪽 띠와 틴트)가 붙고, FC/EXC만 곡명 색이 바뀐다", async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(
+        skill({
+          single: [
+            entry({ songDifficultyId: 1, title: "에스곡", stage: "S", achievementRate: 85 }),
+            entry({ songDifficultyId: 2, title: "에프씨곡", stage: "FC", achievementRate: 98, fullCombo: true }),
+          ],
+        }),
+      ),
+    );
+    const { container } = renderView();
+    await screen.findByText("에스곡");
+
+    const cards = Array.from(container.querySelectorAll("li[data-stage]"));
+    const byStage = (stage: string) => cards.find((li) => li.getAttribute("data-stage") === stage);
+    for (const stage of ["S", "FC"]) {
+      const card = byStage(stage);
+      expect(card, stage).toBeDefined();
+      expect(card).toHaveClass("stage-tint");
+      expect(card?.querySelector(".stage-bar")).not.toBeNull();
+    }
+    expect(screen.getByText("에스곡")).not.toHaveClass("stage-name");
+    expect(screen.getByText("에프씨곡")).toHaveClass("stage-name");
+  });
+
   it("기록이 하나도 없으면 안내와 서열표 링크를 보여 준다", async () => {
     fetchMock.mockResolvedValueOnce(json(skill({ totalScore: 0, singleScore: 0, otherScore: 0, single: [], other: [] })));
     renderView();
