@@ -74,8 +74,8 @@ export function TierGroupSection({
       </header>
 
       <TableHeadRow />
-      {/* 모바일: 4열 카드 격자 / 데스크톱: 표 (각 항목이 md 기준으로 서로를 숨긴다) */}
-      <ul className="grid grid-cols-4 gap-2 px-3 pb-3 md:block md:p-0">
+      {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
+      <ul>
         {group.entries.map((entry) => (
           <EntryCard key={`card-${entry.entryId}`} entry={entry} onRecord={onRecord} />
         ))}

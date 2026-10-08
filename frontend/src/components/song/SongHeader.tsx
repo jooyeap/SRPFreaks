@@ -1,4 +1,4 @@
-import { SongJacket } from "@/components/SongJacket";
+// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { ChartBadge } from "@/components/table/Badges";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 
@@ -21,9 +21,10 @@ export function SongHeader({
 }) {
   return (
     <section aria-label="곡 정보" className="flex items-stretch gap-3.5">
-      <SongJacket className="h-[124px] w-[124px] rounded-[18px]">
+      {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
+      {/* <SongJacket className="h-[124px] w-[124px] rounded-[18px]">
         {chart ? <span data-difficulty={chart.difficultyType} className="diff-band absolute inset-x-0 bottom-0 h-1.5" /> : null}
-      </SongJacket>
+      </SongJacket> */}
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-1.5 py-0.5">
         {/* 속성 칩 자리는 값이 없어도 높이를 잡아 둬서, 속성 유무로 곡명 위치가 흔들리지 않게 한다 */}
         <div className="flex min-h-[26px] justify-end">

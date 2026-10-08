@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SongJacket } from "@/components/SongJacket";
+// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
@@ -120,7 +120,8 @@ function NeighborItem({ label, entry }: { label: string; entry: TableEntryRespon
       className="flex items-center gap-2.5 border-t border-row-line px-3.5 py-2.5 first:border-t-0 hover:bg-table-head"
     >
       <span className="w-[30px] text-[11px] text-fg-dim">{label}</span>
-      <SongJacket className="h-8 w-8 rounded-[7px]" />
+      {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
+      {/* <SongJacket className="h-8 w-8 rounded-[7px]" /> */}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold text-fg">{entry.title}</span>
         <span className="mt-0.5 block">

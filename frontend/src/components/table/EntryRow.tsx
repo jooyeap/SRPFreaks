@@ -1,20 +1,19 @@
 import Link from "next/link";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
-import { SongJacket } from "@/components/SongJacket";
+// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { tableDetailHref } from "@/components/song/TableContext";
 import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 
 /** 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. 채보 열(116px)은 파트·난이도·레벨 알약 하나다. */
 export const ROW_GRID =
-  "md:grid md:grid-cols-[4px_40px_minmax(0,1fr)_116px_64px_44px_52px_72px_48px] md:items-center md:gap-x-3";
+  "md:grid md:grid-cols-[4px_minmax(0,1fr)_116px_64px_44px_52px_72px_48px] md:items-center md:gap-x-3";
 
 /** 데스크톱 표의 머리 행 (모바일에서는 보이지 않는다). */
 export function TableHeadRow() {
   return (
     <div className={`hidden bg-table-head px-3 py-2 text-xs text-fg-dim ${ROW_GRID}`} aria-hidden="true">
-      <span />
       <span />
       <span>곡명</span>
       <span>채보</span>
@@ -40,7 +39,8 @@ export function EntryRow({ entry, onRecord }: { entry: TableEntryResponse; onRec
       className={`hidden border-t border-row-line px-3 py-2 text-sm md:grid ${ROW_GRID} ${stage ? "stage-tint" : ""}`}
     >
       <span className={`h-8 w-1 rounded ${stage ? "stage-bar" : "bg-transparent"}`} aria-hidden="true" />
-      <SongJacket className="h-10 w-10 rounded-lg" />
+      {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. (ROW_GRID의 재킷 열도 함께 뺐다) */}
+      {/* <SongJacket className="h-10 w-10 rounded-lg" /> */}
       <span className="flex min-w-0 items-center gap-2">
         <Link
           href={tableDetailHref(entry)}

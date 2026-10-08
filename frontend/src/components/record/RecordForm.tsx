@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { SongJacket } from "@/components/SongJacket";
+// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { StageBadge } from "@/components/table/StageBadge";
 import { ChartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
@@ -126,7 +126,8 @@ export function RecordForm({
   return (
     <form onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <SongJacket className="h-11 w-11 rounded-[9px]" />
+        {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
+        {/* <SongJacket className="h-11 w-11 rounded-[9px]" /> */}
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-bold text-fg">{chart.title}</p>
           <p className="mt-1 flex items-center gap-2 text-xs text-fg-sub">

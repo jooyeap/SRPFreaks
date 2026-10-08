@@ -1,4 +1,4 @@
-import { SongJacket } from "@/components/SongJacket";
+// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
@@ -23,7 +23,8 @@ export function RatingEntryCard({ entry }: { entry: SkillEntryResponse }) {
       <span className="w-6 shrink-0 text-center font-num text-xs text-fg-dim max-[359px]:w-4" aria-label={`${entry.rank}위`}>
         {entry.rank}
       </span>
-      <SongJacket className="h-14 w-14 rounded-lg max-[359px]:h-10 max-[359px]:w-10" />
+      {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
+      {/* <SongJacket className="h-14 w-14 rounded-lg max-[359px]:h-10 max-[359px]:w-10" /> */}
       <div className="min-w-0 flex-1">
         <p className={`truncate text-sm ${entry.stage === "EXC" || entry.stage === "FC" ? "stage-name" : "text-fg"}`}>
           {entry.title}
