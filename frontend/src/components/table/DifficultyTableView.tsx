@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
+import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { Chip, FilterChips, type ChipOption } from "@/components/table/FilterChips";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
@@ -46,7 +47,7 @@ function errorMessage(error: unknown): string {
  * 서열표 본문. 로그인한 사용자만 이 컴포넌트를 그린다(서버 API가 로그인을 요구하고, 내 기록을 함께 보여 주기 때문).
  * userId를 쿼리 키에 넣는 이유: 로그아웃 후 다른 계정으로 로그인했을 때 이전 사용자의 기록 캐시가 보이지 않게 하려는 것이다.
  */
-export function DifficultyTableView({ userId }: { userId: number }) {
+export function DifficultyTableView({ userId, canRegister = false }: { userId: number; canRegister?: boolean }) {
   const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(0);
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
@@ -86,10 +87,14 @@ export function DifficultyTableView({ userId }: { userId: number }) {
   const data = entries.data;
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-fg">{table.name}</h1>
-        <p className="mt-1 text-sm text-fg-sub">속성은 SRN, SRN+ 옵션 사용 기준</p>
-        <TableCredit className="mt-1 text-xs text-fg-dim" />
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-fg">{table.name}</h1>
+          <p className="mt-1 text-sm text-fg-sub">속성은 SRN, SRN+ 옵션 사용 기준</p>
+          <TableCredit className="mt-1 text-xs text-fg-dim" />
+        </div>
+        {/* ROOT·ADMIN만: 곡과 채보를 등록하면서 이 서열표에도 추가한다 */}
+        {canRegister ? <SongCreateButton tableId={table.id} /> : null}
       </div>
 
       {/* 모바일: 접힌 상태에서도 지금 걸린 필터를 한 줄로 보여 준다. 데스크톱(md 이상)은 버튼 없이 항상 펼친다 */}

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ChartList } from "@/components/songs/ChartList";
 import { FolderSection } from "@/components/songs/FolderSection";
 import { SongListFilterPanel } from "@/components/songs/SongListFilterPanel";
+import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { SongSearchBox } from "@/components/songs/SongSearchBox";
 import { Chip } from "@/components/table/FilterChips";
 import { ApiError } from "@/lib/api";
@@ -30,10 +31,13 @@ export function SongListView({
   userId,
   filters,
   onFiltersChange,
+  canRegister = false,
 }: {
   userId: number;
   filters: SongListFilters;
   onFiltersChange: (next: SongListFilters) => void;
+  /** ROOT·ADMIN이면 true. `곡 등록` 버튼을 보여 준다. 서버도 권한을 다시 검사한다. */
+  canRegister?: boolean;
 }) {
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
@@ -58,9 +62,12 @@ export function SongListView({
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold text-fg">곡 목록</h1>
-        {total ? <p className="mt-1 text-sm text-fg-sub font-num">{total}</p> : null}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-fg">곡 목록</h1>
+          {total ? <p className="mt-1 text-sm text-fg-sub font-num">{total}</p> : null}
+        </div>
+        {canRegister ? <SongCreateButton /> : null}
       </div>
 
       <div className="flex items-center gap-2">

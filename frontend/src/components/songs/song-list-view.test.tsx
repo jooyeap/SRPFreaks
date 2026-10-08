@@ -53,20 +53,20 @@ function json(body: unknown): Response {
 }
 
 /** 부모(주소 쿼리) 역할: 조건을 상태로 들고 있다가 SongListView에 넘긴다. */
-function Harness({ initial = EMPTY_SONG_FILTERS }: { initial?: SongListFilters }) {
+function Harness({ initial = EMPTY_SONG_FILTERS, canRegister = false }: { initial?: SongListFilters; canRegister?: boolean }) {
   const [filters, setFilters] = useState(initial);
-  return <SongListView userId={1} filters={filters} onFiltersChange={setFilters} />;
+  return <SongListView userId={1} filters={filters} onFiltersChange={setFilters} canRegister={canRegister} />;
 }
 
 describe("SongListView", () => {
   const fetchMock = vi.fn<typeof fetch>();
   const chartCalls = () => fetchMock.mock.calls.map(([input]) => String(input)).filter((u) => u.includes("/songs/charts"));
 
-  function renderView(initial?: SongListFilters) {
+  function renderView(initial?: SongListFilters, canRegister = false) {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
       <QueryClientProvider client={client}>
-        <Harness initial={initial} />
+        <Harness initial={initial} canRegister={canRegister} />
       </QueryClientProvider>,
     );
   }
@@ -87,6 +87,16 @@ describe("SongListView", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  it("곡 등록 버튼은 canRegister(ROOT·ADMIN)일 때만 보인다", async () => {
+    const { unmount } = renderView();
+    await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+    expect(screen.queryByRole("button", { name: "곡 등록" })).toBeNull();
+    unmount();
+
+    renderView(undefined, true);
+    expect(await screen.findByRole("button", { name: "곡 등록" })).toBeInTheDocument();
+  });
 
   it("레벨 높은 폴더부터 곡·채보 수와 통계를 보여 주고, 접힌 폴더는 채보를 요청하지 않는다", async () => {
     renderView();

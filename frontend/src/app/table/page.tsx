@@ -22,5 +22,5 @@ export default function TablePage() {
       </section>
     );
   }
-  return <DifficultyTableView userId={user.id} />;
+  return <DifficultyTableView userId={user.id} canRegister={user.role !== "USER"} />;
 }

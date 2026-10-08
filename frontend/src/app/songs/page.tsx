@@ -41,7 +41,7 @@ function SongsContent() {
       </section>
     );
   }
-  return <SongListView userId={user.id} filters={filters} onFiltersChange={onFiltersChange} />;
+  return <SongListView userId={user.id} filters={filters} onFiltersChange={onFiltersChange} canRegister={user.role !== "USER"} />;
 }
 
 export default function SongsPage() {
