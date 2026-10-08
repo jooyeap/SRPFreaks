@@ -475,7 +475,7 @@ com.srpfreaks.backend
 | 서열표 값 수정·채보 추가 (D27) | PUT `/admin/difficulty-tables/{tableId}/entries/{songDifficultyId}` (본문 `tierLabel`(null=미정), `recommend`(상/중/하/null), `pattern`(단일/복합/이중/삼중/레이팅 제외/null). 보낸 값으로 교체, 표에 없으면 추가, `?` 해제, 표 revision +1, 감사 로그) | ROOT·ADMIN |
 | 서열표 만들기 | POST `/admin/difficulty-tables` (이름, 파트(선택), 기준 옵션) | ROOT·ADMIN |
 | 설정 | GET/PATCH `/admin/settings` | ROOT |
-| 역할 | PATCH `/admin/users/{id}/role` | ROOT |
+| 사용자·역할 | GET `/admin/users?page=&size=`(가입 순, 이메일·역할·상태 포함, Google ID 제외), PATCH `/admin/users/{id}/role` body `{"role": "ADMIN"\|"USER"}` (ROOT로 바꾸는 요청은 400, ROOT 계정의 역할 변경은 403, 이미 그 역할이면 변경 없음, 변경은 `audit_logs`의 `USER_ROLE_CHANGE`에 사용자 id와 전/후 역할만 남김) | ROOT |
 | 감사 로그 | GET `/admin/audit-logs` | ROOT |
 
 - Swagger(springdoc)로 문서 자동 생성. 운영 환경에서는 노출 제한.
@@ -650,6 +650,7 @@ com.srpfreaks.backend
 ## 17. 변경 이력
 | 날짜 | 내용 |
 |---|---|
+| 2026-10-08 | **사용자 목록·역할 변경 구현.** `GET /admin/users`, `PATCH /admin/users/{id}/role`(ROOT 전용). ADMIN 지정/해제만 가능하고 ROOT는 만들지도 바꾸지도 못한다(5장 규칙 유지). 역할은 요청마다 DB에서 읽으므로 바로 반영된다 |
 | 2026-10-08 | **설정 조회·변경 구현.** `GET /admin/settings`(ROOT, 키 순, 한 번에 최대 100개), `PATCH /admin/settings/{key}` body `{"value": "..."}`. 새 키는 만들 수 없고(404) 키별로 값을 검사한다: `rating.*`는 바꾼 값을 끼워 넣은 전체 설정으로 `RatingConfig`를 실제로 만들어 보고(계산에 쓸 수 없으면 400, 잘못된 값이 저장돼 레이팅 화면이 500이 되는 것을 막는다), `ui.show_song_images`는 true/false, 나머지는 비어 있지 않은 글자. 변경은 `audit_logs`(`SETTING_UPDATE`, 변경 전/후)에 남긴다 |
 | 2026-10-08 | **감사 로그 조회 구현.** `GET /admin/audit-logs?page=&size=`(ROOT 전용, 최근 순, 기본 30건·최대 100건). 응답에는 작업한 사람의 id와 닉네임만 있고 이메일·Google ID는 없다. 화면은 DESIGN-UI 16장 |
 | 2026-10-08 | **D27 추가.** 곡 상세에서 ROOT·ADMIN이 서열표 값(기준 난이도·추천도·속성)을 수정하거나 표에 없는 채보를 추가하는 API와 화면. `PUT /admin/difficulty-tables/{id}/entries/{songDifficultyId}`, 감사 로그, `?` 해제 |

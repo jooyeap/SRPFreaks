@@ -1,11 +1,12 @@
 import { apiFetch } from "@/lib/api";
-import type { AuditLogResponse, PageResponse, SettingResponse } from "@/lib/api-types";
+import type { AdminUserResponse, AuditLogResponse, PageResponse, Role, SettingResponse } from "@/lib/api-types";
 
 /** 관리(ROOT) 쿼리 키. 보는 사람(viewerId)을 넣는 이유는 다른 화면과 같다(계정이 바뀌어도 이전 캐시가 보이지 않게). */
 export const adminKeys = {
   all: ["admin"] as const,
   auditLogs: (viewerId: number, page: number) => ["admin", "audit-logs", viewerId, page] as const,
   settings: (viewerId: number) => ["admin", "settings", viewerId] as const,
+  users: (viewerId: number, page: number) => ["admin", "users", viewerId, page] as const,
 };
 
 export const AUDIT_LOG_PAGE_SIZE = 30;
@@ -122,3 +123,24 @@ export function validateSettingValue(key: string, raw: string): string | null {
 
 /** 설정을 바꾸면 레이팅 계산과 그 결과(내 레이팅, 유저 목록 총점)가 달라질 수 있어 함께 새로 받는다. */
 export const SETTING_AFFECTED_KEYS = [["admin"], ["skill"], ["players"]] as const;
+
+// ---- 사용자 / 역할 ------------------------------------------------------------------------------------
+
+export const ADMIN_USERS_PAGE_SIZE = 30;
+
+/** 화면에서 고를 수 있는 역할. ROOT로 바꾸는 기능은 없다(ROOT는 환경변수로만 만든다). */
+export const ASSIGNABLE_ROLES = ["USER", "ADMIN"] as const;
+
+const ROLE_LABELS: Record<Role, string> = { ROOT: "운영자(ROOT)", ADMIN: "관리자(ADMIN)", USER: "일반 사용자(USER)" };
+
+export function roleLabel(role: Role): string {
+  return ROLE_LABELS[role];
+}
+
+export function fetchAdminUsers(page: number, size: number, signal?: AbortSignal): Promise<PageResponse<AdminUserResponse>> {
+  return apiFetch<PageResponse<AdminUserResponse>>("/admin/users", { query: { page, size }, signal });
+}
+
+export function changeUserRole(userId: number, role: Role): Promise<AdminUserResponse> {
+  return apiFetch<AdminUserResponse>(`/admin/users/${userId}/role`, { method: "PATCH", body: { role } });
+}

@@ -5,6 +5,8 @@ import com.srpfreaks.backend.entity.User;
 import com.srpfreaks.backend.entity.UserStatus;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /** 사용자 조회/저장. */
@@ -23,4 +25,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** 유저 상세(D26): 공개를 켠 ACTIVE 유저 한 명. 비공개·차단·없는 유저는 모두 빈 값이라 서비스가 똑같이 404로 응답한다. */
     Optional<User> findByIdAndProfilePublicTrueAndStatus(Long id, UserStatus status);
+
+    /** 관리 화면(ROOT) 사용자 목록: 가입 순(id 오름차순). */
+    Page<User> findAllByOrderByIdAsc(Pageable pageable);
 }

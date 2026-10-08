@@ -247,3 +247,13 @@ export interface SettingResponse {
   updatedByNickname: string | null;
   updatedAt: string;
 }
+
+/** 관리 화면(ROOT)의 사용자 한 줄(백엔드 AdminUserResponse). Google ID는 오지 않는다. */
+export interface AdminUserResponse {
+  id: number;
+  email: string;
+  nickname: string | null;
+  role: Role;
+  status: "ACTIVE" | "BLOCKED";
+  createdAt: string;
+}
