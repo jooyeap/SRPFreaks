@@ -77,7 +77,11 @@ class SongChartListServiceTest {
 
     private PageResponse<ChartRowResponse> call(String q, BigDecimal folder, InstrumentPart part,
                                                 List<DifficultyType> types, String version, int page, int size) {
-        return service.charts(7L, q, folder, part, types, version, page, size);
+        return service.charts(7L, q, folder, null, part, types, version, page, size);
+    }
+
+    private PageResponse<ChartRowResponse> callWithStep(BigDecimal folder, BigDecimal folderStep) {
+        return service.charts(7L, null, folder, folderStep, null, null, null, 0, 50);
     }
 
     @Test
@@ -86,6 +90,83 @@ class SongChartListServiceTest {
         assertThat(SongChartListService.folderLow(new BigDecimal("9.50"))).isEqualByComparingTo("9.50");
         assertThat(SongChartListService.folderLow(new BigDecimal("9.99"))).isEqualByComparingTo("9.50");
         assertThat(SongChartListService.folderLow(new BigDecimal("10.00"))).isEqualByComparingTo("10.00");
+    }
+
+    @Test
+    void 하위_폴더_경계는_0점05_단위로_내림한다() {
+        BigDecimal step = new BigDecimal("0.05");
+        assertThat(SongChartListService.folderLow(new BigDecimal("9.04"), step)).isEqualByComparingTo("9.00");
+        assertThat(SongChartListService.folderLow(new BigDecimal("9.05"), step)).isEqualByComparingTo("9.05");
+        assertThat(SongChartListService.folderLow(new BigDecimal("9.09"), step)).isEqualByComparingTo("9.05");
+        assertThat(SongChartListService.folderLow(new BigDecimal("9.10"), step)).isEqualByComparingTo("9.10");
+        assertThat(SongChartListService.folderLow(new BigDecimal("9.49"), step)).isEqualByComparingTo("9.45");
+    }
+
+    @Test
+    void 폴더_안에_0점05_하위_폴더가_레벨_높은_순으로_들어_있고_빈_하위_폴더는_없다() {
+        guitar("a", "9.00");
+        guitar("b", "9.04");
+        guitar("c", "9.10");
+        guitar("d", "9.49");
+        stubCharts();
+        stubBests(7L);
+
+        ChartFolderResponse folder = service.folders(7L).folders().get(0);
+
+        assertThat(folder.lo()).isEqualByComparingTo("9.00");
+        assertThat(folder.subFolders()).extracting(f -> f.lo().toPlainString()).containsExactly("9.45", "9.10", "9.00");
+        assertThat(folder.subFolders().get(2).hi()).isEqualByComparingTo("9.04");
+        assertThat(folder.subFolders().get(2).total()).isEqualTo(2);
+        // 하위 폴더 개수를 합치면 큰 폴더와 같다
+        assertThat(folder.subFolders().stream().mapToInt(ChartFolderResponse::total).sum()).isEqualTo(folder.total());
+        assertThat(folder.subFolders()).allSatisfy(f -> assertThat(f.subFolders()).isEmpty());
+    }
+
+    @Test
+    void 하위_폴더도_같은_규칙으로_통계를_센다() {
+        SongDifficulty exc = guitar("exc", "9.00");
+        guitar("none", "9.03");
+        SongDifficulty other = guitar("other", "9.10");
+        stubCharts();
+        stubBests(7L,
+                new RecordBest(exc.getId(), new BigDecimal("100.00"), true),
+                new RecordBest(other.getId(), new BigDecimal("80.00"), false));
+
+        ChartFolderResponse sub = service.folders(7L).folders().get(0).subFolders().get(1);   // 9.00 ~ 9.04
+
+        assertThat(sub.total()).isEqualTo(2);
+        assertThat(sub.recorded()).isEqualTo(1);
+        assertThat(sub.exc()).isEqualTo(1);
+        assertThat(sub.s()).isZero();   // 9.10 채보의 S는 다른 하위 폴더에 센다
+        assertThat(sub.averageRecorded()).isEqualByComparingTo("100.00");
+        assertThat(sub.averageWithZero()).isEqualByComparingTo("50.00");
+    }
+
+    @Test
+    void 폴더_단위를_0점05로_주면_하위_폴더_채보만_준다() {
+        guitar("in1", "9.50");
+        guitar("in2", "9.54");
+        guitar("out", "9.55");
+        stubCharts();
+        stubBests(7L);
+
+        // 같은 9.50이라도 단위에 따라 범위가 다르다: 큰 폴더는 9.50 ~ 9.99, 하위 폴더는 9.50 ~ 9.54
+        assertThat(callWithStep(new BigDecimal("9.50"), new BigDecimal("0.05")).content())
+                .extracting(ChartRowResponse::title).containsExactlyInAnyOrder("in1", "in2");
+        assertThat(callWithStep(new BigDecimal("9.50"), null).content()).hasSize(3);
+        assertThat(callWithStep(new BigDecimal("9.55"), new BigDecimal("0.05")).content())
+                .extracting(ChartRowResponse::title).containsExactly("out");
+    }
+
+    @Test
+    void 폴더_단위는_0점50과_0점05만_받는다() {
+        assertThatThrownBy(() -> callWithStep(new BigDecimal("9.50"), new BigDecimal("0.10"))).isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> callWithStep(new BigDecimal("9.50"), BigDecimal.ZERO)).isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> callWithStep(new BigDecimal("9.50"), new BigDecimal("-0.05"))).isInstanceOf(ApiException.class);
+        // 0.05의 배수가 아니면 하위 폴더 시작값이 될 수 없다
+        assertThatThrownBy(() -> callWithStep(new BigDecimal("9.52"), new BigDecimal("0.05"))).isInstanceOf(ApiException.class);
+        // 0.05의 배수여도 큰 폴더(0.50) 시작값은 아니다 (기존 규칙 유지)
+        assertThatThrownBy(() -> callWithStep(new BigDecimal("9.55"), null)).isInstanceOf(ApiException.class);
     }
 
     @Test

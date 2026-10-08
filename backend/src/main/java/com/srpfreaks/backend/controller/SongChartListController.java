@@ -39,11 +39,12 @@ public class SongChartListController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) BigDecimal folder,
+            @RequestParam(required = false) BigDecimal folderStep,
             @RequestParam(required = false) InstrumentPart part,
             @RequestParam(required = false) List<DifficultyType> difficulty,
             @RequestParam(required = false) String version,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + SongChartListService.DEFAULT_PAGE_SIZE) int size) {
-        return songChartListService.charts(user.id(), q, folder, part, difficulty, version, page, size);
+        return songChartListService.charts(user.id(), q, folder, folderStep, part, difficulty, version, page, size);
     }
 }

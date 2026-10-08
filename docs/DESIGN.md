@@ -470,8 +470,8 @@ com.srpfreaks.backend
 | 난이도표 | GET `/difficulty-tables` / POST·PATCH | USER+ / ADMIN+ |
 | 서열표 | GET `/difficulty-tables/{id}/entries?mine=true&part=&recommend=&pattern=&page=&size=` (기준 난이도 묶음 단위 페이지(기본 10, 최대 20), 묶음마다 칩 개수(EXC/FC/SS/S/S 미만)·평균(0% 미포함/포함 둘 다), 항목마다 본인 최고 기록과 단계. 쿼리 2번 고정: 항목 fetch join + 본인 최고 기록 group by. 본인 기록은 표의 기준 옵션(SRN+)만, 채보의 최고 달성률과 FC 여부(하나라도 FC면 FC)로 계산) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |
-| 곡 목록 폴더 | GET `/songs/chart-folders` (전체 곡 수·채보 수, 버전 목록, 0.5 단위 레벨 폴더별 칩 개수·평균(0% 미포함/포함 둘 다). 채보가 없는 폴더는 없다. 쿼리: 채보+곡 fetch join 1번 + 본인 SRN+ 최고 기록 group by 1번) | USER+ |
-| 곡 목록 채보 | GET `/songs/charts?folder=&q=&part=&difficulty=&version=&page=&size=` (채보 단위 페이지(기본 20, 최대 50). `folder`는 폴더 시작 레벨이고 0.5 단위가 아니면 400, `difficulty`는 쉼표로 여러 개, 정렬은 레벨 높은 순 → 곡명 → id. 항목마다 본인 SRN+ 최고 기록과 단계. 곡 검색은 `/songs`와 같은 조건(곡명·아티스트·정규화 표기). 속성은 담지 않는다) | USER+ |
+| 곡 목록 폴더 | GET `/songs/chart-folders` (전체 곡 수·채보 수, 버전 목록, 0.5 단위 레벨 폴더별 칩 개수·평균(0% 미포함/포함 둘 다)과, 폴더마다 그 안의 0.05 단위 하위 폴더 `subFolders`(같은 통계, 하위 폴더 개수의 합 = 큰 폴더). 채보가 없는 폴더는 없다. 쿼리: 채보+곡 fetch join 1번 + 본인 SRN+ 최고 기록 group by 1번) | USER+ |
+| 곡 목록 채보 | GET `/songs/charts?folder=&q=&part=&difficulty=&version=&page=&size=` (채보 단위 페이지(기본 20, 최대 50). `folder`는 폴더 시작 레벨, `folderStep`은 그 단위(생략하면 0.50, `0.05`만 더 허용. 9.50이 큰 폴더인지 하위 폴더인지 구분). 단위의 배수가 아니거나 허용 밖 단위면 400, `difficulty`는 쉼표로 여러 개, 정렬은 레벨 높은 순 → 곡명 → id. 항목마다 본인 SRN+ 최고 기록과 단계. 곡 검색은 `/songs`와 같은 조건(곡명·아티스트·정규화 표기). 속성은 담지 않는다) | USER+ |
 | 서열표 목록 | GET `/difficulty-tables` | USER+ |
 | 서열표 값 수정·채보 추가 (D27) | PUT `/admin/difficulty-tables/{tableId}/entries/{songDifficultyId}` (본문 `tierLabel`(null=미정), `recommend`(상/중/하/null), `pattern`(단일/복합/이중/삼중/레이팅 제외/null), `ratingEnabled`(true/false, 생략하면 기존 값 유지·새 줄은 꺼짐, D28). 보낸 값으로 교체, 표에 없으면 추가, `?` 해제, 표 revision +1, 감사 로그) | ROOT·ADMIN |
 | 서열표 만들기 | POST `/admin/difficulty-tables` (이름, 파트(선택), 기준 옵션) | ROOT·ADMIN |
@@ -656,6 +656,7 @@ com.srpfreaks.backend
 | 2026-10-08 | **감사 로그 조회 구현.** `GET /admin/audit-logs?page=&size=`(ROOT 전용, 최근 순, 기본 30건·최대 100건). 응답에는 작업한 사람의 id와 닉네임만 있고 이메일·Google ID는 없다. 화면은 DESIGN-UI 16장 |
 | 2026-10-08 | **D27 추가.** 곡 상세에서 ROOT·ADMIN이 서열표 값(기준 난이도·추천도·속성)을 수정하거나 표에 없는 채보를 추가하는 API와 화면. `PUT /admin/difficulty-tables/{id}/entries/{songDifficultyId}`, 감사 로그, `?` 해제 |
 | 2026-10-08 | **D26 추가.** 유저 목록(닉네임·티어·총점, 본인이 공개를 선택)과 유저 상세(읽기 전용 레이팅 목록)를 구현 대상으로 하고 D15의 랭킹·유저 간 비교 보류를 일부 해제. `users.profile_public`, `/players` API, 설정의 공개 여부, 화면 항목, 개인정보 안내 추가. 곡별 랭킹·유저 비교는 계속 보류 |
+| 2026-10-08 | **곡 목록 하위 폴더.** 0.5 폴더 안에 0.05 단위 하위 폴더(`subFolders`, 같은 통계)를 추가하고 `GET /songs/charts`에 `folderStep`(0.50 기본 / 0.05)을 더했다. 9.50이 큰 폴더인지 하위 폴더인지 구분하려는 것이다. 9장 |
 | 2026-10-08 | **곡 목록 화면 API 추가.** `GET /songs/chart-folders`, `GET /songs/charts`(레벨 폴더 통계, 폴더 안 채보·검색·필터 결과). **유저 목록 동점을 달성 시각 기준으로 변경**(`user_id` 단독 → 가장 늦은 달성 시각이 이른 쪽, 같으면 `user_id`). 7장·18.2 |
 | 2026-10-08 | **D26 구현.** `users.profile_public` 컬럼(V1 직접 수정), `GET /players`·`GET /players/{userId}`, `PATCH /users/me/visibility`(설계의 `PATCH /users/me` 확장 대신 별도 경로), 동점은 user_id 오름차순으로 구현(18.2에 사유 기록) |
 | 2026-10-05 | **D23 추가.** CSV 일괄 등록·내려받기·달성률 CSV 입력을 만들지 않기로 하고 시드는 1회성 SQL로 입력한다. 관련 규칙(권한표, API 표, 15장 곡 마스터 확장)을 정리 |
