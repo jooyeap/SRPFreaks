@@ -94,7 +94,7 @@ export function OtherCharts({ charts }: { charts: readonly TableEntryResponse[] 
 }
 
 /**
- * 같은 묶음의 곡: 묶음 안의 모든 채보를 서열표 순서(레벨 높은 순)로 보여 준다. 눌러서 이동한다.
+ * 같은 난이도의 곡: 묶음 안의 모든 채보를 서열표 순서(레벨 높은 순)로 보여 준다. 눌러서 이동한다.
  * 지금 보는 채보는 강조하고(aria-current) 목록이 길면(48개 등) 목록 안에서만 스크롤하며, 열릴 때 현재 채보 위치로 맞춘다.
  * 아래 링크로 묶음 페이지(/table/folder/…)에서 묶음 전체를 크게 볼 수 있다.
  */
@@ -113,10 +113,10 @@ export function GroupSongList({ group, index }: { group: TierGroupResponse; inde
   }, [group, index]);
 
   return (
-    <section aria-label="같은 묶음의 곡" className="flex flex-col gap-2">
+    <section aria-label="같은 난이도의 곡" className="flex flex-col gap-2">
       <h2 className="flex items-baseline justify-between px-1 font-num text-[17px] font-bold text-fg">
         <span>
-          같은 묶음의 곡 <span className="font-sans text-xs font-normal text-fg-dim">{group.entries.length}개</span>
+          같은 난이도의 곡 <span className="font-sans text-xs font-normal text-fg-dim">{group.entries.length}개</span>
         </span>
         <Link href={folderHref(group.tier)} className="font-sans text-xs font-normal text-fg-sub hover:text-fg">
           묶음 전체 보기

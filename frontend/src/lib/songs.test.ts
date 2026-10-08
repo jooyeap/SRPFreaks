@@ -133,7 +133,7 @@ describe("서열표 전체에서 찾기", () => {
     expect(findChart(groups, 999)).toBeNull();
   });
 
-  it("앞/뒤 곡은 같은 묶음 안에서만 찾는다", () => {
+  it("앞/뒤 곡은 같은 난이도 안에서만 찾는다", () => {
     expect(neighbors(groups[0], 0)).toEqual({ prev: null, next: b });
     expect(neighbors(groups[0], 1)).toEqual({ prev: a, next: c });
     expect(neighbors(groups[0], 2)).toEqual({ prev: b, next: null });

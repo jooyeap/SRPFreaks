@@ -157,7 +157,7 @@ describe("SongDetailView", () => {
     return render(<QueryClientProvider client={client}>{wrapAuth ? <AuthProvider>{view}</AuthProvider> : view}</QueryClientProvider>);
   }
 
-  it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 묶음의 곡 목록, 다른 채보를 보여 준다", async () => {
+  it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 난이도의 곡 목록, 다른 채보를 보여 준다", async () => {
     renderView("table", 10);
     expect(await screen.findByRole("heading", { name: "테스트곡" })).toBeInTheDocument();
     expect(await screen.findByText("속성 복합")).toBeInTheDocument();
@@ -174,7 +174,7 @@ describe("SongDetailView", () => {
     expect(within(mine).getByText("SRN+")).toBeInTheDocument();
     expect(within(mine).getByText("서열표는 SRN+, Premium Free 기준입니다.")).toBeInTheDocument();
 
-    const neighbors = screen.getByRole("region", { name: "같은 묶음의 곡" });
+    const neighbors = screen.getByRole("region", { name: "같은 난이도의 곡" });
     expect(within(neighbors).getByRole("link", { name: /앞곡/ })).toHaveAttribute("href", "/songs/9?from=table&chart=90");
     expect(within(neighbors).getByRole("link", { name: /뒷곡/ })).toHaveAttribute("href", "/songs/8?from=table&chart=91");
     expect(within(neighbors).getByText("기록 없음")).toBeInTheDocument();
@@ -216,7 +216,7 @@ describe("SongDetailView", () => {
     expect(rows[2]).toHaveTextContent("–");
 
     expect(screen.queryByText(/속성/)).toBeNull();
-    expect(screen.queryByRole("region", { name: "같은 묶음의 곡" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "같은 난이도의 곡" })).toBeNull();
   });
 
   it("chart 값이 이 곡의 채보가 아니면 레벨이 가장 높은 채보를 고른다", async () => {
@@ -298,9 +298,9 @@ describe("SongDetailView", () => {
     }
   });
 
-  it("서열표에서: 같은 묶음의 곡과 다른 채보 링크도 바꿔치기(replace)한다", async () => {
+  it("서열표에서: 같은 난이도의 곡과 다른 채보 링크도 바꿔치기(replace)한다", async () => {
     renderView("table", 10);
-    const neighbors = await screen.findByRole("region", { name: "같은 묶음의 곡" });
+    const neighbors = await screen.findByRole("region", { name: "같은 난이도의 곡" });
     for (const link of within(neighbors).getAllByRole("link")) {
       // 맨 위의 `묶음 전체 보기`는 다른 화면으로 나가는 링크라 기록을 쌓는다
       if (link.getAttribute("href")?.startsWith("/table/folder")) {
