@@ -3,7 +3,7 @@ import { StageBadge } from "@/components/table/StageBadge";
 import { folderHref, type TableProgress } from "@/lib/difficulty-table";
 import { formatTier } from "@/lib/format";
 
-/** 전체가 있고 기록이 모두 채워졌으면 완료. 완료한 묶음은 막대와 기준 난이도 글자 색이 달라진다(색 값은 globals.css의 --done). */
+/** 전체가 있고 기록이 모두 채워졌으면 완료. 완료한 묶음은 막대와 기준 난이도 글자 색이 달라진다(`n/n` 숫자가 같이 보이므로 색만으로 구분하는 것은 아니다)(색 값은 globals.css의 --done). */
 function isDone(recorded: number, total: number): boolean {
   return total > 0 && recorded >= total;
 }
@@ -36,7 +36,6 @@ export function TableProgressCard({ progress }: { progress: TableProgress }) {
       <div className="flex flex-col gap-1">
         <p className="text-sm text-fg-sub">
           기록 <span className="font-num font-semibold text-fg">{progress.recorded}</span>/{progress.total}
-          {isDone(progress.recorded, progress.total) ? <span className="ml-2 text-xs font-bold text-done-text">완료</span> : null}
           <span className="ml-2 font-num text-xs text-fg-dim">{percent(progress.recorded, progress.total)}%</span>
         </p>
         <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-table-head">
@@ -72,8 +71,7 @@ export function TableProgressCard({ progress }: { progress: TableProgress }) {
                     style={{ width: `${percent(g.recorded, g.total)}%` }}
                   />
                 </span>
-                <span className="w-[5.5rem] shrink-0 text-right font-num text-xs text-fg-sub">
-                  {done ? <span className="mr-1.5 font-sans font-bold text-done-text">완료</span> : null}
+                <span className="w-14 shrink-0 text-right font-num text-xs text-fg-sub">
                   {g.recorded}/{g.total}
                 </span>
               </Link>

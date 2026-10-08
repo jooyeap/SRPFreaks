@@ -30,7 +30,7 @@
   --chip-on-bg: #eef0f6;
   --chip-on-fg: #0f1218;
   --danger: #ff8f8f;
-  /* 서열표 진행도에서 기록이 모두 채워진 묶음: 막대(done)와 기준 난이도 글자(done-text). 글자 `완료`가 같이 있어 색만으로 구분하지 않는다 */
+  /* 서열표 진행도에서 기록이 모두 채워진 묶음: 막대(done)와 기준 난이도 글자(done-text). 기록 숫자 n/n이 같이 보인다 */
   --done: #4ade80; --done-text: #86efac;
 
   /* 단계 (docs/DESIGN-UI.md 2·4장). bar = 행 막대, text = 달성률 숫자, name = 곡명(EXC/FC만 다름), tint = 행 배경 틴트 */

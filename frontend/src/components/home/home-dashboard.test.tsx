@@ -116,17 +116,16 @@ describe("HomeDashboard", () => {
       "/table/folder/undecided",
     ]);
     expect(rows[0]).toHaveTextContent("4/10");
-    // 기록이 모두 채워진 묶음(5.0, 20/20)만 `완료` 글자와 완료 색(막대·기준 난이도 글자)이 붙는다
-    expect(rows[0]).not.toHaveTextContent("완료");
+    // 기록이 모두 채워진 묶음(5.0, 20/20)만 완료 색(막대·기준 난이도 글자)이 붙는다. `완료` 글자는 쓰지 않는다
     expect(rows[0].closest("li")).not.toHaveAttribute("data-done");
-    expect(rows[1]).toHaveTextContent("완료");
     expect(rows[1]).toHaveTextContent("20/20");
+    expect(rows[1]).not.toHaveTextContent("완료");
     expect(rows[1].closest("li")).toHaveAttribute("data-done", "true");
     expect(rows[1].querySelector(".text-done-text")).not.toBeNull();
     expect(rows[1].querySelector(".bg-done")).not.toBeNull();
     expect(rows[0].querySelector(".bg-done")).toBeNull();
-    expect(rows[2]).not.toHaveTextContent("완료"); // 기록 0/2는 완료가 아니다
-    expect(progress).not.toHaveTextContent("기록 24/32완료"); // 전체는 아직 다 채우지 않았다
+    expect(rows[2].closest("li")).not.toHaveAttribute("data-done"); // 기록 0/2는 완료가 아니다
+    expect(progress.querySelector(":scope > div .bg-done")).toBeNull(); // 전체는 아직 다 채우지 않았다
 
     expect(screen.getByRole("link", { name: /^서열표.*기준 난이도별로/ })).toHaveAttribute("href", "/table");
 
@@ -186,14 +185,17 @@ describe("HomeDashboard", () => {
   });
 });
 
-describe("TableProgressCard 완료 표시", () => {
-  it("전체 기록이 모두 채워지면 전체 막대에도 완료가 붙는다", () => {
+describe("TableProgressCard 완료 색", () => {
+  it("전체 기록이 모두 채워지면 전체 막대도 완료 색이 된다", () => {
     render(<TableProgressCard progress={tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, s: 0, belowS: 0 })])} />);
-    expect(screen.getByRole("region", { name: "서열표 진행도" })).toHaveTextContent("기록 3/3완료");
+    const card = screen.getByRole("region", { name: "서열표 진행도" });
+    expect(card).toHaveTextContent("기록 3/3");
+    expect(card.querySelectorAll(".bg-done").length).toBe(2); // 전체 막대 + 묶음 막대
+    expect(card).not.toHaveTextContent("완료");
   });
 
-  it("전체가 0이면 완료로 보지 않는다", () => {
+  it("전체가 0이면 완료 색을 쓰지 않는다", () => {
     render(<TableProgressCard progress={tableProgress([])} />);
-    expect(screen.getByRole("region", { name: "서열표 진행도" })).not.toHaveTextContent("완료");
+    expect(screen.getByRole("region", { name: "서열표 진행도" }).querySelector(".bg-done")).toBeNull();
   });
 });
