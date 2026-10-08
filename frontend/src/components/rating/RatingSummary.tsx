@@ -18,7 +18,7 @@ export function RatingSummary({ skill }: { skill: SkillResponse }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs text-fg-dim">레이팅 (SRN+)</p>
-          <p className="font-num text-3xl font-semibold text-fg">{formatScore(skill.totalScore)}</p>
+          <p className="tier-score font-num text-3xl font-bold">{formatScore(skill.totalScore)}</p>
         </div>
         <span className="tier-chip rounded-full px-3 py-1 text-sm font-bold" aria-label={`플레이어 티어 ${skill.tier.displayName}`}>
           {skill.tier.displayName}
