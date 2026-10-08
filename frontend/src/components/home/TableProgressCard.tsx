@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { StageBadge } from "@/components/table/StageBadge";
-import { folderHref, type TableProgress } from "@/lib/difficulty-table";
-import { formatTier } from "@/lib/format";
+import { StageBar } from "@/components/table/StageBar";
+import type { TableProgress } from "@/lib/difficulty-table";
 
 /** 전체가 있고 기록이 모두 채워졌으면 완료. 완료한 묶음은 막대와 기준 난이도 글자 색이 달라진다(`n/n` 숫자가 같이 보이므로 색만으로 구분하는 것은 아니다)(색 값은 globals.css의 --done). */
 function isDone(recorded: number, total: number): boolean {
@@ -14,8 +14,9 @@ function percent(part: number, whole: number): number {
 }
 
 /**
- * 서열표 진행도 카드: 전체 `기록 n/전체`와 막대, EXC/FC/SS/S 개수, 묶음별 진행(누르면 묶음 페이지).
- * 숫자는 서열표 화면의 묶음 통계 합이다(서버 계산). 막대는 장식이고 같은 값이 글자(n/전체, n%)로 있다.
+ * 서열표 진행도 카드: 전체 `기록 n/전체`와 단계 비율 막대, EXC/FC/SS/S 개수, 묶음별 진행(누르면 묶음 페이지).
+ * 막대는 EXC/FC/SS/S/S 미만이 차지하는 비율대로 칸을 나눈다(남은 부분 = 기록 없음). 6.5 이상 묶음은 한 줄로 합쳐 보인다.
+ * 숫자는 서열표 화면의 묶음 통계 합이다(서버 계산). 막대는 장식이고 같은 값이 글자(n/전체, n%, 단계별 개수)로 있다.
  */
 export function TableProgressCard({ progress }: { progress: TableProgress }) {
   const counts = [
@@ -38,12 +39,7 @@ export function TableProgressCard({ progress }: { progress: TableProgress }) {
           기록 <span className="font-num font-semibold text-fg">{progress.recorded}</span>/{progress.total}
           <span className="ml-2 font-num text-xs text-fg-dim">{percent(progress.recorded, progress.total)}%</span>
         </p>
-        <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-table-head">
-          <div
-            className={`h-full rounded-full ${isDone(progress.recorded, progress.total) ? "bg-done" : "bg-fg-dim"}`}
-            style={{ width: `${percent(progress.recorded, progress.total)}%` }}
-          />
-        </div>
+        <StageBar counts={progress} total={progress.total} className="h-2" done={isDone(progress.recorded, progress.total)} />
       </div>
 
       <ul className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]" aria-label="전체 달성 현황">
@@ -62,15 +58,11 @@ export function TableProgressCard({ progress }: { progress: TableProgress }) {
         {progress.groups.map((g) => {
           const done = isDone(g.recorded, g.total);
           return (
-            <li key={g.tier ?? "undecided"} data-done={done ? "true" : undefined}>
-              <Link href={folderHref(g.tier)} className="flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-table-head">
-                <span className={`w-10 shrink-0 font-num font-semibold ${done ? "text-done-text" : "text-fg"}`}>{formatTier(g.tier)}</span>
-                <span aria-hidden="true" className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-table-head">
-                  <span
-                    className={`block h-full rounded-full ${done ? "bg-done" : "bg-fg-dim"}`}
-                    style={{ width: `${percent(g.recorded, g.total)}%` }}
-                  />
-                </span>
+            <li key={g.key} data-done={done ? "true" : undefined}>
+              <Link href={g.href} className="flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-table-head">
+                {/* "6.5 이상" 같은 합친 줄 이름도 들어가도록 너비를 넉넉히 둔다 */}
+                <span className={`w-16 shrink-0 font-num font-semibold ${done ? "text-done-text" : "text-fg"}`}>{g.label}</span>
+                <StageBar counts={g} total={g.total} className="h-1.5 min-w-0 flex-1" done={done} />
                 <span className="w-14 shrink-0 text-right font-num text-xs text-fg-sub">
                   {g.recorded}/{g.total}
                 </span>

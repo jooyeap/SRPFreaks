@@ -61,7 +61,27 @@ describe("tableProgress", () => {
   it("묶음별 개수를 합치고 묶음 순서를 유지한다", () => {
     const p = tableProgress(groups);
     expect(p).toMatchObject({ total: 32, recorded: 24, exc: 21, fc: 0, ss: 1, s: 1, belowS: 1 });
-    expect(p.groups.map((g) => g.tier)).toEqual([5.8, 5.0, null]);
+    expect(p.groups.map((g) => g.label)).toEqual(["5.8", "5.0", "미정"]);
+  });
+  it("6.5 이상 묶음은 숫자를 더해 한 줄로 합치고 맨 위에 둔다 (6.4는 그대로)", () => {
+    const p = tableProgress([
+      group({ tier: 6.8, total: 3, recorded: 2, exc: 1, fc: 0, ss: 0, s: 1, belowS: 0 }),
+      group({ tier: 6.5, total: 5, recorded: 4, exc: 0, fc: 1, ss: 1, s: 1, belowS: 1 }),
+      group({ tier: 6.4, total: 7, recorded: 1, exc: 0, fc: 0, ss: 0, s: 0, belowS: 1 }),
+      group({ tier: null, total: 2, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 }),
+    ]);
+    expect(p.groups.map((g) => g.label)).toEqual(["6.5 이상", "6.4", "미정"]);
+    expect(p.groups[0]).toMatchObject({ key: "merged-high", href: "/table", total: 8, recorded: 6, exc: 1, fc: 1, ss: 1, s: 2, belowS: 1 });
+    expect(p.groups[1].href).toBe("/table/folder/6.4");
+    // 합쳐도 전체 합계는 그대로다
+    expect(p).toMatchObject({ total: 17, recorded: 7 });
+  });
+  it("6.5 바로 아래(6.4)와 정확히 6.5는 0.1 단위 정수로 비교한다 (부동소수 오차 없음)", () => {
+    const p = tableProgress([group({ tier: 6.5 }), group({ tier: 6.4 })]);
+    expect(p.groups.map((g) => g.label)).toEqual(["6.5 이상", "6.4"]);
+  });
+  it("6.5 이상이 하나도 없으면 합친 줄을 만들지 않는다", () => {
+    expect(tableProgress([group({ tier: 5.8 })]).groups.map((g) => g.label)).toEqual(["5.8"]);
   });
   it("묶음이 없으면 모두 0", () => {
     expect(tableProgress([])).toMatchObject({ total: 0, recorded: 0, groups: [] });
@@ -122,10 +142,11 @@ describe("HomeDashboard", () => {
     expect(rows[1]).not.toHaveTextContent("완료");
     expect(rows[1].closest("li")).toHaveAttribute("data-done", "true");
     expect(rows[1].querySelector(".text-done-text")).not.toBeNull();
-    expect(rows[1].querySelector(".bg-done")).not.toBeNull();
-    expect(rows[0].querySelector(".bg-done")).toBeNull();
+    // 완료한 줄은 막대에 완료 색 테두리가 붙는다 (막대 안은 단계 비율 칸이다)
+    expect(rows[1].querySelector("[data-stage-bar].ring-done")).not.toBeNull();
+    expect(rows[0].querySelector("[data-stage-bar].ring-done")).toBeNull();
     expect(rows[2].closest("li")).not.toHaveAttribute("data-done"); // 기록 0/2는 완료가 아니다
-    expect(progress.querySelector(":scope > div .bg-done")).toBeNull(); // 전체는 아직 다 채우지 않았다
+    expect(progress.querySelector(":scope > div [data-stage-bar].ring-done")).toBeNull(); // 전체는 아직 다 채우지 않았다
 
     expect(screen.getByRole("link", { name: /^서열표.*기준 난이도별로/ })).toHaveAttribute("href", "/table");
 
@@ -185,17 +206,60 @@ describe("HomeDashboard", () => {
   });
 });
 
+describe("TableProgressCard 단계 비율 막대", () => {
+  const widthsOf = (bar: Element) =>
+    Array.from(bar.querySelectorAll("[data-stage]")).map((el) => [el.getAttribute("data-stage"), (el as HTMLElement).style.width]);
+
+  it("전체 막대는 EXC/FC/SS/S/S 미만을 개수 비율대로 높은 단계부터 칸으로 나눈다", () => {
+    render(<TableProgressCard progress={tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })])} />);
+    const bar = screen.getByRole("region", { name: "서열표 진행도" }).querySelector("[data-stage-bar]")!;
+    // 개수 0인 SS 칸은 만들지 않는다. S 미만은 A 색을 쓴다. 남은 4/10(기록 없음)은 바탕색이다
+    expect(widthsOf(bar)).toEqual([
+      ["EXC", "10%"],
+      ["FC", "20%"],
+      ["S", "20%"],
+      ["A", "10%"],
+    ]);
+  });
+
+  it("묶음 줄에도 같은 비율 막대가 있고, 합친 줄(6.5 이상)은 합친 숫자로 그린다", () => {
+    render(
+      <TableProgressCard
+        progress={tableProgress([
+          group({ tier: 6.6, total: 4, recorded: 4, exc: 2, fc: 0, ss: 0, s: 0, belowS: 2 }),
+          group({ tier: 6.5, total: 4, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 }),
+        ])}
+      />,
+    );
+    const list = screen.getByRole("list", { name: "묶음별 진행" });
+    const links = within(list).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveTextContent("6.5 이상");
+    expect(links[0]).toHaveTextContent("4/8");
+    expect(widthsOf(links[0].querySelector("[data-stage-bar]")!)).toEqual([
+      ["EXC", "25%"],
+      ["A", "25%"],
+    ]);
+  });
+
+  it("전체가 0이면 칸 없이 바탕만 보인다", () => {
+    render(<TableProgressCard progress={tableProgress([])} />);
+    const bar = screen.getByRole("region", { name: "서열표 진행도" }).querySelector("[data-stage-bar]")!;
+    expect(bar.querySelectorAll("[data-stage]")).toHaveLength(0);
+  });
+});
+
 describe("TableProgressCard 완료 색", () => {
   it("전체 기록이 모두 채워지면 전체 막대도 완료 색이 된다", () => {
     render(<TableProgressCard progress={tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, s: 0, belowS: 0 })])} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     expect(card).toHaveTextContent("기록 3/3");
-    expect(card.querySelectorAll(".bg-done").length).toBe(2); // 전체 막대 + 묶음 막대
+    expect(card.querySelectorAll("[data-stage-bar].ring-done").length).toBe(2); // 전체 막대 + 묶음 막대
     expect(card).not.toHaveTextContent("완료");
   });
 
   it("전체가 0이면 완료 색을 쓰지 않는다", () => {
     render(<TableProgressCard progress={tableProgress([])} />);
-    expect(screen.getByRole("region", { name: "서열표 진행도" }).querySelector(".bg-done")).toBeNull();
+    expect(screen.getByRole("region", { name: "서열표 진행도" }).querySelector(".ring-done")).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import type { DifficultyTableResponse, PageResponse, TierGroupResponse } from "@/lib/api-types";
+import { formatTier } from "@/lib/format";
 import type { InstrumentPart } from "@/lib/types";
 
 /**
@@ -47,9 +48,29 @@ export interface TableProgress {
   ss: number;
   s: number;
   belowS: number;
-  /** 묶음별 (서열표 순서 그대로: 높은 기준 난이도 먼저, 미정 맨 뒤) */
-  groups: { tier: number | null; total: number; recorded: number }[];
+  /** 묶음별 (서열표 순서 그대로: 높은 기준 난이도 먼저, 미정 맨 뒤). 6.5 이상은 한 줄로 합친다 */
+  groups: ProgressGroup[];
 }
+
+/** 진행도 카드의 한 줄. 6.5 이상은 숫자를 더한 한 줄(`6.5 이상`)이고, 그 밖의 묶음은 기준 난이도 하나에 한 줄이다. */
+export interface ProgressGroup {
+  /** 줄을 구분하는 키 */
+  key: string;
+  /** 화면에 보이는 이름: `5.8`, `미정`, `6.5 이상` */
+  label: string;
+  /** 눌렀을 때 이동할 주소. 합친 줄은 서열표 맨 위(높은 난이도부터 시작)로 간다 */
+  href: string;
+  total: number;
+  recorded: number;
+  exc: number;
+  fc: number;
+  ss: number;
+  s: number;
+  belowS: number;
+}
+
+/** 이 값 이상의 기준 난이도 묶음은 진행도 카드에서 한 줄(`6.5 이상`)로 합친다. 높은 난이도는 곡 수가 적어 줄이 길어지기만 해서다. */
+export const MERGE_FROM_TIER = 6.5;
 
 export function tableProgress(groups: readonly TierGroupResponse[]): TableProgress {
   const sum = (pick: (g: TierGroupResponse) => number) => groups.reduce((acc, g) => acc + pick(g), 0);
@@ -61,8 +82,52 @@ export function tableProgress(groups: readonly TierGroupResponse[]): TableProgre
     ss: sum((g) => g.ss),
     s: sum((g) => g.s),
     belowS: sum((g) => g.belowS),
-    groups: groups.map((g) => ({ tier: g.tier, total: g.total, recorded: g.recorded })),
+    groups: progressGroups(groups),
   };
+}
+
+/**
+ * 묶음별 줄을 만든다. 기준 난이도가 MERGE_FROM_TIER 이상인 묶음은 숫자를 더해서 한 줄로 합치고(맨 위에 둔다),
+ * 나머지는 서열표 순서 그대로 둔다. 합친 줄이 하나뿐이어도 `6.5 이상`으로 보여 준다(기준이 일정해야 헷갈리지 않는다).
+ * 부동소수 비교를 피하려고 0.1 단위 정수로 바꿔서 비교한다.
+ */
+function progressGroups(groups: readonly TierGroupResponse[]): ProgressGroup[] {
+  const mergeFrom = Math.round(MERGE_FROM_TIER * 10);
+  const high = groups.filter((g) => g.tier !== null && Math.round(g.tier * 10) >= mergeFrom);
+  const result: ProgressGroup[] = [];
+  if (high.length > 0) {
+    const sum = (pick: (g: TierGroupResponse) => number) => high.reduce((acc, g) => acc + pick(g), 0);
+    result.push({
+      key: "merged-high",
+      label: `${formatTier(MERGE_FROM_TIER)} 이상`,
+      href: "/table",
+      total: sum((g) => g.total),
+      recorded: sum((g) => g.recorded),
+      exc: sum((g) => g.exc),
+      fc: sum((g) => g.fc),
+      ss: sum((g) => g.ss),
+      s: sum((g) => g.s),
+      belowS: sum((g) => g.belowS),
+    });
+  }
+  for (const g of groups) {
+    if (high.includes(g)) {
+      continue;
+    }
+    result.push({
+      key: g.tier === null ? "undecided" : tierParam(g.tier),
+      label: formatTier(g.tier),
+      href: folderHref(g.tier),
+      total: g.total,
+      recorded: g.recorded,
+      exc: g.exc,
+      fc: g.fc,
+      ss: g.ss,
+      s: g.s,
+      belowS: g.belowS,
+    });
+  }
+  return result;
 }
 
 /** 서열표 필터. 값이 null이면 "전체". recommend/pattern은 서버가 쓰는 한글 값 그대로다. */
