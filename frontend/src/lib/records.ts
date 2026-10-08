@@ -102,8 +102,8 @@ export async function fetchBestRecord(songDifficultyId: number, signal?: AbortSi
   return page.content[0] ?? null;
 }
 
-/** 기록을 바꾼 뒤 화면에 영향을 받는 캐시(서열표, 이 채보의 기록 목록)를 무효화할 때 쓰는 키들. */
-export const AFFECTED_QUERY_KEYS = [["difficulty-tables"], ["records"], ["skill"]] as const;
+/** 기록을 바꾼 뒤 화면에 영향을 받는 캐시(서열표, 이 채보의 기록 목록, 곡 목록의 내 기록)를 무효화할 때 쓰는 키들. */
+export const AFFECTED_QUERY_KEYS = [["difficulty-tables"], ["records"], ["skill"], ["song-list"]] as const;
 
 /** 기존 기록 -> 폼 초기값. 달성률은 입력칸에 쓰는 문자열(소수 둘째 자리)로 만든다. */
 export function recordToFormValues(record: RecordResponse): RecordFormValues {

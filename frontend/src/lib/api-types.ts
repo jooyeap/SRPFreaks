@@ -185,3 +185,43 @@ export interface PlayerDetailResponse {
   skill: SkillResponse;
 }
 
+// ---- 전체 곡 목록 (백엔드 ChartFolderListResponse / ChartFolderResponse / ChartRowResponse, DESIGN-UI 9장) ----
+
+/**
+ * 레벨 폴더 하나(0.5 단위). 칩 개수와 평균은 서열표 묶음과 같은 규칙이다(D24):
+ * exc+fc+ss+s+belowS == recorded, 기록 없는 채보는 어느 칩에도 세지 않는다.
+ */
+export interface ChartFolderResponse {
+  lo: number;
+  hi: number;
+  total: number;
+  recorded: number;
+  exc: number;
+  fc: number;
+  ss: number;
+  s: number;
+  belowS: number;
+  /** 기록 있는 채보만의 평균. 기록이 없으면 null */
+  averageRecorded: number | null;
+  /** 기록 없는 채보를 0%로 넣은 평균 */
+  averageWithZero: number;
+}
+
+export interface ChartFolderListResponse {
+  totalSongs: number;
+  totalCharts: number;
+  versions: string[];
+  folders: ChartFolderResponse[];
+}
+
+/** 곡 목록의 채보 한 줄. 전체 곡 목록에는 속성을 보이지 않으므로 서열표 값은 없다. */
+export interface ChartRowResponse {
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  addedVersion: string | null;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  mine: MyRecord | null;
+}
