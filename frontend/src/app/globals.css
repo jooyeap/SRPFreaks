@@ -300,3 +300,18 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .theme-thumb { transition: none; }
 }
+
+/* 모바일 슬라이드 메뉴(MobileMenu): 오른쪽에서 밀려 나오고 바깥 영역은 서서히 어두워진다. 움직임을 줄이는 설정에서는 바로 나타난다. */
+@keyframes drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes drawer-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.drawer-panel { animation: drawer-in 0.2s ease-out; }
+.drawer-overlay { animation: drawer-fade 0.2s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel, .drawer-overlay { animation: none; }
+}
