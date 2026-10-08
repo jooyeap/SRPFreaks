@@ -57,10 +57,10 @@ export function EntryRow({ entry, onRecord }: { entry: TableEntryResponse; onRec
         {formatRate(entry.mine?.rate)}
       </span>
       <span>
-        <RecommendBadge value={entry.recommend} uncertain={entry.recommendUncertain} />
+        <RecommendBadge value={entry.recommend} />
       </span>
-      <span className="text-fg-sub" title={entry.patternUncertain ? "확정되지 않은 값" : undefined}>
-        {entry.pattern ? `${entry.pattern}${entry.patternUncertain ? "?" : ""}` : EMPTY_MARK}
+      <span className="text-fg-sub">
+        {entry.pattern ?? EMPTY_MARK}
       </span>
       <span className="truncate text-fg-dim">{entry.addedVersion ?? EMPTY_MARK}</span>
       <span>

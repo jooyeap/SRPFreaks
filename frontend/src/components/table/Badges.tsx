@@ -61,9 +61,9 @@ export function PartBadge({ part }: { part: InstrumentPart }) {
 /**
  * 추천도 배지. 상 = 주황 윤곽 + 연한 배경(채우지 않아 달성 단계 배지보다 튀지 않는다), 중 = 밝은 외곽선, 하 = 흐린 외곽선 (DESIGN-UI 3장).
  * 파랑/금색은 SS, EXC와 헷갈려서 쓰지 않는다. 값이 없으면 아무것도 그리지 않는다.
- * uncertain이면 값이 확정되지 않았다는 뜻으로 `?`를 붙인다.
+ * 값이 확정되지 않았더라도(API의 *Uncertain) `?`는 붙이지 않고 값만 보여 준다.
  */
-export function RecommendBadge({ value, uncertain }: { value: string | null; uncertain: boolean }) {
+export function RecommendBadge({ value }: { value: string | null }) {
   if (!value) {
     return null;
   }
@@ -74,12 +74,6 @@ export function RecommendBadge({ value, uncertain }: { value: string | null; unc
         ? "border-[var(--rec-mid-line)] text-fg-sub"
         : "border-[var(--rec-low-line)] text-fg-faint";
   return (
-    <span
-      title={uncertain ? "확정되지 않은 값" : undefined}
-      className={`inline-block rounded border px-1.5 py-px text-[11px] font-bold leading-4 ${style}`}
-    >
-      {value}
-      {uncertain ? "?" : ""}
-    </span>
+    <span className={`inline-block rounded border px-1.5 py-px text-[11px] font-bold leading-4 ${style}`}>{value}</span>
   );
 }

@@ -31,14 +31,13 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
           <dt className="text-xs text-fg-dim">기준 난이도</dt>
           <dd className="font-num text-[22px] font-bold leading-tight text-fg">
             {formatTier(group.tier)}
-            {entry.tierUncertain ? "?" : ""}
           </dd>
         </div>
         <div>
           <dt className="text-xs text-fg-dim">추천</dt>
           <dd>
             {entry.recommend ? (
-              <RecommendBadge value={entry.recommend} uncertain={entry.recommendUncertain} />
+              <RecommendBadge value={entry.recommend} />
             ) : (
               <span className="text-fg-faint">{EMPTY_MARK}</span>
             )}

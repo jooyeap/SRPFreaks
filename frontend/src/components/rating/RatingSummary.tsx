@@ -3,7 +3,7 @@ import type { SkillResponse } from "@/lib/api-types";
 import { tierProgress } from "@/lib/rating";
 
 /**
- * 맨 위 레이팅 카드 (DESIGN-UI 5장): 합계, 단일/그 외 소계, 플레이어 티어 칩, 다음 티어까지 진행 막대와 남은 점수.
+ * 맨 위 레이팅 카드 (DESIGN-UI 5장): 합계, 단일/복합·이중·삼중 소계, 플레이어 티어 칩, 다음 티어까지 진행 막대와 남은 점수.
  * 마지막 티어는 `최고 티어`로 표시한다. 티어 이름은 글자로도 쓰므로 색만으로 구분하지 않는다.
  * Bronze 이상은 카드 테두리가 2px 그라데이션 + 글로우다 (globals.css의 .tier-card).
  */
@@ -30,7 +30,7 @@ export function RatingSummary({ skill }: { skill: SkillResponse }) {
           단일 <span className="font-num text-fg">{formatScore(skill.singleScore)}</span>
         </span>
         <span>
-          그 외 <span className="font-num text-fg">{formatScore(skill.otherScore)}</span>
+          복합·이중·삼중 <span className="font-num text-fg">{formatScore(skill.otherScore)}</span>
         </span>
       </p>
 

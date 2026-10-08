@@ -70,11 +70,11 @@ export function LevelTable({
                   <ChartBadge part={chart.instrumentPart} difficulty={chart.difficultyType} level={chart.level} />
                 </span>
                 <span className="font-num text-fg-sub">
-                  {found ? `${formatTier(found.group.tier)}${found.entry.tierUncertain ? "?" : ""}` : EMPTY_MARK}
+                  {found ? formatTier(found.group.tier) : EMPTY_MARK}
                 </span>
                 <span>
                   {found?.entry.recommend ? (
-                    <RecommendBadge value={found.entry.recommend} uncertain={found.entry.recommendUncertain} />
+                    <RecommendBadge value={found.entry.recommend} />
                   ) : (
                     <span className="text-fg-faint">{EMPTY_MARK}</span>
                   )}

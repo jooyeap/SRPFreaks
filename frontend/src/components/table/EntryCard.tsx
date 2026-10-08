@@ -46,7 +46,7 @@ export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRe
         <span className={`font-num text-xs font-semibold ${stage ? "stage-text" : "text-fg-faint"}`}>
           {formatRate(entry.mine?.rate)}
         </span>
-        <RecommendBadge value={entry.recommend} uncertain={entry.recommendUncertain} />
+        <RecommendBadge value={entry.recommend} />
       </div>
       {/* 칸 폭이 좁아서(약 90px) 단계·난이도·속성을 한 줄에 두면 속성이 잘린다: 배지는 한 줄(넘치면 줄바꿈), 속성은 아래 줄 */}
       <div className="flex flex-wrap items-center gap-1">

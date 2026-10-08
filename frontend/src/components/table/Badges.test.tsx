@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ChartBadge } from "@/components/table/Badges";
+import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 
 describe("ChartBadge", () => {
   it("왼쪽에 파트, 오른쪽에 난이도와 레벨(둘째 자리까지)을 한 알약으로 보여 준다", () => {
@@ -23,5 +23,18 @@ describe("ChartBadge", () => {
     rerender(<ChartBadge part="GUITAR" difficulty="BASIC" level={5} />);
     expect(container.firstElementChild).toHaveAttribute("data-difficulty", "BASIC");
     expect(screen.getByText("BAS 5.00")).toBeInTheDocument();
+  });
+});
+
+describe("RecommendBadge", () => {
+  it("추천도 값만 보여 주고 `?` 같은 불확실 표시는 붙이지 않는다", () => {
+    const { container } = render(<RecommendBadge value="상" />);
+    expect(container).toHaveTextContent(/^상$/);
+    expect(container.firstElementChild).not.toHaveAttribute("title");
+  });
+
+  it("값이 없으면 아무것도 그리지 않는다", () => {
+    const { container } = render(<RecommendBadge value={null} />);
+    expect(container).toBeEmptyDOMElement();
   });
 });

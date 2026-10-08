@@ -10,7 +10,7 @@ const SHORTCUTS = [
   {
     href: "/rating",
     title: "레이팅",
-    description: "SRN+ 기록으로 계산한 레이팅 합계와 플레이어 티어, 단일 15·그 외 25 목록을 확인합니다.",
+    description: "SRN+ 기록으로 계산한 레이팅 합계와 플레이어 티어, 단일 15·복합·이중·삼중 25 목록을 확인합니다.",
   },
 ] as const;
 

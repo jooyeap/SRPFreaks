@@ -100,7 +100,7 @@ describe("RatingView", () => {
     expect(within(single).getByText("96.50")).toBeInTheDocument();
     expect(within(single).getByText(/상수/)).toHaveTextContent("기준 5.8 · 상수 14.00 · 단일");
 
-    const other = screen.getByRole("region", { name: "그 외 (복합·이중·삼중)" });
+    const other = screen.getByRole("region", { name: "복합·이중·삼중" });
     expect(within(other).getByText("1/25")).toBeInTheDocument();
     expect(within(other).getByText("복합곡")).toBeInTheDocument();
     expect(within(other).getByLabelText("달성 단계 EXC")).toBeInTheDocument();

@@ -82,7 +82,7 @@ export function RatingView({ userId }: { userId: number }) {
         emptyText="속성이 단일인 채보의 기록이 아직 없습니다."
       />
       <Group
-        title="그 외 (복합·이중·삼중)"
+        title="복합·이중·삼중"
         entries={data.other}
         limit={data.otherLimit}
         emptyText="속성이 복합·이중·삼중인 채보의 기록이 아직 없습니다."
