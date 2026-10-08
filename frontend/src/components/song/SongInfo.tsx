@@ -58,6 +58,7 @@ export function LevelTable({
           return (
             <li key={chart.id} className="border-t border-row-line">
               <Link
+                replace
                 href={songsDetailHref(song.id, chart.id)}
                 aria-current={selected ? "true" : undefined}
                 className={`grid grid-cols-[4px_116px_1fr_44px] items-center gap-x-2 px-3 py-2 text-sm ${

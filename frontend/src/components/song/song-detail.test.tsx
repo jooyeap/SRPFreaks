@@ -14,6 +14,14 @@ import type { SongDetailOrigin } from "@/lib/songs";
 
 const back = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ back, push: vi.fn(), replace: vi.fn() }) }));
+// 링크가 기록을 쌓는지(push) 바꿔치는지(replace) 확인할 수 있게, 진짜 Link 대신 replace 여부를 표시하는 a 태그를 쓴다
+vi.mock("next/link", () => ({
+  default: ({ href, replace, children, ...rest }: { href: string; replace?: boolean; children: React.ReactNode }) => (
+    <a href={href} data-replace={replace ? "true" : "false"} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 
 const table: DifficultyTableResponse = {
   id: 3,
@@ -278,6 +286,34 @@ describe("SongDetailView", () => {
     expect(await screen.findByText("이 채보는 서열표에 없습니다.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "기록 등록" })).toBeEnabled();
     expect(screen.queryByText(/^속성/)).toBeNull();
+  });
+
+  it("곡 상세 안에서 다른 채보·곡으로 옮기는 링크는 기록을 쌓지 않고 바꿔치기(replace)한다", async () => {
+    // 쌓으면 뒤로가기가 곡 목록이 아니라 직전에 본 곡으로 간다
+    renderView("songs", 10);
+    const table = await screen.findByRole("region", { name: "레벨 정보" });
+    for (const link of within(table).getAllByRole("link")) {
+      expect(link).toHaveAttribute("data-replace", "true");
+    }
+  });
+
+  it("서열표에서: 같은 묶음의 곡과 다른 채보 링크도 바꿔치기(replace)한다", async () => {
+    renderView("table", 10);
+    const neighbors = await screen.findByRole("region", { name: "같은 묶음의 곡" });
+    for (const link of within(neighbors).getAllByRole("link")) {
+      // 맨 위의 `묶음 전체 보기`는 다른 화면으로 나가는 링크라 기록을 쌓는다
+      if (link.getAttribute("href")?.startsWith("/table/folder")) {
+        expect(link).toHaveAttribute("data-replace", "false");
+      } else {
+        expect(link).toHaveAttribute("data-replace", "true");
+      }
+    }
+    fireEvent.click(screen.getByText("이 곡의 다른 채보 2개"));
+    const others = screen.getByText("이 곡의 다른 채보 2개").closest("details");
+    expect(others).not.toBeNull();
+    for (const link of within(others as HTMLElement).getAllByRole("link")) {
+      expect(link).toHaveAttribute("data-replace", "true");
+    }
   });
 
   it("뒤로 버튼은 이전 화면으로 돌아간다", async () => {

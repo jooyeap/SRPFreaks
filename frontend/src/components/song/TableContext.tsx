@@ -79,6 +79,7 @@ export function OtherCharts({ charts }: { charts: readonly TableEntryResponse[] 
         {charts.map((c) => (
           <li key={c.songDifficultyId}>
             <Link
+              replace
               href={tableDetailHref(c)}
               className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-fg hover:bg-table-head"
             >
@@ -142,6 +143,7 @@ function GroupSongItem({
   return (
     <li ref={itemRef} aria-current={current ? "true" : undefined} className="border-t border-row-line first:border-t-0">
       <Link
+        replace
         href={tableDetailHref(entry)}
         className={`flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-table-head ${current ? "bg-table-head" : ""}`}
       >
