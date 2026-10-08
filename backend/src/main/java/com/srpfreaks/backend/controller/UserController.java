@@ -3,6 +3,7 @@ package com.srpfreaks.backend.controller;
 import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.NicknameUpdateRequest;
+import com.srpfreaks.backend.dto.ProfileVisibilityRequest;
 import com.srpfreaks.backend.dto.UserResponse;
 import com.srpfreaks.backend.repository.UserRepository;
 import com.srpfreaks.backend.security.AuthenticatedUser;
@@ -42,6 +43,13 @@ public class UserController {
     public UserResponse updateMyNickname(@AuthenticationPrincipal AuthenticatedUser principal,
                                          @Valid @RequestBody NicknameUpdateRequest request) {
         return userProfileService.updateNickname(principal.id(), request.nickname());
+    }
+
+    /** 유저 목록 공개 여부 변경(D26). 닉네임이 없으면 공개로 바꿀 수 없다(400). 사용자 ID는 토큰에서만 정한다. */
+    @PatchMapping("/me/visibility")
+    public UserResponse updateMyVisibility(@AuthenticationPrincipal AuthenticatedUser principal,
+                                           @Valid @RequestBody ProfileVisibilityRequest request) {
+        return userProfileService.updateProfilePublic(principal.id(), request.profilePublic());
     }
 
     /**

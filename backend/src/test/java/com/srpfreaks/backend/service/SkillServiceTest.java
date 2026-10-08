@@ -23,6 +23,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -98,8 +99,13 @@ class SkillServiceTest {
     }
 
     private static RatingCandidate cand(long id, long songId, String pattern, String tier, String rate, boolean fc) {
+        return cand(id, songId, pattern, tier, rate, fc, null);
+    }
+
+    private static RatingCandidate cand(long id, long songId, String pattern, String tier, String rate, boolean fc,
+                                        LocalDateTime achievedAt) {
         return new RatingCandidate(id, songId, "곡" + songId, "GUITAR", "MASTER", new BigDecimal("9.50"),
-                tier == null ? null : new BigDecimal(tier), pattern, new BigDecimal(rate), fc);
+                tier == null ? null : new BigDecimal(tier), pattern, new BigDecimal(rate), fc, achievedAt);
     }
 
     // ---- 테스트
@@ -301,5 +307,48 @@ class SkillServiceTest {
         when(settingRepository.findAll()).thenReturn(List.of(AppSetting.create("rating.pivot", "6.0", null)));
 
         assertThatThrownBy(() -> service.mySkill(USER)).isInstanceOf(IllegalStateException.class);
+    }
+
+    // ---- 마지막 달성 시각 (유저 목록 동점 처리, D26)
+
+    @Test
+    void 마지막_달성_시각은_레이팅_목록에_들어간_채보들의_달성_시각_중_가장_늦은_것이다() {
+        settings(1, 1);
+        tableExists();
+        tiers(0);
+        candidates(
+                cand(1, 10, PatternType.SINGLE.getLabel(), "7.0", "80.00", false, LocalDateTime.of(2026, 10, 1, 0, 0)),   // 단일 1위 (목록 안)
+                cand(2, 11, PatternType.COMPOUND.getLabel(), "7.0", "80.00", false, LocalDateTime.of(2026, 10, 3, 0, 0)), // 그 외 1위 (목록 안)
+                // 탈락한 채보(점수가 낮아 목록에 못 들어감)의 시각은 아무리 늦어도 쓰지 않는다
+                cand(3, 12, PatternType.SINGLE.getLabel(), "5.0", "50.00", false, LocalDateTime.of(2026, 12, 25, 0, 0)));
+
+        SkillService.RatedSkill rated = service.rated(USER);
+
+        assertThat(rated.lastAchievedAt()).isEqualTo(LocalDateTime.of(2026, 10, 3, 0, 0));
+        assertThat(rated.skill().single()).hasSize(1);
+        assertThat(rated.skill().other()).hasSize(1);
+    }
+
+    @Test
+    void 달성_시각이_없거나_목록이_비면_마지막_달성_시각은_null이다() {
+        settings(1, 1);
+        tableExists();
+        tiers(0);
+        candidates();
+
+        assertThat(service.rated(USER).lastAchievedAt()).isNull();
+
+        candidates(cand(1, 10, PatternType.SINGLE, "7.0", "80.00"));   // 시각 값이 비어 있는 후보
+        assertThat(service.rated(USER).lastAchievedAt()).isNull();
+    }
+
+    @Test
+    void mySkill은_rated의_레이팅_부분과_같다() {
+        settings(1, 1);
+        tableExists();
+        tiers(0);
+        candidates(cand(1, 10, PatternType.SINGLE, "7.0", "80.00"));
+
+        assertThat(service.mySkill(USER).totalScore()).isEqualByComparingTo(service.rated(USER).skill().totalScore());
     }
 }

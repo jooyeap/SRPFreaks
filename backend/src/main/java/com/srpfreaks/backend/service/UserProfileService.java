@@ -29,6 +29,17 @@ public class UserProfileService {
     }
 
     /**
+     * 유저 목록 공개 여부를 바꾼다(D26). 대상은 토큰에서 나온 userId뿐이다.
+     * 공개로 바꾸려면 닉네임이 있어야 하며, 없으면 User가 IllegalArgumentException을 던져 400이 된다.
+     */
+    @Transactional
+    public UserResponse updateProfilePublic(Long userId, boolean profilePublic) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
+        user.changeProfilePublic(profilePublic);
+        return UserResponse.from(user);
+    }
+
+    /**
      * 탈퇴 = 완전 삭제(D20). users 행 하나만 지우면 된다.
      * 나머지는 DB 외래키가 처리한다(V1__init_schema.sql):
      *  - option_records, refresh_tokens: ON DELETE CASCADE라 같이 지워진다(기록·토큰이 남지 않는다).

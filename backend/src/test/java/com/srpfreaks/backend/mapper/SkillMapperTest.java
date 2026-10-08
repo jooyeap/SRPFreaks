@@ -81,6 +81,10 @@ class SkillMapperTest {
         persist(OptionRecord.create(user, d, option, new BigDecimal(rate), fc, null, null, null));
     }
 
+    private void recordAt(User user, SongDifficulty d, String rate, java.time.Instant playedAt) {
+        persist(OptionRecord.create(user, d, NoteOption.SUPER_RANDOM_PLUS, new BigDecimal(rate), false, playedAt, null, null));
+    }
+
     private List<RatingCandidate> query(User user) {
         em.flush();
         em.clear();
@@ -205,5 +209,19 @@ class SkillMapperTest {
         }
 
         assertThat(query(userA)).hasSize(2);
+    }
+
+    @Test
+    void 달성_시각은_최고_달성률을_처음_기록한_시각이다() {
+        SongDifficulty d = chart("6.0", PatternType.SINGLE);
+        recordAt(userA, d, "90.00", java.time.Instant.parse("2026-10-01T00:00:00Z"));
+        recordAt(userA, d, "95.50", java.time.Instant.parse("2026-10-02T00:00:00Z"));   // 최고 점수를 처음 낸 시각
+        recordAt(userA, d, "95.50", java.time.Instant.parse("2026-10-05T00:00:00Z"));   // 같은 점수를 또 냈다 -> 더 이른 쪽을 쓴다
+        recordAt(userA, d, "80.00", java.time.Instant.parse("2026-10-09T00:00:00Z"));   // 낮은 점수는 늦게 내도 무관
+
+        List<RatingCandidate> rows = query(userA);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).achievedAt()).isEqualTo(java.time.LocalDateTime.of(2026, 10, 2, 0, 0));
     }
 }

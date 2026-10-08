@@ -105,4 +105,63 @@ class UserTest {
 
         assertThat(root.getRole()).isEqualTo(Role.ROOT);
     }
+
+    // ---- 유저 목록 공개 여부 (D26) ----
+
+    @Test
+    void 새_사용자는_비공개다() {
+        assertThat(User.create("sub-1", "a@example.com", "たろう").isProfilePublic()).isFalse();
+    }
+
+    @Test
+    void 닉네임이_있으면_공개로_바꿀_수_있고_다시_비공개로도_바꿀_수_있다() {
+        User user = User.create("sub-1", "a@example.com", "たろう");
+
+        user.changeProfilePublic(true);
+        assertThat(user.isProfilePublic()).isTrue();
+
+        user.changeProfilePublic(false);
+        assertThat(user.isProfilePublic()).isFalse();
+    }
+
+    @Test
+    void 닉네임이_없으면_공개로_바꿀_수_없다() {
+        User user = User.create("sub-1", "a@example.com", null);
+
+        assertThatThrownBy(() -> user.changeProfilePublic(true)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(user.isProfilePublic()).isFalse();
+        user.changeProfilePublic(false); // 비공개로 두는 것은 닉네임과 상관없이 언제나 가능
+    }
+
+    @Test
+    void 공개_중에_닉네임을_지우면_비공개로_내려간다() {
+        User user = User.create("sub-1", "a@example.com", "たろう");
+        user.changeProfilePublic(true);
+
+        user.changeNickname("  ");
+
+        assertThat(user.getNickname()).isNull();
+        assertThat(user.isProfilePublic()).isFalse();
+    }
+
+    @Test
+    void 공개_중에_닉네임을_다른_값으로_바꾸면_공개_상태가_유지된다() {
+        User user = User.create("sub-1", "a@example.com", "たろう");
+        user.changeProfilePublic(true);
+
+        user.changeNickname("はなこ");
+
+        assertThat(user.isProfilePublic()).isTrue();
+    }
+
+    @Test
+    void 규칙에_어긋난_닉네임으로_바꾸려_하면_공개_상태도_그대로다() {
+        User user = User.create("sub-1", "a@example.com", "たろう");
+        user.changeProfilePublic(true);
+
+        assertThatThrownBy(() -> user.changeNickname("닉네임")).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(user.getNickname()).isEqualTo("たろう");
+        assertThat(user.isProfilePublic()).isTrue();
+    }
 }

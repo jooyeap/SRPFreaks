@@ -10,6 +10,7 @@ CREATE TABLE users (
     nickname     VARCHAR(30)  NULL,
     role         VARCHAR(20)  NOT NULL DEFAULT 'USER',      -- ROOT / ADMIN / USER
     status       VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',    -- ACTIVE / BLOCKED
+    profile_public BOOLEAN    NOT NULL DEFAULT FALSE,                -- 유저 목록·상세에 공개할지(D26). 본인이 켠다. 닉네임이 없으면 켤 수 없다
     created_at   DATETIME(6)  NOT NULL,
     updated_at   DATETIME(6)  NOT NULL,
     PRIMARY KEY (user_id),

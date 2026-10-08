@@ -27,6 +27,7 @@ public interface SkillMapper {
      * - pattern_type IS NOT NULL AND <> #{excludedPattern}: 속성이 없거나 '레이팅 제외'인 채보는 어느 그룹에도 안 들어간다.
      *   '레이팅 제외' 문자열은 SQL에 박지 않고 enum 라벨을 바인딩한다.
      * - 삭제된(소프트 삭제) 곡·채보는 제외한다.
+     * - achievedAt: 그 최고 달성률을 "처음" 기록한 시각(같은 점수를 여러 번 냈으면 가장 이른 것). 유저 목록 동점 처리용(D26).
      */
     @Select("""
             SELECT d.song_difficulty_id AS songDifficultyId,
@@ -38,7 +39,13 @@ public interface SkillMapper {
                    e.tier_label         AS tier,
                    e.pattern_type       AS pattern,
                    b.best_rate          AS bestRate,
-                   b.full_combo         AS fullCombo
+                   b.full_combo         AS fullCombo,
+                   (SELECT MIN(r2.played_at)
+                      FROM option_records r2
+                     WHERE r2.user_id = #{userId}
+                       AND r2.note_option = #{noteOption}
+                       AND r2.song_difficulty_id = b.song_difficulty_id
+                       AND r2.achievement_rate = b.best_rate) AS achievedAt
             FROM (
                 SELECT r.song_difficulty_id,
                        MAX(r.achievement_rate) AS best_rate,

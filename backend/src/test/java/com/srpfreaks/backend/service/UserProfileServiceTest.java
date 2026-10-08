@@ -76,6 +76,45 @@ class UserProfileServiceTest {
     }
 
     @Test
+    void 닉네임이_있으면_공개로_바꾸고_응답에_담는다() {
+        User user = existingUser("たろう");
+
+        UserResponse response = service.updateProfilePublic(1L, true);
+
+        assertThat(response.profilePublic()).isTrue();
+        assertThat(user.isProfilePublic()).isTrue();
+    }
+
+    @Test
+    void 닉네임이_없으면_공개로_바꿀_수_없다() {
+        User user = existingUser(null);
+
+        assertThatThrownBy(() -> service.updateProfilePublic(1L, true)).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(user.isProfilePublic()).isFalse();
+    }
+
+    @Test
+    void 공개를_끌_수_있다() {
+        User user = existingUser("たろう");
+        user.changeProfilePublic(true);
+
+        UserResponse response = service.updateProfilePublic(1L, false);
+
+        assertThat(response.profilePublic()).isFalse();
+        assertThat(user.isProfilePublic()).isFalse();
+    }
+
+    @Test
+    void 공개_설정도_없는_사용자는_UNAUTHORIZED다() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateProfilePublic(1L, true))
+                .isInstanceOfSatisfying(ApiException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Test
     void 탈퇴하면_본인_사용자_행을_삭제한다() {
         User user = existingUser(null);
 

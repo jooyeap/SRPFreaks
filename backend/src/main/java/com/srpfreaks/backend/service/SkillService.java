@@ -23,12 +23,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 내 레이팅 목록 계산. 값은 저장하지 않고 요청 때마다 계산한다 (D3).
@@ -53,6 +56,15 @@ public class SkillService {
     private final SkillMapper skillMapper;
 
     public SkillResponse mySkill(Long userId) {
+        return rated(userId).skill();
+    }
+
+    /**
+     * 레이팅 목록 + "마지막 달성 시각"(유저 목록 동점 처리용, D26).
+     * lastAchievedAt = 레이팅 목록(단일 + 그 외)에 들어간 채보들의 달성 시각 중 가장 늦은 것. 목록이 비면 null.
+     * "그 점수 세트를 완성한 시각"이라서, 같은 총점이면 더 일찍 완성한 사람이 먼저다. API 응답에는 내보내지 않는다.
+     */
+    public RatedSkill rated(Long userId) {
         RatingConfig config = RatingConfig.from(ratingSettings());
         RatingCalculator calculator = new RatingCalculator(config);
 
@@ -68,9 +80,23 @@ public class SkillService {
         BigDecimal otherScore = sum(other);
         BigDecimal total = singleScore.add(otherScore);
 
-        return new SkillResponse(config.noteOption(), RatingCalculator.display(total),
+        SkillResponse response = new SkillResponse(config.noteOption(), RatingCalculator.display(total),
                 RatingCalculator.display(singleScore), RatingCalculator.display(otherScore), playerTier(total),
                 config.listSingle(), config.listOther(), toResponses(single), toResponses(other));
+        return new RatedSkill(response, lastAchievedAt(single, other));
+    }
+
+    /** 뽑힌 채보들의 달성 시각 중 가장 늦은 것. 시각이 하나도 없으면 null. */
+    private static LocalDateTime lastAchievedAt(List<Scored> single, List<Scored> other) {
+        return Stream.concat(single.stream(), other.stream())
+                .map(s -> s.candidate().achievedAt())
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+    }
+
+    /** 레이팅 계산 결과와 동점 처리용 시각을 한 번에 돌려주는 값. */
+    public record RatedSkill(SkillResponse skill, LocalDateTime lastAchievedAt) {
     }
 
     /** rating.* 설정만 맵으로 모은다(설정 테이블은 작아서 전부 읽어도 가볍다). */
