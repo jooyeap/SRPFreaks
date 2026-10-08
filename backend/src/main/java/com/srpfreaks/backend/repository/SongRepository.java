@@ -1,6 +1,7 @@
 package com.srpfreaks.backend.repository;
 
 import com.srpfreaks.backend.entity.Song;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,4 +33,18 @@ public interface SongRepository extends JpaRepository<Song, Long> {
     Page<Song> search(@Param("pattern") String pattern,
                       @Param("normalizedPattern") String normalizedPattern,
                       Pageable pageable);
+
+    /**
+     * 곡 검색과 같은 조건(곡명, 아티스트, 정규화된 표기/별칭)에 맞는 곡 id만 가져온다. 채보 단위 검색(곡 목록 화면)이
+     * 이 id로 채보를 거른다. 이스케이프와 파라미터 규칙은 위 search와 같다.
+     */
+    @Query("""
+            select s.id from Song s
+            where s.deleted = false
+              and (s.title like :pattern escape '!'
+                   or s.artist like :pattern escape '!'
+                   or exists (select 1 from SongTitle t
+                              where t.song = s and t.normalizedTitle like :normalizedPattern escape '!'))
+            """)
+    List<Long> searchIds(@Param("pattern") String pattern, @Param("normalizedPattern") String normalizedPattern);
 }

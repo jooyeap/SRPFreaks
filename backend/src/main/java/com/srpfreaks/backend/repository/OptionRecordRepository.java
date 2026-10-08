@@ -70,4 +70,17 @@ public interface OptionRecordRepository extends JpaRepository<OptionRecord, Long
             """)
     List<RecordBest> findBestByTable(@Param("userId") Long userId, @Param("noteOption") NoteOption noteOption,
                                      @Param("tableId") Long tableId);
+
+    /**
+     * 본인의 모든 채보에 대한 최고 기록을 한 번에 가져온다(곡 목록 화면: 채보마다 쿼리하면 N+1).
+     * 서열표용 findBestByTable과 달리 서열표 소속 조건이 없다. user_id 조건이 항상 걸려 다른 사용자의 기록은 섞이지 않는다.
+     */
+    @Query("""
+            select new com.srpfreaks.backend.repository.RecordBest(
+                r.songDifficulty.id, max(r.achievementRate), sum(case when r.fullCombo = true then 1L else 0L end))
+            from OptionRecord r
+            where r.user.id = :userId and r.noteOption = :noteOption
+            group by r.songDifficulty.id
+            """)
+    List<RecordBest> findBestByUser(@Param("userId") Long userId, @Param("noteOption") NoteOption noteOption);
 }
