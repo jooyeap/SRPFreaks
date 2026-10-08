@@ -190,7 +190,7 @@ export interface PlayerDetailResponse {
 // ---- 전체 곡 목록 (백엔드 ChartFolderListResponse / ChartFolderResponse / ChartRowResponse, DESIGN-UI 9장) ----
 
 /**
- * 레벨 폴더 하나(0.5 단위). 칩 개수와 평균은 서열표 묶음과 같은 규칙이다(D24):
+ * 레벨 폴더 하나(0.5 단위, 또는 그 안의 0.05 단위 하위 폴더). 칩 개수와 평균은 서열표 묶음과 같은 규칙이다(D24):
  * exc+fc+ss+s+belowS == recorded, 기록 없는 채보는 어느 칩에도 세지 않는다.
  */
 export interface ChartFolderResponse {
@@ -207,6 +207,8 @@ export interface ChartFolderResponse {
   averageRecorded: number | null;
   /** 기록 없는 채보를 0%로 넣은 평균 */
   averageWithZero: number;
+  /** 그 안의 0.05 단위 하위 폴더(레벨 높은 순, 같은 통계). 하위 폴더 자신은 빈 배열 */
+  subFolders: ChartFolderResponse[];
 }
 
 export interface ChartFolderListResponse {

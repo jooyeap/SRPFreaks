@@ -6,9 +6,13 @@ import type { DifficultyType, InstrumentPart } from "@/lib/types";
 /** 곡 목록 쿼리 키. 앞부분 "song-list"로 기록 저장 후 한꺼번에 무효화한다(AFFECTED_QUERY_KEYS). 내 기록이 섞이므로 사용자 id를 넣는다. */
 export const songListKeys = {
   folders: (userId: number) => ["song-list", "folders", userId] as const,
-  folder: (userId: number, lo: number) => ["song-list", "folder", userId, lo] as const,
+  // 같은 시작값(9.50)이 큰 폴더와 하위 폴더 둘 다 있으므로 단위(step)도 키에 넣는다
+  folder: (userId: number, lo: number, step: FolderStep) => ["song-list", "folder", userId, step, lo] as const,
   results: (userId: number, filters: SongListFilters) => ["song-list", "results", userId, filters] as const,
 };
+
+/** 폴더 단위: 큰 폴더는 0.5, 그 안의 하위 폴더는 0.05. 서버의 `folderStep` 파라미터 값이다. */
+export type FolderStep = "0.50" | "0.05";
 
 /** 한 번에 이어 받는 채보 수 (`더 보기` 한 번). 서버 기본값과 같다. */
 export const CHARTS_PAGE_SIZE = 20;
@@ -74,10 +78,15 @@ export function fetchChartFolders(signal?: AbortSignal): Promise<ChartFolderList
   return apiFetch<ChartFolderListResponse>("/songs/chart-folders", { signal });
 }
 
-/** 폴더 안 채보 한 페이지. folder는 폴더 시작 레벨(예: 9.5). 서버가 0.5 단위가 아니면 400으로 거절한다. */
-export function fetchFolderCharts(lo: number, page: number, signal?: AbortSignal): Promise<PageResponse<ChartRowResponse>> {
+/** 폴더 안 채보 한 페이지. folder는 폴더 시작 레벨(예: 9.5), step은 그 단위. 단위의 배수가 아니면 서버가 400으로 거절한다. */
+export function fetchFolderCharts(
+  lo: number,
+  step: FolderStep,
+  page: number,
+  signal?: AbortSignal,
+): Promise<PageResponse<ChartRowResponse>> {
   return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", {
-    query: { folder: lo.toFixed(2), page, size: CHARTS_PAGE_SIZE },
+    query: { folder: lo.toFixed(2), folderStep: step, page, size: CHARTS_PAGE_SIZE },
     signal,
   });
 }

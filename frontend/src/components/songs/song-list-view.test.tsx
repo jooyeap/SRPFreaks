@@ -19,8 +19,14 @@ function folder(lo: number, over: Partial<ChartFolderResponse> = {}): ChartFolde
     belowS: 1,
     averageRecorded: 90.5,
     averageWithZero: 60.33,
+    subFolders: [],
     ...over,
   };
+}
+
+/** 0.05 단위 하위 폴더 (hi = lo + 0.04, 자신의 subFolders는 비어 있다) */
+function sub(lo: number, over: Partial<ChartFolderResponse> = {}): ChartFolderResponse {
+  return folder(lo, { hi: lo + 0.04, total: 1, recorded: 0, fc: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, ...over });
 }
 
 function row(id: number, title: string, over: Partial<ChartRowResponse> = {}): ChartRowResponse {
@@ -152,7 +158,52 @@ describe("SongListView", () => {
 
     expect(await screen.findByRole("link", { name: "첫번째곡" })).toHaveAttribute("href", "/songs/101?from=songs&chart=1");
     expect(chartCalls()[0]).toContain("folder=9.50");
+    expect(chartCalls()[0]).toContain("folderStep=0.50");
     expect(screen.getByText("두번째곡")).toBeInTheDocument();
+  });
+
+  it("하위 폴더가 있으면 큰 폴더를 펼칠 때 하위 폴더만 보이고, 하위 폴더를 펼쳐야 채보를 요청한다", async () => {
+    const withSubs: ChartFolderListResponse = {
+      ...folders,
+      folders: [folder(9.5, { subFolders: [sub(9.55, { total: 2 }), sub(9.5)] })],
+    };
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(withSubs));
+      return Promise.resolve(json(page([row(1, "하위곡")])));
+    });
+    renderView();
+
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    const upper = await screen.findByRole("button", { name: /9\.55 ~ 9\.59/ });
+    const lower = screen.getByRole("button", { name: /9\.50 ~ 9\.54/ });
+    expect(upper).toHaveTextContent("2개");
+    // 레벨 높은 하위 폴더가 위
+    expect(upper.compareDocumentPosition(lower) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(chartCalls()).toHaveLength(0);
+
+    fireEvent.click(upper);
+    expect(await screen.findByRole("link", { name: "하위곡" })).toBeInTheDocument();
+    // 같은 시작값이라도 단위를 같이 보내 서버가 하위 폴더 범위로 읽게 한다
+    expect(chartCalls()).toHaveLength(1);
+    expect(chartCalls()[0]).toContain("folder=9.55");
+    expect(chartCalls()[0]).toContain("folderStep=0.05");
+  });
+
+  it("큰 폴더와 하위 폴더의 시작값이 같아도(9.50) 서로 다른 목록으로 캐시된다", async () => {
+    const withSubs: ChartFolderListResponse = { ...folders, folders: [folder(9.5, { subFolders: [sub(9.5)] })] };
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/songs/chart-folders") ? json(withSubs) : json(page([row(1, "하위곡")]))),
+    );
+    renderView();
+
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.54/ }));
+
+    await screen.findByRole("link", { name: "하위곡" });
+    // 큰 폴더는 하위 폴더를 보여 주므로 채보 요청은 하위 폴더 것 하나뿐이다
+    expect(chartCalls()).toHaveLength(1);
+    expect(chartCalls()[0]).toContain("folderStep=0.05");
   });
 
   it("`더 보기`는 다음 페이지를 이어 붙인다", async () => {
