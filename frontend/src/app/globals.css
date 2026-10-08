@@ -30,6 +30,8 @@
   --chip-on-bg: #eef0f6;
   --chip-on-fg: #0f1218;
   --danger: #ff8f8f;
+  /* 서열표 진행도에서 기록이 모두 채워진 묶음: 막대(done)와 기준 난이도 글자(done-text). 글자 `완료`가 같이 있어 색만으로 구분하지 않는다 */
+  --done: #4ade80; --done-text: #86efac;
 
   /* 단계 (docs/DESIGN-UI.md 2·4장). bar = 행 막대, text = 달성률 숫자, name = 곡명(EXC/FC만 다름), tint = 행 배경 틴트 */
   --stage-chip-fg: #10131a;
@@ -79,6 +81,7 @@
   --chip-on-fg: #f3f5f9;
   /* 라이트에서 --danger를 빼먹으면 다크용 연한 색(#ff8f8f)이 흰 배경에 남아 대비가 2.19까지 떨어진다 */
   --danger: #b91c1c;
+  --done: #16a34a; --done-text: #15803d;
   /* 라이트에서는 난이도 색(연한 파스텔)이 흰 배경에서 글자로 읽히지 않아 더 진한 글자색을 따로 둔다 */
   --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
 
@@ -113,6 +116,7 @@
     --chip-on-bg: #12151c;
     --chip-on-fg: #f3f5f9;
     --danger: #b91c1c;
+  --done: #16a34a; --done-text: #15803d;
     --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
 
     --stage-s-bar: #16a34a; --stage-s-text: #15803d;
@@ -142,6 +146,8 @@
   --color-chip-on-bg: var(--chip-on-bg);
   --color-chip-on-fg: var(--chip-on-fg);
   --color-danger: var(--danger);
+  --color-done: var(--done);
+  --color-done-text: var(--done-text);
 
   /* 본문은 Noto Sans KR, 숫자/영문 라벨은 Chakra Petch (DESIGN-UI 1장) */
   --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;

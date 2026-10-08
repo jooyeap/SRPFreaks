@@ -3,6 +3,11 @@ import { StageBadge } from "@/components/table/StageBadge";
 import { folderHref, type TableProgress } from "@/lib/difficulty-table";
 import { formatTier } from "@/lib/format";
 
+/** 전체가 있고 기록이 모두 채워졌으면 완료. 완료한 묶음은 막대와 기준 난이도 글자 색이 달라진다(색 값은 globals.css의 --done). */
+function isDone(recorded: number, total: number): boolean {
+  return total > 0 && recorded >= total;
+}
+
 /** 0~100 사이 정수 비율. 전체가 0이면 0. */
 function percent(part: number, whole: number): number {
   return whole > 0 ? Math.round((part / whole) * 100) : 0;
@@ -31,10 +36,14 @@ export function TableProgressCard({ progress }: { progress: TableProgress }) {
       <div className="flex flex-col gap-1">
         <p className="text-sm text-fg-sub">
           기록 <span className="font-num font-semibold text-fg">{progress.recorded}</span>/{progress.total}
+          {isDone(progress.recorded, progress.total) ? <span className="ml-2 text-xs font-bold text-done-text">완료</span> : null}
           <span className="ml-2 font-num text-xs text-fg-dim">{percent(progress.recorded, progress.total)}%</span>
         </p>
         <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-table-head">
-          <div className="h-full rounded-full bg-fg-dim" style={{ width: `${percent(progress.recorded, progress.total)}%` }} />
+          <div
+            className={`h-full rounded-full ${isDone(progress.recorded, progress.total) ? "bg-done" : "bg-fg-dim"}`}
+            style={{ width: `${percent(progress.recorded, progress.total)}%` }}
+          />
         </div>
       </div>
 
@@ -51,19 +60,26 @@ export function TableProgressCard({ progress }: { progress: TableProgress }) {
       </ul>
 
       <ul aria-label="묶음별 진행" className="grid gap-x-4 gap-y-1 border-t border-row-line pt-2.5 md:grid-cols-2">
-        {progress.groups.map((g) => (
-          <li key={g.tier ?? "undecided"}>
-            <Link href={folderHref(g.tier)} className="flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-table-head">
-              <span className="w-10 shrink-0 font-num font-semibold text-fg">{formatTier(g.tier)}</span>
-              <span aria-hidden="true" className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-table-head">
-                <span className="block h-full rounded-full bg-fg-dim" style={{ width: `${percent(g.recorded, g.total)}%` }} />
-              </span>
-              <span className="w-14 shrink-0 text-right font-num text-xs text-fg-sub">
-                {g.recorded}/{g.total}
-              </span>
-            </Link>
-          </li>
-        ))}
+        {progress.groups.map((g) => {
+          const done = isDone(g.recorded, g.total);
+          return (
+            <li key={g.tier ?? "undecided"} data-done={done ? "true" : undefined}>
+              <Link href={folderHref(g.tier)} className="flex items-center gap-2 rounded px-1 py-1 text-sm hover:bg-table-head">
+                <span className={`w-10 shrink-0 font-num font-semibold ${done ? "text-done-text" : "text-fg"}`}>{formatTier(g.tier)}</span>
+                <span aria-hidden="true" className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-table-head">
+                  <span
+                    className={`block h-full rounded-full ${done ? "bg-done" : "bg-fg-dim"}`}
+                    style={{ width: `${percent(g.recorded, g.total)}%` }}
+                  />
+                </span>
+                <span className="w-[5.5rem] shrink-0 text-right font-num text-xs text-fg-sub">
+                  {done ? <span className="mr-1.5 font-sans font-bold text-done-text">완료</span> : null}
+                  {g.recorded}/{g.total}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
