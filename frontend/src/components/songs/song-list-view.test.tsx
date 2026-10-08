@@ -101,6 +101,24 @@ describe("SongListView", () => {
     expect(chartCalls()).toHaveLength(0);
   });
 
+  it("폴더의 모든 채보가 같은 단계 이상이면 머리에 그 단계 효과가 붙고, 하나라도 모자라면 붙지 않는다", async () => {
+    // 9.50: 3개 중 EXC 1 + SS 2 = 모두 SS 이상 -> SS / 9.00: 4개 중 기록 없는 것이 있어 효과 없음
+    const all: ChartFolderListResponse = {
+      ...folders,
+      folders: [
+        folder(9.5, { total: 3, recorded: 3, exc: 1, fc: 0, ss: 2, s: 0, belowS: 0 }),
+        folder(9.0, { total: 4, recorded: 3, exc: 1, fc: 0, ss: 2, s: 0, belowS: 0 }),
+      ],
+    };
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/songs/chart-folders") ? json(all) : json(page([]))),
+    );
+    renderView();
+
+    expect(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ })).toHaveAttribute("data-stage", "SS");
+    expect(screen.getByRole("button", { name: /9\.00 ~ 9\.49/ })).not.toHaveAttribute("data-stage");
+  });
+
   it("`0% 포함`으로 바꾸면 기록 없는 채보를 0으로 넣은 평균이 보인다", async () => {
     renderView();
     const top = await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
