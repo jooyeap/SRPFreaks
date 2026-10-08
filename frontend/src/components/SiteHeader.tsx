@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminNavLink } from "@/components/AdminNavLink";
 import { AuthControls } from "@/components/AuthControls";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -36,6 +37,7 @@ export function SiteHeader() {
           >
             유저
           </Link>
+          <AdminNavLink />
         </nav>
         <div className="ml-auto flex items-center gap-2 whitespace-nowrap">
           <AuthControls />

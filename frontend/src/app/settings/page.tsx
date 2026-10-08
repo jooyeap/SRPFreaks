@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { NicknameForm } from "@/components/settings/NicknameForm";
+import { canSeeAdminMenu } from "@/lib/admin";
 import { ProfileVisibilityForm } from "@/components/settings/ProfileVisibilityForm";
 
 /** 설정 화면: 계정 정보, 닉네임, 유저 목록 공개 여부, 로그아웃, 탈퇴로 가는 링크. 내 정보이므로 로그인이 필요하다. */
@@ -45,7 +46,7 @@ export default function SettingsPage() {
       <section aria-label="유저 목록 공개 설정" className={card}>
         <ProfileVisibilityForm user={user} />
       </section>
-      {user.role === "ROOT" ? (
+      {canSeeAdminMenu(user.role) ? (
         <section aria-label="관리" className={card}>
           <h2 className="text-xs font-bold text-fg-sub">관리</h2>
           <Link

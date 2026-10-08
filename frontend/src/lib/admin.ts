@@ -144,3 +144,34 @@ export function fetchAdminUsers(page: number, size: number, signal?: AbortSignal
 export function changeUserRole(userId: number, role: Role): Promise<AdminUserResponse> {
   return apiFetch<AdminUserResponse>(`/admin/users/${userId}/role`, { method: "PATCH", body: { role } });
 }
+
+// ---- 관리 메뉴 / 역할 조건 ------------------------------------------------------------------------------
+
+const ROLE_RANK: Record<Role, number> = { USER: 0, ADMIN: 1, ROOT: 2 };
+
+/** 역할이 기준 이상인지. 서버의 RoleHierarchy(ROOT > ADMIN > USER)와 같은 순서다. 화면을 보이게 할지 정하는 데만 쓰고, 권한은 서버가 검사한다. */
+export function hasRoleAtLeast(role: Role | null | undefined, minRole: Role): boolean {
+  return role !== null && role !== undefined && ROLE_RANK[role] >= ROLE_RANK[minRole];
+}
+
+/** 헤더의 `관리` 메뉴와 관리 메뉴 화면을 볼 수 있는 역할(ADMIN, ROOT). */
+export function canSeeAdminMenu(role: Role | null | undefined): boolean {
+  return hasRoleAtLeast(role, "ADMIN");
+}
+
+export interface AdminMenuItem {
+  href: string;
+  title: string;
+  description: string;
+  /** 이 항목을 보여 줄 최소 역할 */
+  minRole: Role;
+}
+
+/** 관리 메뉴 항목. 새 관리 화면이 생기면 여기에 한 줄 추가한다. */
+export const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
+  { href: "/songs", title: "곡 관리", description: "곡 목록에서 곡을 등록하고, 곡 상세에서 곡·채보를 수정하거나 삭제합니다.", minRole: "ADMIN" },
+  { href: "/table", title: "서열표 관리", description: "서열표에서 곡을 등록하고, 곡 상세에서 기준 난이도·추천도·속성을 고칩니다.", minRole: "ADMIN" },
+  { href: "/admin/users", title: "사용자", description: "사용자 목록을 보고 관리자(ADMIN) 역할을 지정하거나 해제합니다.", minRole: "ROOT" },
+  { href: "/admin/settings", title: "설정", description: "레이팅 계수, 재킷 표시, 연락처를 바꿉니다.", minRole: "ROOT" },
+  { href: "/admin/audit-logs", title: "감사 로그", description: "관리 작업 기록을 최근 순으로 봅니다.", minRole: "ROOT" },
+];

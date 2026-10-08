@@ -54,7 +54,7 @@ describe("설정 화면", () => {
     expect(screen.queryByRole("link", { name: "탈퇴하기" })).toBeNull();
   });
 
-  it("ROOT에게만 관리 화면 링크를 보여 준다", async () => {
+  it("ADMIN·ROOT에게만 관리 화면 링크를 보여 준다", async () => {
     const login = (role: string) =>
       fetchMock.mockResolvedValueOnce(
         json({
@@ -71,6 +71,12 @@ describe("설정 화면", () => {
 
     clearAccessToken();
     login("ADMIN");
+    const second = renderPage();
+    expect(await screen.findByRole("link", { name: "관리 화면" })).toHaveAttribute("href", "/admin");
+    second.unmount();
+
+    clearAccessToken();
+    login("USER");
     renderPage();
     await screen.findByText("a@example.com");
     expect(screen.queryByRole("link", { name: "관리 화면" })).toBeNull();
