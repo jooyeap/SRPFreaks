@@ -148,7 +148,7 @@ describe("HomeDashboard", () => {
     expect(rows[2].closest("li")).not.toHaveAttribute("data-done"); // 기록 0/2는 완료가 아니다
     expect(progress.querySelector(":scope > div [data-stage-bar].ring-done")).toBeNull(); // 전체는 아직 다 채우지 않았다
 
-    expect(screen.getByRole("link", { name: /^서열표.*기준 난이도별로/ })).toHaveAttribute("href", "/table");
+    expect(screen.getByRole("link", { name: /^서열표.*레이팅 상수 난이도별로/ })).toHaveAttribute("href", "/table");
 
     // 유저 목록 미리보기: 공개한 유저 줄(상세 링크)과 전체 보기 링크
     const preview = await screen.findByRole("region", { name: "유저 목록 미리보기" });

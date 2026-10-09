@@ -36,7 +36,7 @@ export default function Home() {
       <ul className="grid gap-3 md:grid-cols-3">
         <li className="rounded-lg border border-line bg-card p-4">
           <p className="text-base font-semibold text-fg">서열표</p>
-          <p className="mt-1 text-sm text-fg-sub">기준 난이도별로 채보를 보고, 내 기록과 달성 현황을 확인합니다.</p>
+          <p className="mt-1 text-sm text-fg-sub">레이팅 상수 난이도별로 채보를 보고, 내 기록과 달성 현황을 확인합니다.</p>
         </li>
         <li className="rounded-lg border border-line bg-card p-4">
           <p className="text-base font-semibold text-fg">레이팅</p>

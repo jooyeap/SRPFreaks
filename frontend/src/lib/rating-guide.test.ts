@@ -33,7 +33,7 @@ describe("채보 값 V와 화면 점수", () => {
     expect(chartValue(15, 100)).toBeCloseTo(15.2); // 95 이상은 더 오르지 않는다
   });
 
-  it("예시: 기준 난이도 6.0, 달성률 90% -> V 14.1333, 점수 282.67", () => {
+  it("예시: 레이팅 상수 난이도 6.0, 달성률 90% -> V 14.1333, 점수 282.67", () => {
     expect(chartValue(15, 90)).toBeCloseTo(14.1333, 4); // 12 + 3.2×10/15
     expect(chartScore(60, 90)).toBeCloseTo(282.667, 3);
   });

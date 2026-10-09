@@ -155,7 +155,7 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
 
       <div className="flex flex-col gap-1">
         <label htmlFor="entry-tier" className="text-sm text-fg-sub">
-          기준 난이도
+          레이팅 상수 난이도
         </label>
         <input
           id="entry-tier"
@@ -246,17 +246,17 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
           </span>
         </div>
         <p id="entry-rating-hint" className="text-[11px] text-fg-faint">
-          꺼 두면 기준 난이도와 속성이 있어도 모든 사용자의 레이팅에서 빠지고, 기록은 그대로 남습니다.
+          꺼 두면 레이팅 상수 난이도와 속성이 있어도 모든 사용자의 레이팅에서 빠지고, 기록은 그대로 남습니다.
         </p>
         {switchIneffective ? (
           <p role="status" className="text-sm text-fg">
-            지금 값으로는 계산에 들어가지 않습니다. 기준 난이도와 속성(레이팅 제외 아님)이 필요합니다.
+            지금 값으로는 계산에 들어가지 않습니다. 레이팅 상수 난이도와 속성(레이팅 제외 아님)이 필요합니다.
           </p>
         ) : null}
       </div>
 
       <p className="text-xs text-fg-dim">
-        기준 난이도와 속성이 모두 있어야 레이팅에 들어갑니다. 속성이 없거나 레이팅 제외이면 기록만 남습니다. 저장하면 모든 사용자의
+        레이팅 상수 난이도와 속성이 모두 있어야 레이팅에 들어갑니다. 속성이 없거나 레이팅 제외이면 기록만 남습니다. 저장하면 모든 사용자의
         서열표와 레이팅에 반영되고, 변경 내용은 관리 기록에 남습니다.
       </p>
 

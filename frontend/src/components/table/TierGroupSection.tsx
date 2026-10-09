@@ -78,7 +78,7 @@ export function TierGroupSection({
   const title = formatTier(group.tier);
   const reached = groupStage(group);
   return (
-    <section aria-label={`기준 난이도 ${title}`} className="overflow-hidden rounded-[14px] border border-line bg-card">
+    <section aria-label={`레이팅 상수 난이도 ${title}`} className="overflow-hidden rounded-[14px] border border-line bg-card">
       {/* 묶음 전체가 한 단계 이상이면 곡 카드와 같은 왼쪽 막대와 배경을 머리에 준다. 단계 글자는 칩이 이미 보여 준다 */}
       <header
         data-stage={reached ?? undefined}

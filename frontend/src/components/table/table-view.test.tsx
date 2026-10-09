@@ -110,7 +110,7 @@ describe("TierGroupSection", () => {
     expect(screen.getByText(/^평균/)).toHaveTextContent("평균 –");
   });
 
-  it("기준 난이도가 없는 묶음은 `미정`이라고 쓴다", () => {
+  it("레이팅 상수 난이도가 없는 묶음은 `미정`이라고 쓴다", () => {
     render(<TierGroupSection group={group({ tier: null })} includeZero={false} />);
     expect(screen.getByRole("heading", { name: /미정/ })).toBeInTheDocument();
   });

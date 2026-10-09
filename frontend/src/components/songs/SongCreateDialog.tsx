@@ -239,8 +239,8 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
                       type="text"
                       inputMode="decimal"
                       autoComplete="off"
-                      placeholder="기준 난이도 (비우면 미정)"
-                      aria-label={`채보 ${n} 기준 난이도`}
+                      placeholder="레이팅 상수 난이도 (비우면 미정)"
+                      aria-label={`채보 ${n} 레이팅 상수 난이도`}
                       aria-invalid={chartErrors?.tier ? true : undefined}
                       className={`${FIELD} w-52`}
                       {...register(`charts.${index}.tier`)}
@@ -289,7 +289,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
 
       <p className="text-xs text-fg-dim">
         {tableId !== null
-          ? "서열표에도 함께 추가됩니다. 기준 난이도를 비우면 미정으로 들어가고 레이팅에서는 빠집니다. "
+          ? "서열표에도 함께 추가됩니다. 레이팅 상수 난이도를 비우면 미정으로 들어가고 레이팅에서는 빠집니다. "
           : "곡 목록에만 등록되고 서열표에는 서열표 화면에서 추가합니다. "}
         등록하면 모든 사용자에게 보이고, 변경 내용은 관리 기록에 남습니다.
       </p>

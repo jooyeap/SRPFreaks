@@ -77,7 +77,7 @@ export interface SettingMeta {
  * 뻔한 실수를 먼저 막는 용도다. 목록에 없는 키는 글자(text)로 다룬다.
  */
 export const SETTING_META: Record<string, SettingMeta> = {
-  "rating.pivot": { label: "기준 난이도 경계", description: "이 값보다 크면 높은 구간 식, 아니면 낮은 구간 식으로 상수를 구합니다.", kind: "number" },
+  "rating.pivot": { label: "레이팅 상수 난이도 경계", description: "이 값보다 크면 높은 구간 식, 아니면 낮은 구간 식으로 상수를 구합니다.", kind: "number" },
   "rating.high_slope": { label: "높은 구간 기울기", description: "R = 기울기 × T − 절편 (T > 경계)", kind: "number" },
   "rating.high_offset": { label: "높은 구간 절편", description: "R = 기울기 × T − 절편 (T > 경계)", kind: "number" },
   "rating.low_slope": { label: "낮은 구간 기울기", description: "R = 기울기 × T − 절편 (T ≤ 경계)", kind: "number" },
@@ -174,7 +174,7 @@ export interface AdminMenuItem {
 /** 관리 메뉴 항목. 새 관리 화면이 생기면 여기에 한 줄 추가한다. */
 export const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
   { href: "/songs", title: "곡 관리", description: "곡 목록에서 곡을 등록하고, 곡 상세에서 곡·채보를 수정하거나 삭제합니다.", minRole: "ADMIN" },
-  { href: "/table", title: "서열표 관리", description: "서열표에서 곡을 등록하고, 곡 상세에서 기준 난이도·추천도·속성을 고칩니다.", minRole: "ADMIN" },
+  { href: "/table", title: "서열표 관리", description: "서열표에서 곡을 등록하고, 곡 상세에서 레이팅 상수 난이도·추천도·속성을 고칩니다.", minRole: "ADMIN" },
   { href: "/admin/users", title: "사용자", description: "사용자 목록을 보고 관리자(ADMIN) 역할을 지정하거나 해제합니다.", minRole: "ROOT" },
   { href: "/admin/settings", title: "설정", description: "레이팅 계수, 재킷 표시, 연락처를 바꿉니다.", minRole: "ROOT" },
   { href: "/admin/audit-logs", title: "감사 로그", description: "관리 작업 기록을 최근 순으로 봅니다.", minRole: "ROOT" },

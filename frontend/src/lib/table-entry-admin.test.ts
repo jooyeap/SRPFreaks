@@ -25,7 +25,7 @@ function check(tier: string, recommend = "", pattern = "") {
 }
 
 describe("tableEntrySchema", () => {
-  it("기준 난이도는 비워도 되고(미정) 소수 첫째 자리까지의 숫자는 통과한다", () => {
+  it("레이팅 상수 난이도는 비워도 되고(미정) 소수 첫째 자리까지의 숫자는 통과한다", () => {
     for (const tier of ["", "  ", "0", "0.0", "5.8", "6", "10.5", "99.9"]) {
       expect(check(tier).success, tier).toBe(true);
     }
@@ -40,7 +40,7 @@ describe("tableEntrySchema", () => {
   it("소수 둘째 자리는 그에 맞는 문구를 준다", () => {
     const result = check("5.85");
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toBe("기준 난이도는 소수 첫째 자리까지만 입력할 수 있습니다.");
+    expect(result.error?.issues[0]?.message).toBe("레이팅 상수 난이도는 소수 첫째 자리까지만 입력할 수 있습니다.");
   });
 
   it("추천도는 상/중/하, 속성은 단일/복합/이중/삼중/레이팅 제외만 받는다", () => {
@@ -75,7 +75,7 @@ describe("toTableEntryBody", () => {
 });
 
 describe("tableEntryToFormValues", () => {
-  it("지금 값으로 초기값을 만든다 (기준 난이도는 소수 첫째 자리 문자열)", () => {
+  it("지금 값으로 초기값을 만든다 (레이팅 상수 난이도는 소수 첫째 자리 문자열)", () => {
     expect(tableEntryToFormValues(6, entry)).toEqual({ tier: "6.0", recommend: "상", pattern: "복합", ratingEnabled: true });
   });
 

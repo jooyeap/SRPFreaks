@@ -90,7 +90,7 @@ export function RatingBody({
         onDeleteEntry={onDeleteEntry}
       />
       <p className="text-xs text-fg-dim">
-        기준 난이도와 속성이 없는 채보는 레이팅에서 제외됩니다. 같은 곡의 다른 채보는 각각 계산합니다.
+        레이팅 상수 난이도와 속성이 없는 채보는 레이팅에서 제외됩니다. 같은 곡의 다른 채보는 각각 계산합니다.
       </p>
     </>
   );

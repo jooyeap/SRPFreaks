@@ -48,7 +48,7 @@ export function LevelTable({
       <div className="grid grid-cols-[4px_116px_1fr_44px] items-center gap-x-2 bg-table-head px-3 py-2 text-xs text-fg-dim" aria-hidden="true">
         <span />
         <span>채보</span>
-        <span>기준 난이도</span>
+        <span>레이팅 상수 난이도</span>
         <span>추천</span>
       </div>
       <ul>

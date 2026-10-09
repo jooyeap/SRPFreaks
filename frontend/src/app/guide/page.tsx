@@ -10,7 +10,7 @@ const SUMMARY = [
 ] as const;
 
 const INCLUDED = [
-  "서열표에 기준 난이도가 있는 채보",
+  "서열표에 레이팅 상수 난이도가 있는 채보",
   "속성이 단일, 복합, 이중, 삼중 중 하나인 채보",
   "내가 SRN+로 저장한 기록이 있는 채보",
 ] as const;
@@ -80,7 +80,7 @@ export default function GuidePage() {
             <li className="flex items-start gap-2">
               <CrossIcon />
               <span>
-                기준 난이도가 <b className="text-fg">미정</b>인 채보
+                레이팅 상수 난이도가 <b className="text-fg">미정</b>인 채보
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -115,13 +115,13 @@ export default function GuidePage() {
       <section aria-label="레이팅 상수표" className="space-y-3">
         <h2 className="text-lg font-bold text-fg">레이팅 상수표</h2>
         <p className="text-[13px] leading-relaxed text-fg-sub">
-          슈랜플 난이도(서열표의 기준 난이도)와 달성률별 채보 점수입니다. 정수로 반올림해 보여 주며, 칸 색은 점수가 높을수록 노랑에서 분홍, 검정 쪽으로 이어집니다.
+          슈랜플 난이도(서열표의 레이팅 상수 난이도)와 달성률별 채보 점수입니다. 정수로 반올림해 보여 주며, 칸 색은 점수가 높을수록 노랑에서 분홍, 검정 쪽으로 이어집니다.
         </p>
         <p className="text-[13px] leading-relaxed text-fg-sub">
           곡별 레이팅의 최고 수치는 달성률 <b className="text-fg">100%가 아니라 95%</b>입니다. 95%를 넘어도 점수는 더 오르지 않습니다.
         </p>
         <ConstantTable />
-        <p className="text-xs leading-relaxed text-fg-dim">내부 상수는 서열표의 기준 난이도로 정해집니다. 이 표는 현재 계수를 기준으로 계산한 값입니다.</p>
+        <p className="text-xs leading-relaxed text-fg-dim">내부 상수는 서열표의 레이팅 상수 난이도로 정해집니다. 이 표는 현재 계수를 기준으로 계산한 값입니다.</p>
       </section>
     </article>
   );

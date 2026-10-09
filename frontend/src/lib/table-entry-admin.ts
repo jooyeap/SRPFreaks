@@ -26,11 +26,11 @@ export const tableEntrySchema = z.object({
         return; // 미정
       }
       if (TIER_TOO_MANY_DECIMALS.test(value)) {
-        ctx.addIssue({ code: "custom", message: "기준 난이도는 소수 첫째 자리까지만 입력할 수 있습니다." });
+        ctx.addIssue({ code: "custom", message: "레이팅 상수 난이도는 소수 첫째 자리까지만 입력할 수 있습니다." });
         return;
       }
       if (!TIER_FORMAT.test(value)) {
-        ctx.addIssue({ code: "custom", message: "기준 난이도는 0.0 이상의 숫자로 입력해 주세요." });
+        ctx.addIssue({ code: "custom", message: "레이팅 상수 난이도는 0.0 이상의 숫자로 입력해 주세요." });
       }
     }),
   recommend: z.enum(["", ...RECOMMEND_CHOICES]),

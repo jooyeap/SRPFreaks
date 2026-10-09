@@ -236,7 +236,7 @@ describe("SongDetailView", () => {
     renderView("table", 10, false, true);
     fireEvent.click(await screen.findByRole("button", { name: "서열표 값 수정" }));
 
-    expect(screen.getByLabelText("기준 난이도")).toHaveValue("5.8");
+    expect(screen.getByLabelText("레이팅 상수 난이도")).toHaveValue("5.8");
     expect(screen.getByLabelText("추천도")).toHaveValue("상");
     expect(screen.getByLabelText("속성")).toHaveValue("복합");
   });

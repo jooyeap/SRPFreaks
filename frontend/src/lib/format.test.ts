@@ -62,7 +62,7 @@ describe("partLabel / difficultyLabel", () => {
   });
 });
 
-describe("formatTier (기준 난이도)", () => {
+describe("formatTier (레이팅 상수 난이도)", () => {
   it("0.1 단위로 표시한다", () => {
     expect(formatTier(6)).toBe("6.0");
     expect(formatTier(5.9)).toBe("5.9");

@@ -17,7 +17,7 @@ import { fetchMySkill, skillKeys } from "@/lib/rating";
 
 const SHORTCUTS = [
   { href: "/songs", title: "곡 목록", description: "레벨 폴더별로 전체 곡을 보고 검색합니다." },
-  { href: "/table", title: "서열표", description: "기준 난이도별로 채보를 보고 기록을 입력합니다." },
+  { href: "/table", title: "서열표", description: "레이팅 상수 난이도별로 채보를 보고 기록을 입력합니다." },
   { href: "/rating", title: "레이팅", description: "단일 15·복합·이중·삼중 25 목록을 확인합니다." },
 ] as const;
 

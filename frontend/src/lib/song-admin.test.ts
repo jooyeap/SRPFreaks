@@ -60,7 +60,7 @@ describe("songCreateSchema", () => {
     expect(songCreateSchema.safeParse(values({ charts: [...charts, { ...emptyChart(), level: "1" }] })).success).toBe(false);
   });
 
-  it("서열표 값은 기준 난이도 형식을 같이 검사한다", () => {
+  it("서열표 값은 레이팅 상수 난이도 형식을 같이 검사한다", () => {
     expect(songCreateSchema.safeParse(values({ charts: [{ ...emptyChart(), level: "9", tier: "5.85" }] })).success).toBe(false);
     expect(songCreateSchema.safeParse(values({ charts: [{ ...emptyChart(), level: "9", tier: "5.8" }] })).success).toBe(true);
   });
@@ -120,7 +120,7 @@ describe("registerSong", () => {
     expect(calls()).toEqual(["POST /songs", "POST /songs/77/difficulties", "POST /songs/77/difficulties"]);
   });
 
-  it("tableId가 있으면 만든 채보마다 서열표 값을 저장한다 (기준 난이도가 비면 null = 미정)", async () => {
+  it("tableId가 있으면 만든 채보마다 서열표 값을 저장한다 (레이팅 상수 난이도가 비면 null = 미정)", async () => {
     fetchMock
       .mockResolvedValueOnce(json({ id: 77 }, 201))
       .mockResolvedValueOnce(json({ id: 101 }, 201))

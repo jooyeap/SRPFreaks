@@ -75,7 +75,7 @@ describe("TierFolderView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("주소의 기준 난이도에 해당하는 묶음 하나만 보여 준다", async () => {
+  it("주소의 레이팅 상수 난이도에 해당하는 묶음 하나만 보여 준다", async () => {
     renderView("5.8");
     expect(await screen.findByRole("heading", { name: /5\.8\s*2개/ })).toBeInTheDocument();
     expect(screen.getAllByText("가곡").length).toBeGreaterThan(0);
@@ -83,7 +83,7 @@ describe("TierFolderView", () => {
     expect(screen.getByRole("link", { name: "서열표로" })).toHaveAttribute("href", "/table");
   });
 
-  it("undecided는 기준 난이도가 없는 `미정` 묶음이다", async () => {
+  it("undecided는 레이팅 상수 난이도가 없는 `미정` 묶음이다", async () => {
     renderView("undecided");
     expect(await screen.findByRole("heading", { name: /미정/ })).toBeInTheDocument();
     expect(screen.getAllByText("미정곡").length).toBeGreaterThan(0);

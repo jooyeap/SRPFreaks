@@ -50,7 +50,7 @@ describe("pickRatingTable", () => {
 });
 
 describe("묶음 주소 (tierParam / findGroupByParam / folderHref)", () => {
-  it("기준 난이도는 소수 첫째 자리 문자열, 없으면 undecided", () => {
+  it("레이팅 상수 난이도는 소수 첫째 자리 문자열, 없으면 undecided", () => {
     expect(tierParam(5.8)).toBe("5.8");
     expect(tierParam(6)).toBe("6.0");
     expect(tierParam(null)).toBe("undecided");

@@ -119,7 +119,7 @@ export interface SkillEntryResponse {
   part: InstrumentPart;
   difficulty: DifficultyType;
   level: number;
-  tier: number; // 서열표 기준 난이도 T
+  tier: number; // 서열표 레이팅 상수 난이도 T
   pattern: string | null;
   achievementRate: number;
   fullCombo: boolean;

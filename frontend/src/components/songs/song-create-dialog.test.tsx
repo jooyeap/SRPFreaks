@@ -47,12 +47,12 @@ describe("SongCreateButton / 곡 등록 창", () => {
   it("곡 목록 모드에는 서열표 칸이 없고, 서열표 모드에는 있다", () => {
     const { unmount } = renderButton();
     open();
-    expect(screen.queryByLabelText("채보 1 기준 난이도")).toBeNull();
+    expect(screen.queryByLabelText("채보 1 레이팅 상수 난이도")).toBeNull();
     unmount();
 
     renderButton(3);
     open();
-    expect(screen.getByLabelText("채보 1 기준 난이도")).toBeInTheDocument();
+    expect(screen.getByLabelText("채보 1 레이팅 상수 난이도")).toBeInTheDocument();
     expect(screen.getByLabelText("채보 1 추천도")).toBeInTheDocument();
     expect(screen.getByLabelText("채보 1 속성")).toBeInTheDocument();
   });
@@ -105,7 +105,7 @@ describe("SongCreateButton / 곡 등록 창", () => {
     open();
     fireEvent.change(screen.getByLabelText("곡명"), { target: { value: "새 곡" } });
     fireEvent.change(screen.getByLabelText("채보 1 레벨"), { target: { value: "9.5" } });
-    fireEvent.change(screen.getByLabelText("채보 1 기준 난이도"), { target: { value: "5.8" } });
+    fireEvent.change(screen.getByLabelText("채보 1 레이팅 상수 난이도"), { target: { value: "5.8" } });
     fireEvent.click(screen.getByRole("button", { name: "등록" }));
 
     expect(await screen.findByText("곡을 등록했습니다.")).toBeInTheDocument();

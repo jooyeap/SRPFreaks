@@ -63,13 +63,13 @@ describe("TableEntryEditDialog", () => {
 
   it("target이 없으면 아무것도 그리지 않는다", () => {
     renderDialog(null);
-    expect(screen.queryByLabelText("기준 난이도")).toBeNull();
+    expect(screen.queryByLabelText("레이팅 상수 난이도")).toBeNull();
   });
 
   it("지금 값이 미리 채워져 있고 제목은 '서열표 값 수정'이다", () => {
     renderDialog(existing);
     expect(screen.getByText("서열표 값 수정")).toBeInTheDocument();
-    expect(screen.getByLabelText("기준 난이도")).toHaveValue("5.8");
+    expect(screen.getByLabelText("레이팅 상수 난이도")).toHaveValue("5.8");
     expect(screen.getByLabelText("추천도")).toHaveValue("중");
     expect(screen.getByLabelText("속성")).toHaveValue("단일");
   });
@@ -78,7 +78,7 @@ describe("TableEntryEditDialog", () => {
     fetchMock.mockResolvedValue(json(entry));
     renderDialog(existing);
 
-    fireEvent.change(screen.getByLabelText("기준 난이도"), { target: { value: "6.1" } });
+    fireEvent.change(screen.getByLabelText("레이팅 상수 난이도"), { target: { value: "6.1" } });
     fireEvent.change(screen.getByLabelText("추천도"), { target: { value: "상" } });
     fireEvent.change(screen.getByLabelText("속성"), { target: { value: "레이팅 제외" } });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
@@ -96,7 +96,7 @@ describe("TableEntryEditDialog", () => {
     fetchMock.mockResolvedValue(json(entry));
     renderDialog(existing);
 
-    fireEvent.change(screen.getByLabelText("기준 난이도"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("레이팅 상수 난이도"), { target: { value: "" } });
     fireEvent.change(screen.getByLabelText("추천도"), { target: { value: "" } });
     fireEvent.change(screen.getByLabelText("속성"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
@@ -108,7 +108,7 @@ describe("TableEntryEditDialog", () => {
   it("표에 없는 채보는 제목이 '서열표에 추가'이고 비어 있는 채로 시작한다", () => {
     renderDialog({ ...existing, tier: null, entry: null });
     expect(screen.getByText("서열표에 추가")).toBeInTheDocument();
-    expect(screen.getByLabelText("기준 난이도")).toHaveValue("");
+    expect(screen.getByLabelText("레이팅 상수 난이도")).toHaveValue("");
     expect(screen.getByLabelText("추천도")).toHaveValue("");
     expect(screen.getByRole("button", { name: "추가" })).toBeInTheDocument();
   });
@@ -144,11 +144,11 @@ describe("TableEntryEditDialog", () => {
       expect(sentBody()).toMatchObject({ ratingEnabled: false });
     });
 
-    it("켜 두었는데 기준 난이도나 속성이 없으면 계산에 안 들어간다고 알려 준다", () => {
+    it("켜 두었는데 레이팅 상수 난이도나 속성이 없으면 계산에 안 들어간다고 알려 준다", () => {
       renderDialog({ ...existing, tier: null, entry: { ...entry, ratingEnabled: true, pattern: null } });
       expect(screen.getByRole("status")).toHaveTextContent("계산에 들어가지 않습니다");
 
-      fireEvent.change(screen.getByLabelText("기준 난이도"), { target: { value: "6.0" } });
+      fireEvent.change(screen.getByLabelText("레이팅 상수 난이도"), { target: { value: "6.0" } });
       fireEvent.change(screen.getByLabelText("속성"), { target: { value: "단일" } });
       expect(screen.queryByRole("status")).toBeNull();
     });
@@ -166,25 +166,25 @@ describe("TableEntryEditDialog", () => {
 
   it("검사에 실패하면 서버에 보내지 않고 입력칸 아래에 문구를 보여 준다", async () => {
     renderDialog(existing);
-    fireEvent.change(screen.getByLabelText("기준 난이도"), { target: { value: "5.85" } });
+    fireEvent.change(screen.getByLabelText("레이팅 상수 난이도"), { target: { value: "5.85" } });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("기준 난이도는 소수 첫째 자리까지만 입력할 수 있습니다.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("레이팅 상수 난이도는 소수 첫째 자리까지만 입력할 수 있습니다.");
     expect(fetchMock).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("서버가 필드 오류(tierLabel)를 주면 기준 난이도 칸 아래에 보여 주고 닫지 않는다", async () => {
+  it("서버가 필드 오류(tierLabel)를 주면 레이팅 상수 난이도 칸 아래에 보여 주고 닫지 않는다", async () => {
     fetchMock.mockResolvedValue(
       json(
-        { code: "VALIDATION_ERROR", message: "요청 값을 확인해 주세요.", timestamp: "t", fieldErrors: { tierLabel: "기준 난이도는 99.9 이하여야 합니다." } },
+        { code: "VALIDATION_ERROR", message: "요청 값을 확인해 주세요.", timestamp: "t", fieldErrors: { tierLabel: "레이팅 상수 난이도는 99.9 이하여야 합니다." } },
         400,
       ),
     );
     renderDialog(existing);
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
-    expect(await screen.findByText("기준 난이도는 99.9 이하여야 합니다.")).toBeInTheDocument();
+    expect(await screen.findByText("레이팅 상수 난이도는 99.9 이하여야 합니다.")).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 
