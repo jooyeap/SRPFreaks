@@ -5,7 +5,7 @@ import { useState } from "react";
 import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
-import { Chip, FilterChips, type ChipOption } from "@/components/table/FilterChips";
+import { Chip, FilterChips, MultiFilterChips, type ChipOption } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
@@ -20,6 +20,7 @@ import {
   pickRatingTable,
   RECOMMEND_OPTIONS,
   tableKeys,
+  toggleValue,
   type TableFilters,
 } from "@/lib/difficulty-table";
 import type { TableEntryResponse } from "@/lib/api-types";
@@ -37,8 +38,8 @@ const PATTERN_CHIPS: readonly ChipOption<string>[] = PATTERN_OPTIONS.map((v) => 
 function filterSummary(filters: TableFilters, includeZero: boolean): string {
   const picked = [
     filters.part ? PART_OPTIONS.find((o) => o.value === filters.part)?.label : null,
-    filters.recommend ? `추천 ${filters.recommend}` : null,
-    filters.pattern ? `속성 ${filters.pattern}` : null,
+    filters.recommend.length > 0 ? `추천 ${filters.recommend.join("·")}` : null,
+    filters.pattern.length > 0 ? `속성 ${filters.pattern.join("·")}` : null,
   ].filter((v): v is string => Boolean(v));
   const average = includeZero ? "평균 0% 포함" : "평균 0% 미포함";
   return `${picked.length > 0 ? picked.join(" · ") : "전체"} · ${average}`;
@@ -131,17 +132,19 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
         className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-xl border border-line bg-card p-3 md:flex`}
       >
         <FilterChips label="파트" options={PART_OPTIONS} selected={filters.part} onChange={(part) => changeFilter({ part })} />
-        <FilterChips
+        <MultiFilterChips
           label="추천"
           options={RECOMMEND_CHIPS}
           selected={filters.recommend}
-          onChange={(recommend) => changeFilter({ recommend })}
+          onToggle={(value) => changeFilter({ recommend: toggleValue(filters.recommend, value, RECOMMEND_OPTIONS) })}
+          onClear={() => changeFilter({ recommend: [] })}
         />
-        <FilterChips
+        <MultiFilterChips
           label="속성"
           options={PATTERN_CHIPS}
           selected={filters.pattern}
-          onChange={(pattern) => changeFilter({ pattern })}
+          onToggle={(value) => changeFilter({ pattern: toggleValue(filters.pattern, value, PATTERN_OPTIONS) })}
+          onClear={() => changeFilter({ pattern: [] })}
         />
         <SortSelect value={sort} onChange={setSort} />
         <div role="group" aria-label="평균 계산" className="flex flex-wrap items-center gap-1.5">

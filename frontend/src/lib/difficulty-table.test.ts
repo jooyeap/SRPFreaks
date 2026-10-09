@@ -7,8 +7,11 @@ import {
   findGroupByParam,
   folderHref,
   groupAverage,
+  joinFilter,
   pickRatingTable,
+  RECOMMEND_OPTIONS,
   tierParam,
+  toggleValue,
 } from "@/lib/difficulty-table";
 
 function table(over: Partial<DifficultyTableResponse>): DifficultyTableResponse {
@@ -90,7 +93,7 @@ describe("fetchTableEntries", () => {
 
   it("필터가 있는 것만 쿼리로 보내고 mine=true를 붙인다", async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ content: [] }), { status: 200 }));
-    await fetchTableEntries(3, { part: "BASS", recommend: "상", pattern: null }, 2);
+    await fetchTableEntries(3, { part: "BASS", recommend: ["상"], pattern: [] }, 2);
     const url = String(fetchMock.mock.calls[0][0]);
     const params = new URL(url, "http://x").searchParams;
     expect(url.startsWith("/api/v1/difficulty-tables/3/entries?")).toBe(true);
@@ -101,11 +104,42 @@ describe("fetchTableEntries", () => {
     expect(params.get("page")).toBe("2");
   });
 
+  it("추천·속성을 여러 개 고르면 쉼표로 이어 한 값으로 보낸다", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ content: [] }), { status: 200 }));
+    await fetchTableEntries(3, { part: null, recommend: ["상", "중"], pattern: ["단일", "삼중"] }, 0);
+    const params = new URL(String(fetchMock.mock.calls[0][0]), "http://x").searchParams;
+    expect(params.get("recommend")).toBe("상,중");
+    expect(params.get("pattern")).toBe("단일,삼중");
+  });
+
   it("필터가 모두 '전체'이면 part/recommend/pattern을 보내지 않는다", async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ content: [] }), { status: 200 }));
     await fetchTableEntries(1, EMPTY_FILTERS, 0);
     const params = new URL(String(fetchMock.mock.calls[0][0]), "http://x").searchParams;
     expect([...params.keys()].sort()).toEqual(["mine", "page"]);
+  });
+});
+
+describe("toggleValue / joinFilter", () => {
+  it("없으면 넣고 있으면 뺀다", () => {
+    expect(toggleValue([], "상", RECOMMEND_OPTIONS)).toEqual(["상"]);
+    expect(toggleValue(["상"], "상", RECOMMEND_OPTIONS)).toEqual([]);
+  });
+
+  it("누른 순서와 상관없이 옵션 순서로 정렬한다 (같은 선택은 같은 키)", () => {
+    expect(toggleValue(["하"], "상", RECOMMEND_OPTIONS)).toEqual(["상", "하"]);
+    expect(toggleValue(["상", "하"], "중", RECOMMEND_OPTIONS)).toEqual(["상", "중", "하"]);
+  });
+
+  it("입력 배열을 바꾸지 않는다", () => {
+    const input = ["상"];
+    toggleValue(input, "중", RECOMMEND_OPTIONS);
+    expect(input).toEqual(["상"]);
+  });
+
+  it("joinFilter는 비면 null, 아니면 쉼표로 잇는다", () => {
+    expect(joinFilter([])).toBeNull();
+    expect(joinFilter(["상", "중"])).toBe("상,중");
   });
 });
 

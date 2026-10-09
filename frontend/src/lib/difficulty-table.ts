@@ -130,17 +130,34 @@ function progressGroups(groups: readonly TierGroupResponse[]): ProgressGroup[] {
   return result;
 }
 
-/** 서열표 필터. 값이 null이면 "전체". recommend/pattern은 서버가 쓰는 한글 값 그대로다. */
+/**
+ * 서열표 필터. 파트는 하나만 고르고(null이면 전체), 추천·속성은 여러 개를 고를 수 있다(빈 배열이면 전체).
+ * recommend/pattern은 서버가 쓰는 한글 값 그대로다. 한 필터 안의 값은 OR, 필터끼리는 AND로 걸린다.
+ */
 export interface TableFilters {
   part: InstrumentPart | null;
-  recommend: string | null;
-  pattern: string | null;
+  recommend: string[];
+  pattern: string[];
 }
 
-export const EMPTY_FILTERS: TableFilters = { part: null, recommend: null, pattern: null };
+export const EMPTY_FILTERS: TableFilters = { part: null, recommend: [], pattern: [] };
 
 export const RECOMMEND_OPTIONS = ["상", "중", "하"] as const;
 export const PATTERN_OPTIONS = ["단일", "복합", "이중", "삼중"] as const;
+
+/**
+ * 칩을 눌렀을 때의 새 선택 목록. 이미 골랐으면 빼고, 아니면 넣는다.
+ * 결과는 항상 options 순서로 맞춘다 -> 같은 선택이면 누른 순서와 상관없이 쿼리 키와 요청 주소가 같아 캐시를 함께 쓴다.
+ */
+export function toggleValue(selected: readonly string[], value: string, options: readonly string[]): string[] {
+  const next = selected.includes(value) ? selected.filter((v) => v !== value) : [...selected, value];
+  return options.filter((o) => next.includes(o));
+}
+
+/** 서버에 보낼 값: 여러 개는 쉼표로 잇고(Spring이 목록으로 받는다), 비어 있으면 null(= 보내지 않음). */
+export function joinFilter(values: readonly string[]): string | null {
+  return values.length > 0 ? values.join(",") : null;
+}
 
 /** TanStack Query 키. 필터나 페이지가 바뀌면 키가 달라져서 새로 가져오고, 같으면 캐시를 쓴다. */
 export const tableKeys = {
@@ -162,7 +179,7 @@ export function fetchTableEntries(
   signal?: AbortSignal,
 ): Promise<PageResponse<TierGroupResponse>> {
   return apiFetch<PageResponse<TierGroupResponse>>(`/difficulty-tables/${tableId}/entries`, {
-    query: { part: filters.part, recommend: filters.recommend, pattern: filters.pattern, mine: true, page },
+    query: { part: filters.part, recommend: joinFilter(filters.recommend), pattern: joinFilter(filters.pattern), mine: true, page },
     signal,
   });
 }

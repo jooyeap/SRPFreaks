@@ -195,6 +195,13 @@ describe("DifficultyTableView", () => {
       .filter((u) => u.includes("/entries") && !new URL(u, "http://x").searchParams.has("size"));
     return new URL(urls[index], "http://x").searchParams;
   }
+  /** 가장 마지막에 보낸 서열표 요청의 쿼리 (난이도 바로가기용 전체 요청은 제외) */
+  function lastEntryParams(): URLSearchParams {
+    const urls = fetchMock.mock.calls
+      .map((c) => String(c[0]))
+      .filter((u) => u.includes("/entries") && !new URL(u, "http://x").searchParams.has("size"));
+    return new URL(urls[urls.length - 1], "http://x").searchParams;
+  }
 
   beforeEach(() => {
     fetchMock.mockReset();
@@ -249,6 +256,46 @@ describe("DifficultyTableView", () => {
     fireEvent.click(within(screen.getByRole("group", { name: "파트" })).getByRole("button", { name: "Bass" }));
     await waitFor(() => expect(entryParams(2).get("part")).toBe("BASS"));
     expect(entryParams(2).get("page")).toBe("0");
+  });
+
+  it("추천·속성은 여러 개를 골라 한 번에 조회하고, 전체를 누르면 해제한다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    );
+    renderView();
+    await screen.findByRole("heading", { name: /5\.8/ });
+    const recommend = within(screen.getByRole("group", { name: "추천" }));
+
+    fireEvent.click(recommend.getByRole("button", { name: "중" }));
+    fireEvent.click(recommend.getByRole("button", { name: "상" })); // 누른 순서와 상관없이 상,중
+    await waitFor(() => expect(lastEntryParams().get("recommend")).toBe("상,중"));
+    expect(recommend.getByRole("button", { name: "상" })).toHaveAttribute("aria-pressed", "true");
+    expect(recommend.getByRole("button", { name: "중" })).toHaveAttribute("aria-pressed", "true");
+    expect(recommend.getByRole("button", { name: "전체" })).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "단일" }));
+    await waitFor(() => {
+      const params = lastEntryParams();
+      expect(params.get("recommend")).toBe("상,중");
+      expect(params.get("pattern")).toBe("단일");
+    });
+
+    fireEvent.click(recommend.getByRole("button", { name: "전체" }));
+    await waitFor(() => expect(lastEntryParams().has("recommend")).toBe(false));
+    expect(recommend.getByRole("button", { name: "전체" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("여러 개를 고르면 접힌 줄 요약에 모두 보인다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    );
+    renderView();
+    const toggle = await screen.findByRole("button", { name: /^필터/ });
+    fireEvent.click(toggle);
+    fireEvent.click(within(screen.getByRole("group", { name: "추천" })).getByRole("button", { name: "상" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "추천" })).getByRole("button", { name: "하" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "단일" }));
+    expect(toggle).toHaveTextContent("추천 상·하 · 속성 단일 · 평균 0% 미포함");
   });
 
   it("필터는 접었다 펼 수 있고, 접힌 줄에 걸린 필터를 요약한다", async () => {
