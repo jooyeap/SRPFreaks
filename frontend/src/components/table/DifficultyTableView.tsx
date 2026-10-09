@@ -12,7 +12,7 @@ import { TierQuickNav } from "@/components/table/TierQuickNav";
 import { ApiError } from "@/lib/api";
 import {
   allGroupsKey,
-  EMPTY_FILTERS,
+  DEFAULT_FILTERS,
   fetchAllTierGroups,
   fetchDifficultyTables,
   fetchTableEntries,
@@ -54,7 +54,7 @@ function errorMessage(error: unknown): string {
  * userId를 쿼리 키에 넣는 이유: 로그아웃 후 다른 계정으로 로그인했을 때 이전 사용자의 기록 캐시가 보이지 않게 하려는 것이다.
  */
 export function DifficultyTableView({ userId, canRegister = false }: { userId: number; canRegister?: boolean }) {
-  const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<TableFilters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(0);
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT); // 묶음 안 채보 정렬. 서버 요청과 무관해서 페이지·캐시에 영향이 없다
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)

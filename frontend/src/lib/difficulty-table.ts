@@ -142,6 +142,12 @@ export interface TableFilters {
 
 export const EMPTY_FILTERS: TableFilters = { part: null, recommend: [], pattern: [] };
 
+/**
+ * 서열표를 처음 열 때의 필터: 추천 `상`·`중`만 보인다(추천도가 낮은 채보는 처음부터 늘어놓지 않는다).
+ * `전체`를 누르면 추천 필터가 풀린다. EMPTY_FILTERS(아무것도 안 건 상태)와 구분해서 둔다.
+ */
+export const DEFAULT_FILTERS: TableFilters = { part: null, recommend: ["상", "중"], pattern: [] };
+
 export const RECOMMEND_OPTIONS = ["상", "중", "하"] as const;
 export const PATTERN_OPTIONS = ["단일", "복합", "이중", "삼중"] as const;
 
