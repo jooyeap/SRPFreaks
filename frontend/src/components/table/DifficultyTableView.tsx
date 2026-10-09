@@ -104,7 +104,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-fg">{table.name}</h1>
-          <p className="mt-1 text-sm text-fg-sub">속성은 SRN, SRN+ 옵션 사용 기준</p>
+          <p className="mt-1 text-sm text-fg-sub">속성은 SRN+ 옵션 사용 기준</p>
           <TableCredit className="mt-1 text-xs text-fg-dim" />
         </div>
         {/* ROOT·ADMIN만: 곡과 채보를 등록하면서 이 서열표에도 추가한다 */}
