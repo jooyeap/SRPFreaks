@@ -473,7 +473,7 @@ com.srpfreaks.backend
 | 사진 인식 | POST `/records/recognize` (multipart, 인식 결과만 반환하고 저장하지 않는다. 일일 한도) | USER+ |
 | 스킬 추이 | GET `/skills/me/history` (Phase 2) | USER+ |
 | 난이도표 | GET `/difficulty-tables` / POST·PATCH | USER+ / ADMIN+ |
-| 서열표 | GET `/difficulty-tables/{id}/entries?mine=true&part=&recommend=&pattern=&page=&size=` (기준 난이도 묶음 단위 페이지(기본 10, 최대 20), 묶음마다 칩 개수(EXC/FC/SS/S/S 미만)·평균(0% 미포함/포함 둘 다), 항목마다 본인 최고 기록과 단계. 쿼리 2번 고정: 항목 fetch join + 본인 최고 기록 group by. 본인 기록은 표의 기준 옵션(SRN+)만, 채보의 최고 달성률과 FC 여부(하나라도 FC면 FC)로 계산) | USER+ |
+| 서열표 | GET `/difficulty-tables/{id}/entries?mine=true&part=&recommend=&pattern=&page=&size=` (`recommend`·`pattern`은 여러 값을 쉼표로 이어 보낼 수 있다(`recommend=상,중`). 한 필터 안은 OR, 필터끼리는 AND, 비우면 전체, 모르는 값이 하나라도 있으면 400. 기준 난이도 묶음 단위 페이지(기본 10, 최대 20), 묶음마다 칩 개수(EXC/FC/SS/S/S 미만)·평균(0% 미포함/포함 둘 다), 항목마다 본인 최고 기록과 단계. 쿼리 2번 고정: 항목 fetch join + 본인 최고 기록 group by. 본인 기록은 표의 기준 옵션(SRN+)만, 채보의 최고 달성률과 FC 여부(하나라도 FC면 FC)로 계산) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |
 | 곡 목록 폴더 | GET `/songs/chart-folders` (전체 곡 수·채보 수, 버전 목록, 0.5 단위 레벨 폴더별 칩 개수·평균(0% 미포함/포함 둘 다)과, 폴더마다 그 안의 0.05 단위 하위 폴더 `subFolders`(같은 통계, 하위 폴더 개수의 합 = 큰 폴더). 채보가 없는 폴더는 없다. 쿼리: 채보+곡 fetch join 1번 + 본인 SRN+ 최고 기록 group by 1번) | USER+ |
 | 곡 목록 채보 | GET `/songs/charts?folder=&q=&part=&difficulty=&version=&page=&size=` (채보 단위 페이지(기본 20, 최대 50). `folder`는 폴더 시작 레벨, `folderStep`은 그 단위(생략하면 0.50, `0.05`만 더 허용. 9.50이 큰 폴더인지 하위 폴더인지 구분). 단위의 배수가 아니거나 허용 밖 단위면 400, `difficulty`는 쉼표로 여러 개, 정렬은 레벨 높은 순 → 곡명 → id. 항목마다 본인 SRN+ 최고 기록과 단계. 곡 검색은 `/songs`와 같은 조건(곡명·아티스트·정규화 표기). 속성은 담지 않는다) | USER+ |
