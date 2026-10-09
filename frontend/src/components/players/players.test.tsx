@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PlayerDetailView } from "@/components/players/PlayerDetailView";
 import { PlayerListView } from "@/components/players/PlayerListView";
-import type { PageResponse, PlayerDetailResponse, PlayerSummaryResponse, SkillResponse } from "@/lib/api-types";
+import type { PageResponse, PlayerDetailResponse, PlayerSummaryResponse, SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -121,5 +121,75 @@ describe("PlayerDetailView", () => {
     renderWith(<PlayerDetailView viewerId={1} playerId={99} />);
     expect(await screen.findByRole("alert")).toHaveTextContent("유저를 찾을 수 없습니다.");
     expect(screen.getByRole("link", { name: "유저 목록으로" })).toBeInTheDocument();
+  });
+
+  describe("관리자 기록 삭제 (D29)", () => {
+    const entry = {
+      rank: 1,
+      songDifficultyId: 55,
+      songId: 5,
+      title: "テスト曲",
+      part: "GUITAR",
+      difficulty: "MASTER",
+      level: 9.8,
+      tier: 6.5,
+      pattern: "단일",
+      achievementRate: 100,
+      fullCombo: true,
+      stage: "EXC",
+      ratingConstant: 17.5,
+      value: 17.5,
+      score: 350,
+    } as SkillEntryResponse;
+    const withEntry: PlayerDetailResponse = { userId: 7, nickname: "あか", skill: { ...skill, single: [entry] } };
+
+    it("관리자가 아니면 삭제 버튼이 없다", async () => {
+      fetchMock.mockResolvedValue(json(withEntry));
+      renderWith(<PlayerDetailView viewerId={1} playerId={7} />);
+      await screen.findByText("テスト曲");
+      expect(screen.queryByRole("button", { name: /삭제/ })).not.toBeInTheDocument();
+    });
+
+    it("삭제를 누르면 확인 상자가 뜨고, 취소하면 요청을 보내지 않는다", async () => {
+      fetchMock.mockResolvedValue(json(withEntry));
+      renderWith(<PlayerDetailView viewerId={1} playerId={7} canDeleteRecords />);
+      fireEvent.click(await screen.findByRole("button", { name: "テスト曲 기록 삭제" }));
+
+      expect(screen.getByRole("alertdialog", { name: "기록 삭제 확인" })).toHaveTextContent("모두 삭제할까요?");
+      fireEvent.click(screen.getByRole("button", { name: "취소" }));
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      expect(fetchMock.mock.calls.every((c) => (c[1]?.method ?? "GET") === "GET")).toBe(true);
+    });
+
+    it("확인하면 DELETE 요청을 보내고 상세를 다시 받는다", async () => {
+      fetchMock.mockImplementation((_input, init) =>
+        Promise.resolve(init?.method === "DELETE" ? new Response(null, { status: 204 }) : json(withEntry)),
+      );
+      renderWith(<PlayerDetailView viewerId={1} playerId={7} canDeleteRecords />);
+      fireEvent.click(await screen.findByRole("button", { name: "テスト曲 기록 삭제" }));
+      fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "삭제" }));
+
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+      const del = fetchMock.mock.calls.find((c) => c[1]?.method === "DELETE");
+      expect(String(del?.[0])).toContain("/admin/players/7/charts/55/records");
+      const gets = fetchMock.mock.calls.filter((c) => (c[1]?.method ?? "GET") === "GET");
+      expect(gets.length).toBeGreaterThanOrEqual(2); // 처음 + 삭제 뒤 다시 받기
+    });
+
+    it("서버가 거절하면 문구를 보여 주고 상자를 닫지 않는다", async () => {
+      fetchMock.mockImplementation((_input, init) =>
+        Promise.resolve(
+          init?.method === "DELETE"
+            ? json({ code: "FORBIDDEN", message: "권한이 없습니다.", timestamp: "t" }, 403)
+            : json(withEntry),
+        ),
+      );
+      renderWith(<PlayerDetailView viewerId={1} playerId={7} canDeleteRecords />);
+      fireEvent.click(await screen.findByRole("button", { name: "テスト曲 기록 삭제" }));
+      fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "삭제" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("권한이 없습니다.");
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    });
   });
 });

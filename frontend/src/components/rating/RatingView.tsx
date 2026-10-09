@@ -16,6 +16,7 @@ function Group({
   limit,
   score,
   emptyText,
+  onDeleteEntry,
 }: {
   title: string;
   entries: SkillEntryResponse[];
@@ -23,6 +24,7 @@ function Group({
   /** 이 구역 채보의 점수 합계 (서버가 계산한 singleScore/otherScore) */
   score: number;
   emptyText: string;
+  onDeleteEntry?: (entry: SkillEntryResponse) => void;
 }) {
   return (
     <section aria-label={title} className="flex flex-col gap-2">
@@ -43,7 +45,7 @@ function Group({
       ) : (
         <ul className="flex flex-col gap-2">
           {entries.map((entry) => (
-            <RatingEntryCard key={entry.songDifficultyId} entry={entry} />
+            <RatingEntryCard key={entry.songDifficultyId} entry={entry} onDelete={onDeleteEntry} />
           ))}
         </ul>
       )}
@@ -56,7 +58,16 @@ function Group({
  * 합계와 목록은 모두 서버가 계산한 값을 그대로 보여 준다 (화면에서 다시 계산하지 않는다).
  * emptyHint: 목록이 모두 비었을 때의 안내. 내 화면은 서열표 링크, 남의 화면은 단순 문구를 넘긴다.
  */
-export function RatingBody({ skill, emptyHint }: { skill: SkillResponse; emptyHint: ReactNode }) {
+export function RatingBody({
+  skill,
+  emptyHint,
+  onDeleteEntry,
+}: {
+  skill: SkillResponse;
+  emptyHint: ReactNode;
+  /** 있으면 카드마다 `삭제` 버튼이 생긴다(유저 상세에서 관리자만, D29) */
+  onDeleteEntry?: (entry: SkillEntryResponse) => void;
+}) {
   const empty = skill.single.length === 0 && skill.other.length === 0;
   return (
     <>
@@ -68,6 +79,7 @@ export function RatingBody({ skill, emptyHint }: { skill: SkillResponse; emptyHi
         limit={skill.singleLimit}
         score={skill.singleScore}
         emptyText="속성이 단일인 채보의 기록이 아직 없습니다."
+        onDeleteEntry={onDeleteEntry}
       />
       <Group
         title="복합·이중·삼중"
@@ -75,6 +87,7 @@ export function RatingBody({ skill, emptyHint }: { skill: SkillResponse; emptyHi
         limit={skill.otherLimit}
         score={skill.otherScore}
         emptyText="속성이 복합·이중·삼중인 채보의 기록이 아직 없습니다."
+        onDeleteEntry={onDeleteEntry}
       />
       <p className="text-xs text-fg-dim">
         기준 난이도와 속성이 없는 채보는 레이팅에서 제외됩니다. 같은 곡의 다른 채보는 각각 계산합니다.

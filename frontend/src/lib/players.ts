@@ -21,3 +21,11 @@ export function fetchPlayers(page: number, size: number, signal?: AbortSignal): 
 export function fetchPlayer(playerId: number, signal?: AbortSignal): Promise<PlayerDetailResponse> {
   return apiFetch<PlayerDetailResponse>(`/players/${playerId}`, { signal });
 }
+
+/**
+ * 관리자(ADMIN·ROOT)가 그 유저의 한 채보 기록을 모두 지운다 (D29). 권한은 서버가 검사하고, 화면은 버튼을 보일지만 정한다.
+ * 성공하면 204(본문 없음)다.
+ */
+export function deletePlayerChartRecords(playerId: number, songDifficultyId: number): Promise<void> {
+  return apiFetch<void>(`/admin/players/${playerId}/charts/${songDifficultyId}/records`, { method: "DELETE" });
+}

@@ -10,7 +10,14 @@ import type { SkillEntryResponse } from "@/lib/api-types";
  * 모든 채보는 기록이 있으므로 단계가 항상 있다. 모든 단계(C~EXC)에 왼쪽 4px 띠와 배경 틴트를 단계 색으로 주고,
  * FC/EXC는 곡명 색도 바꾼다 (서열표 행과 같은 규칙. 예전에는 FC/EXC만 효과가 있었다).
  */
-export function RatingEntryCard({ entry }: { entry: SkillEntryResponse }) {
+export function RatingEntryCard({
+  entry,
+  onDelete,
+}: {
+  entry: SkillEntryResponse;
+  /** 있으면 `삭제` 버튼을 그린다(관리자가 남의 기록을 지울 때만, D29). 카드 전체를 덮는 링크보다 위(z-10)에 둔다. */
+  onDelete?: (entry: SkillEntryResponse) => void;
+}) {
   const nameAccent = entry.stage === "FC" || entry.stage === "EXC";
   return (
     <li
@@ -47,6 +54,16 @@ export function RatingEntryCard({ entry }: { entry: SkillEntryResponse }) {
       <div className="shrink-0 text-right">
         <p className="font-num text-lg font-semibold text-fg">{formatScore(entry.score)}</p>
         <p className="stage-text font-num text-xs">{formatRate(entry.achievementRate)}</p>
+        {onDelete ? (
+          <button
+            type="button"
+            onClick={() => onDelete(entry)}
+            aria-label={`${entry.title} 기록 삭제`}
+            className="relative z-10 mt-1 rounded-full border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
+          >
+            삭제
+          </button>
+        ) : null}
       </div>
     </li>
   );

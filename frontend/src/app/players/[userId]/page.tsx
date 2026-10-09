@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { PlayerDetailView } from "@/components/players/PlayerDetailView";
+import { canSeeAdminMenu } from "@/lib/admin";
 import { parseId } from "@/lib/songs";
 
 /**
@@ -32,5 +33,5 @@ export default function PlayerDetailPage() {
   if (playerId === null) {
     return <p role="alert" className="text-sm text-fg">유저를 찾을 수 없습니다.</p>;
   }
-  return <PlayerDetailView viewerId={user.id} playerId={playerId} />;
+  return <PlayerDetailView viewerId={user.id} playerId={playerId} canDeleteRecords={canSeeAdminMenu(user.role)} />;
 }
