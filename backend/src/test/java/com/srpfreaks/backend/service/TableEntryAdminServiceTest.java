@@ -78,6 +78,8 @@ class TableEntryAdminServiceTest {
         e.changeTier(new BigDecimal("5.8"), true, null);
         e.changeRecommend(Recommend.MIDDLE, true);
         e.changePattern(PatternType.SINGLE, true);
+        // 이미 있던 줄은 레이팅 반영이 켜져 있다(D28: 새로 만든 줄만 꺼짐으로 시작하고, 마이그레이션 전부터 있던 줄은 켜짐)
+        e.changeRatingEnabled(true);
         return e;
     }
 
@@ -159,8 +161,8 @@ class TableEntryAdminServiceTest {
         assertThat(audit.getValue().getTargetType()).isEqualTo("DIFFICULTY_TABLE_ENTRY");
         assertThat(audit.getValue().getTargetId()).isEqualTo("77");
         Map<String, Object> detail = audit.getValue().getDetail();
-        assertThat(detail.get("before")).isEqualTo(Map.of("tier", "5.8", "recommend", "중", "pattern", "단일"));
-        assertThat(detail.get("after")).isEqualTo(Map.of("tier", "6.1", "recommend", "상", "pattern", "복합"));
+        assertThat(detail.get("before")).isEqualTo(Map.of("tier", "5.8", "recommend", "중", "pattern", "단일", "ratingEnabled", true));
+        assertThat(detail.get("after")).isEqualTo(Map.of("tier", "6.1", "recommend", "상", "pattern", "복합", "ratingEnabled", true));
     }
 
     @Test
