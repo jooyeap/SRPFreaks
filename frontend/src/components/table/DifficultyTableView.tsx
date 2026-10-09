@@ -26,6 +26,7 @@ import {
 import type { TableEntryResponse } from "@/lib/api-types";
 import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
 import type { InstrumentPart } from "@/lib/types";
+import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 
 const PART_OPTIONS: readonly ChipOption<InstrumentPart>[] = [
   { value: "GUITAR", label: "Guitar" },
@@ -56,6 +57,7 @@ function errorMessage(error: unknown): string {
 export function DifficultyTableView({ userId, canRegister = false }: { userId: number; canRegister?: boolean }) {
   const [filters, setFilters] = useState<TableFilters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(0);
+  useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT); // 묶음 안 채보 정렬. 서버 요청과 무관해서 페이지·캐시에 영향이 없다
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)

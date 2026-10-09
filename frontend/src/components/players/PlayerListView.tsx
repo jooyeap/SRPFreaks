@@ -6,6 +6,7 @@ import { useState } from "react";
 import { PlayerRow } from "@/components/players/PlayerRow";
 import { ApiError } from "@/lib/api";
 import { fetchPlayers, PLAYERS_PAGE_SIZE, playerKeys } from "@/lib/players";
+import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 
 /**
  * 유저 목록 (D26). 본인이 공개를 켠 유저의 닉네임·플레이어 티어·총점만 보이고, 누르면 읽기 전용 상세로 간다.
@@ -13,6 +14,7 @@ import { fetchPlayers, PLAYERS_PAGE_SIZE, playerKeys } from "@/lib/players";
  */
 export function PlayerListView({ viewerId }: { viewerId: number }) {
   const [page, setPage] = useState(0);
+  useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const { data, isPending, isError, error } = useQuery({
     queryKey: playerKeys.list(viewerId, page, PLAYERS_PAGE_SIZE),
     queryFn: ({ signal }) => fetchPlayers(page, PLAYERS_PAGE_SIZE, signal),

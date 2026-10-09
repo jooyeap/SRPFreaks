@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import { actionLabel, adminKeys, AUDIT_LOG_PAGE_SIZE, detailText, fetchAuditLogs } from "@/lib/admin";
 import { formatPlayedDate } from "@/lib/format";
+import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 
 /**
  * 감사 로그 (ROOT 전용, 읽기 전용). 최근 순으로 누가 언제 무엇을 바꿨는지 보여 준다.
@@ -13,6 +14,7 @@ import { formatPlayedDate } from "@/lib/format";
  */
 export function AuditLogView({ viewerId }: { viewerId: number }) {
   const [page, setPage] = useState(0);
+  useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const { data, isPending, isError, error } = useQuery({
     queryKey: adminKeys.auditLogs(viewerId, page),
     queryFn: ({ signal }) => fetchAuditLogs(page, AUDIT_LOG_PAGE_SIZE, signal),

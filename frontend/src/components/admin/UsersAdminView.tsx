@@ -7,6 +7,7 @@ import { ApiError } from "@/lib/api";
 import type { AdminUserResponse, Role } from "@/lib/api-types";
 import { adminKeys, ADMIN_USERS_PAGE_SIZE, ASSIGNABLE_ROLES, changeUserRole, fetchAdminUsers, roleLabel } from "@/lib/admin";
 import { formatPlayedDate } from "@/lib/format";
+import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -17,6 +18,7 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
  */
 export function UsersAdminView({ viewerId }: { viewerId: number }) {
   const [page, setPage] = useState(0);
+  useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const { data, isPending, isError, error } = useQuery({
     queryKey: adminKeys.users(viewerId, page),
     queryFn: ({ signal }) => fetchAdminUsers(page, ADMIN_USERS_PAGE_SIZE, signal),

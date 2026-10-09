@@ -6,6 +6,7 @@ import { NoticeForm } from "@/components/notices/NoticeForm";
 import { ApiError } from "@/lib/api";
 import type { NoticeResponse } from "@/lib/api-types";
 import { formatPlayedDate } from "@/lib/format";
+import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import {
   createNotice,
   deleteNotice,
@@ -30,6 +31,7 @@ function messageOf(error: unknown): string | null {
 export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite: boolean }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
+  useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   // 고치는 중인 공지와 삭제 확인 중인 공지의 id (한 번에 하나씩)
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
