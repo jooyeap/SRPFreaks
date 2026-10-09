@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { Chip } from "@/components/table/FilterChips";
+import { SortSelect } from "@/components/table/SortSelect";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
 import {
@@ -15,6 +16,7 @@ import {
   pickRatingTable,
   tableKeys,
 } from "@/lib/difficulty-table";
+import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
 import type { TableEntryResponse } from "@/lib/api-types";
 
 function errorMessage(error: unknown): string {
@@ -29,6 +31,7 @@ function errorMessage(error: unknown): string {
  */
 export function TierFolderView({ userId, param }: { userId: number; param: string }) {
   const [includeZero, setIncludeZero] = useState(false);
+  const [sort, setSort] = useState<TableSort>(DEFAULT_SORT);
   const [recordTarget, setRecordTarget] = useState<TableEntryResponse | null>(null);
 
   const tables = useQuery({
@@ -87,7 +90,8 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
           0% 포함
         </Chip>
       </div>
-      <TierGroupSection group={group} includeZero={includeZero} onRecord={setRecordTarget} />
+      <SortSelect value={sort} onChange={setSort} />
+      <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={setRecordTarget} />
       <RecordDialog
         chart={
           recordTarget && {

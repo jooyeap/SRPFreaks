@@ -135,6 +135,31 @@ describe("TierGroupSection", () => {
   });
 });
 
+describe("TierGroupSection 정렬", () => {
+  const entries = [
+    entry({ entryId: 1, title: "Banana", mine: { rate: 90, fullCombo: false, stage: "A" } }),
+    entry({ entryId: 2, title: "Apple", mine: { rate: 99, fullCombo: false, stage: "SS" } }),
+  ];
+  // 모바일 카드와 데스크톱 줄이 둘 다 DOM에 있어, 곡명이 나오는 순서 중 앞의 둘(카드)만 본다.
+  // (머리 줄의 묶음 칩도 li라서 li 순서로 세지 않고 곡명 글자로 찾는다)
+  const cardTitles = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll("*"))
+      .filter((el) => el.children.length === 0 && /^(Banana|Apple)$/.test(el.textContent ?? ""))
+      .slice(0, 2)
+      .map((el) => el.textContent ?? "");
+
+  it("정렬 기준을 주면 묶음 안 채보 순서가 바뀐다", () => {
+    const { container, rerender } = render(<TierGroupSection group={group({ entries })} includeZero={false} />);
+    expect(cardTitles(container)[0]).toContain("Banana"); // 기본은 서버 순서
+    rerender(<TierGroupSection group={group({ entries })} includeZero={false} sort="title" />);
+    expect(cardTitles(container)[0]).toContain("Apple");
+    rerender(<TierGroupSection group={group({ entries })} includeZero={false} sort="rateDesc" />);
+    expect(cardTitles(container)[0]).toContain("Apple");
+    rerender(<TierGroupSection group={group({ entries })} includeZero={false} sort="rateAsc" />);
+    expect(cardTitles(container)[0]).toContain("Banana");
+  });
+});
+
 describe("DifficultyTableView", () => {
   const fetchMock = vi.fn<typeof fetch>();
   const table: DifficultyTableResponse = {
@@ -289,5 +314,30 @@ describe("DifficultyTableView", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "테스트곡 기록 입력" })[0]);
     expect(await screen.findByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
     expect(screen.getByLabelText("달성률")).toBeInTheDocument();
+  });
+
+  it("정렬을 바꿔도 서버에 다시 요청하지 않는다(화면에서 정렬)", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(
+        String(input).includes("/entries")
+          ? json(page([group({ entries: [entry({ entryId: 1, title: "Banana" }), entry({ entryId: 2, title: "Apple" })] })]))
+          : json([table]),
+      ),
+    );
+    renderView();
+    await screen.findByRole("heading", { name: /5\.8/ });
+    const before = fetchMock.mock.calls.length;
+
+    fireEvent.change(screen.getByLabelText("정렬"), { target: { value: "title" } });
+
+    expect(screen.getByLabelText("정렬")).toHaveValue("title");
+    expect(fetchMock.mock.calls.length).toBe(before);
+    expect(within(screen.getByRole("combobox", { name: "정렬" })).getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "레벨 높은 순",
+      "내 달성률 높은 순",
+      "내 달성률 낮은 순",
+      "곡명 순",
+      "추천도 순",
+    ]);
   });
 });

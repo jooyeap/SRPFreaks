@@ -6,6 +6,7 @@ import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { Chip, FilterChips, type ChipOption } from "@/components/table/FilterChips";
+import { SortSelect } from "@/components/table/SortSelect";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
 import { ApiError } from "@/lib/api";
@@ -22,6 +23,7 @@ import {
   type TableFilters,
 } from "@/lib/difficulty-table";
 import type { TableEntryResponse } from "@/lib/api-types";
+import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
 import type { InstrumentPart } from "@/lib/types";
 
 const PART_OPTIONS: readonly ChipOption<InstrumentPart>[] = [
@@ -53,6 +55,7 @@ function errorMessage(error: unknown): string {
 export function DifficultyTableView({ userId, canRegister = false }: { userId: number; canRegister?: boolean }) {
   const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
   const [page, setPage] = useState(0);
+  const [sort, setSort] = useState<TableSort>(DEFAULT_SORT); // 묶음 안 채보 정렬. 서버 요청과 무관해서 페이지·캐시에 영향이 없다
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
   const [recordTarget, setRecordTarget] = useState<TableEntryResponse | null>(null); // 기록 입력창을 연 채보
@@ -140,6 +143,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
           selected={filters.pattern}
           onChange={(pattern) => changeFilter({ pattern })}
         />
+        <SortSelect value={sort} onChange={setSort} />
         <div role="group" aria-label="평균 계산" className="flex flex-wrap items-center gap-1.5">
           <span className="mr-1 text-xs text-fg-dim">평균 계산</span>
           <Chip pressed={!includeZero} onClick={() => setIncludeZero(false)}>
@@ -161,7 +165,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
         <>
           <div className="flex flex-col gap-4">
             {data.content.map((group) => (
-              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} onRecord={setRecordTarget} />
+              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} sort={sort} onRecord={setRecordTarget} />
             ))}
           </div>
           <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">

@@ -1,6 +1,7 @@
 import { EntryCard } from "@/components/table/EntryCard";
 import { EntryRow, TableHeadRow } from "@/components/table/EntryRow";
 import { groupAverage } from "@/lib/difficulty-table";
+import { DEFAULT_SORT, sortEntries, type TableSort } from "@/lib/table-sort";
 import { EMPTY_MARK, formatTier } from "@/lib/format";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import type { AchievementStage } from "@/lib/types";
@@ -64,12 +65,16 @@ function formatAverage(value: number | null): string {
 export function TierGroupSection({
   group,
   includeZero,
+  sort = DEFAULT_SORT,
   onRecord,
 }: {
   group: TierGroupResponse;
   includeZero: boolean;
+  /** 묶음 안 채보의 정렬 기준. 기본은 서버 순서(레벨 높은 순) */
+  sort?: TableSort;
   onRecord?: (entry: TableEntryResponse) => void;
 }) {
+  const entries = sortEntries(group.entries, sort);
   const title = formatTier(group.tier);
   const reached = groupStage(group);
   return (
@@ -110,10 +115,10 @@ export function TierGroupSection({
       <TableHeadRow />
       {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
       <ul>
-        {group.entries.map((entry) => (
+        {entries.map((entry) => (
           <EntryCard key={`card-${entry.entryId}`} entry={entry} onRecord={onRecord} />
         ))}
-        {group.entries.map((entry) => (
+        {entries.map((entry) => (
           <EntryRow key={`row-${entry.entryId}`} entry={entry} onRecord={onRecord} />
         ))}
       </ul>
