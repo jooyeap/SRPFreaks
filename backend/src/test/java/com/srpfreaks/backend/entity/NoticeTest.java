@@ -37,7 +37,7 @@ class NoticeTest {
 
     @Test
     void 고치면_제목과_내용이_바뀌고_쓴_사람은_그대로다() {
-        User author = User.create("sub", "a@example.com", "작성자");
+        User author = User.create("sub", "a@example.com", "author");
         Notice notice = Notice.create(author, "이전", "이전 내용");
 
         notice.edit("새 제목", "새 내용");
