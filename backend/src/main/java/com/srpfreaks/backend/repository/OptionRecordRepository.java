@@ -83,4 +83,10 @@ public interface OptionRecordRepository extends JpaRepository<OptionRecord, Long
             group by r.songDifficulty.id
             """)
     List<RecordBest> findBestByUser(@Param("userId") Long userId, @Param("noteOption") NoteOption noteOption);
+
+    /**
+     * 한 유저의 한 채보 기록 전부(관리자 삭제용, D29). 노트 옵션은 따지지 않는다(지금은 SRN+만 저장되지만 확장 대비).
+     * 항상 (userId, 채보) 두 조건을 함께 건다.
+     */
+    List<OptionRecord> findByUserIdAndSongDifficultyId(Long userId, Long songDifficultyId);
 }
