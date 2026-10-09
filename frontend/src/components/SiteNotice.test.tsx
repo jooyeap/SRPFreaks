@@ -34,4 +34,15 @@ describe("고지 문구", () => {
     expect(link).toHaveAttribute("target", "_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
   });
+
+  it("하단은 왼쪽(고지)과 오른쪽(출처·문의·처리방침) 두 묶음으로 나뉜다", () => {
+    render(<SiteFooter />);
+    const left = screen.getByText("비공식 팬 프로젝트").parentElement as HTMLElement;
+    const right = screen.getByRole("link", { name: "개인정보 처리방침" }).closest("div") as HTMLElement;
+
+    expect(left).not.toBe(right);
+    expect(left).toHaveTextContent(/KONAMI와 무관/);
+    expect(left).not.toContainElement(screen.getByRole("link", { name: "개인정보 처리방침" }));
+    expect(right).toContainElement(screen.getByRole("link", { name: /イズニャン/ }));
+  });
 });
