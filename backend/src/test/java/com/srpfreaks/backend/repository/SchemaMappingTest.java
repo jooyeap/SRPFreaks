@@ -7,6 +7,7 @@ import com.srpfreaks.backend.entity.DifficultyTableEntry;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.Notice;
 import com.srpfreaks.backend.entity.OptionRecord;
 import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.Platform;
@@ -95,9 +96,16 @@ class SchemaMappingTest {
         em.persist(entry);
 
         em.persist(AuditLog.record(user, "SONG_IMPORT", "SONG", String.valueOf(song.getId()), Map.of("count", 1)));
+        Notice notice = Notice.create(user, "업데이트 안내", "줄1\n줄2");
+        em.persist(notice);
 
         em.flush();
         em.clear();
+
+        Notice loadedNotice = em.find(Notice.class, notice.getId());
+        assertThat(loadedNotice.getTitle()).isEqualTo("업데이트 안내");
+        assertThat(loadedNotice.getContent()).isEqualTo("줄1\n줄2");
+        assertThat(loadedNotice.getCreatedAt()).isNotNull();
 
         OptionRecord loaded = em.find(OptionRecord.class, record.getId());
         assertThat(loaded.getAchievementRate()).isEqualByComparingTo("98.76");
