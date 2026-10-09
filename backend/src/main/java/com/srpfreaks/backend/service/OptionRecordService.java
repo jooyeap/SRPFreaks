@@ -31,7 +31,7 @@ import java.util.Set;
  * - userId는 요청 본문/경로가 아니라 인증 정보에서만 받는다. 다른 사용자를 지정할 방법이 없다.
  * - 수정/삭제/단건 조회는 (기록 id + 소유자 id)를 함께 조건으로 조회한다. 타인의 기록이든 없는 기록이든
  *   똑같이 404가 되므로, 응답으로 기록 존재 여부를 알아낼 수 없다.
- * - ADMIN/ROOT도 다른 사용자의 기록은 고치지 않는다(CLAUDE.md). 그래서 역할 예외를 두지 않는다.
+ * - ADMIN/ROOT도 다른 사용자의 기록은 고치지 않는다(CLAUDE.md). 그래서 이 서비스에는 역할 예외를 두지 않는다. 관리자의 삭제(D29)는 별도 RecordAdminService가 맡는다.
  */
 @Service
 @RequiredArgsConstructor
