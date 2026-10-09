@@ -26,11 +26,38 @@ describe("MobileMenu", () => {
 
     const dialog = screen.getByRole("dialog", { name: "메뉴" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    const nav = within(dialog).getByRole("navigation", { name: "주요 메뉴(모바일)" });
+    const nav = within(dialog).getByRole("navigation", { name: "주요 메뉴" });
     expect(within(nav).getByRole("link", { name: "곡 목록" })).toHaveAttribute("href", "/songs");
     expect(within(nav).getByRole("link", { name: "서열표" })).toHaveAttribute("href", "/table");
     expect(within(nav).getByRole("link", { name: "레이팅" })).toHaveAttribute("href", "/rating");
     expect(within(nav).getByRole("link", { name: "유저" })).toHaveAttribute("href", "/players");
+    expect(within(nav).getByRole("link", { name: "설명서" })).toHaveAttribute("href", "/guide");
+    expect(within(nav).getByRole("link", { name: "공지" })).toHaveAttribute("href", "/notices");
+  });
+
+  it("항목마다 아이콘이 있고, 아이콘은 화면 읽기 프로그램에 숨겨져 링크 이름은 글자만이다", () => {
+    renderMenu();
+    fireEvent.click(opener());
+    const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
+    const links = within(nav).getAllByRole("link");
+    expect(links.length).toBeGreaterThanOrEqual(6);
+    for (const link of links) {
+      const icon = link.querySelector("svg");
+      expect(icon).not.toBeNull();
+      expect(icon).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
+  it("헤더에는 가로 메뉴 링크가 없고 햄버거만 있다(모든 화면 폭)", async () => {
+    const { SiteHeader } = await import("@/components/SiteHeader");
+    render(
+      <AuthProvider>
+        <SiteHeader />
+      </AuthProvider>,
+    );
+    expect(screen.queryByRole("navigation", { name: "주요 메뉴" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "곡 목록" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "메뉴 열기" })).not.toHaveClass("sm:hidden");
   });
 
   it("열면 닫기 버튼으로 포커스가 가고, 뒤 화면 스크롤을 잠근다", () => {

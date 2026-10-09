@@ -4,14 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminNavLink } from "@/components/AdminNavLink";
 import { AuthControls } from "@/components/AuthControls";
+import { NavIcon } from "@/components/NavIcon";
 import { NAV_ITEMS } from "@/lib/nav";
 
 const FOCUSABLE = "a[href], button:not([disabled])";
 
-const ITEM_CLASS = "block rounded-xl px-3 py-3 text-base font-semibold text-fg hover:bg-table-head";
+const ITEM_CLASS = "flex items-center gap-3 rounded-xl px-3 py-3 text-base font-semibold text-fg hover:bg-table-head";
 
 /**
- * 모바일(sm 미만) 헤더 메뉴: 햄버거 버튼을 누르면 오른쪽에서 슬라이드 메뉴가 나온다. sm 이상에서는 버튼이 보이지 않는다.
+ * 헤더 메뉴(모든 화면 폭): 햄버거 버튼을 누르면 오른쪽에서 슬라이드 메뉴가 나온다. 메뉴가 많아져 데스크톱도 같은 방식을 쓴다.
  * 닫는 방법: 바깥 어두운 영역 누르기, 닫기 버튼, Esc, 메뉴 안의 링크·버튼 누르기(이동하면 닫혀야 해서).
  * 접근성: role="dialog" aria-modal, 열면 닫기 버튼으로 포커스가 가고 Tab이 메뉴 안에서만 돌며, 닫으면 햄버거로 돌아온다.
  * 패널은 열려 있을 때만 그린다. 닫힌 상태의 DOM에 링크가 이중으로 남지 않아 화면 읽기 프로그램에도 한 번만 읽힌다.
@@ -75,7 +76,7 @@ export function MobileMenu() {
         aria-label="메뉴 열기"
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-chip-line text-fg-sub hover:text-fg sm:hidden"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-chip-line text-fg-sub hover:text-fg"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
           <path d="M4 7h16M4 12h16M4 17h16" />
@@ -83,7 +84,7 @@ export function MobileMenu() {
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 sm:hidden">
+        <div className="fixed inset-0 z-50">
           {/* 바깥을 누르면 닫는다. 키보드 사용자는 닫기 버튼/Esc를 쓰므로 포커스 대상에서 뺀다 */}
           <div className="drawer-overlay absolute inset-0 bg-black/50" onClick={close} aria-hidden="true" />
           <div
@@ -113,15 +114,17 @@ export function MobileMenu() {
                 </svg>
               </button>
             </div>
-            <nav aria-label="주요 메뉴(모바일)" className="flex flex-col gap-1">
+            <nav aria-label="주요 메뉴" className="flex flex-col gap-1">
               {NAV_ITEMS.map((item) => (
                 <Link key={item.href} href={item.href} className={ITEM_CLASS}>
+                  <NavIcon name={item.icon} />
                   {item.label}
                 </Link>
               ))}
-              <AdminNavLink className={ITEM_CLASS} />
+              <AdminNavLink className={ITEM_CLASS} showIcon />
             </nav>
-            <div className="mt-auto border-t border-line pt-4">
+            {/* sm 이상은 헤더에 로그인 상태가 이미 있어서 메뉴 안에는 모바일에서만 둔다 */}
+            <div className="mt-auto border-t border-line pt-4 sm:hidden">
               <AuthControls />
             </div>
           </div>
