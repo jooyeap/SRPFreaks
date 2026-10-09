@@ -41,4 +41,12 @@ describe("레이팅 설명서", () => {
     expect(top).toHaveTextContent("384");
     expect(top).toHaveStyle({ backgroundColor: "rgb(30, 20, 30)", color: "rgb(255, 255, 255)" });
   });
+
+  it("곡별 레이팅의 최고 수치는 100%가 아니라 95%라고 알려 주고, 마지막 문장은 현재 계수 기준이라고 쓴다", () => {
+    render(<GuidePage />);
+    expect(screen.getByText(/100%가 아니라 95%/)).toBeInTheDocument();
+    expect(screen.getByText(/95%를 넘어도 점수는 더 오르지 않습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/이 표는 현재 계수를 기준으로 계산한 값입니다/)).toBeInTheDocument();
+    expect(screen.queryByText(/운영 설정값/)).not.toBeInTheDocument();
+  });
 });

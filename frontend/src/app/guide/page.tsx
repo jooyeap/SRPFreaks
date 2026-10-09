@@ -112,8 +112,11 @@ export default function GuidePage() {
         <p className="text-[13px] leading-relaxed text-fg-sub">
           슈랜플 난이도(서열표의 기준 난이도)와 달성률별 채보 점수입니다. 정수로 반올림해 보여 주며, 칸 색은 점수가 높을수록 노랑에서 분홍, 검정 쪽으로 이어집니다.
         </p>
+        <p className="text-[13px] leading-relaxed text-fg-sub">
+          곡별 레이팅의 최고 수치는 달성률 <b className="text-fg">100%가 아니라 95%</b>입니다. 95%를 넘어도 점수는 더 오르지 않습니다.
+        </p>
         <ConstantTable />
-        <p className="text-xs leading-relaxed text-fg-dim">내부 상수는 서열표의 기준 난이도로 정해집니다. 계수는 운영 설정값이라 바뀌면 이 표도 바뀝니다.</p>
+        <p className="text-xs leading-relaxed text-fg-dim">내부 상수는 서열표의 기준 난이도로 정해집니다. 이 표는 현재 계수를 기준으로 계산한 값입니다.</p>
       </section>
     </article>
   );
