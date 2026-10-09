@@ -42,6 +42,12 @@ describe("레이팅 설명서", () => {
     expect(top).toHaveStyle({ backgroundColor: "rgb(30, 20, 30)", color: "rgb(255, 255, 255)" });
   });
 
+  it("부정한 기록은 운영자가 삭제할 수 있다는 안내를 보여 준다", () => {
+    render(<GuidePage />);
+    expect(screen.getByRole("heading", { name: "기록 관리" })).toBeInTheDocument();
+    expect(screen.getByText("부정한 방법으로 입력한 기록은 운영자가 삭제할 수 있습니다.")).toBeInTheDocument();
+  });
+
   it("곡별 레이팅의 최고 수치는 100%가 아니라 95%라고 알려 주고, 마지막 문장은 현재 계수 기준이라고 쓴다", () => {
     render(<GuidePage />);
     expect(screen.getByText(/100%가 아니라 95%/)).toBeInTheDocument();

@@ -105,6 +105,11 @@ export default function GuidePage() {
             ))}
           </ul>
         </div>
+
+        <div className="space-y-2.5 rounded-xl border border-line bg-card p-4">
+          <h3 className="text-[15px] font-bold text-fg">기록 관리</h3>
+          <p className="text-[13px] leading-relaxed text-fg-sub">부정한 방법으로 입력한 기록은 운영자가 삭제할 수 있습니다.</p>
+        </div>
       </section>
 
       <section aria-label="레이팅 상수표" className="space-y-3">
