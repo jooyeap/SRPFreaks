@@ -39,6 +39,7 @@
 | D27 | 2026-10-08 | **서열표 값(기준 난이도·추천도·속성) 수정 API를 만든다 (D23-2 "필요해지면 따로 설계"의 설계).** (1) `PUT /admin/difficulty-tables/{tableId}/entries/{songDifficultyId}` (ROOT·ADMIN). **보낸 값으로 통째로 교체**하고(비우면 미정/값 없음), **표에 그 채보가 없으면 새 줄로 추가**한다(upsert) (2) 값을 고치면 `*_uncertain`(?) 플래그는 모두 해제한다. 화면에서는 `?` 표시를 이미 없앴다 (3) 표가 한 파트만 다루면(`instrument_part`가 있으면) 다른 파트 채보는 400 (4) 변경마다 표의 `revision`을 올리고 `audit_logs`에 남긴다(`TABLE_ENTRY_CREATE`/`TABLE_ENTRY_UPDATE`, 전후 값 포함) (5) 화면은 곡 상세(서열표·곡 목록 어느 쪽에서 들어와도)에서 ROOT·ADMIN에게만 "서열표 값 수정"(표에 없으면 "서열표에 추가") 버튼을 보여 준다 (6) 표에서 줄을 지우는 기능은 아직 만들지 않는다 |
 | D28 | 2026-10-08 | **서열표 채보마다 "레이팅 반영" 스위치를 둔다.** (1) `difficulty_table_entries.rating_enabled`(BOOLEAN NOT NULL, V2 마이그레이션). ROOT·ADMIN이 서열표 값 수정 창에서 켜고 끈다 (2) **꺼져 있으면 기준 난이도·속성이 있어도 레이팅에서 뺀다.** 레이팅 대상 = 스위치 켜짐 + 기준 난이도 있음 + 속성이 단일/복합/이중/삼중. 기록은 그대로 남는다 (3) **기본값**: 마이그레이션 전부터 있던 줄과 시드 SQL로 넣는 줄은 켜짐(DB 기본값 TRUE, "지금 데이터 그대로"). 관리자 화면에서 **새로 추가하는 줄만 꺼짐으로 시작**한다(엔티티 `create`). 이 기본값을 바꾸려면 엔티티 초기값만 고치면 된다 (4) 속성 `레이팅 제외`는 그대로 둔다(스위치와 별개로 하나라도 해당하면 제외) (5) 수정 API 본문에 `ratingEnabled`(boolean, 선택)를 받는다. 안 보내면 기존 값을 두고, 새 줄이면 꺼짐. 응답에도 `ratingEnabled`가 들어가고 감사 로그의 전후 값에도 남는다 |
 | D29 | 2026-10-09 | **ADMIN·ROOT가 다른 사용자의 기록을 "삭제"할 수 있다. D15의 "다른 사용자의 기록은 ADMIN/ROOT도 고치지 않는다"에 대한 삭제 한정 예외.** 일부러 만든 가짜 기록(예: 100%)을 지우기 위한 것이다. (1) **삭제만** 허용한다. 다른 사용자의 기록을 수정하거나 새로 넣는 기능은 만들지 않는다 (2) ADMIN과 ROOT 모두, 모든 사용자의 기록이 대상이다 (3) 단위는 "그 유저의 그 채보 기록 전부"다. 유저 상세에는 채보별 최고 기록만 보이고, 최고 한 건만 지우면 다음 기록이 올라와 가짜가 남을 수 있어서다 (4) `DELETE /admin/players/{userId}/charts/{songDifficultyId}/records`. 되돌릴 수 없는 hard delete(D20), 지울 기록이 없으면 404 (5) `audit_logs`에 `RECORD_ADMIN_DELETE`로 남긴다(대상 유저 id, 채보 id, 지운 개수, 지운 최고 달성률. 닉네임·이메일은 넣지 않는다) (6) 화면은 **유저 상세**에서 ADMIN·ROOT에게만 카드마다 `삭제` 버튼과 확인 상자를 보인다. 따라서 공개한 유저의 기록만 화면에서 지울 수 있다 |
+| D30 | 2026-10-09 | **공지사항(수정사항 기록)을 만든다.** (1) **관리자 작성형**: ROOT·ADMIN이 화면에서 쓰고 고치고 지운다(배포 없이 글을 올릴 수 있다) (2) **로그인한 사용자 전체**가 읽는다. 로그인 전에는 로그인 안내 (3) `notices` 테이블(V3 마이그레이션, 제목 100자·본문 5000자, 쓴 사람은 탈퇴하면 NULL). 본문은 **글자(plain text)만** 저장·표시한다(줄바꿈만 살리고 HTML은 해석하지 않는다). 쓴 사람은 응답에 내보내지 않는다 (4) `GET /notices`(최근 순, 페이지 10건), `POST·PUT·DELETE /admin/notices` (5) 쓰기는 `audit_logs`에 `NOTICE_CREATE/UPDATE/DELETE`로 남기고 제목만 넣는다(본문 제외) (6) 주 메뉴에 `공지`를 둔다. 고정(핀)·분류·댓글·알림은 만들지 않는다 |
 ---
 
 ## 1. 목적과 범위
@@ -169,6 +170,8 @@ com.srpfreaks.backend
 | 난이도표 조회 | O | O | O |
 | 난이도표 생성·수정, 서열표 값(기준 난이도·추천도·속성) 수정과 채보 추가 (D27) | O | O | X |
 | 다른 사용자의 기록 삭제 (D29, 수정은 불가) | O | O | X |
+| 공지사항 읽기 (D30) | O | O | O |
+| 공지사항 쓰기·수정·삭제 (D30) | O | O | X |
 | 노트 수·메타데이터 입력, 곡 등록 요청 승인 (D22) | O | O | X |
 | 유저 역할 변경, 설정(`app_settings`) 변경 | O | X | X |
 | 감사 로그 조회 | O | X | X |
@@ -477,6 +480,8 @@ com.srpfreaks.backend
 | 서열표 목록 | GET `/difficulty-tables` | USER+ |
 | 서열표 값 수정·채보 추가 (D27) | PUT `/admin/difficulty-tables/{tableId}/entries/{songDifficultyId}` (본문 `tierLabel`(null=미정), `recommend`(상/중/하/null), `pattern`(단일/복합/이중/삼중/레이팅 제외/null), `ratingEnabled`(true/false, 생략하면 기존 값 유지·새 줄은 꺼짐, D28). 보낸 값으로 교체, 표에 없으면 추가, `?` 해제, 표 revision +1, 감사 로그) | ROOT·ADMIN |
 | 유저 채보 기록 삭제 (D29) | DELETE `/admin/players/{userId}/charts/{songDifficultyId}/records` (그 유저의 그 채보 기록 전부 삭제, 204. 없으면 404. 감사 로그 `RECORD_ADMIN_DELETE`) | ROOT·ADMIN |
+| 공지사항 목록 (D30) | GET `/notices` (최근 순 페이지) | 로그인한 사용자 |
+| 공지사항 쓰기·수정·삭제 (D30) | POST `/admin/notices`, PUT·DELETE `/admin/notices/{noticeId}` (본문 `title`(1~100자), `content`(1~5000자), 감사 로그) | ROOT·ADMIN |
 | 서열표 만들기 | POST `/admin/difficulty-tables` (이름, 파트(선택), 기준 옵션) | ROOT·ADMIN |
 | 설정 | GET/PATCH `/admin/settings` | ROOT |
 | 사용자·역할 | GET `/admin/users?page=&size=`(가입 순, 이메일·역할·상태 포함, Google ID 제외), PATCH `/admin/users/{id}/role` body `{"role": "ADMIN"\|"USER"}` (ROOT로 바꾸는 요청은 400, ROOT 계정의 역할 변경은 403, 이미 그 역할이면 변경 없음, 변경은 `audit_logs`의 `USER_ROLE_CHANGE`에 사용자 id와 전/후 역할만 남김) | ROOT |
