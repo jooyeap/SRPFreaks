@@ -25,8 +25,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -51,22 +53,24 @@ public class DifficultyTableViewService {
 
     /**
      * @param part      null이면 전체
-     * @param recommend 상/중/하 (null이면 전체)
-     * @param pattern   단일/복합/이중/삼중/레이팅 제외 (null이면 전체)
+     * @param recommend 상/중/하 여러 개 (null이거나 비어 있으면 전체). 고른 값 중 하나라도 맞으면 통과(OR)
+     * @param pattern   단일/복합/이중/삼중/레이팅 제외 여러 개 (null이거나 비어 있으면 전체). 마찬가지로 OR
      * @param mine      true일 때만 본인 기록을 연결한다
      * @param page      묶음(기준 난이도) 단위 페이지. 묶음 하나는 쪼개지 않는다
      */
-    public PageResponse<TierGroupResponse> entries(Long userId, Long tableId, InstrumentPart part, String recommend,
-                                                   String pattern, boolean mine, int page, int size) {
+    public PageResponse<TierGroupResponse> entries(Long userId, Long tableId, InstrumentPart part,
+                                                   List<String> recommend, List<String> pattern, boolean mine,
+                                                   int page, int size) {
         DifficultyTable table = difficultyTableRepository.findById(tableId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
-        Recommend recommendFilter = parseLabel(Recommend.class, recommend);
-        PatternType patternFilter = parseLabel(PatternType.class, pattern);
+        // 필터 안의 값은 OR(하나라도 맞으면 통과), 필터끼리는 AND. 빈 집합은 "전체"라는 뜻이다.
+        Set<Recommend> recommendFilter = parseLabels(Recommend.class, recommend);
+        Set<PatternType> patternFilter = parseLabels(PatternType.class, pattern);
 
         List<DifficultyTableEntry> entries = entryRepository.findAllForView(tableId).stream()
                 .filter(e -> part == null || e.getSongDifficulty().getInstrumentPart() == part)
-                .filter(e -> recommendFilter == null || e.getRecommend() == recommendFilter)
-                .filter(e -> patternFilter == null || e.getPatternType() == patternFilter)
+                .filter(e -> recommendFilter.isEmpty() || recommendFilter.contains(e.getRecommend()))
+                .filter(e -> patternFilter.isEmpty() || patternFilter.contains(e.getPatternType()))
                 .toList();
 
         Map<Long, RecordBest> bests = new HashMap<>();
@@ -133,14 +137,26 @@ public class DifficultyTableViewService {
         return new TierGroupResponse(tier, total, recorded, exc, fc, ss, s, belowS, avgRecorded, avgWithZero, rows);
     }
 
-    private static <E extends Enum<E> & LabeledEnum> E parseLabel(Class<E> type, String label) {
-        if (label == null || label.isBlank()) {
-            return null;
+    /**
+     * 한글 표기 여러 개를 enum 집합으로 바꾼다. null·빈 목록·빈 문자열은 "필터 없음"(빈 집합).
+     * 모르는 표기가 하나라도 있으면 400이다(화이트리스트 검증). 값이 null인 채보(속성 미정 등)는 어떤 집합에도 들어 있지 않아
+     * 필터가 켜져 있으면 빠진다.
+     */
+    private static <E extends Enum<E> & LabeledEnum> Set<E> parseLabels(Class<E> type, List<String> labels) {
+        Set<E> result = new HashSet<>();
+        if (labels == null) {
+            return result;
         }
-        try {
-            return LabeledEnum.fromLabel(type, label.strip());
-        } catch (IllegalArgumentException e) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
+        for (String label : labels) {
+            if (label == null || label.isBlank()) {
+                continue;
+            }
+            try {
+                result.add(LabeledEnum.fromLabel(type, label.strip()));
+            } catch (IllegalArgumentException e) {
+                throw new ApiException(ErrorCode.BAD_REQUEST);
+            }
         }
+        return result;
     }
 }

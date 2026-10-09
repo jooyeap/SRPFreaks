@@ -191,7 +191,7 @@ class DifficultyTableViewServiceTest {
                 entry("베이스상단일", InstrumentPart.BASS, "9.00", "6.0", Recommend.HIGH, PatternType.SINGLE),
                 entry("기타하복합", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.LOW, PatternType.COMPOUND)));
 
-        List<TierGroupResponse> groups = service.entries(7L, 1L, InstrumentPart.GUITAR, "상", "단일", false, 0, 10).content();
+        List<TierGroupResponse> groups = service.entries(7L, 1L, InstrumentPart.GUITAR, List.of("상"), List.of("단일"), false, 0, 10).content();
 
         assertThat(groups).hasSize(1);
         assertThat(groups.get(0).entries()).extracting(e -> e.title()).containsExactly("기타상단일");
@@ -200,10 +200,60 @@ class DifficultyTableViewServiceTest {
     }
 
     @Test
-    void 알_수_없는_필터_값은_400이다() {
-        assertThatThrownBy(() -> service.entries(7L, 1L, null, "최상", null, false, 0, 10))
+    void 같은_필터_안의_여러_값은_OR로_묶는다() {
+        when(entryRepository.findAllForView(1L)).thenReturn(List.of(
+                entry("상단일", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.HIGH, PatternType.SINGLE),
+                entry("중복합", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.MIDDLE, PatternType.COMPOUND),
+                entry("하이중", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.LOW, PatternType.DOUBLE)));
+
+        // 추천 상·중 → "하이중"만 빠진다
+        List<TierGroupResponse> byRecommend = service.entries(7L, 1L, null, List.of("상", "중"), null, false, 0, 10).content();
+        assertThat(byRecommend.get(0).entries()).extracting(e -> e.title()).containsExactlyInAnyOrder("상단일", "중복합");
+
+        // 속성 단일·이중 → "중복합"만 빠진다
+        List<TierGroupResponse> byPattern = service.entries(7L, 1L, null, null, List.of("단일", "이중"), false, 0, 10).content();
+        assertThat(byPattern.get(0).entries()).extracting(e -> e.title()).containsExactlyInAnyOrder("상단일", "하이중");
+    }
+
+    @Test
+    void 필터끼리는_AND로_묶는다() {
+        when(entryRepository.findAllForView(1L)).thenReturn(List.of(
+                entry("상단일", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.HIGH, PatternType.SINGLE),
+                entry("중단일", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.MIDDLE, PatternType.SINGLE),
+                entry("상복합", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.HIGH, PatternType.COMPOUND),
+                entry("하이중", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.LOW, PatternType.DOUBLE)));
+
+        // 추천 상·중 AND 속성 단일·복합 → 상단일, 중단일, 상복합 (하이중은 둘 다 아니라서 빠진다)
+        List<TierGroupResponse> groups = service.entries(
+                7L, 1L, null, List.of("상", "중"), List.of("단일", "복합"), false, 0, 10).content();
+        assertThat(groups.get(0).entries()).extracting(e -> e.title()).containsExactlyInAnyOrder("상단일", "중단일", "상복합");
+
+        // 추천 중 AND 속성 복합 → 겹치는 채보가 없어 빈 결과
+        assertThat(service.entries(7L, 1L, null, List.of("중"), List.of("복합"), false, 0, 10).content()).isEmpty();
+    }
+
+    @Test
+    void 빈_목록이나_빈_문자열은_필터_없음이다() {
+        when(entryRepository.findAllForView(1L)).thenReturn(List.of(
+                entry("a", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.HIGH, PatternType.SINGLE),
+                entry("b", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.LOW, PatternType.COMPOUND)));
+
+        List<TierGroupResponse> groups = service.entries(7L, 1L, null, List.of(), List.of(""), false, 0, 10).content();
+
+        assertThat(groups.get(0).entries()).hasSize(2);
+    }
+
+    @Test
+    void 여러_값_중_하나라도_모르는_값이면_400이다() {
+        assertThatThrownBy(() -> service.entries(7L, 1L, null, List.of("상", "최상"), null, false, 0, 10))
                 .isInstanceOf(ApiException.class);
-        assertThatThrownBy(() -> service.entries(7L, 1L, null, null, "없는속성", false, 0, 10))
+    }
+
+    @Test
+    void 알_수_없는_필터_값은_400이다() {
+        assertThatThrownBy(() -> service.entries(7L, 1L, null, List.of("최상"), null, false, 0, 10))
+                .isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> service.entries(7L, 1L, null, null, List.of("없는속성"), false, 0, 10))
                 .isInstanceOf(ApiException.class);
     }
 
