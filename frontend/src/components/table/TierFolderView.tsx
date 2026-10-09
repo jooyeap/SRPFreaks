@@ -32,7 +32,7 @@ function errorMessage(error: unknown): string {
 export function TierFolderView({ userId, param }: { userId: number; param: string }) {
   const [includeZero, setIncludeZero] = useState(false);
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT);
-  const [recordTarget, setRecordTarget] = useState<TableEntryResponse | null>(null);
+  const [recordTarget, setRecordTarget] = useState<{ entry: TableEntryResponse; tier: number | null } | null>(null);
 
   const tables = useQuery({
     queryKey: tableKeys.list,
@@ -91,15 +91,16 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
         </Chip>
       </div>
       <SortSelect value={sort} onChange={setSort} />
-      <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={setRecordTarget} />
+      <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={(entry, tier) => setRecordTarget({ entry, tier })} />
       <RecordDialog
         chart={
           recordTarget && {
-            songDifficultyId: recordTarget.songDifficultyId,
-            title: recordTarget.title,
-            part: recordTarget.part,
-            difficulty: recordTarget.difficulty,
-            level: recordTarget.level,
+            songDifficultyId: recordTarget.entry.songDifficultyId,
+            title: recordTarget.entry.title,
+            part: recordTarget.entry.part,
+            difficulty: recordTarget.entry.difficulty,
+            level: recordTarget.entry.level,
+            tier: recordTarget.tier,
           }
         }
         onClose={() => setRecordTarget(null)}

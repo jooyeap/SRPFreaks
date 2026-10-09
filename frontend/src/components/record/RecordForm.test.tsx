@@ -24,10 +24,10 @@ describe("RecordForm", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  function renderForm() {
+  function renderForm(target: RecordChart = chart) {
     return render(
       <QueryClientProvider client={client}>
-        <RecordForm chart={chart} onSaved={onSaved} onCancel={onCancel} />
+        <RecordForm chart={target} onSaved={onSaved} onCancel={onCancel} />
       </QueryClientProvider>,
     );
   }
@@ -42,6 +42,36 @@ describe("RecordForm", () => {
     expect(screen.getByLabelText("달성 단계 A")).toBeInTheDocument();
     fireEvent.change(rateInput(), { target: { value: "62.99" } });
     expect(screen.getByLabelText("달성 단계 C")).toBeInTheDocument();
+  });
+
+  it("레이팅 상수 난이도가 있으면 달성률을 입력하는 동안 점수를 바로 계산해 티어 색으로 보여 준다", () => {
+    renderForm({ ...chart, tier: 6.0 }); // R=15
+    expect(screen.getByText(/예상 점수/)).toHaveTextContent("레이팅 상수 난이도 6.0");
+    expect(screen.queryByText("304.00")).toBeNull(); // 아직 입력 전: 점수 대신 –
+
+    fireEvent.change(rateInput(), { target: { value: "95" } });
+    const top = screen.getByText("304.00"); // 15×0.8 + 3.2 = 15.2, ×20
+    expect(top).toHaveAttribute("data-tier", "HASUBONG");
+    expect(top).toHaveAttribute("data-glow", "2");
+
+    fireEvent.change(rateInput(), { target: { value: "80" } });
+    expect(screen.getByText("240.00")).toHaveAttribute("data-glow", "1");
+
+    fireEvent.change(rateInput(), { target: { value: "50" } }); // 15×0.5×20 = 150 -> Red
+    const low = screen.getByText("150.00");
+    expect(low).toHaveAttribute("data-tier", "RED");
+    expect(low).not.toHaveAttribute("data-glow");
+  });
+
+  it("달성률이 범위 밖이면 점수를 계산하지 않고, 레이팅 상수 난이도가 없으면 점수 칸을 그리지 않는다", () => {
+    const first = renderForm({ ...chart, tier: 6.0 });
+    fireEvent.change(rateInput(), { target: { value: "100.01" } });
+    expect(screen.queryByText(/^\d+\.\d\d$/)).toBeNull();
+    first.unmount();
+
+    renderForm({ ...chart, tier: null });
+    fireEvent.change(rateInput(), { target: { value: "95" } });
+    expect(screen.queryByText(/예상 점수/)).toBeNull();
   });
 
   it("풀콤보를 체크하면 FC, 달성률 100.00이면 EXC로 보이고 풀콤보가 자동으로 켜진다", () => {

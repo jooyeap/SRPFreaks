@@ -20,6 +20,8 @@ import {
   updateRecord,
   type RecordResponse,
 } from "@/lib/records";
+import { chartTierAttrs, previewScore } from "@/lib/chart-tier";
+import { formatScore, formatTier } from "@/lib/format";
 import { achievementStage } from "@/lib/stage";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 
@@ -30,6 +32,8 @@ export interface RecordChart {
   part: InstrumentPart;
   difficulty: DifficultyType;
   level: number;
+  /** 서열표의 레이팅 상수 난이도. 있으면 달성률을 입력하는 동안 점수를 바로 계산해 보여 준다. 미정이거나 모르면 null/생략 */
+  tier?: number | null;
 }
 
 const FIELD_NAMES = ["achievementRate", "fullCombo", "playedDate", "memo"] as const;
@@ -84,6 +88,9 @@ export function RecordForm({
   const fullCombo = maxRate || fullComboChecked; // 100.00이면 풀콤보를 자동으로 켠다 (DESIGN-UI 10장)
   const rateNumber = rate.trim() === "" ? null : Number(rate.trim());
   const stage = rateNumber === null || Number.isNaN(rateNumber) ? null : achievementStage(rateNumber, fullCombo);
+  // 입력한 달성률로 곡 점수를 바로 계산한다(저장하지 않는 미리보기). 레이팅 상수 난이도가 없거나 달성률이 범위 밖이면 null
+  const preview =
+    chart.tier === undefined || chart.tier === null || rateNumber === null ? null : previewScore(chart.tier, rateNumber);
 
   const mutation = useMutation({
     mutationFn: (values: RecordFormValues) => {
@@ -171,6 +178,21 @@ export function RecordForm({
         <p id="achievementRate-error" role="alert" className="-mt-2 text-sm text-fg">
           {errors.achievementRate.message}
         </p>
+      ) : null}
+
+      {chart.tier !== undefined && chart.tier !== null ? (
+        <div aria-live="polite" className="flex items-baseline justify-between rounded-xl border border-line bg-card px-3.5 py-2.5">
+          <span className="text-xs font-bold text-fg-dim">
+            예상 점수 <span className="font-normal">· 레이팅 상수 난이도 {formatTier(chart.tier)}</span>
+          </span>
+          {preview !== null ? (
+            <span {...chartTierAttrs(preview)} className="tier-score font-num text-2xl font-extrabold">
+              {formatScore(preview)}
+            </span>
+          ) : (
+            <span className="text-fg-faint">–</span>
+          )}
+        </div>
       ) : null}
 
       <div className="flex flex-col gap-1">

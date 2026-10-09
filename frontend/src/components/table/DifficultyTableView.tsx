@@ -61,7 +61,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT); // 묶음 안 채보 정렬. 서버 요청과 무관해서 페이지·캐시에 영향이 없다
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
-  const [recordTarget, setRecordTarget] = useState<TableEntryResponse | null>(null); // 기록 입력창을 연 채보
+  const [recordTarget, setRecordTarget] = useState<{ entry: TableEntryResponse; tier: number | null } | null>(null); // 기록 입력창을 연 채보
 
   const tables = useQuery({
     queryKey: tableKeys.list,
@@ -170,7 +170,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
         <>
           <div className="flex flex-col gap-4">
             {data.content.map((group) => (
-              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} sort={sort} onRecord={setRecordTarget} />
+              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} sort={sort} onRecord={(entry, tier) => setRecordTarget({ entry, tier })} />
             ))}
           </div>
           <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">
@@ -199,11 +199,12 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
       <RecordDialog
         chart={
           recordTarget && {
-            songDifficultyId: recordTarget.songDifficultyId,
-            title: recordTarget.title,
-            part: recordTarget.part,
-            difficulty: recordTarget.difficulty,
-            level: recordTarget.level,
+            songDifficultyId: recordTarget.entry.songDifficultyId,
+            title: recordTarget.entry.title,
+            part: recordTarget.entry.part,
+            difficulty: recordTarget.entry.difficulty,
+            level: recordTarget.entry.level,
+            tier: recordTarget.tier,
           }
         }
         onClose={() => setRecordTarget(null)}

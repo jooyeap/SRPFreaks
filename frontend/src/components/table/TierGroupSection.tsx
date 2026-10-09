@@ -72,7 +72,8 @@ export function TierGroupSection({
   includeZero: boolean;
   /** 묶음 안 채보의 정렬 기준. 기본은 서버 순서(레벨 높은 순) */
   sort?: TableSort;
-  onRecord?: (entry: TableEntryResponse) => void;
+  /** 기록 입력 버튼을 눌렀을 때. 묶음의 레이팅 상수 난이도(미정이면 null)를 함께 넘겨 입력창이 점수를 바로 계산하게 한다 */
+  onRecord?: (entry: TableEntryResponse, tier: number | null) => void;
 }) {
   const entries = sortEntries(group.entries, sort);
   const title = formatTier(group.tier);
@@ -116,10 +117,10 @@ export function TierGroupSection({
       {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
       <ul>
         {entries.map((entry) => (
-          <EntryCard key={`card-${entry.entryId}`} entry={entry} onRecord={onRecord} />
+          <EntryCard key={`card-${entry.entryId}`} entry={entry} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
         ))}
         {entries.map((entry) => (
-          <EntryRow key={`row-${entry.entryId}`} entry={entry} onRecord={onRecord} />
+          <EntryRow key={`row-${entry.entryId}`} entry={entry} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
         ))}
       </ul>
     </section>
