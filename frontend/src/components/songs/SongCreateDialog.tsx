@@ -208,7 +208,8 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
                     placeholder="레벨 9.50"
                     aria-label={`채보 ${n} 레벨`}
                     aria-invalid={chartErrors?.level ? true : undefined}
-                    className={`${FIELD} w-28 font-num`}
+                    // font-num을 쓰지 않는다: 옆 선택 상자(본문 글꼴)와 글꼴이 다르면 글자 위치가 어긋나고, 한글 placeholder는 숫자 글꼴에 글자가 없어 대체 글꼴로 그려진다
+                    className={`${FIELD} w-28`}
                     {...register(`charts.${index}.level`)}
                   />
                   <button
@@ -241,7 +242,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
                       placeholder="기준 난이도 (비우면 미정)"
                       aria-label={`채보 ${n} 기준 난이도`}
                       aria-invalid={chartErrors?.tier ? true : undefined}
-                      className={`${FIELD} w-52 font-num`}
+                      className={`${FIELD} w-52`}
                       {...register(`charts.${index}.tier`)}
                     />
                     <select aria-label={`채보 ${n} 추천도`} className={FIELD} {...register(`charts.${index}.recommend`)}>
