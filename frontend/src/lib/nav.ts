@@ -5,4 +5,5 @@ export const NAV_ITEMS = [
   { href: "/rating", label: "레이팅" },
   { href: "/players", label: "유저" },
   { href: "/guide", label: "설명서" },
+  { href: "/notices", label: "공지" },
 ] as const;

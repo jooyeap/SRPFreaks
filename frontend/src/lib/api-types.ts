@@ -261,3 +261,14 @@ export interface AdminUserResponse {
   status: "ACTIVE" | "BLOCKED";
   createdAt: string;
 }
+
+// ---- 공지사항 (D30, 백엔드 NoticeResponse) --------------------------------------------------------
+
+/** 공지 한 건. 쓴 사람은 내려오지 않는다. 본문은 글자(plain text)다. */
+export interface NoticeResponse {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}

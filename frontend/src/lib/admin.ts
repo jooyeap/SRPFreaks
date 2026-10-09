@@ -26,6 +26,10 @@ const ACTION_LABELS: Record<string, string> = {
   TABLE_ENTRY_CREATE: "서열표에 채보 추가",
   TABLE_ENTRY_UPDATE: "서열표 값 수정",
   USER_ROLE_CHANGE: "역할 변경",
+  RECORD_ADMIN_DELETE: "유저 기록 삭제",
+  NOTICE_CREATE: "공지 등록",
+  NOTICE_UPDATE: "공지 수정",
+  NOTICE_DELETE: "공지 삭제",
   SETTING_UPDATE: "설정 변경",
 };
 
