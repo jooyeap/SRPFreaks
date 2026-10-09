@@ -185,7 +185,8 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
             const n = index + 1;
             return (
               <div key={field.id} className="flex flex-col gap-2 rounded-xl border border-line p-3">
-                <div className="flex flex-wrap items-start gap-2">
+                {/* items-stretch: 선택 상자·입력칸·삭제 버튼의 높이를 한 줄에서 같게 맞춘다(버튼은 글자가 작아 혼자 낮아 보였다) */}
+                <div className="flex flex-wrap items-stretch gap-2">
                   <select aria-label={`채보 ${n} 파트`} className={FIELD} {...register(`charts.${index}.part`)}>
                     {PART_CHOICES.map((part) => (
                       <option key={part} value={part}>
@@ -215,7 +216,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
                     onClick={() => remove(index)}
                     disabled={fields.length === 1}
                     aria-label={`채보 ${n} 삭제`}
-                    className="ml-auto rounded-full border border-chip-line px-3 py-2 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
+                    className="ml-auto inline-flex items-center rounded-full border border-chip-line px-4 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
                   >
                     삭제
                   </button>
