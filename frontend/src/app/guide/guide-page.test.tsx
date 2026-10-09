@@ -33,13 +33,36 @@ describe("레이팅 설명서", () => {
     expect(cells[6]).toHaveTextContent("304");
   });
 
-  it("칸마다 점수에 맞는 배경색이 붙고, 가장 높은 칸(384)은 어두운 색에 흰 글자다", () => {
+  it("칸마다 점수에 맞는 플레이어 티어 색(data-tier)이 붙고, 최고 티어를 넘으면 빛 단계(data-glow)가 붙는다", () => {
     render(<GuidePage />);
     const table = screen.getByRole("table", { name: /레이팅 상수표/ });
-    const first = within(within(table).getAllByRole("row")[1]).getAllByRole("cell"); // 7.0 행
-    const top = first[first.length - 1]; // 7.0, 95% = 384
-    expect(top).toHaveTextContent("384");
-    expect(top).toHaveStyle({ backgroundColor: "rgb(30, 20, 30)", color: "rgb(255, 255, 255)" });
+    const rows = within(table).getAllByRole("row");
+    const cellsOf = (row: HTMLElement) => within(row).getAllByRole("cell").slice(1); // 첫 칸은 내부 상수
+    const bodyRows = rows.slice(1); // 첫 행은 머리글
+    const top = cellsOf(rows[1]); // 7.0 행: 70% ... 95%
+    const topRight = top[top.length - 1]; // 7.0, 95% = 384 -> 하수봉, 가장 강한 빛
+    expect(topRight).toHaveTextContent("384");
+    expect(topRight).toHaveAttribute("data-tier", "HASUBONG");
+    expect(topRight).toHaveAttribute("data-glow", "3");
+    // 6.0 행 95% = 304 -> 하수봉, 강한 빛(300 이상) / 6.0 행 80% = 240 -> 하수봉, 약한 빛
+    const row60 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "6.0") as HTMLElement;
+    const c60 = cellsOf(row60);
+    expect(c60[5]).toHaveAttribute("data-glow", "2");
+    expect(c60[2]).toHaveTextContent("240");
+    expect(c60[2]).toHaveAttribute("data-glow", "1");
+    // 5.5 행: 80% = 160 -> Red(빛 없음), 5.0 행 80% = 80 -> Green
+    const row55 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "5.5") as HTMLElement;
+    expect(cellsOf(row55)[2]).toHaveAttribute("data-tier", "RED");
+    expect(cellsOf(row55)[2]).not.toHaveAttribute("data-glow");
+    const row50 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "5.0") as HTMLElement;
+    expect(cellsOf(row50)[2]).toHaveAttribute("data-tier", "GREEN");
+  });
+
+  it("색 기준 범례에 20개 티어의 곡 점수 기준이 글자로 있다 (하수봉 237.5)", () => {
+    render(<GuidePage />);
+    expect(screen.getByText("237.5~")).toBeInTheDocument();
+    expect(screen.getByText("12.5")).toBeInTheDocument();
+    expect(screen.getByText("하수봉")).toBeInTheDocument();
   });
 
   it("부정한 기록은 운영자가 삭제할 수 있다는 안내를 보여 준다", () => {

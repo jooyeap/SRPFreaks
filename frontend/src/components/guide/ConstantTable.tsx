@@ -1,12 +1,5 @@
-import {
-  guideRows,
-  GUIDE_RATES,
-  legendGradient,
-  legendTicks,
-  rgbCss,
-  scoreColor,
-  textColorOn,
-} from "@/lib/rating-guide";
+import { chartTierAttrs, chartTierStart, GLOW_2_FROM, GLOW_3_FROM, PLAYER_TIER_MINS } from "@/lib/chart-tier";
+import { chartScore, guideRows, GUIDE_RATES } from "@/lib/rating-guide";
 
 /**
  * 레이팅 상수표: 기준 난이도(행) × 달성률(열)의 채보 점수. 칸 색은 점수에 따른 그라데이션이다.
@@ -65,29 +58,37 @@ export function ConstantTable() {
                 {row.tier}
               </th>
               <td className="font-num text-[11px] text-fg-sub">{row.constant}</td>
-              {row.cells.map((cell) => {
-                const bg = scoreColor(cell.score);
-                return (
-                  <td
-                    key={cell.rate}
-                    style={{ backgroundColor: rgbCss(bg), color: textColorOn(bg) }}
-                    className="font-num py-1.5 text-xs font-semibold"
-                  >
-                    {cell.score}
-                  </td>
-                );
-              })}
+              {row.cells.map((cell) => (
+                // 색은 반올림 전 점수로 정한다(표에는 정수로 반올림한 값이 보이지만 서버 비교는 소수 그대로다)
+                <td
+                  key={cell.rate}
+                  {...chartTierAttrs(chartScore(Math.round(Number(row.tier) * 10), cell.rate))}
+                  className="chart-cell font-num py-1.5 text-xs font-semibold"
+                >
+                  {cell.score}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
       </table>
-      <div aria-hidden="true" className="space-y-1 px-1">
-        <span className="block h-2 rounded" style={{ backgroundImage: legendGradient() }} />
-        <div className="font-num flex justify-between text-[10px] text-fg-dim">
-          {legendTicks().map((tick) => (
-            <span key={tick}>{tick}</span>
+      <div className="space-y-2 px-1">
+        <p className="text-[11px] text-fg-dim">칸 색 기준 · 곡 점수 (플레이어 티어 최소 점수 ÷ 40)</p>
+        <ul className="grid grid-cols-5 gap-x-1 gap-y-1.5">
+          {PLAYER_TIER_MINS.map((tier) => (
+            <li key={tier.key} className="flex flex-col items-center gap-0.5">
+              <span aria-hidden="true" data-tier={tier.key} className="chart-swatch block h-3 w-full max-w-9 rounded-sm" />
+              <span className="font-num text-[10px] text-fg-dim">
+                {chartTierStart(tier.min)}
+                {tier.key === "HASUBONG" ? "~" : ""}
+              </span>
+              <span className="sr-only">{tier.name}</span>
+            </li>
           ))}
-        </div>
+        </ul>
+        <p className="text-[11px] leading-relaxed text-fg-dim">
+          하수봉 기준({chartTierStart(9500)}점)을 넘으면 빛이 생기고, {GLOW_2_FROM}점부터 더 강해지고, {GLOW_3_FROM}점부터 가장 강해집니다(테두리 추가).
+        </p>
       </div>
     </div>
   );

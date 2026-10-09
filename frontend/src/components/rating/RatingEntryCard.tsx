@@ -2,6 +2,7 @@ import Link from "next/link";
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
+import { chartTierAttrs } from "@/lib/chart-tier";
 import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
 import type { SkillEntryResponse } from "@/lib/api-types";
 
@@ -52,7 +53,10 @@ export function RatingEntryCard({
         </p>
       </div>
       <div className="shrink-0 text-right">
-        <p className="font-num text-lg font-semibold text-fg">{formatScore(entry.score)}</p>
+        {/* 곡 점수는 플레이어 티어 색 글자다(lib/chart-tier.ts). 숫자가 그대로 보이므로 색만으로 전달하지 않는다. 하수봉 기준을 넘으면 빛이 더해진다 */}
+        <p {...chartTierAttrs(entry.score)} className="tier-score font-num text-lg font-semibold">
+          {formatScore(entry.score)}
+        </p>
         <p className="stage-text font-num text-xs">{formatRate(entry.achievementRate)}</p>
         {onDelete ? (
           <button

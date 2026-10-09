@@ -115,7 +115,7 @@ export default function GuidePage() {
       <section aria-label="레이팅 상수표" className="space-y-3">
         <h2 className="text-lg font-bold text-fg">레이팅 상수표</h2>
         <p className="text-[13px] leading-relaxed text-fg-sub">
-          슈랜플 난이도(서열표의 레이팅 상수 난이도)와 달성률별 채보 점수입니다. 정수로 반올림해 보여 주며, 칸 색은 점수가 높을수록 노랑에서 분홍, 검정 쪽으로 이어집니다.
+          슈랜플 난이도(서열표의 레이팅 상수 난이도)와 달성률별 채보 점수입니다. 정수로 반올림해 보여 줍니다. 칸 색은 그 점수를 40곡 모두에서 냈을 때 도달하는 플레이어 티어의 색입니다.
         </p>
         <p className="text-[13px] leading-relaxed text-fg-sub">
           곡별 레이팅의 최고 수치는 달성률 <b className="text-fg">100%가 아니라 95%</b>입니다. 95%를 넘어도 점수는 더 오르지 않습니다.

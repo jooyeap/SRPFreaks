@@ -108,6 +108,25 @@ describe("RatingView", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/skills/me");
   });
 
+  it("곡별 점수 숫자는 점수에 맞는 플레이어 티어 색이고, 하수봉 기준(237.5)을 넘으면 빛 단계가 붙는다", async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(
+        skill({
+          single: [entry({ score: 264 })],
+          other: [entry({ rank: 1, songDifficultyId: 11, title: "복합곡", pattern: "복합", score: 160.5 })],
+        }),
+      ),
+    );
+    renderView();
+    const high = await screen.findByText("264.00");
+    expect(high).toHaveAttribute("data-tier", "HASUBONG");
+    expect(high).toHaveAttribute("data-glow", "1");
+    expect(high).toHaveClass("tier-score");
+    const mid = screen.getByText("160.50");
+    expect(mid).toHaveAttribute("data-tier", "RED"); // 150 이상 162.5 미만
+    expect(mid).not.toHaveAttribute("data-glow");
+  });
+
   it("각 구역 제목 오른쪽에 그 구역의 점수 합산을 보여 준다", async () => {
     fetchMock.mockResolvedValueOnce(json(skill({ singleScore: 700.25, otherScore: 425.5 })));
     renderView();
