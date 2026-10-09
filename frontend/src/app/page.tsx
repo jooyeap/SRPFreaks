@@ -24,7 +24,7 @@ export default function Home() {
         <p className="mt-2 text-sm text-fg-sub">
           GITADORA 플레이 기록을 SRN+ 옵션으로 저장하고, 레이팅 목록을 계산합니다.
         </p>
-        <p className="mt-2 text-xs text-fg-dim">로그인은 Google 계정으로만 합니다. 기록은 직접 입력하며, 본인만 볼 수 있습니다.</p>
+        <p className="mt-2 text-xs text-fg-dim">로그인은 Google 계정으로만 합니다. 기록은 직접 입력합니다.</p>
         <Link
           href="/login"
           className="mt-3 inline-block rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head"
