@@ -440,7 +440,7 @@ describe("DifficultyTableView", () => {
     // 모바일 카드와 데스크톱 줄에 버튼이 하나씩 있다. 어느 쪽이 보일지는 화면 폭(CSS)이 정한다.
     fireEvent.click(screen.getAllByRole("button", { name: "테스트곡 기록 입력" })[0]);
     expect(await screen.findByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
-    expect(screen.getByLabelText("달성률")).toBeInTheDocument();
+    expect(await screen.findByLabelText("달성률")).toBeInTheDocument(); // 내 기록을 불러온 뒤에 폼이 나온다
   });
 
   it("정렬을 바꿔도 서버에 다시 요청하지 않는다(화면에서 정렬)", async () => {

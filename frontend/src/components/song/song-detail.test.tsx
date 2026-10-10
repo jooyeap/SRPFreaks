@@ -343,6 +343,6 @@ describe("SongDetailView", () => {
     renderView("songs", 10, true);
     fireEvent.click(await screen.findByRole("button", { name: "기록 등록" }));
     expect(await screen.findByRole("heading", { name: "기록 등록", level: 2 })).toBeInTheDocument();
-    expect(screen.getByLabelText("달성률")).toBeInTheDocument();
+    expect(await screen.findByLabelText("달성률")).toBeInTheDocument(); // 내 기록을 불러온 뒤에 폼이 나온다
   });
 });

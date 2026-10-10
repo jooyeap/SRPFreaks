@@ -37,7 +37,7 @@ export function RecordList({
         {data.content.map((record) => (
           <li
             key={record.id}
-            className="flex items-center gap-3 rounded border border-line px-3 py-1.5 text-sm"
+            className="flex items-center gap-3 rounded border border-line py-1 pl-3 pr-1.5 text-sm"
           >
             <span className="font-num font-semibold text-fg">{formatRate(record.achievementRate)}</span>
             <StageBadge stage={record.stage} />
@@ -47,14 +47,14 @@ export function RecordList({
               onClick={() => onEdit(record)}
               aria-pressed={editingId === record.id}
               aria-label={`${formatRate(record.achievementRate)} 기록 수정`}
-              className="ml-auto rounded-full border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
+              className="ml-auto min-h-9 rounded-full border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
             >
               수정
             </button>
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs text-fg-dim">수정하면 서열표와 스킬에 바로 반영됩니다.</p>
+      <p className="mt-2 text-xs text-fg-dim">수정하면 서열표와 레이팅에 바로 반영됩니다. 서열표에는 이 중 달성률이 가장 높은 기록이 보입니다.</p>
     </section>
   );
 }

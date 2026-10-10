@@ -2,9 +2,10 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { StageBadge } from "@/components/table/StageBadge";
 import { ChartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
@@ -54,12 +55,15 @@ export function RecordForm({
   onSaved,
   onDeleted,
   onCancel,
+  onDirtyChange,
 }: {
   chart: RecordChart;
   record?: RecordResponse;
   onSaved: (saved: RecordResponse) => void;
   onDeleted?: () => void;
   onCancel: () => void;
+  /** 입력값이 처음과 달라졌는지 알린다. 창이 바깥 클릭으로 닫혀 입력이 사라지는 일을 막는 데 쓴다 */
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   // 스키마와 기본값은 한 번만 만든다 ("오늘"은 폼을 연 시점 기준)
@@ -78,8 +82,18 @@ export function RecordForm({
     handleSubmit,
     control,
     setError,
-    formState: { errors },
+    setFocus,
+    formState: { errors, isDirty },
   } = useForm<RecordFormValues>({ resolver: zodResolver(schema), defaultValues, mode: "onTouched" });
+
+  // 폼이 열리면(수정 대상이 바뀌어 다시 만들어질 때도) 달성률 칸으로 바로 커서를 둔다: 기록 입력의 첫 동작이 달성률이다
+  useEffect(() => {
+    setFocus("achievementRate");
+  }, [setFocus]);
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+    return () => onDirtyChange?.(false); // 폼이 사라지면 더 이상 지킬 입력이 없다
+  }, [isDirty, onDirtyChange]);
 
   // useWatch: 입력이 바뀔 때마다 이 컴포넌트를 다시 그려서 미리보기를 갱신한다 (watch는 React 컴파일러와 맞지 않는다)
   const rate = useWatch({ control, name: "achievementRate" });
@@ -120,6 +134,8 @@ export function RecordForm({
       await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onDeleted?.();
     },
+    // 실패하면 확인 창을 닫아서 폼 아래의 오류 문구가 보이게 한다
+    onError: () => setConfirmingDelete(false),
   });
 
   const failure = mutation.error ?? removal.error;
@@ -254,33 +270,22 @@ export function RecordForm({
       ) : null}
 
       {record ? (
-        <div className="flex flex-wrap items-center gap-2 border-t border-row-line pt-3">
-          {confirmingDelete ? (
-            <>
-              <span className="text-sm text-fg">이 기록을 삭제할까요? 되돌릴 수 없습니다.</span>
-              <button
-                type="button"
-                onClick={() => removal.mutate()}
-                disabled={removal.isPending}
-                className="rounded-full border border-danger px-3 py-1 text-sm font-semibold text-danger disabled:opacity-60"
-              >
-                {removal.isPending ? "삭제 중" : "삭제"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(false)}
-                className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
-              >
-                취소
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={() => setConfirmingDelete(true)} className="text-sm text-danger underline">
-              이 기록 삭제
-            </button>
-          )}
+        <div className="border-t border-row-line pt-3">
+          <button type="button" onClick={() => setConfirmingDelete(true)} className="min-h-9 text-sm text-danger underline">
+            이 기록 삭제
+          </button>
         </div>
       ) : null}
+      {/* 삭제는 되돌릴 수 없어서 별도 확인 창으로 한 번 더 묻는다(같은 줄에 붙은 버튼을 잘못 누르는 일을 줄인다) */}
+      <ConfirmDialog
+        open={confirmingDelete}
+        title="기록 삭제"
+        message="이 기록을 삭제할까요? 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        pending={removal.isPending}
+        onConfirm={() => removal.mutate()}
+        onCancel={() => setConfirmingDelete(false)}
+      />
 
       <div className="flex gap-2.5">
         <button

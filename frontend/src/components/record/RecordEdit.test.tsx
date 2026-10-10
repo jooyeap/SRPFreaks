@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { RecordDialog } from "@/components/record/RecordDialog";
@@ -69,23 +69,72 @@ describe("기록 수정 / 삭제", () => {
       </QueryClientProvider>,
     );
   }
+  // 기록이 있으면 창이 가장 높은 기록의 수정 화면으로 바로 열린다
   async function openEdit() {
-    fireEvent.click(await screen.findByRole("button", { name: "91.25 기록 수정" }));
     await screen.findByRole("heading", { name: "기록 수정" });
+    await screen.findByLabelText("달성률");
   }
   const callsOf = (method: string) => fetchMock.mock.calls.filter((c) => c[1]?.method === method);
 
-  it("이 채보의 내 기록 목록을 보여 주고, 수정을 누르면 같은 폼이 기록 값으로 채워진다", async () => {
+  it("기록이 있으면 가장 높은 기록의 수정 화면으로 바로 열리고 폼이 기록 값으로 채워진다", async () => {
     renderDialog();
     expect(await screen.findByRole("heading", { name: "이 채보의 내 기록" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
-
     await openEdit();
     expect(screen.getByLabelText("달성률")).toHaveValue("91.25");
     expect(screen.getByLabelText("플레이 날짜")).toHaveValue("2026-10-05");
     expect(screen.getByLabelText("메모 (선택)")).toHaveValue("예전 메모");
     expect(screen.getAllByLabelText("달성 단계 S")).toHaveLength(2); // 기록 목록 줄 + 폼의 달성 표시 미리보기
     expect(screen.getByRole("button", { name: "이 기록 삭제" })).toBeInTheDocument();
+  });
+
+  it("가장 높은 기록이 여러 개 중에서 골라진다 (낮은 기록은 목록의 수정으로 고친다)", async () => {
+    const low: RecordResponse = { ...saved, id: 8, achievementRate: 80 };
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
+      if (url.includes("/records?")) {
+        return Promise.resolve(json({ content: [low, saved], page: 0, size: 20, totalElements: 2, totalPages: 1 }));
+      }
+      return Promise.resolve(json({}, 404));
+    });
+    renderDialog();
+    await openEdit();
+    expect(screen.getByLabelText("달성률")).toHaveValue("91.25"); // 목록 앞(더 최근)이 80이어도 최고 기록이 열린다
+    fireEvent.click(screen.getByRole("button", { name: "80.00 기록 수정" }));
+    await waitFor(() => expect(screen.getByLabelText("달성률")).toHaveValue("80.00"));
+  });
+
+  it("낮은 값으로도 수정할 수 있다 (PUT)", async () => {
+    renderDialog();
+    await openEdit();
+    fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "50.5" } });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(JSON.parse(String(callsOf("PUT")[0][1]?.body))).toMatchObject({ achievementRate: 50.5 });
+  });
+
+  it("`새 기록 추가`를 누르면 빈 등록 폼으로 바뀌고, `기존 기록 수정`으로 돌아간다", async () => {
+    renderDialog();
+    await openEdit();
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 추가" }));
+    expect(await screen.findByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
+    expect(screen.getByLabelText("달성률")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "기존 기록 수정" }));
+    expect(await screen.findByRole("heading", { name: "기록 수정" })).toBeInTheDocument();
+    expect(screen.getByLabelText("달성률")).toHaveValue("91.25");
+  });
+
+  it("입력한 값이 있으면 창 바깥을 눌러도 닫히지 않고, 달성률 칸에 커서가 있다", async () => {
+    renderDialog();
+    await openEdit();
+    expect(screen.getByLabelText("달성률")).toHaveFocus();
+    const dialog = screen.getByRole("dialog", { hidden: true });
+    fireEvent.click(dialog); // 바깥(::backdrop) 클릭은 dialog 자신이 target이다. 아직 값이 같으니 닫힌다
+    expect(onClose).toHaveBeenCalledTimes(1);
+    onClose.mockClear();
+    fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "95" } });
+    fireEvent.click(dialog);
+    await waitFor(() => expect(onClose).not.toHaveBeenCalled());
   });
 
   it("저장하면 PUT /records/{id}로 보내고 창을 닫는다", async () => {
@@ -105,9 +154,10 @@ describe("기록 수정 / 삭제", () => {
     await openEdit();
     fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
     expect(callsOf("DELETE")).toHaveLength(0);
-    expect(screen.getByText("이 기록을 삭제할까요? 되돌릴 수 없습니다.")).toBeInTheDocument();
+    const confirm = screen.getByRole("dialog", { name: "기록 삭제" });
+    expect(within(confirm).getByText("이 기록을 삭제할까요? 되돌릴 수 없습니다.")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    fireEvent.click(within(confirm).getByRole("button", { name: "삭제" }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(callsOf("DELETE")[0][0]).toBe("/api/v1/records/7");
   });
@@ -116,18 +166,10 @@ describe("기록 수정 / 삭제", () => {
     renderDialog();
     await openEdit();
     fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
-    fireEvent.click(screen.getAllByRole("button", { name: "취소" })[0]);
+    fireEvent.click(within(screen.getByRole("dialog", { name: "기록 삭제" })).getByRole("button", { name: "취소" }));
     expect(callsOf("DELETE")).toHaveLength(0);
+    expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull();
     expect(screen.getByRole("button", { name: "이 기록 삭제" })).toBeInTheDocument();
-  });
-
-  it("수정 중 취소하면 등록 폼으로 돌아간다 (창은 닫지 않는다)", async () => {
-    renderDialog();
-    await openEdit();
-    fireEvent.click(screen.getByRole("button", { name: "취소" }));
-    expect(await screen.findByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
-    expect(screen.getByLabelText("달성률")).toHaveValue("");
-    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("삭제가 서버 오류로 실패하면 문구를 보여 주고 창을 닫지 않는다", async () => {
@@ -139,8 +181,9 @@ describe("기록 수정 / 삭제", () => {
       ),
     );
     fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
-    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "기록 삭제" })).getByRole("button", { name: "삭제" }));
     expect(await screen.findByText("찾을 수 없습니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull(); // 확인 창은 닫혀서 오류 문구가 가려지지 않는다
     expect(onClose).not.toHaveBeenCalled();
   });
 });
