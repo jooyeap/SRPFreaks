@@ -6,6 +6,7 @@ import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { Chip } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
+import { TableSearch } from "@/components/table/TableSearch";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
 import {
@@ -92,6 +93,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
       </div>
       <SortSelect value={sort} onChange={setSort} />
       <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={(entry, tier) => setRecordTarget({ entry, tier })} />
+      <TableSearch userId={userId} groups={groups.data} />
       <RecordDialog
         chart={
           recordTarget && {

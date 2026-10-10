@@ -7,6 +7,7 @@ import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { Chip, FilterChips, MultiFilterChips, type ChipOption } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
+import { TableSearch } from "@/components/table/TableSearch";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
 import { ApiError } from "@/lib/api";
@@ -196,6 +197,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
           </nav>
         </>
       )}
+      <TableSearch userId={userId} groups={allGroups.data} />
       <RecordDialog
         chart={
           recordTarget && {
