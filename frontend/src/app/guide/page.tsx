@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ConstantTable } from "@/components/guide/ConstantTable";
+import { DEFAULT_COEFFICIENTS, pointsPerPercentAboveCap } from "@/lib/rating-guide";
 
 export const metadata: Metadata = { title: "레이팅 설명서 | SRPFreaks" };
 
@@ -121,6 +122,19 @@ export default function GuidePage() {
           곡별 레이팅의 최고 수치는 달성률 <b className="text-fg">100%가 아니라 95%</b>입니다. 95%를 넘어도 점수는 더 오르지 않습니다.
         </p>
         <ConstantTable />
+        {/* 참고: 달성률 1%가 점수로 얼마인지. 값은 계수(DEFAULT_COEFFICIENTS)에서 계산한다 */}
+        <div className="space-y-2.5 rounded-xl border border-line bg-card p-4">
+          <h3 className="text-[15px] font-bold text-fg">참고: 달성률 1%의 점수</h3>
+          <ul className="list-disc space-y-2 pl-[18px] text-[13px] leading-relaxed text-fg-sub">
+            <li>
+              달성률 {DEFAULT_COEFFICIENTS.capRate}%에서 {DEFAULT_COEFFICIENTS.maxRate}% 사이는 곡 난이도와 관계없이 1%마다 약{" "}
+              <b className="font-num text-fg">{pointsPerPercentAboveCap().toFixed(2)}점</b>씩 오릅니다.
+            </li>
+            <li>
+              {DEFAULT_COEFFICIENTS.capRate}% 아래는 곡마다 다릅니다. 내부 상수가 클수록 1%의 점수도 커지며, 상수 20인 곡은 1%마다 정확히 4점입니다.
+            </li>
+          </ul>
+        </div>
         <p className="text-xs leading-relaxed text-fg-dim">내부 상수는 서열표의 레이팅 상수 난이도로 정해집니다. 이 표는 현재 계수를 기준으로 계산한 값입니다.</p>
       </section>
     </article>

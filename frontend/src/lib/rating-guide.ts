@@ -154,3 +154,16 @@ export function legendGradient(steps = 12): string {
 export function legendTicks(): number[] {
   return [0, 1, 2, 3, 4, 5, 6].map((k) => Math.round(SCORE_MIN + ((SCORE_MAX - SCORE_MIN) * k) / 6));
 }
+
+/**
+ * 달성률 1%당 오르는 점수 (설명서 참고사항용).
+ * - 가산 구간(capRate~maxRate, 기본 80~95%): 곡 난이도와 관계없이 bonus × multiplier ÷ (maxRate − capRate) = 3.2×20÷15 ≈ 4.27점
+ * - 그 아래(0~capRate%): R × multiplier ÷ 100 = 레이팅상수 R의 0.2배 (R=20이면 4점)
+ */
+export function pointsPerPercentAboveCap(c: RatingCoefficients = DEFAULT_COEFFICIENTS): number {
+  return (c.bonus * c.multiplier) / (c.maxRate - c.capRate);
+}
+
+export function pointsPerPercentBelowCap(r: number, c: RatingCoefficients = DEFAULT_COEFFICIENTS): number {
+  return (r * c.multiplier) / 100;
+}

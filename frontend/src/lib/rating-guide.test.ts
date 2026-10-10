@@ -5,6 +5,8 @@ import {
   guideRows,
   legendTicks,
   luminance,
+  pointsPerPercentAboveCap,
+  pointsPerPercentBelowCap,
   ratingConstant,
   scoreColor,
   SCORE_MAX,
@@ -106,5 +108,18 @@ describe("칸 색", () => {
     expect(ticks).toHaveLength(7);
     expect(ticks[0]).toBe(SCORE_MIN);
     expect(ticks[6]).toBe(SCORE_MAX);
+  });
+});
+
+describe("달성률 1%당 점수", () => {
+  it("80~95% 구간은 곡과 관계없이 3.2×20÷15 ≈ 4.27점이다", () => {
+    expect(pointsPerPercentAboveCap()).toBeCloseTo(4.2667, 4);
+    // 실제 계산과 같은지: 기준 난이도 6.0(80~90%)
+    expect(chartScore(60, 90) - chartScore(60, 89)).toBeCloseTo(pointsPerPercentAboveCap(), 6);
+  });
+
+  it("80% 미만은 R×0.2점이고, R=20이면 4점이다", () => {
+    expect(pointsPerPercentBelowCap(20)).toBe(4);
+    expect(chartScore(70, 61) - chartScore(70, 60)).toBeCloseTo(pointsPerPercentBelowCap(20), 6); // 7.0 → R=20
   });
 });

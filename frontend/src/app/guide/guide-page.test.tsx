@@ -78,4 +78,11 @@ describe("레이팅 설명서", () => {
     expect(screen.getByText(/이 표는 현재 계수를 기준으로 계산한 값입니다/)).toBeInTheDocument();
     expect(screen.queryByText(/운영 설정값/)).not.toBeInTheDocument();
   });
+
+  it("참고사항으로 달성률 1%의 점수를 알려 준다", () => {
+    render(<GuidePage />);
+    expect(screen.getByRole("heading", { name: "참고: 달성률 1%의 점수" })).toBeInTheDocument();
+    expect(screen.getByText("4.27점")).toBeInTheDocument();
+    expect(screen.getByText(/상수 20인 곡은 1%마다 정확히 4점/)).toBeInTheDocument();
+  });
 });
