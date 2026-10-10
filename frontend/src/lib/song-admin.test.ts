@@ -1,3 +1,4 @@
+import type { SongDetailResponse } from "@/lib/api-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   chartEditSchema,
@@ -10,6 +11,9 @@ import {
   songToEditValues,
   toChartBody,
   toSongBody,
+  addAlias,
+  aliasesOf,
+  aliasLimit,
   toSongUpdateBody,
   type SongCreateValues,
 } from "@/lib/song-admin";
@@ -188,5 +192,67 @@ describe("수정 본문", () => {
     expect(chartEditSchema.safeParse({ level: "" }).success).toBe(false);
     expect(chartEditSchema.safeParse({ level: "10.00" }).success).toBe(false);
     expect(chartEditSchema.safeParse({ level: "9.555" }).success).toBe(false);
+  });
+});
+
+describe("검색 키워드(별칭)", () => {
+  const base: SongDetailResponse = {
+    id: 1,
+    title: "곡",
+    artist: null,
+    addedVersion: null,
+    titleFolder: null,
+    bpmMin: null,
+    bpmMax: null,
+    source: null,
+    titles: [],
+    difficulties: [],
+  };
+  const withTitles = (titles: SongDetailResponse["titles"]): SongDetailResponse => ({ ...base, titles });
+
+  it("aliasesOf는 종류가 ALIAS인 표기만 모은다", () => {
+    const s = withTitles([
+      { kind: "ROMAJI", title: "TESUTO" },
+      { kind: "ALIAS", title: "테곡" },
+      { kind: "ALIAS", title: "tk" },
+    ]);
+    expect(aliasesOf(s)).toEqual(["테곡", "tk"]);
+  });
+
+  it("aliasLimit는 전체 20개에서 별칭이 아닌 표기 수를 뺀다", () => {
+    expect(aliasLimit(withTitles([]))).toBe(20);
+    expect(aliasLimit(withTitles([{ kind: "ROMAJI", title: "a" }, { kind: "KO", title: "b" }, { kind: "ALIAS", title: "c" }]))).toBe(18);
+  });
+
+  it("addAlias: 앞뒤 공백을 빼고 목록 끝에 더하며 입력 배열은 바꾸지 않는다", () => {
+    const current = ["a"];
+    const result = addAlias(current, "  b  ", 5);
+    expect(result).toEqual({ ok: true, aliases: ["a", "b"] });
+    expect(current).toEqual(["a"]);
+  });
+
+  it("addAlias: 빈 값 · 너무 긴 값 · 중복(대소문자·공백·전각 무시) · 한도 초과는 막는다", () => {
+    expect(addAlias([], "   ", 5)).toEqual({ ok: false, message: "키워드를 입력해 주세요." });
+    expect(addAlias([], "x".repeat(256), 5)).toEqual({ ok: false, message: "키워드는 255자 이하여야 합니다." });
+    expect(addAlias(["Test Song"], "ｔｅｓｔsong", 5)).toEqual({ ok: false, message: "이미 등록된 키워드입니다." });
+    expect(addAlias(["a", "b"], "c", 2)).toEqual({ ok: false, message: "키워드는 2개까지 등록할 수 있습니다." });
+    expect(addAlias([], "x".repeat(255), 5).ok).toBe(true);
+  });
+
+  it("toSongUpdateBody: 키워드가 그대로면 titles를 보내지 않고, 바뀌면 별칭이 아닌 기존 표기와 함께 통째로 보낸다", () => {
+    const s = withTitles([
+      { kind: "ROMAJI", title: "TESUTO" },
+      { kind: "ALIAS", title: "옛별칭" },
+    ]);
+    const values = { title: "t", artist: "", addedVersion: "" };
+    expect(toSongUpdateBody(s, values, ["옛별칭"])).not.toHaveProperty("titles");
+    expect(toSongUpdateBody(s, values)).not.toHaveProperty("titles");
+    expect(toSongUpdateBody(s, values, ["옛별칭", "새별칭"]).titles).toEqual([
+      { kind: "ROMAJI", title: "TESUTO" },
+      { kind: "ALIAS", title: "옛별칭" },
+      { kind: "ALIAS", title: "새별칭" },
+    ]);
+    // 모두 지우면 별칭만 빠지고 로마자 표기는 남는다
+    expect(toSongUpdateBody(s, values, []).titles).toEqual([{ kind: "ROMAJI", title: "TESUTO" }]);
   });
 });

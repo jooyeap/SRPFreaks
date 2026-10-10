@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { apiFetch } from "@/lib/api";
-import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
+import type { SongChartResponse, SongDetailResponse, TitleKind } from "@/lib/api-types";
 import { saveTableEntry, tableEntrySchema, toTableEntryBody } from "@/lib/table-entry-admin";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 
@@ -171,12 +171,64 @@ export function songToEditValues(song: SongDetailResponse): SongEditValues {
   return { title: song.title, artist: song.artist ?? "", addedVersion: song.addedVersion ?? "" };
 }
 
+/** 한 곡에 등록할 수 있는 곡명 표기(로마자·가타카나·한국어·별칭)의 총 개수. 서버(SongRequest.titles)와 같다. */
+export const MAX_TITLES = 20;
+/** 검색 키워드 한 개의 최대 길이. 서버(SongTitleRequest)와 같다. */
+export const ALIAS_MAX_LENGTH = 255;
+
+/** 곡에 등록된 검색 키워드(별칭). 곡명 표기 중 종류가 ALIAS인 것이다. */
+export function aliasesOf(song: Pick<SongDetailResponse, "titles">): string[] {
+  return song.titles.filter((t) => t.kind === "ALIAS").map((t) => t.title);
+}
+
+/** 별칭을 더 넣을 수 있는 개수. 전체 표기 20개에서 별칭이 아닌 표기(로마자 등)가 차지한 만큼을 뺀다. */
+export function aliasLimit(song: Pick<SongDetailResponse, "titles">): number {
+  return Math.max(MAX_TITLES - song.titles.filter((t) => t.kind !== "ALIAS").length, 0);
+}
+
+/** 같은 키워드인지 비교하는 값: NFKC로 맞추고 공백을 없애고 소문자로 (서버의 normalized_title과 같은 규칙). */
+function aliasKey(text: string): string {
+  return text.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
+}
+
+export type AliasResult = { ok: true; aliases: string[] } | { ok: false; message: string };
+
+/** 키워드 하나를 목록 끝에 더한다. 검사에 걸리면 목록은 그대로 두고 안내 문구를 돌려준다. 입력 배열은 바꾸지 않는다. */
+export function addAlias(current: readonly string[], text: string, limit: number): AliasResult {
+  const alias = text.trim();
+  if (alias === "") {
+    return { ok: false, message: "키워드를 입력해 주세요." };
+  }
+  if (alias.length > ALIAS_MAX_LENGTH) {
+    return { ok: false, message: `키워드는 ${ALIAS_MAX_LENGTH}자 이하여야 합니다.` };
+  }
+  if (current.some((existing) => aliasKey(existing) === aliasKey(alias))) {
+    return { ok: false, message: "이미 등록된 키워드입니다." };
+  }
+  if (current.length >= limit) {
+    return { ok: false, message: `키워드는 ${limit}개까지 등록할 수 있습니다.` };
+  }
+  return { ok: true, aliases: [...current, alias] };
+}
+
 /**
  * PUT /songs/{id} 본문. 서버 수정은 "보낸 값으로 교체"라서 화면에 없는 값(타이틀 폴더, BPM)은 지금 값을 그대로 보내야 지워지지 않는다.
- * titles(곡명 표기)는 보내지 않으면(생략) 서버가 기존 표기를 그대로 둔다. 출처(source)는 서버가 수정 때 바꾸지 않는다.
+ * titles(곡명 표기)는 기본적으로 보내지 않는다(생략 = 서버가 기존 표기를 그대로 둔다). 검색 키워드(aliases)를 넘겼고 지금과 다를 때만
+ * titles를 보내는데, 서버는 titles를 "통째로 교체"하므로 별칭이 아닌 기존 표기(로마자 등)를 그대로 함께 보낸다. 출처(source)는 서버가 수정 때 바꾸지 않는다.
  */
-export function toSongUpdateBody(song: SongDetailResponse, values: SongEditValues) {
-  return {
+export interface SongUpdateBody {
+  title: string;
+  artist: string | null;
+  addedVersion: string | null;
+  titleFolder: string | null;
+  bpmMin: number | null;
+  bpmMax: number | null;
+  /** 있을 때만 서버가 곡명 표기를 통째로 교체한다 */
+  titles?: { kind: TitleKind; title: string }[];
+}
+
+export function toSongUpdateBody(song: SongDetailResponse, values: SongEditValues, aliases?: readonly string[]): SongUpdateBody {
+  const body: SongUpdateBody = {
     title: values.title.trim(),
     artist: blankToNull(values.artist),
     addedVersion: blankToNull(values.addedVersion),
@@ -184,10 +236,26 @@ export function toSongUpdateBody(song: SongDetailResponse, values: SongEditValue
     bpmMin: song.bpmMin,
     bpmMax: song.bpmMax,
   };
+  const before = aliasesOf(song);
+  const changed = aliases !== undefined && (aliases.length !== before.length || aliases.some((a, i) => a !== before[i]));
+  if (!changed) {
+    return body;
+  }
+  return {
+    ...body,
+    titles: [
+      ...song.titles.filter((t) => t.kind !== "ALIAS").map((t) => ({ kind: t.kind, title: t.title })),
+      ...aliases.map((title) => ({ kind: "ALIAS" as const, title })),
+    ],
+  };
 }
 
-export function updateSong(song: SongDetailResponse, values: SongEditValues): Promise<SongDetailResponse> {
-  return apiFetch<SongDetailResponse>(`/songs/${song.id}`, { method: "PUT", body: toSongUpdateBody(song, values) });
+export function updateSong(
+  song: SongDetailResponse,
+  values: SongEditValues,
+  aliases?: readonly string[],
+): Promise<SongDetailResponse> {
+  return apiFetch<SongDetailResponse>(`/songs/${song.id}`, { method: "PUT", body: toSongUpdateBody(song, values, aliases) });
 }
 
 /** PUT /difficulties/{id} 본문. 노트 수는 화면에 없으므로 지금 값을 그대로 보낸다. 파트·난이도는 서버가 바꾸지 못하게 한다. */

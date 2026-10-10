@@ -2,12 +2,15 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiError } from "@/lib/api";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 import { difficultyLabel, partLabel } from "@/lib/format";
 import {
+  addAlias,
+  aliasesOf,
+  aliasLimit,
   chartEditSchema,
   SONG_EDIT_AFFECTED_KEYS,
   songEditSchema,
@@ -115,8 +118,29 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
     formState: { errors },
   } = useForm<SongEditValues>({ resolver: zodResolver(songEditSchema), defaultValues: songToEditValues(song), mode: "onTouched" });
 
+  // 검색 키워드(별칭): 곡명 대신 쓰는 줄임말·별명. 폼 값(RHF)과 따로 목록 상태로 두고, 저장할 때 곡 정보와 함께 보낸다.
+  const [aliases, setAliases] = useState<string[]>(() => aliasesOf(song));
+  const [draft, setDraft] = useState("");
+  const [aliasError, setAliasError] = useState<string | null>(null);
+  const limit = aliasLimit(song);
+
+  function commitDraft(): string[] | null {
+    if (draft.trim() === "") {
+      return aliases;
+    }
+    const result = addAlias(aliases, draft, limit);
+    if (!result.ok) {
+      setAliasError(result.message);
+      return null;
+    }
+    setAliases(result.aliases);
+    setDraft("");
+    setAliasError(null);
+    return result.aliases;
+  }
+
   const mutation = useMutation({
-    mutationFn: (values: SongEditValues) => updateSong(song, values),
+    mutationFn: ({ values, list }: { values: SongEditValues; list: string[] }) => updateSong(song, values, list),
     onSuccess: async () => {
       await Promise.all(SONG_EDIT_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onDone();
@@ -124,7 +148,17 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
   });
 
   return (
-    <form onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate className="flex flex-col gap-4">
+    <form
+      onSubmit={handleSubmit((values) => {
+        // 입력칸에 쓰고 `추가`를 안 눌렀더라도 저장할 때 같이 넣는다(적은 키워드가 사라지지 않게)
+        const list = commitDraft();
+        if (list) {
+          mutation.mutate({ values, list });
+        }
+      })}
+      noValidate
+      className="flex flex-col gap-4"
+    >
       <div className="flex flex-col gap-1">
         <label htmlFor="edit-title" className="text-sm text-fg-sub">
           곡명
@@ -157,6 +191,60 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
             {errors.addedVersion.message}
           </p>
         ) : null}
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="edit-alias" className="text-sm text-fg-sub">
+          검색 키워드
+        </label>
+        {aliases.length > 0 ? (
+          <ul aria-label="등록된 검색 키워드" className="flex flex-wrap gap-1.5">
+            {aliases.map((alias) => (
+              <li key={alias} className="flex items-center gap-1 rounded-full border border-chip-line py-0.5 pl-3 pr-1 text-sm text-fg">
+                {alias}
+                <button
+                  type="button"
+                  onClick={() => setAliases((current) => current.filter((a) => a !== alias))}
+                  aria-label={`${alias} 키워드 삭제`}
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-fg-sub hover:text-fg"
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-fg-dim">등록된 키워드가 없습니다.</p>
+        )}
+        <div className="flex gap-2">
+          <input
+            id="edit-alias"
+            type="text"
+            autoComplete="off"
+            maxLength={255}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter는 폼 저장이 아니라 키워드 추가로 쓴다
+              if (event.key === "Enter") {
+                event.preventDefault();
+                commitDraft();
+              }
+            }}
+            aria-describedby="edit-alias-help"
+            className={`${FIELD} min-w-0 flex-1`}
+          />
+          <button type="button" onClick={commitDraft} className="rounded-[10px] border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
+            추가
+          </button>
+        </div>
+        {aliasError ? (
+          <p role="alert" className="text-sm text-fg">
+            {aliasError}
+          </p>
+        ) : null}
+        <p id="edit-alias-help" className="text-xs text-fg-dim">
+          곡명 대신 쓰는 줄임말이나 별명을 등록하면 곡 검색(서열표 검색 포함)에서 찾을 수 있습니다. 저장하면 반영됩니다. ({aliases.length}/{limit})
+        </p>
       </div>
       <p className="text-xs text-fg-dim">변경 내용은 관리 기록에 남습니다.</p>
       <Footer pending={mutation.isPending} error={mutation.error} onDone={onDone} />
