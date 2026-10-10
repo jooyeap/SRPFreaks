@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { DifficultyTableView } from "@/components/table/DifficultyTableView";
 import { StageBadge } from "@/components/table/StageBadge";
+import { DEFAULT_VIEW_STATE } from "@/lib/table-view-state";
 import { TierGroupSection, groupStage } from "@/components/table/TierGroupSection";
 import type { DifficultyTableResponse, PageResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 
@@ -302,6 +303,30 @@ describe("DifficultyTableView", () => {
     expect(first).toHaveAttribute("aria-expanded", "false");
     expect(second).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: "모두 펼치기" })).toBeInTheDocument();
+  });
+
+  it("보기 상태(state)를 받으면 그 값으로 조회하고, 페이지·필터를 바꾸면 onStateChange로 알린다 (주소에 저장하려고)", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()], { page: 1, totalPages: 3 })) : json([table])),
+    );
+    const onStateChange = vi.fn();
+    const state = { ...DEFAULT_VIEW_STATE, page: 1, sort: "rateDesc" as const, filters: { part: "BASS" as const, recommend: ["상"], pattern: [] } };
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <DifficultyTableView userId={1} state={state} onStateChange={onStateChange} />
+      </QueryClientProvider>,
+    );
+    await screen.findByRole("heading", { name: /5\.8/ });
+    const params = lastEntryParams();
+    expect(params.get("page")).toBe("1");
+    expect(params.get("part")).toBe("BASS");
+    expect(params.get("recommend")).toBe("상");
+
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(onStateChange).toHaveBeenLastCalledWith({ ...state, page: 2 });
+    fireEvent.click(screen.getByRole("button", { name: "0% 포함" }));
+    expect(onStateChange).toHaveBeenLastCalledWith({ ...state, includeZero: true });
   });
 
   it("서열표 화면 상단에 정보 제공자 표기와 X 링크를 보여 준다", async () => {

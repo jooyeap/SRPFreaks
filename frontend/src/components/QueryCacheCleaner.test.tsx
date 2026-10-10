@@ -7,6 +7,13 @@ import { setAuthLostHandler } from "@/lib/api";
 import { clearAccessToken } from "@/lib/auth-token";
 import TablePage from "@/app/table/page";
 
+// 서열표 페이지가 주소 쿼리(useSearchParams 등)를 읽으므로 라우터 훅을 가짜로 대신한다
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), back: vi.fn() }),
+  usePathname: () => "/table",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
@@ -14,7 +14,6 @@ import { TierQuickNav } from "@/components/table/TierQuickNav";
 import { ApiError } from "@/lib/api";
 import {
   allGroupsKey,
-  DEFAULT_FILTERS,
   decidedGroups,
   fetchAllTierGroups,
   fetchDifficultyTables,
@@ -27,7 +26,8 @@ import {
   type TableFilters,
 } from "@/lib/difficulty-table";
 import type { TableEntryResponse } from "@/lib/api-types";
-import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
+import { DEFAULT_VIEW_STATE, type TableViewState } from "@/lib/table-view-state";
+import type { TableSort } from "@/lib/table-sort";
 import type { InstrumentPart } from "@/lib/types";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 
@@ -57,12 +57,36 @@ function errorMessage(error: unknown): string {
  * 서열표 본문. 로그인한 사용자만 이 컴포넌트를 그린다(서버 API가 로그인을 요구하고, 내 기록을 함께 보여 주기 때문).
  * userId를 쿼리 키에 넣는 이유: 로그아웃 후 다른 계정으로 로그인했을 때 이전 사용자의 기록 캐시가 보이지 않게 하려는 것이다.
  */
-export function DifficultyTableView({ userId, canRegister = false }: { userId: number; canRegister?: boolean }) {
-  const [filters, setFilters] = useState<TableFilters>(DEFAULT_FILTERS);
-  const [page, setPage] = useState(0);
+export function DifficultyTableView({
+  userId,
+  canRegister = false,
+  state: controlledState,
+  onStateChange,
+}: {
+  userId: number;
+  canRegister?: boolean;
+  /**
+   * 필터·정렬·평균 계산·페이지(보기 상태). 서열표 페이지가 주소 쿼리에서 읽어 넘기면 곡 상세에 갔다 뒤로 와도 그대로 남는다.
+   * 넘기지 않으면 이 컴포넌트가 스스로 갖는다(처음에는 기본 상태).
+   */
+  state?: TableViewState;
+  onStateChange?: (next: TableViewState) => void;
+}) {
+  const [innerState, setInnerState] = useState<TableViewState>(DEFAULT_VIEW_STATE);
+  const view = controlledState ?? innerState;
+  const updateView = useCallback(
+    (patch: Partial<TableViewState>) => {
+      const next = { ...view, ...patch };
+      if (onStateChange) onStateChange(next);
+      else setInnerState(next);
+    },
+    [view, onStateChange],
+  );
+  const { filters, page, sort, includeZero } = view;
+  const setPage = (next: number | ((p: number) => number)) => updateView({ page: typeof next === "function" ? next(page) : next });
+  const setSort = (next: TableSort) => updateView({ sort: next }); // 묶음 안 채보 정렬. 서버 요청과 무관해서 페이지·캐시에 영향이 없다
+  const setIncludeZero = (next: boolean) => updateView({ includeZero: next }); // 0% 미포함이 기본 (DESIGN-UI 3장)
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
-  const [sort, setSort] = useState<TableSort>(DEFAULT_SORT); // 묶음 안 채보 정렬. 서버 요청과 무관해서 페이지·캐시에 영향이 없다
-  const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
   // 펼친 묶음의 난이도(미정은 "undecided"). 처음에는 모두 닫혀 있다. 페이지·필터를 바꿔도 같은 난이도는 그대로 펼쳐 있다
   const [openGroups, setOpenGroups] = useState<ReadonlySet<string>>(new Set());
@@ -91,8 +115,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
 
   // 필터를 바꾸면 첫 페이지부터 다시 본다 (이전 필터의 3페이지가 새 결과에는 없을 수 있다)
   function changeFilter(next: Partial<TableFilters>) {
-    setFilters((current) => ({ ...current, ...next }));
-    setPage(0);
+    updateView({ filters: { ...filters, ...next }, page: 0 });
   }
 
   if (tables.isPending) {
