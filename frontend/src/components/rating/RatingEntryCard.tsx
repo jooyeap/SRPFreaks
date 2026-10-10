@@ -27,12 +27,8 @@ export function RatingEntryCard({
       // 그 폭에서만 순위·재킷·여백을 줄여 알약이 들어갈 자리를 만든다 (360px 이상은 그대로).
       className="stage-tint relative flex items-center gap-3 overflow-hidden rounded-xl border border-line bg-card py-2 pl-4 pr-3 max-[359px]:gap-2 max-[359px]:pl-3 max-[359px]:pr-2"
     >
-      {/* 왼쪽 띠는 위아래 반반: 위 = 달성 단계 색, 아래 = 점수의 플레이어 티어 색(상수표 칸과 같은 색, lib/chart-tier.ts).
-          색만으로 전달하지 않는다: 단계 배지 글자와 점수 숫자가 같이 있다 */}
-      <span className="absolute inset-y-0 left-0 flex w-1.5 flex-col" aria-hidden="true">
-        <span className="stage-bar flex-1" />
-        <span {...chartTierAttrs(entry.score)} className="tier-bar flex-1" />
-      </span>
+      {/* 왼쪽 띠는 점수의 플레이어 티어 색 하나다(상수표 칸과 같은 색, lib/chart-tier.ts). 색만으로 전달하지 않는다: 점수 숫자가 오른쪽에 있다 */}
+      <span {...chartTierAttrs(entry.score)} className="tier-bar absolute inset-y-0 left-0 w-1.5" aria-hidden="true" />
       <span className="w-6 shrink-0 text-center font-num text-xs text-fg-dim max-[359px]:w-4" aria-label={`${entry.rank}위`}>
         {entry.rank}
       </span>

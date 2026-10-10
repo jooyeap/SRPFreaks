@@ -138,11 +138,11 @@ describe("RatingView", () => {
     const mid = screen.getByText("160.50");
     expect(mid).toHaveAttribute("data-tier", "RED"); // 150 이상 162.5 미만
     expect(mid).not.toHaveAttribute("data-glow");
-    // 카드 왼쪽 띠: 위 = 단계 색(stage-bar), 아래 = 점수의 티어 색(tier-bar)이 같은 점수와 같은 티어다
+    // 카드 왼쪽 띠는 점수의 티어 색 하나다 (단계 색 띠는 없다)
     const bars = document.querySelectorAll("li .tier-bar");
     expect(bars[0]).toHaveAttribute("data-tier", "HASUBONG");
     expect(bars[1]).toHaveAttribute("data-tier", "RED");
-    expect(document.querySelectorAll("li .stage-bar")).toHaveLength(2);
+    expect(document.querySelectorAll("li .stage-bar")).toHaveLength(0);
   });
 
   it("각 구역 제목 오른쪽에 그 구역의 점수 합산을 보여 준다", async () => {
@@ -154,7 +154,7 @@ describe("RatingView", () => {
     expect(within(other).getByText(/합산/)).toHaveTextContent("합산 425.50");
   });
 
-  it("모든 단계(S 포함)의 카드에 단계 효과(왼쪽 띠와 틴트)가 붙고, FC/EXC만 곡명 색이 바뀐다", async () => {
+  it("모든 단계(S 포함)의 카드에 단계 틴트와 점수 티어 색 띠가 붙고, FC/EXC만 곡명 색이 바뀐다", async () => {
     fetchMock.mockResolvedValueOnce(
       json(
         skill({
@@ -174,7 +174,7 @@ describe("RatingView", () => {
       const card = byStage(stage);
       expect(card, stage).toBeDefined();
       expect(card).toHaveClass("stage-tint");
-      expect(card?.querySelector(".stage-bar")).not.toBeNull();
+      expect(card?.querySelector(".tier-bar")).not.toBeNull(); // 띠는 점수 티어 색(단계 색 띠 아님)
     }
     // 곡명은 링크 안에 있고, 색 클래스는 감싼 문단에 붙는다
     expect(screen.getByText("에스곡").closest("p")).not.toHaveClass("stage-name");
