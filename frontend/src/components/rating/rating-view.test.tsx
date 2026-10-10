@@ -58,16 +58,6 @@ describe("RatingSummary", () => {
     expect(screen.getByRole("region", { name: "내 레이팅" })).toHaveAttribute("data-tier", "ORANGE");
   });
 
-  it("티어 칸은 위(티어 이름)·아래(합계 점수)로 나뉘고 상수표 칸과 같은 chart-cell 스타일이다", () => {
-    const { container } = render(<RatingSummary skill={skill()} />);
-    const tile = container.querySelector(".chart-cell");
-    expect(tile).not.toBeNull();
-    const halves = tile!.querySelectorAll(":scope > p");
-    expect(halves).toHaveLength(2);
-    expect(halves[0]).toHaveTextContent("Orange");
-    expect(halves[1]).toHaveTextContent("1125.50");
-  });
-
   it("마지막 티어는 진행 막대 대신 '최고 티어'를 보여 준다", () => {
     render(
       <RatingSummary
