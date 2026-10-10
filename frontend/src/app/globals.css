@@ -289,7 +289,7 @@ body {
  */
 /* 하수봉 구간 6단계: 237.5부터 25점마다 색(채움)과 빛이 모두 바뀐다. 1단계 = 하수봉 기본 무지개. 글자는 검정이라 모두 밝은 색이다 */
 [data-glow="1"] { --tier-glow: 0 0 8px rgb(255 126 182 / 0.5); }
-[data-glow="2"] { --tier-fill: linear-gradient(90deg, #fff3b0, #ffd23f, #fff3b0); --tier-glow: 0 0 12px rgb(255 210 63 / 0.7); }
+[data-glow="2"] { --tier-fill: linear-gradient(90deg, #fef9a7, #b6e84a, #fef9a7); --tier-glow: 0 0 12px rgb(182 232 74 / 0.75); }
 [data-glow="3"] { --tier-fill: linear-gradient(90deg, #b9f6ca, #22d3ee, #bae6fd); --tier-glow: 0 0 14px rgb(34 211 238 / 0.75); }
 [data-glow="4"] { --tier-fill: linear-gradient(90deg, #fbcfe8, #f43f8e, #fde68a); --tier-glow: 0 0 16px rgb(244 63 142 / 0.8); }
 [data-glow="5"] { --tier-fill: linear-gradient(90deg, #e9d5ff, #8b5cf6, #c4b5fd); --tier-glow: 0 0 20px rgb(139 92 246 / 0.85); }
@@ -297,6 +297,8 @@ body {
 .chart-cell { background: var(--tier-fill); color: #000; box-shadow: var(--tier-glow); }
 [data-glow="6"].chart-cell { outline: 2px solid var(--fg); outline-offset: 1px; }
 .chart-swatch { background: var(--tier-fill); box-shadow: var(--tier-glow); }
+/* 하수봉 구간(data-glow 1~6)은 흰 안쪽 테두리를 더해 중간 티어(Gold 등)와 한눈에 갈라 보이게 한다. 2단계는 금색과 겹치지 않게 연두빛 노랑이다 */
+[data-glow].chart-cell, [data-glow].chart-swatch { box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.9), var(--tier-glow); }
 
 /* 곡 상세의 내 기록: FC/EXC 달성률 숫자를 단계 그라데이션 글자로 (DESIGN-UI 6장) */
 .stage-grad-text { background: var(--st-bar); -webkit-background-clip: text; background-clip: text; color: transparent; }
