@@ -172,7 +172,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
         <>
           <div className="flex flex-col gap-4">
             {data.content.map((group) => (
-              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} sort={sort} onRecord={(entry, tier) => setRecordTarget({ entry, tier })} />
+              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} sort={sort} collapsible onRecord={(entry, tier) => setRecordTarget({ entry, tier })} />
             ))}
           </div>
           <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">

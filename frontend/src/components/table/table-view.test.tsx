@@ -135,6 +135,35 @@ describe("TierGroupSection", () => {
   });
 });
 
+describe("TierGroupSection 접기", () => {
+  const entries = [entry({ entryId: 1, title: "Banana" })];
+
+  it("collapsible이면 처음에는 닫혀 있고 머리의 칩·평균만 보인다", () => {
+    render(<TierGroupSection group={group({ entries })} includeZero={false} collapsible />);
+    const toggle = screen.getByRole("button", { name: /5\.8/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Banana")).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "내 달성 현황" })).toBeInTheDocument(); // 머리 정보는 닫혀도 보인다
+  });
+
+  it("제목 줄을 누르면 채보 목록이 펼쳐지고 다시 누르면 접힌다", () => {
+    render(<TierGroupSection group={group({ entries })} includeZero={false} collapsible />);
+    const toggle = screen.getByRole("button", { name: /5\.8/ });
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getAllByText("Banana").length).toBeGreaterThan(0);
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Banana")).not.toBeInTheDocument();
+  });
+
+  it("collapsible이 아니면(묶음 화면) 버튼 없이 항상 펼쳐 있다", () => {
+    render(<TierGroupSection group={group({ entries })} includeZero={false} />);
+    expect(screen.queryByRole("button", { name: /5\.8/ })).not.toBeInTheDocument();
+    expect(screen.getAllByText("Banana").length).toBeGreaterThan(0);
+  });
+});
+
 describe("TierGroupSection 정렬", () => {
   const entries = [
     entry({ entryId: 1, title: "Banana", mine: { rate: 90, fullCombo: false, stage: "A" } }),
@@ -384,7 +413,7 @@ describe("DifficultyTableView", () => {
         </AuthProvider>
       </QueryClientProvider>,
     );
-    await screen.findByRole("heading", { name: /5\.8/ });
+    fireEvent.click(await screen.findByRole("button", { name: /5\.8/ })); // 묶음은 처음에 닫혀 있다
     expect(screen.queryByRole("heading", { name: "기록 등록" })).toBeNull();
 
     // 모바일 카드와 데스크톱 줄에 버튼이 하나씩 있다. 어느 쪽이 보일지는 화면 폭(CSS)이 정한다.

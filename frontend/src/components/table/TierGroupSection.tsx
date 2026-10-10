@@ -1,3 +1,6 @@
+"use client";
+
+import { useId, useState } from "react";
 import { EntryCard } from "@/components/table/EntryCard";
 import { EntryRow, TableHeadRow } from "@/components/table/EntryRow";
 import { groupAverage } from "@/lib/difficulty-table";
@@ -67,14 +70,23 @@ export function TierGroupSection({
   includeZero,
   sort = DEFAULT_SORT,
   onRecord,
+  collapsible = false,
 }: {
   group: TierGroupResponse;
+  /**
+   * true면 머리의 제목 줄을 눌러 채보 목록을 펼치고 접는다(처음에는 접힘, 곡 목록의 레벨 폴더와 같다).
+   * 서열표 본문처럼 묶음이 여럿 이어지는 화면에서 쓴다. 묶음 하나만 보는 묶음 화면은 false(항상 펼침).
+   */
+  collapsible?: boolean;
   includeZero: boolean;
   /** 묶음 안 채보의 정렬 기준. 기본은 서버 순서(레벨 높은 순) */
   sort?: TableSort;
   /** 기록 입력 버튼을 눌렀을 때. 묶음의 레이팅 상수 난이도(미정이면 null)를 함께 넘겨 입력창이 점수를 바로 계산하게 한다 */
   onRecord?: (entry: TableEntryResponse, tier: number | null) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const bodyId = useId();
+  const expanded = !collapsible || open; // 접을 수 없는 묶음은 항상 펼쳐 있다
   const entries = sortEntries(group.entries, sort);
   const title = formatTier(group.tier);
   const reached = groupStage(group);
@@ -88,7 +100,26 @@ export function TierGroupSection({
       >
         {reached && <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" />}
         <h2 className="font-num text-lg font-semibold text-fg">
-          {title} <span className="ml-1 text-sm font-normal text-fg-sub">{group.total}개</span>
+          {collapsible ? (
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={bodyId}
+              onClick={() => setOpen((v) => !v)}
+              className="flex items-center gap-1 text-left"
+            >
+              <span aria-hidden="true" className="w-4 text-sm text-fg-dim">
+                {open ? "▾" : "▸"}
+              </span>
+              <span>
+                {title} <span className="ml-1 text-sm font-normal text-fg-sub">{group.total}개</span>
+              </span>
+            </button>
+          ) : (
+            <>
+              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{group.total}개</span>
+            </>
+          )}
         </h2>
         <ul className="flex flex-wrap items-center gap-1.5" aria-label="내 달성 현황">
           {chipsOf(group).map((chip) => (
@@ -113,16 +144,20 @@ export function TierGroupSection({
         </p>
       </header>
 
-      <TableHeadRow />
-      {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
-      <ul>
-        {entries.map((entry) => (
-          <EntryCard key={`card-${entry.entryId}`} entry={entry} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
-        ))}
-        {entries.map((entry) => (
-          <EntryRow key={`row-${entry.entryId}`} entry={entry} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
-        ))}
-      </ul>
+      {expanded ? (
+        <div id={bodyId}>
+          <TableHeadRow />
+          {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
+          <ul>
+            {entries.map((entry) => (
+              <EntryCard key={`card-${entry.entryId}`} entry={entry} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
+            ))}
+            {entries.map((entry) => (
+              <EntryRow key={`row-${entry.entryId}`} entry={entry} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }
