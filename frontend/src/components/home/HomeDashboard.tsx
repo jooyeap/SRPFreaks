@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { Skeleton } from "@/components/Skeleton";
 import { PlayersPreview } from "@/components/home/PlayersPreview";
 import { TableProgressCard } from "@/components/home/TableProgressCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
@@ -56,7 +57,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       ) : skill.isError ? (
         <p role="alert" className="text-sm text-fg">레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
       ) : (
-        <p className="text-sm text-fg-sub">레이팅을 불러오는 중입니다.</p>
+        <Skeleton label="레이팅을 불러오는 중입니다." className="h-[7.5rem]" />
       )}
 
       {groups.data ? (
@@ -66,7 +67,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       ) : tables.isSuccess && tableId === null ? (
         <p className="text-sm text-fg-sub">SRN+ 서열표가 아직 없습니다.</p>
       ) : (
-        <p className="text-sm text-fg-sub">서열표 진행도를 불러오는 중입니다.</p>
+        <Skeleton label="서열표 진행도를 불러오는 중입니다." className="h-32" />
       )}
 
       <PlayersPreview viewerId={userId} />

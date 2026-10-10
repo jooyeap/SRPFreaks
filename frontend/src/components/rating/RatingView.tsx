@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Skeleton } from "@/components/Skeleton";
 import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
@@ -117,7 +118,13 @@ export function RatingView({ userId }: { userId: number }) {
   });
 
   if (isPending) {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return (
+      <div className="flex flex-col gap-5">
+        <h1 className="text-xl font-semibold text-fg">레이팅</h1>
+        <Skeleton label="불러오는 중입니다." className="h-[7.5rem]" />
+        <Skeleton label="레이팅 목록을 불러오는 중입니다." className="h-72" />
+      </div>
+    );
   }
   if (isError) {
     return (
