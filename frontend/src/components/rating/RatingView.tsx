@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
+import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { RatingTargetPlanner } from "@/components/rating/RatingTargetPlanner";
 import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
@@ -143,6 +144,7 @@ export function RatingView({ userId }: { userId: number }) {
           </>
         }
       />
+      <ScrollTopButton />
     </div>
   );
 }

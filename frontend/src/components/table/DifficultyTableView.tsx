@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
@@ -230,6 +231,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
           </nav>
         </>
       )}
+      <ScrollTopButton lifted />
       <TableSearch userId={userId} groups={allGroups.data && decidedGroups(allGroups.data)} />
       <RecordDialog
         chart={
