@@ -41,6 +41,7 @@
 | D29 | 2026-10-09 | **ADMIN·ROOT가 다른 사용자의 기록을 "삭제"할 수 있다. D15의 "다른 사용자의 기록은 ADMIN/ROOT도 고치지 않는다"에 대한 삭제 한정 예외.** 일부러 만든 가짜 기록(예: 100%)을 지우기 위한 것이다. (1) **삭제만** 허용한다. 다른 사용자의 기록을 수정하거나 새로 넣는 기능은 만들지 않는다 (2) ADMIN과 ROOT 모두, 모든 사용자의 기록이 대상이다 (3) 단위는 "그 유저의 그 채보 기록 전부"다. 유저 상세에는 채보별 최고 기록만 보이고, 최고 한 건만 지우면 다음 기록이 올라와 가짜가 남을 수 있어서다 (4) `DELETE /admin/players/{userId}/charts/{songDifficultyId}/records`. 되돌릴 수 없는 hard delete(D20), 지울 기록이 없으면 404 (5) `audit_logs`에 `RECORD_ADMIN_DELETE`로 남긴다(대상 유저 id, 채보 id, 지운 개수, 지운 최고 달성률. 닉네임·이메일은 넣지 않는다) (6) 화면은 **유저 상세**에서 ADMIN·ROOT에게만 카드마다 `삭제` 버튼과 확인 상자를 보인다. 따라서 공개한 유저의 기록만 화면에서 지울 수 있다 |
 | D30 | 2026-10-09 | **공지사항(수정사항 기록)을 만든다.** (1) **관리자 작성형**: ROOT·ADMIN이 화면에서 쓰고 고치고 지운다(배포 없이 글을 올릴 수 있다) (2) **로그인한 사용자 전체**가 읽는다. 로그인 전에는 로그인 안내 (3) `notices` 테이블(V3 마이그레이션, 제목 100자·본문 5000자, 쓴 사람은 탈퇴하면 NULL). 본문은 **글자(plain text)만** 저장·표시한다(줄바꿈만 살리고 HTML은 해석하지 않는다). 쓴 사람은 응답에 내보내지 않는다 (4) `GET /notices`(최근 순, 페이지 10건), `POST·PUT·DELETE /admin/notices` (5) 쓰기는 `audit_logs`에 `NOTICE_CREATE/UPDATE/DELETE`로 남기고 제목만 넣는다(본문 제외) (6) 주 메뉴에 `공지`를 둔다. 고정(핀)·분류·댓글·알림은 만들지 않는다 |
 | D31 | 2026-10-10 | **점수 역산(내 레이팅 화면)을 만든다.** (1) 기준 점수는 내 레이팅 목록의 순위 점수다: 단일 **1·7·15위**, 그 외(복합·이중·삼중) **1·12·25위**(목록의 처음·중간·끝). 목록이 덜 찼으면 있는 순위만 쓴다 (2) 각 기준 점수를 곡 하나에서 내려면 서열표의 **레이팅 상수 난이도별로 달성률이 얼마나 필요한지**를 `chartScore`의 역함수로 계산해 보인다(둘째 자리 올림, 그 난이도의 95% 점수를 넘으면 `불가`). 난이도를 누르면 그 난이도 채보(목록 종류에 맞는 속성, 레이팅 반영 켜짐) 목록을 펼친다 (3) **저장하는 값이 없다**: 서버가 계산한 내 목록 점수와 서열표 묶음을 화면에서 맞춰 볼 뿐이다(D3 유지). 새 API·테이블·마이그레이션 없음 (4) 위치는 레이팅 화면 맨 위 카드 아래의 접이식 섹션(처음에는 접힘). 남의 레이팅(유저 상세)에는 두지 않는다 (5) 추천 기능(역산 결과에서 곡을 골라 주는 것)은 이번에 만들지 않는다 |
+| D32 | 2026-10-10 | **레이팅 스냅샷을 만든다 (D3의 좁은 예외: 계산이 기본이고, 사용자가 누른 시점의 추이 사본만 저장).** (1) `skill_snapshots`(V4): user_id(탈퇴 시 CASCADE, D20), note_option, **snapshot_date(Asia/Seoul 날짜)**, total/single/other_score(DECIMAL(10,2), 화면에 내보내는 반올림 값). **(user_id, note_option, snapshot_date) 유일** (2) **사용자가 `기록하기`를 누를 때만** 만든다(자동·예약 저장 없음). 레이팅 화면은 계속 계산한 값을 보여 주고, 스냅샷은 읽기 전용 사본이다(수정·삭제 API 없음) (3) **막는 경우**(순서대로): 오늘(서울) 이미 기록함 / 레이팅에 들어간 기록이 없음 / **마지막 스냅샷과 합계·단일 소계·그 외 소계가 모두 같음**. 서버가 검사하고(409), 동시에 눌러도 유일 키가 한 줄만 남긴다 (4) API(USER+, 본인만): GET `/skills/me/snapshots`(최근 순 페이지네이션, 줄마다 바로 이전 스냅샷 대비 합계 `change`, 가장 오래된 줄은 null), GET `/skills/me/snapshots/status`(`available`, 막히면 `reason` = ALREADY_TODAY / NO_RECORDS / NO_CHANGE), POST `/skills/me/snapshots`(201) (5) 화면은 레이팅 화면 맨 아래의 `레이팅 기록` 섹션(DESIGN-UI 5장). 남의 스냅샷 조회·유저 상세 공개·그래프는 만들지 않는다 |
 ---
 
 ## 1. 목적과 범위
@@ -190,7 +191,7 @@ com.srpfreaks.backend
 공통 컬럼: `created_at`, `updated_at`, `is_deleted`(소프트 삭제). 시간은 **UTC로 저장**한다.
 표기는 목표 스키마이며, 현재와의 차이는 2장 표를 따른다. 배포 전에는 새 `V1`을 직접 고친다 (2장 마이그레이션 원칙).
 
-**이름 규칙 (2026-10-02):** PK 컬럼은 `{테이블 단수형}_id` (`user_id`, `song_id`, `song_difficulty_id`, `option_record_id`, `difficulty_table_id` …), FK는 **참조하는 PK와 같은 이름**이다. 아래 표의 `id`와 `difficulty_id`, `table_id`는 이 규칙으로 읽는다 (`difficulty_id` → `song_difficulty_id`, `table_id` → `difficulty_table_id`). 시간 컬럼은 모두 `DATETIME(6)` UTC이다. 새 `V1`은 `backend/src/main/resources/db/migration/V1__init_schema.sql`에 이 규칙으로 썼다(2026-10-02, 이 장 표와 같은 구조. `difficulty_tables`·`difficulty_table_entries`·`player_tiers`·`audit_logs` 포함, 티어 20행과 `app_settings` 기본값 시드 포함. `skill_snapshots`는 Phase 2라 아직 없다). 기록은 소프트 삭제하지 않고 완전 삭제한다(D20), `is_deleted`는 `songs`·`song_difficulties`에만 둔다.
+**이름 규칙 (2026-10-02):** PK 컬럼은 `{테이블 단수형}_id` (`user_id`, `song_id`, `song_difficulty_id`, `option_record_id`, `difficulty_table_id` …), FK는 **참조하는 PK와 같은 이름**이다. 아래 표의 `id`와 `difficulty_id`, `table_id`는 이 규칙으로 읽는다 (`difficulty_id` → `song_difficulty_id`, `table_id` → `difficulty_table_id`). 시간 컬럼은 모두 `DATETIME(6)` UTC이다. 새 `V1`은 `backend/src/main/resources/db/migration/V1__init_schema.sql`에 이 규칙으로 썼다(2026-10-02, 이 장 표와 같은 구조. `difficulty_tables`·`difficulty_table_entries`·`player_tiers`·`audit_logs` 포함, 티어 20행과 `app_settings` 기본값 시드 포함. `skill_snapshots`는 D32로 V4에서 추가했다). 기록은 소프트 삭제하지 않고 완전 삭제한다(D20), `is_deleted`는 `songs`·`song_difficulties`에만 둔다.
 
 ### users
 | 컬럼 | 타입 | 비고 |
@@ -308,7 +309,7 @@ com.srpfreaks.backend
 ### Phase 2 이후 테이블
 | 테이블 | 용도 |
 |---|---|
-| skill_snapshots | 스킬 성장 추이. user_id, scope, single_total, other_total, total, calculated_at |
+| skill_snapshots | 레이팅 추이 사본 (D32, V4). user_id, note_option, snapshot_date(서울), total/single/other_score. (user, option, date) 유일 |
 | song_aliases | `song_titles`로 대체 (별도 테이블을 두지 않는다) |
 | difficulty_tables / difficulty_table_entries | ADMIN이 관리하는 난이도표. **SRN+ 서열표(D8)** 가 첫 사례. tables: id, name, part(NULL=둘 다), **note_option**, status, revision / entries: table_id, difficulty_id, **tier_label**(기준 난이도, 예 `5.8`), tier_order, **recommend**(상/중/하 NULL), **pattern_type**(단일/복합/이중/삼중/**레이팅 제외**, NULL도 제외로 취급), **uncertain**(스프레드시트의 `?` 표시), comment. 기준 난이도가 없는 채보는 tier_label NULL = "미정" |
 | audit_logs | ROOT/ADMIN 관리 작업 기록 (actor_id, action, target_type, target_id, detail JSON) |
@@ -472,7 +473,7 @@ com.srpfreaks.backend
 | 공개 설정 (D26) | `PATCH /users/me/visibility` body `{"profilePublic": true|false}` (닉네임이 없으면 켤 수 없고 400. `PATCH /users/me`와 따로 둔 이유: 그 요청은 닉네임이 비면 "닉네임 삭제"라 공개 값만 보내면 닉네임이 지워질 수 있다.) 응답은 `UserResponse`(`profilePublic` 포함). 닉네임을 지우면 공개도 함께 꺼진다 | USER+ (본인) |
 | 스킬 목록 | GET `/skills/me` (SRN+ 40곡 + 합계 + 플레이어 티어. 이후 scope 파라미터 확장 가능) | USER+ |
 | 사진 인식 | POST `/records/recognize` (multipart, 인식 결과만 반환하고 저장하지 않는다. 일일 한도) | USER+ |
-| 스킬 추이 | GET `/skills/me/history` (Phase 2) | USER+ |
+| 레이팅 스냅샷 (D32) | GET `/skills/me/snapshots`(목록), GET `/skills/me/snapshots/status`(기록 가능 여부), POST `/skills/me/snapshots`(기록, 하루 1회·변경 없으면 409) | USER+ |
 | 난이도표 | GET `/difficulty-tables` / POST·PATCH | USER+ / ADMIN+ |
 | 서열표 | GET `/difficulty-tables/{id}/entries?mine=true&part=&recommend=&pattern=&page=&size=` (`recommend`·`pattern`은 여러 값을 쉼표로 이어 보낼 수 있다(`recommend=상,중`). 한 필터 안은 OR, 필터끼리는 AND, 비우면 전체, 모르는 값이 하나라도 있으면 400. 기준 난이도 묶음 단위 페이지(기본 10, 최대 20), 묶음마다 칩 개수(EXC/FC/SS/S/S 미만)·평균(0% 미포함/포함 둘 다), 항목마다 본인 최고 기록과 단계. 쿼리 2번 고정: 항목 fetch join + 본인 최고 기록 group by. 본인 기록은 표의 기준 옵션(SRN+)만, 채보의 최고 달성률과 FC 여부(하나라도 FC면 FC)로 계산) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |
