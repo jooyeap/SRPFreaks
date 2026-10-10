@@ -40,14 +40,14 @@ describe("레이팅 설명서", () => {
     const cellsOf = (row: HTMLElement) => within(row).getAllByRole("cell").slice(1); // 첫 칸은 내부 상수
     const bodyRows = rows.slice(1); // 첫 행은 머리글
     const top = cellsOf(rows[1]); // 7.0 행: 70% ... 95%
-    const topRight = top[top.length - 1]; // 7.0, 95% = 384 -> 하수봉, 가장 강한 빛
+    const topRight = top[top.length - 1]; // 7.0, 95% = 384 -> 하수봉, 가장 높은 단계(6)
     expect(topRight).toHaveTextContent("384");
     expect(topRight).toHaveAttribute("data-tier", "HASUBONG");
-    expect(topRight).toHaveAttribute("data-glow", "3");
-    // 6.0 행 95% = 304 -> 하수봉, 강한 빛(300 이상) / 6.0 행 80% = 240 -> 하수봉, 약한 빛
+    expect(topRight).toHaveAttribute("data-glow", "6");
+    // 6.0 행 95% = 304 -> 하수봉 3단계(287.5~312.5) / 6.0 행 80% = 240 -> 하수봉 1단계
     const row60 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "6.0") as HTMLElement;
     const c60 = cellsOf(row60);
-    expect(c60[5]).toHaveAttribute("data-glow", "2");
+    expect(c60[5]).toHaveAttribute("data-glow", "3");
     expect(c60[2]).toHaveTextContent("240");
     expect(c60[2]).toHaveAttribute("data-glow", "1");
     // 5.5 행: 80% = 160 -> Red(빛 없음), 5.0 행 80% = 80 -> Green

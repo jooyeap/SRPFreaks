@@ -41,15 +41,19 @@ export function chartTierStart(min: number): number {
   return min / RATED_CHART_COUNT;
 }
 
-/** 최고 티어를 넘는 점수의 빛 단계 시작점: 1단계는 최고 티어 시작점부터, 2·3단계는 아래 값부터 */
-export const GLOW_2_FROM = 300;
-export const GLOW_3_FROM = 350;
+/**
+ * 최고 티어(하수봉) 구간 안의 단계 폭과 개수. 점수 대부분이 237.5 이상인 상수표 윗부분이 한 색으로만 보여서
+ * (2026-10-10) 237.5부터 25점마다 단계를 올린다: 237.5 / 262.5 / 287.5 / 312.5 / 337.5 / 362.5 (최대 점수 384까지 6단계).
+ * 단계마다 색(채움)과 빛이 달라서 색만 봐도 구간을 알 수 있다(globals.css의 [data-glow]).
+ */
+export const HASUBONG_BAND_STEP = 25;
+export const HASUBONG_BAND_COUNT = 6;
 
 export interface ChartTier {
   /** player_tiers의 tier_key. CSS `[data-tier]`가 색을 정한다 */
   key: string;
-  /** 0 = 빛 단계 없음. 최고 티어(하수봉) 구간에서만 1~3 (점수가 높을수록 강하다) */
-  glow: 0 | 1 | 2 | 3;
+  /** 0 = 단계 없음. 최고 티어(하수봉) 구간에서만 1~6 (점수가 높을수록 높은 단계). CSS data-glow의 값이다 */
+  glow: 0 | 1 | 2 | 3 | 4 | 5 | 6;
 }
 
 /** 점수(소수 그대로, 반올림 전)가 속한 티어와 빛 단계. 음수는 가장 낮은 티어로 본다. */
@@ -64,7 +68,8 @@ export function chartTier(score: number): ChartTier {
   if (current.key !== top.key) {
     return { key: current.key, glow: 0 };
   }
-  return { key: current.key, glow: score >= GLOW_3_FROM ? 3 : score >= GLOW_2_FROM ? 2 : 1 };
+  const band = Math.floor((score - chartTierStart(top.min)) / HASUBONG_BAND_STEP) + 1;
+  return { key: current.key, glow: Math.min(HASUBONG_BAND_COUNT, band) as ChartTier["glow"] };
 }
 
 /** 요소에 붙일 속성. CSS가 `data-tier`로 색을, `data-glow`로 빛 세기를 정한다. 빛이 없으면 data-glow는 붙이지 않는다. */

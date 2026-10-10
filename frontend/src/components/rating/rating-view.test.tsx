@@ -143,7 +143,7 @@ describe("RatingView", () => {
     renderView();
     const high = await screen.findByText("264.00");
     expect(high).toHaveAttribute("data-tier", "HASUBONG");
-    expect(high).toHaveAttribute("data-glow", "1");
+    expect(high).toHaveAttribute("data-glow", "2"); // 264 = 262.5 이상
     expect(high).toHaveClass("chart-cell");
     const mid = screen.getByText("160.50");
     expect(mid).toHaveAttribute("data-tier", "RED"); // 150 이상 162.5 미만

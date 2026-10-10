@@ -52,7 +52,7 @@ describe("RecordForm", () => {
     fireEvent.change(rateInput(), { target: { value: "95" } });
     const top = screen.getByText("304.00"); // 15×0.8 + 3.2 = 15.2, ×20
     expect(top).toHaveAttribute("data-tier", "HASUBONG");
-    expect(top).toHaveAttribute("data-glow", "2");
+    expect(top).toHaveAttribute("data-glow", "3");
 
     fireEvent.change(rateInput(), { target: { value: "80" } });
     expect(screen.getByText("240.00")).toHaveAttribute("data-glow", "1");

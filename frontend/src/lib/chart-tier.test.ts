@@ -33,13 +33,18 @@ describe("chartTier", () => {
     expect(chartTier(160).glow).toBe(0);
   });
 
-  it("최고 티어에서는 점수가 높을수록 빛이 강하다 (1 → 2 → 3)", () => {
+  it("최고 티어에서는 25점마다 단계가 오른다 (237.5 → 1, 262.5 → 2, … 362.5 → 6)", () => {
     expect(chartTier(237.5).glow).toBe(1);
-    expect(chartTier(299.99).glow).toBe(1);
-    expect(chartTier(300).glow).toBe(2);
-    expect(chartTier(349.99).glow).toBe(2);
-    expect(chartTier(350).glow).toBe(3);
-    expect(chartTier(384).glow).toBe(3);
+    expect(chartTier(262.49).glow).toBe(1);
+    expect(chartTier(262.5).glow).toBe(2);
+    expect(chartTier(287.5).glow).toBe(3);
+    expect(chartTier(304).glow).toBe(3);
+    expect(chartTier(312.5).glow).toBe(4);
+    expect(chartTier(337.5).glow).toBe(5);
+    expect(chartTier(362.49).glow).toBe(5);
+    expect(chartTier(362.5).glow).toBe(6);
+    expect(chartTier(384).glow).toBe(6);
+    expect(chartTier(500).glow).toBe(6); // 더 올라가도 6단계에서 멈춘다
   });
 
   it("상수표의 직접 계산한 예시 칸", () => {
@@ -57,7 +62,7 @@ describe("chartTierAttrs", () => {
   });
 
   it("빛이 있으면 단계를 문자열로 붙인다", () => {
-    expect(chartTierAttrs(384)).toEqual({ "data-tier": "HASUBONG", "data-glow": "3" });
+    expect(chartTierAttrs(384)).toEqual({ "data-tier": "HASUBONG", "data-glow": "6" });
   });
 });
 
