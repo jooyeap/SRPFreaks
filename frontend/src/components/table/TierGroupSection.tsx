@@ -150,10 +150,10 @@ export function TierGroupSection({
           {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
           <ul>
             {entries.map((entry) => (
-              <EntryCard key={`card-${entry.entryId}`} entry={entry} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
+              <EntryCard key={`card-${entry.entryId}`} entry={entry} tier={group.tier} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
             ))}
             {entries.map((entry) => (
-              <EntryRow key={`row-${entry.entryId}`} entry={entry} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
+              <EntryRow key={`row-${entry.entryId}`} entry={entry} tier={group.tier} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
             ))}
           </ul>
         </div>

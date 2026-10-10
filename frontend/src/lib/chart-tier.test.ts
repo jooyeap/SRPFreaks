@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartTier, chartTierAttrs, chartTierStart, PLAYER_TIER_MINS, previewScore } from "@/lib/chart-tier";
+import { chartTier, chartTierAttrs, chartTierStart, PLAYER_TIER_MINS, previewScore, ratedScore } from "@/lib/chart-tier";
 
 describe("chartTierStart", () => {
   it("티어 최소 점수를 40으로 나눈다 (하수봉 9500 -> 237.5)", () => {
@@ -77,5 +77,19 @@ describe("previewScore", () => {
     expect(previewScore(6.0, -0.01)).toBeNull();
     expect(previewScore(6.0, 100.01)).toBeNull();
     expect(previewScore(6.0, Number.NaN)).toBeNull();
+  });
+});
+
+describe("ratedScore", () => {
+  const ok = { ratingEnabled: true, pattern: "단일" };
+  it("레이팅 대상이면 previewScore와 같은 값이다", () => {
+    expect(ratedScore(5.8, 96.5, ok)).toBe(272);
+  });
+  it("기록 없음, 반영 꺼짐, 속성 없음·`레이팅 제외`, 미정이면 null", () => {
+    expect(ratedScore(5.8, null, ok)).toBeNull();
+    expect(ratedScore(5.8, 90, { ...ok, ratingEnabled: false })).toBeNull();
+    expect(ratedScore(5.8, 90, { ...ok, pattern: null })).toBeNull();
+    expect(ratedScore(5.8, 90, { ...ok, pattern: "레이팅 제외" })).toBeNull();
+    expect(ratedScore(null, 90, ok)).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
+import { RatedScore } from "@/components/table/RatedScore";
 import { StageBadge } from "@/components/table/StageBadge";
 import { tableDetailHref } from "@/components/song/TableContext";
 import { EMPTY_MARK, formatRate } from "@/lib/format";
@@ -8,9 +9,18 @@ import type { TableEntryResponse } from "@/lib/api-types";
 /**
  * 서열표 한 줄 (모바일). 재킷 칸을 숨기면서 4열 카드 격자 대신 한 줄 행으로 바꿨다.
  * 왼쪽: 곡명, 그 아래 `Guitar | MAS 9.80` 알약 + 달성 단계 + 속성. 오른쪽: 달성률, 추천, 기록 입력 버튼(+).
- * 기록이 있으면 data-stage를 붙여 왼쪽 4px 막대와 배경 틴트, 곡명·달성률 색을 같은 단계 색으로 맞춘다 (데스크톱 표의 EntryRow와 같은 규칙).
+ * 기록이 있으면 단계 배지 앞에 레이팅 점수(티어 색)를 둔다(2026-10-10). 기록이 있으면 data-stage를 붙여 왼쪽 4px 막대와 배경 틴트, 곡명·달성률 색을 같은 단계 색으로 맞춘다 (데스크톱 표의 EntryRow와 같은 규칙).
  */
-export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRecord?: (entry: TableEntryResponse) => void }) {
+export function EntryCard({
+  entry,
+  tier = null,
+  onRecord,
+}: {
+  entry: TableEntryResponse;
+  /** 묶음의 레이팅 상수 난이도. 기록이 있을 때 레이팅 점수를 계산하는 데 쓴다(미정이면 null) */
+  tier?: number | null;
+  onRecord?: (entry: TableEntryResponse) => void;
+}) {
   const stage = entry.mine?.stage ?? null;
   return (
     <li
@@ -29,6 +39,7 @@ export function EntryCard({ entry, onRecord }: { entry: TableEntryResponse; onRe
         </Link>
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
+          {stage ? <RatedScore entry={entry} tier={tier} /> : null}
           {stage ? <StageBadge stage={stage} /> : null}
           <span className="text-xs text-fg-dim">속성 {entry.pattern ?? EMPTY_MARK}</span>
         </p>

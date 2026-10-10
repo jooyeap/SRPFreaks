@@ -133,6 +133,27 @@ describe("TierGroupSection", () => {
     expect(screen.getAllByText("MAX").length).toBeGreaterThan(0);
     expect(screen.queryAllByLabelText(/달성 단계/)).toHaveLength(2); // 기록 있는 곡의 카드 + 줄 하나씩, 기록 없는 곡은 없음
   });
+
+  it("기록이 있는 줄은 레이팅에 찍히는 점수를 티어 색으로 보인다 (5.8, 96.5% -> 272.00)", () => {
+    render(<TierGroupSection group={group({ entries: [entry({ entryId: 1 }), entry({ entryId: 2, title: "기록없음", mine: null })] })} includeZero={false} />);
+    // 기록 있는 곡만 카드 + 줄 하나씩. 점수 = (13×0.8 + 3.2) × 20, 하수봉 기준(237.5)을 넘어 data-glow가 붙는다
+    const scores = screen.getAllByLabelText("레이팅 점수 272.00");
+    expect(scores).toHaveLength(2);
+    expect(scores[0]).toHaveTextContent("272.00");
+    expect(scores[0]).toHaveAttribute("data-tier", "HASUBONG");
+    expect(scores[0]).toHaveClass("chart-cell");
+    expect(screen.queryAllByLabelText(/레이팅 점수/)).toHaveLength(2);
+  });
+
+  it("레이팅 대상이 아니거나(속성 `레이팅 제외`) 난이도가 미정이면 점수 대신 `–`를 보인다", () => {
+    const { rerender } = render(
+      <TierGroupSection group={group({ entries: [entry({ pattern: "레이팅 제외" })] })} includeZero={false} />,
+    );
+    expect(screen.queryAllByLabelText(/레이팅 점수 \d/)).toHaveLength(0);
+    expect(screen.getAllByLabelText("레이팅 점수 없음").length).toBeGreaterThan(0);
+    rerender(<TierGroupSection group={group({ tier: null, entries: [entry()] })} includeZero={false} />);
+    expect(screen.queryAllByLabelText(/레이팅 점수 \d/)).toHaveLength(0);
+  });
 });
 
 describe("TierGroupSection 접기", () => {

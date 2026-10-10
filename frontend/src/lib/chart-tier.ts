@@ -83,3 +83,18 @@ export function previewScore(tier: number | null, rate: number): number | null {
   }
   return chartScore(Math.round(tier * 10), rate);
 }
+
+/**
+ * 서열표 줄에 보일 "이 기록이 레이팅에 찍히는 점수". 레이팅 대상이 아니면(반영 스위치 꺼짐, 속성 없음·`레이팅 제외`, 난이도 미정) null.
+ * 서버 목록과 같은 식이라 레이팅 화면의 곡 점수와 같은 값이다(저장하지 않고 화면에서 계산).
+ */
+export function ratedScore(
+  tier: number | null,
+  rate: number | null | undefined,
+  entry: { ratingEnabled: boolean; pattern: string | null },
+): number | null {
+  if (rate === null || rate === undefined || !entry.ratingEnabled || entry.pattern === null || entry.pattern === "레이팅 제외") {
+    return null;
+  }
+  return previewScore(tier, rate);
+}
