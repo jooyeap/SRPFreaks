@@ -83,6 +83,13 @@ describe("TierFolderView", () => {
     expect(screen.getByRole("link", { name: "서열표로" })).toHaveAttribute("href", "/table");
   });
 
+  it("묶음 화면 상단에 이웃 난이도 막대와 난이도 칩 띠가 있다", async () => {
+    renderView("5.8");
+    await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+    expect(screen.getByRole("navigation", { name: "이웃 난이도" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "난이도 목록" })).toBeInTheDocument();
+  });
+
   it("undecided(미정) 주소는 서열표 화면에서 뺐으므로 찾을 수 없다", async () => {
     renderView("undecided");
     expect(await screen.findByRole("alert")).toHaveTextContent("묶음을 찾을 수 없습니다.");

@@ -7,6 +7,7 @@ import { RecordDialog } from "@/components/record/RecordDialog";
 import { Chip } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
 import { TableSearch } from "@/components/table/TableSearch";
+import { TierFolderNav } from "@/components/table/TierFolderNav";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
 import {
@@ -84,6 +85,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
   return (
     <div className="flex flex-col gap-4">
       {back}
+      {groups.data ? <TierFolderNav groups={groups.data} currentTier={group.tier} /> : null}
       <div role="group" aria-label="평균 계산" className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-xs text-fg-dim">평균 계산</span>
         <Chip pressed={!includeZero} onClick={() => setIncludeZero(false)}>
