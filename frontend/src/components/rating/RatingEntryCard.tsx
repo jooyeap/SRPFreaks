@@ -1,13 +1,12 @@
 import Link from "next/link";
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { ChartBadge } from "@/components/table/Badges";
-import { StageBadge } from "@/components/table/StageBadge";
 import { chartTierAttrs } from "@/lib/chart-tier";
 import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
 import type { SkillEntryResponse } from "@/lib/api-types";
 
 /**
- * 레이팅 목록의 곡 카드 (DESIGN-UI 5장, 누르면 곡 상세): 재킷 칸(56px) · 곡명 · 기준 난이도·상수·속성 · `Guitar | MAS 9.80` 알약 + 달성 단계 · 오른쪽에 점수와 달성률.
+ * 레이팅 목록의 곡 카드 (DESIGN-UI 5장, 누르면 곡 상세): 재킷 칸(56px) · 곡명 · 기준 난이도·상수·속성 · `Guitar | MAS 9.80` 알약 · 오른쪽에 달성률. 왼쪽(순위 옆) 칸은 위아래 반반: 위 = 달성 단계, 아래 = 점수(플레이어 티어 색).
  * 모든 채보는 기록이 있으므로 단계가 항상 있다. 모든 단계(C~EXC)에 왼쪽 4px 띠와 배경 틴트를 단계 색으로 주고,
  * FC/EXC는 곡명 색도 바꾼다 (서열표 행과 같은 규칙. 예전에는 FC/EXC만 효과가 있었다).
  */
@@ -33,6 +32,20 @@ export function RatingEntryCard({
       </span>
       {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
       {/* <SongJacket className="h-14 w-14 rounded-lg max-[359px]:h-10 max-[359px]:w-10" /> */}
+      {/* 위아래 반반: 위 = 달성 단계(랭크) 색, 아래 = 점수의 플레이어 티어 색(상수표와 같은 칸, .chart-cell).
+          단계 글자와 점수 숫자가 그대로 보이므로 색만으로 전달하지 않는다. 하수봉 기준을 넘으면 빛이 더해진다 */}
+      <div className="flex w-16 shrink-0 flex-col overflow-hidden rounded-lg text-center max-[359px]:w-14">
+        <p
+          data-stage={entry.stage}
+          aria-label={`달성 단계 ${entry.stage}`}
+          className="stage-chip border-b border-black/25 py-0.5 font-num text-xs font-bold leading-4"
+        >
+          {entry.stage}
+        </p>
+        <p {...chartTierAttrs(entry.score)} className="chart-cell py-1 font-num text-sm font-bold leading-4">
+          {formatScore(entry.score)}
+        </p>
+      </div>
       <div className="min-w-0 flex-1">
         <p className={`truncate text-sm ${nameAccent ? "stage-name" : "text-fg"}`}>
           {/* 곡명 링크의 클릭 영역을 ::after로 카드 전체에 넓힌다(카드 안에 다른 링크·버튼이 없다). 서열표에서 들어온 것과 같은 상세 화면(서열표 정보 포함)으로 간다 */}
@@ -49,15 +62,10 @@ export function RatingEntryCard({
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-1.5">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
-          <StageBadge stage={entry.stage} />
         </p>
       </div>
       <div className="shrink-0 text-right">
-        {/* 곡 점수는 플레이어 티어 색 글자다(lib/chart-tier.ts). 숫자가 그대로 보이므로 색만으로 전달하지 않는다. 하수봉 기준을 넘으면 빛이 더해진다 */}
-        <p {...chartTierAttrs(entry.score)} className="tier-score font-num text-lg font-semibold">
-          {formatScore(entry.score)}
-        </p>
-        <p className="stage-text font-num text-xs">{formatRate(entry.achievementRate)}</p>
+        <p className="stage-text font-num text-sm font-semibold">{formatRate(entry.achievementRate)}</p>
         {onDelete ? (
           <button
             type="button"
