@@ -141,6 +141,7 @@ describe("RatingView", () => {
     // 카드 왼쪽 띠는 점수의 티어 색 하나다 (단계 색 띠는 없다)
     const bars = document.querySelectorAll("li .tier-bar");
     expect(bars[0]).toHaveAttribute("data-tier", "HASUBONG");
+    expect(bars[0]).toHaveClass("tier-bar-v"); // 세로 띠는 그라데이션이 위→아래로 흐른다
     expect(bars[1]).toHaveAttribute("data-tier", "RED");
     expect(document.querySelectorAll("li .stage-bar")).toHaveLength(0);
   });

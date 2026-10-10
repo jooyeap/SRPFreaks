@@ -213,29 +213,31 @@ body {
  * 칩 글자색은 모든 티어에서 어두운 색으로 같게 둔다 (밝은 배경 위 대비).
  */
 [data-tier="WHITE"] { --tier-fill: #e5e7eb; }
-[data-tier="WHITE_GRADIENT"] { --tier-fill: linear-gradient(90deg, #e5e7eb, #9ca3af); }
+[data-tier="WHITE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #e5e7eb, #9ca3af); }
 [data-tier="ORANGE"] { --tier-fill: #fb923c; }
-[data-tier="ORANGE_GRADIENT"] { --tier-fill: linear-gradient(90deg, #fb923c, #fde68a); }
+[data-tier="ORANGE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fb923c, #fde68a); }
 [data-tier="YELLOW"] { --tier-fill: #facc15; }
-[data-tier="YELLOW_GRADIENT"] { --tier-fill: linear-gradient(90deg, #facc15, #bef264); }
+[data-tier="YELLOW_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #facc15, #bef264); }
 [data-tier="GREEN"] { --tier-fill: #4ade80; }
-[data-tier="GREEN_GRADIENT"] { --tier-fill: linear-gradient(90deg, #4ade80, #67e8f9); }
+[data-tier="GREEN_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #4ade80, #67e8f9); }
 [data-tier="BLUE"] { --tier-fill: #60a5fa; }
-[data-tier="BLUE_GRADIENT"] { --tier-fill: linear-gradient(90deg, #60a5fa, #c4b5fd); }
+[data-tier="BLUE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #60a5fa, #c4b5fd); }
 [data-tier="PURPLE"] { --tier-fill: #c084fc; }
-[data-tier="PURPLE_GRADIENT"] { --tier-fill: linear-gradient(90deg, #c084fc, #f9a8d4); }
+[data-tier="PURPLE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #c084fc, #f9a8d4); }
 [data-tier="RED"] { --tier-fill: #f87171; }
-[data-tier="RED_GRADIENT"] { --tier-fill: linear-gradient(90deg, #f87171, #fdba74); }
-[data-tier="BRONZE"] { --tier-fill: linear-gradient(90deg, #b45309, #f59e0b); --tier-glow: 0 0 10px rgb(245 158 11 / 0.35); }
-[data-tier="SILVER"] { --tier-fill: linear-gradient(90deg, #cbd5e1, #f8fafc); --tier-glow: 0 0 12px rgb(203 213 225 / 0.45); }
-[data-tier="GOLD"] { --tier-fill: linear-gradient(90deg, #fcd34d, #f59e0b); --tier-glow: 0 0 14px rgb(252 211 77 / 0.55); }
-[data-tier="RAINBOW"] { --tier-fill: linear-gradient(90deg, #fca5a5, #fde68a, #86efac, #93c5fd, #d8b4fe); --tier-glow: 0 0 16px rgb(147 197 253 / 0.55); }
-[data-tier="RAINBOW_GRADIENT"] { --tier-fill: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bff95, #6bd5ff, #c084fc, #ff6bd6); --tier-glow: 0 0 20px rgb(192 132 252 / 0.65); }
-[data-tier="HASUBONG"] { --tier-fill: linear-gradient(90deg, #ffe27a, #ff7eb6, #c084fc, #22d3ee); --tier-glow: 0 0 26px rgb(255 126 182 / 0.75); }
+[data-tier="RED_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #f87171, #fdba74); }
+[data-tier="BRONZE"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #b45309, #f59e0b); --tier-glow: 0 0 10px rgb(245 158 11 / 0.35); }
+[data-tier="SILVER"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #cbd5e1, #f8fafc); --tier-glow: 0 0 12px rgb(203 213 225 / 0.45); }
+[data-tier="GOLD"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fcd34d, #f59e0b); --tier-glow: 0 0 14px rgb(252 211 77 / 0.55); }
+[data-tier="RAINBOW"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fca5a5, #fde68a, #86efac, #93c5fd, #d8b4fe); --tier-glow: 0 0 16px rgb(147 197 253 / 0.55); }
+[data-tier="RAINBOW_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ff6b6b, #ffd93d, #6bff95, #6bd5ff, #c084fc, #ff6bd6); --tier-glow: 0 0 20px rgb(192 132 252 / 0.65); }
+[data-tier="HASUBONG"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffe27a, #ff7eb6, #c084fc, #22d3ee); --tier-glow: 0 0 26px rgb(255 126 182 / 0.75); }
 
 :root { --tier-glow: 0 0 0 transparent; } /* 빛 없음 기본값 (Bronze 미만). 위 [data-tier] 규칙이 더 가까워서 덮어쓴다 */
 .tier-chip { background: var(--tier-fill); color: var(--stage-chip-fg); }
 .tier-bar { background: var(--tier-fill); }
+/* 세로 띠(레이팅 곡 카드 왼쪽)는 그라데이션이 위→아래로 흐르게 한다. 티어 채움 값의 방향만 바꾼다 */
+.tier-bar-v { --tier-dir: 180deg; }
 
 /*
  * 총점 글자에 티어 색 (레이팅 카드, 유저 목록). 칩과 같은 --tier-fill을 글자 모양으로 오려 쓴다.
@@ -289,11 +291,11 @@ body {
  */
 /* 하수봉 구간 6단계: 237.5부터 25점마다 색(채움)과 빛이 모두 바뀐다. 1단계 = 하수봉 기본 무지개. 글자는 검정이라 모두 밝은 색이다 */
 [data-glow="1"] { --tier-glow: 0 0 8px rgb(255 126 182 / 0.5); }
-[data-glow="2"] { --tier-fill: linear-gradient(90deg, #fef9a7, #b6e84a, #fef9a7); --tier-glow: 0 0 12px rgb(182 232 74 / 0.75); }
-[data-glow="3"] { --tier-fill: linear-gradient(90deg, #b9f6ca, #22d3ee, #bae6fd); --tier-glow: 0 0 14px rgb(34 211 238 / 0.75); }
-[data-glow="4"] { --tier-fill: linear-gradient(90deg, #fbcfe8, #f43f8e, #fde68a); --tier-glow: 0 0 16px rgb(244 63 142 / 0.8); }
-[data-glow="5"] { --tier-fill: linear-gradient(90deg, #e9d5ff, #8b5cf6, #c4b5fd); --tier-glow: 0 0 20px rgb(139 92 246 / 0.85); }
-[data-glow="6"] { --tier-fill: linear-gradient(90deg, #ffffff, #fde68a, #ffffff, #bae6fd, #ffffff); --tier-glow: 0 0 24px rgb(255 255 255 / 0.95); }
+[data-glow="2"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fef9a7, #b6e84a, #fef9a7); --tier-glow: 0 0 12px rgb(182 232 74 / 0.75); }
+[data-glow="3"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #b9f6ca, #22d3ee, #bae6fd); --tier-glow: 0 0 14px rgb(34 211 238 / 0.75); }
+[data-glow="4"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fbcfe8, #f43f8e, #fde68a); --tier-glow: 0 0 16px rgb(244 63 142 / 0.8); }
+[data-glow="5"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #e9d5ff, #8b5cf6, #c4b5fd); --tier-glow: 0 0 20px rgb(139 92 246 / 0.85); }
+[data-glow="6"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffffff, #fde68a, #ffffff, #bae6fd, #ffffff); --tier-glow: 0 0 24px rgb(255 255 255 / 0.95); }
 .chart-cell { background: var(--tier-fill); color: #000; box-shadow: var(--tier-glow); }
 [data-glow="6"].chart-cell { outline: 2px solid var(--fg); outline-offset: 1px; }
 .chart-swatch { background: var(--tier-fill); box-shadow: var(--tier-glow); }

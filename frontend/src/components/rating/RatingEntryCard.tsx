@@ -28,7 +28,7 @@ export function RatingEntryCard({
       className="stage-tint relative flex items-center gap-3 overflow-hidden rounded-xl border border-line bg-card py-2 pl-4 pr-3 max-[359px]:gap-2 max-[359px]:pl-3 max-[359px]:pr-2"
     >
       {/* 왼쪽 띠는 점수의 플레이어 티어 색 하나다(상수표 칸과 같은 색, lib/chart-tier.ts). 색만으로 전달하지 않는다: 점수 숫자가 오른쪽에 있다 */}
-      <span {...chartTierAttrs(entry.score)} className="tier-bar absolute inset-y-0 left-0 w-1.5" aria-hidden="true" />
+      <span {...chartTierAttrs(entry.score)} className="tier-bar tier-bar-v absolute inset-y-0 left-0 w-1.5" aria-hidden="true" />
       <span className="w-6 shrink-0 text-center font-num text-xs text-fg-dim max-[359px]:w-4" aria-label={`${entry.rank}위`}>
         {entry.rank}
       </span>
