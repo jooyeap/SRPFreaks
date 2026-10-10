@@ -103,7 +103,7 @@ export function SongDetailView({
         onClick={() => router.back()}
         aria-label="뒤로"
         title="뒤로"
-        className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+        className="min-h-9 min-w-11 rounded-full border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
       >
         <span aria-hidden="true">←</span>
       </button>
@@ -153,73 +153,87 @@ export function SongDetailView({
   return (
     <div className="flex flex-col gap-4">
       {backBar}
-      <div className="grid gap-4 md:grid-cols-2 md:items-start">
-        <div className="flex flex-col gap-4">
-          <SongHeader song={data} chart={chart} pattern={isTable ? (found?.entry.pattern ?? null) : null} />
-          {canShowTableEdit ? (
-            <button
-              type="button"
-              onClick={openTableEdit}
-              className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
-            >
-              {found ? "서열표 값 수정" : "서열표에 추가"}
-            </button>
-          ) : null}
-          {canEditTable ? (
-            <div className="flex flex-wrap gap-2">
+      {/*
+        모바일(한 열)은 곡 정보 → 내 기록(기록 등록 버튼) → 나머지 정보 → 같은 난이도의 곡 순서로 보인다.
+        기록 등록이 이 화면의 가장 큰 목적인데, 예전에는 서열표 정보·다른 채보 아래에 있어 한참 내려가야 했다.
+        그래서 두 열(md 이상) 껍데기는 모바일에서 `contents`로 없애고, 네 덩어리에 order를 줘서 순서를 바꾼다.
+        md 이상에서는 order가 풀려(md:order-none) 예전처럼 왼쪽 열(정보) / 오른쪽 열(내 기록 + 같은 난이도의 곡)이다.
+      */}
+      <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start">
+        <div className="contents md:flex md:flex-col md:gap-4">
+          <div className="order-1 flex flex-col gap-4 md:order-none">
+            <SongHeader song={data} chart={chart} pattern={isTable ? (found?.entry.pattern ?? null) : null} />
+            {canShowTableEdit ? (
               <button
                 type="button"
-                onClick={() => setSongEdit({ kind: "song", song: data })}
-                className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                onClick={openTableEdit}
+                className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
               >
-                곡 정보 수정
+                {found ? "서열표 값 수정" : "서열표에 추가"}
               </button>
-              {chart ? (
+            ) : null}
+            {canEditTable ? (
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setSongEdit({ kind: "chart", song: data, chart })}
+                  onClick={() => setSongEdit({ kind: "song", song: data })}
                   className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
                 >
-                  채보 수정
+                  곡 정보 수정
                 </button>
-              ) : null}
+                {chart ? (
+                  <button
+                    type="button"
+                    onClick={() => setSongEdit({ kind: "chart", song: data, chart })}
+                    className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                  >
+                    채보 수정
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            {canEditTable ? (
+              <SongDeleteControl
+                songId={data.id}
+                songTitle={data.title}
+                chartId={chart?.id ?? null}
+                chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
+                onDeleted={(target) => {
+                  // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
+                  router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
+                }}
+              />
+            ) : null}
+          </div>
+          <div className="order-3 flex flex-col gap-4 md:order-none">
+            {isTable ? (
+              <>
+                {found ? (
+                  <TableInfoCard group={found.group} entry={found.entry} />
+                ) : (
+                  <p className="rounded-lg border border-line bg-card p-4 text-sm text-fg-sub">
+                    {groupsQuery.isPending && tableId !== null
+                      ? "서열표 정보를 불러오는 중입니다."
+                      : "이 채보는 서열표에 없습니다."}
+                  </p>
+                )}
+                {groups ? <OtherCharts charts={entriesOfSong(groups, data.id).filter((e) => e.songDifficultyId !== chart?.id)} /> : null}
+              </>
+            ) : (
+              <>
+                <InfoCards song={data} />
+                <LevelTable song={data} selectedId={chart?.id ?? null} groups={groups} />
+              </>
+            )}
+          </div>
+        </div>
+        <div className="contents md:flex md:flex-col md:gap-4">
+          <div className="order-2 md:order-none">{myRecord}</div>
+          {isTable && found ? (
+            <div className="order-4 md:order-none">
+              <GroupSongList group={found.group} index={found.index} />
             </div>
           ) : null}
-          {canEditTable ? (
-            <SongDeleteControl
-              songId={data.id}
-              songTitle={data.title}
-              chartId={chart?.id ?? null}
-              chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
-              onDeleted={(target) => {
-                // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
-                router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
-              }}
-            />
-          ) : null}
-          {isTable ? (
-            <>
-              {found ? (
-                <TableInfoCard group={found.group} entry={found.entry} />
-              ) : (
-                <p className="rounded-lg border border-line bg-card p-4 text-sm text-fg-sub">
-                  {groupsQuery.isPending && tableId !== null
-                    ? "서열표 정보를 불러오는 중입니다."
-                    : "이 채보는 서열표에 없습니다."}
-                </p>
-              )}
-              {groups ? <OtherCharts charts={entriesOfSong(groups, data.id).filter((e) => e.songDifficultyId !== chart?.id)} /> : null}
-            </>
-          ) : (
-            <>
-              <InfoCards song={data} />
-              <LevelTable song={data} selectedId={chart?.id ?? null} groups={groups} />
-            </>
-          )}
-        </div>
-        <div className="flex flex-col gap-4">
-          {myRecord}
-          {isTable && found ? <GroupSongList group={found.group} index={found.index} /> : null}
         </div>
       </div>
 

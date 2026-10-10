@@ -345,4 +345,14 @@ describe("SongDetailView", () => {
     expect(await screen.findByRole("heading", { name: "기록 등록", level: 2 })).toBeInTheDocument();
     expect(await screen.findByLabelText("달성률")).toBeInTheDocument(); // 내 기록을 불러온 뒤에 폼이 나온다
   });
+
+  it("모바일 순서: 곡 정보 -> 내 기록(기록 등록 버튼) -> 나머지 정보 순으로 order가 붙고, md 이상에서는 풀린다", async () => {
+    renderView("songs", 10, true);
+    const mine = (await screen.findByRole("region", { name: "내 기록" })).parentElement;
+    const info = screen.getByRole("region", { name: "곡 정보" }).parentElement;
+    expect(info).toHaveClass("order-1", "md:order-none");
+    expect(mine).toHaveClass("order-2", "md:order-none");
+    const rest = screen.getByRole("region", { name: "레벨 정보" }).parentElement;
+    expect(rest).toHaveClass("order-3", "md:order-none");
+  });
 });
