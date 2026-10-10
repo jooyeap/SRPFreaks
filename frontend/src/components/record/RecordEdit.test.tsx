@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { RecordDialog } from "@/components/record/RecordDialog";
+import { ToastProvider } from "@/components/Toast";
 import type { RecordChart } from "@/components/record/RecordForm";
 import { clearAccessToken } from "@/lib/auth-token";
 import type { RecordResponse } from "@/lib/records";
@@ -64,7 +65,9 @@ describe("기록 수정 / 삭제", () => {
     return render(
       <QueryClientProvider client={client}>
         <AuthProvider>
-          <RecordDialog chart={chart} onClose={onClose} />
+          <ToastProvider>
+            <RecordDialog chart={chart} onClose={onClose} />
+          </ToastProvider>
         </AuthProvider>
       </QueryClientProvider>,
     );
@@ -144,6 +147,7 @@ describe("기록 수정 / 삭제", () => {
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toHaveTextContent("기록을 수정했습니다.");
     const [url, init] = callsOf("PUT")[0];
     expect(url).toBe("/api/v1/records/7");
     expect(JSON.parse(String(init?.body))).toMatchObject({ achievementRate: 95, noteOption: "SUPER_RANDOM_PLUS" });
@@ -159,6 +163,7 @@ describe("기록 수정 / 삭제", () => {
 
     fireEvent.click(within(confirm).getByRole("button", { name: "삭제" }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toHaveTextContent("기록을 삭제했습니다.");
     expect(callsOf("DELETE")[0][0]).toBe("/api/v1/records/7");
   });
 

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { AuthProvider } from "@/components/AuthProvider";
 import { QueryCacheCleaner } from "@/components/QueryCacheCleaner";
+import { ToastProvider } from "@/components/Toast";
 
 /**
  * 서버 데이터(TanStack Query) 설정.
@@ -26,7 +27,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <QueryCacheCleaner />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/components/Toast";
 import { StageBadge } from "@/components/table/StageBadge";
 import { ChartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
@@ -66,6 +67,7 @@ export function RecordForm({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   // 스키마와 기본값은 한 번만 만든다 ("오늘"은 폼을 연 시점 기준)
   const schema = useMemo(() => makeRecordSchema(todaySeoul), []);
   const defaultValues = useMemo<RecordFormValues>(
@@ -114,6 +116,7 @@ export function RecordForm({
     onSuccess: async (saved) => {
       // 서열표(내 기록, 칩, 평균)와 기록 목록이 바로 바뀌도록 관련 캐시를 무효화한다
       await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+      toast(record ? "기록을 수정했습니다." : "기록을 저장했습니다."); // 창이 바로 닫히므로 저장됐다는 확인을 남긴다
       onSaved(saved);
     },
     onError: (error) => {
@@ -132,6 +135,7 @@ export function RecordForm({
     mutationFn: () => (record ? deleteRecord(record.id) : Promise.resolve()),
     onSuccess: async () => {
       await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+      toast("기록을 삭제했습니다.");
       onDeleted?.();
     },
     // 실패하면 확인 창을 닫아서 폼 아래의 오류 문구가 보이게 한다
