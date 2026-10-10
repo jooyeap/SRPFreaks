@@ -9,6 +9,7 @@ import com.srpfreaks.backend.entity.DifficultyTable;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.LabeledEnum;
+import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.PlayerTier;
 import com.srpfreaks.backend.entity.TableStatus;
@@ -97,6 +98,11 @@ public class SkillService {
 
     /** 레이팅 계산 결과와 동점 처리용 시각을 한 번에 돌려주는 값. */
     public record RatedSkill(SkillResponse skill, LocalDateTime lastAchievedAt) {
+    }
+
+    /** 레이팅이 쓰는 노트 옵션(설정 rating.note_option). 스냅샷 목록처럼 계산 없이 옵션만 필요할 때 쓴다. */
+    public NoteOption ratingNoteOption() {
+        return RatingConfig.from(ratingSettings()).noteOption();
     }
 
     /** rating.* 설정만 맵으로 모은다(설정 테이블은 작아서 전부 읽어도 가볍다). */

@@ -13,6 +13,7 @@ import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.Platform;
 import com.srpfreaks.backend.entity.Recommend;
 import com.srpfreaks.backend.entity.RefreshToken;
+import com.srpfreaks.backend.entity.SkillSnapshot;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
@@ -31,9 +32,11 @@ import org.testcontainers.mysql.MySQLContainer;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 실제 MySQL(Testcontainers)에서 Flyway V1을 적용하고, 엔티티 매핑이 스키마와 맞는지 확인한다.
@@ -98,9 +101,17 @@ class SchemaMappingTest {
         em.persist(AuditLog.record(user, "SONG_IMPORT", "SONG", String.valueOf(song.getId()), Map.of("count", 1)));
         Notice notice = Notice.create(user, "업데이트 안내", "줄1\n줄2");
         em.persist(notice);
+        SkillSnapshot snapshot = SkillSnapshot.create(user, NoteOption.SUPER_RANDOM_PLUS, LocalDate.of(2026, 10, 10),
+                new BigDecimal("8412.55"), new BigDecimal("3610.12"), new BigDecimal("4802.43"));
+        em.persist(snapshot);
 
         em.flush();
         em.clear();
+
+        SkillSnapshot loadedSnapshot = em.find(SkillSnapshot.class, snapshot.getId());
+        assertThat(loadedSnapshot.getSnapshotDate()).isEqualTo(LocalDate.of(2026, 10, 10));
+        assertThat(loadedSnapshot.getTotalScore()).isEqualByComparingTo("8412.55");
+        assertThat(loadedSnapshot.getNoteOption()).isEqualTo(NoteOption.SUPER_RANDOM_PLUS);
 
         Notice loadedNotice = em.find(Notice.class, notice.getId());
         assertThat(loadedNotice.getTitle()).isEqualTo("업데이트 안내");
@@ -126,5 +137,22 @@ class SchemaMappingTest {
         Object stored = em.createNativeQuery("select pattern_type from difficulty_table_entries where difficulty_table_entry_id = ?1")
                 .setParameter(1, entry.getId()).getSingleResult();
         assertThat(stored).isEqualTo("레이팅 제외");
+    }
+
+    @Test
+    void 스냅샷은_같은_날_두_번_저장되지_않는다_유일_키() {
+        User user = User.create("google-sub-snap", "snap@example.com", "snap");
+        em.persist(user);
+        LocalDate day = LocalDate.of(2026, 10, 10);
+        em.persist(SkillSnapshot.create(user, NoteOption.SUPER_RANDOM_PLUS, day,
+                new BigDecimal("100.00"), new BigDecimal("60.00"), new BigDecimal("40.00")));
+        em.flush();
+
+        // 같은 사용자·옵션·날짜는 DB가 막는다 (하루 1회의 마지막 보장)
+        assertThatThrownBy(() -> {
+            em.persist(SkillSnapshot.create(user, NoteOption.SUPER_RANDOM_PLUS, day,
+                    new BigDecimal("101.00"), new BigDecimal("61.00"), new BigDecimal("40.00")));
+            em.flush();
+        }).isInstanceOf(Exception.class);
     }
 }

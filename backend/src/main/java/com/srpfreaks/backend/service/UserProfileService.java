@@ -42,7 +42,7 @@ public class UserProfileService {
     /**
      * 탈퇴 = 완전 삭제(D20). users 행 하나만 지우면 된다.
      * 나머지는 DB 외래키가 처리한다(V1__init_schema.sql):
-     *  - option_records, refresh_tokens: ON DELETE CASCADE라 같이 지워진다(기록·토큰이 남지 않는다).
+     *  - option_records, refresh_tokens, skill_snapshots: ON DELETE CASCADE라 같이 지워진다(기록·토큰이 남지 않는다).
      *  - audit_logs.actor_id, songs.created_by, app_settings.updated_by: ON DELETE SET NULL이라 행은 남고 사용자 식별만 사라진다.
      * 그래서 여기서 기록을 일일이 지우지 않는다(코드로 지우면 빠뜨릴 수 있고, FK가 이미 같은 규칙을 보장한다).
      * 대상은 토큰에서 나온 userId뿐이라 남의 계정은 지울 수 없다.
