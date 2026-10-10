@@ -118,6 +118,19 @@ describe("RatingView", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/skills/me");
   });
 
+  it("레이팅 화면 맨 아래에 레이팅 기록 섹션이 있다 (내 화면에만)", async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/snapshots/status")) return Promise.resolve(json({ available: true, reason: null }));
+      if (url.includes("/snapshots")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
+      return Promise.resolve(json(skill()));
+    });
+    renderView();
+    const panel = await screen.findByRole("region", { name: "레이팅 기록" });
+    const regions = screen.getAllByRole("region");
+    expect(regions[regions.length - 1]).toBe(panel); // 마지막 구역
+  });
+
   it("곡별 점수 숫자는 점수에 맞는 플레이어 티어 색이고, 하수봉 기준(237.5)을 넘으면 빛 단계가 붙는다", async () => {
     fetchMock.mockResolvedValueOnce(
       json(

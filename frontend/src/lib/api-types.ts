@@ -142,6 +142,23 @@ export interface SkillResponse {
   other: SkillEntryResponse[];
 }
 
+/** 레이팅 스냅샷 한 줄 (D32). date는 Asia/Seoul 기준 날짜(YYYY-MM-DD), change는 바로 이전 스냅샷 대비 합계 증감(첫 줄이면 null). */
+export interface SkillSnapshotResponse {
+  id: number;
+  date: string;
+  totalScore: number;
+  singleScore: number;
+  otherScore: number;
+  change: number | null;
+}
+
+/** 지금 기록할 수 있는지. 못 하면 reason에 이유 코드가 들어 있다. */
+export type SnapshotBlockReason = "ALREADY_TODAY" | "NO_CHANGE" | "NO_RECORDS";
+export interface SkillSnapshotStatusResponse {
+  available: boolean;
+  reason: SnapshotBlockReason | null;
+}
+
 // ---- 곡 (백엔드 SongDetailResponse / DifficultyResponse) ----------------------------------
 
 export type TitleKind = "ROMAJI" | "KANA" | "KO" | "ALIAS";
