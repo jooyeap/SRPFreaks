@@ -11,6 +11,7 @@ import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
 import {
   allGroupsKey,
+  decidedGroups,
   fetchAllTierGroups,
   fetchDifficultyTables,
   findGroupByParam,
@@ -45,6 +46,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
     queryKey: allGroupsKey(userId, tableId ?? 0),
     queryFn: ({ signal }) => fetchAllTierGroups(tableId ?? 0, signal),
     enabled: tableId !== null,
+    select: decidedGroups, // 미정 묶음은 서열표 화면에서 뺀다(곡 상세·홈과 캐시는 같이 쓰고 여기서만 거른다)
   });
 
   const back = (

@@ -56,11 +56,12 @@ public class DifficultyTableViewService {
      * @param recommend 상/중/하 여러 개 (null이거나 비어 있으면 전체). 고른 값 중 하나라도 맞으면 통과(OR)
      * @param pattern   단일/복합/이중/삼중/레이팅 제외 여러 개 (null이거나 비어 있으면 전체). 마찬가지로 OR
      * @param mine      true일 때만 본인 기록을 연결한다
+     * @param includeUndecided true면 기준 난이도가 없는 채보(미정)도 맨 뒤 묶음으로 포함한다. false면 서열표에서 뺀다
      * @param page      묶음(기준 난이도) 단위 페이지. 묶음 하나는 쪼개지 않는다
      */
     public PageResponse<TierGroupResponse> entries(Long userId, Long tableId, InstrumentPart part,
                                                    List<String> recommend, List<String> pattern, boolean mine,
-                                                   int page, int size) {
+                                                   boolean includeUndecided, int page, int size) {
         DifficultyTable table = difficultyTableRepository.findById(tableId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         // 필터 안의 값은 OR(하나라도 맞으면 통과), 필터끼리는 AND. 빈 집합은 "전체"라는 뜻이다.
@@ -68,6 +69,7 @@ public class DifficultyTableViewService {
         Set<PatternType> patternFilter = parseLabels(PatternType.class, pattern);
 
         List<DifficultyTableEntry> entries = entryRepository.findAllForView(tableId).stream()
+                .filter(e -> includeUndecided || e.getTierLabel() != null)
                 .filter(e -> part == null || e.getSongDifficulty().getInstrumentPart() == part)
                 .filter(e -> recommendFilter.isEmpty() || recommendFilter.contains(e.getRecommend()))
                 .filter(e -> patternFilter.isEmpty() || patternFilter.contains(e.getPatternType()))

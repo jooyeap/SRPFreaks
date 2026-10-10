@@ -83,10 +83,10 @@ describe("TierFolderView", () => {
     expect(screen.getByRole("link", { name: "서열표로" })).toHaveAttribute("href", "/table");
   });
 
-  it("undecided는 레이팅 상수 난이도가 없는 `미정` 묶음이다", async () => {
+  it("undecided(미정) 주소는 서열표 화면에서 뺐으므로 찾을 수 없다", async () => {
     renderView("undecided");
-    expect(await screen.findByRole("heading", { name: /미정/ })).toBeInTheDocument();
-    expect(screen.getAllByText("미정곡").length).toBeGreaterThan(0);
+    expect(await screen.findByRole("alert")).toHaveTextContent("묶음을 찾을 수 없습니다.");
+    expect(screen.queryByText("미정곡")).not.toBeInTheDocument();
   });
 
   it("없는 묶음 주소는 `묶음을 찾을 수 없습니다.`", async () => {

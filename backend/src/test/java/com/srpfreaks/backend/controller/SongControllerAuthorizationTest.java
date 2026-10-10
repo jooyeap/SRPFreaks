@@ -142,7 +142,7 @@ class SongControllerAuthorizationTest {
 
         AuthenticatedUser user = loginAs(Role.USER);
         assertThatCode(tables::list).doesNotThrowAnyException();
-        assertThatCode(() -> tables.entries(user, 1L, null, null, null, true, 0, 10)).doesNotThrowAnyException();
+        assertThatCode(() -> tables.entries(user, 1L, null, null, null, true, false, 0, 10)).doesNotThrowAnyException();
         assertThatThrownBy(() -> tables.create(user, request)).isInstanceOf(AccessDeniedException.class);
 
         for (Role role : new Role[]{Role.ADMIN, Role.ROOT}) {

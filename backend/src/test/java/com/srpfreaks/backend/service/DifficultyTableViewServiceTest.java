@@ -76,7 +76,7 @@ class DifficultyTableViewServiceTest {
     }
 
     private PageResponse<TierGroupResponse> call(boolean mine, int page, int size) {
-        return service.entries(7L, 1L, null, null, null, mine, page, size);
+        return service.entries(7L, 1L, null, null, null, mine, true, page, size);
     }
 
     @Test
@@ -90,6 +90,19 @@ class DifficultyTableViewServiceTest {
         assertThat(groups).extracting(TierGroupResponse::tier)
                 .containsExactly(new BigDecimal("6.1"), new BigDecimal("5.8"), null);
         assertThat(groups.get(1).total()).isEqualTo(2);
+    }
+
+    @Test
+    void 미정_묶음은_includeUndecided가_false면_빠지고_페이지_수에도_세지_않는다() {
+        when(entryRepository.findAllForView(1L)).thenReturn(List.of(
+                simple("a", "9.00", "5.8"), simple("b", "9.10", null), simple("c", "9.20", "6.1")));
+
+        // 묶음 2개(6.1, 5.8)만 남는다. 미정을 서버에서 걸러야 "미정만 있는 빈 마지막 페이지"가 생기지 않는다
+        PageResponse<TierGroupResponse> result = service.entries(7L, 1L, null, null, null, false, false, 0, 2);
+
+        assertThat(result.content()).extracting(TierGroupResponse::tier)
+                .containsExactly(new BigDecimal("6.1"), new BigDecimal("5.8"));
+        assertThat(result.totalPages()).isEqualTo(1);
     }
 
     @Test
@@ -191,7 +204,7 @@ class DifficultyTableViewServiceTest {
                 entry("베이스상단일", InstrumentPart.BASS, "9.00", "6.0", Recommend.HIGH, PatternType.SINGLE),
                 entry("기타하복합", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.LOW, PatternType.COMPOUND)));
 
-        List<TierGroupResponse> groups = service.entries(7L, 1L, InstrumentPart.GUITAR, List.of("상"), List.of("단일"), false, 0, 10).content();
+        List<TierGroupResponse> groups = service.entries(7L, 1L, InstrumentPart.GUITAR, List.of("상"), List.of("단일"), false, true, 0, 10).content();
 
         assertThat(groups).hasSize(1);
         assertThat(groups.get(0).entries()).extracting(e -> e.title()).containsExactly("기타상단일");
@@ -207,11 +220,11 @@ class DifficultyTableViewServiceTest {
                 entry("하이중", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.LOW, PatternType.DOUBLE)));
 
         // 추천 상·중 → "하이중"만 빠진다
-        List<TierGroupResponse> byRecommend = service.entries(7L, 1L, null, List.of("상", "중"), null, false, 0, 10).content();
+        List<TierGroupResponse> byRecommend = service.entries(7L, 1L, null, List.of("상", "중"), null, false, true, 0, 10).content();
         assertThat(byRecommend.get(0).entries()).extracting(e -> e.title()).containsExactlyInAnyOrder("상단일", "중복합");
 
         // 속성 단일·이중 → "중복합"만 빠진다
-        List<TierGroupResponse> byPattern = service.entries(7L, 1L, null, null, List.of("단일", "이중"), false, 0, 10).content();
+        List<TierGroupResponse> byPattern = service.entries(7L, 1L, null, null, List.of("단일", "이중"), false, true, 0, 10).content();
         assertThat(byPattern.get(0).entries()).extracting(e -> e.title()).containsExactlyInAnyOrder("상단일", "하이중");
     }
 
@@ -225,11 +238,11 @@ class DifficultyTableViewServiceTest {
 
         // 추천 상·중 AND 속성 단일·복합 → 상단일, 중단일, 상복합 (하이중은 둘 다 아니라서 빠진다)
         List<TierGroupResponse> groups = service.entries(
-                7L, 1L, null, List.of("상", "중"), List.of("단일", "복합"), false, 0, 10).content();
+                7L, 1L, null, List.of("상", "중"), List.of("단일", "복합"), false, true, 0, 10).content();
         assertThat(groups.get(0).entries()).extracting(e -> e.title()).containsExactlyInAnyOrder("상단일", "중단일", "상복합");
 
         // 추천 중 AND 속성 복합 → 겹치는 채보가 없어 빈 결과
-        assertThat(service.entries(7L, 1L, null, List.of("중"), List.of("복합"), false, 0, 10).content()).isEmpty();
+        assertThat(service.entries(7L, 1L, null, List.of("중"), List.of("복합"), false, true, 0, 10).content()).isEmpty();
     }
 
     @Test
@@ -238,22 +251,22 @@ class DifficultyTableViewServiceTest {
                 entry("a", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.HIGH, PatternType.SINGLE),
                 entry("b", InstrumentPart.GUITAR, "9.00", "6.0", Recommend.LOW, PatternType.COMPOUND)));
 
-        List<TierGroupResponse> groups = service.entries(7L, 1L, null, List.of(), List.of(""), false, 0, 10).content();
+        List<TierGroupResponse> groups = service.entries(7L, 1L, null, List.of(), List.of(""), false, true, 0, 10).content();
 
         assertThat(groups.get(0).entries()).hasSize(2);
     }
 
     @Test
     void 여러_값_중_하나라도_모르는_값이면_400이다() {
-        assertThatThrownBy(() -> service.entries(7L, 1L, null, List.of("상", "최상"), null, false, 0, 10))
+        assertThatThrownBy(() -> service.entries(7L, 1L, null, List.of("상", "최상"), null, false, true, 0, 10))
                 .isInstanceOf(ApiException.class);
     }
 
     @Test
     void 알_수_없는_필터_값은_400이다() {
-        assertThatThrownBy(() -> service.entries(7L, 1L, null, List.of("최상"), null, false, 0, 10))
+        assertThatThrownBy(() -> service.entries(7L, 1L, null, List.of("최상"), null, false, true, 0, 10))
                 .isInstanceOf(ApiException.class);
-        assertThatThrownBy(() -> service.entries(7L, 1L, null, null, List.of("없는속성"), false, 0, 10))
+        assertThatThrownBy(() -> service.entries(7L, 1L, null, null, List.of("없는속성"), false, true, 0, 10))
                 .isInstanceOf(ApiException.class);
     }
 
@@ -261,7 +274,7 @@ class DifficultyTableViewServiceTest {
     void 없는_서열표는_404다() {
         when(tableRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.entries(7L, 99L, null, null, null, false, 0, 10))
+        assertThatThrownBy(() -> service.entries(7L, 99L, null, null, null, false, true, 0, 10))
                 .isInstanceOf(ApiException.class);
     }
 

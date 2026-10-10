@@ -221,6 +221,19 @@ describe("DifficultyTableView", () => {
     );
   });
 
+  it("난이도 이동 목록에는 미정 묶음이 나오지 않는다 (미정은 곡 목록에만)", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(
+        String(input).includes("/entries") ? json(page([group({ tier: 5.8 }), group({ tier: null })])) : json([table]),
+      ),
+    );
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: "난이도 이동" }));
+    const nav = await screen.findByRole("navigation", { name: "난이도 바로가기" });
+    expect(within(nav).getByRole("link", { name: /5\.8/ })).toBeInTheDocument();
+    expect(within(nav).queryByRole("link", { name: /미정/ })).not.toBeInTheDocument();
+  });
+
   it("서열표 화면 상단에 정보 제공자 표기와 X 링크를 보여 준다", async () => {
     fetchMock.mockImplementation((input) =>
       Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),

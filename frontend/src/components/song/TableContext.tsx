@@ -118,9 +118,12 @@ export function GroupSongList({ group, index }: { group: TierGroupResponse; inde
         <span>
           같은 난이도의 곡 <span className="font-sans text-xs font-normal text-fg-dim">{group.entries.length}개</span>
         </span>
-        <Link href={folderHref(group.tier)} className="font-sans text-xs font-normal text-fg-sub hover:text-fg">
-          묶음 전체 보기
-        </Link>
+        {/* 미정 묶음은 서열표 화면에서 뺐으므로 갈 곳이 없다 */}
+        {group.tier !== null ? (
+          <Link href={folderHref(group.tier)} className="font-sans text-xs font-normal text-fg-sub hover:text-fg">
+            묶음 전체 보기
+          </Link>
+        ) : null}
       </h2>
       <ul ref={listRef} className="relative max-h-[22rem] overflow-y-auto rounded-[14px] border border-line bg-card">
         {group.entries.map((entry, i) => (

@@ -208,7 +208,7 @@ export async function fetchAllTierGroups(tableId: number, signal?: AbortSignal):
   const groups: TierGroupResponse[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
     const result = await apiFetch<PageResponse<TierGroupResponse>>(`/difficulty-tables/${tableId}/entries`, {
-      query: { mine: true, page, size: GROUPS_PER_REQUEST },
+      query: { mine: true, undecided: true, page, size: GROUPS_PER_REQUEST },
       signal,
     });
     groups.push(...result.content);
@@ -217,4 +217,13 @@ export async function fetchAllTierGroups(tableId: number, signal?: AbortSignal):
     }
   }
   return groups;
+}
+
+/**
+ * 서열표 화면(본문·폴더·바로가기·검색)에 보일 묶음만 고른다: 기준 난이도가 없는 "미정" 묶음은 뺀다.
+ * 미정 채보는 곡 목록에만 나온다. 곡 상세·홈은 미정 채보도 찾아야 해서(서열표 값 수정) 전체 묶음을 그대로 쓰고,
+ * 같은 캐시(allGroupsKey)를 쓰는 서열표 화면들만 이 함수로 거른다.
+ */
+export function decidedGroups(groups: readonly TierGroupResponse[]): TierGroupResponse[] {
+  return groups.filter((g) => g.tier !== null);
 }

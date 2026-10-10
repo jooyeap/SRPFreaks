@@ -42,6 +42,7 @@ public class DifficultyTableController {
      * 서열표 화면. 기준 난이도 묶음 단위로 페이지를 나눈다. mine=true면 로그인한 본인의 기록만 연결한다.
      * recommend / pattern은 여러 값을 받는다(`?recommend=상,중` 또는 `?recommend=상&recommend=중`, Spring이 List로 묶는다).
      * 한 필터 안의 값은 OR, 필터끼리(파트·추천·속성)는 AND다.
+     * 기준 난이도가 없는 채보(미정)는 기본으로 빠진다. undecided=true일 때만 맨 뒤 "미정" 묶음으로 포함한다(곡 상세·홈이 전체 채보를 찾을 때).
      */
     @GetMapping("/difficulty-tables/{id}/entries")
     public PageResponse<TierGroupResponse> entries(
@@ -51,9 +52,10 @@ public class DifficultyTableController {
             @RequestParam(required = false) List<String> recommend,
             @RequestParam(required = false) List<String> pattern,
             @RequestParam(defaultValue = "false") boolean mine,
+            @RequestParam(defaultValue = "false") boolean undecided,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return difficultyTableViewService.entries(user.id(), id, part, recommend, pattern, mine, page, size);
+        return difficultyTableViewService.entries(user.id(), id, part, recommend, pattern, mine, undecided, page, size);
     }
 
     @PostMapping("/admin/difficulty-tables")

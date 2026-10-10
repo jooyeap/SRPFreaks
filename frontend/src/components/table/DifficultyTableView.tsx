@@ -14,6 +14,7 @@ import { ApiError } from "@/lib/api";
 import {
   allGroupsKey,
   DEFAULT_FILTERS,
+  decidedGroups,
   fetchAllTierGroups,
   fetchDifficultyTables,
   fetchTableEntries,
@@ -114,7 +115,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
         {canRegister ? <SongCreateButton tableId={table.id} /> : null}
       </div>
 
-      {allGroups.data ? <TierQuickNav groups={allGroups.data} /> : null}
+      {allGroups.data ? <TierQuickNav groups={decidedGroups(allGroups.data)} /> : null}
 
       {/* 모바일: 접힌 상태에서도 지금 걸린 필터를 한 줄로 보여 준다. 데스크톱(md 이상)은 버튼 없이 항상 펼친다 */}
       <button
@@ -197,7 +198,7 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
           </nav>
         </>
       )}
-      <TableSearch userId={userId} groups={allGroups.data} />
+      <TableSearch userId={userId} groups={allGroups.data && decidedGroups(allGroups.data)} />
       <RecordDialog
         chart={
           recordTarget && {

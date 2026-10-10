@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DifficultyTableResponse, TierGroupResponse } from "@/lib/api-types";
 import {
+  decidedGroups,
   EMPTY_FILTERS,
   fetchAllTierGroups,
   fetchTableEntries,
@@ -164,6 +165,7 @@ describe("fetchAllTierGroups", () => {
     expect(params.get("page")).toBe("1");
     expect(params.get("size")).toBe("20");
     expect(params.get("mine")).toBe("true");
+    expect(params.get("undecided")).toBe("true"); // 곡 상세·홈은 미정 채보도 찾아야 한다
   });
 
   it("서버가 totalPages를 터무니없이 크게 줘도 정해진 횟수에서 멈춘다", async () => {
@@ -171,5 +173,12 @@ describe("fetchAllTierGroups", () => {
     const groups = await fetchAllTierGroups(1);
     expect(fetchMock).toHaveBeenCalledTimes(10);
     expect(groups).toHaveLength(10);
+  });
+});
+
+describe("decidedGroups", () => {
+  it("기준 난이도가 없는 미정 묶음만 뺀다", () => {
+    const groups = [{ tier: 6.0 }, { tier: 5.9 }, { tier: null }] as TierGroupResponse[];
+    expect(decidedGroups(groups).map((g) => g.tier)).toEqual([6.0, 5.9]);
   });
 });

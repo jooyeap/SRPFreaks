@@ -157,6 +157,22 @@ describe("SongDetailView", () => {
     return render(<QueryClientProvider client={client}>{wrapAuth ? <AuthProvider>{view}</AuthProvider> : view}</QueryClientProvider>);
   }
 
+  it("미정 묶음의 채보는 곡 상세에서 보이되 `묶음 전체 보기` 링크는 없다 (서열표 화면에서 뺀 묶음이라)", async () => {
+    const undecided: TierGroupResponse = { ...groups[1], tier: null, entries: [mainEntry] };
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
+      if (url.includes("/difficulty-tables/") && url.includes("/entries")) {
+        return Promise.resolve(json({ content: [undecided], page: 0, size: 20, totalElements: 1, totalPages: 1 }));
+      }
+      if (url.includes("/difficulty-tables")) return Promise.resolve(json(tables));
+      return Promise.resolve(songResponse());
+    });
+    renderView("table", 10);
+    const neighbors = await screen.findByRole("region", { name: "같은 난이도의 곡" });
+    expect(within(neighbors).queryByRole("link", { name: "묶음 전체 보기" })).not.toBeInTheDocument();
+  });
+
   it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 난이도의 곡 목록, 다른 채보를 보여 준다", async () => {
     renderView("table", 10);
     expect(await screen.findByRole("heading", { name: "테스트곡" })).toBeInTheDocument();
