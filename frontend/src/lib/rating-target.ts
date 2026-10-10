@@ -2,7 +2,7 @@ import type { SkillEntryResponse, TableEntryResponse, TierGroupResponse } from "
 import { DEFAULT_COEFFICIENTS, ratingConstant, type RatingCoefficients } from "@/lib/rating-guide";
 
 /**
- * 점수 역산 (D31): "이 점수를 곡 하나에서 내려면 어떤 레이팅 상수 난이도를 몇 %로 쳐야 하나"를 거꾸로 계산한다.
+ * 레이팅 예상 값 (D31): "이 점수를 곡 하나에서 내려면 어떤 레이팅 상수 난이도를 몇 %로 쳐야 하나"를 거꾸로 계산한다.
  * 기준 점수는 내 레이팅 목록의 몇 위 점수로 정한다: 단일은 1·7·15위, 그 외(복합·이중·삼중)는 1·12·25위(목록의 처음·중간·끝).
  * 저장하는 값은 없고, 서버가 계산한 내 목록 점수와 서열표 묶음을 화면에서 맞춰 볼 뿐이다.
  */

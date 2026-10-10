@@ -14,7 +14,7 @@ import { tableSearchHref } from "@/lib/table-search";
 import type { SkillResponse, TierGroupResponse } from "@/lib/api-types";
 
 /**
- * 점수 역산 (D31, DESIGN-UI 5장): 내 레이팅 목록의 기준 점수(단일 1·7·15위, 그 외 1·12·25위)를 곡 하나에서 내려면
+ * 레이팅 예상 값 (D31, DESIGN-UI 5장): 내 레이팅 목록의 기준 점수(단일 1·7·15위, 그 외 1·12·25위)를 곡 하나에서 내려면
  * 레이팅 상수 난이도별로 달성률을 얼마나 쳐야 하는지 보여 주고, 난이도를 누르면 그 난이도의 채보 목록을 펼친다.
  * 계산은 서버 값(내 목록 점수)과 서열표 묶음을 화면에서 맞춰 보는 것이라 저장하는 값이 없다 (lib/rating-target.ts).
  * 처음에는 접혀 있다(레이팅 목록이 먼저 보이게).
@@ -24,7 +24,7 @@ export function RatingTargetPlanner({ userId, skill }: { userId: number; skill: 
   const bodyId = useId();
 
   return (
-    <section aria-label="점수 역산" className="rounded-[14px] border border-line bg-card">
+    <section aria-label="레이팅 예상 값" className="rounded-[14px] border border-line bg-card">
       <button
         type="button"
         aria-expanded={open}
@@ -33,7 +33,7 @@ export function RatingTargetPlanner({ userId, skill }: { userId: number; skill: 
         className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
       >
         <span>
-          <span className="block text-[15px] font-bold text-fg">점수 역산</span>
+          <span className="block text-[15px] font-bold text-fg">레이팅 예상 값</span>
           <span className="block text-xs text-fg-sub">목록의 점수를 내려면 어떤 난이도를 몇 %로 쳐야 하는지</span>
         </span>
         <span aria-hidden="true" className="text-fg-dim">
@@ -105,7 +105,7 @@ function PlanList({ title, targets, rows }: { title: string; targets: PlanTarget
   // 첫 칸은 난이도, 나머지는 기준 점수마다 한 칸씩
   const columns = { gridTemplateColumns: `3.25rem repeat(${targets.length}, minmax(0, 1fr))` };
   return (
-    <section aria-label={`${title} 점수 역산`} className="flex flex-col gap-2">
+    <section aria-label={`${title} 레이팅 예상 값`} className="flex flex-col gap-2">
       <h3 className="text-sm font-bold text-fg">{title}</h3>
       <div style={columns} className="grid items-end gap-2 text-center text-[11px] text-fg-dim">
         <span className="text-left">난이도</span>

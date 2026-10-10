@@ -61,14 +61,14 @@ describe("RatingTargetPlanner", () => {
 
   it("처음에는 접혀 있고 서열표를 요청하지 않는다", () => {
     renderPlanner();
-    expect(screen.getByRole("button", { name: /점수 역산/ })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: /레이팅 예상 값/ })).toHaveAttribute("aria-expanded", "false");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("펼치면 단일의 1·7·15위 점수와 난이도별 필요 달성률을 보여 준다 (낼 수 없는 난이도는 불가)", async () => {
     renderPlanner();
-    fireEvent.click(screen.getByRole("button", { name: /점수 역산/ }));
-    const list = await screen.findByRole("region", { name: "단일 점수 역산" });
+    fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
+    const list = await screen.findByRole("region", { name: "단일 레이팅 예상 값" });
     expect(within(list).getByText("1위 점수")).toBeInTheDocument();
     expect(within(list).getByText("7위 점수")).toBeInTheDocument();
     expect(within(list).getByText("15위 점수")).toBeInTheDocument();
@@ -86,15 +86,15 @@ describe("RatingTargetPlanner", () => {
 
   it("복합·이중·삼중 목록이 비어 있으면 그 구역은 그리지 않는다", async () => {
     renderPlanner();
-    fireEvent.click(screen.getByRole("button", { name: /점수 역산/ }));
-    await screen.findByRole("region", { name: "단일 점수 역산" });
-    expect(screen.queryByRole("region", { name: "복합·이중·삼중 점수 역산" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
+    await screen.findByRole("region", { name: "단일 레이팅 예상 값" });
+    expect(screen.queryByRole("region", { name: "복합·이중·삼중 레이팅 예상 값" })).not.toBeInTheDocument();
   });
 
   it("난이도를 누르면 그 난이도의 채보 목록이 펼쳐지고 곡 상세로 가는 링크가 있다", async () => {
     renderPlanner();
-    fireEvent.click(screen.getByRole("button", { name: /점수 역산/ }));
-    const list = await screen.findByRole("region", { name: "단일 점수 역산" });
+    fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
+    const list = await screen.findByRole("region", { name: "단일 레이팅 예상 값" });
     expect(screen.queryByText("여섯곡")).not.toBeInTheDocument();
     fireEvent.click(within(list).getByRole("button", { name: /난이도 6\.0/ }));
     const link = within(list).getByRole("link", { name: /여섯곡/ });
@@ -106,15 +106,15 @@ describe("RatingTargetPlanner", () => {
 
   it("목록 순위가 덜 찼으면 있는 순위의 점수만 보인다", async () => {
     renderPlanner(skill({ single: Array.from({ length: 8 }, (_, i) => skillEntry(i + 1, 300 - i)) }));
-    fireEvent.click(screen.getByRole("button", { name: /점수 역산/ }));
-    const list = await screen.findByRole("region", { name: "단일 점수 역산" });
+    fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
+    const list = await screen.findByRole("region", { name: "단일 레이팅 예상 값" });
     expect(within(list).getByText("7위 점수")).toBeInTheDocument();
     expect(within(list).queryByText("15위 점수")).not.toBeInTheDocument();
   });
 
   it("기록이 하나도 없으면 안내만 보인다", async () => {
     renderPlanner(skill({ single: [], other: [] }));
-    fireEvent.click(screen.getByRole("button", { name: /점수 역산/ }));
+    fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
     expect(await screen.findByText("레이팅 목록에 기록이 생기면 기준 점수가 여기에 나옵니다.")).toBeInTheDocument();
   });
 });

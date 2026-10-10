@@ -69,7 +69,7 @@ export function RatingBody({
 }: {
   skill: SkillResponse;
   emptyHint: ReactNode;
-  /** 요약 카드 바로 아래에 끼워 넣을 것(내 화면의 점수 역산). 유저 상세(남의 화면)는 넘기지 않는다 */
+  /** 요약 카드 바로 아래에 끼워 넣을 것(내 화면의 레이팅 예상 값). 유저 상세(남의 화면)는 넘기지 않는다 */
   afterSummary?: ReactNode;
   /** 목록과 안내 문구 맨 아래에 끼워 넣을 것(내 화면의 레이팅 기록) */
   footer?: ReactNode;
