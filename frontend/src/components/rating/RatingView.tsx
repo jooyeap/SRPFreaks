@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
+import { RatingTargetPlanner } from "@/components/rating/RatingTargetPlanner";
 import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 import { formatScore } from "@/lib/format";
@@ -62,9 +63,12 @@ export function RatingBody({
   skill,
   emptyHint,
   onDeleteEntry,
+  afterSummary,
 }: {
   skill: SkillResponse;
   emptyHint: ReactNode;
+  /** 요약 카드 바로 아래에 끼워 넣을 것(내 화면의 점수 역산). 유저 상세(남의 화면)는 넘기지 않는다 */
+  afterSummary?: ReactNode;
   /** 있으면 카드마다 `삭제` 버튼이 생긴다(유저 상세에서 관리자만, D29) */
   onDeleteEntry?: (entry: SkillEntryResponse) => void;
 }) {
@@ -72,6 +76,7 @@ export function RatingBody({
   return (
     <>
       <RatingSummary skill={skill} />
+      {afterSummary}
       {empty ? <p className="text-sm text-fg-sub">{emptyHint}</p> : null}
       <Group
         title="단일"
@@ -121,6 +126,7 @@ export function RatingView({ userId }: { userId: number }) {
       <h1 className="text-xl font-semibold text-fg">레이팅</h1>
       <RatingBody
         skill={data}
+        afterSummary={<RatingTargetPlanner userId={userId} skill={data} />}
         emptyHint={
           <>
             레이팅에 들어갈 기록이 아직 없습니다.{" "}
