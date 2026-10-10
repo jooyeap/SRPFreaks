@@ -144,10 +144,15 @@ describe("RatingView", () => {
     const high = await screen.findByText("264.00");
     expect(high).toHaveAttribute("data-tier", "HASUBONG");
     expect(high).toHaveAttribute("data-glow", "2"); // 264 = 262.5 이상
-    expect(high).toHaveClass("chart-cell");
+    expect(high).toHaveClass("tier-score");
     const mid = screen.getByText("160.50");
     expect(mid).toHaveAttribute("data-tier", "RED"); // 150 이상 162.5 미만
     expect(mid).not.toHaveAttribute("data-glow");
+    // 카드 왼쪽 띠: 위 = 단계 색(stage-bar), 아래 = 점수의 티어 색(tier-bar)이 같은 점수와 같은 티어다
+    const bars = document.querySelectorAll("li .tier-bar");
+    expect(bars[0]).toHaveAttribute("data-tier", "HASUBONG");
+    expect(bars[1]).toHaveAttribute("data-tier", "RED");
+    expect(document.querySelectorAll("li .stage-bar")).toHaveLength(2);
   });
 
   it("각 구역 제목 오른쪽에 그 구역의 점수 합산을 보여 준다", async () => {
