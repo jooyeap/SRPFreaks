@@ -63,6 +63,8 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT); // 묶음 안 채보 정렬. 서버 요청과 무관해서 페이지·캐시에 영향이 없다
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
+  // 펼친 묶음의 난이도(미정은 "undecided"). 처음에는 모두 닫혀 있다. 페이지·필터를 바꿔도 같은 난이도는 그대로 펼쳐 있다
+  const [openGroups, setOpenGroups] = useState<ReadonlySet<string>>(new Set());
   const [recordTarget, setRecordTarget] = useState<{ entry: TableEntryResponse; tier: number | null } | null>(null); // 기록 입력창을 연 채보
 
   const tables = useQuery({
@@ -103,6 +105,8 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
   }
 
   const data = entries.data;
+  const groupKeys = (data?.content ?? []).map((g) => String(g.tier ?? "undecided"));
+  const allOpen = groupKeys.length > 0 && groupKeys.every((k) => openGroups.has(k));
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
@@ -115,7 +119,19 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
         {canRegister ? <SongCreateButton tableId={table.id} /> : null}
       </div>
 
-      {allGroups.data ? <TierQuickNav groups={decidedGroups(allGroups.data)} /> : null}
+      <div className="flex flex-wrap items-center gap-2">
+        {allGroups.data ? <TierQuickNav groups={decidedGroups(allGroups.data)} /> : null}
+        {/* 지금 페이지의 묶음을 한꺼번에 펼치거나 접는다(묶음이 처음에 모두 닫혀 있어서 하나씩 열기 번거롭다) */}
+        {data && data.content.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setOpenGroups(allOpen ? new Set() : new Set(groupKeys))}
+            className="rounded-full border border-chip-line bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+          >
+            {allOpen ? "모두 접기" : "모두 펼치기"}
+          </button>
+        ) : null}
+      </div>
 
       {/* 모바일: 접힌 상태에서도 지금 걸린 필터를 한 줄로 보여 준다. 데스크톱(md 이상)은 버튼 없이 항상 펼친다 */}
       <button
@@ -172,7 +188,23 @@ export function DifficultyTableView({ userId, canRegister = false }: { userId: n
         <>
           <div className="flex flex-col gap-4">
             {data.content.map((group) => (
-              <TierGroupSection key={group.tier ?? "undecided"} group={group} includeZero={includeZero} sort={sort} collapsible onRecord={(entry, tier) => setRecordTarget({ entry, tier })} />
+              <TierGroupSection
+                key={group.tier ?? "undecided"}
+                group={group}
+                includeZero={includeZero}
+                sort={sort}
+                collapsible
+                open={openGroups.has(String(group.tier ?? "undecided"))}
+                onOpenChange={(next) =>
+                  setOpenGroups((current) => {
+                    const copy = new Set(current);
+                    if (next) copy.add(String(group.tier ?? "undecided"));
+                    else copy.delete(String(group.tier ?? "undecided"));
+                    return copy;
+                  })
+                }
+                onRecord={(entry, tier) => setRecordTarget({ entry, tier })}
+              />
             ))}
           </div>
           <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">

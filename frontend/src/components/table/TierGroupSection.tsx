@@ -71,6 +71,8 @@ export function TierGroupSection({
   sort = DEFAULT_SORT,
   onRecord,
   collapsible = false,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   group: TierGroupResponse;
   /**
@@ -78,13 +80,21 @@ export function TierGroupSection({
    * 서열표 본문처럼 묶음이 여럿 이어지는 화면에서 쓴다. 묶음 하나만 보는 묶음 화면은 false(항상 펼침).
    */
   collapsible?: boolean;
+  /**
+   * 펼침 상태를 부모가 쥘 때(서열표의 `모두 펼치기/접기`) 쓴다. 없으면 이 묶음이 스스로 갖는다(처음에는 접힘).
+   * 둘은 함께 넘긴다: open만 주고 onOpenChange를 빼면 눌러도 바뀌지 않는다.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   includeZero: boolean;
   /** 묶음 안 채보의 정렬 기준. 기본은 서버 순서(레벨 높은 순) */
   sort?: TableSort;
   /** 기록 입력 버튼을 눌렀을 때. 묶음의 레이팅 상수 난이도(미정이면 null)를 함께 넘겨 입력창이 점수를 바로 계산하게 한다 */
   onRecord?: (entry: TableEntryResponse, tier: number | null) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [innerOpen, setInnerOpen] = useState(false);
+  const open = controlledOpen ?? innerOpen;
+  const setOpen = (next: boolean) => (onOpenChange ? onOpenChange(next) : setInnerOpen(next));
   const bodyId = useId();
   const expanded = !collapsible || open; // 접을 수 없는 묶음은 항상 펼쳐 있다
   const entries = sortEntries(group.entries, sort);
@@ -105,7 +115,7 @@ export function TierGroupSection({
               type="button"
               aria-expanded={open}
               aria-controls={bodyId}
-              onClick={() => setOpen((v) => !v)}
+              onClick={() => setOpen(!open)}
               className="flex items-center gap-1 text-left"
             >
               <span aria-hidden="true" className="w-4 text-sm text-fg-dim">

@@ -284,6 +284,26 @@ describe("DifficultyTableView", () => {
     expect(within(nav).queryByRole("link", { name: /미정/ })).not.toBeInTheDocument();
   });
 
+  it("`모두 펼치기`는 지금 페이지의 모든 묶음을 열고 `모두 접기`로 닫는다 (직접 연 묶음이 있으면 `모두 펼치기`)", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group({ tier: 5.8 }), group({ tier: 5.6 })])) : json([table])),
+    );
+    renderView();
+    const first = await screen.findByRole("button", { name: /5\.8/ });
+    const second = screen.getByRole("button", { name: /5\.6/ });
+    expect(first).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(first); // 하나만 직접 연다 -> 아직 전부는 아니라서 `모두 펼치기`
+    fireEvent.click(screen.getByRole("button", { name: "모두 펼치기" }));
+    expect(first).toHaveAttribute("aria-expanded", "true");
+    expect(second).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "모두 접기" }));
+    expect(first).toHaveAttribute("aria-expanded", "false");
+    expect(second).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "모두 펼치기" })).toBeInTheDocument();
+  });
+
   it("서열표 화면 상단에 정보 제공자 표기와 X 링크를 보여 준다", async () => {
     fetchMock.mockImplementation((input) =>
       Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
