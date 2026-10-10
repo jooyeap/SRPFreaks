@@ -109,3 +109,38 @@ export function planRows(
   }
   return rows;
 }
+
+/** 목록에 보이는 난이도 줄 수(내 평균 난이도 줄을 가운데로, 위아래로 채운다). 나머지는 `더 보기`로 펼친다 */
+export const PLAN_VISIBLE_ROWS = 5;
+
+/** 내 레이팅 목록 채보의 평균 레이팅 상수 난이도("내가 치는 레벨대"). 난이도가 없는 채보는 빼고, 하나도 없으면 null. */
+export function averageTier(entries: readonly SkillEntryResponse[]): number | null {
+  const tiers = entries.map((e) => e.tier).filter((t): t is number => typeof t === "number" && Number.isFinite(t));
+  return tiers.length === 0 ? null : tiers.reduce((sum, t) => sum + t, 0) / tiers.length;
+}
+
+/**
+ * rows(높은 난이도 먼저)에서 평균 난이도 center에 가장 가까운 줄을 가운데로 size개 고른다.
+ * 위나 아래가 모자라면 반대쪽으로 채워서 항상 size개(줄이 그보다 적으면 전부)를 돌려준다. center가 null이면 위에서부터 size개.
+ * 반환은 rows를 자른 구간이라 원래 순서가 유지된다.
+ */
+export function visibleWindow<T extends { tier: number }>(rows: readonly T[], center: number | null, size: number = PLAN_VISIBLE_ROWS): T[] {
+  if (rows.length <= size) {
+    return [...rows];
+  }
+  let middle = 0;
+  if (center !== null) {
+    let best = Infinity;
+    rows.forEach((row, i) => {
+      const gap = Math.abs(row.tier - center);
+      if (gap < best) {
+        best = gap;
+        middle = i;
+      }
+    });
+  } else {
+    middle = Math.floor(size / 2);
+  }
+  const start = Math.min(Math.max(middle - Math.floor(size / 2), 0), rows.length - size);
+  return rows.slice(start, start + size);
+}

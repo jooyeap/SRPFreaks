@@ -9,7 +9,7 @@ import { ApiError } from "@/lib/api";
 import { chartTierAttrs } from "@/lib/chart-tier";
 import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
-import { planRows, planTargets, type PlanKind, type PlanRow, type PlanTarget } from "@/lib/rating-target";
+import { averageTier, PLAN_VISIBLE_ROWS, planRows, planTargets, visibleWindow, type PlanKind, type PlanRow, type PlanTarget } from "@/lib/rating-target";
 import { tableSearchHref } from "@/lib/table-search";
 import type { SkillResponse, TierGroupResponse } from "@/lib/api-types";
 
@@ -91,7 +91,13 @@ function PlannerBody({ userId, skill }: { userId: number; skill: SkillResponse }
       {lists
         .filter((l) => l.targets.length > 0)
         .map((l) => (
-          <PlanList key={l.kind} title={l.title} targets={l.targets} rows={planRows(groups.data as TierGroupResponse[], l.kind, l.targets)} />
+          <PlanList
+            key={l.kind}
+            title={l.title}
+            targets={l.targets}
+            rows={planRows(groups.data as TierGroupResponse[], l.kind, l.targets)}
+            center={averageTier(l.kind === "single" ? skill.single : skill.other)}
+          />
         ))}
       <p className="text-xs leading-relaxed text-fg-dim">
         표시한 달성률은 그 점수를 낼 수 있는 가장 낮은 값입니다. 곡 점수는 달성률 95%에서 최고이므로, 95%로도 못 내는 난이도는 <b className="text-fg-sub">불가</b>로 보입니다.
@@ -100,8 +106,23 @@ function PlannerBody({ userId, skill }: { userId: number; skill: SkillResponse }
   );
 }
 
-function PlanList({ title, targets, rows }: { title: string; targets: PlanTarget[]; rows: PlanRow[] }) {
+function PlanList({
+  title,
+  targets,
+  rows: allRows,
+  center,
+}: {
+  title: string;
+  targets: PlanTarget[];
+  rows: PlanRow[];
+  /** 내 목록 채보의 평균 레이팅 상수 난이도. 이 난이도 줄을 가운데로 5줄만 먼저 보인다 */
+  center: number | null;
+}) {
   const [openTier, setOpenTier] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  // 난이도 줄이 많아(5.0~7.0 등 20줄 가까이) 다 보이면 길어서, 내가 치는 레벨대(평균 난이도) 위아래 5줄만 먼저 보이고 나머지는 펼친다
+  const rows = showAll ? allRows : visibleWindow(allRows, center);
+  const hidden = allRows.length - rows.length;
   // 첫 칸은 난이도, 나머지는 기준 점수마다 한 칸씩
   const columns = { gridTemplateColumns: `3.25rem repeat(${targets.length}, minmax(0, 1fr))` };
   return (
@@ -177,6 +198,16 @@ function PlanList({ title, targets, rows }: { title: string; targets: PlanTarget
           })}
         </ul>
       )}
+      {allRows.length > PLAN_VISIBLE_ROWS ? (
+        <button
+          type="button"
+          aria-expanded={showAll}
+          onClick={() => setShowAll((v) => !v)}
+          className="min-h-9 self-center rounded-full border border-chip-line px-4 text-sm text-fg-sub hover:text-fg"
+        >
+          {showAll ? "평균 난이도 근처만 보기" : `더 보기 (${hidden}개)`}
+        </button>
+      ) : null}
     </section>
   );
 }

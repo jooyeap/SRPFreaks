@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SkillEntryResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import { chartScore } from "@/lib/rating-guide";
-import { planRows, planTargets, requiredRate } from "@/lib/rating-target";
+import { averageTier, planRows, planTargets, requiredRate, visibleWindow } from "@/lib/rating-target";
 
 describe("requiredRate (점수 → 필요 달성률)", () => {
   it("가산 구간 아래: 7.0(R=20)에서 160점은 V=8 → 40%", () => {
@@ -120,5 +120,30 @@ describe("planRows", () => {
   it("미정 묶음과 채보가 없는 난이도는 건너뛴다", () => {
     const rows = planRows([group(null, [tableEntry(1)]), group(6.5, [tableEntry(2, { pattern: "복합" })])], "single", targets);
     expect(rows).toEqual([]);
+  });
+});
+
+describe("averageTier / visibleWindow (레이팅 예상 값 5줄)", () => {
+  const rows = [7.0, 6.8, 6.6, 6.4, 6.2, 6.0, 5.8, 5.6, 5.4, 5.2].map((tier) => ({ tier }));
+  const e = (tier: number | null) => ({ tier }) as never;
+
+  it("평균 난이도는 난이도가 있는 채보만의 평균이고 없으면 null", () => {
+    expect(averageTier([e(6.0), e(6.4), e(null)])).toBeCloseTo(6.2);
+    expect(averageTier([])).toBeNull();
+    expect(averageTier([e(null)])).toBeNull();
+  });
+
+  it("평균에 가장 가까운 줄을 가운데로 5줄을 고른다 (6.2 -> 6.6 ~ 5.8)", () => {
+    expect(visibleWindow(rows, 6.2).map((r) => r.tier)).toEqual([6.6, 6.4, 6.2, 6.0, 5.8]);
+  });
+
+  it("위나 아래가 모자라면 반대쪽으로 채워 항상 5줄이다", () => {
+    expect(visibleWindow(rows, 7.0).map((r) => r.tier)).toEqual([7.0, 6.8, 6.6, 6.4, 6.2]);
+    expect(visibleWindow(rows, 5.0).map((r) => r.tier)).toEqual([6.0, 5.8, 5.6, 5.4, 5.2]);
+  });
+
+  it("줄이 5개 이하면 전부, 평균이 없으면 위쪽 가운데부터", () => {
+    expect(visibleWindow(rows.slice(0, 4), 6.6)).toHaveLength(4);
+    expect(visibleWindow(rows, null)).toHaveLength(5);
   });
 });

@@ -117,4 +117,30 @@ describe("RatingTargetPlanner", () => {
     fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
     expect(await screen.findByText("레이팅 목록에 기록이 생기면 기준 점수가 여기에 나옵니다.")).toBeInTheDocument();
   });
+
+  it("난이도 줄이 많으면 내 평균 난이도(6.0) 위아래로 5줄만 먼저 보이고, 더 보기로 전부 펼친다", async () => {
+    const tiers = [7.0, 6.8, 6.6, 6.4, 6.2, 6.0, 5.8, 5.6, 5.4, 5.2];
+    const many = tiers.map((t, i) => group(t, [entry(100 + i, `곡${t}`)]));
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(
+        String(input).includes("/entries") ? json({ content: many, page: 0, size: 20, totalElements: 10, totalPages: 1 }) : json([table]),
+      ),
+    );
+    // 기준 점수가 낮아야(150대) 5.2까지 모든 난이도가 낼 수 있다. 내 목록 채보는 모두 레이팅 상수 난이도 6.0 -> 6.0이 가운데
+    renderPlanner(skill({ single: Array.from({ length: 15 }, (_, i) => skillEntry(i + 1, 150 - i)) }));
+    fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
+    const list = await screen.findByRole("region", { name: "단일 레이팅 예상 값" });
+    const rowButtons = () => within(list).getAllByRole("button", { name: /레이팅 상수 난이도/ });
+    expect(rowButtons().map((b) => b.getAttribute("aria-label"))).toEqual([
+      "레이팅 상수 난이도 6.4 채보 1개",
+      "레이팅 상수 난이도 6.2 채보 1개",
+      "레이팅 상수 난이도 6.0 채보 1개",
+      "레이팅 상수 난이도 5.8 채보 1개",
+      "레이팅 상수 난이도 5.6 채보 1개",
+    ]);
+    fireEvent.click(within(list).getByRole("button", { name: "더 보기 (5개)" }));
+    expect(rowButtons()).toHaveLength(10);
+    fireEvent.click(within(list).getByRole("button", { name: "평균 난이도 근처만 보기" }));
+    expect(rowButtons()).toHaveLength(5);
+  });
 });
