@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/Toast";
 import { useAuth } from "@/components/AuthProvider";
 import { ApiError } from "@/lib/api";
 import { playerKeys } from "@/lib/players";
@@ -14,10 +15,12 @@ import { updateMyVisibility } from "@/lib/users";
 export function ProfileVisibilityForm({ user }: { user: UserResponse }) {
   const { updateUser } = useAuth();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: (next: boolean) => updateMyVisibility(next),
     onSuccess: (updated) => {
       updateUser(updated);
+      toast("공개 설정을 저장했습니다.");
       // 공개 여부가 바뀌면 유저 목록 결과도 달라지므로, 받아 둔 목록 캐시를 버린다
       void queryClient.invalidateQueries({ queryKey: playerKeys.all });
     },

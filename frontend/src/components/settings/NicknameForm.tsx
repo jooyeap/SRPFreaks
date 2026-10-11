@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useToast } from "@/components/Toast";
 import { useAuth } from "@/components/AuthProvider";
 import { ApiError } from "@/lib/api";
 import { NICKNAME_MAX_LENGTH, NICKNAME_MIN_LENGTH, nicknameSchema } from "@/lib/nickname";
@@ -28,10 +29,12 @@ export function NicknameForm({ initialNickname }: { initialNickname: string | nu
     mode: "onTouched",
   });
 
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: (values: FormOutput) => updateMyNickname(values.nickname),
     onSuccess: (user) => {
       updateUser(user);
+      toast("닉네임을 저장했습니다.");
       reset({ nickname: user.nickname ?? "" }); // 서버가 정규화한 값으로 입력칸도 맞춘다
     },
   });

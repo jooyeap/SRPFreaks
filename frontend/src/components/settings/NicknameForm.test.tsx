@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ToastProvider } from "@/components/Toast";
 import { NicknameForm } from "@/components/settings/NicknameForm";
 import { clearAccessToken } from "@/lib/auth-token";
 
@@ -68,6 +69,22 @@ describe("NicknameForm", () => {
     expect(url).toBe("/api/v1/users/me");
     expect(JSON.parse(String(init?.body))).toEqual({ nickname: "タロウ" });
     expect(input()).toHaveValue("タロウ");
+  });
+
+  it("저장에 성공하면 화면 아래에 완료 알림도 뜬다", async () => {
+    const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <ToastProvider>
+            <NicknameForm initialNickname={null} />
+          </ToastProvider>
+        </AuthProvider>
+      </QueryClientProvider>,
+    );
+    fireEvent.change(input(), { target: { value: "タロウ" } });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    expect(await screen.findByText("닉네임을 저장했습니다.")).toBeInTheDocument();
   });
 
   it("비워서 저장하면 null(닉네임 없음)을 보낸다", async () => {

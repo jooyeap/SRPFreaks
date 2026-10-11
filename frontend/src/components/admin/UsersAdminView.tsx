@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/Toast";
 import Link from "next/link";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
@@ -80,10 +81,12 @@ function UserRow({ viewerId, page, user }: { viewerId: number; page: number; use
   const [role, setRole] = useState<Role>(user.role);
   const name = user.nickname ?? "(닉네임 없음)";
 
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: (next: Role) => changeUserRole(user.id, next),
     onSuccess: async (saved) => {
       setRole(saved.role);
+      toast("역할을 변경했습니다.");
       await queryClient.invalidateQueries({ queryKey: adminKeys.users(viewerId, page) });
       // 역할 변경은 감사 로그에 남으므로 목록도 오래된 것으로 표시한다
       await queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });

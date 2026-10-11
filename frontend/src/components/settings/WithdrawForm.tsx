@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "@/components/Toast";
 import { useAuth } from "@/components/AuthProvider";
 import { ApiError } from "@/lib/api";
 import { withdrawMyAccount } from "@/lib/users";
@@ -24,10 +25,12 @@ export function WithdrawForm() {
   const router = useRouter();
   const [confirmed, setConfirmed] = useState(false);
 
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: withdrawMyAccount,
     onSuccess: async () => {
       await logout();
+      toast("탈퇴를 완료했습니다."); // 안내는 화면이 바뀌어도 남는다(Provider가 레이아웃에 있다)
       router.replace("/");
     },
   });

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
+import { useToast } from "@/components/Toast";
 import { RatingBody } from "@/components/rating/RatingView";
 import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse } from "@/lib/api-types";
@@ -34,10 +35,12 @@ export function PlayerDetailView({
   // 확인 상자에 올려 둔(삭제하려는) 카드. null이면 상자를 닫는다.
   const [target, setTarget] = useState<SkillEntryResponse | null>(null);
 
+  const toast = useToast();
   const deletion = useMutation({
     mutationFn: (entry: SkillEntryResponse) => deletePlayerChartRecords(playerId, entry.songDifficultyId),
     onSuccess: async () => {
       setTarget(null);
+      toast("기록을 삭제했습니다.");
       // 유저 상세·유저 목록(총점 순위)이 모두 달라지므로 "players" 전체를 새로 받는다
       await queryClient.invalidateQueries({ queryKey: playerKeys.all });
       // 지운 유저가 나 자신일 수도 있어 내 기록과 관련된 화면(레이팅·서열표·곡 목록)도 오래된 것으로 표시한다

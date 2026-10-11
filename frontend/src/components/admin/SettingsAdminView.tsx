@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/Toast";
 import Link from "next/link";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
@@ -57,10 +58,12 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
   const [invalid, setInvalid] = useState<string | null>(null);
   const inputId = `setting-${setting.key}`;
 
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: (next: string) => updateSetting(setting.key, next),
     onSuccess: async (saved) => {
       setValue(saved.value);
+      toast("설정을 저장했습니다.");
       await Promise.all(SETTING_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
     },
   });

@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { useToast } from "@/components/Toast";
 import { ChartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
 import type { TableEntryResponse } from "@/lib/api-types";
@@ -115,10 +116,12 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
   // 스위치를 켜도 기준 난이도·속성이 없거나 속성이 '레이팅 제외'이면 계산에 들어가지 않는다 (서버 규칙과 같다)
   const switchIneffective = ratingEnabled && (tierValue === "" || patternValue === "" || patternValue === "레이팅 제외");
 
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: (values: TableEntryFormValues) =>
       saveTableEntry(target.tableId, target.songDifficultyId, toTableEntryBody(values)),
     onSuccess: async () => {
+      toast("서열표 값을 저장했습니다.");
       await Promise.all(TABLE_ENTRY_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onDone();
     },

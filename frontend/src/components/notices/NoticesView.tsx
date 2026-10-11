@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useToast } from "@/components/Toast";
 import { NoticeForm } from "@/components/notices/NoticeForm";
 import { ApiError } from "@/lib/api";
 import type { NoticeResponse } from "@/lib/api-types";
@@ -47,11 +48,19 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
     await queryClient.invalidateQueries({ queryKey: noticeKeys.all });
     await queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });
   };
-  const create = useMutation({ mutationFn: (values: NoticeValues) => createNotice(values), onSuccess: refresh });
+  const toast = useToast();
+  const create = useMutation({
+    mutationFn: (values: NoticeValues) => createNotice(values),
+    onSuccess: async () => {
+      toast("공지사항을 등록했습니다.");
+      await refresh();
+    },
+  });
   const update = useMutation({
     mutationFn: ({ id, values }: { id: number; values: NoticeValues }) => updateNotice(id, values),
     onSuccess: async () => {
       setEditingId(null);
+      toast("공지사항을 수정했습니다.");
       await refresh();
     },
   });
@@ -59,6 +68,7 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
     mutationFn: (id: number) => deleteNotice(id),
     onSuccess: async () => {
       setDeletingId(null);
+      toast("공지사항을 삭제했습니다.");
       await refresh();
     },
   });

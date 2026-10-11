@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useToast } from "@/components/Toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -139,9 +140,11 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
     return result.aliases;
   }
 
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: ({ values, list }: { values: SongEditValues; list: string[] }) => updateSong(song, values, list),
     onSuccess: async () => {
+      toast("곡 정보를 수정했습니다.");
       await Promise.all(SONG_EDIT_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onDone();
     },
@@ -264,9 +267,11 @@ function ChartForm({ song, chart, onDone }: { song: SongDetailResponse; chart: S
     mode: "onTouched",
   });
 
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: (values: ChartEditValues) => updateChart(chart, values),
     onSuccess: async () => {
+      toast("채보를 수정했습니다.");
       await Promise.all(SONG_EDIT_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onDone();
     },

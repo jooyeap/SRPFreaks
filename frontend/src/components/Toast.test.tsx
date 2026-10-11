@@ -26,6 +26,16 @@ describe("Toast", () => {
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
+  it("데스크톱(md 이상)에서는 오른쪽 아래, 모바일은 가운데이고 클릭을 막지 않는다", () => {
+    render(
+      <ToastProvider>
+        <Button text="완료" />
+      </ToastProvider>,
+    );
+    const region = screen.getByRole("status");
+    expect(region).toHaveClass("justify-center", "md:justify-end", "pointer-events-none");
+  });
+
   it("Provider 밖에서 불러도 오류 없이 아무 일도 하지 않는다", () => {
     render(<Button text="없음" />);
     expect(() => fireEvent.click(screen.getByRole("button", { name: "알림" }))).not.toThrow();

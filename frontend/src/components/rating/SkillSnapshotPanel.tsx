@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/Toast";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import { formatScore } from "@/lib/format";
@@ -33,9 +34,11 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
     placeholderData: keepPreviousData,
   });
 
+  const toast = useToast();
   const record = useMutation({
     mutationFn: createSnapshot,
     onSuccess: async () => {
+      toast("레이팅을 기록했습니다.");
       setPage(0); // 방금 만든 줄이 맨 위에 보이게 첫 페이지로 돌아간다
       await queryClient.invalidateQueries({ queryKey: snapshotKeys.all(userId) });
       await queryClient.invalidateQueries({ queryKey: snapshotKeys.status(userId) });

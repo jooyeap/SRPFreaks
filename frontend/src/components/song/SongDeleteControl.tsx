@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/Toast";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import { deleteChart, deleteSong, SONG_DELETE_AFFECTED_KEYS } from "@/lib/song-admin";
@@ -32,10 +33,12 @@ export function SongDeleteControl({
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState<Target | null>(null);
 
+  const toast = useToast();
   const mutation = useMutation({
     mutationFn: (target: Target) => (target === "song" ? deleteSong(songId) : deleteChart(chartId ?? 0)),
     onSuccess: (_data, target) => {
       setConfirming(null);
+      toast(target === "song" ? "곡을 삭제했습니다." : "채보를 삭제했습니다.");
       // 화면을 먼저 옮긴다. 목록을 먼저 새로 받으면 지워진 곡의 상세 조회가 404가 되어 오류 화면이 잠깐 보인다.
       onDeleted(target);
       void Promise.all(SONG_DELETE_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
