@@ -66,6 +66,7 @@ function Harness({ initial = EMPTY_SONG_FILTERS, canRegister = false }: { initia
 
 describe("SongListView", () => {
   const fetchMock = vi.fn<typeof fetch>();
+  const folderCalls = () => fetchMock.mock.calls.map(([input]) => String(input)).filter((u) => u.includes("/songs/chart-folders"));
   const chartCalls = () => fetchMock.mock.calls.map(([input]) => String(input)).filter((u) => u.includes("/songs/charts"));
 
   function renderView(initial?: SongListFilters, canRegister = false) {
@@ -81,7 +82,9 @@ describe("SongListView", () => {
     fetchMock.mockReset();
     fetchMock.mockImplementation((input) => {
       const url = String(input);
-      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(folders));
+      if (url.includes("/songs/chart-folders")) {
+        return Promise.resolve(json(url.includes("q=nomatch") ? { ...folders, totalSongs: 0, totalCharts: 0, folders: [] } : folders));
+      }
       if (url.includes("folder=9.50")) {
         return Promise.resolve(
           url.includes("page=1") ? json(page([row(3, "세번째곡")], 1, 2, 21)) : json(page([row(1, "첫번째곡"), row(2, "두번째곡")], 0, 2, 21)),
@@ -95,8 +98,9 @@ describe("SongListView", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("채보 행에는 버전을 보이지 않는다(버전은 필터로만 쓴다)", async () => {
-    renderView({ ...EMPTY_SONG_FILTERS, q: "검색" });
-    const rowTitle = await screen.findByText("검색곡");
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    const rowTitle = await screen.findByText("첫번째곡");
     // 행의 addedVersion은 V5지만 행 안에 나오지 않는다 (버전 필터의 선택지 V5와는 별개다)
     expect(rowTitle.closest("li")).not.toHaveTextContent("V5");
   });
@@ -218,21 +222,23 @@ describe("SongListView", () => {
     expect(screen.queryByRole("button", { name: "더 보기" })).not.toBeInTheDocument(); // 마지막 페이지
   });
 
-  it("검색하면 폴더 대신 결과 목록이 나오고 내 기록 단계가 보인다", async () => {
+  it("검색하면 폴더는 그대로 두고 검색어를 폴더 목록과 폴더 안 채보 요청에 함께 보낸다", async () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
 
     fireEvent.change(screen.getByRole("searchbox", { name: "곡 검색" }), { target: { value: "검색" } });
 
-    const results = await screen.findByRole("region", { name: "검색 결과" });
-    expect(within(results).getByText("검색곡")).toBeInTheDocument();
-    expect(within(results).getByText("96.50")).toBeInTheDocument();
-    expect(within(results).getByLabelText("달성 단계 SS")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /9\.50 ~ 9\.99/ })).not.toBeInTheDocument();
-    expect(chartCalls().some((u) => u.includes("q=%EA%B2%80%EC%83%89"))).toBe(true);
+    await waitFor(() => expect(folderCalls().at(-1)).toContain("q=%EA%B2%80%EC%83%89"));
+    // 결과 목록으로 바뀌지 않고 폴더가 남아 있다
+    expect(screen.queryByRole("region", { name: "검색 결과" })).not.toBeInTheDocument();
+    const header = await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+    fireEvent.click(header);
+    await screen.findByText("첫번째곡");
+    expect(chartCalls().at(-1)).toContain("q=%EA%B2%80%EC%83%89");
+    expect(chartCalls().at(-1)).toContain("folder=9.50");
   });
 
-  it("파트와 난이도(여러 개) 필터는 서버 조건으로 전달된다", async () => {
+  it("파트와 난이도(여러 개) 필터는 폴더 목록 요청의 서버 조건으로 전달된다", async () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
 
@@ -241,21 +247,31 @@ describe("SongListView", () => {
     fireEvent.click(screen.getByRole("button", { name: "MAS" }));
 
     await waitFor(() => {
-      const last = chartCalls().at(-1) ?? "";
+      const last = folderCalls().at(-1) ?? "";
       expect(last).toContain("part=BASS");
       expect(last).toContain("difficulty=EXTREME%2CMASTER");
     });
     expect(screen.getByRole("button", { name: "필터 3" })).toBeInTheDocument();
   });
 
-  it("버전을 고르면 그 버전으로 거르고, 초기화하면 폴더 목록으로 돌아온다", async () => {
+  it("난이도 필터에는 BAS가 없고 ADV·EXT·MAS만 있다", async () => {
+    renderView();
+    await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+    expect(screen.queryByRole("button", { name: "BAS" })).not.toBeInTheDocument();
+    for (const name of ["ADV", "EXT", "MAS"]) {
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    }
+  });
+
+  it("버전을 고르면 그 버전으로 거르고, 초기화하면 조건 없는 폴더 목록으로 돌아온다", async () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
 
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "V4" } });
-    await waitFor(() => expect(chartCalls().at(-1)).toContain("version=V4"));
+    await waitFor(() => expect(folderCalls().at(-1)).toContain("version=V4"));
 
     fireEvent.click(screen.getByRole("button", { name: "초기화" }));
+    await waitFor(() => expect(folderCalls().at(-1)).not.toContain("version="));
     expect(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ })).toBeInTheDocument();
   });
 

@@ -1,8 +1,7 @@
 "use client";
 
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ChartList } from "@/components/songs/ChartList";
 import { FolderSection } from "@/components/songs/FolderSection";
 import { SongListFilterPanel } from "@/components/songs/SongListFilterPanel";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
@@ -12,7 +11,6 @@ import { ApiError } from "@/lib/api";
 import {
   activeFilterCount,
   fetchChartFolders,
-  fetchFilteredCharts,
   isFiltering,
   songListKeys,
   type SongListFilters,
@@ -23,7 +21,7 @@ function errorMessage(error: unknown): string {
 }
 
 /**
- * 전체 곡 목록 (DESIGN-UI 9장). 처음에는 레벨 폴더(0.5 단위) 목록이고, 검색하거나 필터를 쓰면 같은 화면에서 결과 목록으로 바뀐다.
+ * 전체 곡 목록 (DESIGN-UI 9장). 레벨 폴더(0.5 단위) 목록이고, 검색하거나 필터를 쓰면 조건에 맞는 채보만으로 폴더가 다시 만들어진다(폴더는 유지).
  * 조건(filters)은 주소 쿼리가 갖고 있어 부모가 넘겨 준다(새로고침·뒤로 가기·링크 공유가 같은 화면을 만든다).
  * 로그인한 사용자만 그린다(내 기록을 함께 보여 주므로). userId는 쿼리 키에만 쓴다 — 계정이 바뀌어도 이전 사용자의 캐시를 보지 않게 한다.
  */
@@ -43,18 +41,12 @@ export function SongListView({
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
 
   const folders = useQuery({
-    queryKey: songListKeys.folders(userId),
-    queryFn: ({ signal }) => fetchChartFolders(signal),
+    queryKey: songListKeys.folders(userId, filters),
+    queryFn: ({ signal }) => fetchChartFolders(signal, filters),
+    // 필터를 바꾸는 동안 이전 목록을 잠깐 유지한다(버전 선택지·화면이 깜박이지 않게)
+    placeholderData: keepPreviousData,
   });
-
   const filtering = isFiltering(filters);
-  const results = useInfiniteQuery({
-    queryKey: songListKeys.results(userId, filters),
-    queryFn: ({ pageParam, signal }) => fetchFilteredCharts(filters, pageParam, signal),
-    initialPageParam: 0,
-    getNextPageParam: (last) => (last.page + 1 < last.totalPages ? last.page + 1 : undefined),
-    enabled: filtering,
-  });
 
   const filterCount = activeFilterCount(filters);
   const versions = folders.data?.versions ?? [];
@@ -92,39 +84,18 @@ export function SongListView({
         onChange={onFiltersChange}
       />
 
-      {filtering ? (
-        results.isError ? (
-          <p role="alert" className="text-sm text-fg">{errorMessage(results.error)}</p>
-        ) : !results.data ? (
-          <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
-        ) : results.data.pages[0].totalElements === 0 ? (
-          <p className="text-sm text-fg-sub">조건에 맞는 채보가 없습니다.</p>
-        ) : (
-          <section aria-label="검색 결과" className="overflow-hidden rounded-[14px] border border-line bg-card">
-            <p className="px-4 py-2.5 text-sm text-fg-sub">
-              결과 <span className="font-num font-semibold text-fg">{results.data.pages[0].totalElements}</span>개
-            </p>
-            <ChartList
-              label="검색 결과 채보"
-              rows={results.data.pages.flatMap((p) => p.content)}
-              hasMore={results.hasNextPage}
-              loadingMore={results.isFetchingNextPage}
-              onMore={() => void results.fetchNextPage()}
-            />
-          </section>
-        )
-      ) : folders.isError ? (
+      {folders.isError ? (
         <p role="alert" className="text-sm text-fg">{errorMessage(folders.error)}</p>
       ) : !folders.data ? (
         <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
       ) : folders.data.folders.length === 0 ? (
-        <p className="text-sm text-fg-sub">등록된 곡이 아직 없습니다.</p>
+        <p className="text-sm text-fg-sub">{filtering ? "조건에 맞는 채보가 없습니다." : "등록된 곡이 아직 없습니다."}</p>
       ) : (
         <>
           <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
           <div className="flex flex-col gap-3">
             {folders.data.folders.map((folder) => (
-              <FolderSection key={folder.lo} userId={userId} folder={folder} includeZero={includeZero} />
+              <FolderSection key={folder.lo} userId={userId} folder={folder} includeZero={includeZero} filters={filters} />
             ))}
           </div>
         </>
