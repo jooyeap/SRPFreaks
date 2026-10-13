@@ -109,7 +109,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
           <h2 id="table-search-title" className="text-lg font-extrabold">
             서열표 곡 검색
           </h2>
-          <button type="button" onClick={close} className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+          <button type="button" onClick={close} className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
             닫기
           </button>
         </div>
@@ -121,7 +121,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
           onChange={(event) => setText(event.target.value)}
           placeholder="곡명, 아티스트 검색 (한글·일본어·로마자)"
           aria-label="곡 검색어"
-          className="mb-3 w-full rounded-full border border-chip-line bg-page px-4 py-2 text-sm text-fg placeholder:text-fg-dim"
+          className="mb-3 w-full rounded-lg border border-chip-line bg-page px-4 py-2 text-sm text-fg placeholder:text-fg-dim"
         />
 
         <div aria-live="polite">

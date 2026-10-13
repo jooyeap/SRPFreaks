@@ -218,6 +218,53 @@ class SongChartListServiceTest {
     }
 
     @Test
+    void 폴더_목록에_필터를_걸면_맞는_채보만_폴더별로_센다() {
+        chart("g-mas", "v1", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.60");
+        chart("g-ext", "v1", InstrumentPart.GUITAR, DifficultyType.EXTREME, "9.70");
+        chart("b-mas", "v1", InstrumentPart.BASS, DifficultyType.MASTER, "9.10");
+        chart("e-ext", "v1", InstrumentPart.GUITAR, DifficultyType.EXTREME, "5.00");
+        stubCharts();
+        stubBests(7L);
+
+        ChartFolderListResponse result = service.folders(7L, null, InstrumentPart.GUITAR, List.of(DifficultyType.EXTREME), null);
+
+        // 9.50 폴더는 g-ext 하나, 9.00 폴더(b-mas는 Bass)는 맞는 채보가 없어 사라지고, 5.00 폴더(e-ext)는 남는다
+        assertThat(result.folders()).extracting(f -> f.lo().toPlainString()).containsExactly("9.50", "5.00");
+        assertThat(result.folders().get(0).total()).isEqualTo(1);
+        assertThat(result.folders().get(0).subFolders()).hasSize(1);
+        assertThat(result.totalCharts()).isEqualTo(2);
+        // 버전 선택지는 필터와 상관없이 전체 기준
+        assertThat(result.versions()).containsExactly("v1");
+    }
+
+    @Test
+    void 폴더_목록의_버전_선택지는_필터를_걸어도_줄지_않는다() {
+        chart("a", "v1", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("b", "v2", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        stubCharts();
+        stubBests(7L);
+
+        ChartFolderListResponse result = service.folders(7L, null, null, null, "v2");
+
+        assertThat(result.totalCharts()).isEqualTo(1);
+        assertThat(result.versions()).containsExactly("v1", "v2");
+    }
+
+    @Test
+    void 폴더_목록의_검색어는_곡_검색_결과로_거른다() {
+        SongDifficulty hit = guitar("hit", "9.00");
+        guitar("miss", "9.00");
+        stubCharts();
+        stubBests(7L);
+        when(songRepository.searchIds(anyString(), anyString())).thenReturn(List.of(hit.getSong().getId()));
+
+        ChartFolderListResponse result = service.folders(7L, "hit", null, null, null);
+
+        assertThat(result.totalCharts()).isEqualTo(1);
+        assertThat(result.folders().get(0).total()).isEqualTo(1);
+    }
+
+    @Test
     void 폴더_통계는_가장_높은_단계_하나만_세고_기록_없는_채보는_세지_않는다() {
         SongDifficulty exc = guitar("exc", "9.00");
         SongDifficulty fc = guitar("fc", "9.10");

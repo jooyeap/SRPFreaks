@@ -14,7 +14,7 @@ export function SongCreateButton({ tableId = null }: { tableId?: number | null }
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="shrink-0 rounded-full border border-chip-line px-3 py-1.5 text-sm text-fg-sub hover:text-fg"
+        className="shrink-0 rounded-lg border border-chip-line px-3 py-1.5 text-sm text-fg-sub hover:text-fg"
       >
         곡 등록
       </button>

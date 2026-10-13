@@ -65,9 +65,26 @@ public class SongChartListService {
     private final OptionRecordRepository optionRecordRepository;
     private final SongRepository songRepository;
 
-    /** 레벨 폴더 목록. 필터 없이 전체 채보를 대상으로 한다(검색·필터를 쓰면 화면이 폴더 대신 결과 목록으로 바뀐다). */
+    /** 레벨 폴더 목록(필터 없음). */
     public ChartFolderListResponse folders(Long userId) {
-        List<SongDifficulty> charts = songDifficultyRepository.findAllActiveWithSong();
+        return folders(userId, null, null, null, null);
+    }
+
+    /**
+     * 레벨 폴더 목록. 검색어·파트·난이도·버전 필터가 있으면 조건에 맞는 채보만으로 폴더를 만든다
+     * (폴더별 개수·칩·평균이 모두 필터 기준이고, 맞는 채보가 없는 폴더는 나오지 않는다).
+     * 필터 해석은 charts()와 같은 규칙이라 폴더를 펼쳐 받는 목록(같은 필터 + folder)과 개수가 항상 맞는다.
+     * 버전 목록(versions)은 선택지이므로 필터와 상관없이 전체 채보 기준이다.
+     */
+    public ChartFolderListResponse folders(Long userId, String q, InstrumentPart part,
+                                           Collection<DifficultyType> difficulties, String version) {
+        List<SongDifficulty> all = songDifficultyRepository.findAllActiveWithSong();
+        String keyword = validKeyword(q);
+        String versionFilter = validVersion(version);
+        Set<Long> matchingSongIds = matchingSongIds(keyword);
+        List<SongDifficulty> charts = all.stream()
+                .filter(d -> matchesFilters(d, matchingSongIds, part, difficulties, versionFilter))
+                .toList();
         Map<Long, RecordBest> bests = bestsOf(userId);
 
         // 레벨이 높은 폴더가 위
@@ -81,7 +98,7 @@ public class SongChartListService {
 
         Set<Long> songIds = new HashSet<>();
         charts.forEach(d -> songIds.add(d.getSong().getId()));
-        List<String> versions = charts.stream()
+        List<String> versions = all.stream()
                 .map(d -> d.getSong().getAddedVersion())
                 .filter(v -> v != null && !v.isBlank())
                 .distinct()
@@ -117,14 +134,8 @@ public class SongChartListService {
                                                  InstrumentPart part, Collection<DifficultyType> difficulties,
                                                  String version, RateBucket rateBucket, ChartSort sort,
                                                  int page, int size) {
-        String keyword = q == null ? "" : q.strip();
-        if (keyword.length() > SongQueryService.MAX_KEYWORD_LENGTH) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
-        }
-        String versionFilter = version == null || version.isBlank() ? null : version.strip();
-        if (versionFilter != null && versionFilter.length() > MAX_VERSION_LENGTH) {
-            throw new ApiException(ErrorCode.BAD_REQUEST);
-        }
+        String keyword = validKeyword(q);
+        String versionFilter = validVersion(version);
         // 단위는 화이트리스트(0.50 / 0.05)로만 받는다. 아무 값이나 받으면 0으로 나누기 같은 오류가 날 수 있다.
         BigDecimal step = folderStep == null ? FOLDER_STEP : folderStep;
         if (step.compareTo(FOLDER_STEP) != 0 && step.compareTo(SUB_FOLDER_STEP) != 0) {
@@ -134,8 +145,7 @@ public class SongChartListService {
             throw new ApiException(ErrorCode.BAD_REQUEST);
         }
 
-        Set<Long> matchingSongIds = keyword.isEmpty() ? null : new HashSet<>(songRepository.searchIds(
-                SongQueryService.likePattern(keyword), SongQueryService.likePattern(SongTitle.normalize(keyword))));
+        Set<Long> matchingSongIds = matchingSongIds(keyword);
 
         // 내 최고 기록은 구간 필터·달성률 정렬에도 필요해서 필터 전에 한 번의 group by 쿼리로 가져온다(채보마다 쿼리하면 N+1)
         Map<Long, RecordBest> bests = bestsOf(userId);
@@ -152,11 +162,8 @@ public class SongChartListService {
         }
 
         List<SongDifficulty> filtered = songDifficultyRepository.findAllActiveWithSong().stream()
-                .filter(d -> matchingSongIds == null || matchingSongIds.contains(d.getSong().getId()))
+                .filter(d -> matchesFilters(d, matchingSongIds, part, difficulties, versionFilter))
                 .filter(d -> folder == null || folderLow(d.getLevel(), step).compareTo(folder) == 0)
-                .filter(d -> part == null || d.getInstrumentPart() == part)
-                .filter(d -> difficulties == null || difficulties.isEmpty() || difficulties.contains(d.getDifficultyType()))
-                .filter(d -> versionFilter == null || versionFilter.equals(d.getSong().getAddedVersion()))
                 .filter(d -> rateBucket == null || RateBucket.of(rateOf(bests, d)) == rateBucket)
                 .sorted(order)
                 .toList();
@@ -171,6 +178,37 @@ public class SongChartListService {
                 .map(d -> ChartRowResponse.of(d, myRecord(bests.get(d.getId()))))
                 .toList();
         return new PageResponse<>(rows, pageIndex, pageSize, filtered.size(), totalPages);
+    }
+
+    private static String validKeyword(String q) {
+        String keyword = q == null ? "" : q.strip();
+        if (keyword.length() > SongQueryService.MAX_KEYWORD_LENGTH) {
+            throw new ApiException(ErrorCode.BAD_REQUEST);
+        }
+        return keyword;
+    }
+
+    private static String validVersion(String version) {
+        String versionFilter = version == null || version.isBlank() ? null : version.strip();
+        if (versionFilter != null && versionFilter.length() > MAX_VERSION_LENGTH) {
+            throw new ApiException(ErrorCode.BAD_REQUEST);
+        }
+        return versionFilter;
+    }
+
+    /** 검색어에 맞는 곡 id. 검색어가 없으면 null(전체). */
+    private Set<Long> matchingSongIds(String keyword) {
+        return keyword.isEmpty() ? null : new HashSet<>(songRepository.searchIds(
+                SongQueryService.likePattern(keyword), SongQueryService.likePattern(SongTitle.normalize(keyword))));
+    }
+
+    /** 검색어·파트·난이도·버전 필터. 폴더 목록과 채보 목록이 같은 규칙을 쓰도록 한 곳에 둔다. */
+    private static boolean matchesFilters(SongDifficulty d, Set<Long> matchingSongIds, InstrumentPart part,
+                                          Collection<DifficultyType> difficulties, String versionFilter) {
+        return (matchingSongIds == null || matchingSongIds.contains(d.getSong().getId()))
+                && (part == null || d.getInstrumentPart() == part)
+                && (difficulties == null || difficulties.isEmpty() || difficulties.contains(d.getDifficultyType()))
+                && (versionFilter == null || versionFilter.equals(d.getSong().getAddedVersion()));
     }
 
     /** 레벨이 속한 0.5 단위 폴더의 시작값. 9.49 -> 9.00, 9.50 -> 9.50, 9.99 -> 9.50. */

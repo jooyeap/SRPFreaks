@@ -5,10 +5,11 @@ import type { DifficultyType, InstrumentPart } from "@/lib/types";
 
 /** 곡 목록 쿼리 키. 앞부분 "song-list"로 기록 저장 후 한꺼번에 무효화한다(AFFECTED_QUERY_KEYS). 내 기록이 섞이므로 사용자 id를 넣는다. */
 export const songListKeys = {
-  folders: (userId: number) => ["song-list", "folders", userId] as const,
+  // 필터가 걸리면 폴더 구성이 달라지므로 조건도 키에 넣는다. 필터 없음(EMPTY_SONG_FILTERS)이 전체 현황용 키다
+  folders: (userId: number, filters: SongListFilters = EMPTY_SONG_FILTERS) => ["song-list", "folders", userId, filters] as const,
   // 같은 시작값(9.50)이 큰 폴더와 하위 폴더 둘 다 있으므로 단위(step)도 키에 넣는다
-  folder: (userId: number, lo: number, step: FolderStep) => ["song-list", "folder", userId, step, lo] as const,
-  results: (userId: number, filters: SongListFilters) => ["song-list", "results", userId, filters] as const,
+  folder: (userId: number, lo: number, step: FolderStep, filters: SongListFilters = EMPTY_SONG_FILTERS) =>
+    ["song-list", "folder", userId, step, lo, filters] as const,
 };
 
 /** 폴더 단위: 큰 폴더는 0.5, 그 안의 하위 폴더는 0.05. 서버의 `folderStep` 파라미터 값이다. */
@@ -27,7 +28,7 @@ export interface SongListFilters {
 
 export const EMPTY_SONG_FILTERS: SongListFilters = { q: "", part: null, difficulties: [], version: null };
 
-/** 검색하거나 필터를 쓰면 폴더 대신 결과 목록을 보여 준다 (DESIGN-UI 9장). */
+/** 검색하거나 필터를 쓰는 중인가. 폴더는 그대로 두고 폴더 안 채보만 걸러진다 (DESIGN-UI 9장). */
 export function isFiltering(filters: SongListFilters): boolean {
   return filters.q.trim() !== "" || filters.part !== null || filters.difficulties.length > 0 || filters.version !== null;
 }
@@ -39,8 +40,8 @@ export function activeFilterCount(filters: SongListFilters): number {
 
 // 주소 쿼리 (`/songs?q=…&part=G&diff=MAS,EXT&ver=…`). 짧은 코드를 쓰고, 알 수 없는 값은 버린다(주소는 사용자가 고칠 수 있다).
 const PART_CODES: Record<string, InstrumentPart> = { G: "GUITAR", B: "BASS" };
-const DIFF_CODES: Record<string, DifficultyType> = { BAS: "BASIC", ADV: "ADVANCED", EXT: "EXTREME", MAS: "MASTER" };
-const DIFF_ORDER: DifficultyType[] = ["BASIC", "ADVANCED", "EXTREME", "MASTER"];
+const DIFF_CODES: Record<string, DifficultyType> = { ADV: "ADVANCED", EXT: "EXTREME", MAS: "MASTER" };
+const DIFF_ORDER: DifficultyType[] = ["ADVANCED", "EXTREME", "MASTER"];
 const MAX_TEXT = 100;
 
 export function filtersFromParams(params: URLSearchParams): SongListFilters {
@@ -74,8 +75,19 @@ export function filtersToQuery(filters: SongListFilters): string {
   return params.toString();
 }
 
-export function fetchChartFolders(signal?: AbortSignal): Promise<ChartFolderListResponse> {
-  return apiFetch<ChartFolderListResponse>("/songs/chart-folders", { signal });
+/** 필터를 서버 조건으로 바꾼다. 폴더 목록과 폴더 안 채보 목록이 같은 조건을 쓰므로 개수가 맞는다. */
+function filterQuery(filters: SongListFilters) {
+  return {
+    q: filters.q.trim() || null,
+    part: filters.part,
+    difficulty: filters.difficulties.length > 0 ? filters.difficulties.join(",") : null,
+    version: filters.version,
+  };
+}
+
+/** 레벨 폴더 목록. 필터를 주면 맞는 채보만으로 폴더가 만들어진다(맞는 채보가 없는 폴더는 오지 않는다). */
+export function fetchChartFolders(signal?: AbortSignal, filters: SongListFilters = EMPTY_SONG_FILTERS): Promise<ChartFolderListResponse> {
+  return apiFetch<ChartFolderListResponse>("/songs/chart-folders", { query: filterQuery(filters), signal });
 }
 
 /** 폴더 안 채보 한 페이지. folder는 폴더 시작 레벨(예: 9.5), step은 그 단위. 단위의 배수가 아니면 서버가 400으로 거절한다. */
@@ -84,28 +96,10 @@ export function fetchFolderCharts(
   step: FolderStep,
   page: number,
   signal?: AbortSignal,
+  filters: SongListFilters = EMPTY_SONG_FILTERS,
 ): Promise<PageResponse<ChartRowResponse>> {
   return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", {
-    query: { folder: lo.toFixed(2), folderStep: step, page, size: CHARTS_PAGE_SIZE },
-    signal,
-  });
-}
-
-/** 검색·필터 결과 한 페이지. */
-export function fetchFilteredCharts(
-  filters: SongListFilters,
-  page: number,
-  signal?: AbortSignal,
-): Promise<PageResponse<ChartRowResponse>> {
-  return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", {
-    query: {
-      q: filters.q.trim() || null,
-      part: filters.part,
-      difficulty: filters.difficulties.length > 0 ? filters.difficulties.join(",") : null,
-      version: filters.version,
-      page,
-      size: CHARTS_PAGE_SIZE,
-    },
+    query: { ...filterQuery(filters), folder: lo.toFixed(2), folderStep: step, page, size: CHARTS_PAGE_SIZE },
     signal,
   });
 }

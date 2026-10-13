@@ -56,7 +56,7 @@ export function EntryCard({
           onClick={() => onRecord(entry)}
           aria-label={`${entry.title} 기록 입력`}
           // 보이는 크기는 32px 그대로, ::after로 누를 수 있는 영역만 사방 6px 넓힌다(44px). 모바일에서 옆 줄 버튼을 잘못 누르지 않게 한다
-          className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-chip-line text-base leading-none text-fg after:absolute after:-inset-1.5 after:content-[''] hover:bg-table-head"
+          className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-chip-line text-base leading-none text-fg after:absolute after:-inset-1.5 after:content-[''] hover:bg-table-head"
         >
           +
         </button>

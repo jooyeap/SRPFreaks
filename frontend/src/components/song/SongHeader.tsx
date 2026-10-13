@@ -2,7 +2,7 @@
 import { ChartBadge } from "@/components/table/Badges";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 
-const CHIP = "rounded-full border border-chip-line px-2 py-0.5 text-xs font-bold text-fg-sub";
+const CHIP = "rounded-lg border border-chip-line px-2 py-0.5 text-xs font-bold text-fg-sub";
 
 /**
  * 곡 정보 헤더 (시안 "곡 상세"): 큰 재킷 칸(단색) + 곡명, 아티스트, 칩 줄(버전, `Guitar | MAS 9.80` 알약).

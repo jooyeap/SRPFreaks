@@ -2,10 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { OverallStageCard } from "@/components/mypage/OverallStageCard";
+import { Pager, usePaged } from "@/components/Pager";
+import { RateFolderMaster } from "@/components/mypage/RateFolderMaster";
+import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { RateFolderCard } from "@/components/mypage/RateFolderCard";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api";
-import type { RateFolderListResponse } from "@/lib/api-types";
+import type { RateFolderListResponse, RateFolderResponse } from "@/lib/api-types";
 import { fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { overallStages } from "@/lib/my-page";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
@@ -108,15 +111,33 @@ function FolderList({
     return query.data.folders.length === 0 ? (
       <p className="text-sm text-fg-sub">{emptyText}</p>
     ) : (
-      <div className="flex flex-col gap-2.5">
-        {query.data.folders.map((folder) => (
-          <RateFolderCard key={folder.key} axis={axis} folder={folder} />
-        ))}
-      </div>
+      <PagedFolders key={axis} axis={axis} folders={query.data.folders} />
     );
   }
   if (query.isError) {
     return <p role="alert" className="text-sm text-fg">{errorMessage(query.error)}</p>;
   }
   return <Skeleton label="통계를 불러오는 중입니다." className="h-72" />;
+}
+
+/** 폴더가 많아서(특히 서열표 난이도) 10개씩 나눠 보여 준다. */
+function PagedFolders({ axis, folders }: { axis: StatsAxis; folders: readonly RateFolderResponse[] }) {
+  // 데스크톱은 좌우 분할(좌: 폴더 목록, 우: 상세), 모바일은 접이식 카드
+  const desktop = useMediaQuery(DESKTOP_QUERY);
+  if (desktop) return <RateFolderMaster axis={axis} folders={folders} />;
+  return <MobileFolders axis={axis} folders={folders} />;
+}
+
+function MobileFolders({ axis, folders }: { axis: StatsAxis; folders: readonly RateFolderResponse[] }) {
+  const { page, totalPages, pageItems, setPage } = usePaged(folders);
+  return (
+    <>
+      <div className="flex flex-col gap-2.5">
+        {pageItems.map((folder) => (
+          <RateFolderCard key={folder.key} axis={axis} folder={folder} />
+        ))}
+      </div>
+      <Pager page={page} totalPages={totalPages} onChange={setPage} />
+    </>
+  );
 }

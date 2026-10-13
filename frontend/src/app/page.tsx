@@ -27,7 +27,7 @@ export default function Home() {
         <p className="mt-2 text-xs text-fg-dim">로그인은 Google 계정으로만 합니다. 기록은 직접 입력합니다.</p>
         <Link
           href="/login"
-          className="mt-3 inline-block rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+          className="mt-3 inline-block rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head"
         >
           로그인
         </Link>

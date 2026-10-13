@@ -64,7 +64,7 @@ export function RatingEntryCard({
             type="button"
             onClick={() => onDelete(entry)}
             aria-label={`${entry.title} 기록 삭제`}
-            className="relative z-10 mt-1 rounded-full border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
+            className="relative z-10 mt-1 rounded-lg border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
           >
             삭제
           </button>

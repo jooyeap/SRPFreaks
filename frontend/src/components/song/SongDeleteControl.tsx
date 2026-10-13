@@ -8,7 +8,7 @@ import { deleteChart, deleteSong, SONG_DELETE_AFFECTED_KEYS } from "@/lib/song-a
 
 type Target = "song" | "chart";
 
-const BTN = "rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg";
+const BTN = "rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg";
 
 /**
  * 곡 삭제 / 채보 삭제 (ROOT·ADMIN 전용, 부모가 role을 보고 그린다. 서버도 권한을 다시 검사한다).

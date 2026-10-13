@@ -35,7 +35,7 @@ function MyPageContent() {
       <section className="flex flex-col items-start gap-3">
         <h1 className="text-xl font-semibold text-fg">마이페이지</h1>
         <p className="text-sm text-fg-sub">내 레이팅과 달성 현황을 보려면 로그인해 주세요.</p>
-        <Link href="/login" className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+        <Link href="/login" className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           로그인
         </Link>
       </section>

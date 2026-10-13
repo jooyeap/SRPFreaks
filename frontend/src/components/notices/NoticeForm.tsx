@@ -83,7 +83,7 @@ export function NoticeForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+          className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
         >
           {pending ? "저장 중" : submitLabel}
         </button>
@@ -92,7 +92,7 @@ export function NoticeForm({
             type="button"
             disabled={pending}
             onClick={onCancel}
-            className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+            className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
           >
             취소
           </button>

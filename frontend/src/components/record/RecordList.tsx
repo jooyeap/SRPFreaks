@@ -47,7 +47,7 @@ export function RecordList({
               onClick={() => onEdit(record)}
               aria-pressed={editingId === record.id}
               aria-label={`${formatRate(record.achievementRate)} 기록 수정`}
-              className="ml-auto min-h-9 rounded-full border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
+              className="ml-auto min-h-9 rounded-lg border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
             >
               수정
             </button>

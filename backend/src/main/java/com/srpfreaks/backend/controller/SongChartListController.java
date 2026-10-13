@@ -32,8 +32,13 @@ public class SongChartListController {
     private final SongChartListService songChartListService;
 
     @GetMapping("/chart-folders")
-    public ChartFolderListResponse folders(@AuthenticationPrincipal AuthenticatedUser user) {
-        return songChartListService.folders(user.id());
+    public ChartFolderListResponse folders(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) InstrumentPart part,
+            @RequestParam(required = false) List<DifficultyType> difficulty,
+            @RequestParam(required = false) String version) {
+        return songChartListService.folders(user.id(), q, part, difficulty, version);
     }
 
     @GetMapping("/charts")

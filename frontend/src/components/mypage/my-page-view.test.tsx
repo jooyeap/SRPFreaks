@@ -136,6 +136,24 @@ describe("MyPageView", () => {
     }
   });
 
+  it("폴더가 10개를 넘으면 10개씩 나눠 보여 주고 다음 페이지로 넘어간다", async () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ ...rateFolders.folders[0], key: 20 - i }));
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/stats/level-rate-folders")) return Promise.resolve(json({ folders: many }));
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(folders));
+      return Promise.resolve(json({}, 404));
+    });
+    renderView("stats");
+    await screen.findByRole("region", { name: "레벨 20.00 ~ 20.49" });
+    expect(screen.getAllByRole("region", { name: /^레벨 / })).toHaveLength(10);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getAllByRole("region", { name: /^레벨 / })).toHaveLength(2);
+    expect(screen.getByRole("region", { name: "레벨 10.00 ~ 10.49" })).toBeInTheDocument();
+  });
+
   it("서열표 난이도 기준을 누르면 바꿔 달라고 알린다", async () => {
     const onStateChange = renderView("stats");
     fireEvent.click(await screen.findByRole("tab", { name: "서열표 난이도" }));
@@ -194,5 +212,51 @@ describe("MyPageView", () => {
     renderView("stats");
     expect(await screen.findByText("달성 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.")).toBeInTheDocument();
     expect(await screen.findByRole("region", { name: "레벨 9.50 ~ 9.99" })).toBeInTheDocument();
+  });
+
+  describe("데스크톱(좌우 분할)", () => {
+    beforeEach(() => {
+      vi.stubGlobal("matchMedia", (query: string) => ({
+        matches: true,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }));
+    });
+
+    it("왼쪽에 폴더 목록만 있고 폴더를 고르면 오른쪽에 달성률 구간이 나온다", async () => {
+      renderView("stats");
+      const list = await screen.findByRole("list", { name: "폴더 목록" });
+      expect(screen.getByText(/왼쪽에서 폴더를 선택하면/)).toBeInTheDocument();
+      expect(screen.queryByRole("list", { name: "9.50 ~ 9.99 달성률 구간" })).toBeNull();
+
+      const item = within(list).getByRole("button", { name: /9\.50 ~ 9\.99/ });
+      expect(item).toHaveAttribute("aria-pressed", "false");
+      fireEvent.click(item);
+
+      expect(item).toHaveAttribute("aria-pressed", "true");
+      const detail = screen.getByRole("region", { name: "9.50 ~ 9.99 상세" });
+      const rows = within(within(detail).getByRole("list", { name: "9.50 ~ 9.99 달성률 구간" })).getAllByRole("listitem");
+      expect(rows).toHaveLength(7);
+      expect(rows[0]).toHaveTextContent("MAX 1");
+      expect(within(rows[0]).getByRole("link")).toHaveAttribute("href", "/me/folder?axis=level&key=9.50&bucket=R95");
+      // 모바일 카드는 함께 그리지 않는다
+      expect(screen.queryByRole("region", { name: "레벨 9.50 ~ 9.99" })).toBeNull();
+    });
+
+    it("다른 폴더를 고르면 상세가 그 폴더로 바뀐다", async () => {
+      fetchMock.mockImplementation((input) => {
+        const url = String(input);
+        if (url.includes("/stats/level-rate-folders")) return Promise.resolve(json({ folders: [rateFolders.folders[0], { ...rateFolders.folders[0], key: 8 }] }));
+        if (url.includes("/songs/chart-folders")) return Promise.resolve(json(folders));
+        return Promise.resolve(json({}, 404));
+      });
+      renderView("stats");
+      const list = await screen.findByRole("list", { name: "폴더 목록" });
+      fireEvent.click(within(list).getByRole("button", { name: /9\.50 ~ 9\.99/ }));
+      fireEvent.click(within(list).getByRole("button", { name: /8\.00 ~ 8\.49/ }));
+      expect(screen.getByRole("region", { name: "8.00 ~ 8.49 상세" })).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: "9.50 ~ 9.99 상세" })).toBeNull();
+    });
   });
 });

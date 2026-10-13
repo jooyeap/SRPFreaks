@@ -40,7 +40,6 @@ export function RateFolderCard({ axis, folder }: { axis: StatsAxis; folder: Rate
   const counts = folderStageCounts(folder);
   const reached = groupStage(counts);
   const bodyId = `rate-folder-${axis}-${folder.key.toFixed(2)}`;
-  const badges = bucketBadges(folder, "R95");
 
   return (
     <section aria-label={`${axis === "level" ? "레벨" : "레이팅 상수 난이도"} ${title}`} className="overflow-hidden rounded-[14px] border border-line bg-card">
@@ -81,7 +80,7 @@ export function RateFolderCard({ axis, folder }: { axis: StatsAxis; folder: Rate
                 <span
                   key={chip.key}
                   data-stage={chip.stage ?? undefined}
-                  className={`rounded-full border border-chip-line px-2 py-0.5 text-xs ${
+                  className={`rounded-lg border border-chip-line px-2 py-0.5 text-xs ${
                     chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
                   }`}
                 >
@@ -94,59 +93,71 @@ export function RateFolderCard({ axis, folder }: { axis: StatsAxis; folder: Rate
       </h3>
       <div id={bodyId} hidden={!open}>
         {open ? (
-          <ul aria-label={`${title} 달성률 구간`} className="flex flex-col gap-1.5 border-t border-row-line p-2.5">
-            {BUCKETS.map(({ key, label }) => {
-              const count = bucketCount(folder, key);
-              const stage = bucketStage(key);
-              const width = folder.total > 0 ? (count / folder.total) * 100 : 0;
-              return (
-                <li key={key} className="rounded-lg border border-row-line bg-table-head/40">
-                  <Link
-                    href={bucketListHref(axis, folder.key, key)}
-                    className="flex flex-col gap-1.5 px-3 py-2 hover:bg-table-head"
-                    aria-label={`${label} ${count}개 보기`}
-                  >
-                    <span className="flex items-center gap-2">
-                      {/* 단계 글자를 채운 칩으로 같이 보인다(색만으로 구분하지 않는다) */}
-                      <span
-                        data-stage={stage ?? undefined}
-                        className={`inline-flex min-w-9 justify-center rounded px-1.5 py-px font-num text-[11px] font-bold ${stage ? "stage-chip" : "border border-chip-line text-fg-dim"}`}
-                      >
-                        {BUCKET_CHIP[key]}
-                      </span>
-                      <span className="text-sm text-fg">{label}</span>
-                      <span className="ml-auto flex items-baseline gap-1 text-sm text-fg">
-                        <span className="font-num font-semibold">{count}</span>
-                        <span className="text-xs text-fg-sub">곡</span>
-                        <span aria-hidden="true" className="ml-1 text-fg-dim">›</span>
-                      </span>
-                    </span>
-                    <span aria-hidden="true" className="flex h-[5px] overflow-hidden rounded-full bg-table-head">
-                      {count > 0 ? (
-                        <span
-                          data-stage={stage ?? undefined}
-                          className={`h-full ${stage ? "stage-bar" : "bg-chip-line"}`}
-                          style={{ width: `${width}%` }}
-                        />
-                      ) : null}
-                    </span>
-                    {key === "R95" ? (
-                      <span className="flex gap-1.5 text-[11px]">
-                        <span data-stage="EXC" className={`stage-text border-l-2 border-current pl-1.5 font-num font-bold ${badges.max === 0 ? "opacity-50" : ""}`}>
-                          MAX {badges.max}
-                        </span>
-                        <span data-stage="FC" className={`stage-text border-l-2 border-current pl-1.5 font-num font-bold ${badges.fc === 0 ? "opacity-50" : ""}`}>
-                          FC {badges.fc}
-                        </span>
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          <BucketList axis={axis} folder={folder} />
         ) : null}
       </div>
     </section>
+  );
+}
+
+/**
+ * 달성률 구간 7개(막대 + 개수) 목록. 모바일 아코디언과 데스크톱 우측 상세가 같이 쓴다. 구간을 누르면 채보 목록 화면으로 간다.
+ * className으로 배치(세로 목록 / 2열 격자)만 바꾼다.
+ */
+export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 border-t border-row-line p-2.5" }: { axis: StatsAxis; folder: RateFolderResponse; className?: string }) {
+  const title = folderLabel(axis, folder.key);
+  const badges = bucketBadges(folder, "R95");
+  return (
+    <ul aria-label={`${title} 달성률 구간`} className={className}>
+      {BUCKETS.map(({ key, label }) => {
+        const count = bucketCount(folder, key);
+        const stage = bucketStage(key);
+        const width = folder.total > 0 ? (count / folder.total) * 100 : 0;
+        return (
+          <li key={key} className="rounded-lg border border-row-line bg-table-head/40">
+            <Link
+              href={bucketListHref(axis, folder.key, key)}
+              className="flex flex-col gap-1.5 px-3 py-2 hover:bg-table-head"
+              aria-label={`${label} ${count}개 보기`}
+            >
+              <span className="flex items-center gap-2">
+                {/* 단계 글자를 채운 칩으로 같이 보인다(색만으로 구분하지 않는다) */}
+                <span
+                  data-stage={stage ?? undefined}
+                  className={`inline-flex min-w-9 justify-center rounded px-1.5 py-px font-num text-[11px] font-bold ${stage ? "stage-chip" : "border border-chip-line text-fg-dim"}`}
+                >
+                  {BUCKET_CHIP[key]}
+                </span>
+                <span className="text-sm text-fg">{label}</span>
+                <span className="ml-auto flex items-baseline gap-1 text-sm text-fg">
+                  <span className="font-num font-semibold">{count}</span>
+                  <span className="text-xs text-fg-sub">곡</span>
+                  <span aria-hidden="true" className="ml-1 text-fg-dim">›</span>
+                </span>
+              </span>
+              <span aria-hidden="true" className="flex h-[5px] overflow-hidden rounded-full bg-table-head">
+                {count > 0 ? (
+                  <span
+                    data-stage={stage ?? undefined}
+                    className={`h-full ${stage ? "stage-bar" : "bg-chip-line"}`}
+                    style={{ width: `${width}%` }}
+                  />
+                ) : null}
+              </span>
+              {key === "R95" ? (
+                <span className="flex gap-1.5 text-[11px]">
+                  <span data-stage="EXC" className={`stage-text border-l-2 border-current pl-1.5 font-num font-bold ${badges.max === 0 ? "opacity-50" : ""}`}>
+                    MAX {badges.max}
+                  </span>
+                  <span data-stage="FC" className={`stage-text border-l-2 border-current pl-1.5 font-num font-bold ${badges.fc === 0 ? "opacity-50" : ""}`}>
+                    FC {badges.fc}
+                  </span>
+                </span>
+              ) : null}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

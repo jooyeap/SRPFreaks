@@ -26,7 +26,7 @@ function SongDetailPage() {
       <section className="flex flex-col items-start gap-3">
         <h1 className="text-xl font-semibold text-fg">곡 상세</h1>
         <p className="text-sm text-fg-sub">곡 정보와 내 기록을 보려면 로그인해 주세요.</p>
-        <Link href="/login" className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+        <Link href="/login" className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           로그인
         </Link>
       </section>

@@ -57,7 +57,7 @@ export function PlayerDetailView({
       href="/players"
       aria-label="유저 목록으로"
       title="유저 목록으로"
-      className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+      className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
     >
       <span aria-hidden="true">←</span>
     </Link>
@@ -106,7 +106,7 @@ export function PlayerDetailView({
               type="button"
               disabled={deletion.isPending}
               onClick={() => deletion.mutate(target)}
-              className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+              className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
             >
               {deletion.isPending ? "삭제 중" : "삭제"}
             </button>
@@ -117,7 +117,7 @@ export function PlayerDetailView({
                 deletion.reset();
                 setTarget(null);
               }}
-              className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+              className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
             >
               취소
             </button>

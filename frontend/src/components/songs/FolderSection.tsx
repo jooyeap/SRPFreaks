@@ -7,7 +7,15 @@ import { chipsOf, groupStage } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
 import type { ChartFolderResponse } from "@/lib/api-types";
 import { EMPTY_MARK } from "@/lib/format";
-import { type FolderStep, fetchFolderCharts, folderAverage, folderTitle, songListKeys } from "@/lib/song-list";
+import {
+  EMPTY_SONG_FILTERS,
+  type FolderStep,
+  fetchFolderCharts,
+  folderAverage,
+  folderTitle,
+  type SongListFilters,
+  songListKeys,
+} from "@/lib/song-list";
 
 /**
  * 레벨 폴더 하나. 큰 폴더(0.5 단위)를 펼치면 안에 0.05 단위 하위 폴더(같은 컴포넌트, level="sub")가 나오고,
@@ -20,11 +28,14 @@ export function FolderSection({
   userId,
   folder,
   includeZero,
+  filters = EMPTY_SONG_FILTERS,
   level = "top",
 }: {
   userId: number;
   folder: ChartFolderResponse;
   includeZero: boolean;
+  /** 걸려 있는 검색·필터. 폴더 안 채보 목록도 같은 조건으로 받는다 */
+  filters?: SongListFilters;
   /** top: 0.5 단위 큰 폴더, sub: 그 안의 0.05 단위 하위 폴더 */
   level?: "top" | "sub";
 }) {
@@ -35,8 +46,8 @@ export function FolderSection({
   // 채보를 직접 보여 주는 폴더: 하위 폴더 또는, 하위 폴더가 없는 큰 폴더
   const showsCharts = isSub || subFolders.length === 0;
   const pages = useInfiniteQuery({
-    queryKey: songListKeys.folder(userId, folder.lo, step),
-    queryFn: ({ pageParam, signal }) => fetchFolderCharts(folder.lo, step, pageParam, signal),
+    queryKey: songListKeys.folder(userId, folder.lo, step, filters),
+    queryFn: ({ pageParam, signal }) => fetchFolderCharts(folder.lo, step, pageParam, signal, filters),
     initialPageParam: 0,
     getNextPageParam: (last) => (last.page + 1 < last.totalPages ? last.page + 1 : undefined),
     enabled: open && showsCharts,
@@ -75,7 +86,7 @@ export function FolderSection({
               <span
                 key={chip.key}
                 data-stage={chip.stage ?? undefined}
-                className={`rounded-full border border-chip-line px-2 py-0.5 text-xs ${
+                className={`rounded-lg border border-chip-line px-2 py-0.5 text-xs ${
                   chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
                 }`}
               >
@@ -101,7 +112,7 @@ export function FolderSection({
         {!open ? null : !showsCharts ? (
           <div className="flex flex-col gap-2 p-2">
             {subFolders.map((sub) => (
-              <FolderSection key={sub.lo} userId={userId} folder={sub} includeZero={includeZero} level="sub" />
+              <FolderSection key={sub.lo} userId={userId} folder={sub} includeZero={includeZero} filters={filters} level="sub" />
             ))}
           </div>
         ) : pages.isError ? (

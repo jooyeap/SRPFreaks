@@ -7,10 +7,10 @@ const PART_OPTIONS: readonly ChipOption<InstrumentPart>[] = [
   { value: "GUITAR", label: "Guitar" },
   { value: "BASS", label: "Bass" },
 ];
-const DIFFICULTIES: readonly DifficultyType[] = ["BASIC", "ADVANCED", "EXTREME", "MASTER"];
+const DIFFICULTIES: readonly DifficultyType[] = ["ADVANCED", "EXTREME", "MASTER"];
 
 /**
- * 곡 목록 필터: 파트(전체/Guitar/Bass), 난이도(BAS/ADV/EXT/MAS 여러 개), 버전. 속성 필터는 두지 않는다 (DESIGN-UI 9장).
+ * 곡 목록 필터: 파트(전체/Guitar/Bass), 난이도(ADV/EXT/MAS 여러 개), 버전. 속성 필터는 두지 않는다 (DESIGN-UI 9장).
  * 난이도는 아무것도 고르지 않으면 "전체"다. 검색어는 이 패널이 아니라 위의 검색창이 다룬다.
  */
 export function SongListFilterPanel({
@@ -51,7 +51,7 @@ export function SongListFilterPanel({
         <select
           value={filters.version ?? ""}
           onChange={(e) => onChange({ ...filters, version: e.target.value === "" ? null : e.target.value })}
-          className="rounded-full border border-chip-line bg-card px-3 py-1 text-sm text-fg"
+          className="rounded-lg border border-chip-line bg-card px-3 py-1 text-sm text-fg"
         >
           <option value="">전체</option>
           {versions.map((v) => (
@@ -64,7 +64,7 @@ export function SongListFilterPanel({
       <button
         type="button"
         onClick={() => onChange({ ...EMPTY_SONG_FILTERS, q: filters.q })}
-        className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+        className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
       >
         초기화
       </button>
