@@ -5,7 +5,7 @@ export type NavIconName = "songs" | "table" | "rating" | "players" | "guide" | "
 export const NAV_ITEMS: readonly { href: string; label: string; icon: NavIconName }[] = [
   { href: "/songs", label: "곡 목록", icon: "songs" },
   { href: "/table", label: "서열표", icon: "table" },
-  { href: "/rating", label: "레이팅", icon: "rating" },
+  { href: "/me", label: "마이페이지", icon: "rating" },
   { href: "/players", label: "유저", icon: "players" },
   { href: "/guide", label: "설명서", icon: "guide" },
   { href: "/notices", label: "공지", icon: "notices" },

@@ -29,7 +29,7 @@ describe("MobileMenu", () => {
     const nav = within(dialog).getByRole("navigation", { name: "주요 메뉴" });
     expect(within(nav).getByRole("link", { name: "곡 목록" })).toHaveAttribute("href", "/songs");
     expect(within(nav).getByRole("link", { name: "서열표" })).toHaveAttribute("href", "/table");
-    expect(within(nav).getByRole("link", { name: "레이팅" })).toHaveAttribute("href", "/rating");
+    expect(within(nav).getByRole("link", { name: "마이페이지" })).toHaveAttribute("href", "/me");
     expect(within(nav).getByRole("link", { name: "유저" })).toHaveAttribute("href", "/players");
     expect(within(nav).getByRole("link", { name: "설명서" })).toHaveAttribute("href", "/guide");
     expect(within(nav).getByRole("link", { name: "공지" })).toHaveAttribute("href", "/notices");

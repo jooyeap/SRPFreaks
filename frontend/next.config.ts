@@ -27,6 +27,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // 레이팅 화면이 마이페이지(/me)로 바뀌었다. 북마크·공유된 옛 주소가 끊기지 않게 임시(307) 이동으로 보낸다.
+  async redirects() {
+    return [{ source: "/rating", destination: "/me", permanent: false }];
+  },
   async rewrites() {
     return [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }];
   },
