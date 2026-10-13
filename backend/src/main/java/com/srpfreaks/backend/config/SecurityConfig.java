@@ -118,10 +118,12 @@ public class SecurityConfig {
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/**", config);
         // 가져오기 경로만 공식 사이트(북마클릿이 실행되는 페이지)의 Origin을 허용한다. 쿠키는 쓰지 않고(credentials 없음),
-        // 가져오기 토큰을 Authorization 헤더로 받는다. 더 구체적인 경로라서 위 /api/** 설정보다 먼저 적용된다.
+        // 가져오기 토큰을 Authorization 헤더로 받는다.
+        // 순서가 중요하다: UrlBasedCorsConfigurationSource는 "가장 구체적인 패턴"이 아니라 먼저 등록된 일치 패턴을 쓴다.
+        // /api/**를 먼저 등록하면 가져오기 경로도 그 설정(공식 사이트 Origin 불허)으로 처리돼 사전 요청(preflight)이 막힌다.
         source.registerCorsConfiguration("/api/v1/imports/**", importCorsConfiguration(appProperties));
+        source.registerCorsConfiguration("/api/**", config);
         return source;
     }
 
