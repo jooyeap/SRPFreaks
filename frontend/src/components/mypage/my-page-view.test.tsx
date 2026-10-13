@@ -126,6 +126,20 @@ describe("MyPageView", () => {
     expect(within(rows[0]).getByRole("link")).toHaveAttribute("href", "/me/folder?axis=level&key=9.50&bucket=R95");
   });
 
+  it("95~100 구간의 막대는 MAX · FC · SS 순으로 단계별로 칠해진다", async () => {
+    renderView("stats");
+    const card = await screen.findByRole("region", { name: "레벨 9.50 ~ 9.99" });
+    fireEvent.click(within(card).getByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    const row = within(card).getAllByRole("listitem")[0];
+    const segs = Array.from(row.querySelectorAll("[data-segment]"));
+    // R95 3개 = EXC 1 + FC 1 + SS 1, 폴더 전체 10개 기준 각 10%
+    expect(segs.map((e) => e.getAttribute("data-segment"))).toEqual(["EXC", "FC", "SS"]);
+    expect(segs.map((e) => e.getAttribute("data-stage"))).toEqual(["EXC", "FC", "SS"]);
+    expect(segs.map((e) => (e as HTMLElement).style.width)).toEqual(["10%", "10%", "10%"]);
+    // 다른 구간은 한 칸(S 구간 90~94.99는 1개)
+    expect(within(card).getAllByRole("listitem")[1].querySelectorAll("[data-segment]")).toHaveLength(1);
+  });
+
   it("폴더 머리에 단계 분포 칩(EXC/FC/SS/S/S 미만)을 모아 보인다", async () => {
     renderView("stats");
     const card = await screen.findByRole("region", { name: "레벨 9.50 ~ 9.99" });

@@ -112,7 +112,15 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
       {BUCKETS.map(({ key, label }) => {
         const count = bucketCount(folder, key);
         const stage = bucketStage(key);
-        const width = folder.total > 0 ? (count / folder.total) * 100 : 0;
+        // 막대는 구간 안의 단계로 나눠 칠한다: 95~100은 MAX(EXC) · FC · SS 순, 나머지는 한 칸. 칸 너비는 폴더 전체 채보 대비다
+        const segments = (key === "R95"
+          ? [
+              { key: "EXC", stage: "EXC" as const, count: badges.max },
+              { key: "FC", stage: "FC" as const, count: badges.fc },
+              { key: "SS", stage: "SS" as const, count: count - badges.max - badges.fc },
+            ]
+          : [{ key, stage, count }]
+        ).filter((seg) => seg.count > 0);
         return (
           <li key={key} className="rounded-lg border border-row-line bg-table-head/40">
             <Link
@@ -136,13 +144,15 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
                 </span>
               </span>
               <span aria-hidden="true" className="flex h-[5px] overflow-hidden rounded-full bg-table-head">
-                {count > 0 ? (
+                {segments.map((seg) => (
                   <span
-                    data-stage={stage ?? undefined}
-                    className={`h-full ${stage ? "stage-bar" : "bg-chip-line"}`}
-                    style={{ width: `${width}%` }}
+                    key={seg.key}
+                    data-stage={seg.stage ?? undefined}
+                    data-segment={seg.key}
+                    className={`h-full ${seg.stage ? "stage-bar" : "bg-chip-line"}`}
+                    style={{ width: `${folder.total > 0 ? (seg.count / folder.total) * 100 : 0}%` }}
                   />
-                ) : null}
+                ))}
               </span>
               {key === "R95" ? (
                 <span className="flex gap-1.5 text-[11px]">
