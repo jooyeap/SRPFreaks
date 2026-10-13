@@ -10,7 +10,7 @@ export interface ChipOption<T extends string> {
   label: string;
 }
 
-/** 하나만 고르는 필터. items의 value가 null인 칸은 "전체" 같은 해제 칸이다. */
+/** 하나만 고르는 필터. items의 value가 null인 칸은 "전체" 같은 해제 칸이다. 라벨은 왼쪽, 칸은 내용 폭만큼만 차지한다(작게). */
 export function Segmented<T extends string>({
   label,
   items,
@@ -23,9 +23,9 @@ export function Segmented<T extends string>({
   onChange: (value: T | null) => void;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex flex-col gap-1">
-      <span className="text-xs text-fg-dim">{label}</span>
-      <div className="flex w-full max-w-sm rounded-[10px] border border-line bg-table-head p-[3px]">
+    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1.5">
+      <span className="mr-1 text-xs text-fg-dim">{label}</span>
+      <div className="inline-flex rounded-lg border border-line bg-table-head p-0.5">
         {items.map((item) => {
           const on = item.value === value;
           return (
@@ -34,7 +34,7 @@ export function Segmented<T extends string>({
               type="button"
               aria-pressed={on}
               onClick={() => onChange(item.value)}
-              className={`min-h-9 flex-1 rounded-lg px-2 text-sm ${
+              className={`rounded-md px-3 py-1 text-sm ${
                 on ? "bg-card font-bold text-fg shadow-sm ring-1 ring-chip-line" : "text-fg-dim hover:text-fg"
               }`}
             >
@@ -85,7 +85,7 @@ export function CheckChip({ pressed, onClick, children }: { pressed: boolean; on
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-sm ${
+      className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm ${
         pressed ? "border-check-line bg-check-bg font-bold text-check-fg" : "border-chip-line text-fg-sub hover:text-fg"
       }`}
     >
@@ -113,18 +113,16 @@ export function MultiFilterChips<T extends string>({
   onClear: () => void;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex flex-col gap-1">
-      <span className="text-xs text-fg-dim">{label}</span>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <CheckChip pressed={selected.length === 0} onClick={onClear}>
-          전체
+    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1.5">
+      <span className="mr-1 text-xs text-fg-dim">{label}</span>
+      <CheckChip pressed={selected.length === 0} onClick={onClear}>
+        전체
+      </CheckChip>
+      {options.map((option) => (
+        <CheckChip key={option.value} pressed={selected.includes(option.value)} onClick={() => onToggle(option.value)}>
+          {option.label}
         </CheckChip>
-        {options.map((option) => (
-          <CheckChip key={option.value} pressed={selected.includes(option.value)} onClick={() => onToggle(option.value)}>
-            {option.label}
-          </CheckChip>
-        ))}
-      </div>
+      ))}
     </div>
   );
 }
