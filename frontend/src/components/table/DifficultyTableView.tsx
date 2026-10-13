@@ -6,8 +6,9 @@ import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
-import { Chip, FilterChips, MultiFilterChips, type ChipOption } from "@/components/table/FilterChips";
+import { Chip } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
+import { PART_OPTIONS, TableFilterPanel } from "@/components/table/TableFilterPanel";
 import { TableSearch } from "@/components/table/TableSearch";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
@@ -18,25 +19,14 @@ import {
   fetchAllTierGroups,
   fetchDifficultyTables,
   fetchTableEntries,
-  PATTERN_OPTIONS,
   pickRatingTable,
-  RECOMMEND_OPTIONS,
   tableKeys,
-  toggleValue,
   type TableFilters,
 } from "@/lib/difficulty-table";
 import type { TableEntryResponse } from "@/lib/api-types";
 import { DEFAULT_VIEW_STATE, type TableViewState } from "@/lib/table-view-state";
 import type { TableSort } from "@/lib/table-sort";
-import type { InstrumentPart } from "@/lib/types";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
-
-const PART_OPTIONS: readonly ChipOption<InstrumentPart>[] = [
-  { value: "GUITAR", label: "Guitar" },
-  { value: "BASS", label: "Bass" },
-];
-const RECOMMEND_CHIPS: readonly ChipOption<string>[] = RECOMMEND_OPTIONS.map((v) => ({ value: v, label: v }));
-const PATTERN_CHIPS: readonly ChipOption<string>[] = PATTERN_OPTIONS.map((v) => ({ value: v, label: v }));
 
 /** 접힌 필터 줄에 보여 줄 요약. 걸린 필터가 없으면 "전체". */
 function filterSummary(filters: TableFilters, includeZero: boolean): string {
@@ -175,21 +165,7 @@ export function DifficultyTableView({
         id="table-filters"
         className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-xl border border-line bg-card p-3 md:flex`}
       >
-        <FilterChips label="파트" options={PART_OPTIONS} selected={filters.part} onChange={(part) => changeFilter({ part })} />
-        <MultiFilterChips
-          label="추천"
-          options={RECOMMEND_CHIPS}
-          selected={filters.recommend}
-          onToggle={(value) => changeFilter({ recommend: toggleValue(filters.recommend, value, RECOMMEND_OPTIONS) })}
-          onClear={() => changeFilter({ recommend: [] })}
-        />
-        <MultiFilterChips
-          label="속성"
-          options={PATTERN_CHIPS}
-          selected={filters.pattern}
-          onToggle={(value) => changeFilter({ pattern: toggleValue(filters.pattern, value, PATTERN_OPTIONS) })}
-          onClear={() => changeFilter({ pattern: [] })}
-        />
+        <TableFilterPanel filters={filters} onChange={changeFilter} />
         <SortSelect value={sort} onChange={setSort} />
         <div role="group" aria-label="평균 계산" className="flex flex-wrap items-center gap-1.5">
           <span className="mr-1 text-xs text-fg-dim">평균 계산</span>

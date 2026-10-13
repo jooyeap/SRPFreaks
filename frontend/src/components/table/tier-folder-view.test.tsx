@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TierFolderView } from "@/components/table/TierFolderView";
 import type { DifficultyTableResponse, PageResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
@@ -51,7 +51,9 @@ function group(tier: number | null, titles: string[]): TierGroupResponse {
 
 describe("TierFolderView", () => {
   const fetchMock = vi.fn<typeof fetch>();
-  const groups = [group(5.8, ["가곡", "나곡"]), group(5.0, ["다곡"]), group(null, ["미정곡"])];
+  const mixed = group(5.8, ["가곡", "나곡"]);
+  mixed.entries[0] = { ...mixed.entries[0], part: "BASS", recommend: "하", pattern: "복합" };
+  const groups = [mixed, group(5.0, ["다곡"]), group(null, ["미정곡"])];
 
   function json(body: unknown): Response {
     return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -99,5 +101,35 @@ describe("TierFolderView", () => {
   it("없는 묶음 주소는 `묶음을 찾을 수 없습니다.`", async () => {
     renderView("7.7");
     expect(await screen.findByRole("alert")).toHaveTextContent("묶음을 찾을 수 없습니다.");
+  });
+
+  it("처음에는 필터 없이 묶음 전체를 보여 주고, 파트 칩으로 거르면 머리 개수도 걸러진 채보 기준이다", async () => {
+    renderView("5.8");
+    await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+
+    const parts = screen.getByRole("group", { name: "파트" });
+    expect(within(parts).getByRole("button", { name: "전체" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(parts).getByRole("button", { name: "Bass" }));
+
+    expect(await screen.findByRole("heading", { name: /5\.8\s*1개/ })).toBeInTheDocument();
+    expect(screen.getAllByText("가곡").length).toBeGreaterThan(0); // Bass인 곡
+    expect(screen.queryByText("나곡")).not.toBeInTheDocument();
+    // 이웃 난이도 막대는 묶음 전체 기준이라 필터와 상관없이 그대로 있다
+    expect(screen.getByRole("navigation", { name: "이웃 난이도" })).toBeInTheDocument();
+  });
+
+  it("추천·속성 칩도 걸리고, 조건에 맞는 채보가 없으면 안내를 보여 준다", async () => {
+    renderView("5.8");
+    await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+
+    fireEvent.click(within(screen.getByRole("group", { name: "추천" })).getByRole("button", { name: "하" }));
+    expect(await screen.findByRole("heading", { name: /5\.8\s*1개/ })).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "삼중" }));
+    expect(await screen.findByText("조건에 맞는 채보가 없습니다.")).toBeInTheDocument();
+
+    // 전체를 누르면 풀린다
+    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "전체" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "추천" })).getByRole("button", { name: "전체" }));
+    expect(await screen.findByRole("heading", { name: /5\.8\s*2개/ })).toBeInTheDocument();
   });
 });

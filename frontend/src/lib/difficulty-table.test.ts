@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DifficultyTableResponse, TierGroupResponse } from "@/lib/api-types";
+import type { DifficultyTableResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import {
   decidedGroups,
   EMPTY_FILTERS,
   fetchAllTierGroups,
   fetchTableEntries,
+  filterTierGroup,
   findGroupByParam,
   folderHref,
   groupAverage,
@@ -180,5 +181,53 @@ describe("decidedGroups", () => {
   it("기준 난이도가 없는 미정 묶음만 뺀다", () => {
     const groups = [{ tier: 6.0 }, { tier: 5.9 }, { tier: null }] as TierGroupResponse[];
     expect(decidedGroups(groups).map((g) => g.tier)).toEqual([6.0, 5.9]);
+  });
+});
+
+describe("filterTierGroup", () => {
+  function entry(id: number, over: Partial<TableEntryResponse> = {}): TableEntryResponse {
+    return {
+      entryId: id, songDifficultyId: id, songId: id, title: `곡${id}`, addedVersion: null, part: "GUITAR", difficulty: "MASTER", level: 9,
+      tierUncertain: false, recommend: "상", recommendUncertain: false, pattern: "단일", patternUncertain: false, ratingEnabled: true, mine: null, ...over,
+    };
+  }
+  const mine = (rate: number, stage: "EXC" | "FC" | "SS" | "S" | "A" | "B" | "C") => ({ rate, fullCombo: stage === "FC" || stage === "EXC", stage });
+  const base: TierGroupResponse = {
+    tier: 5.8, total: 5, recorded: 4, exc: 1, fc: 0, ss: 1, s: 1, belowS: 1, averageRecorded: 0, averageWithZero: 0,
+    entries: [
+      entry(1, { mine: mine(100, "EXC") }),
+      entry(2, { part: "BASS", mine: mine(96, "SS") }),
+      entry(3, { recommend: "중", pattern: "복합", mine: mine(85, "S") }),
+      entry(4, { recommend: null, pattern: null, mine: mine(50, "C") }),
+      entry(5, { part: "BASS", recommend: "하", pattern: "이중" }),
+    ],
+  };
+
+  it("필터가 없으면 묶음을 그대로 돌려준다", () => {
+    expect(filterTierGroup(base, EMPTY_FILTERS)).toBe(base);
+  });
+
+  it("파트로 거르고 개수·단계·평균을 남은 채보로 다시 계산한다", () => {
+    const g = filterTierGroup(base, { ...EMPTY_FILTERS, part: "BASS" });
+    expect(g.entries.map((e) => e.entryId)).toEqual([2, 5]);
+    expect(g).toMatchObject({ total: 2, recorded: 1, exc: 0, fc: 0, ss: 1, s: 0, belowS: 0 });
+    expect(g.averageRecorded).toBe(96);
+    expect(g.averageWithZero).toBe(48); // 기록 없는 채보를 0%로 넣은 평균
+  });
+
+  it("한 필터 안은 OR, 필터끼리는 AND이고, 추천·속성 값이 없는 채보는 그 필터가 걸리면 빠진다", () => {
+    expect(filterTierGroup(base, { ...EMPTY_FILTERS, recommend: ["상", "중"] }).entries.map((e) => e.entryId)).toEqual([1, 2, 3]);
+    expect(filterTierGroup(base, { part: "GUITAR", recommend: ["상", "중"], pattern: ["복합"] }).entries.map((e) => e.entryId)).toEqual([3]);
+    expect(filterTierGroup(base, { ...EMPTY_FILTERS, pattern: ["삼중"] }).entries).toEqual([]);
+  });
+
+  it("남은 채보가 없으면 평균은 없고 0이다", () => {
+    const g = filterTierGroup(base, { ...EMPTY_FILTERS, pattern: ["삼중"] });
+    expect(g).toMatchObject({ total: 0, recorded: 0, belowS: 0, averageRecorded: null, averageWithZero: 0 });
+  });
+
+  it("S 미만은 기록이 있으면서 EXC·FC·SS·S가 아닌 채보다", () => {
+    const g = filterTierGroup(base, { ...EMPTY_FILTERS, recommend: ["상", "중", "하"] });
+    expect(g).toMatchObject({ total: 4, recorded: 3, exc: 1, ss: 1, s: 1, belowS: 0 });
   });
 });
