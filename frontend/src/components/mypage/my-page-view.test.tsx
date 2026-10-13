@@ -75,20 +75,25 @@ describe("MyPageView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("제목, 전체 달성 현황(합산한 단계별 개수), 레이팅·통계 탭을 보여 준다", async () => {
+  it("제목과 레이팅·통계 탭을 보여 주고, 레이팅 탭에는 전체 달성 현황을 그리지 않는다", async () => {
     renderView("rating");
     expect(screen.getByRole("heading", { level: 1, name: "마이페이지" })).toBeInTheDocument();
-
-    const overall = await screen.findByRole("region", { name: "전체 달성 현황" });
-    expect(overall).toHaveTextContent("기록 10/20");
-    expect(within(overall).getByText("EXC").closest("li")).toHaveTextContent("1");
-    expect(within(overall).getByText("FC").closest("li")).toHaveTextContent("2");
-    expect(overall).toHaveTextContent("S 미만 2");
 
     const tabs = screen.getAllByRole("tab");
     expect(tabs.map((t) => t.textContent)).toEqual(["레이팅", "통계"]);
     expect(screen.getByRole("tab", { name: "레이팅" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "통계" })).toHaveAttribute("aria-selected", "false");
+    expect(await screen.findByRole("region", { name: "내 레이팅" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "전체 달성 현황" })).toBeNull();
+  });
+
+  it("통계 탭 맨 위에 전체 달성 현황(합산한 단계별 개수)을 보여 준다", async () => {
+    renderView("stats");
+    const overall = await screen.findByRole("region", { name: "전체 달성 현황" });
+    expect(overall).toHaveTextContent("기록 10/20");
+    expect(within(overall).getByText("EXC").closest("li")).toHaveTextContent("1");
+    expect(within(overall).getByText("FC").closest("li")).toHaveTextContent("2");
+    expect(overall).toHaveTextContent("S 미만 2");
   });
 
   it("레이팅 탭이 선택돼 있으면 내 레이팅을 보여 준다", async () => {
@@ -119,6 +124,16 @@ describe("MyPageView", () => {
     expect(rows[1]).not.toHaveTextContent("MAX");
     expect(rows[6]).toHaveTextContent("미플레이");
     expect(within(rows[0]).getByRole("link")).toHaveAttribute("href", "/me/folder?axis=level&key=9.50&bucket=R95");
+  });
+
+  it("폴더 머리에 단계 분포 칩(EXC/FC/SS/S/S 미만)을 모아 보인다", async () => {
+    renderView("stats");
+    const card = await screen.findByRole("region", { name: "레벨 9.50 ~ 9.99" });
+    const header = within(card).getByRole("button", { name: /9\.50 ~ 9\.99/ });
+    // R95 3개 = EXC 1 + FC 1 + SS 1, S = R90 1 + R80 1, S 미만 = BELOW 1
+    for (const text of ["EXC 1", "FC 1", "SS 1", "S 2", "S 미만 1"]) {
+      expect(header).toHaveTextContent(text);
+    }
   });
 
   it("서열표 난이도 기준을 누르면 바꿔 달라고 알린다", async () => {
@@ -169,14 +184,15 @@ describe("MyPageView", () => {
     expect(onStateChange).toHaveBeenCalledWith({ tab: "stats", axis: "level" });
   });
 
-  it("달성 현황을 못 받아도 탭과 레이팅은 그대로 쓴다", async () => {
+  it("달성 현황을 못 받아도 통계 탭의 폴더 목록은 그대로 쓴다", async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes("/skills/me/snapshots")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
-      return Promise.resolve(url.includes("/skills/me") ? json(skill) : json({ code: "ERR", message: "x" }, 500));
+      if (url.includes("/stats/level-rate-folders")) return Promise.resolve(json(rateFolders));
+      return Promise.resolve(json({ code: "ERR", message: "x" }, 500));
     });
-    renderView("rating");
+    renderView("stats");
     expect(await screen.findByText("달성 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.")).toBeInTheDocument();
-    expect(await screen.findByRole("region", { name: "내 레이팅" })).toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "레벨 9.50 ~ 9.99" })).toBeInTheDocument();
   });
 });

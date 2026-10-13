@@ -35,18 +35,16 @@ export function SongListFilterPanel({
   return (
     <div id={id} className={className}>
       <FilterChips label="파트" options={PART_OPTIONS} selected={filters.part} onChange={(part) => onChange({ ...filters, part })} />
-      <div role="group" aria-label="난이도" className="flex flex-col gap-1">
-        <span className="text-xs text-fg-dim">난이도</span>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <CheckChip pressed={filters.difficulties.length === 0} onClick={() => onChange({ ...filters, difficulties: [] })}>
-            전체
+      <div role="group" aria-label="난이도" className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-xs text-fg-dim">난이도</span>
+        <CheckChip pressed={filters.difficulties.length === 0} onClick={() => onChange({ ...filters, difficulties: [] })}>
+          전체
+        </CheckChip>
+        {DIFFICULTIES.map((d) => (
+          <CheckChip key={d} pressed={filters.difficulties.includes(d)} onClick={() => toggleDifficulty(d)}>
+            {difficultyLabel(d)}
           </CheckChip>
-          {DIFFICULTIES.map((d) => (
-            <CheckChip key={d} pressed={filters.difficulties.includes(d)} onClick={() => toggleDifficulty(d)}>
-              {difficultyLabel(d)}
-            </CheckChip>
-          ))}
-        </div>
+        ))}
       </div>
       <label className="flex flex-wrap items-center gap-1.5 text-xs text-fg-dim">
         <span className="mr-1">버전</span>
