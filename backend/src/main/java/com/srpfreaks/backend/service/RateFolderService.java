@@ -1,10 +1,16 @@
 package com.srpfreaks.backend.service;
 
+import com.srpfreaks.backend.common.error.ApiException;
+import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.RateBucketResponse;
 import com.srpfreaks.backend.dto.RateFolderListResponse;
 import com.srpfreaks.backend.dto.RateFolderResponse;
+import com.srpfreaks.backend.entity.DifficultyTable;
+import com.srpfreaks.backend.entity.DifficultyTableEntry;
 import com.srpfreaks.backend.entity.RateBucket;
 import com.srpfreaks.backend.entity.SongDifficulty;
+import com.srpfreaks.backend.repository.DifficultyTableEntryRepository;
+import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.OptionRecordRepository;
 import com.srpfreaks.backend.repository.RecordBest;
 import com.srpfreaks.backend.repository.SongDifficultyRepository;
@@ -37,6 +43,8 @@ public class RateFolderService {
 
     private final SongDifficultyRepository songDifficultyRepository;
     private final OptionRecordRepository optionRecordRepository;
+    private final DifficultyTableRepository difficultyTableRepository;
+    private final DifficultyTableEntryRepository entryRepository;
 
     /**
      * 레벨 폴더(0.5 단위) 목록. 곡 목록과 같은 대상(삭제되지 않은 모든 채보)이고 폴더 경계도 같다.
@@ -56,6 +64,33 @@ public class RateFolderService {
                     .add(bests.get(d.getId()));
         }
         List<RateFolderResponse> folders = byFolder.entrySet().stream()
+                .map(e -> toFolder(e.getKey(), e.getValue()))
+                .toList();
+        return new RateFolderListResponse(folders);
+    }
+
+    /**
+     * 서열표 난이도(기준 난이도) 목록. 서열표에 올라 있고 기준 난이도가 있는 채보만 센다(미정은 서열표 화면과 같이 뺀다).
+     * 기록은 서열표 소속 채보에 대한 본인 최고 기록이고, 노트 옵션은 서열표의 옵션을 따른다.
+     * 표가 없으면 404다.
+     */
+    public RateFolderListResponse tierFolders(Long userId, Long tableId) {
+        DifficultyTable table = difficultyTableRepository.findById(tableId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        List<DifficultyTableEntry> entries = entryRepository.findAllForView(tableId).stream()
+                .filter(e -> e.getTierLabel() != null)
+                .toList();
+        Map<Long, RecordBest> bests = new HashMap<>();
+        optionRecordRepository.findBestByTable(userId, table.getNoteOption(), tableId)
+                .forEach(b -> bests.put(b.songDifficultyId(), b));
+
+        // 기준 난이도가 높은 묶음이 위 (서열표 화면과 같은 순서)
+        Map<BigDecimal, List<RecordBest>> byTier = new TreeMap<>(Comparator.<BigDecimal>naturalOrder().reversed());
+        for (DifficultyTableEntry e : entries) {
+            byTier.computeIfAbsent(e.getTierLabel(), k -> new ArrayList<>())
+                    .add(bests.get(e.getSongDifficulty().getId()));
+        }
+        List<RateFolderResponse> folders = byTier.entrySet().stream()
                 .map(e -> toFolder(e.getKey(), e.getValue()))
                 .toList();
         return new RateFolderListResponse(folders);

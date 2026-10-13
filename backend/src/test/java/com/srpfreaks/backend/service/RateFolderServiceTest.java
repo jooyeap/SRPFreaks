@@ -1,14 +1,19 @@
 package com.srpfreaks.backend.service;
 
+import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.dto.RateBucketResponse;
 import com.srpfreaks.backend.dto.RateFolderListResponse;
 import com.srpfreaks.backend.dto.RateFolderResponse;
+import com.srpfreaks.backend.entity.DifficultyTable;
+import com.srpfreaks.backend.entity.DifficultyTableEntry;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.RateBucket;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
+import com.srpfreaks.backend.repository.DifficultyTableEntryRepository;
+import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.OptionRecordRepository;
 import com.srpfreaks.backend.repository.RecordBest;
 import com.srpfreaks.backend.repository.SongDifficultyRepository;
@@ -23,8 +28,10 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +41,8 @@ class RateFolderServiceTest {
 
     @Mock SongDifficultyRepository songDifficultyRepository;
     @Mock OptionRecordRepository optionRecordRepository;
+    @Mock DifficultyTableRepository difficultyTableRepository;
+    @Mock DifficultyTableEntryRepository entryRepository;
 
     RateFolderService service;
     final List<SongDifficulty> charts = new ArrayList<>();
@@ -41,7 +50,8 @@ class RateFolderServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RateFolderService(songDifficultyRepository, optionRecordRepository);
+        service = new RateFolderService(songDifficultyRepository, optionRecordRepository,
+                difficultyTableRepository, entryRepository);
     }
 
     private SongDifficulty chart(String level) {
@@ -146,5 +156,49 @@ class RateFolderServiceTest {
         when(optionRecordRepository.findBestByUser(7L, NoteOption.SUPER_RANDOM_PLUS)).thenReturn(List.of());
 
         assertThat(service.levelFolders(7L).folders()).isEmpty();
+    }
+
+    private DifficultyTableEntry entry(DifficultyTable table, SongDifficulty chart, String tier) {
+        DifficultyTableEntry e = DifficultyTableEntry.create(table, chart);
+        e.changeTier(tier == null ? null : new BigDecimal(tier), false, 1);
+        return e;
+    }
+
+    @Test
+    void 서열표_난이도는_기준_난이도별로_묶고_높은_난이도가_위며_미정은_뺀다() {
+        DifficultyTable table = DifficultyTable.create("SRN+ 서열표", null, NoteOption.SUPER_RANDOM_PLUS);
+        SongDifficulty a = chart("8.00");
+        SongDifficulty b = chart("8.10");
+        SongDifficulty c = chart("9.00");
+        SongDifficulty undecided = chart("9.10");
+        when(difficultyTableRepository.findById(1L)).thenReturn(Optional.of(table));
+        when(entryRepository.findAllForView(1L)).thenReturn(List.of(
+                entry(table, a, "6.0"), entry(table, b, "6.0"), entry(table, c, "6.5"), entry(table, undecided, null)));
+        when(optionRecordRepository.findBestByTable(7L, NoteOption.SUPER_RANDOM_PLUS, 1L)).thenReturn(List.of(
+                best(a.getId(), "100.00", true),
+                best(c.getId(), "85.00", false)));
+
+        RateFolderListResponse result = service.tierFolders(7L, 1L);
+
+        assertThat(result.folders()).extracting(RateFolderResponse::key)
+                .usingElementComparator(BigDecimal::compareTo)
+                .containsExactly(new BigDecimal("6.5"), new BigDecimal("6.0"));
+        RateFolderResponse t65 = result.folders().get(0);
+        assertThat(t65.total()).isEqualTo(1);
+        assertThat(bucket(t65, RateBucket.R85).count()).isEqualTo(1);
+        RateFolderResponse t60 = result.folders().get(1);
+        assertThat(t60.total()).isEqualTo(2);
+        assertThat(t60.recorded()).isEqualTo(1);
+        assertThat(bucket(t60, RateBucket.R95).exc()).isEqualTo(1);
+        assertThat(bucket(t60, RateBucket.UNPLAYED).count()).isEqualTo(1);
+        // 기록은 토큰의 사용자(7) 것을, 서열표의 노트 옵션으로만 조회한다
+        verify(optionRecordRepository).findBestByTable(7L, NoteOption.SUPER_RANDOM_PLUS, 1L);
+    }
+
+    @Test
+    void 서열표가_없으면_예외다() {
+        when(difficultyTableRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.tierFolders(7L, 99L)).isInstanceOf(ApiException.class);
     }
 }

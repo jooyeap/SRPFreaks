@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -23,5 +24,12 @@ public class StatsController {
     @GetMapping("/level-rate-folders")
     public RateFolderListResponse levelRateFolders(@AuthenticationPrincipal AuthenticatedUser user) {
         return rateFolderService.levelFolders(user.id());
+    }
+
+    /** 서열표 기준 난이도별로 내 기록을 달성률 구간으로 나눈 개수. 표가 없으면 404. */
+    @GetMapping("/tier-rate-folders")
+    public RateFolderListResponse tierRateFolders(@AuthenticationPrincipal AuthenticatedUser user,
+                                                  @RequestParam Long tableId) {
+        return rateFolderService.tierFolders(user.id(), tableId);
     }
 }
