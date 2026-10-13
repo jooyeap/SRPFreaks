@@ -905,14 +905,14 @@ com.srpfreaks.backend
 | songTitle | `.sr_data_music_info_tb .title` | 번역되지 않은 원문이어야 한다 |
 | part, difficulty | `td.score_data_diff`의 클래스 | `bass_mst` → BASS / MASTER, `gf_mst` → GUITAR / MASTER (확인됨). BASIC/ADVANCED/EXTREME 값은 샘플 확인 전까지 읽지 않고 건너뛴다(사유 `UNKNOWN_DIFFICULTY`) |
 | level | 같은 칸의 글자 | 9.50 (마스터 레벨과 다르면 참고용) |
-| achievement | `.sr_data_score_tb`의 마지막 `th.score_data` | 73.87% → 7387 (×100 정수로 보낸다) |
-| miss, ok | 점수 표에서 `MISS`·`OK` 줄의 값 | 라벨은 번역되므로 **줄 위치**로 읽는다 |
-| options | `.cc_box li.cc_icon` 클래스 목록 | `gf_random_5`, `gf_button_1`, `gf_auto_1`. 다른 옵션 샘플은 `gf_random_4`로 값이 다르다(5와 구분됨). 번호는 우리 enum 순서(1 NORMAL … 4 RANDOM_PLUS, 5 SUPER_RANDOM_PLUS)와 같은 것으로 보이나 확인된 건 5뿐이고, 5 이외는 모두 건너뛴다 |
+| achievement | `.sr_data_score_tb`의 마지막 `th.score_data` | 73.87% → 7387 (×100 정수로 보낸다). **100%는 `100.00%`가 아니라 `MAX`로 표시된다** → 10000 |
+| miss, ok | 점수 표 5번째 줄 `OK`, 6번째 줄 `MISS`(0부터 센 4·5번째 `tr`)의 첫 `.score_data` | 라벨은 번역되므로 **줄 위치**로 읽는다. 5곡 샘플에서 순서가 모두 같음을 확인했다(2026-10-13) |
+| options | `.cc_box li.cc_icon` 클래스 목록 | `gf_random_5`, `gf_button_1`, `gf_auto_1`. 다른 옵션 샘플로 `gf_random_4`, `gf_random_3`이 확인돼 5와 구분된다. 번호는 우리 enum 순서(1 NORMAL … 4 RANDOM_PLUS, 5 SUPER_RANDOM_PLUS)와 같은 것으로 보이나 확인된 건 5뿐이고, 5 이외는 모두 건너뛴다 |
 
 **서버 처리 규칙**
 1. 옵션 클래스가 **정확히** `gf_random_5` + `gf_button_1` + `gf_auto_1`이 아니면 그 기록은 건너뛴다(사유 `OPTION_NOT_SUPPORTED`).
 2. 곡명은 NFKC 정규화·소문자·공백 제거(`normalized_title`)로 마스터와 (곡, 파트, 난이도)를 매칭한다. 곡 고유 ID가 공식 페이지에 없다. 못 찾으면 **제외**하고 사유 `SONG_NOT_FOUND`로 센다. 자동 등록하지 않는다.
-3. 풀콤보는 임시 규칙으로 `miss = 0 and ok = 0`이면 true, 달성률 100.00은 true(EXC). 풀콤보 플레이 샘플을 확인하면 이 규칙을 확정·수정한다.
+3. 풀콤보: 달성률 100.00이면 true(EXC), 아니면 `miss = 0 and ok = 0`이면 true(OK가 있으면 게임에서도 풀콤보로 처리되지 않는다, 사용자 확인). 클리어 칸 클래스는 EXC·FC 플레이 샘플이 확인되면 보조로 쓸지 정한다. 읽는 쪽은 원시 값(달성률, miss, ok)을 보내고 서버가 판정한다.
 4. 내 기존 최고 기록(SRN+, 그 채보)과 비교한다. **더 낮으면 등록하지 않는다**(`LOWER_THAN_BEST`). 같은 달성률이면 FC가 새로 켜질 때만 등록하고 아니면 건너뛴다(`NOT_IMPROVED`, 같은 플레이를 다시 보낸 경우도 여기로 간다). 더 높으면 `option_records`에 새 줄로 저장한다(`played_at` = `date_ms`, 기록은 이력으로 쌓이고 대표 기록은 최고 달성률이다).
 5. 한 요청 안에서 같은 채보가 여럿이면 가장 높은 것만 쓴다.
 6. 응답: 저장 n건, 건너뜀 n건(사유별 개수), **마스터에 없어 제외한 곡 목록**(곡명)을 돌려준다. 화면에도 그대로 안내한다.
@@ -924,7 +924,8 @@ com.srpfreaks.backend
 **아직 확인하지 못한 것**
 - 풀콤보 플레이의 표시(`score_data_clear`의 클래스), 임시 규칙 `miss 0 and ok 0`의 정확성
 - BASIC/ADVANCED/EXTREME의 `score_data_diff` 클래스 값 (`gf_`·`bass_` 접두어 + 난이도 약어로 보이나 MASTER만 확인)
-- 풀콤보·EXC 플레이에서 클리어 칸(`td.score_data_clear`)의 클래스. 일반 클리어는 `score_data_clear clear`이고, EXC 플레이(화면에 EXC 아이콘)에서는 달라질 것으로 보인다. 확인되면 이 칸으로 FC를 판정하고 `MISS 0 and OK 0` 규칙은 쓰지 않거나 보조로만 쓴다
+- 풀콤보·EXC 플레이의 클리어 칸(`td.score_data_clear`) 클래스. 확인한 5건은 모두 `score_data_clear clear`(FC·EXC 아님)였다. 확인되면 보조 판정으로 쓸지 정한다
+- `BASIC`·`ADVANCED`·`EXTREME`: 드럼의 `dm_adv`·`dm_ext`로 `{gf|bass|dm}_{bsc|adv|ext|mst}` 구조로 보이나 Guitar/Bass 값은 확인 전이다
 - 이용규약(8(13), (22), (23)) 확인 — 공개 전 필수
 
 #### 18.4.1 이후: 보류 당시의 설계 원문 (D18)
