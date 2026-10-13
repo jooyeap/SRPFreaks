@@ -1,16 +1,75 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
 import { ApiError } from "@/lib/api";
 import { formatPlayedDate } from "@/lib/format";
+import { buildBookmarkletHref } from "@/lib/import-bookmarklet";
+import { API_BASE } from "@/lib/api";
 import { fetchImportTokenStatus, importTokenKeys, issueImportToken, revokeImportToken } from "@/lib/import-token";
 
 function messageOf(error: unknown): string | null {
   if (!error) return null;
   return error instanceof ApiError ? error.message : "처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+}
+
+
+/**
+ * 북마클릿 안내. 토큰이 들어간 북마크 주소를 만들어 (1) 끌어다 놓을 링크, (2) 복사 버튼으로 준다.
+ * React는 `javascript:` 주소를 href로 렌더링하지 않으므로, 링크의 href는 ref로 직접 넣는다(끌어서 북마크에 추가하는 용도이고 클릭해도 이 페이지에서는 실행하지 않는다).
+ * 토큰이 북마크에 들어가므로 이 화면에서 한 번 더 주의를 안내한다.
+ */
+function BookmarkletGuide({ token }: { token: string }) {
+  const toast = useToast();
+  const linkRef = useRef<HTMLAnchorElement>(null);
+  const href = buildBookmarkletHref(`${window.location.origin}${API_BASE}`, token);
+
+  useEffect(() => {
+    linkRef.current?.setAttribute("href", href);
+  }, [href]);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(href);
+      toast("북마크 주소를 복사했습니다.");
+    } catch {
+      toast("복사하지 못했습니다. 아래 링크를 북마크 바로 끌어다 놓아 주세요.");
+    }
+  }
+
+  return (
+    <div aria-label="북마클릿 안내" role="group" className="flex flex-col gap-2 rounded-xl border border-chip-line bg-page p-3">
+      <p className="text-xs font-bold text-fg">가져오기 북마크 만들기</p>
+      <ol className="list-decimal space-y-1 pl-5 text-xs leading-relaxed text-fg-sub">
+        <li>
+          아래 <b>SRP 가져오기</b> 링크를 북마크 바로 끌어다 놓습니다. 끌기 어려우면 <b>북마크 주소 복사</b>를 누르고, 새 북마크의 주소(URL)칸에 붙여넣어
+          저장합니다.
+        </li>
+        <li>공식 사이트에서 최근 플레이(stage_result) 페이지를 열고, 브라우저 번역은 끕니다.</li>
+        <li>북마크를 누르면 지금 보이는 페이지의 5곡을 보냅니다. 20곡이면 페이지를 넘겨 4번 누릅니다.</li>
+      </ol>
+      <div className="flex flex-wrap items-center gap-2">
+        <a
+          ref={linkRef}
+          draggable
+          onClick={(e) => e.preventDefault()}
+          className="inline-flex h-10 items-center rounded-xl bg-chip-on-bg px-4 text-sm font-extrabold text-chip-on-fg"
+        >
+          SRP 가져오기
+        </a>
+        <button
+          type="button"
+          onClick={() => void copy()}
+          className="h-10 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg"
+        >
+          북마크 주소 복사
+        </button>
+      </div>
+      <p className="text-xs text-danger">이 북마크에는 토큰이 들어 있습니다. 다른 사람에게 공유하지 마세요. 토큰을 폐기하면 북마크도 쓸 수 없게 됩니다.</p>
+    </div>
+  );
 }
 
 /**
@@ -114,6 +173,7 @@ export function ImportTokenPanel({ userId }: { userId: number }) {
             </button>
           </div>
         ) : null}
+        {issuedToken ? <BookmarkletGuide token={issuedToken} /> : null}
 
         <p role="alert" className="min-h-4 text-xs text-danger">
           {messageOf(issue.error) ?? messageOf(revoke.error)}
