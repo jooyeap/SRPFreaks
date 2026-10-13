@@ -73,6 +73,29 @@ describe("ImportTokenPanel", () => {
     expect(calls("POST")).toHaveLength(1);
   });
 
+  it("발급 직후 토큰이 들어간 북마클릿 링크를 보여 주고, 폐기하면 지운다", async () => {
+    renderPanel();
+    await screen.findByText("발급된 토큰이 없습니다.");
+    fireEvent.click(screen.getByRole("button", { name: "토큰 발급" }));
+
+    const link = await screen.findByRole("link", { name: "SRP 가져오기" });
+    const href = link.getAttribute("href") ?? "";
+    expect(href.startsWith("javascript:")).toBe(true);
+    expect(decodeURIComponent(href)).toContain("srpi_secret");
+    expect(screen.getByRole("button", { name: "북마크 주소 복사" })).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByRole("button", { name: "폐기" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "폐기" }).at(-1)!);
+    await waitFor(() => expect(screen.queryByRole("link", { name: "SRP 가져오기" })).toBeNull());
+  });
+
+  it("토큰이 이미 있어도 원문을 모르면 북마클릿은 보여 주지 않는다", async () => {
+    status = { exists: true, createdAt: "2026-10-12T00:00:00Z", lastUsedAt: null };
+    renderPanel();
+    await screen.findByText("발급됨");
+    expect(screen.queryByRole("link", { name: "SRP 가져오기" })).toBeNull();
+  });
+
   it("토큰을 브라우저 저장소에 넣지 않는다", async () => {
     const set = vi.spyOn(Storage.prototype, "setItem");
     renderPanel();

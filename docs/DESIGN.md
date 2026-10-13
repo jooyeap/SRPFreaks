@@ -676,6 +676,7 @@ com.srpfreaks.backend
 ## 17. 변경 이력
 | 날짜 | 내용 |
 |---|---|
+| 2026-10-13 | 가져오기 북마클릿 구현(D34 4단계): `import-bookmarklet.ts`(읽기·전송·결과 안내), 설정 화면에서 발급 직후 북마크 링크·주소 복사 제공. 공식 페이지에서의 실제 동작(CSP)은 미확인 |
 | 2026-10-13 | 가져오기 API 구현(D34 2단계): `POST /imports/recent-plays`, 가져오기 토큰 필터(ROLE_IMPORT 전용), 전용 Rate Limit·CORS. 건너뛰는 이유는 `ImportSkipReason`(게임 종류·번역·옵션·난이도·곡 없음·모호·낮은 기록·개선 없음). 화면·북마클릿은 다음 단계 |
 | 2026-10-13 | 가져오기 토큰 구현(D34 1단계): `import_tokens`(V5), `POST/GET/DELETE /import-token`. 가져오기 API는 다음 단계 |
 | 2026-10-13 | **D34 추가.** D18 번복(일부): 공식 최근 플레이(`stage_result`, 최대 20곡)를 SRN+ 옵션 조건으로 가져온다. 설계는 18.4.0. 구현 전 단계(문서만) |
@@ -935,11 +936,16 @@ com.srpfreaks.backend
 - 마이페이지(또는 설정)에 가져오기 토큰 발급·폐기와 사용 방법을 둔다. **브라우저 번역(자동 번역)을 끄고 실행해야 한다**고 안내하고, 번역 흔적(`font[dir=auto]`)이 있으면 읽는 쪽이 실행을 멈춘다.
 - 실행 결과(저장·건너뜀·제외된 곡)를 읽는 쪽과 SRPFreaks 화면 모두에서 보여 준다.
 
+**구현 상태 (북마클릿, 4단계)**
+- 읽는 코드는 `frontend/src/lib/import-bookmarklet.ts`의 `READER_SOURCE` 한 곳이다(위 표의 위치를 그대로 쓴다). 토큰이 들어간 `javascript:` 북마크를 설정 > 가져오기 설정에서 발급 직후에만 만들어 준다(토큰 원문은 그때만 알 수 있다). 한 번 누르면 지금 연 페이지의 플레이만 읽어 `POST /imports/recent-plays`로 보내고 결과를 알림창으로 보여 준다.
+- 읽지 못한 항목(값이 비었거나 숫자가 아님)은 보내지 않고 개수만 알린다. 서버를 믿지 않는 구조라 옵션·난이도·풀콤보 판정은 서버가 다시 한다.
+
 **아직 확인하지 못한 것**
 - 풀콤보 플레이의 표시(`score_data_clear`의 클래스), 임시 규칙 `miss 0 and ok 0`의 정확성
 - BASIC/ADVANCED/EXTREME의 `score_data_diff` 클래스 값 (`gf_`·`bass_` 접두어 + 난이도 약어로 보이나 MASTER만 확인)
 - 풀콤보·EXC 플레이의 클리어 칸(`td.score_data_clear`) 클래스. 확인한 5건은 모두 `score_data_clear clear`(FC·EXC 아님)였다. 확인되면 보조 판정으로 쓸지 정한다
 - `BASIC`·`ADVANCED`·`EXTREME`: 드럼의 `dm_adv`·`dm_ext`로 `{gf|bass|dm}_{bsc|adv|ext|mst}` 구조로 보이나 Guitar/Bass 값은 확인 전이다
+- 공식 페이지의 보안 정책(CSP `connect-src`)이 우리 서버로의 `fetch`를 막는지 — 실제 페이지에서 북마크를 눌러 봐야 안다. 막히면 읽은 값을 복사해 이 사이트에 붙여넣는 방식으로 바꾼다
 - 이용규약(8(13), (22), (23)) 확인 — 공개 전 필수
 
 #### 18.4.1 이후: 보류 당시의 설계 원문 (D18)
