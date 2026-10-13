@@ -23,15 +23,23 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimiter rateLimiter;
     private final Clock clock;
+    private final String pathPrefix;
 
+    /** 로그인/재발급/로그아웃(/api/v1/auth/) 제한. */
     public RateLimitFilter(RateLimiter rateLimiter, Clock clock) {
+        this(rateLimiter, clock, AUTH_PATH_PREFIX);
+    }
+
+    /** 다른 경로(예: 가져오기)에 따로 제한을 건다. 제한기를 따로 받으므로 로그인 제한과 횟수가 섞이지 않는다. */
+    public RateLimitFilter(RateLimiter rateLimiter, Clock clock, String pathPrefix) {
         this.rateLimiter = rateLimiter;
         this.clock = clock;
+        this.pathPrefix = pathPrefix;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith(AUTH_PATH_PREFIX);
+        return !request.getRequestURI().startsWith(pathPrefix);
     }
 
     @Override

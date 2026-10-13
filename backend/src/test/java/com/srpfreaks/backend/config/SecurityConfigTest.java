@@ -41,4 +41,23 @@ class SecurityConfigTest {
         assertThatThrownBy(() -> new SecurityConfig().corsConfigurationSource(props))
                 .isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    void 가져오기_경로는_공식_사이트_Origin만_쿠키_없이_허용한다() {
+        AppProperties props = new AppProperties();
+        var config = new SecurityConfig().importCorsConfiguration(props);
+
+        assertThat(config.getAllowedOrigins()).containsExactly("https://p.eagate.573.jp");
+        assertThat(config.getAllowCredentials()).isFalse();
+        assertThat(config.getAllowedMethods()).containsExactlyInAnyOrder("POST", "OPTIONS");
+    }
+
+    @Test
+    void 가져오기_허용_Origin에_와일드카드가_있으면_시작하지_못한다() {
+        AppProperties props = new AppProperties();
+        props.getImportApi().setAllowedOrigins(List.of("*"));
+
+        assertThatThrownBy(() -> new SecurityConfig().importCorsConfiguration(props))
+                .isInstanceOf(IllegalStateException.class);
+    }
 }
