@@ -2,12 +2,14 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Pager, usePaged } from "@/components/Pager";
 import { FolderSection } from "@/components/songs/FolderSection";
 import { SongListFilterPanel } from "@/components/songs/SongListFilterPanel";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { SongSearchBox } from "@/components/songs/SongSearchBox";
 import { AverageToggle } from "@/components/table/FilterChips";
 import { ApiError } from "@/lib/api";
+import type { ChartFolderResponse } from "@/lib/api-types";
 import {
   activeFilterCount,
   fetchChartFolders,
@@ -93,13 +95,34 @@ export function SongListView({
       ) : (
         <>
           <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
-          <div className="flex flex-col gap-3">
-            {folders.data.folders.map((folder) => (
-              <FolderSection key={folder.lo} userId={userId} folder={folder} includeZero={includeZero} filters={filters} />
-            ))}
-          </div>
+          <PagedFolders userId={userId} folders={folders.data.folders} includeZero={includeZero} filters={filters} />
         </>
       )}
     </div>
+  );
+}
+
+/** 레벨 폴더가 많아 10개씩 나눠 보여 준다. 필터를 바꿔 폴더 수가 줄면 마지막 페이지로 당겨진다(usePaged). */
+function PagedFolders({
+  userId,
+  folders,
+  includeZero,
+  filters,
+}: {
+  userId: number;
+  folders: readonly ChartFolderResponse[];
+  includeZero: boolean;
+  filters: SongListFilters;
+}) {
+  const { page, totalPages, pageItems, setPage } = usePaged(folders);
+  return (
+    <>
+      <div className="flex flex-col gap-3">
+        {pageItems.map((folder) => (
+          <FolderSection key={folder.lo} userId={userId} folder={folder} includeZero={includeZero} filters={filters} />
+        ))}
+      </div>
+      <Pager page={page} totalPages={totalPages} onChange={setPage} />
+    </>
   );
 }

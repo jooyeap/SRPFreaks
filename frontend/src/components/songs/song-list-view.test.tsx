@@ -280,6 +280,16 @@ describe("SongListView", () => {
     expect(await screen.findByText("조건에 맞는 채보가 없습니다.")).toBeInTheDocument();
   });
 
+  it("폴더가 10개를 넘으면 10개씩 나눠 보여 준다", async () => {
+    const many: ChartFolderListResponse = { ...folders, folders: Array.from({ length: 11 }, (_, i) => folder(20 - i * 0.5)) };
+    fetchMock.mockImplementation(() => Promise.resolve(json(many)));
+    renderView();
+    await screen.findByRole("button", { name: /20\.00 ~ 20\.49/ });
+    expect(screen.getAllByRole("button", { name: /~/ })).toHaveLength(10);
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getAllByRole("button", { name: /~/ })).toHaveLength(1);
+  });
+
   it("폴더를 받지 못하면 오류를 알린다", async () => {
     fetchMock.mockImplementation(() => Promise.resolve(new Response("{}", { status: 500 })));
     renderView();

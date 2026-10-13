@@ -136,6 +136,24 @@ describe("MyPageView", () => {
     }
   });
 
+  it("폴더가 10개를 넘으면 10개씩 나눠 보여 주고 다음 페이지로 넘어간다", async () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({ ...rateFolders.folders[0], key: 20 - i }));
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/stats/level-rate-folders")) return Promise.resolve(json({ folders: many }));
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(folders));
+      return Promise.resolve(json({}, 404));
+    });
+    renderView("stats");
+    await screen.findByRole("region", { name: "레벨 20.00 ~ 20.49" });
+    expect(screen.getAllByRole("region", { name: /^레벨 / })).toHaveLength(10);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    expect(screen.getAllByRole("region", { name: /^레벨 / })).toHaveLength(2);
+    expect(screen.getByRole("region", { name: "레벨 10.00 ~ 10.49" })).toBeInTheDocument();
+  });
+
   it("서열표 난이도 기준을 누르면 바꿔 달라고 알린다", async () => {
     const onStateChange = renderView("stats");
     fireEvent.click(await screen.findByRole("tab", { name: "서열표 난이도" }));

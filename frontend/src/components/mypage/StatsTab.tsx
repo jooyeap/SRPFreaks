@@ -2,10 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { OverallStageCard } from "@/components/mypage/OverallStageCard";
+import { Pager, usePaged } from "@/components/Pager";
 import { RateFolderCard } from "@/components/mypage/RateFolderCard";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api";
-import type { RateFolderListResponse } from "@/lib/api-types";
+import type { RateFolderListResponse, RateFolderResponse } from "@/lib/api-types";
 import { fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { overallStages } from "@/lib/my-page";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
@@ -108,15 +109,26 @@ function FolderList({
     return query.data.folders.length === 0 ? (
       <p className="text-sm text-fg-sub">{emptyText}</p>
     ) : (
-      <div className="flex flex-col gap-2.5">
-        {query.data.folders.map((folder) => (
-          <RateFolderCard key={folder.key} axis={axis} folder={folder} />
-        ))}
-      </div>
+      <PagedFolders axis={axis} folders={query.data.folders} />
     );
   }
   if (query.isError) {
     return <p role="alert" className="text-sm text-fg">{errorMessage(query.error)}</p>;
   }
   return <Skeleton label="통계를 불러오는 중입니다." className="h-72" />;
+}
+
+/** 폴더가 많아서(특히 서열표 난이도) 10개씩 나눠 보여 준다. 기준을 바꾸면 컴포넌트가 새로 만들어져 1페이지로 돌아간다. */
+function PagedFolders({ axis, folders }: { axis: StatsAxis; folders: readonly RateFolderResponse[] }) {
+  const { page, totalPages, pageItems, setPage } = usePaged(folders);
+  return (
+    <>
+      <div className="flex flex-col gap-2.5">
+        {pageItems.map((folder) => (
+          <RateFolderCard key={folder.key} axis={axis} folder={folder} />
+        ))}
+      </div>
+      <Pager page={page} totalPages={totalPages} onChange={setPage} />
+    </>
+  );
 }
