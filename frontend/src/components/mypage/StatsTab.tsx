@@ -1,11 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { OverallStageCard } from "@/components/mypage/OverallStageCard";
 import { RateFolderCard } from "@/components/mypage/RateFolderCard";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api";
 import type { RateFolderListResponse } from "@/lib/api-types";
 import { fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
+import { overallStages } from "@/lib/my-page";
+import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 import { fetchLevelRateFolders, fetchTierRateFolders, statsKeys, type StatsAxis } from "@/lib/rate-folders";
 
 const AXES: readonly { value: StatsAxis; label: string }[] = [
@@ -21,11 +24,24 @@ function errorMessage(error: unknown): string {
  * 통계 탭: `레벨 폴더 | 서열표 난이도` 두 기준 중 하나를 골라, 폴더마다 달성률 구간별 채보 수를 보여 준다.
  * 레벨 폴더는 곡 목록의 0.5 단위 폴더와 같고(모든 채보), 서열표 난이도는 서열표에 올라 있고 난이도가 정해진 채보만 센다.
  * 두 기준은 한 번에 하나만 불러온다(고른 쪽만 요청). 집계는 서버가 한다.
+ * 맨 위에 전체 달성 현황을 둔다. 곡 목록의 폴더 API(/songs/chart-folders)를 합산하고 곡 목록 화면과 같은 쿼리 키라 캐시를 함께 쓴다.
  */
 export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis: StatsAxis; onAxisChange: (axis: StatsAxis) => void }) {
+  const overall = useQuery({
+    queryKey: songListKeys.folders(userId),
+    queryFn: ({ signal }) => fetchChartFolders(signal),
+    select: overallStages,
+  });
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="통계 기준" className="flex gap-1.5">
+      {overall.data ? (
+        <OverallStageCard stages={overall.data} />
+      ) : overall.isError ? (
+        <p role="alert" className="text-sm text-fg">달성 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+      ) : (
+        <Skeleton label="달성 현황을 불러오는 중입니다." className="h-[8.5rem]" />
+      )}
+      <div role="tablist" aria-label="통계 기준" className="flex gap-1 border-b border-line">
         {AXES.map((a) => {
           const selected = a.value === axis;
           return (
@@ -35,8 +51,9 @@ export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis:
               role="tab"
               aria-selected={selected}
               onClick={() => onAxisChange(a.value)}
-              className={`min-h-9 rounded-full border px-3.5 text-sm ${
-                selected ? "border-chip-on-bg bg-chip-on-bg font-bold text-chip-on-fg" : "border-chip-line text-fg-sub hover:text-fg"
+              // 선택은 굵은 글씨와 아래 줄로도 보인다(색만으로 구분하지 않는다)
+              className={`-mb-px min-h-11 border-b-2 px-4 text-sm ${
+                selected ? "border-fg font-bold text-fg" : "border-transparent text-fg-sub hover:text-fg"
               }`}
             >
               {a.label}
