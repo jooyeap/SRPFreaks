@@ -126,6 +126,16 @@ describe("MyPageView", () => {
     expect(within(rows[0]).getByRole("link")).toHaveAttribute("href", "/me/folder?axis=level&key=9.50&bucket=R95");
   });
 
+  it("폴더 머리에 단계 분포 칩(EXC/FC/SS/S/S 미만)을 모아 보인다", async () => {
+    renderView("stats");
+    const card = await screen.findByRole("region", { name: "레벨 9.50 ~ 9.99" });
+    const header = within(card).getByRole("button", { name: /9\.50 ~ 9\.99/ });
+    // R95 3개 = EXC 1 + FC 1 + SS 1, S = R90 1 + R80 1, S 미만 = BELOW 1
+    for (const text of ["EXC 1", "FC 1", "SS 1", "S 2", "S 미만 1"]) {
+      expect(header).toHaveTextContent(text);
+    }
+  });
+
   it("서열표 난이도 기준을 누르면 바꿔 달라고 알린다", async () => {
     const onStateChange = renderView("stats");
     fireEvent.click(await screen.findByRole("tab", { name: "서열표 난이도" }));
