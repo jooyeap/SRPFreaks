@@ -22,3 +22,11 @@
 - 상태 점검(health) 엔드포인트는 actuator 의존성이 늘어나므로 **먼저 물어본다**. springdoc 같은 추가 의존성은 Spring Boot 4.1.1 호환을 확인한 뒤 넣는다.
 - 만들 것: `application-prod.yml`, 백엔드·프론트 Dockerfile(x86), `docker-compose`(운영용), nginx 설정, GitHub Actions 워크플로, Next.js `standalone` 출력 설정, 구글 OAuth 운영 주소 등록 안내, `COOKIE_SECURE=true`, `CORS_ALLOWED_ORIGINS` 운영 도메인.
 - 순서: 내일 로컬 검증(`docs/CHECKLIST.md`) 통과 → 위 파일들을 한 가지씩 커밋 → 서버에 배포 → 첫 주 메모리·CPU 크레딧 확인.
+
+## 자동 배포 사용법 (2026-10-13)
+`.github/workflows/deploy.yml`은 **수동 실행 전용**이다. 푸시해도 배포되지 않는다.
+1. GitHub 저장소 → Settings → Secrets and variables → Actions에 `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`, `EC2_KNOWN_HOSTS`를 등록한다 (설명은 워크플로 파일 맨 위).
+2. Actions 탭(또는 GitHub 모바일 앱) → Deploy → Run workflow → 브랜치와 대상(frontend / backend / frontend + backend)을 고른다.
+3. 서버에서는 `git pull --ff-only` 후 선택한 서비스만 `up -d --build` 한다. DB 컨테이너·볼륨과 `.env.prod`는 건드리지 않는다.
+- 주의: 서버 보안 그룹의 22번 포트가 "내 IP만"이면 GitHub 러너가 접속하지 못한다. 그때는 포트 허용 범위를 조정하거나 SSM 방식으로 바꾼다.
+- 백엔드를 배포하면 Flyway가 새 마이그레이션을 적용한다. 스키마를 바꾸는 배포는 먼저 서버 DB 백업(`mysqldump`)을 확인한다.
