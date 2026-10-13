@@ -491,6 +491,7 @@ com.srpfreaks.backend
 | 서열표 | GET `/difficulty-tables/{id}/entries?mine=true&part=&recommend=&pattern=&page=&size=` (`recommend`·`pattern`은 여러 값을 쉼표로 이어 보낼 수 있다(`recommend=상,중`). 한 필터 안은 OR, 필터끼리는 AND, 비우면 전체, 모르는 값이 하나라도 있으면 400. 기준 난이도 묶음 단위 페이지(기본 10, 최대 20), 묶음마다 칩 개수(EXC/FC/SS/S/S 미만)·평균(0% 미포함/포함 둘 다), 항목마다 본인 최고 기록과 단계. 쿼리 2번 고정: 항목 fetch join + 본인 최고 기록 group by. 본인 기록은 표의 기준 옵션(SRN+)만, 채보의 최고 달성률과 FC 여부(하나라도 FC면 FC)로 계산) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |
 | 내 가져오기 토큰 (D34) | POST `/import-token`(발급, 원문은 응답에만, 이전 토큰 폐기) · GET(발급 여부·시각만) · DELETE(폐기) | USER+ |
+| 최근 플레이 가져오기 (D34) | POST `/imports/recent-plays` — 가져오기 토큰(`Authorization: Bearer srpi_…`)만 인정(ROLE_IMPORT, 로그인 토큰은 403, 가져오기 토큰은 다른 API 불가). 요청 `plays` 1~20건(원시 값), 응답 `saved/skipped/skippedByReason/results/excludedSongs`. IP당 분당 20회, CORS는 `https://p.eagate.573.jp`(POST, 쿠키 없음)만 | 가져오기 토큰 |
 | 곡 목록 폴더 | GET `/songs/chart-folders` (선택 파라미터 `q`·`part`·`difficulty`·`version`: 맞는 채보만으로 폴더·개수·평균을 만들고 맞는 채보가 없는 폴더는 뺀다. 버전 목록은 필터와 무관하게 전체. 조건에 맞는 곡 수·채보 수, 버전 목록, 0.5 단위 레벨 폴더별 칩 개수·평균(0% 미포함/포함 둘 다)과, 폴더마다 그 안의 0.05 단위 하위 폴더 `subFolders`(같은 통계, 하위 폴더 개수의 합 = 큰 폴더). 채보가 없는 폴더는 없다. 쿼리: 채보+곡 fetch join 1번 + 본인 SRN+ 최고 기록 group by 1번) | USER+ |
 | 곡 목록 채보 | GET `/songs/charts?folder=&q=&part=&difficulty=&version=&page=&size=` (채보 단위 페이지(기본 20, 최대 50). `folder`는 폴더 시작 레벨, `folderStep`은 그 단위(생략하면 0.50, `0.05`만 더 허용. 9.50이 큰 폴더인지 하위 폴더인지 구분). 단위의 배수가 아니거나 허용 밖 단위면 400, `difficulty`는 쉼표로 여러 개, 정렬은 레벨 높은 순 → 곡명 → id. 항목마다 본인 SRN+ 최고 기록과 단계. 곡 검색은 `/songs`와 같은 조건(곡명·아티스트·정규화 표기). 속성은 담지 않는다) | USER+ |
 | 서열표 목록 | GET `/difficulty-tables` | USER+ |
@@ -675,6 +676,7 @@ com.srpfreaks.backend
 ## 17. 변경 이력
 | 날짜 | 내용 |
 |---|---|
+| 2026-10-13 | 가져오기 API 구현(D34 2단계): `POST /imports/recent-plays`, 가져오기 토큰 필터(ROLE_IMPORT 전용), 전용 Rate Limit·CORS. 건너뛰는 이유는 `ImportSkipReason`(게임 종류·번역·옵션·난이도·곡 없음·모호·낮은 기록·개선 없음). 화면·북마클릿은 다음 단계 |
 | 2026-10-13 | 가져오기 토큰 구현(D34 1단계): `import_tokens`(V5), `POST/GET/DELETE /import-token`. 가져오기 API는 다음 단계 |
 | 2026-10-13 | **D34 추가.** D18 번복(일부): 공식 최근 플레이(`stage_result`, 최대 20곡)를 SRN+ 옵션 조건으로 가져온다. 설계는 18.4.0. 구현 전 단계(문서만) |
 | 2026-10-13 | **D33 추가.** 마이페이지(`/me`)와 달성률 구간 통계 API(`/stats/*`), `/songs/charts`에 `rateBucket`·`sort` 추가. 화면은 DESIGN-UI 19장 |

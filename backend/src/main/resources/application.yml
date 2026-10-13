@@ -50,6 +50,9 @@ app:
     secure: ${COOKIE_SECURE:true}     # 로컬 http 개발에서만 false로 내린다
   rate-limit:
     auth-per-minute: 10
+    import-per-minute: 20            # 가져오기(/api/v1/imports/**)는 로그인과 따로 센다
+  import-api:
+    allowed-origins: ${IMPORT_ALLOWED_ORIGINS:https://p.eagate.573.jp}   # 가져오기 경로에만 허용하는 Origin(북마클릿이 도는 공식 페이지). * 금지
 
 logging:
   level:

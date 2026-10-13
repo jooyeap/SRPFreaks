@@ -19,6 +19,7 @@ public class AppProperties {
     private final Cors cors = new Cors();
     private final Cookie cookie = new Cookie();
     private final RateLimit rateLimit = new RateLimit();
+    private final ImportApi importApi = new ImportApi();
 
     /**
      * 이 이메일로 처음 Google 로그인하는 계정만 ROOT가 된다(단, 아직 ROOT가 없을 때). 비워 두면 ROOT를 만들지 않는다.
@@ -52,5 +53,15 @@ public class AppProperties {
     public static class RateLimit {
         /** 로그인/재발급/로그아웃 요청을 IP당 1분에 허용하는 횟수. */
         private int authPerMinute = 10;
+        /** 가져오기 요청을 IP당 1분에 허용하는 횟수. 공식 페이지 한 장(5곡)이 한 요청이라 4장을 가져와도 4번이다. */
+        private int importPerMinute = 20;
+    }
+
+    /** 가져오기 API(D34) 설정. 북마클릿이 공식 페이지에서 직접 부르므로 그 Origin만 따로 허용한다. */
+    @Getter
+    @Setter
+    public static class ImportApi {
+        /** 가져오기 경로에만 허용하는 Origin(쿠키 없이). 기본은 공식 사이트 주소다. 와일드카드(*)는 쓰지 않는다. */
+        private List<String> allowedOrigins = new ArrayList<>(List.of("https://p.eagate.573.jp"));
     }
 }

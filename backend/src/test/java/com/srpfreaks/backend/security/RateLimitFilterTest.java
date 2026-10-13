@@ -43,4 +43,15 @@ class RateLimitFilterTest {
             assertThat(call(filter, "/api/v1/users/me").getStatus()).isEqualTo(200);
         }
     }
+
+    @Test
+    void 경로_접두사를_지정하면_그_경로만_따로_제한한다() throws Exception {
+        RateLimitFilter filter = new RateLimitFilter(new RateLimiter(1, clock), clock, "/api/v1/imports/");
+
+        assertThat(call(filter, "/api/v1/imports/recent-plays").getStatus()).isEqualTo(200);
+        assertThat(call(filter, "/api/v1/imports/recent-plays").getStatus()).isEqualTo(429);
+        // 인증 경로는 이 필터의 대상이 아니다
+        assertThat(call(filter, "/api/v1/auth/google").getStatus()).isEqualTo(200);
+        assertThat(call(filter, "/api/v1/auth/google").getStatus()).isEqualTo(200);
+    }
 }
