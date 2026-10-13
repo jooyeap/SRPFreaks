@@ -38,6 +38,21 @@ jobs:
       # 비밀값은 필요 없다 (테스트가 더미 값을 직접 넣는다)
       - name: 테스트
         run: ./gradlew test --no-daemon
+      # 테스트가 실패하면 실패한 테스트의 이름과 메시지를 주석(annotation)으로 남긴다.
+      # 로그 원문은 API로 읽기 어려워서, 실패 원인을 체크 결과 화면과 API에서 바로 볼 수 있게 한다.
+      - name: 실패한 테스트 요약
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          for f in glob.glob("build/test-results/test/*.xml"):
+              for case in ET.parse(f).getroot().iter("testcase"):
+                  for tag in ("failure", "error"):
+                      node = case.find(tag)
+                      if node is not None:
+                          msg = (node.get("message") or "")[:300].replace("\n", " ").replace("%", "%25")
+                          print(f"::error title={case.get('classname')}.{case.get('name')}::{msg}")
+          PY
 
   frontend:
     name: 프론트 검사·테스트·빌드
