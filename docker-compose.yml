@@ -1,0 +1,25 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: srpfreaks-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}   # 관리용, 앱은 쓰지 않는다
+      MYSQL_DATABASE: srpfreaks
+      MYSQL_USER: srpfreaks                        # 앱 전용 계정
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      TZ: UTC
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "127.0.0.1:3307:3306"                    # 내 컴퓨터에서만 접속
+    volumes:
+      - srpfreaks-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+volumes:
+  srpfreaks-mysql-data:

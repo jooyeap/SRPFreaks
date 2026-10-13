@@ -1,0 +1,338 @@
+@import "tailwindcss";
+
+/*
+ * 색 변수 (docs/DESIGN-UI.md 4장). 색 값은 이 파일에서만 정의하고, 컴포넌트에는 직접 쓰지 않는다.
+ * 컴포넌트는 아래 @theme 블록이 만든 유틸리티(bg-page, text-fg, border-line ...)만 쓴다.
+ *
+ * 테마 결정 순서
+ *  1) <html data-theme="light|dark">  : 사용자가 버튼으로 고른 값 (localStorage에서 읽어 페이지가 그려지기 전에 붙인다)
+ *  2) 위가 없으면 브라우저 설정(prefers-color-scheme)
+ * 기본(:root)은 다크이고, 라이트 값은 "명시적으로 라이트" / "설정 없음 + 시스템이 라이트" 두 곳에 같은 값을 둔다.
+ */
+:root {
+  color-scheme: dark;
+  --page: #0f1218;
+  --card: #181d27;
+  --table-head: #1b2130;
+  --line: #2a3142;
+  --row-line: #202737;
+  --fg: #eef0f6;
+  --fg-sub: #c5cbda;
+  --fg-dim: #a0a9bc;
+  --fg-faint: #8a94a8;
+  --disabled: #4a5368;
+  --chip-line: #3a4358;
+  --jacket: #3b4660;
+  /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
+  --part-guitar: #f9a8d4; --part-bass: #5eead4;
+  /* 추천 "상" 배지: 채우지 않고 연한 배경 + 윤곽 + 글자색만 쓴다 (달성 단계보다 튀지 않게). 임시 값 */
+  --rec-high-text: #ffb870; --rec-high-line: #ff9f43; --rec-high-tint: rgb(255 159 67 / 0.14);
+  --chip-on-bg: #eef0f6;
+  --chip-on-fg: #0f1218;
+  --danger: #ff8f8f;
+  /* 서열표 진행도에서 기록이 모두 채워진 묶음: 막대(done)와 기준 난이도 글자(done-text). 기록 숫자 n/n이 같이 보인다 */
+  --done: #4ade80; --done-text: #86efac;
+
+  /* 단계 (docs/DESIGN-UI.md 2·4장). bar = 행 막대, text = 달성률 숫자, name = 곡명(EXC/FC만 다름), tint = 행 배경 틴트 */
+  --stage-chip-fg: #10131a;
+  --stage-c-bar: #7d869a; --stage-c-text: var(--fg-dim);
+  --stage-b-bar: #8b93a8; --stage-b-text: var(--fg-dim);
+  --stage-a-bar: #98a0b4; --stage-a-text: var(--fg-sub);
+  --stage-s-bar: #4ade80; --stage-s-text: #86efac;
+  --stage-ss-bar: #6ea0ff; --stage-ss-text: #b3c9ff;
+  --stage-fc-bar: linear-gradient(180deg, #22d3ee, #c084fc); --stage-fc-text: #67e8f9; --stage-fc-name: #d9f3ff;
+  --stage-exc-bar: linear-gradient(180deg, #ffe27a, #ffb347, #ff7eb6); --stage-exc-text: #ffd84d; --stage-exc-name: #ffe48a;
+  --stage-c-tint: transparent; --stage-b-tint: transparent; --stage-a-tint: transparent;
+  --stage-s-tint: rgb(74 222 128 / 0.1); --stage-ss-tint: rgb(110 160 255 / 0.1);
+  --stage-fc-tint: rgb(34 211 238 / 0.12); --stage-exc-tint: rgb(255 194 77 / 0.14);
+  --stage-c-chip: #98a0b4; --stage-b-chip: #a9b0c2; --stage-a-chip: #bcc2d1;
+  --stage-s-chip: #4ade80; --stage-ss-chip: #6ea0ff;
+  --stage-fc-chip: linear-gradient(90deg, #22d3ee, #c084fc);
+  --stage-exc-chip: linear-gradient(90deg, #ffe27a, #ffb347, #ff7eb6);
+
+  /* 추천도 / 난이도 (3장) */
+  --rec-high-bg: #ff9f43; --rec-high-fg: #1a0e05;
+  --rec-mid-line: var(--fg-sub); --rec-low-line: var(--fg-faint);
+  --diff-bas: #6fd08c; --diff-adv: #f2c94c; --diff-ext: #ff8f8f; --diff-mas: #c4a3ff; --diff-fg: #12151c;
+  /* 파트·난이도 알약의 왼쪽 글자색: 옅은 난이도 색 배경 위에 올라가는 글자다. 다크에서는 난이도 색 그대로 대비가 충분하다 */
+  --diff-text-bas: var(--diff-bas); --diff-text-adv: var(--diff-adv); --diff-text-ext: var(--diff-ext); --diff-text-mas: var(--diff-mas);
+
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --page: #f3f5f9;
+  --card: #ffffff;
+  --table-head: #eaeef5;
+  --line: #d8dde8;
+  --row-line: #e4e8f0;
+  --fg: #12151c;
+  --fg-sub: #3b4559;
+  --fg-dim: #586277;
+  --fg-faint: #667086;
+  --disabled: #9aa3b5;
+  --chip-line: #b5bdcd;
+  --jacket: #c8d0df;
+  /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
+  --part-guitar: #be185d; --part-bass: #0f766e;
+  /* 추천 "상" 배지: 채우지 않고 연한 배경 + 윤곽 + 글자색만 쓴다 (달성 단계보다 튀지 않게). 임시 값 */
+  --rec-high-text: #b45309; --rec-high-line: #d97706; --rec-high-tint: rgb(217 119 6 / 0.10);
+  --chip-on-bg: #12151c;
+  --chip-on-fg: #f3f5f9;
+  /* 라이트에서 --danger를 빼먹으면 다크용 연한 색(#ff8f8f)이 흰 배경에 남아 대비가 2.19까지 떨어진다 */
+  --danger: #b91c1c;
+  --done: #16a34a; --done-text: #15803d;
+  /* 라이트에서는 난이도 색(연한 파스텔)이 흰 배경에서 글자로 읽히지 않아 더 진한 글자색을 따로 둔다 */
+  --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
+
+  --stage-s-bar: #16a34a; --stage-s-text: #15803d;
+  --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
+  --stage-fc-bar: linear-gradient(180deg, #0891b2, #9333ea); --stage-fc-text: #0e7490; --stage-fc-name: #0c4a6e;
+  --stage-exc-bar: linear-gradient(180deg, #f5b301, #f97316, #ec4899); --stage-exc-text: #b45309; --stage-exc-name: #92400e;
+  --stage-c-bar: #7d869a; --stage-b-bar: #6f788d; --stage-a-bar: #626b80;
+  --stage-s-tint: rgb(22 163 74 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
+  --stage-fc-tint: rgb(8 145 178 / 0.09); --stage-exc-tint: rgb(245 179 1 / 0.12);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --page: #f3f5f9;
+    --card: #ffffff;
+    --table-head: #eaeef5;
+    --line: #d8dde8;
+    --row-line: #e4e8f0;
+    --fg: #12151c;
+    --fg-sub: #3b4559;
+    --fg-dim: #586277;
+    --fg-faint: #667086;
+    --disabled: #9aa3b5;
+    --chip-line: #b5bdcd;
+    --jacket: #c8d0df;
+    /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
+    --part-guitar: #be185d; --part-bass: #0f766e;
+    /* 추천 "상" 배지: 채우지 않고 연한 배경 + 윤곽 + 글자색만 쓴다 (달성 단계보다 튀지 않게). 임시 값 */
+    --rec-high-text: #b45309; --rec-high-line: #d97706; --rec-high-tint: rgb(217 119 6 / 0.10);
+    --chip-on-bg: #12151c;
+    --chip-on-fg: #f3f5f9;
+    --danger: #b91c1c;
+  --done: #16a34a; --done-text: #15803d;
+    --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
+
+    --stage-s-bar: #16a34a; --stage-s-text: #15803d;
+    --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
+    --stage-fc-bar: linear-gradient(180deg, #0891b2, #9333ea); --stage-fc-text: #0e7490; --stage-fc-name: #0c4a6e;
+    --stage-exc-bar: linear-gradient(180deg, #f5b301, #f97316, #ec4899); --stage-exc-text: #b45309; --stage-exc-name: #92400e;
+    --stage-c-bar: #7d869a; --stage-b-bar: #6f788d; --stage-a-bar: #626b80;
+    --stage-s-tint: rgb(22 163 74 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
+    --stage-fc-tint: rgb(8 145 178 / 0.09); --stage-exc-tint: rgb(245 179 1 / 0.12);
+  }
+}
+
+/* 변수 -> Tailwind 유틸리티 (예: bg-page, text-fg-sub, border-line, font-num) */
+@theme inline {
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-table-head: var(--table-head);
+  --color-line: var(--line);
+  --color-row-line: var(--row-line);
+  --color-fg: var(--fg);
+  --color-fg-sub: var(--fg-sub);
+  --color-fg-dim: var(--fg-dim);
+  --color-fg-faint: var(--fg-faint);
+  --color-disabled: var(--disabled);
+  --color-chip-line: var(--chip-line);
+  --color-jacket: var(--jacket);
+  --color-chip-on-bg: var(--chip-on-bg);
+  --color-chip-on-fg: var(--chip-on-fg);
+  --color-danger: var(--danger);
+  --color-done: var(--done);
+  --color-done-text: var(--done-text);
+
+  /* 본문은 Noto Sans KR, 숫자/영문 라벨은 Chakra Petch (DESIGN-UI 1장) */
+  --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
+  --font-num: var(--font-chakra-petch), system-ui, sans-serif;
+}
+
+body {
+  background: var(--page);
+  color: var(--fg);
+}
+
+/*
+ * 단계 표시용 유틸리티. 요소에 data-stage="EXC" 처럼 붙이면 아래 변수가 그 단계 값으로 정해지고,
+ * 컴포넌트는 단계 이름을 모른 채 .stage-bar / .stage-text / .stage-tint / .stage-chip 클래스만 쓴다.
+ * 색 값은 위 변수 한 곳에서만 정의한다 (컴포넌트에 색을 직접 쓰지 않는 규칙).
+ */
+[data-stage="C"] { --st-bar: var(--stage-c-bar); --st-text: var(--stage-c-text); --st-name: var(--fg); --st-tint: var(--stage-c-tint); --st-chip: var(--stage-c-chip); }
+[data-stage="B"] { --st-bar: var(--stage-b-bar); --st-text: var(--stage-b-text); --st-name: var(--fg); --st-tint: var(--stage-b-tint); --st-chip: var(--stage-b-chip); }
+[data-stage="A"] { --st-bar: var(--stage-a-bar); --st-text: var(--stage-a-text); --st-name: var(--fg); --st-tint: var(--stage-a-tint); --st-chip: var(--stage-a-chip); }
+[data-stage="S"] { --st-bar: var(--stage-s-bar); --st-text: var(--stage-s-text); --st-name: var(--fg); --st-tint: var(--stage-s-tint); --st-chip: var(--stage-s-chip); }
+[data-stage="SS"] { --st-bar: var(--stage-ss-bar); --st-text: var(--stage-ss-text); --st-name: var(--fg); --st-tint: var(--stage-ss-tint); --st-chip: var(--stage-ss-chip); }
+[data-stage="FC"] { --st-bar: var(--stage-fc-bar); --st-text: var(--stage-fc-text); --st-name: var(--stage-fc-name); --st-tint: var(--stage-fc-tint); --st-chip: var(--stage-fc-chip); }
+[data-stage="EXC"] { --st-bar: var(--stage-exc-bar); --st-text: var(--stage-exc-text); --st-name: var(--stage-exc-name); --st-tint: var(--stage-exc-tint); --st-chip: var(--stage-exc-chip); }
+
+.stage-bar { background: var(--st-bar); }
+.stage-text { color: var(--st-text); }
+.stage-name { color: var(--st-name); }
+.stage-tint { background-image: linear-gradient(90deg, var(--st-tint), transparent 65%); }
+.stage-chip { background: var(--st-chip); color: var(--stage-chip-fg); }
+
+/* 파트 배지: 글자와 테두리 색만 파트별로 다르다. 배경은 채우지 않아 난이도·단계 배지(채움)와 구분된다 */
+[data-part="GUITAR"] { --part: var(--part-guitar); }
+[data-part="BASS"] { --part: var(--part-bass); }
+.part-chip { color: var(--part); border-color: var(--part); }
+
+/* 난이도 / 추천 배지 */
+[data-difficulty="BASIC"] { --diff: var(--diff-bas); --diff-text: var(--diff-text-bas); }
+[data-difficulty="ADVANCED"] { --diff: var(--diff-adv); --diff-text: var(--diff-text-adv); }
+[data-difficulty="EXTREME"] { --diff: var(--diff-ext); --diff-text: var(--diff-text-ext); }
+[data-difficulty="MASTER"] { --diff: var(--diff-mas); --diff-text: var(--diff-text-mas); }
+.diff-chip { background: var(--diff); color: var(--diff-fg); }
+.diff-band { background: var(--diff); }
+
+/*
+ * 파트·난이도·레벨 알약 (ChartBadge). 한 덩어리 안에서 왼쪽 = 파트(옅은 난이도 색 배경 + 진한 글자 + 안쪽 윤곽),
+ * 오른쪽 = 난이도와 레벨(난이도 색으로 채움 + 어두운 글자). 파트 글자(Guitar/Bass)를 항상 적어서 색만으로 구분하지 않는다.
+ * 옅은 배경은 투명도로 깔아서 카드/표 어느 배경 위에서도 같은 느낌이 난다.
+ */
+.chart-chip-part {
+  background: color-mix(in srgb, var(--diff) 20%, transparent);
+  color: var(--diff-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--diff) 40%, transparent);
+}
+.chart-chip-diff { background: var(--diff); color: var(--diff-fg); }
+
+/* FC/EXC는 재킷 칸에 테두리를 둔다 (DESIGN-UI 2장). 색은 단계의 달성률 숫자 색을 쓴다. */
+.stage-ring { outline: 2px solid var(--st-text); outline-offset: -2px; }
+
+/*
+ * 플레이어 티어 색 (docs/DESIGN-UI.md 5장). 티어별 구체 색은 시안 보드에서 정하는데 이 저장소에는 값이 없어서
+ * 이름에서 정한 임시 값이다. 값만 바꾸면 모든 화면에 반영된다.
+ * --tier-fill: 칩 배경 / 카드 테두리, --tier-glow: Bronze 이상의 글로우(위로 갈수록 강하게).
+ * 칩 글자색은 모든 티어에서 어두운 색으로 같게 둔다 (밝은 배경 위 대비).
+ */
+[data-tier="WHITE"] { --tier-fill: #e5e7eb; }
+[data-tier="WHITE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #e5e7eb, #9ca3af); }
+[data-tier="ORANGE"] { --tier-fill: #fb923c; }
+[data-tier="ORANGE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fb923c, #fde68a); }
+[data-tier="YELLOW"] { --tier-fill: #facc15; }
+[data-tier="YELLOW_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #facc15, #bef264); }
+[data-tier="GREEN"] { --tier-fill: #4ade80; }
+[data-tier="GREEN_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #4ade80, #67e8f9); }
+[data-tier="BLUE"] { --tier-fill: #60a5fa; }
+[data-tier="BLUE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #60a5fa, #c4b5fd); }
+[data-tier="PURPLE"] { --tier-fill: #c084fc; }
+[data-tier="PURPLE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #c084fc, #f9a8d4); }
+[data-tier="RED"] { --tier-fill: #f87171; }
+[data-tier="RED_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #f87171, #fdba74); }
+[data-tier="BRONZE"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #b45309, #f59e0b); --tier-glow: 0 0 10px rgb(245 158 11 / 0.35); }
+[data-tier="SILVER"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #cbd5e1, #f8fafc); --tier-glow: 0 0 12px rgb(203 213 225 / 0.45); }
+[data-tier="GOLD"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fcd34d, #f59e0b); --tier-glow: 0 0 14px rgb(252 211 77 / 0.55); }
+[data-tier="RAINBOW"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fca5a5, #fde68a, #86efac, #93c5fd, #d8b4fe); --tier-glow: 0 0 16px rgb(147 197 253 / 0.55); }
+[data-tier="RAINBOW_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ff6b6b, #ffd93d, #6bff95, #6bd5ff, #c084fc, #ff6bd6); --tier-glow: 0 0 20px rgb(192 132 252 / 0.65); }
+[data-tier="HASUBONG"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffe27a, #ff7eb6, #c084fc, #22d3ee); --tier-glow: 0 0 26px rgb(255 126 182 / 0.75); }
+
+:root { --tier-glow: 0 0 0 transparent; } /* 빛 없음 기본값 (Bronze 미만). 위 [data-tier] 규칙이 더 가까워서 덮어쓴다 */
+.tier-chip { background: var(--tier-fill); color: var(--stage-chip-fg); }
+.tier-bar { background: var(--tier-fill); }
+/* 세로 띠(레이팅 곡 카드 왼쪽)는 그라데이션이 위→아래로 흐르게 한다. 티어 채움 값의 방향만 바꾼다 */
+.tier-bar-v { --tier-dir: 180deg; }
+
+/*
+ * 총점 글자에 티어 색 (레이팅 카드, 유저 목록). 칩과 같은 --tier-fill을 글자 모양으로 오려 쓴다.
+ * 효과는 두 가지: (1) Bronze 이상은 --tier-glow를 글자 빛(drop-shadow)으로 쓴다. 낮은 티어는 --tier-glow가 없어
+ * 선언이 무시되어 빛이 없다. (2) GOLD 이상은 그라데이션이 천천히 좌우로 흐른다(반짝임).
+ * 움직임을 줄이는 설정(prefers-reduced-motion)에서는 멈춘다. 라이트 테마는 밝은 티어 색(White, Silver 등)이 흰 배경에서 안 보이지 않게 글자를 어둡게 누른다(brightness).
+ * --tier-glow가 없는 티어에서도 filter가 유효하도록 위 :root에 빛 없음 기본값을 둔다(var()가 비면 선언 전체가 무시되기 때문).
+ */
+.tier-score {
+  background: var(--tier-fill);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(var(--tier-glow));
+}
+@keyframes tier-shimmer {
+  from { background-position: 0% 0; }
+  to { background-position: 100% 0; }
+}
+:is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="HASUBONG"]).tier-score,
+:is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="HASUBONG"]) .tier-score {
+  background-size: 200% 100%;
+  animation: tier-shimmer 3.5s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tier-score { animation: none !important; }
+}
+:root[data-theme="light"] .tier-score { filter: brightness(0.6) saturate(1.5) drop-shadow(var(--tier-glow)); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .tier-score { filter: brightness(0.6) saturate(1.5) drop-shadow(var(--tier-glow)); }
+}
+
+/* 레이팅 카드 테두리: 기본 1px. Bronze 이상은 2px 그라데이션 테두리 + 글로우 */
+.tier-card { border: 1px solid var(--line); }
+[data-tier="BRONZE"].tier-card,
+[data-tier="SILVER"].tier-card,
+[data-tier="GOLD"].tier-card,
+[data-tier="RAINBOW"].tier-card,
+[data-tier="RAINBOW_GRADIENT"].tier-card,
+[data-tier="HASUBONG"].tier-card {
+  border: 2px solid transparent;
+  background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill) border-box;
+  box-shadow: var(--tier-glow);
+}
+
+/*
+ * 곡 하나의 점수를 플레이어 티어 색으로 칠한다 (설명서 상수표 칸, 레이팅 카드의 곡별 점수, 기록 입력창의 예상 점수).
+ * 어느 티어인지는 data-tier(색은 위 [data-tier] 규칙), 최고 티어(하수봉)를 넘는 점수의 빛 세기는 data-glow(1~3)로 정한다.
+ * lib/chart-tier.ts가 점수로 두 속성을 정한다. data-glow 규칙은 [data-tier="HASUBONG"]의 기본 빛을 덮어쓰려고 그 뒤에 둔다.
+ * 칸 글자는 순수 검정이다: 모든 티어 색 위에서 대비 4.5 이상(가장 어두운 Bronze 왼쪽 끝은 글자가 놓이는 가운데에서 5 이상).
+ */
+/* 하수봉 구간 6단계: 237.5부터 25점마다 색(채움)과 빛이 모두 바뀐다. 1단계 = 하수봉 기본 무지개. 글자는 검정이라 모두 밝은 색이다 */
+[data-glow="1"] { --tier-glow: 0 0 8px rgb(255 126 182 / 0.5); }
+[data-glow="2"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fef9a7, #b6e84a, #fef9a7); --tier-glow: 0 0 12px rgb(182 232 74 / 0.75); }
+[data-glow="3"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #b9f6ca, #22d3ee, #bae6fd); --tier-glow: 0 0 14px rgb(34 211 238 / 0.75); }
+[data-glow="4"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fbcfe8, #f43f8e, #fde68a); --tier-glow: 0 0 16px rgb(244 63 142 / 0.8); }
+[data-glow="5"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #e9d5ff, #8b5cf6, #c4b5fd); --tier-glow: 0 0 20px rgb(139 92 246 / 0.85); }
+[data-glow="6"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffffff, #fde68a, #ffffff, #bae6fd, #ffffff); --tier-glow: 0 0 24px rgb(255 255 255 / 0.95); }
+.chart-cell { background: var(--tier-fill); color: #000; box-shadow: var(--tier-glow); }
+[data-glow="6"].chart-cell { outline: 2px solid var(--fg); outline-offset: 1px; }
+.chart-swatch { background: var(--tier-fill); box-shadow: var(--tier-glow); }
+/* 하수봉 구간(data-glow 1~6)은 흰 안쪽 테두리를 더해 중간 티어(Gold 등)와 한눈에 갈라 보이게 한다. 2단계는 금색과 겹치지 않게 연두빛 노랑이다 */
+[data-glow].chart-cell, [data-glow].chart-swatch { box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.9), var(--tier-glow); }
+
+/* 곡 상세의 내 기록: FC/EXC 달성률 숫자를 단계 그라데이션 글자로 (DESIGN-UI 6장) */
+.stage-grad-text { background: var(--st-bar); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* 테마 스위치 (ThemeToggle): 마크업은 항상 같고, 손잡이 위치와 아이콘 색만 테마에 따라 CSS로 바꾼다.
+   서버 렌더링 결과와 브라우저 화면이 달라지지 않게 하려는 것이다. 기본 = 다크(손잡이가 달 쪽). 라이트 선택자는 위 변수 블록과 같은 두 곳. */
+.theme-thumb { transform: translateX(26px); transition: transform 0.15s ease; }
+.theme-switch .theme-sun { color: var(--fg-sub); }
+.theme-switch .theme-moon { color: var(--chip-on-fg); }
+:root[data-theme="light"] .theme-thumb { transform: translateX(0); }
+:root[data-theme="light"] .theme-switch .theme-sun { color: var(--chip-on-fg); }
+:root[data-theme="light"] .theme-switch .theme-moon { color: var(--fg-sub); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .theme-thumb { transform: translateX(0); }
+  :root:not([data-theme]) .theme-switch .theme-sun { color: var(--chip-on-fg); }
+  :root:not([data-theme]) .theme-switch .theme-moon { color: var(--fg-sub); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-thumb { transition: none; }
+}
+
+/* 모바일 슬라이드 메뉴(MobileMenu): 오른쪽에서 밀려 나오고 바깥 영역은 서서히 어두워진다. 움직임을 줄이는 설정에서는 바로 나타난다. */
+@keyframes drawer-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes drawer-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.drawer-panel { animation: drawer-in 0.2s ease-out; }
+.drawer-overlay { animation: drawer-fade 0.2s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .drawer-panel, .drawer-overlay { animation: none; }
+}
