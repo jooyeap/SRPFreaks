@@ -7,6 +7,7 @@ const CHIP = "rounded-full border border-chip-line px-2 py-0.5 text-xs font-bold
 /**
  * 곡 정보 헤더 (시안 "곡 상세"): 큰 재킷 칸(단색) + 곡명, 아티스트, 칩 줄(버전, `Guitar | MAS 9.80` 알약).
  * 재킷 칸 아래쪽 띠는 선택된 채보의 난이도 색이다 (색만이 아니라 칩의 글자로도 난이도를 적는다).
+ * 아티스트·버전처럼 띄어쓰기 없이 긴 글자가 와도 화면 폭을 넘지 않게 한다(아티스트는 줄바꿈, 버전 칩은 말줄임. 2026-10-13: 긴 버전 이름이 모바일에서 페이지 전체를 오른쪽으로 넓혔다).
  * 속성 칩은 서열표에서 들어온 화면에만 두고(pattern을 넘길 때만), 값이 없으면 숨긴다 (DESIGN-UI 6장).
  */
 export function SongHeader({
@@ -36,10 +37,10 @@ export function SongHeader({
         </div>
         <div className="flex flex-col gap-1">
           <h1 className="break-words font-num text-[26px] font-bold leading-[1.15] text-fg">{song.title}</h1>
-          {song.artist ? <p className="text-[13px] text-fg-dim">{song.artist}</p> : null}
+          {song.artist ? <p className="break-words text-[13px] text-fg-dim">{song.artist}</p> : null}
         </div>
         <p className="flex flex-wrap items-center gap-1.5">
-          {song.addedVersion ? <span className={`${CHIP} font-num`}>{song.addedVersion}</span> : null}
+          {song.addedVersion ? <span title={song.addedVersion} className={`${CHIP} max-w-full truncate font-num`}>{song.addedVersion}</span> : null}
           {chart ? <ChartBadge part={chart.instrumentPart} difficulty={chart.difficultyType} level={chart.level} /> : null}
         </p>
       </div>
