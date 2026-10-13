@@ -5,6 +5,7 @@ import com.srpfreaks.backend.entity.AuditLog;
 import com.srpfreaks.backend.entity.DifficultyTable;
 import com.srpfreaks.backend.entity.DifficultyTableEntry;
 import com.srpfreaks.backend.entity.DifficultyType;
+import com.srpfreaks.backend.entity.ImportToken;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.Notice;
@@ -78,6 +79,9 @@ class SchemaMappingTest {
                 "a".repeat(64), Instant.parse("2026-10-20T00:00:00Z"));
         em.persist(token);
 
+        ImportToken importToken = ImportToken.issue(user, "b".repeat(64));
+        em.persist(importToken);
+
         Song song = Song.create("ネクロファンタジア", "Artist", "test", user);
         em.persist(song);
         em.persist(SongTitle.create(song, TitleKind.ROMAJI, "Necro Fantasia"));
@@ -108,6 +112,12 @@ class SchemaMappingTest {
         em.flush();
         em.clear();
 
+        ImportToken loadedImportToken = em.find(ImportToken.class, importToken.getId());
+        assertThat(loadedImportToken.getTokenHash()).isEqualTo("b".repeat(64));
+        assertThat(loadedImportToken.getCreatedAt()).isNotNull();
+        assertThat(loadedImportToken.getLastUsedAt()).isNull();
+        assertThat(loadedImportToken.isRevoked()).isFalse();
+
         SkillSnapshot loadedSnapshot = em.find(SkillSnapshot.class, snapshot.getId());
         assertThat(loadedSnapshot.getSnapshotDate()).isEqualTo(LocalDate.of(2026, 10, 10));
         assertThat(loadedSnapshot.getTotalScore()).isEqualByComparingTo("8412.55");
@@ -137,6 +147,20 @@ class SchemaMappingTest {
         Object stored = em.createNativeQuery("select pattern_type from difficulty_table_entries where difficulty_table_entry_id = ?1")
                 .setParameter(1, entry.getId()).getSingleResult();
         assertThat(stored).isEqualTo("레이팅 제외");
+    }
+
+    @Test
+    void 같은_해시의_가져오기_토큰은_두_번_저장되지_않는다_유일_키() {
+        User user = User.create("google-sub-2", "b@example.com", "tester2");
+        em.persist(user);
+        em.persist(ImportToken.issue(user, "c".repeat(64)));
+        em.flush();
+
+        // IDENTITY 키라 persist 시점에 바로 INSERT가 나가서 유일 키 위반은 persist에서 터진다(flush까지 기다리지 않는다)
+        assertThatThrownBy(() -> {
+            em.persist(ImportToken.issue(user, "c".repeat(64)));
+            em.flush();
+        }).isInstanceOf(Exception.class);
     }
 
     @Test
