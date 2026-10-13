@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChartFolderListResponse, ChartFolderResponse } from "@/lib/api-types";
-import { overallStages, tabFromParam, tabToQuery } from "@/lib/my-page";
+import { myPageStateFromParams, myPageStateToQuery, overallStages, tabFromParam } from "@/lib/my-page";
 
 function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
   return {
@@ -9,17 +9,28 @@ function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
   };
 }
 
-describe("tabFromParam / tabToQuery", () => {
+describe("tabFromParam", () => {
   it("stats만 통계 탭이고, 없거나 알 수 없는 값은 레이팅 탭이다", () => {
     expect(tabFromParam("stats")).toBe("stats");
     expect(tabFromParam("rating")).toBe("rating");
     expect(tabFromParam(null)).toBe("rating");
     expect(tabFromParam("<script>")).toBe("rating");
   });
+});
 
-  it("기본 탭(레이팅)은 주소에 쓰지 않는다", () => {
-    expect(tabToQuery("rating")).toBe("");
-    expect(tabToQuery("stats")).toBe("tab=stats");
+describe("myPageState 주소 변환", () => {
+  it("기본값(레이팅 탭, 레벨 폴더)은 주소에 쓰지 않는다", () => {
+    expect(myPageStateToQuery({ tab: "rating", axis: "level" })).toBe("");
+    // 레이팅 탭에서는 기준이 의미가 없어 쓰지 않는다
+    expect(myPageStateToQuery({ tab: "rating", axis: "tier" })).toBe("");
+    expect(myPageStateToQuery({ tab: "stats", axis: "level" })).toBe("tab=stats");
+    expect(myPageStateToQuery({ tab: "stats", axis: "tier" })).toBe("tab=stats&axis=tier");
+  });
+
+  it("주소에서 읽고, 알 수 없는 값은 기본값으로 본다", () => {
+    expect(myPageStateFromParams(new URLSearchParams("tab=stats&axis=tier"))).toEqual({ tab: "stats", axis: "tier" });
+    expect(myPageStateFromParams(new URLSearchParams("tab=x&axis=y"))).toEqual({ tab: "rating", axis: "level" });
+    expect(myPageStateFromParams(new URLSearchParams(""))).toEqual({ tab: "rating", axis: "level" });
   });
 });
 

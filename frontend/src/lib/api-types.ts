@@ -247,6 +247,31 @@ export interface ChartRowResponse {
   mine: MyRecord | null;
 }
 
+// ---- 마이페이지 통계 (백엔드 RateFolderListResponse / RateFolderResponse / RateBucketResponse) ----
+
+/** 달성률 구간. 내 대표 기록(최고 달성률) 기준으로 서로 겹치지 않고, 경계는 아래쪽 값을 포함한다. 서버의 RateBucket과 같은 이름이다. */
+export type RateBucketKey = "R95" | "R90" | "R85" | "R80" | "R73" | "BELOW" | "UNPLAYED";
+
+/** 구간 하나의 채보 수. exc = 달성률 100.00(MAX)인 수, fc = 풀콤보이면서 100 미만인 수(둘은 겹치지 않는다). */
+export interface RateBucketResponse {
+  bucket: RateBucketKey;
+  count: number;
+  exc: number;
+  fc: number;
+}
+
+/** 폴더 하나. key는 레벨 폴더면 시작 레벨(9.5 = 9.50~9.99), 서열표 난이도면 레이팅 상수 난이도(5.8). buckets는 항상 7개다. */
+export interface RateFolderResponse {
+  key: number;
+  total: number;
+  recorded: number;
+  buckets: RateBucketResponse[];
+}
+
+export interface RateFolderListResponse {
+  folders: RateFolderResponse[];
+}
+
 // ---- 관리 (ROOT 전용, 백엔드 AuditLogResponse) ----------------------------------------------------
 
 /** 감사 로그 한 줄. 작업한 사람이 탈퇴했으면 actorId·actorNickname이 null이다. detail은 작업마다 모양이 달라 읽기만 한다. */

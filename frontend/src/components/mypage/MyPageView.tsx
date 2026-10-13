@@ -4,15 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { OverallStageCard } from "@/components/mypage/OverallStageCard";
 import { RatingView } from "@/components/rating/RatingView";
 import { Skeleton } from "@/components/Skeleton";
-import { MY_PAGE_TABS, overallStages, type MyPageTab } from "@/lib/my-page";
+import { StatsTab } from "@/components/mypage/StatsTab";
+import { MY_PAGE_TABS, overallStages, type MyPageState } from "@/lib/my-page";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 
 /**
  * 마이페이지: 제목, 전체 달성 현황(맨 위), `레이팅 | 통계` 탭.
- * 선택한 탭은 부모(주소 쿼리)가 들고 있고 여기서는 바꿔 달라고 요청만 한다(table 화면과 같은 방식).
+ * 선택한 탭·통계 기준은 부모(주소 쿼리)가 들고 있고 여기서는 바꿔 달라고 요청만 한다(table 화면과 같은 방식).
  * 전체 달성 현황은 곡 목록의 폴더 API(/songs/chart-folders)를 합산한다. 곡 목록 화면과 같은 쿼리 키라 캐시를 함께 쓴다.
  */
-export function MyPageView({ userId, tab, onTabChange }: { userId: number; tab: MyPageTab; onTabChange: (tab: MyPageTab) => void }) {
+export function MyPageView({ userId, state, onStateChange }: { userId: number; state: MyPageState; onStateChange: (state: MyPageState) => void }) {
+  const { tab } = state;
   const folders = useQuery({
     queryKey: songListKeys.folders(userId),
     queryFn: ({ signal }) => fetchChartFolders(signal),
@@ -42,7 +44,7 @@ export function MyPageView({ userId, tab, onTabChange }: { userId: number; tab: 
               id={`mypage-tab-${t.value}`}
               aria-selected={selected}
               aria-controls="mypage-panel"
-              onClick={() => onTabChange(t.value)}
+              onClick={() => onStateChange({ ...state, tab: t.value })}
               // 선택은 굵은 글씨와 아래 줄로도 보인다(색만으로 구분하지 않는다)
               className={`-mb-px min-h-11 border-b-2 px-4 text-sm ${
                 selected ? "border-fg font-bold text-fg" : "border-transparent text-fg-sub hover:text-fg"
@@ -58,7 +60,7 @@ export function MyPageView({ userId, tab, onTabChange }: { userId: number; tab: 
         {tab === "rating" ? (
           <RatingView userId={userId} />
         ) : (
-          <p className="text-sm text-fg-sub">통계를 준비하고 있습니다.</p>
+          <StatsTab userId={userId} axis={state.axis} onAxisChange={(axis) => onStateChange({ ...state, axis })} />
         )}
       </div>
     </div>
