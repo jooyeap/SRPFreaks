@@ -479,7 +479,7 @@ com.srpfreaks.backend
 | 난이도표 | GET `/difficulty-tables` / POST·PATCH | USER+ / ADMIN+ |
 | 서열표 | GET `/difficulty-tables/{id}/entries?mine=true&part=&recommend=&pattern=&page=&size=` (`recommend`·`pattern`은 여러 값을 쉼표로 이어 보낼 수 있다(`recommend=상,중`). 한 필터 안은 OR, 필터끼리는 AND, 비우면 전체, 모르는 값이 하나라도 있으면 400. 기준 난이도 묶음 단위 페이지(기본 10, 최대 20), 묶음마다 칩 개수(EXC/FC/SS/S/S 미만)·평균(0% 미포함/포함 둘 다), 항목마다 본인 최고 기록과 단계. 쿼리 2번 고정: 항목 fetch join + 본인 최고 기록 group by. 본인 기록은 표의 기준 옵션(SRN+)만, 채보의 최고 달성률과 FC 여부(하나라도 FC면 FC)로 계산) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |
-| 곡 목록 폴더 | GET `/songs/chart-folders` (전체 곡 수·채보 수, 버전 목록, 0.5 단위 레벨 폴더별 칩 개수·평균(0% 미포함/포함 둘 다)과, 폴더마다 그 안의 0.05 단위 하위 폴더 `subFolders`(같은 통계, 하위 폴더 개수의 합 = 큰 폴더). 채보가 없는 폴더는 없다. 쿼리: 채보+곡 fetch join 1번 + 본인 SRN+ 최고 기록 group by 1번) | USER+ |
+| 곡 목록 폴더 | GET `/songs/chart-folders` (선택 파라미터 `q`·`part`·`difficulty`·`version`: 맞는 채보만으로 폴더·개수·평균을 만들고 맞는 채보가 없는 폴더는 뺀다. 버전 목록은 필터와 무관하게 전체. 조건에 맞는 곡 수·채보 수, 버전 목록, 0.5 단위 레벨 폴더별 칩 개수·평균(0% 미포함/포함 둘 다)과, 폴더마다 그 안의 0.05 단위 하위 폴더 `subFolders`(같은 통계, 하위 폴더 개수의 합 = 큰 폴더). 채보가 없는 폴더는 없다. 쿼리: 채보+곡 fetch join 1번 + 본인 SRN+ 최고 기록 group by 1번) | USER+ |
 | 곡 목록 채보 | GET `/songs/charts?folder=&q=&part=&difficulty=&version=&page=&size=` (채보 단위 페이지(기본 20, 최대 50). `folder`는 폴더 시작 레벨, `folderStep`은 그 단위(생략하면 0.50, `0.05`만 더 허용. 9.50이 큰 폴더인지 하위 폴더인지 구분). 단위의 배수가 아니거나 허용 밖 단위면 400, `difficulty`는 쉼표로 여러 개, 정렬은 레벨 높은 순 → 곡명 → id. 항목마다 본인 SRN+ 최고 기록과 단계. 곡 검색은 `/songs`와 같은 조건(곡명·아티스트·정규화 표기). 속성은 담지 않는다) | USER+ |
 | 서열표 목록 | GET `/difficulty-tables` | USER+ |
 | 서열표 값 수정·채보 추가 (D27) | PUT `/admin/difficulty-tables/{tableId}/entries/{songDifficultyId}` (본문 `tierLabel`(null=미정), `recommend`(상/중/하/null), `pattern`(단일/복합/이중/삼중/레이팅 제외/null), `ratingEnabled`(true/false, 생략하면 기존 값 유지·새 줄은 꺼짐, D28). 보낸 값으로 교체, 표에 없으면 추가, `?` 해제, 표 revision +1, 감사 로그) | ROOT·ADMIN |
@@ -664,6 +664,7 @@ com.srpfreaks.backend
 | 날짜 | 내용 |
 |---|---|
 | 2026-10-13 | **D33 추가.** 마이페이지(`/me`)와 달성률 구간 통계 API(`/stats/*`), `/songs/charts`에 `rateBucket`·`sort` 추가. 화면은 DESIGN-UI 19장 |
+| 2026-10-13 | **곡 목록 폴더에 필터 적용.** `GET /songs/chart-folders`가 `q`·`part`·`difficulty`·`version`을 받아 필터가 걸린 채보로 폴더를 만든다(폴더 유지, 필터 결과를 한 덩어리로 보이지 않는다). 응답 모양은 그대로 |
 | 2026-10-08 | **사용자 목록·역할 변경 구현.** `GET /admin/users`, `PATCH /admin/users/{id}/role`(ROOT 전용). ADMIN 지정/해제만 가능하고 ROOT는 만들지도 바꾸지도 못한다(5장 규칙 유지). 역할은 요청마다 DB에서 읽으므로 바로 반영된다 |
 | 2026-10-08 | **설정 조회·변경 구현.** `GET /admin/settings`(ROOT, 키 순, 한 번에 최대 100개), `PATCH /admin/settings/{key}` body `{"value": "..."}`. 새 키는 만들 수 없고(404) 키별로 값을 검사한다: `rating.*`는 바꾼 값을 끼워 넣은 전체 설정으로 `RatingConfig`를 실제로 만들어 보고(계산에 쓸 수 없으면 400, 잘못된 값이 저장돼 레이팅 화면이 500이 되는 것을 막는다), `ui.show_song_images`는 true/false, 나머지는 비어 있지 않은 글자. 변경은 `audit_logs`(`SETTING_UPDATE`, 변경 전/후)에 남긴다 |
 | 2026-10-08 | **감사 로그 조회 구현.** `GET /admin/audit-logs?page=&size=`(ROOT 전용, 최근 순, 기본 30건·최대 100건). 응답에는 작업한 사람의 id와 닉네임만 있고 이메일·Google ID는 없다. 화면은 DESIGN-UI 16장 |
