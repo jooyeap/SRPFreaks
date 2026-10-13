@@ -156,8 +156,11 @@ class SchemaMappingTest {
         em.persist(ImportToken.issue(user, "c".repeat(64)));
         em.flush();
 
-        em.persist(ImportToken.issue(user, "c".repeat(64)));
-        assertThatThrownBy(() -> em.flush()).isInstanceOf(Exception.class);
+        // IDENTITY 키라 persist 시점에 바로 INSERT가 나가서 유일 키 위반은 persist에서 터진다(flush까지 기다리지 않는다)
+        assertThatThrownBy(() -> {
+            em.persist(ImportToken.issue(user, "c".repeat(64)));
+            em.flush();
+        }).isInstanceOf(Exception.class);
     }
 
     @Test
