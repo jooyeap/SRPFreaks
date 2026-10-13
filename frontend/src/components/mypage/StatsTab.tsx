@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { OverallStageCard } from "@/components/mypage/OverallStageCard";
 import { Pager, usePaged } from "@/components/Pager";
+import { RateFolderMaster } from "@/components/mypage/RateFolderMaster";
+import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { RateFolderCard } from "@/components/mypage/RateFolderCard";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api";
@@ -109,7 +111,7 @@ function FolderList({
     return query.data.folders.length === 0 ? (
       <p className="text-sm text-fg-sub">{emptyText}</p>
     ) : (
-      <PagedFolders axis={axis} folders={query.data.folders} />
+      <PagedFolders key={axis} axis={axis} folders={query.data.folders} />
     );
   }
   if (query.isError) {
@@ -118,8 +120,15 @@ function FolderList({
   return <Skeleton label="통계를 불러오는 중입니다." className="h-72" />;
 }
 
-/** 폴더가 많아서(특히 서열표 난이도) 10개씩 나눠 보여 준다. 기준을 바꾸면 컴포넌트가 새로 만들어져 1페이지로 돌아간다. */
+/** 폴더가 많아서(특히 서열표 난이도) 10개씩 나눠 보여 준다. */
 function PagedFolders({ axis, folders }: { axis: StatsAxis; folders: readonly RateFolderResponse[] }) {
+  // 데스크톱은 좌우 분할(좌: 폴더 목록, 우: 상세), 모바일은 접이식 카드
+  const desktop = useMediaQuery(DESKTOP_QUERY);
+  if (desktop) return <RateFolderMaster axis={axis} folders={folders} />;
+  return <MobileFolders axis={axis} folders={folders} />;
+}
+
+function MobileFolders({ axis, folders }: { axis: StatsAxis; folders: readonly RateFolderResponse[] }) {
   const { page, totalPages, pageItems, setPage } = usePaged(folders);
   return (
     <>
