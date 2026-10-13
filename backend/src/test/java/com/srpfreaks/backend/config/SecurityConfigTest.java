@@ -5,6 +5,8 @@ import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import org.springframework.mock.web.MockHttpServletRequest;
+
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,5 +61,21 @@ class SecurityConfigTest {
 
         assertThatThrownBy(() -> new SecurityConfig().importCorsConfiguration(props))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void 가져오기_경로의_CORS는_공식_사이트를_허용하고_다른_API는_허용하지_않는다() {
+        AppProperties props = new AppProperties();
+        props.getCors().setAllowedOrigins(List.of("https://srp.example.com"));
+        var source = new SecurityConfig().corsConfigurationSource(props);
+
+        var imports = source.getCorsConfiguration(new MockHttpServletRequest("OPTIONS", "/api/v1/imports/recent-plays"));
+        var others = source.getCorsConfiguration(new MockHttpServletRequest("OPTIONS", "/api/v1/users/me"));
+
+        // 같은 Origin(공식 사이트)이 가져오기 경로에서만 통과해야 한다 (등록 순서 회귀 방지)
+        assertThat(imports.checkOrigin("https://p.eagate.573.jp")).isEqualTo("https://p.eagate.573.jp");
+        assertThat(others.checkOrigin("https://p.eagate.573.jp")).isNull();
+        assertThat(others.checkOrigin("https://srp.example.com")).isEqualTo("https://srp.example.com");
+        assertThat(imports.checkOrigin("https://srp.example.com")).isNull();
     }
 }
