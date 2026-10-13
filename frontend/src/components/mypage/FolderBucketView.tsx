@@ -1,0 +1,130 @@
+"use client";
+
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { ChartList } from "@/components/songs/ChartList";
+import { FilterChips } from "@/components/table/FilterChips";
+import { Skeleton } from "@/components/Skeleton";
+import { tableDetailHref } from "@/components/song/TableContext";
+import { ApiError } from "@/lib/api";
+import { fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
+import { myPageStateToQuery } from "@/lib/my-page";
+import {
+  bucketLabel,
+  FOLDER_SORT_OPTIONS,
+  folderChartsKeys,
+  folderLabel,
+  fetchFolderBucketCharts,
+  type FolderChartSort,
+  type FolderViewState,
+} from "@/lib/rate-folders";
+import { songListDetailHref } from "@/lib/song-list";
+import type { InstrumentPart } from "@/lib/types";
+
+const PART_OPTIONS: readonly { value: InstrumentPart; label: string }[] = [
+  { value: "GUITAR", label: "Guitar" },
+  { value: "BASS", label: "Bass" },
+];
+
+function errorMessage(error: unknown): string {
+  return error instanceof ApiError ? error.message : "목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+}
+
+/**
+ * 마이페이지 통계에서 구간을 눌렀을 때 보는 화면: 한 폴더의 한 달성률 구간에 속한 채보 목록.
+ * 레벨 폴더는 곡 목록 API(/songs/charts)에, 서열표 난이도는 통계 API에 구간·정렬을 넘겨 서버가 거른다(20개씩 `더 보기`).
+ * 파트와 정렬은 이 화면의 필터이고, 모두 주소 쿼리에 있다. 곡을 누르면 그 기준의 곡 상세로 간다(서열표 난이도면 서열표 상세).
+ */
+export function FolderBucketView({
+  userId,
+  state,
+  onStateChange,
+}: {
+  userId: number;
+  state: FolderViewState;
+  onStateChange: (state: FolderViewState) => void;
+}) {
+  // 서열표 난이도 기준일 때만 서열표 id가 필요하다
+  const tables = useQuery({
+    queryKey: tableKeys.list,
+    queryFn: ({ signal }) => fetchDifficultyTables(signal),
+    select: pickRatingTable,
+    enabled: state.axis === "tier",
+  });
+  const tableId = tables.data?.id ?? null;
+  const ready = state.axis === "level" || tableId !== null;
+
+  const pages = useInfiniteQuery({
+    queryKey: folderChartsKeys.list(userId, tableId, state),
+    queryFn: ({ pageParam, signal }) => fetchFolderBucketCharts(state, tableId, pageParam, signal),
+    initialPageParam: 0,
+    getNextPageParam: (last) => (last.page + 1 < last.totalPages ? last.page + 1 : undefined),
+    enabled: ready,
+  });
+
+  const rows = pages.data?.pages.flatMap((p) => p.content) ?? [];
+  const total = pages.data?.pages[0]?.totalElements ?? 0;
+  const backHref = `/me?${myPageStateToQuery({ tab: "stats", axis: state.axis })}`;
+  const title = folderLabel(state.axis, state.key);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Link href={backHref} aria-label="통계로" title="통계로" className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+          <span aria-hidden="true">←</span>
+        </Link>
+        <div>
+          <h1 className="font-num text-lg font-semibold text-fg">{title}</h1>
+          <p className="text-sm text-fg-sub">
+            {state.axis === "level" ? "레벨 폴더" : "레이팅 상수 난이도"} · {bucketLabel(state.bucket)}
+            {pages.data ? <span className="ml-2 font-num text-fg">{total}개</span> : null}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <FilterChips
+          label="파트"
+          options={PART_OPTIONS}
+          selected={state.part}
+          onChange={(part) => onStateChange({ ...state, part })}
+        />
+        <label className="flex flex-wrap items-center gap-1.5 text-xs text-fg-dim">
+          <span className="mr-1">정렬</span>
+          <select
+            value={state.sort}
+            onChange={(e) => onStateChange({ ...state, sort: e.target.value as FolderChartSort })}
+            className="rounded-full border border-chip-line bg-card px-3 py-1 text-sm text-fg"
+          >
+            {FOLDER_SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {tables.isSuccess && tableId === null ? (
+        <p className="text-sm text-fg-sub">사용할 수 있는 서열표가 아직 없습니다.</p>
+      ) : pages.isError || tables.isError ? (
+        <p role="alert" className="text-sm text-fg">{errorMessage(pages.error ?? tables.error)}</p>
+      ) : !pages.data ? (
+        <Skeleton label="목록을 불러오는 중입니다." className="h-72" />
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-fg-sub">이 조건에 맞는 채보가 없습니다.</p>
+      ) : (
+        <div className="overflow-hidden rounded-[14px] border border-line bg-card">
+          <ChartList
+            label={`${title} ${bucketLabel(state.bucket)} 채보`}
+            rows={rows}
+            hasMore={pages.hasNextPage}
+            loadingMore={pages.isFetchingNextPage}
+            onMore={() => void pages.fetchNextPage()}
+            hrefOf={state.axis === "tier" ? tableDetailHref : songListDetailHref}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

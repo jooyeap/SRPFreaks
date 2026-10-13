@@ -1,5 +1,14 @@
 import { apiFetch } from "@/lib/api";
-import type { RateBucketKey, RateBucketResponse, RateFolderListResponse, RateFolderResponse } from "@/lib/api-types";
+import type {
+  ChartRowResponse,
+  PageResponse,
+  RateBucketKey,
+  RateBucketResponse,
+  RateFolderListResponse,
+  RateFolderResponse,
+  TableEntryResponse,
+} from "@/lib/api-types";
+import type { InstrumentPart } from "@/lib/types";
 import type { StageCounts } from "@/components/table/StageBar";
 import { formatLevel, formatTier } from "@/lib/format";
 
@@ -98,4 +107,95 @@ export function folderLabel(axis: StatsAxis, key: number): string {
 export function bucketListHref(axis: StatsAxis, key: number, bucket: RateBucketKey): string {
   const params = new URLSearchParams({ axis, key: key.toFixed(2), bucket });
   return `/me/folder?${params.toString()}`;
+}
+
+// ---- 폴더 안 채보 목록 (구간을 눌렀을 때) ----
+
+export type FolderChartSort = "LEVEL" | "RATE_DESC" | "RATE_ASC";
+
+export const FOLDER_SORT_OPTIONS: readonly { value: FolderChartSort; label: string }[] = [
+  { value: "LEVEL", label: "레벨 높은 순" },
+  { value: "RATE_DESC", label: "내 달성률 높은 순" },
+  { value: "RATE_ASC", label: "내 달성률 낮은 순" },
+];
+
+/** 폴더 목록 화면의 상태. 전부 주소 쿼리에 두어 새로고침·뒤로가기에도 유지된다. 폴더나 구간이 올바르지 않으면 null이다. */
+export interface FolderViewState {
+  axis: StatsAxis;
+  /** 레벨 폴더 시작 레벨(9.5) 또는 서열표 난이도(5.8) */
+  key: number;
+  bucket: RateBucketKey;
+  part: InstrumentPart | null;
+  sort: FolderChartSort;
+}
+
+const BUCKET_KEYS = new Set<string>(BUCKETS.map((b) => b.key));
+const KEY_PATTERN = /^\d{1,2}\.\d{2}$/;
+
+/** 주소는 사용자가 고칠 수 있다: 알 수 없는 값은 버리고, 폴더·구간이 없거나 틀리면 null(화면이 안내를 띄운다). */
+export function folderViewFromParams(params: URLSearchParams): FolderViewState | null {
+  const axis = params.get("axis");
+  const rawKey = params.get("key") ?? "";
+  const bucket = params.get("bucket") ?? "";
+  if ((axis !== "level" && axis !== "tier") || !KEY_PATTERN.test(rawKey) || !BUCKET_KEYS.has(bucket)) {
+    return null;
+  }
+  const sort = params.get("sort");
+  return {
+    axis,
+    key: Number(rawKey),
+    bucket: bucket as RateBucketKey,
+    part: params.get("part") === "G" ? "GUITAR" : params.get("part") === "B" ? "BASS" : null,
+    sort: sort === "RATE_DESC" || sort === "RATE_ASC" ? sort : "LEVEL",
+  };
+}
+
+/** 기본값(전체 파트, 레벨 높은 순)은 쓰지 않는다. */
+export function folderViewToQuery(state: FolderViewState): string {
+  const params = new URLSearchParams({ axis: state.axis, key: state.key.toFixed(2), bucket: state.bucket });
+  if (state.part) params.set("part", state.part === "GUITAR" ? "G" : "B");
+  if (state.sort !== "LEVEL") params.set("sort", state.sort);
+  return params.toString();
+}
+
+export const FOLDER_CHARTS_PAGE_SIZE = 20;
+
+export const folderChartsKeys = {
+  list: (userId: number, tableId: number | null, state: FolderViewState) =>
+    ["stats", "folder-charts", userId, tableId, state] as const,
+};
+
+/** 폴더·구간 안의 채보 한 페이지를 곡 목록 줄 모양으로 돌려준다. 레벨 폴더는 곡 목록 API, 서열표 난이도는 통계 API를 쓴다. */
+export async function fetchFolderBucketCharts(
+  state: FolderViewState,
+  tableId: number | null,
+  page: number,
+  signal?: AbortSignal,
+): Promise<PageResponse<ChartRowResponse>> {
+  const common = { rateBucket: state.bucket, part: state.part, sort: state.sort, page, size: FOLDER_CHARTS_PAGE_SIZE };
+  if (state.axis === "level") {
+    return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", {
+      query: { folder: state.key.toFixed(2), folderStep: "0.50", ...common },
+      signal,
+    });
+  }
+  const result = await apiFetch<PageResponse<TableEntryResponse>>("/stats/tier-rate-folders/charts", {
+    query: { tableId, tier: state.key.toFixed(1), ...common },
+    signal,
+  });
+  return { ...result, content: result.content.map(entryToChartRow) };
+}
+
+/** 서열표 줄을 곡 목록 줄과 같은 모양으로 바꾼다(두 기준이 같은 줄 컴포넌트를 쓰게). 속성·추천 같은 서열표 값은 이 목록에서 쓰지 않는다. */
+export function entryToChartRow(entry: TableEntryResponse): ChartRowResponse {
+  return {
+    songDifficultyId: entry.songDifficultyId,
+    songId: entry.songId,
+    title: entry.title,
+    addedVersion: entry.addedVersion,
+    part: entry.part,
+    difficulty: entry.difficulty,
+    level: entry.level,
+    mine: entry.mine,
+  };
 }

@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { RateBucketKey, RateFolderResponse } from "@/lib/api-types";
-import { bucketBadges, bucketListHref, bucketStage, BUCKETS, folderLabel, folderStageCounts } from "@/lib/rate-folders";
+import {
+  bucketBadges,
+  bucketListHref,
+  bucketStage,
+  BUCKETS,
+  entryToChartRow,
+  folderLabel,
+  folderStageCounts,
+  folderViewFromParams,
+  folderViewToQuery,
+} from "@/lib/rate-folders";
 
 function folder(counts: Partial<Record<RateBucketKey, [number, number, number]>>, total: number, recorded: number): RateFolderResponse {
   return {
@@ -47,5 +57,42 @@ describe("bucket helpers", () => {
     expect(folderLabel("level", 9.5)).toBe("9.50 ~ 9.99");
     expect(folderLabel("tier", 5.8)).toBe("5.8");
     expect(bucketListHref("tier", 5.8, "BELOW")).toBe("/me/folder?axis=tier&key=5.80&bucket=BELOW");
+  });
+});
+
+describe("folderViewFromParams / folderViewToQuery", () => {
+  it("주소에서 읽고 다시 주소로 만든다 (기본값은 쓰지 않는다)", () => {
+    const state = folderViewFromParams(new URLSearchParams("axis=tier&key=5.80&bucket=R95&part=B&sort=RATE_DESC"));
+    expect(state).toEqual({ axis: "tier", key: 5.8, bucket: "R95", part: "BASS", sort: "RATE_DESC" });
+    expect(folderViewToQuery(state!)).toBe("axis=tier&key=5.80&bucket=R95&part=B&sort=RATE_DESC");
+    expect(folderViewToQuery({ axis: "level", key: 9.5, bucket: "UNPLAYED", part: null, sort: "LEVEL" })).toBe(
+      "axis=level&key=9.50&bucket=UNPLAYED",
+    );
+  });
+
+  it("알 수 없는 파트·정렬은 기본값으로 본다", () => {
+    expect(folderViewFromParams(new URLSearchParams("axis=level&key=9.50&bucket=R90&part=X&sort=zzz"))).toEqual({
+      axis: "level", key: 9.5, bucket: "R90", part: null, sort: "LEVEL",
+    });
+  });
+
+  it("폴더나 구간이 올바르지 않으면 null이다", () => {
+    for (const q of ["", "axis=level&key=9.50", "axis=x&key=9.50&bucket=R95", "axis=level&key=abc&bucket=R95", "axis=level&key=9.50&bucket=R99", "axis=level&key=9.5&bucket=R95"]) {
+      expect(folderViewFromParams(new URLSearchParams(q))).toBeNull();
+    }
+  });
+});
+
+describe("entryToChartRow", () => {
+  it("서열표 줄에서 곡 목록 줄에 필요한 값만 옮긴다", () => {
+    const row = entryToChartRow({
+      entryId: 1, songDifficultyId: 10, songId: 100, title: "곡", addedVersion: "v1", part: "BASS", difficulty: "MASTER", level: 9.5,
+      tierUncertain: false, recommend: "상", recommendUncertain: false, pattern: "단일", patternUncertain: false, ratingEnabled: true,
+      mine: { rate: 96, fullCombo: false, stage: "SS" },
+    });
+    expect(row).toEqual({
+      songDifficultyId: 10, songId: 100, title: "곡", addedVersion: "v1", part: "BASS", difficulty: "MASTER", level: 9.5,
+      mine: { rate: 96, fullCombo: false, stage: "SS" },
+    });
   });
 });
