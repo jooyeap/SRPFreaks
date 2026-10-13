@@ -109,7 +109,7 @@ export function RatingBody({
 }
 
 /**
- * 레이팅 화면. 로그인한 사용자만 이 컴포넌트를 그린다. 서버는 항상 토큰의 사용자 본인 목록만 돌려준다.
+ * 마이페이지의 레이팅 탭 본문(제목과 탭은 MyPageView가 그린다). 로그인한 사용자만 이 컴포넌트를 그린다. 서버는 항상 토큰의 사용자 본인 목록만 돌려준다.
  */
 export function RatingView({ userId }: { userId: number }) {
   const { data, isPending, isError, error } = useQuery({
@@ -120,7 +120,6 @@ export function RatingView({ userId }: { userId: number }) {
   if (isPending) {
     return (
       <div className="flex flex-col gap-5">
-        <h1 className="text-xl font-semibold text-fg">레이팅</h1>
         <Skeleton label="불러오는 중입니다." className="h-[7.5rem]" />
         <Skeleton label="레이팅 목록을 불러오는 중입니다." className="h-72" />
       </div>
@@ -136,7 +135,6 @@ export function RatingView({ userId }: { userId: number }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-xl font-semibold text-fg">레이팅</h1>
       <RatingBody
         skill={data}
         afterSummary={<RatingTargetPlanner userId={userId} skill={data} />}

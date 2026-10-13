@@ -29,6 +29,8 @@
   --rec-high-text: #ffb870; --rec-high-line: #ff9f43; --rec-high-tint: rgb(255 159 67 / 0.14);
   --chip-on-bg: #eef0f6;
   --chip-on-fg: #0f1218;
+  /* 여러 개 고르는 필터 칩(체크 칩)이 켜졌을 때: 윤곽 + 연한 배경 + 글자색. 칩 안에 ✓도 같이 나온다 */
+  --check-line: #6ea0ff; --check-bg: rgb(110 160 255 / 0.14); --check-fg: #b3c9ff;
   --danger: #ff8f8f;
   /* 서열표 진행도에서 기록이 모두 채워진 묶음: 막대(done)와 기준 난이도 글자(done-text). 기록 숫자 n/n이 같이 보인다 */
   --done: #4ade80; --done-text: #86efac;
@@ -79,6 +81,7 @@
   --rec-high-text: #b45309; --rec-high-line: #d97706; --rec-high-tint: rgb(217 119 6 / 0.10);
   --chip-on-bg: #12151c;
   --chip-on-fg: #f3f5f9;
+  --check-line: #2563eb; --check-bg: rgb(37 99 235 / 0.08); --check-fg: #1d4ed8;
   /* 라이트에서 --danger를 빼먹으면 다크용 연한 색(#ff8f8f)이 흰 배경에 남아 대비가 2.19까지 떨어진다 */
   --danger: #b91c1c;
   --done: #16a34a; --done-text: #15803d;
@@ -115,6 +118,7 @@
     --rec-high-text: #b45309; --rec-high-line: #d97706; --rec-high-tint: rgb(217 119 6 / 0.10);
     --chip-on-bg: #12151c;
     --chip-on-fg: #f3f5f9;
+    --check-line: #2563eb; --check-bg: rgb(37 99 235 / 0.08); --check-fg: #1d4ed8;
     --danger: #b91c1c;
   --done: #16a34a; --done-text: #15803d;
     --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
@@ -145,6 +149,9 @@
   --color-jacket: var(--jacket);
   --color-chip-on-bg: var(--chip-on-bg);
   --color-chip-on-fg: var(--chip-on-fg);
+  --color-check-line: var(--check-line);
+  --color-check-bg: var(--check-bg);
+  --color-check-fg: var(--check-fg);
   --color-danger: var(--danger);
   --color-done: var(--done);
   --color-done-text: var(--done-text);

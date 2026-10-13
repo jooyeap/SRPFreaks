@@ -14,12 +14,13 @@ const ROW_GRID = "md:grid md:grid-cols-[minmax(0,1fr)_40px_116px_56px] md:items-
  * 데스크톱: 곡명 · 랭크 · 채보 · 달성률이 한 줄에 정렬된다. 버전은 행에 보이지 않고 필터로만 쓴다. 랭크(달성 단계 배지)는 곡명 오른쪽이다.
  * 랭크 칸은 기록이 없어도 자리를 비워 두므로(고정 폭) 랭크 유무와 상관없이 알약의 위치가 줄마다 같다.
  * 알약의 파트 칸은 최소 폭이 있어 Guitar/Bass가 섞여도 오른쪽 칸 시작 위치가 같다(ChartBadge).
+ * href: 곡 상세 주소를 바꿀 때 쓴다(기본은 곡 목록에서 들어간 상세). 마이페이지 서열표 난이도 목록은 서열표 상세로 보낸다.
  * 전체 곡 목록에는 속성을 보이지 않는다 (DESIGN-UI 9장). 기록이 있으면 서열표와 같은 왼쪽 막대·배경 틴트를 준다.
  *
  * md:contents — 모바일의 묶음(div, p)을 데스크톱에서는 없는 것처럼 풀어서 자식들이 위 격자의 칸이 되게 한다.
  * 그러면 칸 순서가 DOM 순서(곡명, 알약, 랭크, 달성률)가 되므로 md:order-*로 데스크톱 순서만 따로 정한다.
  */
-export function ChartRow({ row }: { row: ChartRowResponse }) {
+export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }) {
   const stage = row.mine?.stage ?? null;
   return (
     <li
@@ -31,7 +32,7 @@ export function ChartRow({ row }: { row: ChartRowResponse }) {
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
       <div className="min-w-0 flex-1 md:contents">
         <Link
-          href={songListDetailHref(row)}
+          href={href ?? songListDetailHref(row)}
           className={`block truncate text-sm hover:underline md:order-1 ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
         >
           {row.title}

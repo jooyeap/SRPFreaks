@@ -4,11 +4,13 @@ import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.dto.ChartFolderListResponse;
 import com.srpfreaks.backend.dto.ChartFolderResponse;
 import com.srpfreaks.backend.dto.ChartRowResponse;
+import com.srpfreaks.backend.dto.ChartSort;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.RateBucket;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.repository.OptionRecordRepository;
@@ -387,5 +389,75 @@ class SongChartListServiceTest {
 
         assertThat(page.content()).isEmpty();
         assertThat(page.totalPages()).isZero();
+    }
+
+    private PageResponse<ChartRowResponse> callWithBucket(RateBucket bucket, ChartSort sort) {
+        return service.charts(7L, null, null, null, null, null, null, bucket, sort, 0, 50);
+    }
+
+    private static RecordBest rate(SongDifficulty d, String rate) {
+        return new RecordBest(d.getId(), new BigDecimal(rate), false);
+    }
+
+    @Test
+    void 달성률_구간으로_거른다_경계와_미플레이_포함() {
+        SongDifficulty a = guitar("a", "9.00");
+        SongDifficulty b = guitar("b", "9.10");
+        SongDifficulty c = guitar("c", "9.20");
+        SongDifficulty d = guitar("d", "9.30");
+        stubCharts();
+        stubBests(7L, rate(a, "95.00"), rate(b, "94.99"), rate(c, "10.00"));
+
+        assertThat(callWithBucket(RateBucket.R95, null).content()).extracting(ChartRowResponse::title).containsExactly("a");
+        assertThat(callWithBucket(RateBucket.R90, null).content()).extracting(ChartRowResponse::title).containsExactly("b");
+        assertThat(callWithBucket(RateBucket.BELOW, null).content()).extracting(ChartRowResponse::title).containsExactly("c");
+        assertThat(callWithBucket(RateBucket.UNPLAYED, null).content()).extracting(ChartRowResponse::title).containsExactly("d");
+    }
+
+    @Test
+    void 구간을_주지_않으면_전체가_나온다() {
+        guitar("a", "9.00");
+        guitar("b", "9.10");
+        stubCharts();
+        stubBests(7L);
+
+        assertThat(callWithBucket(null, null).totalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void 달성률_내림차순은_기록_없는_채보를_맨_뒤에_둔다() {
+        SongDifficulty a = guitar("a", "9.00");
+        SongDifficulty b = guitar("b", "9.10");
+        SongDifficulty c = guitar("c", "9.20");
+        guitar("none", "9.90");
+        stubCharts();
+        stubBests(7L, rate(a, "80.00"), rate(b, "99.00"), rate(c, "99.00"));
+
+        // 같은 달성률(b, c)은 레벨 높은 순(c, b), 기록 없는 곡은 레벨이 가장 높아도 맨 뒤
+        assertThat(callWithBucket(null, ChartSort.RATE_DESC).content()).extracting(ChartRowResponse::title)
+                .containsExactly("c", "b", "a", "none");
+    }
+
+    @Test
+    void 달성률_오름차순도_기록_없는_채보를_맨_뒤에_둔다() {
+        SongDifficulty a = guitar("a", "9.00");
+        SongDifficulty b = guitar("b", "9.10");
+        guitar("none", "9.90");
+        stubCharts();
+        stubBests(7L, rate(a, "80.00"), rate(b, "99.00"));
+
+        assertThat(callWithBucket(null, ChartSort.RATE_ASC).content()).extracting(ChartRowResponse::title)
+                .containsExactly("a", "b", "none");
+    }
+
+    @Test
+    void 정렬을_주지_않으면_레벨_높은_순이다() {
+        guitar("low", "9.00");
+        guitar("high", "9.90");
+        stubCharts();
+        stubBests(7L);
+
+        assertThat(callWithBucket(null, ChartSort.LEVEL).content()).extracting(ChartRowResponse::title)
+                .containsExactly("high", "low");
     }
 }

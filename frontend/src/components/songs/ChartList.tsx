@@ -8,18 +8,21 @@ export function ChartList({
   hasMore,
   loadingMore,
   onMore,
+  hrefOf,
 }: {
   label: string;
   rows: ChartRowResponse[];
   hasMore: boolean;
   loadingMore: boolean;
   onMore: () => void;
+  /** 곡 상세 주소를 바꿀 때 */
+  hrefOf?: (row: ChartRowResponse) => string;
 }) {
   return (
     <>
       <ul aria-label={label}>
         {rows.map((row) => (
-          <ChartRow key={row.songDifficultyId} row={row} />
+          <ChartRow key={row.songDifficultyId} row={row} href={hrefOf?.(row)} />
         ))}
       </ul>
       {hasMore ? (

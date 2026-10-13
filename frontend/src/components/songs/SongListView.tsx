@@ -7,7 +7,7 @@ import { FolderSection } from "@/components/songs/FolderSection";
 import { SongListFilterPanel } from "@/components/songs/SongListFilterPanel";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { SongSearchBox } from "@/components/songs/SongSearchBox";
-import { Chip } from "@/components/table/FilterChips";
+import { AverageToggle } from "@/components/table/FilterChips";
 import { ApiError } from "@/lib/api";
 import {
   activeFilterCount,
@@ -121,15 +121,7 @@ export function SongListView({
         <p className="text-sm text-fg-sub">등록된 곡이 아직 없습니다.</p>
       ) : (
         <>
-          <div role="group" aria-label="평균 계산" className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-xs text-fg-dim">평균 계산</span>
-            <Chip pressed={!includeZero} onClick={() => setIncludeZero(false)}>
-              0% 미포함
-            </Chip>
-            <Chip pressed={includeZero} onClick={() => setIncludeZero(true)}>
-              0% 포함
-            </Chip>
-          </div>
+          <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
           <div className="flex flex-col gap-3">
             {folders.data.folders.map((folder) => (
               <FolderSection key={folder.lo} userId={userId} folder={folder} includeZero={includeZero} />

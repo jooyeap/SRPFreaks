@@ -5,12 +5,14 @@ import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.ChartFolderListResponse;
 import com.srpfreaks.backend.dto.ChartFolderResponse;
 import com.srpfreaks.backend.dto.ChartRowResponse;
+import com.srpfreaks.backend.dto.ChartSort;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.TableEntryResponse.MyRecord;
 import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.RateBucket;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
 import com.srpfreaks.backend.repository.OptionRecordRepository;
@@ -102,6 +104,19 @@ public class SongChartListService {
     public PageResponse<ChartRowResponse> charts(Long userId, String q, BigDecimal folder, BigDecimal folderStep,
                                                  InstrumentPart part, Collection<DifficultyType> difficulties,
                                                  String version, int page, int size) {
+        return charts(userId, q, folder, folderStep, part, difficulties, version, null, null, page, size);
+    }
+
+    /**
+     * 위 목록에 달성률 구간과 정렬을 더한 버전(마이페이지 통계: 레벨 폴더 안에서 구간을 골랐을 때).
+     *
+     * @param rateBucket null이면 구간 필터 없음. 내 대표 기록(최고 달성률)이 속한 구간의 채보만 남긴다(UNPLAYED는 기록 없는 채보)
+     * @param sort       null이면 LEVEL(기존 순서)
+     */
+    public PageResponse<ChartRowResponse> charts(Long userId, String q, BigDecimal folder, BigDecimal folderStep,
+                                                 InstrumentPart part, Collection<DifficultyType> difficulties,
+                                                 String version, RateBucket rateBucket, ChartSort sort,
+                                                 int page, int size) {
         String keyword = q == null ? "" : q.strip();
         if (keyword.length() > SongQueryService.MAX_KEYWORD_LENGTH) {
             throw new ApiException(ErrorCode.BAD_REQUEST);
@@ -122,15 +137,28 @@ public class SongChartListService {
         Set<Long> matchingSongIds = keyword.isEmpty() ? null : new HashSet<>(songRepository.searchIds(
                 SongQueryService.likePattern(keyword), SongQueryService.likePattern(SongTitle.normalize(keyword))));
 
+        // 내 최고 기록은 구간 필터·달성률 정렬에도 필요해서 필터 전에 한 번의 group by 쿼리로 가져온다(채보마다 쿼리하면 N+1)
+        Map<Long, RecordBest> bests = bestsOf(userId);
+        Comparator<SongDifficulty> byLevel = Comparator.<SongDifficulty, BigDecimal>comparing(SongDifficulty::getLevel).reversed()
+                .thenComparing(d -> d.getSong().getTitle())
+                .thenComparing(SongDifficulty::getId);
+        Comparator<SongDifficulty> order = byLevel;
+        if (sort == ChartSort.RATE_DESC || sort == ChartSort.RATE_ASC) {
+            // 기록 없는 채보(null)는 오름/내림 모두 맨 뒤. 같은 달성률이면 기존 순서
+            Comparator<BigDecimal> rateOrder = sort == ChartSort.RATE_DESC
+                    ? Comparator.nullsLast(Comparator.<BigDecimal>reverseOrder())
+                    : Comparator.nullsLast(Comparator.<BigDecimal>naturalOrder());
+            order = Comparator.<SongDifficulty, BigDecimal>comparing(d -> rateOf(bests, d), rateOrder).thenComparing(byLevel);
+        }
+
         List<SongDifficulty> filtered = songDifficultyRepository.findAllActiveWithSong().stream()
                 .filter(d -> matchingSongIds == null || matchingSongIds.contains(d.getSong().getId()))
                 .filter(d -> folder == null || folderLow(d.getLevel(), step).compareTo(folder) == 0)
                 .filter(d -> part == null || d.getInstrumentPart() == part)
                 .filter(d -> difficulties == null || difficulties.isEmpty() || difficulties.contains(d.getDifficultyType()))
                 .filter(d -> versionFilter == null || versionFilter.equals(d.getSong().getAddedVersion()))
-                .sorted(Comparator.<SongDifficulty, BigDecimal>comparing(SongDifficulty::getLevel).reversed()
-                        .thenComparing(d -> d.getSong().getTitle())
-                        .thenComparing(SongDifficulty::getId))
+                .filter(d -> rateBucket == null || RateBucket.of(rateOf(bests, d)) == rateBucket)
+                .sorted(order)
                 .toList();
 
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
@@ -139,8 +167,6 @@ public class SongChartListService {
         int to = Math.min(from + pageSize, filtered.size());
         int totalPages = (filtered.size() + pageSize - 1) / pageSize;
 
-        // 내 기록은 이번 페이지의 채보에만 필요하지만 한 번의 group by 쿼리로 모두 가져온다(채보마다 쿼리하면 N+1)
-        Map<Long, RecordBest> bests = bestsOf(userId);
         List<ChartRowResponse> rows = filtered.subList(from, to).stream()
                 .map(d -> ChartRowResponse.of(d, myRecord(bests.get(d.getId()))))
                 .toList();
@@ -155,6 +181,12 @@ public class SongChartListService {
     /** 레벨이 속한 step 단위 폴더의 시작값. step 0.05면 9.07 -> 9.05, 9.10 -> 9.10. */
     static BigDecimal folderLow(BigDecimal level, BigDecimal step) {
         return level.divide(step, 0, RoundingMode.DOWN).multiply(step).setScale(2, RoundingMode.UNNECESSARY);
+    }
+
+    /** 채보의 내 대표 달성률. 기록이 없으면 null. */
+    private static BigDecimal rateOf(Map<Long, RecordBest> bests, SongDifficulty d) {
+        RecordBest best = bests.get(d.getId());
+        return best == null ? null : best.bestRate();
     }
 
     private Map<Long, RecordBest> bestsOf(Long userId) {

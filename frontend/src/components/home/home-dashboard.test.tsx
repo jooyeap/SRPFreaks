@@ -149,6 +149,8 @@ describe("HomeDashboard", () => {
     expect(progress.querySelector(":scope > div [data-stage-bar].ring-done")).toBeNull(); // 전체는 아직 다 채우지 않았다
 
     expect(screen.getByRole("link", { name: /^서열표.*레이팅 상수 난이도별로/ })).toHaveAttribute("href", "/table");
+    expect(screen.getByRole("link", { name: /^마이페이지.*달성 현황/ })).toHaveAttribute("href", "/me");
+    expect(screen.getByRole("link", { name: "마이페이지로" })).toHaveAttribute("href", "/me"); // 레이팅 요약 카드
 
     // 유저 목록 미리보기: 공개한 유저 줄(상세 링크)과 전체 보기 링크
     const preview = await screen.findByRole("region", { name: "유저 목록 미리보기" });
