@@ -1,12 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { RatingView } from "@/components/rating/RatingView";
+import { MyPageView } from "@/components/mypage/MyPageView";
+import { tabFromParam, tabToQuery, type MyPageTab } from "@/lib/my-page";
 
-/** 마이페이지(예전 레이팅 화면). 내 기록으로 계산하므로 로그인이 필요하다. 옛 주소 /rating은 next.config의 redirect가 여기로 보낸다. */
-export default function MyPage() {
+/**
+ * 마이페이지(예전 레이팅 화면). 내 기록으로 계산하므로 로그인이 필요하다. 옛 주소 /rating은 next.config의 redirect가 여기로 보낸다.
+ * 선택한 탭은 주소 쿼리(`/me?tab=stats`)에 둔다. useSearchParams는 Suspense 안에서 써야 해서(Next.js 정적 빌드 규칙) 본문을 따로 나눴다.
+ */
+function MyPageContent() {
   const { status, user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = tabFromParam(searchParams.get("tab"));
+
+  // 탭을 바꿀 때마다 기록(history)을 쌓지 않도록 replace를 쓰고, 화면 스크롤은 그대로 둔다
+  const onTabChange = useCallback(
+    (next: MyPageTab) => {
+      const query = tabToQuery(next);
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    },
+    [router, pathname],
+  );
 
   if (status === "loading") {
     return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
@@ -22,5 +41,13 @@ export default function MyPage() {
       </section>
     );
   }
-  return <RatingView userId={user.id} />;
+  return <MyPageView userId={user.id} tab={tab} onTabChange={onTabChange} />;
+}
+
+export default function MyPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-fg-sub">불러오는 중입니다.</p>}>
+      <MyPageContent />
+    </Suspense>
+  );
 }
