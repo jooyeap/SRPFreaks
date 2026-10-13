@@ -2,11 +2,17 @@ package com.srpfreaks.backend.service;
 
 import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.common.error.ErrorCode;
+import com.srpfreaks.backend.dto.ChartSort;
+import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.RateBucketResponse;
 import com.srpfreaks.backend.dto.RateFolderListResponse;
 import com.srpfreaks.backend.dto.RateFolderResponse;
+import com.srpfreaks.backend.dto.TableEntryResponse;
+import com.srpfreaks.backend.dto.TableEntryResponse.MyRecord;
+import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.DifficultyTable;
 import com.srpfreaks.backend.entity.DifficultyTableEntry;
+import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.RateBucket;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.repository.DifficultyTableEntryRepository;
@@ -38,6 +44,9 @@ import java.util.TreeMap;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class RateFolderService {
+
+    public static final int DEFAULT_PAGE_SIZE = 20;
+    public static final int MAX_PAGE_SIZE = 50;
 
     private static final BigDecimal MAX_RATE = new BigDecimal("100.00");
 
@@ -94,6 +103,63 @@ public class RateFolderService {
                 .map(e -> toFolder(e.getKey(), e.getValue()))
                 .toList();
         return new RateFolderListResponse(folders);
+    }
+
+    /**
+     * 서열표 난이도 폴더 안의 채보 목록(페이지). 기준 난이도 하나(tier)에 속한 채보 중 내 대표 기록이 rateBucket에 속하는 것만 보인다.
+     * 서열표 화면의 줄(TableEntryResponse)과 같은 모양이라 화면이 같은 줄 컴포넌트를 쓴다.
+     *
+     * @param tier       기준 난이도(예: 6.0). 이 값의 묶음이 없으면 빈 목록
+     * @param rateBucket null이면 구간 필터 없음(UNPLAYED는 기록 없는 채보)
+     * @param part       null이면 전체
+     * @param sort       null이면 LEVEL(레벨 높은 순 -> 곡명 -> id). RATE_*는 기록 없는 채보를 항상 맨 뒤에 둔다
+     */
+    public PageResponse<TableEntryResponse> tierCharts(Long userId, Long tableId, BigDecimal tier, RateBucket rateBucket,
+                                                       InstrumentPart part, ChartSort sort, int page, int size) {
+        DifficultyTable table = difficultyTableRepository.findById(tableId)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        Map<Long, RecordBest> bests = new HashMap<>();
+        optionRecordRepository.findBestByTable(userId, table.getNoteOption(), tableId)
+                .forEach(b -> bests.put(b.songDifficultyId(), b));
+
+        Comparator<DifficultyTableEntry> byLevel = Comparator
+                .<DifficultyTableEntry, BigDecimal>comparing(e -> e.getSongDifficulty().getLevel()).reversed()
+                .thenComparing(e -> e.getSongDifficulty().getSong().getTitle())
+                .thenComparing(DifficultyTableEntry::getId);
+        Comparator<DifficultyTableEntry> order = byLevel;
+        if (sort == ChartSort.RATE_DESC || sort == ChartSort.RATE_ASC) {
+            Comparator<BigDecimal> rateOrder = sort == ChartSort.RATE_DESC
+                    ? Comparator.nullsLast(Comparator.<BigDecimal>reverseOrder())
+                    : Comparator.nullsLast(Comparator.<BigDecimal>naturalOrder());
+            order = Comparator.<DifficultyTableEntry, BigDecimal>comparing(e -> rateOf(bests, e), rateOrder).thenComparing(byLevel);
+        }
+
+        List<DifficultyTableEntry> filtered = entryRepository.findAllForView(tableId).stream()
+                .filter(e -> e.getTierLabel() != null && e.getTierLabel().compareTo(tier) == 0)
+                .filter(e -> part == null || e.getSongDifficulty().getInstrumentPart() == part)
+                .filter(e -> rateBucket == null || RateBucket.of(rateOf(bests, e)) == rateBucket)
+                .sorted(order)
+                .toList();
+
+        int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int pageIndex = Math.max(page, 0);
+        int from = (int) Math.min((long) pageIndex * pageSize, filtered.size());
+        int to = Math.min(from + pageSize, filtered.size());
+        int totalPages = (filtered.size() + pageSize - 1) / pageSize;
+        List<TableEntryResponse> rows = filtered.subList(from, to).stream()
+                .map(e -> TableEntryResponse.of(e, myRecord(bests.get(e.getSongDifficulty().getId()))))
+                .toList();
+        return new PageResponse<>(rows, pageIndex, pageSize, filtered.size(), totalPages);
+    }
+
+    private static BigDecimal rateOf(Map<Long, RecordBest> bests, DifficultyTableEntry e) {
+        RecordBest best = bests.get(e.getSongDifficulty().getId());
+        return best == null ? null : best.bestRate();
+    }
+
+    private static MyRecord myRecord(RecordBest best) {
+        return best == null ? null
+                : new MyRecord(best.bestRate(), best.fullCombo(), AchievementStage.of(best.bestRate(), best.fullCombo()));
     }
 
     /**

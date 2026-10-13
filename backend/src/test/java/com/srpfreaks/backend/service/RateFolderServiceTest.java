@@ -1,9 +1,12 @@
 package com.srpfreaks.backend.service;
 
 import com.srpfreaks.backend.common.error.ApiException;
+import com.srpfreaks.backend.dto.ChartSort;
+import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.RateBucketResponse;
 import com.srpfreaks.backend.dto.RateFolderListResponse;
 import com.srpfreaks.backend.dto.RateFolderResponse;
+import com.srpfreaks.backend.dto.TableEntryResponse;
 import com.srpfreaks.backend.entity.DifficultyTable;
 import com.srpfreaks.backend.entity.DifficultyTableEntry;
 import com.srpfreaks.backend.entity.DifficultyType;
@@ -200,5 +203,68 @@ class RateFolderServiceTest {
         when(difficultyTableRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.tierFolders(7L, 99L)).isInstanceOf(ApiException.class);
+    }
+
+    /** tier 6.0 묶음: 레벨 8.00(a, 96%) / 8.10(b, 85%) / 8.20(c, 기록 없음). 6.5 묶음: d. 미정: e */
+    private DifficultyTable stubTierTable() {
+        DifficultyTable table = DifficultyTable.create("SRN+ 서열표", null, NoteOption.SUPER_RANDOM_PLUS);
+        SongDifficulty a = chart("8.00");
+        SongDifficulty b = chart("8.10");
+        SongDifficulty c = chart("8.20");
+        SongDifficulty d = chart("9.00");
+        SongDifficulty e = chart("9.10");
+        when(difficultyTableRepository.findById(1L)).thenReturn(Optional.of(table));
+        when(entryRepository.findAllForView(1L)).thenReturn(List.of(
+                entry(table, a, "6.0"), entry(table, b, "6.0"), entry(table, c, "6.0"),
+                entry(table, d, "6.5"), entry(table, e, null)));
+        when(optionRecordRepository.findBestByTable(7L, NoteOption.SUPER_RANDOM_PLUS, 1L)).thenReturn(List.of(
+                best(a.getId(), "96.00", false), best(b.getId(), "85.00", false), best(d.getId(), "100.00", true)));
+        return table;
+    }
+
+    private static List<String> titles(PageResponse<TableEntryResponse> page) {
+        return page.content().stream().map(TableEntryResponse::title).toList();
+    }
+
+    @Test
+    void 서열표_폴더_목록은_기준_난이도와_구간으로_거른다() {
+        stubTierTable();
+
+        PageResponse<TableEntryResponse> r95 = service.tierCharts(7L, 1L, new BigDecimal("6.0"), RateBucket.R95,
+                null, null, 0, 20);
+        assertThat(titles(r95)).containsExactly("song1");
+        assertThat(r95.content().get(0).mine().rate()).isEqualByComparingTo("96.00");
+
+        assertThat(titles(service.tierCharts(7L, 1L, new BigDecimal("6.0"), RateBucket.UNPLAYED, null, null, 0, 20)))
+                .containsExactly("song3");
+        // 다른 난이도 묶음의 곡(d)이나 미정 곡(e)은 섞이지 않는다
+        assertThat(service.tierCharts(7L, 1L, new BigDecimal("6.0"), null, null, null, 0, 20).totalElements()).isEqualTo(3);
+        assertThat(titles(service.tierCharts(7L, 1L, new BigDecimal("6.5"), RateBucket.R95, null, null, 0, 20)))
+                .containsExactly("song4");
+    }
+
+    @Test
+    void 서열표_폴더_목록_정렬과_페이지() {
+        stubTierTable();
+
+        // 달성률 내림차순: 96(song1), 85(song2), 기록 없음(song3)
+        PageResponse<TableEntryResponse> sorted = service.tierCharts(7L, 1L, new BigDecimal("6.0"), null, null,
+                ChartSort.RATE_DESC, 0, 2);
+        assertThat(titles(sorted)).containsExactly("song1", "song2");
+        assertThat(sorted.totalElements()).isEqualTo(3);
+        assertThat(sorted.totalPages()).isEqualTo(2);
+        assertThat(titles(service.tierCharts(7L, 1L, new BigDecimal("6.0"), null, null, ChartSort.RATE_DESC, 1, 2)))
+                .containsExactly("song3");
+        // 기본 정렬은 레벨 높은 순
+        assertThat(titles(service.tierCharts(7L, 1L, new BigDecimal("6.0"), null, null, null, 0, 20)))
+                .containsExactly("song3", "song2", "song1");
+    }
+
+    @Test
+    void 서열표_폴더_목록은_표가_없으면_예외다() {
+        when(difficultyTableRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.tierCharts(7L, 99L, new BigDecimal("6.0"), null, null, null, 0, 20))
+                .isInstanceOf(ApiException.class);
     }
 }
