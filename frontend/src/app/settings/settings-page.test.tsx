@@ -45,7 +45,8 @@ describe("설정 화면", () => {
     expect(screen.getByLabelText("닉네임")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "탈퇴하기" })).toHaveAttribute("href", "/settings/withdraw");
-    expect(screen.getByRole("link", { name: "가져오기 설정" })).toHaveAttribute("href", "/settings/import");
+    // 최근 플레이 가져오기는 동작 확인 전까지 꺼 둔다(lib/features.ts)
+    expect(screen.queryByRole("link", { name: "가져오기 설정" })).toBeNull();
   });
 
   it("로그인하지 않았으면 로그인 링크만 보여 준다", async () => {

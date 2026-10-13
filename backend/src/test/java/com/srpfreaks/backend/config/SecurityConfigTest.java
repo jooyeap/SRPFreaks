@@ -78,4 +78,17 @@ class SecurityConfigTest {
         assertThat(others.checkOrigin("https://srp.example.com")).isEqualTo("https://srp.example.com");
         assertThat(imports.checkOrigin("https://srp.example.com")).isNull();
     }
+
+    @Test
+    void 가져오기_기능을_끌_때_막는_경로는_가져오기_API와_토큰_API뿐이다() {
+        assertThat(SecurityConfig.isImportApiPath("/api/v1/imports/recent-plays")).isTrue();
+        assertThat(SecurityConfig.isImportApiPath("/api/v1/import-token")).isTrue();
+        assertThat(SecurityConfig.isImportApiPath("/api/v1/users/me")).isFalse();
+        assertThat(SecurityConfig.isImportApiPath("/api/v1/records")).isFalse();
+    }
+
+    @Test
+    void 가져오기_기능은_기본으로_꺼져_있다() {
+        assertThat(new AppProperties().getImportApi().isEnabled()).isFalse();
+    }
 }
