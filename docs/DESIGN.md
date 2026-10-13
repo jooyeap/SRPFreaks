@@ -903,11 +903,11 @@ com.srpfreaks.backend
 | playedAtMs | `form.center_pos input[name=date_ms]` | 1791796344469 (2026-10-12 18:12:24 KST). 화면의 `.play_date` 글자는 번역·형식에 흔들려서 쓰지 않는다 |
 | gameType | `input[name=gtype]` | `gf`만 받는다 |
 | songTitle | `.sr_data_music_info_tb .title` | 번역되지 않은 원문이어야 한다 |
-| part, difficulty | `td.score_data_diff`의 클래스 | `bass_mst` → BASS / MASTER (`guitar_*`, `*_bsc/adv/ext/mst`는 샘플 추가 확인 필요) |
+| part, difficulty | `td.score_data_diff`의 클래스 | `bass_mst` → BASS / MASTER, `gf_mst` → GUITAR / MASTER (확인됨). BASIC/ADVANCED/EXTREME 값은 샘플 확인 전까지 읽지 않고 건너뛴다(사유 `UNKNOWN_DIFFICULTY`) |
 | level | 같은 칸의 글자 | 9.50 (마스터 레벨과 다르면 참고용) |
 | achievement | `.sr_data_score_tb`의 마지막 `th.score_data` | 73.87% → 7387 (×100 정수로 보낸다) |
 | miss, ok | 점수 표에서 `MISS`·`OK` 줄의 값 | 라벨은 번역되므로 **줄 위치**로 읽는다 |
-| options | `.cc_box li.cc_icon` 클래스 목록 | `gf_random_5`, `gf_button_1`, `gf_auto_1` |
+| options | `.cc_box li.cc_icon` 클래스 목록 | `gf_random_5`, `gf_button_1`, `gf_auto_1`. 다른 옵션 샘플은 `gf_random_4`로 값이 다르다(5와 구분됨). 번호는 우리 enum 순서(1 NORMAL … 4 RANDOM_PLUS, 5 SUPER_RANDOM_PLUS)와 같은 것으로 보이나 확인된 건 5뿐이고, 5 이외는 모두 건너뛴다 |
 
 **서버 처리 규칙**
 1. 옵션 클래스가 **정확히** `gf_random_5` + `gf_button_1` + `gf_auto_1`이 아니면 그 기록은 건너뛴다(사유 `OPTION_NOT_SUPPORTED`).
@@ -923,8 +923,8 @@ com.srpfreaks.backend
 
 **아직 확인하지 못한 것**
 - 풀콤보 플레이의 표시(`score_data_clear`의 클래스), 임시 규칙 `miss 0 and ok 0`의 정확성
-- Guitar 채보와 BASIC/ADVANCED/EXTREME의 `score_data_diff` 클래스 값
-- 다른 옵션의 `cc_box` 값(지금은 `gf_random_5`가 SRN+ 하나라는 한 건의 샘플로만 확인)
+- BASIC/ADVANCED/EXTREME의 `score_data_diff` 클래스 값 (`gf_`·`bass_` 접두어 + 난이도 약어로 보이나 MASTER만 확인)
+- 풀콤보·EXC 플레이에서 클리어 칸(`td.score_data_clear`)의 클래스. 일반 클리어는 `score_data_clear clear`이고, EXC 플레이(화면에 EXC 아이콘)에서는 달라질 것으로 보인다. 확인되면 이 칸으로 FC를 판정하고 `MISS 0 and OK 0` 규칙은 쓰지 않거나 보조로만 쓴다
 - 이용규약(8(13), (22), (23)) 확인 — 공개 전 필수
 
 #### 18.4.1 이후: 보류 당시의 설계 원문 (D18)
