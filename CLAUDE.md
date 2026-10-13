@@ -98,12 +98,12 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 - ROOT/ADMIN의 관리 작업은 `audit_logs`에 기록한다.
 
 ## 공식 사이트와의 관계 (D18)
-- **공식 기록·곡 목록 가져오기는 보류했다.** 확장 프로그램, 북마클릿, 가져오기 토큰, 공식 페이지 읽기 코드를 만들지 않는다. 설계 원문은 `docs/DESIGN.md` 18.4.
+- **공식 곡 목록·스킬 페이지 가져오기는 보류했다.** 단, **최근 플레이 결과(`stage_result`, 최대 20곡) 가져오기는 D34로 허용**한다. 설계는 `docs/DESIGN.md` 18.4.0 (설계 확정 전에는 구현하지 않는다). 그 외 공식 페이지 읽기 코드는 만들지 않는다.
 - 서버는 **Konami 계정, 세션, 쿠키를 받지도 저장하지도 않고**, 공식 사이트와 통신하지 않는다.
 - 기록은 직접 입력하거나 사진 입력(D16)으로 넣는다. 사진은 저장하지 않고, 플레이어 이름·ID는 읽지 않는다.
 
 ## 범위와 기록 규칙 (D15)
-- **보류 추가(D18)**: 공식 사이트 가져오기 전체 (D5, D17, `official_records`, `import_tokens`, `import_unmatched`). 다시 켤 때까지 만들지 않는다.
+- **보류 추가(D18)**: 공식 사이트 곡 목록·스킬 페이지 가져오기, `official_records`, `import_unmatched`. 다시 켤 때까지 만들지 않는다. **D34로 되살린 것은 최근 플레이 가져오기(가져오기 토큰 포함)뿐이다.**
 - **유저 목록(D26)은 구현됨**: 본인이 공개를 선택(`users.profile_public`, 기본 비공개, 설정은 `PATCH /users/me/visibility`)한 유저의 닉네임·티어·총점 목록(`/players`)과 읽기 전용 유저 상세(`/players/{userId}`, 비공개·없는 유저는 404). 이메일·역할·Google ID는 내보내지 않는다. 설계는 `docs/DESIGN.md` 18.2.
 - **공지사항(D30)은 구현됨**: ROOT·ADMIN이 쓰고(`/admin/notices`) 로그인한 사용자가 읽는다(`/notices`). 본문은 글자만 저장·표시하고 HTML을 해석하지 않는다. 고정·분류·댓글·알림은 만들지 않는다. 설계는 `docs/DESIGN.md` D30, 화면은 `docs/DESIGN-UI.md` 18장.
 - **보류(만들지 않는다)**: 곡별 랭킹, 두 유저 비교 화면, 증빙 사진·인증·이의제기·신고(D14), 노트 성향 그래프(D11). 설계 원문은 `docs/DESIGN.md` 18장, 화면 규칙은 `docs/DESIGN-UI.md` 13장. 다시 켤 때까지 `source`·`verification` 컬럼, `record_evidence`·`record_disputes`·`difficulty_profiles` 테이블, 관련 API·설정을 만들지 않는다.
@@ -117,7 +117,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 - **USER**: 본인 기록 CRUD, 조회.
 
 ## 하지 않는 것
-- Konami 계정 정보 수집, 서버의 공식 사이트 자동 로그인/스크래핑
+- Konami 계정 정보 수집, 서버의 공식 사이트 자동 로그인/스크래핑 (D34의 사용자 브라우저가 읽어 보내는 최근 플레이는 예외)
 - 음원, 채보, 게임 로고 사용. **재킷 이미지는 허락 없이 쓰지 않는다.** 공식 데이터를 통째로 복사해 곡 DB를 만들지 않는다. 곡 데이터는 직접 정리한 시트 기준이고 `songs.source`에 출처를 남긴다. (`docs/DESIGN.md` 15장)
 - 공식 서비스처럼 보이는 표현. 화면에 "비공식 팬 프로젝트" 고지를 유지한다.
 
