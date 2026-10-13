@@ -6,7 +6,7 @@ import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
-import { Chip } from "@/components/table/FilterChips";
+import { AverageToggle } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
 import { PART_OPTIONS, TableFilterPanel } from "@/components/table/TableFilterPanel";
 import { TableSearch } from "@/components/table/TableSearch";
@@ -167,15 +167,7 @@ export function DifficultyTableView({
       >
         <TableFilterPanel filters={filters} onChange={changeFilter} />
         <SortSelect value={sort} onChange={setSort} />
-        <div role="group" aria-label="평균 계산" className="flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 text-xs text-fg-dim">평균 계산</span>
-          <Chip pressed={!includeZero} onClick={() => setIncludeZero(false)}>
-            0% 미포함
-          </Chip>
-          <Chip pressed={includeZero} onClick={() => setIncludeZero(true)}>
-            0% 포함
-          </Chip>
-        </div>
+        <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
       </div>
 
       {entries.isError ? (

@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
-import { Chip } from "@/components/table/FilterChips";
+import { AverageToggle } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
 import { TableFilterPanel } from "@/components/table/TableFilterPanel";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
@@ -99,15 +99,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
       <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-3">
         <TableFilterPanel filters={filters} onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} />
       </div>
-      <div role="group" aria-label="평균 계산" className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-xs text-fg-dim">평균 계산</span>
-        <Chip pressed={!includeZero} onClick={() => setIncludeZero(false)}>
-          0% 미포함
-        </Chip>
-        <Chip pressed={includeZero} onClick={() => setIncludeZero(true)}>
-          0% 포함
-        </Chip>
-      </div>
+      <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
       <SortSelect value={sort} onChange={setSort} />
       {hasFilters(filters) && group.entries.length === 0 ? (
         <p className="text-sm text-fg-sub">조건에 맞는 채보가 없습니다.</p>
