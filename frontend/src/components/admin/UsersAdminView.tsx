@@ -29,7 +29,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" aria-label="관리로" title="관리로" className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+        <Link href="/admin" aria-label="관리로" title="관리로" className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
           <span aria-hidden="true">←</span>
         </Link>
         <h1 className="text-xl font-semibold text-fg">사용자</h1>
@@ -54,7 +54,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
               type="button"
               disabled={page <= 0}
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
-              className="rounded-full border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               이전
             </button>
@@ -65,7 +65,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
               type="button"
               disabled={page + 1 >= data.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-full border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               다음
             </button>

@@ -202,7 +202,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
         {aliases.length > 0 ? (
           <ul aria-label="등록된 검색 키워드" className="flex flex-wrap gap-1.5">
             {aliases.map((alias) => (
-              <li key={alias} className="flex items-center gap-1 rounded-full border border-chip-line py-0.5 pl-3 pr-1 text-sm text-fg">
+              <li key={alias} className="flex items-center gap-1 rounded-lg border border-chip-line py-0.5 pl-3 pr-1 text-sm text-fg">
                 {alias}
                 <button
                   type="button"

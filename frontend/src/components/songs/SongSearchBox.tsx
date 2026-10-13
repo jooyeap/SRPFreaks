@@ -33,7 +33,7 @@ export function SongSearchBox({ value, onCommit }: { value: string; onCommit: (q
       onChange={(e) => setText(e.target.value)}
       placeholder="곡명, 아티스트 검색 (한글·일본어·로마자)"
       aria-label="곡 검색"
-      className="min-w-0 flex-1 rounded-full border border-chip-line bg-card px-4 py-2 text-sm text-fg placeholder:text-fg-dim"
+      className="min-w-0 flex-1 rounded-lg border border-chip-line bg-card px-4 py-2 text-sm text-fg placeholder:text-fg-dim"
     />
   );
 }

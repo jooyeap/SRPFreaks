@@ -103,13 +103,13 @@ export function SongDetailView({
         onClick={() => router.back()}
         aria-label="뒤로"
         title="뒤로"
-        className="min-h-9 min-w-11 rounded-full border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
+        className="min-h-9 min-w-11 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
       >
         <span aria-hidden="true">←</span>
       </button>
       <span className="text-sm font-semibold text-fg">곡 상세</span>
       {origin === "table" && found ? (
-        <span className="rounded-full border border-chip-line px-2 py-0.5 text-xs text-fg-sub">
+        <span className="rounded-lg border border-chip-line px-2 py-0.5 text-xs text-fg-sub">
           SRN+ 서열표 · <span className="font-num">{formatTier(found.group.tier)}</span>
         </span>
       ) : (
@@ -167,7 +167,7 @@ export function SongDetailView({
               <button
                 type="button"
                 onClick={openTableEdit}
-                className="self-start rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
               >
                 {found ? "서열표 값 수정" : "서열표에 추가"}
               </button>
@@ -177,7 +177,7 @@ export function SongDetailView({
                 <button
                   type="button"
                   onClick={() => setSongEdit({ kind: "song", song: data })}
-                  className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                  className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
                 >
                   곡 정보 수정
                 </button>
@@ -185,7 +185,7 @@ export function SongDetailView({
                   <button
                     type="button"
                     onClick={() => setSongEdit({ kind: "chart", song: data, chart })}
-                    className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                    className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
                   >
                     채보 수정
                   </button>

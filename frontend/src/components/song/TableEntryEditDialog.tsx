@@ -235,7 +235,7 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
               aria-labelledby="entry-rating-label"
               aria-describedby="entry-rating-hint"
               onClick={() => setValue("ratingEnabled", !ratingEnabled, { shouldDirty: true })}
-              className={`relative h-6 w-11 shrink-0 rounded-full border border-chip-line transition-colors ${
+              className={`relative h-6 w-11 shrink-0 rounded-lg border border-chip-line transition-colors ${
                 ratingEnabled ? "bg-chip-on-bg" : "bg-table-head"
               }`}
             >

@@ -77,7 +77,7 @@ export function SongListView({
           aria-expanded={filtersOpen}
           aria-controls="song-filters"
           onClick={() => setFiltersOpen((open) => !open)}
-          className="shrink-0 rounded-full border border-chip-line px-3 py-2 text-sm text-fg-sub hover:text-fg md:hidden"
+          className="shrink-0 rounded-lg border border-chip-line px-3 py-2 text-sm text-fg-sub hover:text-fg md:hidden"
         >
           {filterCount > 0 ? `필터 ${filterCount}` : "필터"}
         </button>

@@ -70,7 +70,7 @@ export function FolderBucketView({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Link href={backHref} aria-label="통계로" title="통계로" className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+        <Link href={backHref} aria-label="통계로" title="통계로" className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
           <span aria-hidden="true">←</span>
         </Link>
         <div>
@@ -94,7 +94,7 @@ export function FolderBucketView({
           <select
             value={state.sort}
             onChange={(e) => onStateChange({ ...state, sort: e.target.value as FolderChartSort })}
-            className="rounded-full border border-chip-line bg-card px-3 py-1 text-sm text-fg"
+            className="rounded-lg border border-chip-line bg-card px-3 py-1 text-sm text-fg"
           >
             {FOLDER_SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>

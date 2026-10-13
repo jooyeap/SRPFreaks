@@ -217,7 +217,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
                     onClick={() => remove(index)}
                     disabled={fields.length === 1}
                     aria-label={`채보 ${n} 삭제`}
-                    className="ml-auto inline-flex items-center rounded-full border border-chip-line px-4 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
+                    className="ml-auto inline-flex items-center rounded-lg border border-chip-line px-4 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
                   >
                     삭제
                   </button>
@@ -280,7 +280,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
             type="button"
             onClick={() => append(emptyChart())}
             disabled={fields.length >= MAX_CHARTS}
-            className="self-start rounded-full border border-chip-line px-3 py-1.5 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
+            className="self-start rounded-lg border border-chip-line px-3 py-1.5 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
           >
             채보 추가
           </button>

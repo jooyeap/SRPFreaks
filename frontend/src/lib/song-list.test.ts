@@ -26,7 +26,7 @@ describe("song-list 조건 <-> 주소 쿼리", () => {
   it("알 수 없는 값은 버리고 난이도는 순서를 고정한다", () => {
     const filters = filtersFromParams(new URLSearchParams("part=X&diff=MAS,ZZZ,BAS,MAS"));
     expect(filters.part).toBeNull();
-    expect(filters.difficulties).toEqual(["BASIC", "MASTER"]);
+    expect(filters.difficulties).toEqual(["MASTER"]);
   });
 
   it("너무 긴 검색어는 100자로 자른다", () => {
@@ -40,7 +40,7 @@ describe("song-list 조건 <-> 주소 쿼리", () => {
 
   it("필터 개수는 파트 + 난이도 수 + 버전이고 검색어는 세지 않는다", () => {
     expect(
-      activeFilterCount({ q: "x", part: "BASS", difficulties: ["BASIC", "MASTER"], version: "V5" }),
+      activeFilterCount({ q: "x", part: "BASS", difficulties: ["ADVANCED", "MASTER"], version: "V5" }),
     ).toBe(4);
     expect(activeFilterCount({ ...EMPTY_SONG_FILTERS, q: "x" })).toBe(0);
   });

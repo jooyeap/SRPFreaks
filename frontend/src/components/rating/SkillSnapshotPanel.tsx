@@ -107,7 +107,7 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
                 type="button"
                 disabled={page <= 0}
                 onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                className="rounded-full border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+                className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
               >
                 이전
               </button>
@@ -118,7 +118,7 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
                 type="button"
                 disabled={page + 1 >= data.totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="rounded-full border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+                className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
               >
                 다음
               </button>

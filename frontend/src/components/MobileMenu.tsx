@@ -76,7 +76,7 @@ export function MobileMenu() {
         aria-label="메뉴 열기"
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-chip-line text-fg-sub hover:text-fg"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-chip-line text-fg-sub hover:text-fg"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
           <path d="M4 7h16M4 12h16M4 17h16" />
@@ -107,7 +107,7 @@ export function MobileMenu() {
                 type="button"
                 onClick={close}
                 aria-label="메뉴 닫기"
-                className="grid h-9 w-9 place-items-center rounded-full border border-chip-line text-fg-sub hover:text-fg"
+                className="grid h-9 w-9 place-items-center rounded-lg border border-chip-line text-fg-sub hover:text-fg"
               >
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />

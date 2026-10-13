@@ -39,8 +39,8 @@ export function activeFilterCount(filters: SongListFilters): number {
 
 // 주소 쿼리 (`/songs?q=…&part=G&diff=MAS,EXT&ver=…`). 짧은 코드를 쓰고, 알 수 없는 값은 버린다(주소는 사용자가 고칠 수 있다).
 const PART_CODES: Record<string, InstrumentPart> = { G: "GUITAR", B: "BASS" };
-const DIFF_CODES: Record<string, DifficultyType> = { BAS: "BASIC", ADV: "ADVANCED", EXT: "EXTREME", MAS: "MASTER" };
-const DIFF_ORDER: DifficultyType[] = ["BASIC", "ADVANCED", "EXTREME", "MASTER"];
+const DIFF_CODES: Record<string, DifficultyType> = { ADV: "ADVANCED", EXT: "EXTREME", MAS: "MASTER" };
+const DIFF_ORDER: DifficultyType[] = ["ADVANCED", "EXTREME", "MASTER"];
 const MAX_TEXT = 100;
 
 export function filtersFromParams(params: URLSearchParams): SongListFilters {

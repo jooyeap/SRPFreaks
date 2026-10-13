@@ -203,7 +203,7 @@ function PlanList({
           type="button"
           aria-expanded={showAll}
           onClick={() => setShowAll((v) => !v)}
-          className="min-h-9 self-center rounded-full border border-chip-line px-4 text-sm text-fg-sub hover:text-fg"
+          className="min-h-9 self-center rounded-lg border border-chip-line px-4 text-sm text-fg-sub hover:text-fg"
         >
           {showAll ? "평균 난이도 근처만 보기" : `더 보기 (${hidden}개)`}
         </button>

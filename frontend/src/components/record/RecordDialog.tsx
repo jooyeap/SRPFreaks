@@ -116,7 +116,7 @@ function RecordDialogBody({
               <button
                 type="button"
                 onClick={() => setPicked("new")}
-                className="min-h-9 shrink-0 rounded-full border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
+                className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
               >
                 새 기록 추가
               </button>
@@ -124,7 +124,7 @@ function RecordDialogBody({
               <button
                 type="button"
                 onClick={() => setPicked(best)}
-                className="min-h-9 shrink-0 rounded-full border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
+                className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
               >
                 기존 기록 수정
               </button>

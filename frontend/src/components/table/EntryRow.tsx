@@ -85,7 +85,7 @@ export function EntryRow({
             type="button"
             onClick={() => onRecord(entry)}
             aria-label={`${entry.title} 기록 입력`}
-            className="rounded-full border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
+            className="rounded-lg border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
           >
             기록
           </button>

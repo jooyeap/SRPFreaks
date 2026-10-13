@@ -132,7 +132,7 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
               type="button"
               disabled={page <= 0}
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
-              className="rounded-full border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               이전
             </button>
@@ -143,7 +143,7 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
               type="button"
               disabled={page + 1 >= data.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-full border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               다음
             </button>
@@ -219,7 +219,7 @@ function NoticeItem({
                 type="button"
                 disabled={removePending}
                 onClick={onConfirmDelete}
-                className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+                className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
               >
                 {removePending ? "삭제 중" : "삭제"}
               </button>
@@ -227,7 +227,7 @@ function NoticeItem({
                 type="button"
                 disabled={removePending}
                 onClick={onCancelDelete}
-                className="rounded-full border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+                className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
               >
                 취소
               </button>
@@ -244,7 +244,7 @@ function NoticeItem({
               type="button"
               onClick={onEdit}
               aria-label={`${notice.title} 고치기`}
-              className="rounded-full border border-chip-line px-3 py-1 text-xs text-fg-sub hover:text-fg"
+              className="rounded-lg border border-chip-line px-3 py-1 text-xs text-fg-sub hover:text-fg"
             >
               고치기
             </button>
@@ -252,7 +252,7 @@ function NoticeItem({
               type="button"
               onClick={onAskDelete}
               aria-label={`${notice.title} 삭제`}
-              className="rounded-full border border-chip-line px-3 py-1 text-xs text-fg-sub hover:text-fg"
+              className="rounded-lg border border-chip-line px-3 py-1 text-xs text-fg-sub hover:text-fg"
             >
               삭제
             </button>

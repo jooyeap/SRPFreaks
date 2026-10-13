@@ -53,7 +53,7 @@ export function TierQuickNav({ groups }: { groups: readonly TierGroupResponse[] 
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full border border-chip-line bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+        className="flex items-center gap-2 rounded-lg border border-chip-line bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
       >
         난이도 이동
         <svg className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
