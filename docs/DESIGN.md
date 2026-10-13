@@ -676,6 +676,7 @@ com.srpfreaks.backend
 ## 17. 변경 이력
 | 날짜 | 내용 |
 |---|---|
+| 2026-10-13 | 가져오기 기능을 **꺼 둠**: 서버 `app.import-api.enabled`(환경변수 `IMPORT_API_ENABLED`, 기본 false)가 false이면 `/imports/**`와 `/import-token`이 403, 프론트는 `lib/features.ts`의 `IMPORT_FEATURE_ENABLED`(false)로 설정 화면의 카드를 숨기고 `/settings/import`에 `준비 중`을 보여 준다. 공식 페이지에서의 동작을 확인한 뒤 둘 다 켠다. (확인 중 CORS 설정 순서 문제는 수정했다) |
 | 2026-10-13 | 가져오기 북마클릿 구현(D34 4단계): `import-bookmarklet.ts`(읽기·전송·결과 안내), 설정 화면에서 발급 직후 북마크 링크·주소 복사 제공. 공식 페이지에서의 실제 동작(CSP)은 미확인 |
 | 2026-10-13 | 가져오기 API 구현(D34 2단계): `POST /imports/recent-plays`, 가져오기 토큰 필터(ROLE_IMPORT 전용), 전용 Rate Limit·CORS. 건너뛰는 이유는 `ImportSkipReason`(게임 종류·번역·옵션·난이도·곡 없음·모호·낮은 기록·개선 없음). 화면·북마클릿은 다음 단계 |
 | 2026-10-13 | 가져오기 토큰 구현(D34 1단계): `import_tokens`(V5), `POST/GET/DELETE /import-token`. 가져오기 API는 다음 단계 |

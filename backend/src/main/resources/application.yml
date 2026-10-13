@@ -52,6 +52,7 @@ app:
     auth-per-minute: 10
     import-per-minute: 20            # 가져오기(/api/v1/imports/**)는 로그인과 따로 센다
   import-api:
+    enabled: ${IMPORT_API_ENABLED:false}   # 최근 플레이 가져오기(D34) 사용 여부. 동작 확인 전까지 false
     allowed-origins: ${IMPORT_ALLOWED_ORIGINS:https://p.eagate.573.jp}   # 가져오기 경로에만 허용하는 Origin(북마클릿이 도는 공식 페이지). * 금지
 
 logging:
