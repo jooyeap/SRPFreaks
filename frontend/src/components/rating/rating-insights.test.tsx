@@ -3,26 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RatingInsights } from "@/components/rating/RatingInsights";
 import { ToastProvider } from "@/components/Toast";
-import type { SkillEntryResponse, SkillResponse, SkillSnapshotStatusResponse, SnapshotCompareResponse } from "@/lib/api-types";
-
-function entry(rank: number, title: string, score: number): SkillEntryResponse {
-  return {
-    rank, songDifficultyId: rank, songId: rank, title, part: "GUITAR", difficulty: "MASTER", level: 9, tier: 6, pattern: "단일",
-    achievementRate: 90, fullCombo: false, stage: "S", ratingConstant: 15, value: score / 20, score,
-  };
-}
-
-const orange = { key: "ORANGE", displayName: "Orange", minScore: 1000, nextDisplayName: "Orange Gradient", nextMinScore: 1500 };
-
-function skill(over: Partial<SkillResponse> = {}): SkillResponse {
-  return {
-    noteOption: "SUPER_RANDOM_PLUS", totalScore: 1400, singleScore: 700, otherScore: 700, tier: orange,
-    singleLimit: 3, otherLimit: 3,
-    single: [entry(1, "단일1", 400), entry(2, "단일2", 301), entry(3, "단일3", 300)],
-    other: [entry(1, "그외1", 500)],
-    ...over,
-  };
-}
+import type { SkillSnapshotStatusResponse, SnapshotCompareResponse } from "@/lib/api-types";
 
 const compareOk: SnapshotCompareResponse = {
   available: true, reason: null, fromDate: "2026-10-10", toDate: null, fromTotal: 1366.08, toTotal: 1400, totalChange: 33.92,
@@ -36,12 +17,12 @@ describe("RatingInsights", () => {
   let compare: SnapshotCompareResponse;
   const json = (body: unknown, code = 200) => new Response(JSON.stringify(body), { status: code, headers: { "Content-Type": "application/json" } });
 
-  function renderInsights(s: SkillResponse = skill()) {
+  function renderInsights() {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
       <QueryClientProvider client={client}>
         <ToastProvider>
-          <RatingInsights userId={1} skill={s} />
+          <RatingInsights userId={1} />
         </ToastProvider>
       </QueryClientProvider>,
     );
@@ -91,18 +72,5 @@ describe("RatingInsights", () => {
     expect(summary).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(summary);
     expect(await screen.findByRole("region", { name: "새로 들어온 곡" })).toHaveTextContent("신곡");
-  });
-
-  it("보더는 꽉 찬 구역의 맨 아래 곡 점수이고, 덜 찬 구역은 –로 보인다", async () => {
-    renderInsights();
-    // 단일은 3/3이라 맨 아래 300, 그 외는 1/3이라 보더가 없다
-    expect(await screen.findByText("단일 보더")).toBeInTheDocument();
-    expect(screen.getByText("단일 보더").nextElementSibling).toHaveTextContent("300.00");
-    expect(screen.getByText("그 외 보더").nextElementSibling).toHaveTextContent("–");
-  });
-
-  it("두 구역이 모두 꽉 차면 둘 다 점수로 보인다", async () => {
-    renderInsights(skill({ otherLimit: 1 }));
-    expect((await screen.findByText("그 외 보더")).nextElementSibling).toHaveTextContent("500.00");
   });
 });

@@ -5,8 +5,6 @@ import { useId, useState } from "react";
 import { CompareBody } from "@/components/rating/SnapshotCompare";
 import { useToast } from "@/components/Toast";
 import { ApiError } from "@/lib/api";
-import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
-import { EMPTY_MARK, formatScore } from "@/lib/format";
 import { createSnapshot, fetchCompareCurrent, fetchSnapshotStatus, formatChange, snapshotKeys } from "@/lib/skill-snapshot";
 
 /**
@@ -14,10 +12,9 @@ import { createSnapshot, fetchCompareCurrent, fetchSnapshotStatus, formatChange,
  *  1) 기록 제안: 오늘 아직 기록하지 않았고 점수가 달라졌을 때만 눈에 띄게 `지금 레이팅 기록하기`를 권한다.
  *     자동으로 저장하지 않는다 — 기록은 사용자가 누를 때만 남는다(D32). 하루 1회·변경 없음 검사는 서버가 한다.
  *  2) 요약 한 줄: 마지막 기록 대비 얼마나 달라졌고 새로 들어온 곡이 몇 개인지. 누르면 곡별 비교를 펼친다.
- *  3) 보더: 단일 / 그 외 구역이 가득 찼을 때 맨 아래 곡의 점수(이보다 높아야 목록에 들어간다).
  * 모두 이미 받은 레이팅 목록과 비교 API 결과를 화면에서 맞춰 보는 것이라 새로 저장하는 값이 없다.
  */
-export function RatingInsights({ userId, skill }: { userId: number; skill: SkillResponse }) {
+export function RatingInsights({ userId }: { userId: number }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const detailId = useId();
@@ -74,8 +71,8 @@ export function RatingInsights({ userId, skill }: { userId: number; skill: Skill
         </section>
       ) : null}
 
-      <section aria-label="레이팅 현황" className="flex flex-col gap-3 rounded-[14px] border border-line bg-card p-4">
-        {result ? (
+      {result ? (
+        <section aria-label="레이팅 현황" className="flex flex-col gap-2 rounded-[14px] border border-line bg-card p-4">
           <div className="flex flex-col gap-2">
             <button
               type="button"
@@ -99,28 +96,8 @@ export function RatingInsights({ userId, skill }: { userId: number; skill: Skill
               </div>
             ) : null}
           </div>
-        ) : null}
-
-        {/* 보더 = 구역이 가득 찼을 때 맨 아래 곡의 점수. 이 점수보다 높은 곡이 들어와야 목록에 들어간다 */}
-        <dl className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-          <Border label="단일 보더" score={border(skill.single, skill.singleLimit)} />
-          <Border label="그 외 보더" score={border(skill.other, skill.otherLimit)} />
-        </dl>
-      </section>
-    </div>
-  );
-}
-
-/** 구역이 가득 찼을 때만 맨 아래 곡의 점수. 덜 찼으면 들어가기만 하면 되므로 보더가 없다(null) */
-function border(entries: readonly SkillEntryResponse[], limit: number): number | null {
-  return limit > 0 && entries.length >= limit ? entries[entries.length - 1].score : null;
-}
-
-function Border({ label, score }: { label: string; score: number | null }) {
-  return (
-    <div className="flex items-baseline gap-2">
-      <dt className="text-fg-sub">{label}</dt>
-      <dd className="font-num font-semibold text-fg">{score === null ? EMPTY_MARK : formatScore(score)}</dd>
+        </section>
+      ) : null}
     </div>
   );
 }
