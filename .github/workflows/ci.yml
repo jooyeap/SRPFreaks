@@ -37,7 +37,12 @@ jobs:
       # Testcontainers가 MySQL 컨테이너를 띄운다. GitHub의 ubuntu 러너에는 Docker가 기본 설치돼 있다.
       # 비밀값은 필요 없다 (테스트가 더미 값을 직접 넣는다)
       - name: 테스트
-        run: ./gradlew test --no-daemon
+        run: |
+          set +e
+          ./gradlew test --no-daemon > /tmp/gradle.log 2>&1
+          code=$?
+          grep -E "error:|warning: \[|FAILED|What went wrong" -A3 /tmp/gradle.log | head -40 | while IFS= read -r line; do echo "::error title=gradle::$(echo "$line" | cut -c1-300 | sed 's/%/%25/g')"; done
+          exit $code
       # 테스트가 실패하면 실패한 테스트의 이름과 메시지를 주석(annotation)으로 남긴다.
       # 로그 원문은 API로 읽기 어려워서, 실패 원인을 체크 결과 화면과 API에서 바로 볼 수 있게 한다.
       - name: 실패한 테스트 요약
