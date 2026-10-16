@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { SnapshotCompare } from "@/components/rating/SnapshotCompare";
 import { useToast } from "@/components/Toast";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
@@ -23,6 +24,7 @@ import {
 export function SkillSnapshotPanel({ userId }: { userId: number }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
+  const [openId, setOpenId] = useState<number | null>(null); // 비교를 펼친 줄(한 번에 하나)
 
   const status = useQuery({
     queryKey: snapshotKeys.status(userId),
@@ -87,16 +89,34 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
           <ul aria-label="레이팅 기록 목록" className="flex flex-col">
             {data.content.map((row) => {
               const change = formatChange(row.change);
+              const opened = openId === row.id;
               return (
-                <li key={row.id} className="flex items-baseline justify-between gap-3 border-t border-line py-2 first:border-t-0">
-                  <span className="font-num text-sm text-fg-sub">{row.date}</span>
-                  <span className="flex items-baseline gap-3">
-                    <span className="font-num text-base font-semibold text-fg">{formatScore(row.totalScore)}</span>
-                    {/* 증감은 부호 글자(▲ +/▼ -)가 있어서 색은 보조다 */}
-                    <span data-direction={change.direction} className={`font-num w-24 text-right text-sm ${change.direction === "up" ? "text-done-text" : "text-fg-sub"}`}>
-                      {change.text}
+                <li key={row.id} className="flex flex-col gap-2 border-t border-line py-2 first:border-t-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-num text-sm text-fg-sub">{row.date}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="font-num text-base font-semibold text-fg">{formatScore(row.totalScore)}</span>
+                      {/* 증감은 부호 글자(▲ +/▼ -)가 있어서 색은 보조다 */}
+                      <span data-direction={change.direction} className={`font-num w-20 text-right text-sm ${change.direction === "up" ? "text-done-text" : "text-fg-sub"}`}>
+                        {change.text}
+                      </span>
+                      {/* 첫 기록은 비교할 이전 기록이 없어서 버튼이 없다 */}
+                      {row.change !== null ? (
+                        <button
+                          type="button"
+                          aria-expanded={opened}
+                          aria-label={`${row.date} 기록을 이전 기록과 비교`}
+                          onClick={() => setOpenId(opened ? null : row.id)}
+                          className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
+                        >
+                          {opened ? "닫기" : "비교"}
+                        </button>
+                      ) : (
+                        <span className="w-[3.25rem]" aria-hidden="true" />
+                      )}
                     </span>
-                  </span>
+                  </div>
+                  {opened ? <SnapshotCompare userId={userId} snapshotId={row.id} /> : null}
                 </li>
               );
             })}

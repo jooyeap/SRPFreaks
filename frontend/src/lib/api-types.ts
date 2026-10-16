@@ -152,6 +152,38 @@ export interface SkillSnapshotResponse {
   change: number | null;
 }
 
+/** 비교 결과의 곡 한 줄. 없는 쪽(새로 들어온 곡의 이전, 밀려난 곡의 이후)은 null이다. */
+export interface SnapshotCompareChange {
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  group: "SINGLE" | "OTHER";
+  rateBefore: number | null;
+  rateAfter: number | null;
+  scoreBefore: number | null;
+  scoreAfter: number | null;
+}
+
+/** 비교할 수 없는 이유: 이전 스냅샷 없음 / 상세가 없는 예전 스냅샷 / 스냅샷 없음 */
+export type SnapshotCompareReason = "NO_PREVIOUS" | "NO_DETAIL" | "NO_SNAPSHOT";
+
+/** 레이팅 목록 비교 (D32 확장). toDate가 null이면 지금(계산한 현재 레이팅)과 비교한 것이다. */
+export interface SnapshotCompareResponse {
+  available: boolean;
+  reason: SnapshotCompareReason | null;
+  fromDate: string | null;
+  toDate: string | null;
+  fromTotal: number | null;
+  toTotal: number | null;
+  totalChange: number | null;
+  entered: SnapshotCompareChange[];
+  improved: SnapshotCompareChange[];
+  declined: SnapshotCompareChange[];
+  left: SnapshotCompareChange[];
+}
+
 /** 지금 기록할 수 있는지. 못 하면 reason에 이유 코드가 들어 있다. */
 export type SnapshotBlockReason = "ALREADY_TODAY" | "NO_CHANGE" | "NO_RECORDS";
 export interface SkillSnapshotStatusResponse {

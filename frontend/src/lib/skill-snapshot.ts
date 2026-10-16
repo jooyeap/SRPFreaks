@@ -1,5 +1,12 @@
 import { apiFetch } from "@/lib/api";
-import type { PageResponse, SkillSnapshotResponse, SkillSnapshotStatusResponse, SnapshotBlockReason } from "@/lib/api-types";
+import type {
+  PageResponse,
+  SkillSnapshotResponse,
+  SkillSnapshotStatusResponse,
+  SnapshotBlockReason,
+  SnapshotCompareReason,
+  SnapshotCompareResponse,
+} from "@/lib/api-types";
 
 /**
  * 레이팅 스냅샷 (D32) 쿼리 키. 앞부분을 skillKeys.me와 같은 ["skill", userId]로 시작해서,
@@ -9,6 +16,8 @@ export const snapshotKeys = {
   list: (userId: number, page: number) => ["skill", userId, "snapshots", page] as const,
   status: (userId: number) => ["skill", userId, "snapshots-status"] as const,
   all: (userId: number) => ["skill", userId, "snapshots"] as const,
+  compare: (userId: number, snapshotId: number) => ["skill", userId, "snapshots", "compare", snapshotId] as const,
+  compareCurrent: (userId: number) => ["skill", userId, "snapshots", "compare-current"] as const,
 };
 
 export const SNAPSHOT_PAGE_SIZE = 10;
@@ -22,6 +31,30 @@ export function fetchSnapshots(page: number, signal?: AbortSignal): Promise<Page
 
 export function fetchSnapshotStatus(signal?: AbortSignal): Promise<SkillSnapshotStatusResponse> {
   return apiFetch<SkillSnapshotStatusResponse>("/skills/me/snapshots/status", { signal });
+}
+
+/** 고른 스냅샷을 바로 이전 스냅샷과 비교한다(오른 곡·새로 들어온 곡(NEW)·내려간 곡·밀려난 곡). */
+export function fetchSnapshotCompare(snapshotId: number, signal?: AbortSignal): Promise<SnapshotCompareResponse> {
+  return apiFetch<SnapshotCompareResponse>(`/skills/me/snapshots/${snapshotId}/compare`, { signal });
+}
+
+/** 가장 최근 스냅샷과 지금(계산한 현재 레이팅)을 비교한다. */
+export function fetchCompareCurrent(signal?: AbortSignal): Promise<SnapshotCompareResponse> {
+  return apiFetch<SnapshotCompareResponse>("/skills/me/snapshots/compare-current", { signal });
+}
+
+/** 비교할 수 없는 이유 문구 */
+export function compareReasonText(reason: SnapshotCompareReason | null): string {
+  switch (reason) {
+    case "NO_PREVIOUS":
+      return "비교할 이전 기록이 없습니다.";
+    case "NO_DETAIL":
+      return "곡별 상세를 남기기 전의 기록이라 곡 단위로는 비교할 수 없습니다. 다음 기록부터 비교할 수 있습니다.";
+    case "NO_SNAPSHOT":
+      return "아직 기록한 레이팅이 없습니다.";
+    default:
+      return "비교할 수 없습니다.";
+  }
 }
 
 export function createSnapshot(): Promise<SkillSnapshotResponse> {
