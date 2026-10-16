@@ -3,16 +3,17 @@ import type { StageCounts } from "@/components/table/StageBar";
 import type { StatsAxis } from "@/lib/rate-folders";
 
 /** 마이페이지 탭. 주소 쿼리(`/me?tab=stats`)에 두어 새로고침·뒤로가기·링크 공유에도 같은 탭이 열린다. */
-export type MyPageTab = "rating" | "stats";
+export type MyPageTab = "rating" | "stats" | "setlist";
 
 export const MY_PAGE_TABS: readonly { value: MyPageTab; label: string }[] = [
   { value: "rating", label: "레이팅" },
   { value: "stats", label: "통계" },
+  { value: "setlist", label: "세트리스트" },
 ];
 
 /** 알 수 없는 값(주소는 사용자가 고칠 수 있다)은 기본 탭(레이팅)으로 본다. */
 export function tabFromParam(value: string | null): MyPageTab {
-  return value === "stats" ? "stats" : "rating";
+  return value === "stats" || value === "setlist" ? value : "rating";
 }
 
 /** 마이페이지의 화면 상태: 탭, 통계 탭의 기준(레벨 폴더 / 서열표 난이도). */
@@ -30,7 +31,9 @@ export function myPageStateFromParams(params: URLSearchParams): MyPageState {
 /** 기본값(레이팅 탭, 레벨 폴더)은 주소에 쓰지 않는다. 기준(axis)은 통계 탭일 때만 의미가 있어서 그때만 쓴다. */
 export function myPageStateToQuery(state: MyPageState): string {
   const params = new URLSearchParams();
-  if (state.tab === "stats") {
+  if (state.tab === "setlist") {
+    params.set("tab", "setlist");
+  } else if (state.tab === "stats") {
     params.set("tab", "stats");
     if (state.axis === "tier") params.set("axis", "tier");
   }

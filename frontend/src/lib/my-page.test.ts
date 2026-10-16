@@ -12,6 +12,7 @@ function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
 describe("tabFromParam", () => {
   it("stats만 통계 탭이고, 없거나 알 수 없는 값은 레이팅 탭이다", () => {
     expect(tabFromParam("stats")).toBe("stats");
+    expect(tabFromParam("setlist")).toBe("setlist");
     expect(tabFromParam("rating")).toBe("rating");
     expect(tabFromParam(null)).toBe("rating");
     expect(tabFromParam("<script>")).toBe("rating");
@@ -24,6 +25,7 @@ describe("myPageState 주소 변환", () => {
     // 레이팅 탭에서는 기준이 의미가 없어 쓰지 않는다
     expect(myPageStateToQuery({ tab: "rating", axis: "tier" })).toBe("");
     expect(myPageStateToQuery({ tab: "stats", axis: "level" })).toBe("tab=stats");
+    expect(myPageStateToQuery({ tab: "setlist", axis: "tier" })).toBe("tab=setlist"); // 기준(axis)은 통계 탭에서만 의미가 있다
     expect(myPageStateToQuery({ tab: "stats", axis: "tier" })).toBe("tab=stats&axis=tier");
   });
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
+import { SetlistToggleButton } from "@/components/setlist/SetlistToggleButton";
 import { RatedScore } from "@/components/table/RatedScore";
 import { StageBadge } from "@/components/table/StageBadge";
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
@@ -12,7 +13,7 @@ import type { TableEntryResponse } from "@/lib/api-types";
  * 열 순서: 막대 · 곡명 · 점수(레이팅에 찍히는 값, 티어 색) · 랭크(달성 단계) · 채보 · 달성률 · 추천 · 속성 · 기록 버튼 (랭크는 곡명 오른쪽이다, 2026-10-08).
  */
 export const ROW_GRID =
-  "md:grid md:grid-cols-[4px_minmax(0,1fr)_52px_40px_116px_64px_44px_52px_48px] md:items-center md:gap-x-3";
+  "md:grid md:grid-cols-[4px_minmax(0,1fr)_52px_40px_116px_64px_44px_52px_88px] md:items-center md:gap-x-3";
 
 /** 데스크톱 표의 머리 행 (모바일에서는 보이지 않는다). */
 export function TableHeadRow() {
@@ -79,7 +80,7 @@ export function EntryRow({
       <span className="text-fg-sub">
         {entry.pattern ?? EMPTY_MARK}
       </span>
-      <span>
+      <span className="flex items-center gap-1.5">
         {onRecord ? (
           <button
             type="button"
@@ -90,6 +91,7 @@ export function EntryRow({
             기록
           </button>
         ) : null}
+        <SetlistToggleButton songDifficultyId={entry.songDifficultyId} title={entry.title} />
       </span>
     </li>
   );

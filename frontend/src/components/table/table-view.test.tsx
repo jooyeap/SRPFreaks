@@ -486,6 +486,7 @@ describe("DifficultyTableView", () => {
         );
       }
       if (url.includes("/records?")) return Promise.resolve(json(page([]) as unknown));
+      if (url.includes("/setlist")) return Promise.resolve(json(page([]) as unknown)); // 줄마다 있는 세트리스트 버튼이 받는 목록
       return Promise.resolve(url.includes("/entries") ? json(page([group()])) : json([table]));
     });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

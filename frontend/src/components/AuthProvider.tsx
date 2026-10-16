@@ -95,3 +95,12 @@ export function useAuth(): AuthContextValue {
   }
   return context;
 }
+
+/**
+ * 로그인한 사용자(없거나 AuthProvider 밖이면 null). useAuth와 달리 던지지 않는다.
+ * 여러 화면의 줄(서열표·곡 목록)에 끼는 작은 버튼이 "로그인했을 때만 보이기"를 정할 때 쓴다 —
+ * 그 줄을 AuthProvider 없이 그리는 테스트와 화면이 있어서 useAuth를 그대로 쓰면 깨진다.
+ */
+export function useOptionalUser(): UserResponse | null {
+  return useContext(AuthContext)?.user ?? null;
+}
