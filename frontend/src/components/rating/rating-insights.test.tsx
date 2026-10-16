@@ -93,20 +93,16 @@ describe("RatingInsights", () => {
     expect(await screen.findByRole("region", { name: "새로 들어온 곡" })).toHaveTextContent("신곡");
   });
 
-  it("목표 안내: 꽉 찬 구역은 밀려나는 곡 점수를 같이 알려 준다", async () => {
+  it("보더는 꽉 찬 구역의 맨 아래 곡 점수이고, 덜 찬 구역은 –로 보인다", async () => {
     renderInsights();
-    // 남은 점수 100. 단일은 꽉 참(맨 아래 300) -> 400 필요, 그 외는 덜 참 -> 100만 필요 -> 그 외 구역이 더 쉽다
-    expect(await screen.findByText(/다음 티어 Orange Gradient까지/)).toHaveTextContent("복합·이중·삼중에서 100.00점 이상인 곡이 하나 들어오면 도달합니다.");
+    // 단일은 3/3이라 맨 아래 300, 그 외는 1/3이라 보더가 없다
+    expect(await screen.findByText("단일 보더")).toBeInTheDocument();
+    expect(screen.getByText("단일 보더").nextElementSibling).toHaveTextContent("300.00");
+    expect(screen.getByText("그 외 보더").nextElementSibling).toHaveTextContent("–");
   });
 
-  it("곧 빠질 곡은 꽉 찬 구역에서 맨 아래 곡과 점수가 비슷한 곡만 보인다", async () => {
-    renderInsights();
-    const section = await screen.findByRole("region", { name: "곧 빠질 곡" });
-    const list = within(section).getByRole("list", { name: "단일 곧 빠질 곡" });
-    expect(within(list).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
-      expect.stringContaining("단일2"),
-      expect.stringContaining("단일3"),
-    ]);
-    expect(within(section).queryByRole("list", { name: "복합·이중·삼중 곧 빠질 곡" })).toBeNull(); // 덜 찬 구역
+  it("두 구역이 모두 꽉 차면 둘 다 점수로 보인다", async () => {
+    renderInsights(skill({ otherLimit: 1 }));
+    expect((await screen.findByText("그 외 보더")).nextElementSibling).toHaveTextContent("500.00");
   });
 });
