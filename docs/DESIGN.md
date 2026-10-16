@@ -495,6 +495,7 @@ com.srpfreaks.backend
 | 최근 플레이 가져오기 (D34) | POST `/imports/recent-plays` — 가져오기 토큰(`Authorization: Bearer srpi_…`)만 인정(ROLE_IMPORT, 로그인 토큰은 403, 가져오기 토큰은 다른 API 불가). 요청 `plays` 1~20건(원시 값), 응답 `saved/skipped/skippedByReason/results/excludedSongs`. IP당 분당 20회, CORS는 `https://p.eagate.573.jp`(POST, 쿠키 없음)만 | 가져오기 토큰 |
 | 곡 목록 폴더 | GET `/songs/chart-folders` (선택 파라미터 `q`·`part`·`difficulty`·`version`: 맞는 채보만으로 폴더·개수·평균을 만들고 맞는 채보가 없는 폴더는 뺀다. 버전 목록은 필터와 무관하게 전체. 조건에 맞는 곡 수·채보 수, 버전 목록, 0.5 단위 레벨 폴더별 칩 개수·평균(0% 미포함/포함 둘 다)과, 폴더마다 그 안의 0.05 단위 하위 폴더 `subFolders`(같은 통계, 하위 폴더 개수의 합 = 큰 폴더). 채보가 없는 폴더는 없다. 쿼리: 채보+곡 fetch join 1번 + 본인 SRN+ 최고 기록 group by 1번) | USER+ |
 | 곡 목록 채보 | GET `/songs/charts?folder=&q=&part=&difficulty=&version=&page=&size=` (채보 단위 페이지(기본 20, 최대 50). `folder`는 폴더 시작 레벨, `folderStep`은 그 단위(생략하면 0.50, `0.05`만 더 허용. 9.50이 큰 폴더인지 하위 폴더인지 구분). 단위의 배수가 아니거나 허용 밖 단위면 400, `difficulty`는 쉼표로 여러 개, 정렬은 레벨 높은 순 → 곡명 → id. 항목마다 본인 SRN+ 최고 기록과 단계. 곡 검색은 `/songs`와 같은 조건(곡명·아티스트·정규화 표기). 속성은 담지 않는다) | USER+ |
+| 곡 검색 오타 보정 | GET `/songs/suggest?q=` (검색 결과가 비었을 때 화면이 부른다. 곡명·별칭 표기를 NFKC·소문자·기호 제거·히라가나→가타카나로 접은 뒤 검색어가 들어 있는 곡을 편집 거리로 찾는다. 허용 거리는 검색어 3자 이하 0 / 7자 이하 1 / 그 이상 2, 최대 5곡, 2~40자. DB는 바꾸지 않는다. 한글 발음은 등록된 한국어 별칭으로만 찾는다) | USER+ |
 | 서열표 목록 | GET `/difficulty-tables` | USER+ |
 | 서열표 값 수정·채보 추가 (D27) | PUT `/admin/difficulty-tables/{tableId}/entries/{songDifficultyId}` (본문 `tierLabel`(null=미정), `recommend`(상/중/하/null), `pattern`(단일/복합/이중/삼중/레이팅 제외/null), `ratingEnabled`(true/false, 생략하면 기존 값 유지·새 줄은 꺼짐, D28). 보낸 값으로 교체, 표에 없으면 추가, `?` 해제, 표 revision +1, 감사 로그) | ROOT·ADMIN |
 | 유저 채보 기록 삭제 (D29) | DELETE `/admin/players/{userId}/charts/{songDifficultyId}/records` (그 유저의 그 채보 기록 전부 삭제, 204. 없으면 404. 감사 로그 `RECORD_ADMIN_DELETE`) | ROOT·ADMIN |
@@ -684,6 +685,7 @@ com.srpfreaks.backend
 | 2026-10-13 | 가져오기 토큰 구현(D34 1단계): `import_tokens`(V5), `POST/GET/DELETE /import-token`. 가져오기 API는 다음 단계 |
 | 2026-10-13 | **D34 추가.** D18 번복(일부): 공식 최근 플레이(`stage_result`, 최대 20곡)를 SRN+ 옵션 조건으로 가져온다. 설계는 18.4.0. 구현 전 단계(문서만) |
 | 2026-10-13 | **D33 추가.** 마이페이지(`/me`)와 달성률 구간 통계 API(`/stats/*`), `/songs/charts`에 `rateBucket`·`sort` 추가. 화면은 DESIGN-UI 19장 |
+| 2026-10-16 | **곡 검색 오타 보정.** `GET /songs/suggest` 추가(스키마 변경 없음). 화면은 DESIGN-UI 9장 |
 | 2026-10-13 | **곡 목록 폴더에 필터 적용.** `GET /songs/chart-folders`가 `q`·`part`·`difficulty`·`version`을 받아 필터가 걸린 채보로 폴더를 만든다(폴더 유지, 필터 결과를 한 덩어리로 보이지 않는다). 응답 모양은 그대로 |
 | 2026-10-08 | **사용자 목록·역할 변경 구현.** `GET /admin/users`, `PATCH /admin/users/{id}/role`(ROOT 전용). ADMIN 지정/해제만 가능하고 ROOT는 만들지도 바꾸지도 못한다(5장 규칙 유지). 역할은 요청마다 DB에서 읽으므로 바로 반영된다 |
 | 2026-10-08 | **설정 조회·변경 구현.** `GET /admin/settings`(ROOT, 키 순, 한 번에 최대 100개), `PATCH /admin/settings/{key}` body `{"value": "..."}`. 새 키는 만들 수 없고(404) 키별로 값을 검사한다: `rating.*`는 바꾼 값을 끼워 넣은 전체 설정으로 `RatingConfig`를 실제로 만들어 보고(계산에 쓸 수 없으면 400, 잘못된 값이 저장돼 레이팅 화면이 500이 되는 것을 막는다), `ui.show_song_images`는 true/false, 나머지는 비어 있지 않은 글자. 변경은 `audit_logs`(`SETTING_UPDATE`, 변경 전/후)에 남긴다 |
