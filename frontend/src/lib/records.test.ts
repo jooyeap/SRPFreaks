@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
-import { isEdited, isMaxRate, recordOriginText, seoulDateToInstant, toRecordRequest } from "@/lib/records";
+import { isEdited, isMaxRate, ratingChangeText, recordOriginText, seoulDateToInstant, toRecordRequest } from "@/lib/records";
 
 const TODAY = "2026-10-05";
 const schema = makeRecordSchema(() => TODAY);
@@ -116,5 +116,33 @@ describe("등록·수정 표시", () => {
     expect(recordOriginText({ createdAt: created, updatedAt: "2026-10-07T20:00:00Z" })).toBe(
       "등록 2026-10-05 · 수정 2026-10-08",
     ); // UTC 20시는 서울 다음 날 05시
+  });
+});
+
+describe("ratingChangeText", () => {
+  const base = { totalBefore: 10638.13, totalAfter: 10641.53, change: 3.4, entered: false, inList: true };
+
+  it("서버가 변화를 주지 않으면 아무것도 붙이지 않는다", () => {
+    expect(ratingChangeText(null)).toBeNull();
+    expect(ratingChangeText(undefined)).toBeNull();
+  });
+
+  it("오르면 + 부호와 전후 합계를 쓴다", () => {
+    expect(ratingChangeText(base)).toBe("레이팅 +3.40 (10638.13 → 10641.53)");
+  });
+
+  it("내려가면 - 부호를 쓴다 (기록을 낮춰 고친 경우)", () => {
+    expect(ratingChangeText({ ...base, totalAfter: 10636.93, change: -1.2 })).toBe("레이팅 -1.20 (10638.13 → 10636.93)");
+  });
+
+  it("목록에 새로 들어가면 NEW 문구를 덧붙인다", () => {
+    expect(ratingChangeText({ ...base, entered: true })).toBe(
+      "레이팅 +3.40 (10638.13 → 10641.53) · NEW 레이팅 목록에 새로 들어갔습니다.",
+    );
+  });
+
+  it("목록 밖이면 이유를 알려 주고, 목록 안인데 점수가 같으면 그대로라고 한다", () => {
+    expect(ratingChangeText({ ...base, change: 0, totalAfter: 10638.13, inList: false })).toBe("아직 레이팅 목록에는 들지 못했습니다.");
+    expect(ratingChangeText({ ...base, change: 0, totalAfter: 10638.13 })).toBe("레이팅은 그대로입니다.");
   });
 });
