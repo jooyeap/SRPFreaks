@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
-import { isMaxRate, seoulDateToInstant, toRecordRequest } from "@/lib/records";
+import { isEdited, isMaxRate, recordOriginText, seoulDateToInstant, toRecordRequest } from "@/lib/records";
 
 const TODAY = "2026-10-05";
 const schema = makeRecordSchema(() => TODAY);
@@ -95,5 +95,26 @@ describe("요청 변환", () => {
     expect(isMaxRate("99.99")).toBe(false);
     expect(isMaxRate("")).toBe(false);
     expect(isMaxRate("abc")).toBe(false);
+  });
+});
+
+describe("등록·수정 표시", () => {
+  const created = "2026-10-05T01:00:00Z";
+
+  it("등록 직후(1분 이내)는 수정으로 보지 않고, 1분을 넘게 뒤면 수정으로 본다", () => {
+    expect(isEdited({ createdAt: created, updatedAt: created })).toBe(false);
+    expect(isEdited({ createdAt: created, updatedAt: "2026-10-05T01:00:59Z" })).toBe(false);
+    expect(isEdited({ createdAt: created, updatedAt: "2026-10-05T01:01:01Z" })).toBe(true);
+  });
+
+  it("날짜가 올바르지 않으면 수정으로 보지 않는다", () => {
+    expect(isEdited({ createdAt: "x", updatedAt: created })).toBe(false);
+  });
+
+  it("글자는 서울 날짜로 `등록`만, 고쳤으면 `수정`까지 보여 준다", () => {
+    expect(recordOriginText({ createdAt: created, updatedAt: created })).toBe("등록 2026-10-05");
+    expect(recordOriginText({ createdAt: created, updatedAt: "2026-10-07T20:00:00Z" })).toBe(
+      "등록 2026-10-05 · 수정 2026-10-08",
+    ); // UTC 20시는 서울 다음 날 05시
   });
 });

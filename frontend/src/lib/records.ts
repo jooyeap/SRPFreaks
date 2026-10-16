@@ -20,6 +20,26 @@ export interface RecordResponse {
   playedAt: string | null;
   platform: string | null;
   memo: string | null;
+  /** 서버가 기록한 등록 시각(UTC). playedAt(사용자가 입력한 플레이 시각)과 다르다 */
+  createdAt: string;
+  /** 마지막 수정 시각(UTC). 수정한 적이 없으면 createdAt과 같다 */
+  updatedAt: string;
+}
+
+/** 등록 직후 몇 초 차이는 수정으로 보지 않는다 */
+const EDITED_THRESHOLD_MS = 60_000;
+
+/** 목록·기록 창에 보이는 "등록 2026-10-12 · 수정 2026-10-14" 글자. 고친 적이 없으면 등록만 보인다. */
+export function recordOriginText(record: Pick<RecordResponse, "createdAt" | "updatedAt">): string {
+  const created = `등록 ${formatPlayedDate(record.createdAt)}`;
+  return isEdited(record) ? `${created} · 수정 ${formatPlayedDate(record.updatedAt)}` : created;
+}
+
+/** 등록한 뒤 고친 적이 있는가 (updatedAt이 createdAt보다 1분 넘게 뒤). */
+export function isEdited(record: Pick<RecordResponse, "createdAt" | "updatedAt">): boolean {
+  const created = new Date(record.createdAt).getTime();
+  const updated = new Date(record.updatedAt).getTime();
+  return !Number.isNaN(created) && !Number.isNaN(updated) && updated - created > EDITED_THRESHOLD_MS;
 }
 
 /** 서버 RecordRequest와 같은 모양. */

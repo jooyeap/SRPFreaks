@@ -30,6 +30,8 @@ const saved: RecordResponse = {
   playedAt: "2026-10-04T15:00:00Z", // 서울 2026-10-05
   platform: null,
   memo: "예전 메모",
+  createdAt: "2026-10-05T01:00:00Z",
+  updatedAt: "2026-10-05T01:00:00Z",
 };
 
 function json(body: unknown, status = 200): Response {
@@ -111,7 +113,7 @@ describe("기록 수정 / 삭제", () => {
     renderDialog();
     await openEdit();
     fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "50.5" } });
-    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(JSON.parse(String(callsOf("PUT")[0][1]?.body))).toMatchObject({ achievementRate: 50.5 });
   });
@@ -140,11 +142,52 @@ describe("기록 수정 / 삭제", () => {
     await waitFor(() => expect(onClose).not.toHaveBeenCalled());
   });
 
+  it("수정 중인 기록의 등록 날짜를 보여 주고, 고친 적이 있으면 수정 날짜와 `수정됨`도 보여 준다", async () => {
+    renderDialog();
+    await openEdit();
+    expect(screen.getByText("수정 중인 기록: 달성률 91.25 · 등록 2026-10-05")).toBeInTheDocument();
+    expect(screen.queryByText(/수정됨/)).toBeNull();
+  });
+
+  it("고친 기록은 목록 줄에 `수정됨`과 수정 날짜가 보인다", async () => {
+    const edited: RecordResponse = { ...saved, updatedAt: "2026-10-07T03:00:00Z" };
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
+      if (url.includes("/records?")) {
+        return Promise.resolve(json({ content: [edited], page: 0, size: 20, totalElements: 1, totalPages: 1 }));
+      }
+      return Promise.resolve(json({}, 404));
+    });
+    renderDialog();
+    await openEdit();
+    expect(screen.getByText("수정 중인 기록: 달성률 91.25 · 등록 2026-10-05 · 수정 2026-10-07")).toBeInTheDocument();
+    expect(screen.getByText(/수정됨/)).toBeInTheDocument();
+    expect(screen.getByText("플레이 2026-10-05")).toBeInTheDocument();
+  });
+
+  it("`새 기록 추가` 상태에서는 기존 기록이 그대로 남는다고 안내한다", async () => {
+    renderDialog();
+    await openEdit();
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 추가" }));
+    expect(await screen.findByText("새 기록을 등록합니다. 기존 기록은 그대로 남습니다.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "새 기록 등록" })).toBeInTheDocument();
+  });
+
+  it("수정으로 달성률이 바뀌면 안내에 이전 값과 새 값이 같이 나온다", async () => {
+    renderDialog();
+    await openEdit();
+    fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "95" } });
+    fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toHaveTextContent("기록을 수정했습니다. (91.25 → 95.00)");
+  });
+
   it("저장하면 PUT /records/{id}로 보내고 창을 닫는다", async () => {
     renderDialog();
     await openEdit();
     fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "95" } });
-    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(screen.getByRole("status")).toHaveTextContent("기록을 수정했습니다.");

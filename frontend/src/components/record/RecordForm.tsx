@@ -23,7 +23,7 @@ import {
   type RecordResponse,
 } from "@/lib/records";
 import { chartTierAttrs, previewScore } from "@/lib/chart-tier";
-import { formatScore, formatTier } from "@/lib/format";
+import { formatRate, formatScore, formatTier } from "@/lib/format";
 import { achievementStage } from "@/lib/stage";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 
@@ -116,7 +116,14 @@ export function RecordForm({
     onSuccess: async (saved) => {
       // 서열표(내 기록, 칩, 평균)와 기록 목록이 바로 바뀌도록 관련 캐시를 무효화한다
       await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
-      toast(record ? "기록을 수정했습니다." : "기록을 저장했습니다."); // 창이 바로 닫히므로 저장됐다는 확인을 남긴다
+      // 창이 바로 닫히므로 저장됐다는 확인을 남긴다. 수정이면 달성률이 어떻게 바뀌었는지도 같이 알려 준다
+      toast(
+        record
+          ? record.achievementRate === saved.achievementRate
+            ? "기록을 수정했습니다."
+            : `기록을 수정했습니다. (${formatRate(record.achievementRate)} → ${formatRate(saved.achievementRate)})`
+          : "새 기록을 등록했습니다.",
+      );
       onSaved(saved);
     },
     onError: (error) => {
@@ -304,7 +311,7 @@ export function RecordForm({
           disabled={mutation.isPending}
           className="h-12 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-60"
         >
-          {mutation.isPending ? "저장 중" : "저장"}
+          {mutation.isPending ? "저장 중" : record ? "수정 저장" : "새 기록 등록"}
         </button>
       </div>
     </form>

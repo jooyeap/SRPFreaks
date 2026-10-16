@@ -90,14 +90,14 @@ describe("RecordForm", () => {
   it("검사에 실패하면 서버에 보내지 않고 입력칸 아래에 문구를 보여 준다", async () => {
     renderForm();
     fireEvent.change(rateInput(), { target: { value: "100.01" } });
-    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     expect(await screen.findByText("달성률은 0.00 이상 100.00 이하여야 합니다.")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("비어 있으면 필수 문구를 보여 준다", async () => {
     renderForm();
-    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     expect(await screen.findByText("달성률은 필수입니다.")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -108,7 +108,7 @@ describe("RecordForm", () => {
     renderForm();
     fireEvent.change(rateInput(), { target: { value: "96.5" } });
     fireEvent.change(screen.getByLabelText("메모 (선택)"), { target: { value: " 메모 " } });
-    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     const [url, init] = fetchMock.mock.calls[0];
@@ -140,7 +140,7 @@ describe("RecordForm", () => {
     );
     renderForm();
     fireEvent.change(rateInput(), { target: { value: "96.5" } });
-    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     expect(await screen.findByText("서버: 달성률을 확인해 주세요.")).toBeInTheDocument();
     expect(onSaved).not.toHaveBeenCalled();
   });
@@ -149,7 +149,7 @@ describe("RecordForm", () => {
     fetchMock.mockResolvedValueOnce(json({ code: "NOT_FOUND", message: "찾을 수 없습니다.", timestamp: "t" }, 404));
     renderForm();
     fireEvent.change(rateInput(), { target: { value: "90" } });
-    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     expect(await screen.findByText("찾을 수 없습니다.")).toBeInTheDocument();
   });
 
