@@ -8,6 +8,7 @@ import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
+import { RatingInsights } from "@/components/rating/RatingInsights";
 import { RatingTargetPlanner } from "@/components/rating/RatingTargetPlanner";
 import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
@@ -137,7 +138,12 @@ export function RatingView({ userId }: { userId: number }) {
     <div className="flex flex-col gap-5">
       <RatingBody
         skill={data}
-        afterSummary={<RatingTargetPlanner userId={userId} skill={data} />}
+        afterSummary={
+          <>
+            <RatingInsights userId={userId} skill={data} />
+            <RatingTargetPlanner userId={userId} skill={data} />
+          </>
+        }
         footer={<SkillSnapshotPanel userId={userId} />}
         emptyHint={
           <>
