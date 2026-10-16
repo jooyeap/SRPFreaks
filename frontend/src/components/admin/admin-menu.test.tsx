@@ -38,6 +38,7 @@ describe("AdminMenu 항목", () => {
     const { unmount } = render(<AdminMenu role="ADMIN" />);
     expect(screen.getByRole("link", { name: /곡 관리/ })).toHaveAttribute("href", "/songs");
     expect(screen.getByRole("link", { name: /서열표 관리/ })).toHaveAttribute("href", "/table");
+    expect(screen.getByRole("link", { name: /건의 관리/ })).toHaveAttribute("href", "/admin/suggestions");
     expect(screen.queryByRole("link", { name: /사용자/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /감사 로그/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /^설정/ })).toBeNull();
