@@ -104,6 +104,42 @@ describe("RatingTargetPlanner", () => {
     expect(screen.queryByText("여섯곡")).not.toBeInTheDocument();
   });
 
+  it("한 난이도에 채보가 많으면 10개씩 나눠 보이고, 접었다 다시 열면 1쪽부터 시작한다", async () => {
+    const many = Array.from({ length: 23 }, (_, i) => entry(100 + i, `많은곡${String(i + 1).padStart(2, "0")}`));
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json({ content: [group(6.0, many)], page: 0, size: 20, totalElements: 1, totalPages: 1 }) : json([table])),
+    );
+    renderPlanner();
+    fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
+    const region = await screen.findByRole("region", { name: "단일 레이팅 예상 값" });
+    const tierButton = () => within(region).getByRole("button", { name: /난이도 6\.0/ });
+    fireEvent.click(tierButton());
+
+    const list = () => within(region).getByRole("list", { name: "6.0 채보" });
+    expect(within(list()).getAllByRole("link")).toHaveLength(10);
+    expect(within(list()).getByText("많은곡01")).toBeInTheDocument();
+    expect(within(list()).queryByText("많은곡11")).not.toBeInTheDocument();
+    expect(within(region).getByText("1 / 3")).toBeInTheDocument();
+
+    fireEvent.click(within(region).getByRole("button", { name: "다음" }));
+    expect(within(list()).getByText("많은곡11")).toBeInTheDocument();
+    fireEvent.click(within(region).getByRole("button", { name: "다음" }));
+    expect(within(list()).getAllByRole("link")).toHaveLength(3); // 마지막 쪽은 남은 3개
+
+    fireEvent.click(tierButton()); // 접기
+    fireEvent.click(tierButton()); // 다시 열기
+    expect(within(list()).getByText("많은곡01")).toBeInTheDocument();
+    expect(within(region).getByText("1 / 3")).toBeInTheDocument();
+  });
+
+  it("채보가 10개 이하면 페이지 이동을 보이지 않는다", async () => {
+    renderPlanner();
+    fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
+    const region = await screen.findByRole("region", { name: "단일 레이팅 예상 값" });
+    fireEvent.click(within(region).getByRole("button", { name: /난이도 6\.0/ }));
+    expect(within(region).queryByRole("navigation", { name: "페이지 이동" })).toBeNull();
+  });
+
   it("목록 순위가 덜 찼으면 있는 순위의 점수만 보인다", async () => {
     renderPlanner(skill({ single: Array.from({ length: 8 }, (_, i) => skillEntry(i + 1, 300 - i)) }));
     fireEvent.click(screen.getByRole("button", { name: /레이팅 예상 값/ }));
