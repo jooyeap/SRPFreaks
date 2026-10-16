@@ -17,7 +17,8 @@ public record RecordResponse(Long id, Long songDifficultyId, Long songId, String
                              DifficultyType difficulty, BigDecimal level, NoteOption noteOption,
                              BigDecimal achievementRate, boolean fullCombo, AchievementStage stage,
                              Instant playedAt, Platform platform, String memo,
-                             Instant createdAt, Instant updatedAt) {
+                             Instant createdAt, Instant updatedAt,
+                             RatingChangeResponse ratingChange) {
 
     public static RecordResponse from(OptionRecord r) {
         SongDifficulty d = r.getSongDifficulty();
@@ -25,6 +26,12 @@ public record RecordResponse(Long id, Long songDifficultyId, Long songId, String
                 d.getInstrumentPart(), d.getDifficultyType(), d.getLevel(), r.getNoteOption(),
                 r.getAchievementRate(), r.isFullCombo(),
                 AchievementStage.of(r.getAchievementRate(), r.isFullCombo()),
-                r.getPlayedAt(), r.getPlatform(), r.getMemo(), r.getCreatedAt(), r.getUpdatedAt());
+                r.getPlayedAt(), r.getPlatform(), r.getMemo(), r.getCreatedAt(), r.getUpdatedAt(), null);
+    }
+
+    /** 저장 응답에만 레이팅 변화를 붙인다(목록·상세 응답은 null). */
+    public RecordResponse withRatingChange(RatingChangeResponse change) {
+        return new RecordResponse(id, songDifficultyId, songId, title, part, difficulty, level, noteOption,
+                achievementRate, fullCombo, stage, playedAt, platform, memo, createdAt, updatedAt, change);
     }
 }
