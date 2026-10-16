@@ -3,12 +3,15 @@ package com.srpfreaks.backend.controller;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.SkillSnapshotResponse;
 import com.srpfreaks.backend.dto.SkillSnapshotStatusResponse;
+import com.srpfreaks.backend.dto.SnapshotCompareResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
+import com.srpfreaks.backend.service.SkillSnapshotCompareService;
 import com.srpfreaks.backend.service.SkillSnapshotService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SkillSnapshotController {
 
     private final SkillSnapshotService snapshotService;
+    private final SkillSnapshotCompareService compareService;
 
     @GetMapping
     public PageResponse<SkillSnapshotResponse> list(
@@ -37,6 +41,18 @@ public class SkillSnapshotController {
     @GetMapping("/status")
     public SkillSnapshotStatusResponse status(@AuthenticationPrincipal AuthenticatedUser user) {
         return snapshotService.status(user.id());
+    }
+
+    /** 고른 스냅샷을 바로 이전 스냅샷과 비교한다(오른 곡·새로 들어온 곡·밀려난 곡). */
+    @GetMapping("/{snapshotId}/compare")
+    public SnapshotCompareResponse compare(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long snapshotId) {
+        return compareService.compareWithPrevious(user.id(), snapshotId);
+    }
+
+    /** 가장 최근 스냅샷과 지금(계산한 현재 레이팅)을 비교한다. */
+    @GetMapping("/compare-current")
+    public SnapshotCompareResponse compareCurrent(@AuthenticationPrincipal AuthenticatedUser user) {
+        return compareService.compareLatestWithCurrent(user.id());
     }
 
     @PostMapping

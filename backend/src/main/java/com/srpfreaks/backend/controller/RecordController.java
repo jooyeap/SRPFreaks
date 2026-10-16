@@ -6,6 +6,7 @@ import com.srpfreaks.backend.dto.RecordResponse;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.OptionRecordService;
+import com.srpfreaks.backend.service.RecordRatingChangeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,11 +34,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecordController {
 
     private final OptionRecordService optionRecordService;
+    private final RecordRatingChangeService ratingChangeService;
 
     @PostMapping
     public ResponseEntity<RecordResponse> create(@AuthenticationPrincipal AuthenticatedUser user,
                                                  @Valid @RequestBody RecordRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(optionRecordService.create(user.id(), request));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                ratingChangeService.withChange(user.id(), () -> optionRecordService.create(user.id(), request)));
     }
 
     @GetMapping
@@ -59,7 +62,8 @@ public class RecordController {
     @PutMapping("/{recordId}")
     public RecordResponse update(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long recordId,
                                  @Valid @RequestBody RecordRequest request) {
-        return optionRecordService.update(user.id(), recordId, request);
+        // 저장 응답에는 "레이팅이 어떻게 바뀌었는지"를 같이 담는다(저장 직후 안내용)
+        return ratingChangeService.withChange(user.id(), () -> optionRecordService.update(user.id(), recordId, request));
     }
 
     @DeleteMapping("/{recordId}")

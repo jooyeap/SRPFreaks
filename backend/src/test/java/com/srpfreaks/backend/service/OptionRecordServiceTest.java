@@ -226,6 +226,18 @@ class OptionRecordServiceTest {
     }
 
     @Test
+    void entered_정렬은_입력한_시각_최신순이다() {
+        when(recordRepository.findMine(any(), any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(record("90.00"))));
+
+        service.list(ME, NoteOption.SUPER_RANDOM_PLUS, null, 0, 20, "entered");
+
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(recordRepository).findMine(any(), any(), any(), pageable.capture());
+        assertThat(pageable.getValue().getSort().getOrderFor("updatedAt").getDirection()).isEqualTo(org.springframework.data.domain.Sort.Direction.DESC);
+    }
+
+    @Test
     void 허용되지_않은_정렬_값은_400이다() {
         assertThatThrownBy(() -> service.list(ME, null, null, 0, 20, "password; drop table"))
                 .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST));

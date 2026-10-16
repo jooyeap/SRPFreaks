@@ -9,7 +9,11 @@ import com.srpfreaks.backend.dto.SkillSnapshotResponse;
 import com.srpfreaks.backend.dto.SkillSnapshotStatusResponse;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.SkillSnapshot;
+import com.srpfreaks.backend.entity.SkillSnapshotEntry;
+import com.srpfreaks.backend.entity.SnapshotGroup;
+import com.srpfreaks.backend.repository.SkillSnapshotEntryRepository;
 import com.srpfreaks.backend.repository.SkillSnapshotRepository;
+import com.srpfreaks.backend.repository.SongDifficultyRepository;
 import com.srpfreaks.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +53,8 @@ class SkillSnapshotServiceTest {
     static final LocalDate TODAY = LocalDate.of(2026, 10, 11);
 
     @Mock SkillSnapshotRepository snapshotRepository;
+    @Mock SkillSnapshotEntryRepository entryRepository;
+    @Mock SongDifficultyRepository songDifficultyRepository;
     @Mock SkillService skillService;
     @Mock UserRepository userRepository;
 
@@ -56,7 +62,7 @@ class SkillSnapshotServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SkillSnapshotService(snapshotRepository, skillService, userRepository, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new SkillSnapshotService(snapshotRepository, entryRepository, songDifficultyRepository, skillService, userRepository, Clock.fixed(NOW, ZoneOffset.UTC));
         lenient().when(skillService.ratingNoteOption()).thenReturn(OPTION);
     }
 
@@ -90,6 +96,40 @@ class SkillSnapshotServiceTest {
         assertThat(captor.getValue().getTotalScore()).isEqualByComparingTo("120.00");
         assertThat(response.change()).isEqualByComparingTo("19.50");
         assertThat(response.date()).isEqualTo(TODAY);
+    }
+
+    @Test
+    void 기록하면_레이팅_목록의_단일과_그_외_곡을_상세로_함께_저장한다() {
+        SkillEntryResponse single = new SkillEntryResponse(1, 11L, 1L, "곡A", null, null, null, null, "단일",
+                new BigDecimal("96.50"), true, null, null, null, new BigDecimal("40.12"));
+        SkillEntryResponse other = new SkillEntryResponse(1, 22L, 2L, "곡B", null, null, null, null, "복합",
+                new BigDecimal("80.00"), false, null, null, null, new BigDecimal("30.00"));
+        when(skillService.mySkill(USER)).thenReturn(new SkillResponse(OPTION, new BigDecimal("70.12"),
+                new BigDecimal("40.12"), new BigDecimal("30.00"), null, 15, 25, List.of(single), List.of(other)));
+        when(snapshotRepository.findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(USER, OPTION)).thenReturn(Optional.empty());
+
+        service.create(USER);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<SkillSnapshotEntry>> captor = ArgumentCaptor.forClass(List.class);
+        verify(entryRepository).saveAll(captor.capture());
+        List<SkillSnapshotEntry> saved = captor.getValue();
+        assertThat(saved).hasSize(2);
+        assertThat(saved.get(0).getListGroup()).isEqualTo(SnapshotGroup.SINGLE);
+        assertThat(saved.get(0).getAchievementRate()).isEqualByComparingTo("96.50");
+        assertThat(saved.get(0).isFullCombo()).isTrue();
+        assertThat(saved.get(0).getScore()).isEqualByComparingTo("40.12");
+        assertThat(saved.get(1).getListGroup()).isEqualTo(SnapshotGroup.OTHER);
+        assertThat(saved.get(1).getListRank()).isEqualTo(1);
+    }
+
+    @Test
+    void 막힌_경우에는_상세도_저장하지_않는다() {
+        when(skillService.mySkill(USER)).thenReturn(skill("120.00", "70.00", "50.00", true));
+        when(snapshotRepository.existsByUser_IdAndNoteOptionAndSnapshotDate(USER, OPTION, TODAY)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.create(USER)).isInstanceOf(ApiException.class);
+        verify(entryRepository, never()).saveAll(any());
     }
 
     @Test

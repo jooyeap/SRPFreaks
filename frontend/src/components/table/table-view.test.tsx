@@ -146,6 +146,23 @@ describe("TierGroupSection", () => {
     expect(screen.queryAllByLabelText(/레이팅 점수/)).toHaveLength(2);
   });
 
+  it("점수 칩을 누르면 그 채보의 기록 창을 열도록 알린다 (기록이 있는 줄만)", () => {
+    const onRecord = vi.fn();
+    render(
+      <TierGroupSection
+        group={group({ entries: [entry({ entryId: 1, title: "기록있음" }), entry({ entryId: 2, title: "기록없음", mine: null })] })}
+        includeZero={false}
+        onRecord={onRecord}
+      />,
+    );
+    // 기록이 없는 곡에는 점수가 없으니 칩 버튼도 없다. 있는 곡은 카드 + 줄 하나씩
+    expect(screen.queryAllByRole("button", { name: "기록없음 기록 수정" })).toHaveLength(0);
+    const chips = screen.getAllByRole("button", { name: "기록있음 기록 수정" });
+    expect(chips).toHaveLength(2);
+    fireEvent.click(chips[0]);
+    expect(onRecord).toHaveBeenCalledWith(expect.objectContaining({ title: "기록있음" }), 5.8);
+  });
+
   it("레이팅 대상이 아니거나(속성 `레이팅 제외`) 난이도가 미정이면 점수 대신 `–`를 보인다", () => {
     const { rerender } = render(
       <TierGroupSection group={group({ entries: [entry({ pattern: "레이팅 제외" })] })} includeZero={false} />,

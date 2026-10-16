@@ -16,6 +16,7 @@ import {
   createRecord,
   deleteRecord,
   isMaxRate,
+  ratingChangeText,
   recordToFormValues,
   toRecordRequest,
   todaySeoul,
@@ -117,13 +118,14 @@ export function RecordForm({
       // 서열표(내 기록, 칩, 평균)와 기록 목록이 바로 바뀌도록 관련 캐시를 무효화한다
       await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       // 창이 바로 닫히므로 저장됐다는 확인을 남긴다. 수정이면 달성률이 어떻게 바뀌었는지도 같이 알려 준다
-      toast(
-        record
-          ? record.achievementRate === saved.achievementRate
-            ? "기록을 수정했습니다."
-            : `기록을 수정했습니다. (${formatRate(record.achievementRate)} → ${formatRate(saved.achievementRate)})`
-          : "새 기록을 등록했습니다.",
-      );
+      const savedText = record
+        ? record.achievementRate === saved.achievementRate
+          ? "기록을 수정했습니다."
+          : `기록을 수정했습니다. (${formatRate(record.achievementRate)} → ${formatRate(saved.achievementRate)})`
+        : "새 기록을 등록했습니다.";
+      // 레이팅이 어떻게 바뀌었는지(새로 들어갔으면 NEW)를 같이 보여 준다. 서버가 못 주면 저장 문구만 보인다
+      const ratingText = ratingChangeText(saved.ratingChange);
+      toast(ratingText ? `${savedText} ${ratingText}` : savedText);
       onSaved(saved);
     },
     onError: (error) => {

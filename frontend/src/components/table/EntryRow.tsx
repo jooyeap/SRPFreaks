@@ -64,7 +64,7 @@ export function EntryRow({
         </Link>
       </span>
       {/* 점수(레이팅에 찍히는 값)는 랭크 앞 칸이다. 기록이 없으면 비워 둔다 */}
-      <span>{stage ? <RatedScore entry={entry} tier={tier} /> : null}</span>
+      <span>{stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}</span>
       {/* 랭크(달성 단계)는 곡명 오른쪽 고정 폭 칸이다. 기록이 없어도 자리를 비워 두어 채보 칸 위치가 줄마다 같다 */}
       <span>{stage ? <StageBadge stage={stage} /> : null}</span>
       <span>

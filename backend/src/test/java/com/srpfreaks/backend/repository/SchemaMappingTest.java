@@ -15,6 +15,8 @@ import com.srpfreaks.backend.entity.Platform;
 import com.srpfreaks.backend.entity.Recommend;
 import com.srpfreaks.backend.entity.RefreshToken;
 import com.srpfreaks.backend.entity.SkillSnapshot;
+import com.srpfreaks.backend.entity.SkillSnapshotEntry;
+import com.srpfreaks.backend.entity.SnapshotGroup;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
@@ -108,6 +110,9 @@ class SchemaMappingTest {
         SkillSnapshot snapshot = SkillSnapshot.create(user, NoteOption.SUPER_RANDOM_PLUS, LocalDate.of(2026, 10, 10),
                 new BigDecimal("8412.55"), new BigDecimal("3610.12"), new BigDecimal("4802.43"));
         em.persist(snapshot);
+        SkillSnapshotEntry snapshotEntry = SkillSnapshotEntry.create(snapshot, difficulty, SnapshotGroup.SINGLE, 1,
+                new BigDecimal("98.76"), true, new BigDecimal("42.10"));
+        em.persist(snapshotEntry);
 
         em.flush();
         em.clear();
@@ -122,6 +127,14 @@ class SchemaMappingTest {
         assertThat(loadedSnapshot.getSnapshotDate()).isEqualTo(LocalDate.of(2026, 10, 10));
         assertThat(loadedSnapshot.getTotalScore()).isEqualByComparingTo("8412.55");
         assertThat(loadedSnapshot.getNoteOption()).isEqualTo(NoteOption.SUPER_RANDOM_PLUS);
+
+        SkillSnapshotEntry loadedSnapshotEntry = em.find(SkillSnapshotEntry.class, snapshotEntry.getId());
+        assertThat(loadedSnapshotEntry.getListGroup()).isEqualTo(SnapshotGroup.SINGLE);
+        assertThat(loadedSnapshotEntry.getListRank()).isEqualTo(1);
+        assertThat(loadedSnapshotEntry.getAchievementRate()).isEqualByComparingTo("98.76");
+        assertThat(loadedSnapshotEntry.isFullCombo()).isTrue();
+        assertThat(loadedSnapshotEntry.getScore()).isEqualByComparingTo("42.10");
+        assertThat(loadedSnapshotEntry.getSnapshot().getId()).isEqualTo(snapshot.getId());
 
         Notice loadedNotice = em.find(Notice.class, notice.getId());
         assertThat(loadedNotice.getTitle()).isEqualTo("업데이트 안내");

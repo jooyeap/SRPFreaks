@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import type { PageResponse } from "@/lib/api-types";
-import { formatPlayedDate, toHundredths } from "@/lib/format";
+import { formatPlayedDate, formatScore, toHundredths } from "@/lib/format";
 import type { RecordFormValues } from "@/lib/record-schema";
 import type { DifficultyType, InstrumentPart, NoteOption, AchievementStage } from "@/lib/types";
 
@@ -24,6 +24,40 @@ export interface RecordResponse {
   createdAt: string;
   /** 마지막 수정 시각(UTC). 수정한 적이 없으면 createdAt과 같다 */
   updatedAt: string;
+  /** 저장(등록·수정) 응답에만 있다: 이 저장으로 내 레이팅이 어떻게 바뀌었는지. 목록·상세 응답과 계산에 실패했을 때는 없다 */
+  ratingChange?: RatingChange | null;
+}
+
+/** 서버 RatingChangeResponse와 같은 모양 (D32 확장). */
+export interface RatingChange {
+  totalBefore: number;
+  totalAfter: number;
+  change: number;
+  /** 이 저장으로 이 채보가 레이팅 목록(단일 15 + 그 외 25)에 새로 들어갔는가 */
+  entered: boolean;
+  /** 저장 뒤에 이 채보가 레이팅 목록에 들어 있는가 */
+  inList: boolean;
+}
+
+/**
+ * 저장 직후 알림에 덧붙이는 레이팅 변화 한 줄. 증감은 부호 글자(+/-)로 쓴다.
+ *  - 새로 들어옴: `레이팅 +3.40 (100.00 → 103.40) · NEW 레이팅 목록에 새로 들어갔습니다.`
+ *  - 목록 밖: 점수가 올라도 레이팅은 그대로라서 이유를 알려 준다
+ * 서버가 변화를 주지 않았으면(계산 실패 등) null이라 알림에 아무것도 붙이지 않는다.
+ */
+export function ratingChangeText(change: RatingChange | null | undefined): string | null {
+  if (!change) {
+    return null;
+  }
+  if (!change.inList) {
+    return "아직 레이팅 목록에는 들지 못했습니다.";
+  }
+  if (change.change === 0) {
+    return "레이팅은 그대로입니다.";
+  }
+  const sign = change.change > 0 ? "+" : "-";
+  const base = `레이팅 ${sign}${formatScore(Math.abs(change.change))} (${formatScore(change.totalBefore)} → ${formatScore(change.totalAfter)})`;
+  return change.entered ? `${base} · NEW 레이팅 목록에 새로 들어갔습니다.` : base;
 }
 
 /** 등록 직후 몇 초 차이는 수정으로 보지 않는다 */
@@ -111,7 +145,35 @@ export function fetchRecordsOfChart(songDifficultyId: number, signal?: AbortSign
 export const recordKeys = {
   ofChart: (userId: number, songDifficultyId: number) => ["records", userId, songDifficultyId] as const,
   bestOfChart: (userId: number, songDifficultyId: number) => ["records", userId, songDifficultyId, "best"] as const,
+  recentEntered: (userId: number) => ["records", userId, "recent-entered"] as const,
 };
+
+/** 기록 창 맨 위 "최근 입력한 곡"에 보여 줄 곡 수 */
+export const RECENT_CHART_COUNT = 5;
+
+/**
+ * 최근에 입력(등록·수정)한 채보를 새것부터 중복 없이 최대 `count`개 모은다.
+ * 같은 채보를 여러 번 입력했으면 가장 최근 것만 센다. 입력 순서는 서버의 sort=entered(수정한 시각 최신순)를 따른다.
+ */
+export function distinctRecentCharts(records: readonly RecordResponse[], count: number = RECENT_CHART_COUNT): RecordResponse[] {
+  const seen = new Set<number>();
+  const result: RecordResponse[] = [];
+  for (const record of records) {
+    if (!seen.has(record.songDifficultyId)) {
+      seen.add(record.songDifficultyId);
+      result.push(record);
+      if (result.length === count) {
+        break;
+      }
+    }
+  }
+  return result;
+}
+
+/** 최근 입력한 기록들(중복 채보가 섞이므로 넉넉히 가져와 distinctRecentCharts로 줄인다). */
+export function fetchRecentEntered(signal?: AbortSignal): Promise<PageResponse<RecordResponse>> {
+  return apiFetch<PageResponse<RecordResponse>>("/records", { query: { sort: "entered", size: 20 }, signal });
+}
 
 /** 한 채보에서 달성률이 가장 높은 내 기록 1건 (없으면 null). 곡 상세의 "내 기록" 날짜에 쓴다. */
 export async function fetchBestRecord(songDifficultyId: number, signal?: AbortSignal): Promise<RecordResponse | null> {

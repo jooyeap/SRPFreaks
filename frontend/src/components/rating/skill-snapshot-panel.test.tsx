@@ -2,11 +2,22 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
-import type { SkillSnapshotResponse, SkillSnapshotStatusResponse } from "@/lib/api-types";
+import type { SkillSnapshotResponse, SkillSnapshotStatusResponse, SnapshotCompareChange, SnapshotCompareResponse } from "@/lib/api-types";
 
 function row(id: number, date: string, total: number, change: number | null): SkillSnapshotResponse {
   return { id, date, totalScore: total, singleScore: total / 2, otherScore: total / 2, change };
 }
+
+function change(id: number, title: string, before: number | null, after: number | null): SnapshotCompareChange {
+  return {
+    songDifficultyId: id, songId: id * 10, title, part: "GUITAR", difficulty: "MASTER", group: "SINGLE",
+    rateBefore: before === null ? null : 90, rateAfter: after === null ? null : 95, scoreBefore: before, scoreAfter: after,
+  };
+}
+const emptyCompare: SnapshotCompareResponse = {
+  available: true, reason: null, fromDate: "2026-10-01", toDate: "2026-10-09", fromTotal: 120, toTotal: 130, totalChange: 10,
+  entered: [], improved: [], declined: [], left: [],
+};
 
 describe("SkillSnapshotPanel", () => {
   const fetchMock = vi.fn<typeof fetch>();
@@ -14,6 +25,8 @@ describe("SkillSnapshotPanel", () => {
   let rows: SkillSnapshotResponse[];
   let totalPages: number;
   let postResponse: () => Response;
+  let compare: SnapshotCompareResponse;
+  let compareStatus: number;
 
   const json = (body: unknown, code = 200) => new Response(JSON.stringify(body), { status: code, headers: { "Content-Type": "application/json" } });
 
@@ -32,10 +45,15 @@ describe("SkillSnapshotPanel", () => {
     rows = [row(2, "2026-10-09", 130, 10), row(1, "2026-10-01", 120, null)];
     totalPages = 1;
     postResponse = () => json(row(3, "2026-10-10", 140, 10), 201);
+    compare = emptyCompare;
+    compareStatus = 200;
     fetchMock.mockReset();
     fetchMock.mockImplementation((input, init) => {
       const url = String(input);
       if (init?.method === "POST") return Promise.resolve(postResponse());
+      if (url.includes("/compare")) {
+        return Promise.resolve(compareStatus === 200 ? json(compare) : json({ code: "ERROR", message: "비교하지 못했습니다.", timestamp: "t" }, compareStatus));
+      }
       if (url.includes("/snapshots/status")) return Promise.resolve(json(status));
       return Promise.resolve(json({ content: rows, page: 0, size: 10, totalElements: rows.length, totalPages }));
     });
@@ -101,5 +119,62 @@ describe("SkillSnapshotPanel", () => {
     expect(within(nav).getByRole("button", { name: "이전" })).toBeDisabled();
     fireEvent.click(within(nav).getByRole("button", { name: "다음" }));
     await waitFor(() => expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("page=1"))).toBe(true));
+  });
+
+  describe("이전 기록과 비교", () => {
+    const compareButton = (date: string) => screen.getByRole("button", { name: `${date} 기록을 이전 기록과 비교` });
+
+    it("가장 오래된 기록에는 비교 버튼이 없고, 이전 기록이 있는 줄에만 있다", async () => {
+      renderPanel();
+      await screen.findByRole("list", { name: "레이팅 기록 목록" });
+      expect(compareButton("2026-10-09")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "2026-10-01 기록을 이전 기록과 비교" })).not.toBeInTheDocument();
+    });
+
+    it("누르기 전에는 비교를 불러오지 않고, 누르면 새로 들어온 곡에 NEW를 붙여 보여 준다", async () => {
+      compare = {
+        ...emptyCompare,
+        entered: [change(1, "Alpha", null, 35.5)],
+        improved: [change(2, "Beta", 30, 35.5)],
+        declined: [change(3, "Gamma", 40, 38)],
+        left: [change(4, "Delta", 20, null)],
+      };
+      renderPanel();
+      await screen.findByRole("list", { name: "레이팅 기록 목록" });
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/compare"))).toBe(false);
+
+      fireEvent.click(compareButton("2026-10-09"));
+      const entered = await screen.findByRole("region", { name: "새로 들어온 곡" });
+      expect(within(entered).getByText("NEW")).toBeInTheDocument();
+      expect(within(entered).getByText("Alpha")).toBeInTheDocument();
+      expect(within(screen.getByRole("region", { name: "점수가 오른 곡" })).getByText(/30\.00 → 35\.50 \(\+5\.50\)/)).toBeInTheDocument();
+      expect(within(screen.getByRole("region", { name: "점수가 내려간 곡" })).getByText(/\(-2\.00\)/)).toBeInTheDocument();
+      expect(within(screen.getByRole("region", { name: "목록에서 밀려난 곡" })).getByText(/목록 밖/)).toBeInTheDocument();
+    });
+
+    it("다시 누르면 닫힌다", async () => {
+      renderPanel();
+      await screen.findByRole("list", { name: "레이팅 기록 목록" });
+      fireEvent.click(compareButton("2026-10-09"));
+      expect(await screen.findByText("곡 목록에는 달라진 점이 없습니다.")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "2026-10-09 기록을 이전 기록과 비교" }));
+      await waitFor(() => expect(screen.queryByText("곡 목록에는 달라진 점이 없습니다.")).not.toBeInTheDocument());
+    });
+
+    it("곡별 상세가 없던 옛 기록이면 이유를 글자로 알려 준다", async () => {
+      compare = { ...emptyCompare, available: false, reason: "NO_DETAIL" };
+      renderPanel();
+      await screen.findByRole("list", { name: "레이팅 기록 목록" });
+      fireEvent.click(compareButton("2026-10-09"));
+      expect(await screen.findByText(/곡별 상세를 남기기 전의 기록/)).toBeInTheDocument();
+    });
+
+    it("서버 오류면 문구를 보여 준다", async () => {
+      compareStatus = 500;
+      renderPanel();
+      await screen.findByRole("list", { name: "레이팅 기록 목록" });
+      fireEvent.click(compareButton("2026-10-09"));
+      expect(await screen.findByRole("alert")).toHaveTextContent("비교하지 못했습니다.");
+    });
   });
 });

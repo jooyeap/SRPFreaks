@@ -39,7 +39,7 @@ export function EntryCard({
         </Link>
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
-          {stage ? <RatedScore entry={entry} tier={tier} /> : null}
+          {stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}
           {stage ? <StageBadge stage={stage} /> : null}
           <span className="text-xs text-fg-dim">속성 {entry.pattern ?? EMPTY_MARK}</span>
         </p>

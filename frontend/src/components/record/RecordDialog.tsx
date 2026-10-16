@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { useToast } from "@/components/Toast";
+import { RecentCharts } from "@/components/record/RecentCharts";
 import { RecordForm, type RecordChart } from "@/components/record/RecordForm";
 import { RecordList } from "@/components/record/RecordList";
 import { formatRate } from "@/lib/format";
@@ -29,6 +31,25 @@ export function RecordDialog({ chart, onClose }: { chart: RecordChart | null; on
   const onDirtyChange = useCallback((dirty: boolean) => {
     dirtyRef.current = dirty;
   }, []);
+  const toast = useToast();
+  // "최근 입력한 곡"으로 옮겨 간 채보. 창을 닫으면 비워서 다음에 열 때는 부모가 준 채보로 열린다
+  const [switched, setSwitched] = useState<RecordChart | null>(null);
+  const active = chart ? (switched ?? chart) : null;
+  const close = useCallback(() => {
+    setSwitched(null);
+    onClose();
+  }, [onClose]);
+  const switchTo = useCallback(
+    (next: RecordChart) => {
+      // 입력 중인 값이 있으면 옮기지 않는다 (바깥 클릭으로 닫히지 않게 하는 것과 같은 이유)
+      if (dirtyRef.current) {
+        toast("입력 중인 값이 있습니다. 저장하거나 지운 뒤에 다른 곡으로 옮겨 주세요.");
+        return;
+      }
+      setSwitched(next);
+    },
+    [toast],
+  );
 
   useEffect(() => {
     const dialog = ref.current;
@@ -58,19 +79,20 @@ export function RecordDialog({ chart, onClose }: { chart: RecordChart | null; on
       ref={ref}
       aria-labelledby="record-dialog-title"
       // Esc(cancel 이벤트)와 닫힘(close 이벤트) 모두 부모 상태를 맞춘다
-      onClose={onClose}
+      onClose={close}
       // 창 바깥(::backdrop) 클릭은 dialog 자신이 target이 된다
       onClick={(event) => {
         if (event.target === ref.current && !dirtyRef.current) {
-          onClose();
+          close();
         }
       }}
       className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-[20px] border border-line bg-card px-5 pb-5 pt-2.5 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
     >
-      {chart ? (
+      {active ? (
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
-          <RecordDialogBody key={chart.songDifficultyId} chart={chart} onClose={onClose} onDirtyChange={onDirtyChange} />
+          <RecentCharts currentChartId={active.songDifficultyId} onPick={switchTo} />
+          <RecordDialogBody key={active.songDifficultyId} chart={active} onClose={close} onDirtyChange={onDirtyChange} />
         </>
       ) : null}
     </dialog>

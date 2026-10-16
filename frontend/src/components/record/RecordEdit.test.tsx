@@ -183,6 +183,29 @@ describe("기록 수정 / 삭제", () => {
     expect(screen.getByRole("status")).toHaveTextContent("기록을 수정했습니다. (91.25 → 95.00)");
   });
 
+  it("서버가 레이팅 변화를 주면 안내에 같이 나오고, 목록에 새로 들어가면 NEW 문구가 붙는다", async () => {
+    fetchMock.mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
+      if (url.includes("/records?")) {
+        return Promise.resolve(json({ content: [saved], page: 0, size: 20, totalElements: 1, totalPages: 1 }));
+      }
+      if (init?.method === "PUT") {
+        const ratingChange = { totalBefore: 100, totalAfter: 103.4, change: 3.4, entered: true, inList: true };
+        return Promise.resolve(json({ ...saved, achievementRate: 95, ratingChange }));
+      }
+      return Promise.resolve(json({}, 404));
+    });
+    renderDialog();
+    await openEdit();
+    fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "95" } });
+    fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "기록을 수정했습니다. (91.25 → 95.00) 레이팅 +3.40 (100.00 → 103.40) · NEW 레이팅 목록에 새로 들어갔습니다.",
+    );
+  });
+
   it("저장하면 PUT /records/{id}로 보내고 창을 닫는다", async () => {
     renderDialog();
     await openEdit();
