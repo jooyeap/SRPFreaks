@@ -74,14 +74,39 @@ describe("기록 수정 / 삭제", () => {
       </QueryClientProvider>,
     );
   }
-  // 기록이 있으면 창이 가장 높은 기록의 수정 화면으로 바로 열린다
+  // 기록이 있으면 먼저 분기 화면이 나오고, `기존 기록 수정`을 고르면 가장 높은 기록의 수정 화면이 된다
   async function openEdit() {
+    // 기록이 있는 채보는 먼저 "기존 기록 수정 / 새 기록 등록"을 고른다
+    fireEvent.click(await screen.findByRole("button", { name: /^기존 기록 수정/ }));
     await screen.findByRole("heading", { name: "기록 수정" });
     await screen.findByLabelText("달성률");
   }
   const callsOf = (method: string) => fetchMock.mock.calls.filter((c) => c[1]?.method === method);
 
-  it("기록이 있으면 가장 높은 기록의 수정 화면으로 바로 열리고 폼이 기록 값으로 채워진다", async () => {
+  it("기록이 있으면 폼 전에 `기존 기록 수정 / 새 기록 등록`을 먼저 고르게 하고, 고르기 전에는 폼이 없다", async () => {
+    renderDialog();
+    const edit = await screen.findByRole("button", { name: /^기존 기록 수정/ });
+    expect(edit).toHaveTextContent("가장 높은 기록: 달성률 91.25");
+    expect(screen.getByRole("button", { name: /^새 기록 등록/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("달성률")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /^새 기록 등록/ }));
+    expect(await screen.findByLabelText("달성률")).toHaveValue(""); // 빈 등록 폼
+    expect(screen.getByText("새 기록을 등록합니다. 기존 기록은 그대로 남습니다.")).toBeInTheDocument();
+  });
+
+  it("기록이 없는 채보는 분기 없이 바로 등록 폼이 열린다", async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
+      return Promise.resolve(json({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }));
+    });
+    renderDialog();
+    await waitFor(() => expect(screen.getByLabelText("달성률")).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /^기존 기록 수정/ })).toBeNull();
+  });
+
+  it("기록이 있으면 `기존 기록 수정`을 고르면 가장 높은 기록의 수정 화면이 되고 폼이 기록 값으로 채워진다", async () => {
     renderDialog();
     expect(await screen.findByRole("heading", { name: "이 채보의 내 기록" })).toBeInTheDocument();
     await openEdit();

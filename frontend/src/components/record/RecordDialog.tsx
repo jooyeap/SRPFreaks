@@ -127,15 +127,17 @@ function RecordDialogBody({
   const best = bestOf(records.data?.content);
   const editing = picked === "new" ? null : (picked ?? best);
   const hasRecords = (records.data?.content.length ?? 0) > 0;
+  // 이미 기록이 있는 채보는 폼 전에 "기존 기록 수정 / 새 기록 등록"을 먼저 고르게 한다(고르기 전에는 폼이 없다)
+  const choosing = picked === null && hasRecords && !loadingRecords;
 
   return (
     <>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 id="record-dialog-title" className="text-lg font-extrabold">
-              {editing ? "기록 수정" : "기록 등록"}
+              {choosing ? "기록 등록" : editing ? "기록 수정" : "기록 등록"}
             </h2>
             {/* 이미 기록이 있으면 수정이 기본이다. 새 플레이를 따로 남기고 싶을 때만 `새 기록 추가`로 바꾼다 */}
-            {editing ? (
+            {choosing ? null : editing ? (
               <button
                 type="button"
                 onClick={() => setPicked("new")}
@@ -154,14 +156,40 @@ function RecordDialogBody({
             ) : null}
           </div>
           <p className="mb-3 text-xs leading-relaxed text-fg-sub">
-            {editing
+            {choosing
+              ? "이 채보에는 이미 기록이 있습니다. 어떻게 할까요?"
+              : editing
               ? `수정 중인 기록: 달성률 ${formatRate(editing.achievementRate)}${editing.fullCombo ? " · FC" : ""} · ${recordOriginText(editing)}`
               : hasRecords
                 ? "새 기록을 등록합니다. 기존 기록은 그대로 남습니다."
                 : "이 채보의 첫 기록을 등록합니다."}
           </p>
+          {choosing && best ? (
+            <div className="mb-3 flex flex-col gap-2">
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setPicked(best)}
+                className="flex min-h-14 flex-col items-start justify-center rounded-lg border border-chip-on-bg px-4 py-2 text-left hover:bg-chip-on-bg/10"
+              >
+                <span className="text-sm font-semibold text-fg">기존 기록 수정</span>
+                <span className="text-xs text-fg-sub">
+                  가장 높은 기록: 달성률 {formatRate(best.achievementRate)}
+                  {best.fullCombo ? " · FC" : ""} · {recordOriginText(best)}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPicked("new")}
+                className="flex min-h-14 flex-col items-start justify-center rounded-lg border border-chip-line px-4 py-2 text-left hover:bg-chip-on-bg/10"
+              >
+                <span className="text-sm font-semibold text-fg">새 기록 등록</span>
+                <span className="text-xs text-fg-sub">새 플레이를 따로 남깁니다. 기존 기록은 그대로 남습니다.</span>
+              </button>
+            </div>
+          ) : null}
           <RecordList songDifficultyId={chartId} editingId={editing?.id ?? null} onEdit={setPicked} />
-          {loadingRecords ? (
+          {choosing ? null : loadingRecords ? (
             <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
           ) : (
             // key: 수정 대상이 바뀌면 폼을 새로 만들어 입력 초기값이 맞게 한다
