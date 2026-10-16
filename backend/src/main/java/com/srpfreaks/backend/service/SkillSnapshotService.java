@@ -3,12 +3,17 @@ package com.srpfreaks.backend.service;
 import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.PageResponse;
+import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.dto.SkillSnapshotResponse;
 import com.srpfreaks.backend.dto.SkillSnapshotStatusResponse;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.SkillSnapshot;
+import com.srpfreaks.backend.entity.SkillSnapshotEntry;
+import com.srpfreaks.backend.entity.SnapshotGroup;
+import com.srpfreaks.backend.repository.SkillSnapshotEntryRepository;
 import com.srpfreaks.backend.repository.SkillSnapshotRepository;
+import com.srpfreaks.backend.repository.SongDifficultyRepository;
 import com.srpfreaks.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -41,6 +46,8 @@ public class SkillSnapshotService {
     static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
 
     private final SkillSnapshotRepository snapshotRepository;
+    private final SkillSnapshotEntryRepository entryRepository;
+    private final SongDifficultyRepository songDifficultyRepository;
     private final SkillService skillService;
     private final UserRepository userRepository;
     private final Clock clock;
@@ -89,7 +96,24 @@ public class SkillSnapshotService {
         } catch (DataIntegrityViolationException e) {
             throw new ApiException(ErrorCode.SNAPSHOT_ALREADY_TODAY);
         }
+        // 비교용 상세: 이 시점의 레이팅 목록(단일 + 그 외)을 그대로 사본으로 남긴다. 스냅샷과 같은 트랜잭션이라 같이 저장되거나 같이 취소된다.
+        entryRepository.saveAll(entriesOf(snapshot, skill));
         return SkillSnapshotResponse.from(snapshot, previous);
+    }
+
+    private List<SkillSnapshotEntry> entriesOf(SkillSnapshot snapshot, SkillResponse skill) {
+        List<SkillSnapshotEntry> entries = new java.util.ArrayList<>();
+        addEntries(entries, snapshot, SnapshotGroup.SINGLE, skill.single());
+        addEntries(entries, snapshot, SnapshotGroup.OTHER, skill.other());
+        return entries;
+    }
+
+    private void addEntries(List<SkillSnapshotEntry> entries, SkillSnapshot snapshot, SnapshotGroup group,
+                            List<SkillEntryResponse> source) {
+        for (SkillEntryResponse e : source) {
+            entries.add(SkillSnapshotEntry.create(snapshot, songDifficultyRepository.getReferenceById(e.songDifficultyId()),
+                    group, e.rank(), e.achievementRate(), e.fullCombo(), e.score()));
+        }
     }
 
     private LocalDate today() {
