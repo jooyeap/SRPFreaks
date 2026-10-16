@@ -21,6 +21,7 @@ public enum ErrorCode {
     SNAPSHOT_NO_CHANGE(HttpStatus.CONFLICT, "마지막 기록과 점수가 같아 기록할 수 없습니다."),
     SNAPSHOT_NO_RECORDS(HttpStatus.CONFLICT, "레이팅에 들어간 기록이 없어 기록할 수 없습니다."),
     SUGGESTION_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "오늘은 건의를 더 보낼 수 없습니다. 내일 다시 보내 주세요."),
+    SETLIST_FULL(HttpStatus.CONFLICT, "세트리스트에는 30곡까지 담을 수 있습니다."),
     RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.");
 

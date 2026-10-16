@@ -17,6 +17,7 @@ import com.srpfreaks.backend.entity.RefreshToken;
 import com.srpfreaks.backend.entity.SkillSnapshot;
 import com.srpfreaks.backend.entity.SkillSnapshotEntry;
 import com.srpfreaks.backend.entity.SnapshotGroup;
+import com.srpfreaks.backend.entity.SetlistItem;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.Suggestion;
 import com.srpfreaks.backend.entity.SuggestionCategory;
@@ -113,6 +114,8 @@ class SchemaMappingTest {
         Suggestion suggestion = Suggestion.create(user, SuggestionCategory.SONG_REQUEST, "곡 추가 요청", "곡명: 예시\n아티스트: 예시");
         suggestion.review(SuggestionStatus.REVIEWING, "확인 중입니다.");
         em.persist(suggestion);
+        SetlistItem setlistItem = SetlistItem.create(user, difficulty);
+        em.persist(setlistItem);
         SkillSnapshot snapshot = SkillSnapshot.create(user, NoteOption.SUPER_RANDOM_PLUS, LocalDate.of(2026, 10, 10),
                 new BigDecimal("8412.55"), new BigDecimal("3610.12"), new BigDecimal("4802.43"));
         em.persist(snapshot);
@@ -153,6 +156,10 @@ class SchemaMappingTest {
         assertThat(loadedSuggestion.getAdminNote()).isEqualTo("확인 중입니다.");
         assertThat(loadedSuggestion.getContent()).isEqualTo("곡명: 예시\n아티스트: 예시");
         assertThat(loadedSuggestion.getCreatedAt()).isNotNull();
+
+        SetlistItem loadedSetlistItem = em.find(SetlistItem.class, setlistItem.getId());
+        assertThat(loadedSetlistItem.getSongDifficulty().getId()).isEqualTo(difficulty.getId());
+        assertThat(loadedSetlistItem.getCreatedAt()).isNotNull();
 
         OptionRecord loaded = em.find(OptionRecord.class, record.getId());
         assertThat(loaded.getAchievementRate()).isEqualByComparingTo("98.76");

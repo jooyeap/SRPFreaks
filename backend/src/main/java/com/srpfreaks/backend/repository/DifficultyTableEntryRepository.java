@@ -28,4 +28,8 @@ public interface DifficultyTableEntryRepository extends JpaRepository<Difficulty
             where e.difficultyTable.id = :tableId and d.deleted = false and s.deleted = false
             """)
     List<DifficultyTableEntry> findAllForView(@Param("tableId") Long tableId);
+
+    /** 세트리스트 표시용: 한 표 안에서 여러 채보의 항목(기준 난이도)을 한 번에 읽는다. 채보 연결은 id만 쓰므로 fetch join이 필요 없다. */
+    List<DifficultyTableEntry> findByDifficultyTableIdAndSongDifficultyIdIn(Long difficultyTableId,
+                                                                          java.util.Collection<Long> songDifficultyIds);
 }
