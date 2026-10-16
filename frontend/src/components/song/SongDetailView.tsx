@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { SetlistToggleButton } from "@/components/setlist/SetlistToggleButton";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongDeleteControl } from "@/components/song/SongDeleteControl";
@@ -228,7 +229,10 @@ export function SongDetailView({
           </div>
         </div>
         <div className="contents md:flex md:flex-col md:gap-4">
-          <div className="order-2 md:order-none">{myRecord}</div>
+          <div className="order-2 flex flex-col gap-3 md:order-none">
+            {myRecord}
+            {chart ? <SetlistToggleButton variant="full" songDifficultyId={chart.id} title={data.title} /> : null}
+          </div>
           {isTable && found ? (
             <div className="order-4 md:order-none">
               <GroupSongList group={found.group} index={found.index} />

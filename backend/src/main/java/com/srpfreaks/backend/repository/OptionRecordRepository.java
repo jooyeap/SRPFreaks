@@ -89,4 +89,17 @@ public interface OptionRecordRepository extends JpaRepository<OptionRecord, Long
      * 항상 (userId, 채보) 두 조건을 함께 건다.
      */
     List<OptionRecord> findByUserIdAndSongDifficultyId(Long userId, Long songDifficultyId);
+
+    /**
+     * 채보별로 내 기록의 가장 최근 저장·수정 시각을 한 번에 가져온다(세트리스트 완료 판정, 채보마다 쿼리하면 N+1).
+     * user_id 조건이 항상 걸리고, 기록이 없는 채보는 결과에 없다.
+     */
+    @Query("""
+            select new com.srpfreaks.backend.repository.RecordLatestUpdate(r.songDifficulty.id, max(r.updatedAt))
+            from OptionRecord r
+            where r.user.id = :userId and r.noteOption = :noteOption and r.songDifficulty.id in :chartIds
+            group by r.songDifficulty.id
+            """)
+    List<RecordLatestUpdate> findLatestUpdates(@Param("userId") Long userId, @Param("noteOption") NoteOption noteOption,
+                                               @Param("chartIds") java.util.Collection<Long> chartIds);
 }

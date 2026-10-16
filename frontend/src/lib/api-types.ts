@@ -376,3 +376,23 @@ export interface SuggestionResponse {
 export interface AdminSuggestionResponse extends SuggestionResponse {
   authorNickname: string;
 }
+
+// ---- 세트리스트 (D36, 백엔드 SetlistItemResponse) ---------------------------------------------------
+
+/**
+ * 세트리스트 한 줄. tier는 서열표의 레이팅 상수 난이도(서열표에 없거나 미정이면 null), mine은 내 최고 기록(없으면 null).
+ * done은 담은 뒤에 이 채보 기록을 저장·수정했는지(서버가 계산한 값)다.
+ */
+export interface SetlistItemResponse {
+  id: number;
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  tier: number | null;
+  mine: MyRecord | null;
+  done: boolean;
+  createdAt: string;
+}

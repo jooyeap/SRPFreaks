@@ -75,12 +75,12 @@ describe("MyPageView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("제목과 레이팅·통계 탭을 보여 주고, 레이팅 탭에는 전체 달성 현황을 그리지 않는다", async () => {
+  it("제목과 레이팅·통계·세트리스트 탭을 보여 주고, 레이팅 탭에는 전체 달성 현황을 그리지 않는다", async () => {
     renderView("rating");
     expect(screen.getByRole("heading", { level: 1, name: "마이페이지" })).toBeInTheDocument();
 
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["레이팅", "통계"]);
+    expect(tabs.map((t) => t.textContent)).toEqual(["레이팅", "통계", "세트리스트"]);
     expect(screen.getByRole("tab", { name: "레이팅" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "통계" })).toHaveAttribute("aria-selected", "false");
     expect(await screen.findByRole("region", { name: "내 레이팅" })).toBeInTheDocument();
