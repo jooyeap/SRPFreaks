@@ -88,4 +88,12 @@ class SongRepositoryTest {
     void 키워드가_없는_목록은_삭제된_곡을_제외한다() {
         assertThat(songRepository.findByDeletedFalse(page).getTotalElements()).isEqualTo(2);
     }
+
+    @Test
+    void 오타_보정_후보는_삭제된_곡을_뺀_본명과_별칭이다() {
+        assertThat(songRepository.findAllTitles()).extracting(SongRepository.SongText::text)
+                .containsExactlyInAnyOrder("ネクロファンタジア", "100% Real");
+        assertThat(songRepository.findAllAliasTitles()).extracting(SongRepository.SongText::text)
+                .containsExactly("Necro Fantasia");
+    }
 }

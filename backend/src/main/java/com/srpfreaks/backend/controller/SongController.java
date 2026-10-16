@@ -3,12 +3,15 @@ package com.srpfreaks.backend.controller;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.SongDetailResponse;
 import com.srpfreaks.backend.dto.SongRequest;
+import com.srpfreaks.backend.dto.SongSuggestionResponse;
 import com.srpfreaks.backend.dto.SongSummaryResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.SongAdminService;
 import com.srpfreaks.backend.service.SongQueryService;
+import com.srpfreaks.backend.service.SongSuggestService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +38,7 @@ public class SongController {
 
     private final SongQueryService songQueryService;
     private final SongAdminService songAdminService;
+    private final SongSuggestService songSuggestService;
 
     @GetMapping
     public PageResponse<SongSummaryResponse> search(
@@ -43,6 +47,12 @@ public class SongController {
             @RequestParam(defaultValue = "" + SongQueryService.DEFAULT_PAGE_SIZE) int size,
             @RequestParam(required = false) String sort) {
         return songQueryService.search(q, page, size, sort);
+    }
+
+    /** 검색 결과가 없을 때 화면이 부르는 오타 보정("혹시 이 곡인가요?"). 최대 5곡이라 페이지네이션 대상이 아니다. */
+    @GetMapping("/suggest")
+    public List<SongSuggestionResponse> suggest(@RequestParam(required = false) String q) {
+        return songSuggestService.suggest(q);
     }
 
     @GetMapping("/{songId}")
