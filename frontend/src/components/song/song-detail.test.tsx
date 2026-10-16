@@ -343,7 +343,9 @@ describe("SongDetailView", () => {
     renderView("songs", 10, true);
     fireEvent.click(await screen.findByRole("button", { name: "기록 등록" }));
     expect(await screen.findByRole("heading", { name: "기록 등록", level: 2 })).toBeInTheDocument();
-    expect(await screen.findByLabelText("달성률")).toBeInTheDocument(); // 내 기록을 불러온 뒤에 폼이 나온다
+    // 이 채보에는 기록이 있어서 폼 전에 `기존 기록 수정 / 새 기록 등록`을 고른다
+    fireEvent.click(await screen.findByRole("button", { name: /^새 기록 등록/ }));
+    expect(await screen.findByLabelText("달성률")).toBeInTheDocument();
   });
 
   it("모바일 순서: 곡 정보 -> 내 기록(기록 등록 버튼) -> 나머지 정보 순으로 order가 붙고, md 이상에서는 풀린다", async () => {
