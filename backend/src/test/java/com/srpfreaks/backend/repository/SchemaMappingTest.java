@@ -18,6 +18,9 @@ import com.srpfreaks.backend.entity.SkillSnapshot;
 import com.srpfreaks.backend.entity.SkillSnapshotEntry;
 import com.srpfreaks.backend.entity.SnapshotGroup;
 import com.srpfreaks.backend.entity.Song;
+import com.srpfreaks.backend.entity.Suggestion;
+import com.srpfreaks.backend.entity.SuggestionCategory;
+import com.srpfreaks.backend.entity.SuggestionStatus;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
 import com.srpfreaks.backend.entity.TitleKind;
@@ -107,6 +110,9 @@ class SchemaMappingTest {
         em.persist(AuditLog.record(user, "SONG_IMPORT", "SONG", String.valueOf(song.getId()), Map.of("count", 1)));
         Notice notice = Notice.create(user, "업데이트 안내", "줄1\n줄2");
         em.persist(notice);
+        Suggestion suggestion = Suggestion.create(user, SuggestionCategory.SONG_REQUEST, "곡 추가 요청", "곡명: 예시\n아티스트: 예시");
+        suggestion.review(SuggestionStatus.REVIEWING, "확인 중입니다.");
+        em.persist(suggestion);
         SkillSnapshot snapshot = SkillSnapshot.create(user, NoteOption.SUPER_RANDOM_PLUS, LocalDate.of(2026, 10, 10),
                 new BigDecimal("8412.55"), new BigDecimal("3610.12"), new BigDecimal("4802.43"));
         em.persist(snapshot);
@@ -140,6 +146,13 @@ class SchemaMappingTest {
         assertThat(loadedNotice.getTitle()).isEqualTo("업데이트 안내");
         assertThat(loadedNotice.getContent()).isEqualTo("줄1\n줄2");
         assertThat(loadedNotice.getCreatedAt()).isNotNull();
+
+        Suggestion loadedSuggestion = em.find(Suggestion.class, suggestion.getId());
+        assertThat(loadedSuggestion.getCategory()).isEqualTo(SuggestionCategory.SONG_REQUEST);
+        assertThat(loadedSuggestion.getStatus()).isEqualTo(SuggestionStatus.REVIEWING);
+        assertThat(loadedSuggestion.getAdminNote()).isEqualTo("확인 중입니다.");
+        assertThat(loadedSuggestion.getContent()).isEqualTo("곡명: 예시\n아티스트: 예시");
+        assertThat(loadedSuggestion.getCreatedAt()).isNotNull();
 
         OptionRecord loaded = em.find(OptionRecord.class, record.getId());
         assertThat(loaded.getAchievementRate()).isEqualByComparingTo("98.76");
