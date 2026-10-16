@@ -128,13 +128,13 @@ class SchemaMappingTest {
         assertThat(loadedSnapshot.getTotalScore()).isEqualByComparingTo("8412.55");
         assertThat(loadedSnapshot.getNoteOption()).isEqualTo(NoteOption.SUPER_RANDOM_PLUS);
 
-        SkillSnapshotEntry loadedEntry = em.find(SkillSnapshotEntry.class, snapshotEntry.getId());
-        assertThat(loadedEntry.getListGroup()).isEqualTo(SnapshotGroup.SINGLE);
-        assertThat(loadedEntry.getListRank()).isEqualTo(1);
-        assertThat(loadedEntry.getAchievementRate()).isEqualByComparingTo("98.76");
-        assertThat(loadedEntry.isFullCombo()).isTrue();
-        assertThat(loadedEntry.getScore()).isEqualByComparingTo("42.10");
-        assertThat(loadedEntry.getSnapshot().getId()).isEqualTo(snapshot.getId());
+        SkillSnapshotEntry loadedSnapshotEntry = em.find(SkillSnapshotEntry.class, snapshotEntry.getId());
+        assertThat(loadedSnapshotEntry.getListGroup()).isEqualTo(SnapshotGroup.SINGLE);
+        assertThat(loadedSnapshotEntry.getListRank()).isEqualTo(1);
+        assertThat(loadedSnapshotEntry.getAchievementRate()).isEqualByComparingTo("98.76");
+        assertThat(loadedSnapshotEntry.isFullCombo()).isTrue();
+        assertThat(loadedSnapshotEntry.getScore()).isEqualByComparingTo("42.10");
+        assertThat(loadedSnapshotEntry.getSnapshot().getId()).isEqualTo(snapshot.getId());
 
         Notice loadedNotice = em.find(Notice.class, notice.getId());
         assertThat(loadedNotice.getTitle()).isEqualTo("업데이트 안내");
