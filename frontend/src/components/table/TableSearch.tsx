@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SongRequestLink } from "@/components/songs/SongRequestLink";
 import { SongSuggestions } from "@/components/songs/SongSuggestions";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
@@ -143,6 +144,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
                 </Link>
               </p>
               <SongSuggestions query={query} onPick={(title) => setText(title)} />
+              <SongRequestLink query={query} />
             </div>
           ) : (
             <>

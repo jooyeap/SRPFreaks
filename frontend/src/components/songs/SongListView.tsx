@@ -7,6 +7,7 @@ import { FolderSection } from "@/components/songs/FolderSection";
 import { SongListFilterPanel } from "@/components/songs/SongListFilterPanel";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { SongSearchBox } from "@/components/songs/SongSearchBox";
+import { SongRequestLink } from "@/components/songs/SongRequestLink";
 import { SongSuggestions } from "@/components/songs/SongSuggestions";
 import { AverageToggle } from "@/components/table/FilterChips";
 import { ApiError } from "@/lib/api";
@@ -95,7 +96,10 @@ export function SongListView({
         <div>
           <p className="text-sm text-fg-sub">{filtering ? "조건에 맞는 채보가 없습니다." : "등록된 곡이 아직 없습니다."}</p>
           {filters.q.trim() !== "" ? (
-            <SongSuggestions query={filters.q} onPick={(title) => onFiltersChange({ ...filters, q: title })} />
+            <>
+              <SongSuggestions query={filters.q} onPick={(title) => onFiltersChange({ ...filters, q: title })} />
+              <SongRequestLink query={filters.q} />
+            </>
           ) : null}
         </div>
       ) : (

@@ -354,3 +354,25 @@ export interface SongSuggestionResponse {
   artist: string | null;
   matchedText: string;
 }
+
+// ---- 건의사항 (D35, 백엔드 SuggestionResponse / AdminSuggestionResponse) ---------------------------
+
+export type SuggestionCategory = "SONG_REQUEST" | "IMPROVEMENT" | "BUG" | "OTHER";
+export type SuggestionStatus = "RECEIVED" | "REVIEWING" | "DONE" | "REJECTED";
+
+/** 내 건의 한 건. 처리 상태와 관리자 답변(없으면 null)이 함께 온다. */
+export interface SuggestionResponse {
+  id: number;
+  category: SuggestionCategory;
+  title: string;
+  content: string;
+  status: SuggestionStatus;
+  adminNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 관리자 목록의 한 건. 보낸 사람은 닉네임만 온다. */
+export interface AdminSuggestionResponse extends SuggestionResponse {
+  authorNickname: string;
+}

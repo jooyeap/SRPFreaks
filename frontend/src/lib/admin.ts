@@ -30,6 +30,7 @@ const ACTION_LABELS: Record<string, string> = {
   NOTICE_CREATE: "공지 등록",
   NOTICE_UPDATE: "공지 수정",
   NOTICE_DELETE: "공지 삭제",
+  SUGGESTION_REVIEW: "건의 처리",
   SETTING_UPDATE: "설정 변경",
 };
 
@@ -175,6 +176,7 @@ export interface AdminMenuItem {
 export const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
   { href: "/songs", title: "곡 관리", description: "곡 목록에서 곡을 등록하고, 곡 상세에서 곡·채보를 수정하거나 삭제합니다.", minRole: "ADMIN" },
   { href: "/table", title: "서열표 관리", description: "서열표에서 곡을 등록하고, 곡 상세에서 레이팅 상수 난이도·추천도·속성을 고칩니다.", minRole: "ADMIN" },
+  { href: "/admin/suggestions", title: "건의 관리", description: "곡 추가·개선사항·버그 제보를 확인하고 처리 상태와 답변을 남깁니다.", minRole: "ADMIN" },
   { href: "/admin/users", title: "사용자", description: "사용자 목록을 보고 관리자(ADMIN) 역할을 지정하거나 해제합니다.", minRole: "ROOT" },
   { href: "/admin/settings", title: "설정", description: "레이팅 계수, 재킷 표시, 연락처를 바꿉니다.", minRole: "ROOT" },
   { href: "/admin/audit-logs", title: "감사 로그", description: "관리 작업 기록을 최근 순으로 봅니다.", minRole: "ROOT" },
