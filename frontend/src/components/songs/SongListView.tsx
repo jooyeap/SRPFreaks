@@ -7,6 +7,7 @@ import { FolderSection } from "@/components/songs/FolderSection";
 import { SongListFilterPanel } from "@/components/songs/SongListFilterPanel";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { SongSearchBox } from "@/components/songs/SongSearchBox";
+import { SongSuggestions } from "@/components/songs/SongSuggestions";
 import { AverageToggle } from "@/components/table/FilterChips";
 import { ApiError } from "@/lib/api";
 import type { ChartFolderResponse } from "@/lib/api-types";
@@ -91,7 +92,12 @@ export function SongListView({
       ) : !folders.data ? (
         <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
       ) : folders.data.folders.length === 0 ? (
-        <p className="text-sm text-fg-sub">{filtering ? "조건에 맞는 채보가 없습니다." : "등록된 곡이 아직 없습니다."}</p>
+        <div>
+          <p className="text-sm text-fg-sub">{filtering ? "조건에 맞는 채보가 없습니다." : "등록된 곡이 아직 없습니다."}</p>
+          {filters.q.trim() !== "" ? (
+            <SongSuggestions query={filters.q} onPick={(title) => onFiltersChange({ ...filters, q: title })} />
+          ) : null}
+        </div>
       ) : (
         <>
           <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />

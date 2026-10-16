@@ -47,4 +47,16 @@ public interface SongRepository extends JpaRepository<Song, Long> {
                               where t.song = s and t.normalizedTitle like :normalizedPattern escape '!'))
             """)
     List<Long> searchIds(@Param("pattern") String pattern, @Param("normalizedPattern") String normalizedPattern);
+
+    /** 오타 보정 검색용: 곡 id와 표기 한 줄. 삭제된 곡은 제외한다. */
+    record SongText(Long songId, String text) {
+    }
+
+    /** 곡명 후보(곡 본명). 오타 보정은 곡이 수천 개 규모라 메모리에서 비교한다(SongSuggestService). */
+    @Query("select new com.srpfreaks.backend.repository.SongRepository$SongText(s.id, s.title) from Song s where s.deleted = false")
+    List<SongText> findAllTitles();
+
+    /** 곡명 후보(표기·별칭). 삭제된 곡의 표기는 제외한다. */
+    @Query("select new com.srpfreaks.backend.repository.SongRepository$SongText(t.song.id, t.title) from SongTitle t where t.song.deleted = false")
+    List<SongText> findAllAliasTitles();
 }

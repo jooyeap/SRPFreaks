@@ -346,3 +346,11 @@ export interface NoticeResponse {
   createdAt: string;
   updatedAt: string;
 }
+
+/** 곡 검색 오타 보정 후보 (GET /songs/suggest). matchedText는 검색어와 닮은 표기(본명 또는 별칭)다. */
+export interface SongSuggestionResponse {
+  songId: number;
+  title: string;
+  artist: string | null;
+  matchedText: string;
+}

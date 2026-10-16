@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SongSuggestions } from "@/components/songs/SongSuggestions";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { ApiError } from "@/lib/api";
@@ -134,12 +135,15 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
               {search.error instanceof ApiError ? search.error.message : "검색하지 못했습니다. 잠시 후 다시 시도해 주세요."}
             </p>
           ) : results.length === 0 ? (
-            <p className="text-sm text-fg-sub">
-              서열표에서 찾지 못했습니다.{" "}
-              <Link href={`/songs?q=${encodeURIComponent(query)}`} className="underline">
-                곡 목록에서 검색
-              </Link>
-            </p>
+            <div>
+              <p className="text-sm text-fg-sub">
+                서열표에서 찾지 못했습니다.{" "}
+                <Link href={`/songs?q=${encodeURIComponent(query)}`} className="underline">
+                  곡 목록에서 검색
+                </Link>
+              </p>
+              <SongSuggestions query={query} onPick={(title) => setText(title)} />
+            </div>
           ) : (
             <>
               <ul aria-label="검색 결과" className="flex flex-col gap-2">
