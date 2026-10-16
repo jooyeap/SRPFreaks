@@ -197,6 +197,7 @@ function RecordDialogBody({
               key={editing?.id ?? "new"}
               chart={chart}
               record={editing ?? undefined}
+              userId={user?.id}
               onSaved={onClose}
               onDeleted={onClose}
               onCancel={onClose}

@@ -233,6 +233,8 @@ export function DifficultyTableView({
             difficulty: recordTarget.entry.difficulty,
             level: recordTarget.entry.level,
             tier: recordTarget.tier,
+            pattern: recordTarget.entry.pattern,
+            ratingEnabled: recordTarget.entry.ratingEnabled,
           }
         }
         onClose={() => setRecordTarget(null)}

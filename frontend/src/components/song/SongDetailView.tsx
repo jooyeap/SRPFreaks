@@ -247,6 +247,8 @@ export function SongDetailView({
                 difficulty: chart.difficultyType,
                 level: chart.level,
                 tier: found ? found.group.tier : null, // 서열표에 있는 채보면 입력 중 점수를 바로 계산한다
+                pattern: found?.entry.pattern ?? null,
+                ratingEnabled: found?.entry.ratingEnabled,
               }
             : null
         }

@@ -24,6 +24,7 @@ import {
   type RecordResponse,
 } from "@/lib/records";
 import { chartTierAttrs, previewScore } from "@/lib/chart-tier";
+import { RatingPreviewLine } from "@/components/record/RatingPreviewLine";
 import { formatRate, formatScore, formatTier } from "@/lib/format";
 import { achievementStage } from "@/lib/stage";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
@@ -37,6 +38,10 @@ export interface RecordChart {
   level: number;
   /** 서열표의 레이팅 상수 난이도. 있으면 달성률을 입력하는 동안 점수를 바로 계산해 보여 준다. 미정이거나 모르면 null/생략 */
   tier?: number | null;
+  /** 서열표의 속성(단일/복합…/레이팅 제외). 입력 중 "예상 레이팅"의 구역을 정하는 데 쓴다. 모르면 생략 */
+  pattern?: string | null;
+  /** 서열표 줄의 레이팅 반영 스위치. false면 예상 레이팅을 보이지 않는다. 생략하면 켜진 것으로 본다 */
+  ratingEnabled?: boolean;
 }
 
 const FIELD_NAMES = ["achievementRate", "fullCombo", "playedDate", "memo"] as const;
@@ -54,6 +59,7 @@ function isFieldName(name: string): name is FieldName {
 export function RecordForm({
   chart,
   record,
+  userId,
   onSaved,
   onDeleted,
   onCancel,
@@ -61,6 +67,8 @@ export function RecordForm({
 }: {
   chart: RecordChart;
   record?: RecordResponse;
+  /** 로그인한 사용자 id. 있으면 입력 중 "예상 레이팅"을 보인다(내 레이팅 목록을 받아 계산) */
+  userId?: number;
   onSaved: (saved: RecordResponse) => void;
   onDeleted?: () => void;
   onCancel: () => void;
@@ -210,7 +218,8 @@ export function RecordForm({
       ) : null}
 
       {chart.tier !== undefined && chart.tier !== null ? (
-        <div aria-live="polite" className="flex items-baseline justify-between rounded-xl border border-line bg-card px-3.5 py-2.5">
+        <div aria-live="polite" className="flex flex-col gap-1 rounded-xl border border-line bg-card px-3.5 py-2.5">
+          <div className="flex items-baseline justify-between">
           <span className="text-xs font-bold text-fg-dim">
             예상 점수 <span className="font-normal">· 레이팅 상수 난이도 {formatTier(chart.tier)}</span>
           </span>
@@ -221,6 +230,8 @@ export function RecordForm({
           ) : (
             <span className="text-fg-faint">–</span>
           )}
+          </div>
+          {userId !== undefined ? <RatingPreviewLine userId={userId} chart={chart} score={preview} record={record} /> : null}
         </div>
       ) : null}
 

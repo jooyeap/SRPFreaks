@@ -158,4 +158,25 @@ describe("RecordForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
     expect(onCancel).toHaveBeenCalled();
   });
+
+  it("userId가 있으면 입력 중에 예상 레이팅(+점수, 새로 들어가면 NEW)을 보여 준다", async () => {
+    const entryOf = (id: number, score: number) => ({ rank: 1, songDifficultyId: id, songId: id, title: "x", score, pattern: "단일", tier: 6 });
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        json({
+          single: [entryOf(1, 300), entryOf(2, 200)], other: [], singleLimit: 2, otherLimit: 2,
+          totalScore: 500, singleScore: 500, otherScore: 0, tier: {}, noteOption: "SUPER_RANDOM_PLUS",
+        }),
+      ),
+    );
+    render(
+      <QueryClientProvider client={client}>
+        <RecordForm chart={{ ...chart, tier: 6.0, pattern: "단일" }} userId={1} onSaved={onSaved} onCancel={onCancel} />
+      </QueryClientProvider>,
+    );
+    fireEvent.change(rateInput(), { target: { value: "95" } }); // 304.00점 > 맨 아래 200
+    expect(await screen.findByText("예상 레이팅 +104.00 · NEW 레이팅 목록에 새로 들어갑니다")).toBeInTheDocument();
+    fireEvent.change(rateInput(), { target: { value: "50" } }); // 150점 < 200: 목록에 못 든다
+    expect(await screen.findByText(/레이팅 변화 없음 · 아직 레이팅 목록에는 들지 못합니다/)).toBeInTheDocument();
+  });
 });

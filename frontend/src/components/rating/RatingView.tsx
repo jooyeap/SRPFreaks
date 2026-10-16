@@ -140,7 +140,7 @@ export function RatingView({ userId }: { userId: number }) {
         skill={data}
         afterSummary={
           <>
-            <RatingInsights userId={userId} skill={data} />
+            <RatingInsights userId={userId} />
             <RatingTargetPlanner userId={userId} skill={data} />
           </>
         }
