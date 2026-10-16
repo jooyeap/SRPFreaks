@@ -53,7 +53,9 @@ public class OptionRecordService {
     // 정렬은 화이트리스트로만 받는다. id를 마지막에 붙여 같은 값일 때도 순서가 매번 같게 한다.
     private static final Map<String, Sort> SORTS = Map.of(
             "recent", Sort.by(Sort.Direction.DESC, "playedAt").and(Sort.by(Sort.Direction.DESC, "id")),
-            "rate", Sort.by(Sort.Direction.DESC, "achievementRate").and(Sort.by(Sort.Direction.DESC, "id")));
+            "rate", Sort.by(Sort.Direction.DESC, "achievementRate").and(Sort.by(Sort.Direction.DESC, "id")),
+            // entered = 내가 사이트에 입력(등록·수정)한 순서. recent(플레이한 날짜)와 달리 "방금 입력한 곡" 바로가기에 쓴다
+            "entered", Sort.by(Sort.Direction.DESC, "updatedAt").and(Sort.by(Sort.Direction.DESC, "id")));
 
     private final OptionRecordRepository optionRecordRepository;
     private final SongDifficultyRepository songDifficultyRepository;

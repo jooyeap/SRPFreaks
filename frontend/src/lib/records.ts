@@ -145,7 +145,35 @@ export function fetchRecordsOfChart(songDifficultyId: number, signal?: AbortSign
 export const recordKeys = {
   ofChart: (userId: number, songDifficultyId: number) => ["records", userId, songDifficultyId] as const,
   bestOfChart: (userId: number, songDifficultyId: number) => ["records", userId, songDifficultyId, "best"] as const,
+  recentEntered: (userId: number) => ["records", userId, "recent-entered"] as const,
 };
+
+/** 기록 창 맨 위 "최근 입력한 곡"에 보여 줄 곡 수 */
+export const RECENT_CHART_COUNT = 5;
+
+/**
+ * 최근에 입력(등록·수정)한 채보를 새것부터 중복 없이 최대 `count`개 모은다.
+ * 같은 채보를 여러 번 입력했으면 가장 최근 것만 센다. 입력 순서는 서버의 sort=entered(수정한 시각 최신순)를 따른다.
+ */
+export function distinctRecentCharts(records: readonly RecordResponse[], count: number = RECENT_CHART_COUNT): RecordResponse[] {
+  const seen = new Set<number>();
+  const result: RecordResponse[] = [];
+  for (const record of records) {
+    if (!seen.has(record.songDifficultyId)) {
+      seen.add(record.songDifficultyId);
+      result.push(record);
+      if (result.length === count) {
+        break;
+      }
+    }
+  }
+  return result;
+}
+
+/** 최근 입력한 기록들(중복 채보가 섞이므로 넉넉히 가져와 distinctRecentCharts로 줄인다). */
+export function fetchRecentEntered(signal?: AbortSignal): Promise<PageResponse<RecordResponse>> {
+  return apiFetch<PageResponse<RecordResponse>>("/records", { query: { sort: "entered", size: 20 }, signal });
+}
 
 /** 한 채보에서 달성률이 가장 높은 내 기록 1건 (없으면 null). 곡 상세의 "내 기록" 날짜에 쓴다. */
 export async function fetchBestRecord(songDifficultyId: number, signal?: AbortSignal): Promise<RecordResponse | null> {

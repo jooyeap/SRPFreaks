@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
-import { isEdited, isMaxRate, ratingChangeText, recordOriginText, seoulDateToInstant, toRecordRequest } from "@/lib/records";
+import { distinctRecentCharts, isEdited, isMaxRate, ratingChangeText, recordOriginText, seoulDateToInstant, toRecordRequest } from "@/lib/records";
 
 const TODAY = "2026-10-05";
 const schema = makeRecordSchema(() => TODAY);
@@ -144,5 +144,24 @@ describe("ratingChangeText", () => {
   it("목록 밖이면 이유를 알려 주고, 목록 안인데 점수가 같으면 그대로라고 한다", () => {
     expect(ratingChangeText({ ...base, change: 0, totalAfter: 10638.13, inList: false })).toBe("아직 레이팅 목록에는 들지 못했습니다.");
     expect(ratingChangeText({ ...base, change: 0, totalAfter: 10638.13 })).toBe("레이팅은 그대로입니다.");
+  });
+});
+
+describe("distinctRecentCharts", () => {
+  const rec = (id: number, chartId: number) => ({ id, songDifficultyId: chartId }) as Parameters<typeof distinctRecentCharts>[0][number];
+
+  it("같은 채보는 가장 최근 것만 남기고 순서를 지킨다", () => {
+    const result = distinctRecentCharts([rec(1, 10), rec(2, 20), rec(3, 10), rec(4, 30)]);
+    expect(result.map((r) => r.id)).toEqual([1, 2, 4]);
+  });
+
+  it("최대 개수에서 멈춘다 (기본 5곡)", () => {
+    const many = Array.from({ length: 9 }, (_, i) => rec(i + 1, i + 100));
+    expect(distinctRecentCharts(many)).toHaveLength(5);
+    expect(distinctRecentCharts(many, 2).map((r) => r.id)).toEqual([1, 2]);
+  });
+
+  it("기록이 없으면 빈 목록이다", () => {
+    expect(distinctRecentCharts([])).toEqual([]);
   });
 });
