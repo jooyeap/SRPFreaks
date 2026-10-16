@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useId, useState } from "react";
+import { Pager, usePaged } from "@/components/Pager";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { ApiError } from "@/lib/api";
@@ -168,30 +169,7 @@ function PlanList({
                   ))}
                 </button>
                 {expanded ? (
-                  <ul id={panelId} aria-label={`${formatTier(row.tier)} 채보`} className="flex flex-col border-t border-line">
-                    {row.entries.map((entry) => (
-                      <li key={entry.songDifficultyId} className="border-b border-line last:border-b-0">
-                        <Link href={tableSearchHref(entry)} className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-table-head">
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm text-fg">{entry.title}</span>
-                            <span className="mt-1 block">
-                              <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
-                            </span>
-                          </span>
-                          <span className="shrink-0 text-right">
-                            {entry.mine ? (
-                              <>
-                                <StageBadge stage={entry.mine.stage} />
-                                <span className="mt-0.5 block font-num text-xs text-fg-sub">{formatRate(entry.mine.rate)}</span>
-                              </>
-                            ) : (
-                              <span className="text-xs text-fg-faint">{EMPTY_MARK}</span>
-                            )}
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
+                  <TierEntryList id={panelId} label={`${formatTier(row.tier)} 채보`} entries={row.entries} />
                 ) : null}
               </li>
             );
@@ -209,5 +187,43 @@ function PlanList({
         </button>
       ) : null}
     </section>
+  );
+}
+
+/** 한 난이도에 채보가 수십 개일 수 있어 10개씩 나눠 보인다. 난이도 줄을 접으면 이 컴포넌트가 사라져 다음에 열 때 1쪽부터 다시 시작한다. */
+export const TIER_ENTRIES_PER_PAGE = 10;
+
+function TierEntryList({ id, label, entries }: { id: string; label: string; entries: PlanRow["entries"] }) {
+  const { page, totalPages, pageItems, setPage } = usePaged(entries, TIER_ENTRIES_PER_PAGE);
+  return (
+    <div className="border-t border-line">
+      <ul id={id} aria-label={label} className="flex flex-col">
+        {pageItems.map((entry) => (
+          <li key={entry.songDifficultyId} className="border-b border-line last:border-b-0">
+            <Link href={tableSearchHref(entry)} className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-table-head">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm text-fg">{entry.title}</span>
+                <span className="mt-1 block">
+                  <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
+                </span>
+              </span>
+              <span className="shrink-0 text-right">
+                {entry.mine ? (
+                  <>
+                    <StageBadge stage={entry.mine.stage} />
+                    <span className="mt-0.5 block font-num text-xs text-fg-sub">{formatRate(entry.mine.rate)}</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-fg-faint">{EMPTY_MARK}</span>
+                )}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <div className="py-2">
+        <Pager page={page} totalPages={totalPages} onChange={setPage} />
+      </div>
+    </div>
   );
 }
