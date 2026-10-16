@@ -47,9 +47,18 @@ describe("PlayerListView", () => {
 
   it("같은 닉네임이 둘이어도 userId로 구분되는 서로 다른 링크가 된다", async () => {
     fetchMock.mockResolvedValue(json(pageOf([player(1, 1, "たろう", 10), player(2, 2, "たろう", 5)])));
-    renderWith(<PlayerListView viewerId={1} />);
+    renderWith(<PlayerListView viewerId={99} />);
     const hrefs = (await screen.findAllByRole("link", { name: /たろう/ })).map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual(["/players/1", "/players/2"]);
+  });
+
+  it("본인 줄은 상세가 아니라 마이페이지(/me)로 연결하고, 다른 유저는 상세로 연결한다", async () => {
+    fetchMock.mockResolvedValue(json(pageOf([player(7, 1, "あか", 100), player(1, 2, "내닉네임", 50)])));
+    renderWith(<PlayerListView viewerId={1} />);
+
+    const list = await screen.findByRole("list", { name: "유저 목록" });
+    const hrefs = within(list).getAllByRole("link").map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual(["/players/7", "/me"]);
   });
 
   it("공개한 유저가 없으면 안내 문구를 보여 준다", async () => {
