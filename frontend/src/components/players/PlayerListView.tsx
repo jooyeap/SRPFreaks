@@ -46,7 +46,7 @@ export function PlayerListView({ viewerId }: { viewerId: number }) {
         <>
           <ul aria-label="유저 목록" className="overflow-hidden rounded-[14px] border border-line bg-card">
             {data.content.map((player) => (
-              <PlayerRow key={player.userId} player={player} />
+              <PlayerRow key={player.userId} player={player} viewerId={viewerId} />
             ))}
           </ul>
           <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">

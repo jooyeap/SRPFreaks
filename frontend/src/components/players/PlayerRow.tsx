@@ -4,12 +4,14 @@ import type { PlayerSummaryResponse } from "@/lib/api-types";
 
 /**
  * 유저 목록의 한 줄: 순위 · 닉네임 · 플레이어 티어 칩 · 총점. 줄 전체가 상세로 가는 링크다.
+ * 보는 사람 본인의 줄(viewerId와 같은 userId)은 읽기 전용 상세가 아니라 마이페이지(`/me`)로 보낸다 — 본인은 거기서 기록을 고칠 수 있다.
  * 티어는 칩 안의 글자(`Gold` 등)로도 알 수 있어 색만으로 구분하지 않는다. 이메일 등은 서버가 주지 않아 화면에도 없다.
  */
-export function PlayerRow({ player }: { player: PlayerSummaryResponse }) {
+export function PlayerRow({ player, viewerId }: { player: PlayerSummaryResponse; viewerId?: number }) {
+  const href = player.userId === viewerId ? "/me" : `/players/${player.userId}`;
   return (
     <li className="border-t border-row-line first:border-t-0">
-      <Link href={`/players/${player.userId}`} className="flex items-center gap-5 px-4 py-3.5 hover:bg-table-head">
+      <Link href={href} className="flex items-center gap-5 px-4 py-3.5 hover:bg-table-head">
         <span className="w-8 shrink-0 text-center font-num text-base font-semibold text-fg-dim">{player.rank}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-fg">{player.nickname}</span>
