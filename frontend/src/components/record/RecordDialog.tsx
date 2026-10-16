@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { RecordForm, type RecordChart } from "@/components/record/RecordForm";
 import { RecordList } from "@/components/record/RecordList";
-import { fetchRecordsOfChart, recordKeys, type RecordResponse } from "@/lib/records";
+import { formatRate } from "@/lib/format";
+import { fetchRecordsOfChart, recordKeys, recordOriginText, type RecordResponse } from "@/lib/records";
 
 /** 달성률이 가장 높은 기록(서열표에 보이는 기록). 같으면 목록 앞(더 최근) */
 function bestOf(records: readonly RecordResponse[] | undefined): RecordResponse | null {
@@ -130,6 +131,13 @@ function RecordDialogBody({
               </button>
             ) : null}
           </div>
+          <p className="mb-3 text-xs leading-relaxed text-fg-sub">
+            {editing
+              ? `수정 중인 기록: 달성률 ${formatRate(editing.achievementRate)}${editing.fullCombo ? " · FC" : ""} · ${recordOriginText(editing)}`
+              : hasRecords
+                ? "새 기록을 등록합니다. 기존 기록은 그대로 남습니다."
+                : "이 채보의 첫 기록을 등록합니다."}
+          </p>
           <RecordList songDifficultyId={chartId} editingId={editing?.id ?? null} onEdit={setPicked} />
           {loadingRecords ? (
             <p className="text-sm text-fg-sub">불러오는 중입니다.</p>

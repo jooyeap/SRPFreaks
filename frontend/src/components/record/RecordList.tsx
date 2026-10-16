@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/AuthProvider";
 import { StageBadge } from "@/components/table/StageBadge";
 import { formatPlayedDate, formatRate } from "@/lib/format";
-import { fetchRecordsOfChart, recordKeys, type RecordResponse } from "@/lib/records";
+import { fetchRecordsOfChart, isEdited, recordKeys, recordOriginText, type RecordResponse } from "@/lib/records";
 
 /**
  * 이 채보에 내가 남긴 기록 목록 (DESIGN-UI 10장 "이 곡의 내 기록": 달성률 · 단계 칩 · 날짜).
@@ -41,7 +41,14 @@ export function RecordList({
           >
             <span className="font-num font-semibold text-fg">{formatRate(record.achievementRate)}</span>
             <StageBadge stage={record.stage} />
-            <span className="font-num text-xs text-fg-dim">{formatPlayedDate(record.playedAt)}</span>
+            {/* 플레이 날짜(내가 입력한 값)와 서버에 등록·수정한 날짜는 다르므로 두 줄로 나눠 보여 준다 */}
+            <span className="flex min-w-0 flex-col font-num text-xs leading-tight text-fg-dim">
+              <span>플레이 {formatPlayedDate(record.playedAt)}</span>
+              <span>
+                {isEdited(record) ? <span className="font-bold text-fg-sub">수정됨 · </span> : null}
+                {recordOriginText(record)}
+              </span>
+            </span>
             <button
               type="button"
               onClick={() => onEdit(record)}
