@@ -131,7 +131,7 @@ describe("SkillSnapshotPanel", () => {
       expect(screen.queryByRole("button", { name: "2026-10-01 기록을 이전 기록과 비교" })).not.toBeInTheDocument();
     });
 
-    it("누르기 전에는 비교를 불러오지 않고, 누르면 새로 들어온 곡에 NEW를 붙여 보여 준다", async () => {
+    it("누르기 전에는 비교를 불러오지 않고, 누르면 기록 갱신에 새로 들어온 곡 NEW와 오른 곡을 묶어 보여 준다", async () => {
       compare = {
         ...emptyCompare,
         entered: [change(1, "Alpha", null, 35.5)],
@@ -144,13 +144,17 @@ describe("SkillSnapshotPanel", () => {
       expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/compare"))).toBe(false);
 
       fireEvent.click(compareButton("2026-10-09"));
-      const entered = await screen.findByRole("region", { name: "새로 들어온 곡" });
-      expect(within(entered).getByText("NEW")).toBeInTheDocument();
-      expect(within(entered).getByText("Alpha")).toBeInTheDocument();
+      const updated = await screen.findByRole("region", { name: "기록 갱신" });
+      expect(within(updated).getByText("NEW")).toBeInTheDocument();
+      expect(within(updated).getByText("Alpha")).toBeInTheDocument();
+      // 새로 들어온 곡(Alpha)과 오른 곡(Beta)이 한 묶음에 있고 NEW는 새로 들어온 곡에만 붙는다
+      const rows = within(updated).getAllByRole("listitem");
+      expect(rows).toHaveLength(2);
+      expect(within(updated).getAllByText("NEW")).toHaveLength(1);
       // 점수는 티어 색을 위해 각각 span이라 줄 전체 글자로 확인한다
-      expect(within(screen.getByRole("region", { name: "점수가 오른 곡" })).getByRole("listitem")).toHaveTextContent(/30\.00 → 35\.50 \(\+5\.50\)/);
+      expect(rows[1]).toHaveTextContent(/30\.00 → 35\.50 \(\+5\.50\)/);
       expect(within(screen.getByRole("region", { name: "점수가 내려간 곡" })).getByRole("listitem")).toHaveTextContent(/\(-2\.00\)/);
-      expect(within(screen.getByRole("region", { name: "목록에서 밀려난 곡" })).getByRole("listitem")).toHaveTextContent(/목록 밖/);
+      expect(within(screen.getByRole("region", { name: "후보곡" })).getByRole("listitem")).toHaveTextContent(/목록 밖/);
     });
 
     it("이전·이후 점수는 각각 자기 점수의 티어 색을 갖고, 숫자 글자도 그대로 보인다", async () => {
@@ -160,13 +164,13 @@ describe("SkillSnapshotPanel", () => {
       await screen.findByRole("list", { name: "레이팅 기록 목록" });
       fireEvent.click(compareButton("2026-10-09"));
 
-      const row = within(await screen.findByRole("region", { name: "점수가 오른 곡" })).getByRole("listitem");
+      const row = within(await screen.findByRole("region", { name: "기록 갱신" })).getByRole("listitem");
       const before = within(row).getByText("20.00");
       const after = within(row).getByText("30.00");
       expect(before).toHaveAttribute("data-tier", "WHITE_GRADIENT"); // 12.5 이상 25 미만
       expect(after).toHaveAttribute("data-tier", "ORANGE"); // 25 이상 37.5 미만
       expect(before).toHaveClass("tier-score");
-      const left = within(screen.getByRole("region", { name: "목록에서 밀려난 곡" })).getByText("30.00");
+      const left = within(screen.getByRole("region", { name: "후보곡" })).getByText("30.00");
       expect(left).toHaveAttribute("data-tier", "ORANGE");
     });
 
