@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Pager, usePaged } from "@/components/Pager";
 import { useToast } from "@/components/Toast";
+import { SetlistSearch } from "@/components/setlist/SetlistSearch";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import type { RecordChart } from "@/components/record/RecordForm";
 import { ChartBadge } from "@/components/table/Badges";
@@ -28,7 +29,7 @@ function errorText(error: unknown): string {
 
 /**
  * 마이페이지 `세트리스트` 탭 (D36): 게임장에 가기 전에 담아 둔 오늘 칠 채보 목록.
- * 줄마다 `기록 입력`(기존 기록 창)이 있고, 저장하면 서버가 계산한 `완료` 표시가 붙는다(줄은 지워지지 않는다).
+ * 위쪽 검색창(SetlistSearch)으로 곡을 찾아 담는다. 줄마다 `기록 입력`(기존 기록 창)이 있고, 저장하면 서버가 계산한 `완료` 표시가 붙는다(줄은 지워지지 않는다).
  * `완료한 곡 비우기`로 다음 방문 전에 한 번에 정리한다. 30곡까지 담을 수 있어 10개씩 나눠 보인다.
  */
 export function SetlistTab({ userId }: { userId: number }) {
@@ -72,6 +73,7 @@ export function SetlistTab({ userId }: { userId: number }) {
   const done = doneCount(items);
   return (
     <div className="flex flex-col gap-3">
+      <SetlistSearch userId={userId} addedIds={new Set(items.map((i) => i.songDifficultyId))} full={items.length >= SETLIST_LIMIT} />
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-fg-sub">
           완료 <span className="font-num text-fg">{done}</span> / 전체 <span className="font-num text-fg">{items.length}</span>
@@ -89,7 +91,7 @@ export function SetlistTab({ userId }: { userId: number }) {
 
       {items.length === 0 ? (
         <p className="text-sm text-fg-sub">
-          담은 곡이 없습니다. 곡 목록, 서열표, 곡 상세에서 곡 옆의 세트리스트 버튼을 눌러 오늘 칠 곡을 담아 보세요.
+          담은 곡이 없습니다. 위 검색창에서 오늘 칠 곡을 찾아 담아 보세요.
         </p>
       ) : (
         <>

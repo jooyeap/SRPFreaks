@@ -3,8 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { SetlistTab } from "@/components/setlist/SetlistTab";
-import { SetlistToggleButton } from "@/components/setlist/SetlistToggleButton";
-import type { SetlistItemResponse } from "@/lib/api-types";
+import type { ChartRowResponse, SetlistItemResponse } from "@/lib/api-types";
 import { clearAccessToken } from "@/lib/auth-token";
 
 vi.mock("@/lib/google", () => ({ loadGoogleIdentity: vi.fn(() => Promise.resolve({ disableAutoSelect: vi.fn() })) }));
@@ -29,11 +28,16 @@ const AUTH = {
   user: { id: 1, email: "a@example.com", nickname: null, role: "USER", createdAt: "2026-10-01T00:00:00Z" },
 };
 
+function chartRow(id: number, title: string): ChartRowResponse {
+  return { songDifficultyId: id, songId: id, title, addedVersion: null, part: "GUITAR", difficulty: "MASTER", level: 9.5, mine: null };
+}
+
 describe("세트리스트", () => {
   const fetchMock = vi.fn<typeof fetch>();
   /** 응답 상태를 바꿔 가며 쓰는 가짜 서버: 세트리스트 목록과 로그인 복구만 응답한다. */
   let listed: SetlistItemResponse[] = [];
   let loggedIn = true;
+  let found: ChartRowResponse[] = [];
   const calls = (method: string) =>
     fetchMock.mock.calls.filter(([input, init]) => String(input).includes("/setlist") && (init?.method ?? "GET") === method);
 
@@ -41,6 +45,7 @@ describe("세트리스트", () => {
     clearAccessToken();
     listed = [];
     loggedIn = true;
+    found = [];
     fetchMock.mockReset();
     fetchMock.mockImplementation((input, init) => {
       const url = String(input);
@@ -50,6 +55,7 @@ describe("세트리스트", () => {
       if (url.includes("/setlist") && method === "POST") return Promise.resolve(json(item(9), 201));
       if (url.includes("/setlist") && method === "DELETE") return Promise.resolve(new Response(null, { status: 204 }));
       if (url.includes("/setlist")) return Promise.resolve(json(pageOf(listed)));
+      if (url.includes("/songs/charts")) return Promise.resolve(json({ content: found, page: 0, size: 10, totalElements: found.length, totalPages: 1 }));
       if (url.includes("/records")) return Promise.resolve(json({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }));
       return Promise.resolve(json({}));
     });
@@ -65,47 +71,6 @@ describe("세트리스트", () => {
       </QueryClientProvider>,
     );
   }
-
-  describe("SetlistToggleButton", () => {
-    it("담기 전에는 담기 버튼이고, 누르면 POST로 채보를 담는다", async () => {
-      renderWith(<SetlistToggleButton songDifficultyId={55} title="테스트곡" />);
-      const button = await screen.findByRole("button", { name: "테스트곡 세트리스트에 담기" });
-      await waitFor(() => expect(button).toBeEnabled()); // 목록을 받기 전에는 담김 여부를 몰라 막아 둔다
-      expect(button).toHaveAttribute("aria-pressed", "false");
-
-      fireEvent.click(button);
-
-      await waitFor(() => expect(calls("POST")).toHaveLength(1));
-      expect(JSON.parse(String(calls("POST")[0][1]?.body))).toEqual({ songDifficultyId: 55 });
-    });
-
-    it("이미 담긴 채보는 담김 상태로 보이고, 누르면 그 줄을 DELETE로 뺀다", async () => {
-      listed = [item(7, { songDifficultyId: 55 })];
-      renderWith(<SetlistToggleButton songDifficultyId={55} title="테스트곡" />);
-      const button = await screen.findByRole("button", { name: "테스트곡 세트리스트에서 빼기" });
-      expect(button).toHaveAttribute("aria-pressed", "true");
-
-      await waitFor(() => expect(button).toBeEnabled());
-      fireEvent.click(button);
-
-      await waitFor(() => expect(calls("DELETE")).toHaveLength(1));
-      expect(String(calls("DELETE")[0][0])).toMatch(/\/setlist\/7$/);
-    });
-
-    it("곡 상세용 큰 버튼은 글자로 담김 여부를 보여 준다", async () => {
-      listed = [item(7, { songDifficultyId: 55 })];
-      renderWith(<SetlistToggleButton variant="full" songDifficultyId={55} title="테스트곡" />);
-      expect(await screen.findByText("세트리스트에 담김")).toBeInTheDocument();
-    });
-
-    it("로그인하지 않았으면 아무것도 그리지 않고 세트리스트를 요청하지 않는다", async () => {
-      loggedIn = false;
-      renderWith(<SetlistToggleButton songDifficultyId={55} title="테스트곡" />);
-      await waitFor(() => expect(fetchMock.mock.calls.some(([input]) => String(input).endsWith("/auth/refresh"))).toBe(true));
-      expect(screen.queryByRole("button")).toBeNull();
-      expect(calls("GET")).toHaveLength(0);
-    });
-  });
 
   describe("SetlistTab", () => {
     it("완료 개수와 줄마다 완료·미완료 글자, 내 최고 기록을 보여 준다", async () => {
@@ -127,6 +92,7 @@ describe("세트리스트", () => {
     it("비어 있으면 담는 방법을 안내하고 비우기 버튼은 막혀 있다", async () => {
       renderWith(<SetlistTab userId={1} />);
       expect(await screen.findByText(/담은 곡이 없습니다/)).toBeInTheDocument();
+      expect(screen.getByText(/위 검색창에서/)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "완료한 곡 비우기" })).toBeDisabled();
     });
 
@@ -168,6 +134,60 @@ describe("세트리스트", () => {
 
       expect(await screen.findByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
       await waitFor(() => expect(screen.getByLabelText("달성률")).toBeInTheDocument());
+    });
+  });
+  describe("곡 검색해서 담기", () => {
+    const search = (text: string) => fireEvent.change(screen.getByRole("searchbox", { name: "곡 검색" }), { target: { value: text } });
+    const searchCalls = () => fetchMock.mock.calls.filter(([input]) => String(input).includes("/songs/charts"));
+
+    it("검색어가 없으면 검색을 요청하지 않는다", async () => {
+      renderWith(<SetlistTab userId={1} />);
+      await screen.findByText(/담은 곡이 없습니다/);
+      expect(searchCalls()).toHaveLength(0);
+    });
+
+    it("검색하면 채보 목록이 나오고 담기를 누르면 POST로 그 채보를 담는다", async () => {
+      found = [chartRow(55, "테스트곡")];
+      renderWith(<SetlistTab userId={1} />);
+      await screen.findByText(/담은 곡이 없습니다/);
+
+      search("테스트");
+      const button = await screen.findByRole("button", { name: "테스트곡 세트리스트에 담기" });
+      expect(String(searchCalls()[0][0])).toContain("q=%ED%85%8C%EC%8A%A4%ED%8A%B8"); // 검색어 "테스트"
+      fireEvent.click(button);
+
+      await waitFor(() => expect(calls("POST")).toHaveLength(1));
+      expect(JSON.parse(String(calls("POST")[0][1]?.body))).toEqual({ songDifficultyId: 55 });
+    });
+
+    it("이미 담은 채보는 담김 글자로 보이고 누를 수 없다", async () => {
+      listed = [item(5, { songDifficultyId: 55, title: "테스트곡" })];
+      found = [chartRow(55, "테스트곡")];
+      renderWith(<SetlistTab userId={1} />);
+      await screen.findByRole("list", { name: "세트리스트" });
+
+      search("테스트");
+      const button = await screen.findByRole("button", { name: "테스트곡 세트리스트에 담김" });
+      expect(button).toBeDisabled();
+      expect(button).toHaveTextContent("담김");
+    });
+
+    it("30곡이 차 있으면 담기를 모두 막고 안내한다", async () => {
+      listed = Array.from({ length: 30 }, (_, i) => item(i + 1));
+      found = [chartRow(999, "새곡")];
+      renderWith(<SetlistTab userId={1} />);
+      await screen.findByRole("list", { name: "세트리스트" });
+
+      search("새");
+      expect(await screen.findByRole("button", { name: "새곡 세트리스트에 담기" })).toBeDisabled();
+      expect(screen.getByText(/30곡이 모두 담겨 있습니다/)).toBeInTheDocument();
+    });
+
+    it("검색 결과가 없으면 안내한다", async () => {
+      renderWith(<SetlistTab userId={1} />);
+      await screen.findByText(/담은 곡이 없습니다/);
+      search("없는곡");
+      expect(await screen.findByText("검색 결과가 없습니다.")).toBeInTheDocument();
     });
   });
 });
