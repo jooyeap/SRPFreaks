@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
-import { TableProgressCard } from "@/components/home/TableProgressCard";
+import { ProgressCard, type ProgressPanel } from "@/components/home/ProgressCard";
 import type {
+  ChartFolderListResponse,
+  ChartFolderResponse,
   DifficultyTableResponse,
   PageResponse,
   PlayerSummaryResponse,
@@ -11,6 +13,7 @@ import type {
   TierGroupResponse,
 } from "@/lib/api-types";
 import { tableProgress } from "@/lib/difficulty-table";
+import { folderProgress } from "@/lib/progress";
 
 const table: DifficultyTableResponse = {
   id: 3,
@@ -54,6 +57,16 @@ const players: PlayerSummaryResponse[] = [
   { userId: 7, rank: 1, nickname: "あか", tier: { key: "GOLD", displayName: "Gold", minScore: 5500, nextMinScore: 6000, nextDisplayName: "Platinum" }, totalScore: 5842.6 },
 ];
 const playersPage: PageResponse<PlayerSummaryResponse> = { content: players, page: 0, size: 5, totalElements: 1, totalPages: 1 };
+
+function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
+  return { lo: 9.5, hi: 9.99, total: 10, recorded: 6, exc: 1, fc: 1, ss: 1, s: 2, belowS: 1, averageRecorded: 90, averageWithZero: 54, subFolders: [], ...over };
+}
+const foldersBody: ChartFolderListResponse = {
+  totalSongs: 30,
+  totalCharts: 30,
+  versions: [],
+  folders: [folder({ lo: 9.5, hi: 9.99 }), folder({ lo: 9, hi: 9.49, total: 20, recorded: 4, exc: 0, fc: 0, ss: 1, s: 1, belowS: 2 })],
+};
 
 const groups = [group({ tier: 5.8 }), group({ tier: 5.0, total: 20, recorded: 20, exc: 20, ss: 0, s: 0, belowS: 0 }), group({ tier: null, total: 2, recorded: 0, exc: 0, ss: 0, s: 0, belowS: 0 })];
 
@@ -111,6 +124,7 @@ describe("HomeDashboard", () => {
   it("내 레이팅 요약, 서열표 진행도(전체·묶음별), 바로가기를 보여 준다", async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
       if (url.includes("/skills/me")) return Promise.resolve(json(skill));
       if (url.includes("/players")) return Promise.resolve(json(playersPage));
       if (url.includes("/entries")) {
@@ -127,7 +141,9 @@ describe("HomeDashboard", () => {
 
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
     expect(progress).toHaveTextContent("기록 24/32");
-    expect(within(progress).getByRole("list", { name: "전체 달성 현황" })).toHaveTextContent("EXC 21");
+    const legend = within(progress).getByRole("list", { name: "전체 달성 현황" });
+    expect(within(legend).getByLabelText("달성 단계 EXC").closest("li")).toHaveTextContent("21");
+    expect(legend).toHaveTextContent("기록 없음8");
     // 묶음별 진행: 각 줄은 묶음 페이지로 가는 링크
     const rows = within(within(progress).getByRole("list", { name: "묶음별 진행" })).getAllByRole("link");
     expect(rows.map((r) => r.getAttribute("href"))).toEqual([
@@ -146,7 +162,13 @@ describe("HomeDashboard", () => {
     expect(rows[1].querySelector("[data-stage-bar].ring-done")).not.toBeNull();
     expect(rows[0].querySelector("[data-stage-bar].ring-done")).toBeNull();
     expect(rows[2].closest("li")).not.toHaveAttribute("data-done"); // 기록 0/2는 완료가 아니다
-    expect(progress.querySelector(":scope > div [data-stage-bar].ring-done")).toBeNull(); // 전체는 아직 다 채우지 않았다
+    // 다음 목표: SS 이상(EXC 21 + SS 1 = 22곡)을 다음 10곡 단위(30곡)까지. 가장 빈 구간은 5.8(4/10, 미정은 후보가 아니다)
+    expect(progress).toHaveTextContent("SS 이상 22곡 → 30곡까지 8곡 남음");
+    expect(rows[0].closest("li")).toHaveAttribute("data-weak", "true");
+    expect(rows[0]).toHaveTextContent("약함");
+    expect(rows[1].closest("li")).not.toHaveAttribute("data-weak");
+    expect(progress).toHaveTextContent("5.8 구간이 가장 비어 있어요. 기록 없는 채보 6곡");
+    expect(within(progress).getByRole("link", { name: "구간 보기" })).toHaveAttribute("href", "/table/folder/5.8");
 
     expect(screen.getByRole("link", { name: /^서열표.*레이팅 상수 난이도별로/ })).toHaveAttribute("href", "/table");
     expect(screen.getByRole("link", { name: /^마이페이지.*달성 현황/ })).toHaveAttribute("href", "/me");
@@ -161,6 +183,7 @@ describe("HomeDashboard", () => {
   it("공개한 유저가 없으면 설정에서 공개할 수 있다는 안내를 보여 준다", async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
       if (url.includes("/players")) return Promise.resolve(json({ ...playersPage, content: [], totalElements: 0, totalPages: 0 }));
       return Promise.resolve(url.includes("/skills/me") ? json(skill) : json([{ ...table, noteOption: "NORMAL" }]));
     });
@@ -173,6 +196,7 @@ describe("HomeDashboard", () => {
   it("유저 목록을 못 불러와도 홈의 나머지는 그대로 보여 준다", async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
       if (url.includes("/players")) return Promise.resolve(json({ code: "INTERNAL", message: "x", timestamp: "t" }, 500));
       return Promise.resolve(url.includes("/skills/me") ? json(skill) : json([{ ...table, noteOption: "NORMAL" }]));
     });
@@ -184,6 +208,7 @@ describe("HomeDashboard", () => {
   it("레이팅이 실패해도 서열표 진행도는 보여 주고, 실패한 칸에만 안내를 둔다", async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
       if (url.includes("/skills/me")) return Promise.resolve(json({ code: "INTERNAL", message: "x", timestamp: "t" }, 500));
       if (url.includes("/players")) return Promise.resolve(json(playersPage));
       if (url.includes("/entries")) {
@@ -200,6 +225,7 @@ describe("HomeDashboard", () => {
   it("SRN+ 서열표가 없으면 안내 문구를 보여 준다", async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
       if (url.includes("/players")) return Promise.resolve(json(playersPage));
       return Promise.resolve(url.includes("/skills/me") ? json(skill) : json([{ ...table, noteOption: "NORMAL" }]));
     });
@@ -208,33 +234,67 @@ describe("HomeDashboard", () => {
   });
 });
 
-describe("TableProgressCard 단계 비율 막대", () => {
+function ready(progress: ReturnType<typeof tableProgress>): ProgressPanel {
+  return { kind: "ready", progress };
+}
+const loading: ProgressPanel = { kind: "loading" };
+
+describe("ProgressCard 도넛", () => {
+  const arcsOf = (card: HTMLElement) =>
+    Array.from(card.querySelectorAll("[data-donut] [data-arc]")).map((el) => ({
+      stage: el.getAttribute("data-arc"),
+      length: Number.parseFloat(el.getAttribute("stroke-dasharray")!.split(" ")[0]),
+      offset: Number.parseFloat(el.getAttribute("stroke-dashoffset")!),
+    }));
+  const CIRCUMFERENCE = 2 * Math.PI * 40;
+
+  it("EXC/FC/SS/S/S 미만을 개수 비율대로 높은 단계부터 이어 붙인다 (개수 0인 호는 만들지 않는다)", () => {
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })]))} songs={loading} />);
+    const arcs = arcsOf(screen.getByRole("region", { name: "서열표 진행도" }));
+    expect(arcs.map((a) => a.stage)).toEqual(["EXC", "FC", "S", "A"]);
+    expect(arcs[0].length).toBeCloseTo(0.1 * CIRCUMFERENCE, 3);
+    expect(arcs[1].length).toBeCloseTo(0.2 * CIRCUMFERENCE, 3);
+    // 앞 호들이 차지한 길이만큼 뒤로 밀려서 이어진다 (EXC 10% + FC 20% = 30%)
+    expect(arcs[0].offset).toBeCloseTo(0, 3);
+    expect(arcs[1].offset).toBeCloseTo(-0.1 * CIRCUMFERENCE, 3);
+    expect(arcs[2].offset).toBeCloseTo(-0.3 * CIRCUMFERENCE, 3);
+  });
+
+  it("가운데에 기록 퍼센트와 기록/전체를 글자로 보여 주고, 범례에 기록 없음 개수가 있다", () => {
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })]))} songs={loading} />);
+    const card = screen.getByRole("region", { name: "서열표 진행도" });
+    expect(card).toHaveTextContent("60%");
+    expect(card).toHaveTextContent("기록 6/10");
+    expect(within(card).getByRole("list", { name: "전체 달성 현황" })).toHaveTextContent("기록 없음4");
+  });
+
+  it("전체가 0이면 호 없이 0%만 보인다", () => {
+    render(<ProgressCard table={ready(tableProgress([]))} songs={loading} />);
+    const card = screen.getByRole("region", { name: "서열표 진행도" });
+    expect(arcsOf(card)).toHaveLength(0);
+    expect(card).toHaveTextContent("0%");
+    expect(card).not.toHaveTextContent("다음 목표");
+    expect(within(card).queryByRole("link", { name: "구간 보기" })).toBeNull();
+  });
+});
+
+describe("ProgressCard 칸 지도", () => {
   const widthsOf = (bar: Element) =>
     Array.from(bar.querySelectorAll("[data-stage]")).map((el) => [el.getAttribute("data-stage"), (el as HTMLElement).style.width]);
 
-  it("전체 막대는 EXC/FC/SS/S/S 미만을 개수 비율대로 높은 단계부터 칸으로 나눈다", () => {
-    render(<TableProgressCard progress={tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })])} />);
-    const bar = screen.getByRole("region", { name: "서열표 진행도" }).querySelector("[data-stage-bar]")!;
-    // 개수 0인 SS 칸은 만들지 않는다. S 미만은 A 색을 쓴다. 남은 4/10(기록 없음)은 바탕색이다
-    expect(widthsOf(bar)).toEqual([
-      ["EXC", "10%"],
-      ["FC", "20%"],
-      ["S", "20%"],
-      ["A", "10%"],
-    ]);
-  });
-
-  it("묶음 줄에도 같은 비율 막대가 있고, 합친 줄(6.5 이상)은 합친 숫자로 그린다", () => {
+  it("칸마다 같은 비율 막대가 있고, 합친 줄(6.5 이상)은 합친 숫자로 그린다", () => {
     render(
-      <TableProgressCard
-        progress={tableProgress([
-          group({ tier: 6.6, total: 4, recorded: 4, exc: 2, fc: 0, ss: 0, s: 0, belowS: 2 }),
-          group({ tier: 6.5, total: 4, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 }),
-        ])}
+      <ProgressCard
+        table={ready(
+          tableProgress([
+            group({ tier: 6.6, total: 4, recorded: 4, exc: 2, fc: 0, ss: 0, s: 0, belowS: 2 }),
+            group({ tier: 6.5, total: 4, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 }),
+          ]),
+        )}
+        songs={loading}
       />,
     );
-    const list = screen.getByRole("list", { name: "묶음별 진행" });
-    const links = within(list).getAllByRole("link");
+    const links = within(screen.getByRole("list", { name: "묶음별 진행" })).getAllByRole("link");
     expect(links).toHaveLength(1);
     expect(links[0]).toHaveTextContent("6.5 이상");
     expect(links[0]).toHaveTextContent("4/8");
@@ -244,24 +304,48 @@ describe("TableProgressCard 단계 비율 막대", () => {
     ]);
   });
 
-  it("전체가 0이면 칸 없이 바탕만 보인다", () => {
-    render(<TableProgressCard progress={tableProgress([])} />);
-    const bar = screen.getByRole("region", { name: "서열표 진행도" }).querySelector("[data-stage-bar]")!;
-    expect(bar.querySelectorAll("[data-stage]")).toHaveLength(0);
+  it("기록이 모두 채워진 칸에만 완료 색이 붙고 `완료` 글자는 쓰지 않는다", () => {
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, s: 0, belowS: 0 })]))} songs={loading} />);
+    const card = screen.getByRole("region", { name: "서열표 진행도" });
+    expect(card.querySelectorAll("[data-stage-bar].ring-done")).toHaveLength(1);
+    expect(card).not.toHaveTextContent("완료");
+    // 비어 있는 구간이 없으면 안내와 약함 표시를 만들지 않는다
+    expect(card).not.toHaveTextContent("약함");
+    expect(within(card).queryByRole("link", { name: "구간 보기" })).toBeNull();
   });
 });
 
-describe("TableProgressCard 완료 색", () => {
-  it("전체 기록이 모두 채워지면 전체 막대도 완료 색이 된다", () => {
-    render(<TableProgressCard progress={tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, s: 0, belowS: 0 })])} />);
-    const card = screen.getByRole("region", { name: "서열표 진행도" });
-    expect(card).toHaveTextContent("기록 3/3");
-    expect(card.querySelectorAll("[data-stage-bar].ring-done").length).toBe(2); // 전체 막대 + 묶음 막대
-    expect(card).not.toHaveTextContent("완료");
+describe("ProgressCard 탭", () => {
+  it("곡 목록 탭은 레벨 폴더 통계를 합쳐 보여 주고 칸은 곡 목록으로 간다", () => {
+    render(<ProgressCard table={ready(tableProgress([group({})]))} songs={ready(folderProgress(foldersBody.folders))} />);
+    expect(screen.getByRole("button", { name: "서열표" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "곡 목록" }));
+    expect(screen.getByRole("button", { name: "곡 목록" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("region", { name: "서열표 진행도" })).toBeNull();
+    const card = screen.getByRole("region", { name: "곡 목록 진행도" });
+    expect(card).toHaveTextContent("기록 10/30"); // (6 + 4) / (10 + 20)
+    expect(within(card).getByRole("link", { name: "곡 목록 보기" })).toHaveAttribute("href", "/songs");
+    const tiles = within(within(card).getByRole("list", { name: "폴더별 진행" })).getAllByRole("link");
+    expect(tiles.map((t) => t.textContent)).toEqual(expect.arrayContaining([expect.stringContaining("9.50 ~ 9.99"), expect.stringContaining("9.00 ~ 9.49")]));
+    expect(tiles.every((t) => t.getAttribute("href") === "/songs")).toBe(true);
+    // 9.00 ~ 9.49(4/20)가 가장 비어 있다
+    expect(card).toHaveTextContent("9.00 ~ 9.49 구간이 가장 비어 있어요. 기록 없는 채보 16곡");
+
+    fireEvent.click(screen.getByRole("button", { name: "서열표" }));
+    expect(screen.getByRole("region", { name: "서열표 진행도" })).toBeInTheDocument();
   });
 
-  it("전체가 0이면 완료 색을 쓰지 않는다", () => {
-    render(<TableProgressCard progress={tableProgress([])} />);
-    expect(screen.getByRole("region", { name: "서열표 진행도" }).querySelector(".ring-done")).toBeNull();
+  it("한 탭이 실패하거나 비어 있어도 다른 탭은 그대로 쓸 수 있다", () => {
+    render(<ProgressCard table={{ kind: "empty", message: "SRN+ 서열표가 아직 없습니다." }} songs={{ kind: "error" }} />);
+    expect(screen.getByText("SRN+ 서열표가 아직 없습니다.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "곡 목록" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("곡 목록 진행도를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    expect(screen.getByRole("button", { name: "서열표" })).toBeInTheDocument();
+  });
+
+  it("불러오는 동안에는 자리를 잡는 회색 칸을 보여 준다", () => {
+    render(<ProgressCard table={loading} songs={loading} />);
+    expect(screen.getByText("서열표 진행도를 불러오는 중입니다.")).toBeInTheDocument();
   });
 });
