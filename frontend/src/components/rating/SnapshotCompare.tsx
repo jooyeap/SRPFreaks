@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { NewBadge } from "@/components/NewBadge";
 import { ApiError } from "@/lib/api";
+import { chartTierAttrs } from "@/lib/chart-tier";
 import type { SnapshotCompareChange, SnapshotCompareResponse } from "@/lib/api-types";
 import { difficultyLabel, formatRate, formatScore, partLabel } from "@/lib/format";
 import { compareReasonText, fetchSnapshotCompare, snapshotKeys } from "@/lib/skill-snapshot";
@@ -72,7 +73,7 @@ function Group({ title, items, kind }: { title: string; items: SnapshotCompareCh
             <span className="shrink-0 text-xs text-fg-dim">
               {partLabel(item.part)} {difficultyLabel(item.difficulty)}
             </span>
-            <span className="shrink-0 text-right font-num text-xs text-fg-sub">{scoreText(item, kind)}</span>
+            <ScoreText item={item} kind={kind} />
           </li>
         ))}
       </ul>
@@ -80,16 +81,47 @@ function Group({ title, items, kind }: { title: string; items: SnapshotCompareCh
   );
 }
 
-/** `30.00 → 35.50 (+5.50)` / 새로 들어옴 `35.50` / 밀려남 `30.00`. 달성률은 괄호 안 작은 글자 대신 같은 줄에 붙인다. */
-function scoreText(item: SnapshotCompareChange, kind: Kind): string {
+/** 점수 한 개. 곡 점수가 속한 플레이어 티어 색으로 칠한다(레이팅 카드와 같은 규칙, lib/chart-tier.ts). 숫자가 그대로 보이므로 색만으로 전달하지 않는다. */
+function Score({ value }: { value: number | null }) {
+  if (value === null) {
+    return null;
+  }
+  return (
+    <span {...chartTierAttrs(value)} className="tier-score font-semibold">
+      {formatScore(value)}
+    </span>
+  );
+}
+
+/**
+ * `30.00 → 35.50 (+5.50) · 95.00%` / 새로 들어옴 `35.50 · 95.00%` / 밀려남 `30.00 → 목록 밖`.
+ * 이전·이후 점수는 각각 자기 티어 색이라, 티어가 바뀐 곡은 색 변화로도 보인다. 증감은 부호 글자(+/-)로 쓴다.
+ */
+function ScoreText({ item, kind }: { item: SnapshotCompareChange; kind: Kind }) {
   const rateAfter = item.rateAfter === null ? "" : ` · ${formatRate(item.rateAfter)}`;
+  let body: React.ReactNode;
   if (kind === "entered") {
-    return `${formatScore(item.scoreAfter)}${rateAfter}`;
+    body = <Score value={item.scoreAfter} />;
+  } else if (kind === "left") {
+    body = (
+      <>
+        <Score value={item.scoreBefore} /> → 목록 밖
+      </>
+    );
+  } else {
+    const delta = (item.scoreAfter ?? 0) - (item.scoreBefore ?? 0);
+    const sign = delta >= 0 ? "+" : "-";
+    body = (
+      <>
+        <Score value={item.scoreBefore} /> → <Score value={item.scoreAfter} /> ({sign}
+        {Math.abs(delta).toFixed(2)})
+      </>
+    );
   }
-  if (kind === "left") {
-    return `${formatScore(item.scoreBefore)} → 목록 밖`;
-  }
-  const delta = (item.scoreAfter ?? 0) - (item.scoreBefore ?? 0);
-  const sign = delta >= 0 ? "+" : "-";
-  return `${formatScore(item.scoreBefore)} → ${formatScore(item.scoreAfter)} (${sign}${Math.abs(delta).toFixed(2)})${rateAfter}`;
+  return (
+    <span className="shrink-0 text-right font-num text-xs text-fg-sub">
+      {body}
+      {rateAfter}
+    </span>
+  );
 }
