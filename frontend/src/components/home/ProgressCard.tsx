@@ -98,10 +98,7 @@ function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: (typeof TABS)[nu
       {progress.groups.length > 0 ? (
         <>
           <div className="border-t border-row-line pt-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <h3 className="text-[13px] font-bold text-fg-sub">{tab.mapTitle}</h3>
-              <span className="text-[11px] text-fg-dim">진한 칸일수록 많이 채움</span>
-            </div>
+            <h3 className="text-[13px] font-bold text-fg-sub">{tab.mapTitle}</h3>
           </div>
           <ProgressTiles groups={progress.groups} label={tab.mapLabel} />
         </>
