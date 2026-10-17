@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -173,6 +174,7 @@ public class RateFolderService {
             counters.put(bucket, new int[3]);
         }
         int recorded = 0;
+        BigDecimal sum = BigDecimal.ZERO;
         for (RecordBest best : bestOfCharts) {
             BigDecimal rate = best == null ? null : best.bestRate();
             int[] counter = counters.get(RateBucket.of(rate));
@@ -181,6 +183,7 @@ public class RateFolderService {
                 continue;
             }
             recorded++;
+            sum = sum.add(rate);
             if (rate.compareTo(MAX_RATE) >= 0) {
                 counter[1]++;
             } else if (best.fullCombo()) {
@@ -191,6 +194,12 @@ public class RateFolderService {
         List<RateBucketResponse> buckets = counters.entrySet().stream()
                 .map(e -> new RateBucketResponse(e.getKey(), e.getValue()[0], e.getValue()[1], e.getValue()[2]))
                 .toList();
-        return new RateFolderResponse(key, bestOfCharts.size(), recorded, buckets);
+        // 평균: 곡 목록(SongChartListService)과 같은 규칙. 합계를 먼저 구하고 마지막에 한 번만 반올림한다.
+        // 채보가 없는 폴더는 만들어지지 않으므로 total > 0이지만, 0으로 나누지 않게 한 번 더 막아 둔다.
+        int total = bestOfCharts.size();
+        BigDecimal averageRecorded = recorded == 0 ? null : sum.divide(BigDecimal.valueOf(recorded), 2, RoundingMode.HALF_UP);
+        BigDecimal averageWithZero = total == 0 ? BigDecimal.ZERO.setScale(2)
+                : sum.divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
+        return new RateFolderResponse(key, total, recorded, averageRecorded, averageWithZero, buckets);
     }
 }
