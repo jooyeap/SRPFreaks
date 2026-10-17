@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { SetlistToggleButton } from "@/components/setlist/SetlistToggleButton";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { RatedScore } from "@/components/table/RatedScore";
 import { StageBadge } from "@/components/table/StageBadge";
@@ -51,7 +50,6 @@ export function EntryCard({
         </span>
         <RecommendBadge value={entry.recommend} />
       </div>
-      <SetlistToggleButton songDifficultyId={entry.songDifficultyId} title={entry.title} />
       {onRecord ? (
         <button
           type="button"

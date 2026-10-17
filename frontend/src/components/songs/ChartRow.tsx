@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { SetlistToggleButton } from "@/components/setlist/SetlistToggleButton";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { formatRate } from "@/lib/format";
@@ -7,12 +6,12 @@ import type { ChartRowResponse } from "@/lib/api-types";
 import { songListDetailHref } from "@/lib/song-list";
 
 /** 데스크톱 열: 곡명 · 랭크(달성 단계) · 채보 알약(파트·난이도·레벨) · 달성률. 모든 행이 같은 열 너비를 써서 줄마다 위치가 맞는다. */
-const ROW_GRID = "md:grid md:grid-cols-[minmax(0,1fr)_40px_116px_56px_32px] md:items-center md:gap-x-3";
+const ROW_GRID = "md:grid md:grid-cols-[minmax(0,1fr)_40px_116px_56px] md:items-center md:gap-x-3";
 
 /**
  * 곡 목록의 채보 한 줄 (모바일·데스크톱 공용, 폭에 따라 배치만 바뀐다).
  * 모바일: 곡명 / `Guitar | MAS 9.99` 알약 + 랭크 (오른쪽에 달성률).
- * 데스크톱: 곡명 · 랭크 · 채보 · 달성률 · 세트리스트 버튼이 한 줄에 정렬된다. 버전은 행에 보이지 않고 필터로만 쓴다. 랭크(달성 단계 배지)는 곡명 오른쪽이다.
+ * 데스크톱: 곡명 · 랭크 · 채보 · 달성률이 한 줄에 정렬된다. 버전은 행에 보이지 않고 필터로만 쓴다. 랭크(달성 단계 배지)는 곡명 오른쪽이다.
  * 랭크 칸은 기록이 없어도 자리를 비워 두므로(고정 폭) 랭크 유무와 상관없이 알약의 위치가 줄마다 같다.
  * 알약의 파트 칸은 최소 폭이 있어 Guitar/Bass가 섞여도 오른쪽 칸 시작 위치가 같다(ChartBadge).
  * href: 곡 상세 주소를 바꿀 때 쓴다(기본은 곡 목록에서 들어간 상세). 마이페이지 서열표 난이도 목록은 서열표 상세로 보낸다.
@@ -47,10 +46,6 @@ export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }
       </div>
       <span className={`shrink-0 text-right font-num text-sm font-semibold md:order-4 ${stage ? "stage-text" : "text-fg-faint"}`}>
         {formatRate(row.mine?.rate)}
-      </span>
-      {/* 세트리스트 담기/빼기(로그인했을 때만 그려진다). 데스크톱은 맨 오른쪽 32px 칸 */}
-      <span className="shrink-0 md:order-5">
-        <SetlistToggleButton songDifficultyId={row.songDifficultyId} title={row.title} />
       </span>
     </li>
   );

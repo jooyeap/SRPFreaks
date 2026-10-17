@@ -1,10 +1,12 @@
 import { apiFetch } from "@/lib/api";
-import type { PageResponse, SetlistItemResponse } from "@/lib/api-types";
+import type { ChartRowResponse, PageResponse, SetlistItemResponse } from "@/lib/api-types";
 
 /** 세트리스트 쿼리 키. 앞부분 "setlist"는 records.ts의 AFFECTED_QUERY_KEYS와 같다: 기록을 저장/수정/삭제하면 무효화되어 완료 표시가 바로 바뀐다. */
 export const setlistKeys = {
   all: ["setlist"] as const,
   list: (userId: number) => ["setlist", "list", userId] as const,
+  // 검색 결과에는 내 기록이 섞여 있으므로 사용자 id를 넣는다
+  search: (userId: number, q: string, page: number) => ["setlist", "search", userId, q, page] as const,
 };
 
 /** 서버(SetlistItem.MAX_ITEMS)와 같은 한도다. 서버도 다시 검사한다. */
@@ -15,6 +17,17 @@ export const SETLIST_PAGE_SIZE = 10;
 /** 세트리스트 전체(최대 30줄)를 한 번에 받는다. 담김 표시도 같은 응답으로 정하므로 화면 어디서든 요청은 하나다(같은 쿼리 키). */
 export function fetchSetlist(signal?: AbortSignal): Promise<PageResponse<SetlistItemResponse>> {
   return apiFetch<PageResponse<SetlistItemResponse>>("/setlist", { query: { page: 0, size: SETLIST_LIMIT }, signal });
+}
+
+/** 세트리스트에 담을 채보를 찾는 검색 한 번에 받는 줄 수. */
+export const SETLIST_SEARCH_PAGE_SIZE = 10;
+
+/**
+ * 곡명·아티스트로 채보를 찾는다. 곡 목록 화면과 같은 API(GET /songs/charts)를 폴더 조건 없이 검색어만 줘서 쓴다.
+ * 그래서 새 백엔드 API가 필요 없고, 검색 규칙(한글·일본어·로마자, 오타 보정 전 단계)이 곡 목록과 같다.
+ */
+export function searchCharts(q: string, page: number, signal?: AbortSignal): Promise<PageResponse<ChartRowResponse>> {
+  return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", { query: { q, page, size: SETLIST_SEARCH_PAGE_SIZE }, signal });
 }
 
 export function addToSetlist(songDifficultyId: number): Promise<SetlistItemResponse> {
