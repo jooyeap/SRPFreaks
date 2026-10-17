@@ -164,9 +164,7 @@ describe("HomeDashboard", () => {
     expect(rows[2].closest("li")).not.toHaveAttribute("data-done"); // 기록 0/2는 완료가 아니다
     // 다음 목표: SS 이상(EXC 21 + SS 1 = 22곡)을 다음 10곡 단위(30곡)까지. 가장 빈 구간은 5.8(4/10, 미정은 후보가 아니다)
     expect(progress).toHaveTextContent("SS 이상 22곡 → 30곡까지 8곡 남음");
-    expect(rows[0].closest("li")).toHaveAttribute("data-weak", "true");
-    expect(rows[0]).toHaveTextContent("약함");
-    expect(rows[1].closest("li")).not.toHaveAttribute("data-weak");
+    expect(progress).not.toHaveTextContent("약함"); // 칸에는 약함 뱃지를 달지 않는다(구분이 어렵다). 안내 문장과 링크만 있다
     expect(progress).toHaveTextContent("5.8 구간이 가장 비어 있어요. 기록 없는 채보 6곡");
     expect(within(progress).getByRole("link", { name: "구간 보기" })).toHaveAttribute("href", "/table/folder/5.8");
 
