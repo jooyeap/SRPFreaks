@@ -147,9 +147,27 @@ describe("SkillSnapshotPanel", () => {
       const entered = await screen.findByRole("region", { name: "새로 들어온 곡" });
       expect(within(entered).getByText("NEW")).toBeInTheDocument();
       expect(within(entered).getByText("Alpha")).toBeInTheDocument();
-      expect(within(screen.getByRole("region", { name: "점수가 오른 곡" })).getByText(/30\.00 → 35\.50 \(\+5\.50\)/)).toBeInTheDocument();
-      expect(within(screen.getByRole("region", { name: "점수가 내려간 곡" })).getByText(/\(-2\.00\)/)).toBeInTheDocument();
-      expect(within(screen.getByRole("region", { name: "목록에서 밀려난 곡" })).getByText(/목록 밖/)).toBeInTheDocument();
+      // 점수는 티어 색을 위해 각각 span이라 줄 전체 글자로 확인한다
+      expect(within(screen.getByRole("region", { name: "점수가 오른 곡" })).getByRole("listitem")).toHaveTextContent(/30\.00 → 35\.50 \(\+5\.50\)/);
+      expect(within(screen.getByRole("region", { name: "점수가 내려간 곡" })).getByRole("listitem")).toHaveTextContent(/\(-2\.00\)/);
+      expect(within(screen.getByRole("region", { name: "목록에서 밀려난 곡" })).getByRole("listitem")).toHaveTextContent(/목록 밖/);
+    });
+
+    it("이전·이후 점수는 각각 자기 점수의 티어 색을 갖고, 숫자 글자도 그대로 보인다", async () => {
+      // 곡 점수 기준(티어 최소 점수 ÷ 40): White Gradient 12.5~25, Orange 25~37.5
+      compare = { ...emptyCompare, improved: [change(2, "Beta", 20, 30)], left: [change(4, "Delta", 30, null)] };
+      renderPanel();
+      await screen.findByRole("list", { name: "레이팅 기록 목록" });
+      fireEvent.click(compareButton("2026-10-09"));
+
+      const row = within(await screen.findByRole("region", { name: "점수가 오른 곡" })).getByRole("listitem");
+      const before = within(row).getByText("20.00");
+      const after = within(row).getByText("30.00");
+      expect(before).toHaveAttribute("data-tier", "WHITE_GRADIENT"); // 12.5 이상 25 미만
+      expect(after).toHaveAttribute("data-tier", "ORANGE"); // 25 이상 37.5 미만
+      expect(before).toHaveClass("tier-score");
+      const left = within(screen.getByRole("region", { name: "목록에서 밀려난 곡" })).getByText("30.00");
+      expect(left).toHaveAttribute("data-tier", "ORANGE");
     });
 
     it("다시 누르면 닫힌다", async () => {
