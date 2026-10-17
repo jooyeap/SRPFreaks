@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api";
-import type { ChartRowResponse, PageResponse, SetlistItemResponse } from "@/lib/api-types";
+import type { ChartRowResponse, PageResponse, SetlistItemResponse, SetlistRecommendationResponse } from "@/lib/api-types";
 
 /** 세트리스트 쿼리 키. 앞부분 "setlist"는 records.ts의 AFFECTED_QUERY_KEYS와 같다: 기록을 저장/수정/삭제하면 무효화되어 완료 표시가 바로 바뀐다. */
 export const setlistKeys = {
@@ -7,6 +7,8 @@ export const setlistKeys = {
   list: (userId: number) => ["setlist", "list", userId] as const,
   // 검색 결과에는 내 기록이 섞여 있으므로 사용자 id를 넣는다
   search: (userId: number, q: string, page: number) => ["setlist", "search", userId, q, page] as const,
+  // 추천은 내 기록·세트리스트에 따라 달라진다. "setlist"로 시작해서 기록 저장·담기·빼기 때 함께 무효화된다
+  recommend: (userId: number, page: number) => ["setlist", "recommend", userId, page] as const,
 };
 
 /** 서버(SetlistItem.MAX_ITEMS)와 같은 한도다. 서버도 다시 검사한다. */
@@ -28,6 +30,14 @@ export const SETLIST_SEARCH_PAGE_SIZE = 10;
  */
 export function searchCharts(q: string, page: number, signal?: AbortSignal): Promise<PageResponse<ChartRowResponse>> {
   return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", { query: { q, page, size: SETLIST_SEARCH_PAGE_SIZE }, signal });
+}
+
+/** 추천 한 쪽에서 묶음(SS 도전 / S 채우기)마다 받는 줄 수. 서버 기본값과 같다. */
+export const RECOMMEND_PAGE_SIZE = 5;
+
+/** 내 평균 난이도 기준 추천(SS 도전 / S 채우기). 이미 담은 채보는 서버가 빼고 준다. */
+export function fetchRecommendations(page: number, signal?: AbortSignal): Promise<SetlistRecommendationResponse> {
+  return apiFetch<SetlistRecommendationResponse>("/setlist/recommendations", { query: { page, size: RECOMMEND_PAGE_SIZE }, signal });
 }
 
 export function addToSetlist(songDifficultyId: number): Promise<SetlistItemResponse> {
