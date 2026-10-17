@@ -71,6 +71,6 @@ describe("RatingInsights", () => {
     expect(summary).toHaveTextContent("새로 들어온 곡 1개");
     expect(summary).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(summary);
-    expect(await screen.findByRole("region", { name: "새로 들어온 곡" })).toHaveTextContent("신곡");
+    expect(await screen.findByRole("region", { name: "기록 갱신" })).toHaveTextContent("신곡");
   });
 });

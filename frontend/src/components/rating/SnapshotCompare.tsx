@@ -44,27 +44,34 @@ export function CompareBody({ result }: { result: SnapshotCompareResponse }) {
         {result.fromDate} → {result.toDate ?? "지금"} 레이팅 목록 비교
       </p>
       {nothing ? <p className="text-xs text-fg-sub">곡 목록에는 달라진 점이 없습니다.</p> : null}
-      <Group title="새로 들어온 곡" items={result.entered} kind="entered" />
-      <Group title="점수가 오른 곡" items={result.improved} kind="improved" />
-      <Group title="점수가 내려간 곡" items={result.declined} kind="declined" />
-      <Group title="목록에서 밀려난 곡" items={result.left} kind="left" />
+      {/* 새로 들어온 곡(NEW 표시)과 점수가 오른 곡은 `기록 갱신` 한 묶음이다. 줄 표시는 각자 그대로다 */}
+      <Group
+        title="기록 갱신"
+        rows={[
+          ...result.entered.map((item) => ({ item, kind: "entered" as const })),
+          ...result.improved.map((item) => ({ item, kind: "improved" as const })),
+        ]}
+      />
+      <Group title="점수가 내려간 곡" rows={result.declined.map((item) => ({ item, kind: "declined" as const }))} />
+      {/* 레이팅 목록 밖으로 나간 곡은 `후보곡`이다(다시 올라올 수 있는 곡) */}
+      <Group title="후보곡" rows={result.left.map((item) => ({ item, kind: "left" as const }))} />
     </div>
   );
 }
 
 type Kind = "entered" | "improved" | "declined" | "left";
 
-function Group({ title, items, kind }: { title: string; items: SnapshotCompareChange[]; kind: Kind }) {
-  if (items.length === 0) {
+function Group({ title, rows }: { title: string; rows: { item: SnapshotCompareChange; kind: Kind }[] }) {
+  if (rows.length === 0) {
     return null;
   }
   return (
     <section aria-label={title}>
       <h4 className="mb-1 text-xs font-bold text-fg-sub">
-        {title} <span className="font-num">{items.length}</span>
+        {title} <span className="font-num">{rows.length}</span>
       </h4>
       <ul className="flex flex-col">
-        {items.map((item) => (
+        {rows.map(({ item, kind }) => (
           <li key={item.songDifficultyId} className="flex items-center gap-2 border-t border-line py-1.5 text-sm first:border-t-0">
             {kind === "entered" ? <NewBadge /> : null}
             <Link href={`/songs/${item.songId}`} className="min-w-0 flex-1 truncate text-fg hover:underline">

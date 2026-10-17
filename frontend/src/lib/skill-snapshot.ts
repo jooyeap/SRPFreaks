@@ -33,7 +33,7 @@ export function fetchSnapshotStatus(signal?: AbortSignal): Promise<SkillSnapshot
   return apiFetch<SkillSnapshotStatusResponse>("/skills/me/snapshots/status", { signal });
 }
 
-/** 고른 스냅샷을 바로 이전 스냅샷과 비교한다(오른 곡·새로 들어온 곡(NEW)·내려간 곡·밀려난 곡). */
+/** 고른 스냅샷을 바로 이전 스냅샷과 비교한다(오른 곡·기록 갱신(새로 들어온 곡 NEW·오른 곡)·내려간 곡·후보곡(밀려난 곡)). */
 export function fetchSnapshotCompare(snapshotId: number, signal?: AbortSignal): Promise<SnapshotCompareResponse> {
   return apiFetch<SnapshotCompareResponse>(`/skills/me/snapshots/${snapshotId}/compare`, { signal });
 }
