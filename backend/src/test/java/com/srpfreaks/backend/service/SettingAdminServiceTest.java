@@ -140,14 +140,19 @@ class SettingAdminServiceTest {
     }
 
     @Test
-    void 세트리스트_추천_설정은_규칙에_맞는_값만_받는다() {
-        service.update(1L, "setlist.recommend_range_ss", "0.4");   // 0.5(S 범위) 이하라 통과
-        assertThat(settings.stream().filter(x -> x.getKey().equals("setlist.recommend_range_ss")).findFirst().orElseThrow().getValue())
-                .isEqualTo("0.4");
+    void 세트리스트_추천_설정은_규칙에_맞는_값을_받는다() {
+        // S 범위(0.5) 이하라 통과
+        assertThat(service.update(1L, "setlist.recommend_range_ss", "0.4").value()).isEqualTo("0.4");
+        // SS 범위가 0.4가 된 뒤에도 S 범위는 0.4 이상이면 된다
+        assertThat(service.update(1L, "setlist.recommend_range_s", "0.4").value()).isEqualTo("0.4");
+        assertThat(service.update(1L, "setlist.recommend_min_entries", "20").value()).isEqualTo("20");
+    }
 
+    @Test
+    void 세트리스트_추천_설정이_규칙에_어긋나면_거절한다() {
         assertRejected("setlist.recommend_range_ss", "0.6");       // S 범위(0.5)보다 크면 안 된다
         assertRejected("setlist.recommend_range_ss", "0");         // 0 이하
-        assertRejected("setlist.recommend_range_s", "0.1");        // SS 범위(0.4)보다 작으면 안 된다
+        assertRejected("setlist.recommend_range_s", "0.2");        // SS 범위(0.3)보다 작으면 안 된다
         assertRejected("setlist.recommend_min_entries", "0");
         assertRejected("setlist.recommend_min_entries", "열");
     }
