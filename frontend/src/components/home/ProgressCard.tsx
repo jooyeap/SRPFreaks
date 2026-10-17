@@ -23,7 +23,7 @@ const TABS: readonly { key: TabKey; name: string; href: string; link: string; ma
 
 /**
  * 홈 진행도 카드: `서열표 | 곡 목록` 탭 하나로 전환한다.
- * 위에서부터 도넛(전체 달성 비율), `다음 목표`(SS 이상을 다음 10곡 단위까지), 칸 지도(묶음별 진행, 가장 빈 칸에 `약함`),
+ * 위에서부터 도넛(전체 달성 비율), `다음 목표`(SS 이상을 다음 10곡 단위까지), 칸 지도(묶음별 진행),
  * 가장 빈 구간 안내와 `구간 보기` 링크다. 숫자는 모두 서버가 준 개수를 합치거나 비교한 값이다(채보를 화면에서 다시 세지 않는다).
  * 탭은 버튼 둘(aria-pressed)이고 모바일에서 누르기 쉽게 높이를 44px로 둔다.
  */
@@ -103,7 +103,7 @@ function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: (typeof TABS)[nu
               <span className="text-[11px] text-fg-dim">진한 칸일수록 많이 채움</span>
             </div>
           </div>
-          <ProgressTiles groups={progress.groups} weakKey={weak?.group.key ?? null} label={tab.mapLabel} />
+          <ProgressTiles groups={progress.groups} label={tab.mapLabel} />
         </>
       ) : null}
 
