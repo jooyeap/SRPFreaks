@@ -46,6 +46,7 @@
 | D34 | 2026-10-13 | **D18의 "공식 사이트 가져오기 보류"를 일부 번복해, 공식 `stage_result` 페이지의 최근 플레이(최대 20곡)만 가져온다.** (1) 범위는 최근 플레이 결과 한정이고 곡 목록·스킬 페이지·`official_records`·`import_unmatched`는 계속 보류. (2) 서버는 Konami와 통신하지 않고 계정·세션·쿠키를 받지 않는다. 사용자 브라우저가 **사용자가 연 페이지 한 장(5곡)** 의 값을 읽어 파싱된 값만 가져오기 토큰으로 보낸다(다른 페이지를 자동으로 불러오지 않는다, 4장이면 4번 실행). (3) **옵션이 정확히 SRN+(`gf_random_5`) + BUTTON OFF(`gf_button_1`) + AUTO OFF(`gf_auto_1`)인 플레이만** 받고 나머지는 건너뛴다(D25와 같은 방향). (4) **마스터에 없는 곡은 제외하고 응답과 화면에 "n곡은 곡 목록에 없어 제외"로 알린다**(자동 등록 금지, `import_unmatched` 테이블은 만들지 않는다). (5) **기존 최고 기록보다 낮은 기록은 등록하지 않는다**(같은 달성률은 FC가 새로 켜질 때만 등록). (6) 풀콤보는 임시로 `MISS 0 and OK 0`이면 true(달성률 100.00은 EXC). 풀콤보 플레이 샘플을 확인하면 확정한다. (7) 이용규약(8(13), (22), (23))은 공개 전에 확인한다. 설계는 18.4 |
 | D35 | 2026-10-16 | **건의사항을 만든다.** 없는 곡 추가 요청을 따로 만들지 않고 건의함 하나로 받는다. (1) 종류(`category`): `SONG_REQUEST`(곡 추가) `IMPROVEMENT`(개선사항) `BUG`(버그 제보) `OTHER`(기타). 상태(`status`): `RECEIVED` `REVIEWING` `DONE` `REJECTED`. 둘 다 enum 이름을 VARCHAR로 저장 (2) `suggestions` 테이블(V7, 제목 100자·본문 2000자·관리자 답변 500자). 본문은 **글자만** 저장·표시한다(공지와 같음). **이미지 첨부는 받지 않는다** (3) 로그인한 사용자가 보내고(`POST /suggestions`) 본인 것만 본다(`GET /suggestions/me`, 처리 상태와 관리자 답변 포함). **하루(24시간) 5건 제한**, 넘으면 429 `SUGGESTION_LIMIT` (4) ROOT·ADMIN: `GET /admin/suggestions`(종류·상태 필터, 닉네임만 노출), `GET /admin/suggestions/received-count`, `PATCH /admin/suggestions/{id}`(상태·답변). 처리는 `audit_logs`에 `SUGGESTION_REVIEW`로 남기고 제목·상태만 넣는다 (5) 탈퇴하면 건의도 함께 삭제(D20, FK CASCADE) (6) **곡 건의는 관리자가 읽고 직접 등록한다. 자동 등록·`import_unmatched`는 만들지 않는다**(D18 유지). 기록·유저 신고·이의제기(D14)는 계속 만들지 않고 일반 건의만 받는다 (7) 알림(이메일 등)은 만들지 않는다. 화면은 DESIGN-UI 22장 |
 | D36 | 2026-10-16 | **세트리스트를 만든다.** 게임장에 가기 전에 오늘 칠 채보를 미리 담아 두는 사용자별 임시 목록. (1) `setlist_items` 테이블(V8): (사용자, 채보) 유일, 탈퇴·채보 삭제 시 함께 삭제, 소프트 삭제 없음(임시 목록) (2) **한 사람당 최대 30곡**, 넘으면 409 `SETLIST_FULL`, 이미 담은 채보는 409, 삭제된 곡·채보는 404, 남의 줄은 404(존재 여부 비노출) (3) **완료 여부는 저장하지 않고 계산**한다: 담은 시각(`created_at`) 이후에 그 채보의 내 SRN+ 기록이 저장·수정(`option_records.updated_at`)됐으면 완료(같은 순간 포함). 기록 저장 코드를 건드리지 않으므로 직접 입력·사진 입력·최근 플레이 가져오기(D34)가 모두 같은 규칙으로 체크된다. 기록을 지우면 완료도 풀린다 (4) 저장하면 줄은 **지워지지 않고 체크만** 된다. 다음 방문 전에 `완료한 곡 비우기`로 한꺼번에 정리한다 (5) API(USER+, 본인만): GET `/setlist`(담은 순서, 줄마다 채보·서열표 난이도 T·내 최고 기록·`done`), POST `/setlist`, DELETE `/setlist/{id}`, DELETE `/setlist/done` (6) 화면은 마이페이지 `세트리스트` 탭 하나다(DESIGN-UI 23장). 곡은 그 탭의 검색창에서 곡명으로 찾아 담는다(곡 목록과 같은 `GET /songs/charts` 검색을 쓴다). 곡 목록·서열표·곡 상세에는 담기 버튼을 두지 않는다: 기록 입력 버튼과 헷갈리기 때문(2026-10-17 변경). 자동 추천·공유·순서 바꾸기는 만들지 않는다 |
+| D37 | 2026-10-17 | **세트리스트 추천을 만든다.** 내 평균 난이도를 기준으로 오늘 칠 채보를 골라 주고, 담기는 사용자가 줄마다 직접 누른다(한꺼번에 담지 않는다). D36의 "담기는 곡 검색으로만"을 "곡 검색 또는 추천 목록의 줄별 `담기`로만"으로 넓힌다. (1) **평균 난이도** = 내 레이팅 목록(단일 15 + 그 외 25) 채보의 서열표 기준 난이도 평균(둘째 자리 반올림). 채보가 `setlist.recommend_min_entries`(10)개보다 적으면 추정하지 않고 추천도 비운다. 이 추정은 `PlayLevelEstimator` 인터페이스 뒤에 두어, 나중에 플레이어 레이팅대별 획득 평균 데이터가 쌓이면 그 데이터로 추정하는 구현으로 바꿔 끼울 수 있다(조회·화면은 그대로) (2) **두 묶음을 반반**: **SS 도전** = 평균 ± `setlist.recommend_range_ss`(0.3, 경계 포함) 안에서 기록이 없거나 달성 단계가 SS 미만(FC·EXC는 SS 이상), **S 채우기** = 평균 ± `setlist.recommend_range_s`(0.5, 더 넓게) 안에서 기록이 없거나 S 미만이면서 SS 도전에 없는 채보 (3) 레이팅 대상 채보만(기준 난이도·속성 있음, 레이팅 제외·반영 꺼짐·삭제 제외), 이미 세트리스트에 담은 채보 제외, SRN+ 기록만 사용 (4) 정렬: 기록 없음 먼저 → 내 최고 달성률 낮은 순 → 평균에 가까운 순 → 채보 id 순. 묶음마다 같은 page로 size(기본 5, 최대 10)개씩 (5) 계산은 저장하지 않는다(요청 때마다). 범위·최소 개수는 `app_settings`(V9)이고 ROOT가 바꾸며 규칙(양수, S 범위 ≥ SS 범위, 최소 1)을 검사한다 (6) 후보 조회는 MyBatis 읽기 전용 쿼리, 단계 판정·정렬·페이지는 서비스에서 한다 |
 ---
 
 ## 1. 목적과 범위
@@ -181,6 +182,7 @@ com.srpfreaks.backend
 | 건의 보내기·내 건의 보기 (D35) | O | O | O |
 | 건의 목록·처리 (D35) | O | O | X |
 | 세트리스트 담기·빼기·보기 (D36) | O | O | O |
+| 세트리스트 추천 보기 (D37) | O | O | O |
 | 노트 수·메타데이터 입력, 곡 등록 요청 승인 (D22) | O | O | X |
 | 유저 역할 변경, 설정(`app_settings`) 변경 | O | X | X |
 | 감사 로그 조회 | O | X | X |
@@ -509,6 +511,7 @@ com.srpfreaks.backend
 | 건의 보내기·내 목록 (D35) | POST `/suggestions` (본문 `category`, `title`(1~100자), `content`(1~2000자). 24시간에 5건까지, 넘으면 429), GET `/suggestions/me` (본인 것만, 최근 순 페이지) | 로그인한 사용자 |
 | 건의 관리 (D35) | GET `/admin/suggestions?category=&status=&page=&size=`, GET `/admin/suggestions/received-count`, PATCH `/admin/suggestions/{id}` (본문 `status`, `adminNote`(선택, 500자), 감사 로그) | ROOT·ADMIN |
 | 세트리스트 (D36) | GET `/setlist?page=&size=` (담은 순서, 최대 30줄. 줄마다 `tier`·`mine`·`done`), POST `/setlist` (본문 `songDifficultyId`. 30곡이 차 있으면 409, 이미 담았으면 409, 없는·삭제된 채보는 404), DELETE `/setlist/{id}` (남의 줄은 404), DELETE `/setlist/done` (완료한 줄 비우기, `{removed}`) | 로그인한 사용자 (본인) |
+| 세트리스트 추천 (D37) | GET `/setlist/recommendations?page=&size=` (`baseTier`·`rangeSs`·`rangeS`와 `ssChallenge`·`sFill` 두 묶음, 줄마다 `tier`·`mine`. 평균을 구할 수 없으면 `baseTier` null + 빈 목록) | 로그인한 사용자 (본인) |
 | 서열표 만들기 | POST `/admin/difficulty-tables` (이름, 파트(선택), 기준 옵션) | ROOT·ADMIN |
 | 설정 | GET/PATCH `/admin/settings` | ROOT |
 | 사용자·역할 | GET `/admin/users?page=&size=`(가입 순, 이메일·역할·상태 포함, Google ID 제외), PATCH `/admin/users/{id}/role` body `{"role": "ADMIN"\|"USER"}` (ROOT로 바꾸는 요청은 400, ROOT 계정의 역할 변경은 403, 이미 그 역할이면 변경 없음, 변경은 `audit_logs`의 `USER_ROLE_CHANGE`에 사용자 id와 전/후 역할만 남김) | ROOT |
@@ -697,6 +700,7 @@ com.srpfreaks.backend
 | 2026-10-16 | **D35 추가.** 건의사항(`suggestions`, V7)과 `/suggestions`·`/admin/suggestions` API. 화면은 DESIGN-UI 22장 |
 | 2026-10-16 | **D36 추가.** 세트리스트(`setlist_items`, V8)와 `/setlist` API. 화면은 DESIGN-UI 23장 |
 | 2026-10-17 | D36 변경: 담기는 마이페이지 `세트리스트` 탭의 곡 검색으로만 한다. 곡 목록·서열표·곡 상세의 담기 버튼은 제거. 백엔드 변경 없음 |
+| 2026-10-17 | **D37 추가.** 세트리스트 추천(`GET /setlist/recommendations`, `PlayLevelEstimator`, 설정 `setlist.recommend_*` V9). 화면은 DESIGN-UI 23장. D36의 담기 규칙을 "곡 검색 또는 추천 목록의 줄별 `담기`"로 넓힘 |
 | 2026-10-13 | **곡 목록 폴더에 필터 적용.** `GET /songs/chart-folders`가 `q`·`part`·`difficulty`·`version`을 받아 필터가 걸린 채보로 폴더를 만든다(폴더 유지, 필터 결과를 한 덩어리로 보이지 않는다). 응답 모양은 그대로 |
 | 2026-10-08 | **사용자 목록·역할 변경 구현.** `GET /admin/users`, `PATCH /admin/users/{id}/role`(ROOT 전용). ADMIN 지정/해제만 가능하고 ROOT는 만들지도 바꾸지도 못한다(5장 규칙 유지). 역할은 요청마다 DB에서 읽으므로 바로 반영된다 |
 | 2026-10-08 | **설정 조회·변경 구현.** `GET /admin/settings`(ROOT, 키 순, 한 번에 최대 100개), `PATCH /admin/settings/{key}` body `{"value": "..."}`. 새 키는 만들 수 없고(404) 키별로 값을 검사한다: `rating.*`는 바꾼 값을 끼워 넣은 전체 설정으로 `RatingConfig`를 실제로 만들어 보고(계산에 쓸 수 없으면 400, 잘못된 값이 저장돼 레이팅 화면이 500이 되는 것을 막는다), `ui.show_song_images`는 true/false, 나머지는 비어 있지 않은 글자. 변경은 `audit_logs`(`SETTING_UPDATE`, 변경 전/후)에 남긴다 |

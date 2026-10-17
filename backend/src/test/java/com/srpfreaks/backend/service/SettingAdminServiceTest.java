@@ -50,7 +50,9 @@ class SettingAdminServiceTest {
                 setting("rating.cap_rate", "80"), setting("rating.max_rate", "95"), setting("rating.bonus", "3.2"),
                 setting("rating.score_multiplier", "20"), setting("rating.list_single", "15"),
                 setting("rating.list_other", "25"), setting("rating.note_option", "SUPER_RANDOM_PLUS"),
-                setting("ui.show_song_images", "false"), setting("contact.takedown_email", "a@example.com")));
+                setting("ui.show_song_images", "false"), setting("contact.takedown_email", "a@example.com"),
+                setting("setlist.recommend_range_ss", "0.3"), setting("setlist.recommend_range_s", "0.5"),
+                setting("setlist.recommend_min_entries", "10")));
         lenient().when(appSettingRepository.findAll()).thenReturn(settings);
         lenient().when(appSettingRepository.findAllWithUpdatedBy()).thenReturn(settings);
         lenient().when(appSettingRepository.findById(any(String.class))).thenAnswer(invocation ->
@@ -71,14 +73,14 @@ class SettingAdminServiceTest {
     @Test
     void 목록은_키_순으로_정렬하고_페이지로_자른다() {
         PageResponse<SettingResponse> first = service.list(0, 5);
-        PageResponse<SettingResponse> last = service.list(2, 5);
+        PageResponse<SettingResponse> last = service.list(3, 5);
 
         assertThat(first.content()).hasSize(5);
         assertThat(first.content()).extracting(SettingResponse::key).isSorted();
         assertThat(first.content().get(0).key()).isEqualTo("contact.takedown_email");
-        assertThat(first.totalElements()).isEqualTo(14);
-        assertThat(first.totalPages()).isEqualTo(3);
-        assertThat(last.content()).hasSize(4); // 14개 중 11~14번째
+        assertThat(first.totalElements()).isEqualTo(17);
+        assertThat(first.totalPages()).isEqualTo(4);
+        assertThat(last.content()).hasSize(2); // 17개 중 16~17번째
         assertThat(service.list(9, 5).content()).isEmpty();
         assertThat(service.list(-1, 0).content()).hasSize(1); // 범위 밖 값은 허용 범위로 맞춘다
     }
@@ -135,5 +137,23 @@ class SettingAdminServiceTest {
     void 빈_값은_거절한다() {
         assertRejected("contact.takedown_email", "   ");
         assertRejected("rating.pivot", "");
+    }
+
+    @Test
+    void 세트리스트_추천_설정은_규칙에_맞는_값을_받는다() {
+        // S 범위(0.5) 이하라 통과
+        assertThat(service.update(1L, "setlist.recommend_range_ss", "0.4").value()).isEqualTo("0.4");
+        // SS 범위가 0.4가 된 뒤에도 S 범위는 0.4 이상이면 된다
+        assertThat(service.update(1L, "setlist.recommend_range_s", "0.4").value()).isEqualTo("0.4");
+        assertThat(service.update(1L, "setlist.recommend_min_entries", "20").value()).isEqualTo("20");
+    }
+
+    @Test
+    void 세트리스트_추천_설정이_규칙에_어긋나면_거절한다() {
+        assertRejected("setlist.recommend_range_ss", "0.6");       // S 범위(0.5)보다 크면 안 된다
+        assertRejected("setlist.recommend_range_ss", "0");         // 0 이하
+        assertRejected("setlist.recommend_range_s", "0.2");        // SS 범위(0.3)보다 작으면 안 된다
+        assertRejected("setlist.recommend_min_entries", "0");
+        assertRejected("setlist.recommend_min_entries", "열");
     }
 }

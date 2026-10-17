@@ -396,3 +396,33 @@ export interface SetlistItemResponse {
   done: boolean;
   createdAt: string;
 }
+
+// ---- 세트리스트 추천 (D37, 백엔드 SetlistRecommendationResponse) ---------------------------------------
+
+/** 추천 한 줄. mine은 내 SRN+ 최고 기록(없으면 null). */
+export interface RecommendationItem {
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  tier: number;
+  mine: MyRecord | null;
+}
+
+/**
+ * 세트리스트 추천. baseTier = 내 평균 난이도(레이팅 상수 난이도 기준)이고, 추정할 근거가 모자라면 null(목록도 비어 있다).
+ * ssChallenge = 평균 ± rangeSs 안에서 기록이 없거나 SS 미만, sFill = 평균 ± rangeS 안에서 기록이 없거나 S 미만이며 SS 도전에 없는 것.
+ * 두 묶음은 같은 page로 묶음마다 size개씩 온다. totalPages는 둘 중 긴 쪽 기준.
+ */
+export interface SetlistRecommendationResponse {
+  baseTier: number | null;
+  rangeSs: number;
+  rangeS: number;
+  ssChallenge: RecommendationItem[];
+  sFill: RecommendationItem[];
+  page: number;
+  size: number;
+  totalPages: number;
+}
