@@ -6,7 +6,7 @@ import { Pager, usePaged } from "@/components/Pager";
 import { StageBar } from "@/components/table/StageBar";
 import { chipsOf, groupStage } from "@/components/table/TierGroupSection";
 import type { RateFolderResponse } from "@/lib/api-types";
-import { folderLabel, folderStageCounts, type StatsAxis } from "@/lib/rate-folders";
+import { folderAverage, folderLabel, folderStageCounts, formatFolderAverage, type StatsAxis } from "@/lib/rate-folders";
 
 /**
  * 데스크톱 통계: 왼쪽에 폴더 목록(10개씩 페이지), 오른쪽에 고른 폴더의 달성률 구간 상세.
@@ -14,7 +14,7 @@ import { folderLabel, folderStageCounts, type StatsAxis } from "@/lib/rate-folde
  * 선택은 폴더의 key로 기억해서, 페이지를 넘기거나 기록을 저장해 목록이 새로 와도 같은 폴더가 선택돼 있다.
  * 모바일은 이 화면을 쓰지 않고 접이식 카드(RateFolderCard)를 쓴다.
  */
-export function RateFolderMaster({ axis, folders }: { axis: StatsAxis; folders: readonly RateFolderResponse[] }) {
+export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAxis; folders: readonly RateFolderResponse[]; includeZero: boolean }) {
   const [selectedKey, setSelectedKey] = useState<number | null>(null);
   const { page, totalPages, pageItems, setPage } = usePaged(folders);
   const selected = folders.find((f) => f.key === selectedKey) ?? null;
@@ -46,6 +46,9 @@ export function RateFolderMaster({ axis, folders }: { axis: StatsAxis; folders: 
                     <span className="ml-auto text-xs text-fg-dim">
                       기록 {folder.recorded}/{folder.total}
                     </span>
+                    <span className="text-xs text-fg-sub">
+                      평균 <span className="font-num font-semibold text-fg">{formatFolderAverage(folderAverage(folder, includeZero))}</span>
+                    </span>
                   </span>
                   <StageBar counts={counts} total={folder.total} className="h-1.5" />
                 </button>
@@ -56,12 +59,12 @@ export function RateFolderMaster({ axis, folders }: { axis: StatsAxis; folders: 
         <Pager page={page} totalPages={totalPages} onChange={setPage} />
       </div>
 
-      {selected ? <FolderDetail axis={axis} folder={selected} /> : <p className="rounded-xl border border-dashed border-line p-6 text-sm text-fg-sub">왼쪽에서 폴더를 선택하면 달성률 구간별 곡 수가 여기에 표시됩니다.</p>}
+      {selected ? <FolderDetail axis={axis} folder={selected} includeZero={includeZero} /> : <p className="rounded-xl border border-dashed border-line p-6 text-sm text-fg-sub">왼쪽에서 폴더를 선택하면 달성률 구간별 곡 수가 여기에 표시됩니다.</p>}
     </div>
   );
 }
 
-function FolderDetail({ axis, folder }: { axis: StatsAxis; folder: RateFolderResponse }) {
+function FolderDetail({ axis, folder, includeZero }: { axis: StatsAxis; folder: RateFolderResponse; includeZero: boolean }) {
   const title = folderLabel(axis, folder.key);
   const counts = folderStageCounts(folder);
   const reached = groupStage(counts);
@@ -76,8 +79,13 @@ function FolderDetail({ axis, folder }: { axis: StatsAxis; folder: RateFolderRes
             전부 {reached} 이상
           </span>
         ) : null}
-        <span className="ml-auto text-xs text-fg-dim">
-          기록 {folder.recorded}/{folder.total}
+        <span className="ml-auto flex items-baseline gap-3 text-xs text-fg-dim">
+          <span>
+            기록 {folder.recorded}/{folder.total}
+          </span>
+          <span className="text-sm text-fg-sub">
+            평균 <span className="font-num font-semibold text-fg">{formatFolderAverage(folderAverage(folder, includeZero))}</span>
+          </span>
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">

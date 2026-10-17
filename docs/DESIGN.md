@@ -494,7 +494,7 @@ com.srpfreaks.backend
 | 스킬 목록 | GET `/skills/me` (SRN+ 40곡 + 합계 + 플레이어 티어. 이후 scope 파라미터 확장 가능) | USER+ |
 | 사진 인식 | POST `/records/recognize` (multipart, 인식 결과만 반환하고 저장하지 않는다. 일일 한도) | USER+ |
 | 레이팅 스냅샷 (D32) | GET `/skills/me/snapshots`(목록), GET `/skills/me/snapshots/status`(기록 가능 여부), POST `/skills/me/snapshots`(기록, 하루 1회·변경 없으면 409), GET `/skills/me/snapshots/{id}/compare`(이전 스냅샷과 비교), GET `/skills/me/snapshots/compare-current`(최근 스냅샷과 지금 비교) | USER+ |
-| 마이페이지 통계 (D33) | GET `/stats/level-rate-folders`, GET `/stats/tier-rate-folders?tableId=`, GET `/stats/tier-rate-folders/charts?tableId=&tier=&rateBucket=&part=&sort=&page=&size=` (레벨 폴더 안 목록은 `GET /songs/charts`의 `rateBucket`·`sort`) | USER+ (본인) |
+| 마이페이지 통계 (D33) | GET `/stats/level-rate-folders`, GET `/stats/tier-rate-folders?tableId=`(폴더마다 `averageRecorded`·`averageWithZero` 포함, 2026-10-17), GET `/stats/tier-rate-folders/charts?tableId=&tier=&rateBucket=&part=&sort=&page=&size=` (레벨 폴더 안 목록은 `GET /songs/charts`의 `rateBucket`·`sort`) | USER+ (본인) |
 | 난이도표 | GET `/difficulty-tables` / POST·PATCH | USER+ / ADMIN+ |
 | 서열표 | GET `/difficulty-tables/{id}/entries?mine=true&part=&recommend=&pattern=&page=&size=` (`recommend`·`pattern`은 여러 값을 쉼표로 이어 보낼 수 있다(`recommend=상,중`). 한 필터 안은 OR, 필터끼리는 AND, 비우면 전체, 모르는 값이 하나라도 있으면 400. 기준 난이도 묶음 단위 페이지(기본 10, 최대 20), 묶음마다 칩 개수(EXC/FC/SS/S/S 미만)·평균(0% 미포함/포함 둘 다), 항목마다 본인 최고 기록과 단계. 쿼리 2번 고정: 항목 fetch join + 본인 최고 기록 group by. 본인 기록은 표의 기준 옵션(SRN+)만, 채보의 최고 달성률과 FC 여부(하나라도 FC면 FC)로 계산) | USER+ |
 | 곡 상세 | GET `/songs/{id}` (곡 정보 + 채보) | USER+ |

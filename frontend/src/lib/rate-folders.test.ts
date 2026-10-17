@@ -6,10 +6,12 @@ import {
   bucketStage,
   BUCKETS,
   entryToChartRow,
+  folderAverage,
   folderLabel,
   folderStageCounts,
   folderViewFromParams,
   folderViewToQuery,
+  formatFolderAverage,
 } from "@/lib/rate-folders";
 
 function folder(counts: Partial<Record<RateBucketKey, [number, number, number]>>, total: number, recorded: number): RateFolderResponse {
@@ -17,6 +19,8 @@ function folder(counts: Partial<Record<RateBucketKey, [number, number, number]>>
     key: 9.5,
     total,
     recorded,
+    averageRecorded: recorded === 0 ? null : 90.5,
+    averageWithZero: 45.25,
     buckets: BUCKETS.map(({ key }) => {
       const [count, exc, fc] = counts[key] ?? [0, 0, 0];
       return { bucket: key, count, exc, fc };
@@ -37,6 +41,20 @@ describe("folderStageCounts", () => {
 
   it("미플레이는 어느 단계에도 세지 않는다", () => {
     expect(folderStageCounts(folder({ UNPLAYED: [4, 0, 0] }, 4, 0))).toEqual({ exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, total: 4 });
+  });
+});
+
+describe("folderAverage", () => {
+  it("0% 포함이면 미플레이를 0으로 넣은 평균, 아니면 기록 있는 채보만의 평균이다", () => {
+    const f = folder({}, 10, 4);
+    expect(folderAverage(f, false)).toBe(90.5);
+    expect(folderAverage(f, true)).toBe(45.25);
+  });
+
+  it("기록이 하나도 없으면 미포함 평균은 null이고 `–`로 보인다", () => {
+    expect(folderAverage(folder({}, 3, 0), false)).toBeNull();
+    expect(formatFolderAverage(null)).toBe("–");
+    expect(formatFolderAverage(91.5)).toBe("91.50%");
   });
 });
 

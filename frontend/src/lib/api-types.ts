@@ -292,11 +292,16 @@ export interface RateBucketResponse {
   fc: number;
 }
 
-/** 폴더 하나. key는 레벨 폴더면 시작 레벨(9.5 = 9.50~9.99), 서열표 난이도면 레이팅 상수 난이도(5.8). buckets는 항상 7개다. */
+/**
+ * 폴더 하나. key는 레벨 폴더면 시작 레벨(9.5 = 9.50~9.99), 서열표 난이도면 레이팅 상수 난이도(5.8). buckets는 항상 7개다.
+ * 평균은 곡 목록·서열표와 같다: averageRecorded = 기록 있는 채보만(없으면 null), averageWithZero = 기록 없는 채보를 0%로 넣은 값.
+ */
 export interface RateFolderResponse {
   key: number;
   total: number;
   recorded: number;
+  averageRecorded: number | null;
+  averageWithZero: number;
   buckets: RateBucketResponse[];
 }
 

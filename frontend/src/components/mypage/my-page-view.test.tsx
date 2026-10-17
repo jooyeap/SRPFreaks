@@ -23,6 +23,8 @@ const rateFolders: RateFolderListResponse = {
       key: 9.5,
       total: 10,
       recorded: 6,
+      averageRecorded: 91.5,
+      averageWithZero: 54.9,
       buckets: [
         { bucket: "R95", count: 3, exc: 1, fc: 1 },
         { bucket: "R90", count: 1, exc: 0, fc: 0 },
@@ -140,6 +142,17 @@ describe("MyPageView", () => {
     expect(within(card).getAllByRole("listitem")[1].querySelectorAll("[data-segment]")).toHaveLength(1);
   });
 
+  it("폴더 머리에 평균이 보이고 `0% 포함`을 누르면 미플레이를 0%로 넣은 평균으로 바뀐다", async () => {
+    renderView("stats");
+    const card = await screen.findByRole("region", { name: "레벨 9.50 ~ 9.99" });
+    expect(within(card).getByRole("button", { name: /9\.50 ~ 9\.99/ })).toHaveTextContent("평균 91.50%"); // 기본은 0% 미포함
+    expect(screen.getByRole("button", { name: "0% 미포함" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "0% 포함" }));
+
+    expect(within(card).getByRole("button", { name: /9\.50 ~ 9\.99/ })).toHaveTextContent("평균 54.90%");
+  });
+
   it("폴더 머리에 단계 분포 칩(EXC/FC/SS/S/S 미만)을 모아 보인다", async () => {
     renderView("stats");
     const card = await screen.findByRole("region", { name: "레벨 9.50 ~ 9.99" });
@@ -195,7 +208,7 @@ describe("MyPageView", () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes("/stats/level-rate-folders")) {
-        return Promise.resolve(json({ folders: [{ key: 8, total: 4, recorded: 4, buckets: [
+        return Promise.resolve(json({ folders: [{ key: 8, total: 4, recorded: 4, averageRecorded: 97.25, averageWithZero: 97.25, buckets: [
           { bucket: "R95", count: 4, exc: 1, fc: 0 }, { bucket: "R90", count: 0, exc: 0, fc: 0 }, { bucket: "R85", count: 0, exc: 0, fc: 0 },
           { bucket: "R80", count: 0, exc: 0, fc: 0 }, { bucket: "R73", count: 0, exc: 0, fc: 0 }, { bucket: "BELOW", count: 0, exc: 0, fc: 0 },
           { bucket: "UNPLAYED", count: 0, exc: 0, fc: 0 },
@@ -256,6 +269,21 @@ describe("MyPageView", () => {
       expect(within(rows[0]).getByRole("link")).toHaveAttribute("href", "/me/folder?axis=level&key=9.50&bucket=R95");
       // 모바일 카드는 함께 그리지 않는다
       expect(screen.queryByRole("region", { name: "레벨 9.50 ~ 9.99" })).toBeNull();
+    });
+
+    it("목록 줄과 오른쪽 상세에 같은 평균이 보이고 토글에 따라 함께 바뀐다", async () => {
+      renderView("stats");
+      const list = await screen.findByRole("list", { name: "폴더 목록" });
+      const item = within(list).getByRole("button", { name: /9\.50 ~ 9\.99/ });
+      fireEvent.click(item);
+      const detail = screen.getByRole("region", { name: "9.50 ~ 9.99 상세" });
+      expect(item).toHaveTextContent("평균 91.50%");
+      expect(detail).toHaveTextContent("평균 91.50%");
+
+      fireEvent.click(screen.getByRole("button", { name: "0% 포함" }));
+
+      expect(item).toHaveTextContent("평균 54.90%");
+      expect(detail).toHaveTextContent("평균 54.90%");
     });
 
     it("다른 폴더를 고르면 상세가 그 폴더로 바뀐다", async () => {

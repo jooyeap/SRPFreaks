@@ -11,8 +11,10 @@ import {
   bucketListHref,
   bucketStage,
   BUCKETS,
+  folderAverage,
   folderLabel,
   folderStageCounts,
+  formatFolderAverage,
   type StatsAxis,
 } from "@/lib/rate-folders";
 
@@ -28,13 +30,13 @@ const BUCKET_CHIP: Record<RateBucketKey, string> = {
 };
 
 /**
- * 폴더(레벨 폴더 또는 서열표 난이도) 하나: 접힌 머리에 제목, `기록 n/전체`, 단계 분포 막대와 EXC/FC/SS/S/S 미만 칩, 펼치면 달성률 구간 7개(막대 + 개수)가 나온다.
+ * 폴더(레벨 폴더 또는 서열표 난이도) 하나: 접힌 머리에 제목, `기록 n/전체`, 평균(includeZero가 `0% 포함/미포함`을 정한다), 단계 분포 막대와 EXC/FC/SS/S/S 미만 칩, 펼치면 달성률 구간 7개(막대 + 개수)가 나온다.
  * 구간을 누르면 그 폴더·구간의 채보 목록 화면으로 간다.
  * 폴더의 채보를 모두 플레이했고 모두 같은 단계 이상이면 그 단계(S/SS/FC/EXC) 색으로 머리가 밝아진다(곡 목록·서열표 묶음과 같은 규칙).
  * 색만으로 구분하지 않도록 개수와 구간 이름이 글자로 같이 있다. 막대는 장식이라 aria-hidden이다.
  * 95~100% 구간에는 막대 아래에 MAX(100.00)와 FC(풀콤보, 100 미만) 개수를 뱃지로 따로 보인다.
  */
-export function RateFolderCard({ axis, folder }: { axis: StatsAxis; folder: RateFolderResponse }) {
+export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis; folder: RateFolderResponse; includeZero: boolean }) {
   const [open, setOpen] = useState(false);
   const title = folderLabel(axis, folder.key);
   const counts = folderStageCounts(folder);
@@ -66,6 +68,9 @@ export function RateFolderCard({ axis, folder }: { axis: StatsAxis; folder: Rate
             <span className="ml-auto flex items-baseline gap-2 text-sm text-fg-sub">
               <span className="text-xs text-fg-dim">
                 기록 {folder.recorded}/{folder.total}
+              </span>
+              <span>
+                평균 <span className="font-num font-semibold text-fg">{formatFolderAverage(folderAverage(folder, includeZero))}</span>
               </span>
               <span aria-hidden="true" className="text-fg-dim">
                 {open ? "▴" : "▾"}
