@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Skeleton } from "@/components/Skeleton";
 import { PlayersPreview } from "@/components/home/PlayersPreview";
-import { TableProgressCard } from "@/components/home/TableProgressCard";
+import { ProgressCard, type ProgressPanel } from "@/components/home/ProgressCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import {
   allGroupsKey,
@@ -14,7 +14,9 @@ import {
   tableKeys,
   tableProgress,
 } from "@/lib/difficulty-table";
+import { folderProgress } from "@/lib/progress";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
+import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 
 const SHORTCUTS = [
   { href: "/songs", title: "곡 목록", description: "레벨 폴더별로 전체 곡을 보고 검색합니다." },
@@ -23,9 +25,9 @@ const SHORTCUTS = [
 ] as const;
 
 /**
- * 로그인한 사용자의 홈: 내 레이팅 요약, 서열표 진행도, 유저 목록 미리보기, 바로가기.
+ * 로그인한 사용자의 홈: 내 레이팅 요약, 진행도(서열표·곡 목록 탭), 유저 목록 미리보기, 바로가기.
  * 각 칸은 따로 불러와서 한쪽이 실패(또는 서열표 없음)해도 나머지는 그대로 보여 준다.
- * 서열표 쿼리 키는 곡 상세·묶음 페이지와 같아서(allGroupsKey) 캐시를 함께 쓴다.
+ * 서열표 쿼리 키는 곡 상세·묶음 페이지와 같고(allGroupsKey), 곡 목록은 곡 목록 화면의 "필터 없음" 폴더 키와 같아서 캐시를 함께 쓴다.
  */
 export function HomeDashboard({ userId, name }: { userId: number; name: string }) {
   const skill = useQuery({
@@ -43,6 +45,24 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
     queryFn: ({ signal }) => fetchAllTierGroups(tableId ?? 0, signal),
     enabled: tableId !== null,
   });
+  // 곡 목록 탭: 레벨 폴더별 통계(필터 없음)를 합친다. 두 탭을 모두 미리 불러와 탭을 바꿀 때 기다리지 않게 한다
+  const folders = useQuery({
+    queryKey: songListKeys.folders(userId),
+    queryFn: ({ signal }) => fetchChartFolders(signal),
+  });
+
+  const tablePanel: ProgressPanel = groups.data
+    ? { kind: "ready", progress: tableProgress(groups.data) }
+    : groups.isError || tables.isError
+      ? { kind: "error" }
+      : tables.isSuccess && tableId === null
+        ? { kind: "empty", message: "SRN+ 서열표가 아직 없습니다." }
+        : { kind: "loading" };
+  const songsPanel: ProgressPanel = folders.data
+    ? { kind: "ready", progress: folderProgress(folders.data.folders) }
+    : folders.isError
+      ? { kind: "error" }
+      : { kind: "loading" };
 
   return (
     <div className="flex flex-col gap-4">
@@ -60,15 +80,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
         <Skeleton label="레이팅을 불러오는 중입니다." className="h-[7.5rem]" />
       )}
 
-      {groups.data ? (
-        <TableProgressCard progress={tableProgress(groups.data)} />
-      ) : groups.isError || tables.isError ? (
-        <p role="alert" className="text-sm text-fg">서열표 진행도를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
-      ) : tables.isSuccess && tableId === null ? (
-        <p className="text-sm text-fg-sub">SRN+ 서열표가 아직 없습니다.</p>
-      ) : (
-        <Skeleton label="서열표 진행도를 불러오는 중입니다." className="h-32" />
-      )}
+      <ProgressCard table={tablePanel} songs={songsPanel} />
 
       <PlayersPreview viewerId={userId} />
 

@@ -51,6 +51,11 @@
   --stage-s-chip: #4ade80; --stage-ss-chip: #6ea0ff;
   --stage-fc-chip: linear-gradient(90deg, #22d3ee, #c084fc);
   --stage-exc-chip: linear-gradient(90deg, #ffe27a, #ffb347, #ff7eb6);
+  /* 홈 진행도 도넛: SVG 선은 CSS 그라데이션 값을 못 쓰므로 EXC/FC 그라데이션의 끝점 색을 따로 둔다 */
+  --ring-exc-1: #ffe27a; --ring-exc-2: #ffb347; --ring-exc-3: #ff7eb6;
+  --ring-fc-1: #22d3ee; --ring-fc-2: #c084fc;
+  /* 진행도 칸 지도에서 가장 비어 있는 구간(`약함`) 표시. 글자(약함)가 같이 있어 색만으로 구분하지 않는다 */
+  --weak-line: #ff9f43; --weak-text: #ffb870; --weak-tint: rgb(255 159 67 / 0.14);
 
   /* 추천도 / 난이도 (3장) */
   --rec-high-bg: #ff9f43; --rec-high-fg: #1a0e05;
@@ -95,6 +100,9 @@
   --stage-c-bar: #7d869a; --stage-b-bar: #6f788d; --stage-a-bar: #626b80;
   --stage-s-tint: rgb(22 163 74 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
   --stage-fc-tint: rgb(8 145 178 / 0.09); --stage-exc-tint: rgb(245 179 1 / 0.12);
+  --ring-exc-1: #f5b301; --ring-exc-2: #f97316; --ring-exc-3: #ec4899;
+  --ring-fc-1: #0891b2; --ring-fc-2: #9333ea;
+  --weak-line: #d97706; --weak-text: #b45309; --weak-tint: rgb(217 119 6 / 0.1);
 }
 
 @media (prefers-color-scheme: light) {
@@ -130,6 +138,9 @@
     --stage-c-bar: #7d869a; --stage-b-bar: #6f788d; --stage-a-bar: #626b80;
     --stage-s-tint: rgb(22 163 74 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
     --stage-fc-tint: rgb(8 145 178 / 0.09); --stage-exc-tint: rgb(245 179 1 / 0.12);
+    --ring-exc-1: #f5b301; --ring-exc-2: #f97316; --ring-exc-3: #ec4899;
+    --ring-fc-1: #0891b2; --ring-fc-2: #9333ea;
+    --weak-line: #d97706; --weak-text: #b45309; --weak-tint: rgb(217 119 6 / 0.1);
   }
 }
 
@@ -155,6 +166,9 @@
   --color-danger: var(--danger);
   --color-done: var(--done);
   --color-done-text: var(--done-text);
+  --color-weak: var(--weak-line);
+  --color-weak-text: var(--weak-text);
+  --color-weak-tint: var(--weak-tint);
 
   /* 본문은 Noto Sans KR, 숫자/영문 라벨은 Chakra Petch (DESIGN-UI 1장) */
   --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
