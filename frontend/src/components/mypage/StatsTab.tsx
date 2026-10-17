@@ -1,11 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { OverallStageCard } from "@/components/mypage/OverallStageCard";
 import { Pager, usePaged } from "@/components/Pager";
 import { RateFolderMaster } from "@/components/mypage/RateFolderMaster";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { RateFolderCard } from "@/components/mypage/RateFolderCard";
+import { AverageToggle } from "@/components/table/FilterChips";
 import { Skeleton } from "@/components/Skeleton";
 import { ApiError } from "@/lib/api";
 import type { RateFolderListResponse, RateFolderResponse } from "@/lib/api-types";
@@ -30,6 +32,7 @@ function errorMessage(error: unknown): string {
  * 맨 위에 전체 달성 현황을 둔다. 곡 목록의 폴더 API(/songs/chart-folders)를 합산하고 곡 목록 화면과 같은 쿼리 키라 캐시를 함께 쓴다.
  */
 export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis: StatsAxis; onAxisChange: (axis: StatsAxis) => void }) {
+  const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const overall = useQuery({
     queryKey: songListKeys.folders(userId),
     queryFn: ({ signal }) => fetchChartFolders(signal),
@@ -64,20 +67,21 @@ export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis:
           );
         })}
       </div>
-      {axis === "level" ? <LevelFolders userId={userId} /> : <TierFolders userId={userId} />}
+      <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
+      {axis === "level" ? <LevelFolders userId={userId} includeZero={includeZero} /> : <TierFolders userId={userId} includeZero={includeZero} />}
     </div>
   );
 }
 
-function LevelFolders({ userId }: { userId: number }) {
+function LevelFolders({ userId, includeZero }: { userId: number; includeZero: boolean }) {
   const q = useQuery({
     queryKey: statsKeys.levelFolders(userId),
     queryFn: ({ signal }) => fetchLevelRateFolders(signal),
   });
-  return <FolderList axis="level" query={q} emptyText="아직 등록된 곡이 없습니다." />;
+  return <FolderList axis="level" query={q} includeZero={includeZero} emptyText="아직 등록된 곡이 없습니다." />;
 }
 
-function TierFolders({ userId }: { userId: number }) {
+function TierFolders({ userId, includeZero }: { userId: number; includeZero: boolean }) {
   const tables = useQuery({
     queryKey: tableKeys.list,
     queryFn: ({ signal }) => fetchDifficultyTables(signal),
@@ -95,15 +99,17 @@ function TierFolders({ userId }: { userId: number }) {
   if (tables.isError) {
     return <p role="alert" className="text-sm text-fg">{errorMessage(tables.error)}</p>;
   }
-  return <FolderList axis="tier" query={q} emptyText="서열표에 레이팅 상수 난이도가 정해진 채보가 아직 없습니다." />;
+  return <FolderList axis="tier" query={q} includeZero={includeZero} emptyText="서열표에 레이팅 상수 난이도가 정해진 채보가 아직 없습니다." />;
 }
 
 function FolderList({
   axis,
   query,
+  includeZero,
   emptyText,
 }: {
   axis: StatsAxis;
+  includeZero: boolean;
   query: { data?: RateFolderListResponse; isError: boolean; error: unknown };
   emptyText: string;
 }) {
@@ -111,7 +117,7 @@ function FolderList({
     return query.data.folders.length === 0 ? (
       <p className="text-sm text-fg-sub">{emptyText}</p>
     ) : (
-      <PagedFolders key={axis} axis={axis} folders={query.data.folders} />
+      <PagedFolders key={axis} axis={axis} folders={query.data.folders} includeZero={includeZero} />
     );
   }
   if (query.isError) {
@@ -121,20 +127,20 @@ function FolderList({
 }
 
 /** 폴더가 많아서(특히 서열표 난이도) 10개씩 나눠 보여 준다. */
-function PagedFolders({ axis, folders }: { axis: StatsAxis; folders: readonly RateFolderResponse[] }) {
+function PagedFolders({ axis, folders, includeZero }: { axis: StatsAxis; folders: readonly RateFolderResponse[]; includeZero: boolean }) {
   // 데스크톱은 좌우 분할(좌: 폴더 목록, 우: 상세), 모바일은 접이식 카드
   const desktop = useMediaQuery(DESKTOP_QUERY);
-  if (desktop) return <RateFolderMaster axis={axis} folders={folders} />;
-  return <MobileFolders axis={axis} folders={folders} />;
+  if (desktop) return <RateFolderMaster axis={axis} folders={folders} includeZero={includeZero} />;
+  return <MobileFolders axis={axis} folders={folders} includeZero={includeZero} />;
 }
 
-function MobileFolders({ axis, folders }: { axis: StatsAxis; folders: readonly RateFolderResponse[] }) {
+function MobileFolders({ axis, folders, includeZero }: { axis: StatsAxis; folders: readonly RateFolderResponse[]; includeZero: boolean }) {
   const { page, totalPages, pageItems, setPage } = usePaged(folders);
   return (
     <>
       <div className="flex flex-col gap-2.5">
         {pageItems.map((folder) => (
-          <RateFolderCard key={folder.key} axis={axis} folder={folder} />
+          <RateFolderCard key={folder.key} axis={axis} folder={folder} includeZero={includeZero} />
         ))}
       </div>
       <Pager page={page} totalPages={totalPages} onChange={setPage} />

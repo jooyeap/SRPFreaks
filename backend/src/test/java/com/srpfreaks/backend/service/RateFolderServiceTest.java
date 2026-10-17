@@ -126,6 +126,34 @@ class RateFolderServiceTest {
     }
 
     @Test
+    void 평균은_기록_있는_채보만과_0퍼센트_포함_두_가지다() {
+        // 합계 100.00 + 90.00 + 80.00 = 270.00. 기록 3개 / 전체 4개
+        RateFolderResponse folder = RateFolderService.toFolder(new BigDecimal("8.00"), Arrays.asList(
+                best(1, "100.00", true), best(2, "90.00", false), best(3, "80.00", false), null));
+
+        assertThat(folder.averageRecorded()).isEqualByComparingTo("90.00");   // 270 / 3
+        assertThat(folder.averageWithZero()).isEqualByComparingTo("67.50");   // 270 / 4
+    }
+
+    @Test
+    void 평균은_소수_둘째_자리에서_반올림한다() {
+        // 기록 2개: 199.97 / 2 = 99.985 -> 99.99(HALF_UP). 전체 3개: 199.97 / 3 = 66.6566.. -> 66.66
+        RateFolderResponse folder = RateFolderService.toFolder(new BigDecimal("8.00"), Arrays.asList(
+                best(1, "99.99", false), best(2, "99.98", false), null));
+
+        assertThat(folder.averageRecorded()).isEqualByComparingTo("99.99");
+        assertThat(folder.averageWithZero()).isEqualByComparingTo("66.66");
+    }
+
+    @Test
+    void 기록이_없으면_기록_평균은_null이고_0퍼센트_포함_평균은_0이다() {
+        RateFolderResponse folder = RateFolderService.toFolder(new BigDecimal("6.0"), Arrays.asList(null, null));
+
+        assertThat(folder.averageRecorded()).isNull();
+        assertThat(folder.averageWithZero()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
     void 레벨_폴더는_0점5_단위로_묶고_레벨_높은_폴더가_위다() {
         SongDifficulty a = chart("8.49");   // 8.00 폴더
         SongDifficulty b = chart("8.50");   // 8.50 폴더

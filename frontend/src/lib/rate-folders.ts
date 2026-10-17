@@ -10,7 +10,7 @@ import type {
 } from "@/lib/api-types";
 import type { InstrumentPart } from "@/lib/types";
 import type { StageCounts } from "@/components/table/StageBar";
-import { formatLevel, formatTier } from "@/lib/format";
+import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
 
 /** 통계 쿼리 키. 앞부분 "stats"는 records.ts의 AFFECTED_QUERY_KEYS와 같다: 기록을 저장/수정/삭제하면 무효화된다. 내 기록이 섞이므로 사용자 id를 넣는다. */
 export const statsKeys = {
@@ -61,6 +61,16 @@ export function bucketStage(key: RateBucketKey): "SS" | "S" | "A" | "C" | null {
 
 function bucketOf(folder: RateFolderResponse, key: RateBucketKey): RateBucketResponse {
   return folder.buckets.find((b) => b.bucket === key) ?? { bucket: key, count: 0, exc: 0, fc: 0 };
+}
+
+/** 폴더 평균. "0% 포함"이면 기록 없는 채보를 0%로 넣은 값, 아니면 기록 있는 채보만의 값(기록이 없으면 null). */
+export function folderAverage(folder: RateFolderResponse, includeZero: boolean): number | null {
+  return includeZero ? folder.averageWithZero : folder.averageRecorded;
+}
+
+/** 평균 표기. 소수 둘째 자리 + %. 기록이 없어 평균이 없으면 `–`. */
+export function formatFolderAverage(value: number | null): string {
+  return value === null ? EMPTY_MARK : `${value.toFixed(2)}%`;
 }
 
 /**
