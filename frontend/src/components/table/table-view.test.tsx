@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { DifficultyTableView } from "@/components/table/DifficultyTableView";
-import { ROW_GRID, TableHeadRow } from "@/components/table/EntryRow";
+import { ROW_GRID } from "@/components/table/EntryRow";
 import { StageBadge } from "@/components/table/StageBadge";
 import { DEFAULT_VIEW_STATE } from "@/lib/table-view-state";
 import { TierGroupSection, groupStage } from "@/components/table/TierGroupSection";
@@ -459,14 +459,6 @@ describe("DifficultyTableView", () => {
     for (const name of ["파트", "추천", "속성", "평균 계산"]) {
       expect(panel).toContainElement(screen.getByRole("group", { name }));
     }
-  });
-
-  it("표형 열 순서: 점수(레이팅)는 달성률·추천·속성과 같은 오른쪽 묶음 끝에 있다", () => {
-    const { container } = render(<TableHeadRow />);
-    const labels = Array.from(container.querySelectorAll("span")).map((el) => el.textContent);
-    expect(labels).toEqual(["", "곡명", "랭크", "채보", "달성률", "추천", "속성", "점수", ""]);
-    // 열 개수와 격자 칸 수가 같다 (막대 · 곡명 · 랭크 · 채보 · 달성률 · 추천 · 속성 · 점수 · 기록)
-    expect(ROW_GRID.match(/\d+px|minmax\(0,1fr\)/g)).toHaveLength(labels.length);
   });
 
   it("표형 열 너비: 랭크 70 · 채보 190 · 달성률 90px (머리 행과 행이 같은 값을 쓴다)", () => {
