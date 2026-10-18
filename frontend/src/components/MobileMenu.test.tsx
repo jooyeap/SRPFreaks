@@ -1,7 +1,10 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { MobileMenu } from "@/components/MobileMenu";
+
+// SiteHeader 안의 DesktopNav가 현재 경로를 읽는다
+vi.mock("next/navigation", () => ({ usePathname: () => "/songs" }));
 
 function renderMenu() {
   return render(
@@ -48,16 +51,17 @@ describe("MobileMenu", () => {
     }
   });
 
-  it("헤더에는 가로 메뉴 링크가 없고 햄버거만 있다(모든 화면 폭)", async () => {
+  it("헤더에는 lg 이상용 가로 메뉴와 lg 미만용 햄버거가 함께 있고, 각각 반대 폭에서 숨는다", async () => {
     const { SiteHeader } = await import("@/components/SiteHeader");
     render(
       <AuthProvider>
         <SiteHeader />
       </AuthProvider>,
     );
-    expect(screen.queryByRole("navigation", { name: "주요 메뉴" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "곡 목록" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "메뉴 열기" })).not.toHaveClass("sm:hidden");
+    // 가로 메뉴(DesktopNav)는 lg 이상에서만 보인다
+    expect(screen.getByRole("navigation", { name: "주요 메뉴" })).toHaveClass("hidden", "lg:flex");
+    // 햄버거는 lg 이상에서 감싸는 칸이 숨긴다 (jsdom은 CSS를 계산하지 않아 클래스로 확인한다)
+    expect(screen.getByRole("button", { name: "메뉴 열기" }).closest("div")).toHaveClass("lg:hidden");
   });
 
   it("열면 닫기 버튼으로 포커스가 가고, 뒤 화면 스크롤을 잠근다", () => {

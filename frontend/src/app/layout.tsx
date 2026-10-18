@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>
           <SiteHeader />
           <NicknameNotice />
-          <main className="mx-auto w-full max-w-[980px] flex-1 px-4 py-6">{children}</main>
+          <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6">{children}</main>
           <SiteFooter />
         </Providers>
       </body>
