@@ -153,7 +153,7 @@ export function DifficultyTableView({
         aria-expanded={filtersOpen}
         aria-controls="table-filters"
         onClick={() => setFiltersOpen((open) => !open)}
-        className="flex items-center justify-between gap-3 rounded-xl border border-line bg-card px-4 py-2.5 text-left text-sm md:hidden"
+        className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 py-2.5 text-left text-sm md:hidden"
       >
         <span className="font-semibold text-fg">필터</span>
         <span className="min-w-0 flex-1 truncate text-xs text-fg-dim">{filterSummary(filters, includeZero)}</span>
@@ -164,7 +164,7 @@ export function DifficultyTableView({
       <div
         id="table-filters"
         // 모바일: 세로로 쌓이는 접이식 패널. 데스크톱(md 이상): 파트 · 추천 · 속성 · 정렬 · 평균 계산이 한 카드 안에 가로로 놓인다(시안, 넘치면 줄바꿈)
-        className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-xl border border-line bg-card p-3 md:flex md:flex-row md:flex-wrap md:items-center md:gap-x-5 md:gap-y-2 md:rounded-2xl md:px-4 md:py-3`}
+        className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:flex md:flex-row md:flex-wrap md:items-center md:gap-x-5 md:gap-y-2 md:rounded-2xl md:px-4 md:py-3`}
       >
         <TableFilterPanel filters={filters} onChange={changeFilter} />
         <SortSelect value={sort} onChange={setSort} />

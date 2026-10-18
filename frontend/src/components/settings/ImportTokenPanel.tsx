@@ -111,7 +111,7 @@ export function ImportTokenPanel({ userId }: { userId: number }) {
     }
   }
 
-  const card = "flex flex-col gap-3 rounded-[14px] border border-line bg-card p-4";
+  const card = "flex flex-col gap-3 rounded-2xl border border-line bg-card p-4";
   const exists = status.data?.exists === true;
 
   return (

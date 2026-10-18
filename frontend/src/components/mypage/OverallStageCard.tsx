@@ -18,7 +18,7 @@ export function OverallStageCard({ stages }: { stages: OverallStages }) {
     { stage: "S", count: stages.s },
   ] as const;
   return (
-    <section aria-label="전체 달성 현황" className="flex flex-col gap-3 rounded-[14px] border border-line bg-card p-4">
+    <section aria-label="전체 달성 현황" className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
       <h2 className="font-num text-[17px] font-bold text-fg">전체 달성 현황</h2>
       <p className="text-sm text-fg-sub">
         기록 <span className="font-num font-semibold text-fg">{stages.recorded}</span>/{stages.total}

@@ -41,7 +41,7 @@ export function WithdrawForm() {
 
   return (
     <div className="flex flex-col gap-4">
-      <section className="flex flex-col gap-3 rounded-[14px] border border-danger bg-card p-4" aria-label="삭제되는 내용">
+      <section className="flex flex-col gap-3 rounded-2xl border border-danger bg-card p-4" aria-label="삭제되는 내용">
         <h2 className="flex items-center gap-2 text-sm font-extrabold text-danger">
           <span aria-hidden="true">!</span>되돌릴 수 없습니다
         </h2>
@@ -54,14 +54,14 @@ export function WithdrawForm() {
         </ul>
       </section>
 
-      <section className="flex flex-col gap-1.5 rounded-[14px] border border-line bg-card p-4" aria-label="삭제 범위">
+      <section className="flex flex-col gap-1.5 rounded-2xl border border-line bg-card p-4" aria-label="삭제 범위">
         <h2 className="text-sm font-bold text-fg-sub">삭제 범위</h2>
         <p className="text-xs leading-relaxed text-fg-sub">
           이 서비스에 저장된 회원님의 모든 정보가 삭제됩니다. 운영자의 관리 작업 기록에 남아 있던 이 계정의 식별 정보도 지워집니다. 같은 Google 계정으로 다시 가입하면 새 계정으로 시작합니다.
         </p>
       </section>
 
-      <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-line bg-card px-3.5 py-3">
+      <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-line bg-card px-3.5 py-3">
         <input
           type="checkbox"
           checked={confirmed}

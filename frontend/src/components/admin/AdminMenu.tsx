@@ -11,7 +11,7 @@ export function AdminMenu({ role }: { role: Role }) {
       <ul aria-label="관리 메뉴" className="flex flex-col gap-2">
         {items.map((item) => (
           <li key={item.href}>
-            <Link href={item.href} className="flex flex-col gap-0.5 rounded-[14px] border border-line bg-card px-4 py-3 hover:bg-table-head">
+            <Link href={item.href} className="flex flex-col gap-0.5 rounded-2xl border border-line bg-card px-4 py-3 hover:bg-table-head">
               <span className="text-sm font-bold text-fg">{item.title}</span>
               <span className="text-xs text-fg-sub">{item.description}</span>
             </Link>

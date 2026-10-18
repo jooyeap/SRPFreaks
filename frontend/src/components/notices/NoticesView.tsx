@@ -201,7 +201,7 @@ function NoticeItem({
     );
   }
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4">
+    <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-[17px] font-bold text-fg">{notice.title}</h2>
         <time dateTime={notice.createdAt} className="shrink-0 font-num text-xs text-fg-dim">
@@ -219,7 +219,7 @@ function NoticeItem({
                 type="button"
                 disabled={removePending}
                 onClick={onConfirmDelete}
-                className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+                className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
               >
                 {removePending ? "삭제 중" : "삭제"}
               </button>
@@ -227,7 +227,7 @@ function NoticeItem({
                 type="button"
                 disabled={removePending}
                 onClick={onCancelDelete}
-                className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+                className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
               >
                 취소
               </button>

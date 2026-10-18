@@ -167,7 +167,7 @@ export function SongDetailView({
               <button
                 type="button"
                 onClick={openTableEdit}
-                className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
               >
                 {found ? "서열표 값 수정" : "서열표에 추가"}
               </button>
@@ -177,7 +177,7 @@ export function SongDetailView({
                 <button
                   type="button"
                   onClick={() => setSongEdit({ kind: "song", song: data })}
-                  className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                  className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
                 >
                   곡 정보 수정
                 </button>
@@ -185,7 +185,7 @@ export function SongDetailView({
                   <button
                     type="button"
                     onClick={() => setSongEdit({ kind: "chart", song: data, chart })}
-                    className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                    className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
                   >
                     채보 수정
                   </button>

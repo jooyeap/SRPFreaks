@@ -41,7 +41,7 @@ export function ChartList({
             type="button"
             disabled={loadingMore}
             onClick={onMore}
-            className="rounded-lg border border-chip-line px-4 py-1 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
+            className="min-h-11 rounded-lg border border-chip-line px-4 py-1 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
           >
             {loadingMore ? "불러오는 중" : "더 보기"}
           </button>

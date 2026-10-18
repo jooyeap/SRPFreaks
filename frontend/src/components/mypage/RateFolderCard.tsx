@@ -44,7 +44,7 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
   const bodyId = `rate-folder-${axis}-${folder.key.toFixed(2)}`;
 
   return (
-    <section aria-label={`${axis === "level" ? "레벨" : "레이팅 상수 난이도"} ${title}`} className="overflow-hidden rounded-[14px] border border-line bg-card">
+    <section aria-label={`${axis === "level" ? "레벨" : "레이팅 상수 난이도"} ${title}`} className="overflow-hidden rounded-2xl border border-line bg-card">
       <h3>
         <button
           type="button"

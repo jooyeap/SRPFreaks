@@ -54,7 +54,7 @@ export function NoticeForm({
           // 실패 문구는 부모가 error로 넘겨 준다. 입력한 내용은 지우지 않는다.
         }
       })}
-      className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4"
+      className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4"
     >
       <label className="flex flex-col gap-1 text-sm text-fg-sub">
         제목
@@ -83,7 +83,7 @@ export function NoticeForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+          className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
         >
           {pending ? "저장 중" : submitLabel}
         </button>
@@ -92,7 +92,7 @@ export function NoticeForm({
             type="button"
             disabled={pending}
             onClick={onCancel}
-            className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+            className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
           >
             취소
           </button>

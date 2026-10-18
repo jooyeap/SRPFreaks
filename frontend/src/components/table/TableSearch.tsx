@@ -111,7 +111,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
           <h2 id="table-search-title" className="text-lg font-extrabold">
             서열표 곡 검색
           </h2>
-          <button type="button" onClick={close} className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+          <button type="button" onClick={close} className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
             닫기
           </button>
         </div>

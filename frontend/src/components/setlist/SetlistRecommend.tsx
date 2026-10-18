@@ -39,7 +39,7 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
   });
 
   return (
-    <section aria-label="내 실력대 추천" className="flex flex-col gap-3 rounded-xl border border-line bg-card p-3">
+    <section aria-label="내 실력대 추천" className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
       <h2 className="text-sm font-bold text-fg">내 실력대 추천</h2>
 
       {result.isPending ? (

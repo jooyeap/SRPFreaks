@@ -18,7 +18,7 @@ export function InfoCards({ song }: { song: SongDetailResponse }) {
   return (
     <ul className="grid grid-cols-1 gap-2" aria-label="곡 정보 요약">
       {items.map((item) => (
-        <li key={item.label} className="rounded-xl border border-line bg-card px-3 py-2.5">
+        <li key={item.label} className="rounded-2xl border border-line bg-card px-3 py-2.5">
           <p className="text-xs text-fg-dim">{item.label}</p>
           <p className="mt-0.5 truncate font-num text-base font-bold text-fg">{item.value}</p>
         </li>

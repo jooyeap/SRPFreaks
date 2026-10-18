@@ -26,7 +26,7 @@ export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex items-center gap-3 border-t border-row-line py-2 pl-4 pr-3 first:border-t-0 ${ROW_GRID} ${
+      className={`relative flex min-h-14 items-center gap-3 border-t border-row-line py-2 pl-4 pr-3 first:border-t-0 md:min-h-12 ${ROW_GRID} ${
         stage ? "stage-tint" : ""
       }`}
     >

@@ -36,7 +36,7 @@ export function TierFolderNav({ groups, currentTier }: { groups: readonly TierGr
     <div className="flex flex-col gap-2">
       <nav aria-label="이웃 난이도" className="flex items-stretch justify-between gap-2">
         <StepLink group={lower} direction="prev" />
-        <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-xl border border-line bg-card px-3 py-1.5">
+        <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-line bg-card px-3 py-1.5">
           <span aria-current="page" className="font-num text-lg font-semibold text-fg">
             {formatTier(current.tier)}
           </span>

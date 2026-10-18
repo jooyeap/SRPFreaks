@@ -73,7 +73,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       </h1>
 
       {skill.data ? (
-        <Link href="/me" className="block rounded-[14px] hover:opacity-95" aria-label="마이페이지로">
+        <Link href="/me" className="block rounded-2xl hover:opacity-95" aria-label="마이페이지로">
           <RatingSummary skill={skill.data} />
         </Link>
       ) : skill.isError ? (

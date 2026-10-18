@@ -5,7 +5,7 @@
  */
 export function Skeleton({ label, className = "h-28" }: { label: string; className?: string }) {
   return (
-    <div aria-busy="true" className={`animate-pulse rounded-[14px] bg-table-head motion-reduce:animate-none ${className}`}>
+    <div aria-busy="true" className={`animate-pulse rounded-2xl bg-table-head motion-reduce:animate-none ${className}`}>
       <span className="sr-only">{label}</span>
     </div>
   );

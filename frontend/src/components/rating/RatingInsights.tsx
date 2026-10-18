@@ -44,7 +44,7 @@ export function RatingInsights({ userId }: { userId: number }) {
   return (
     <div className="flex flex-col gap-3">
       {canRecord ? (
-        <section aria-label="레이팅 기록 제안" className="flex flex-col gap-2 rounded-[14px] border border-chip-on-bg bg-card p-4">
+        <section aria-label="레이팅 기록 제안" className="flex flex-col gap-2 rounded-2xl border border-chip-on-bg bg-card p-4">
           <p className="text-sm font-semibold text-fg">
             {result
               ? `마지막 기록(${result.fromDate}) 이후 레이팅이 ${formatChange(result.totalChange).text} 달라졌습니다.`
@@ -72,7 +72,7 @@ export function RatingInsights({ userId }: { userId: number }) {
       ) : null}
 
       {result ? (
-        <section aria-label="레이팅 현황" className="flex flex-col gap-2 rounded-[14px] border border-line bg-card p-4">
+        <section aria-label="레이팅 현황" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
           <div className="flex flex-col gap-2">
             <button
               type="button"

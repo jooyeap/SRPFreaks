@@ -147,7 +147,7 @@ function SetlistRow({
 }) {
   const stage = item.mine?.stage ?? null;
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-line bg-card p-3">
+    <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <Link href={`/songs/${item.songId}?chart=${item.songDifficultyId}`} className="block truncate text-sm font-bold text-fg hover:underline">

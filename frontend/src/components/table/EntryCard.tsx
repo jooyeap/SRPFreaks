@@ -25,7 +25,7 @@ export function EntryCard({
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex items-center gap-2 border-t border-row-line py-2 pl-4 pr-3 first:border-t-0 md:hidden ${
+      className={`relative flex min-h-[60px] items-center gap-2 border-t border-row-line py-2 pl-4 pr-3 first:border-t-0 md:hidden ${
         stage ? "stage-tint" : ""
       }`}
     >

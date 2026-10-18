@@ -18,7 +18,7 @@ export default function TierFolderPage() {
       <section className="flex flex-col items-start gap-3">
         <h1 className="text-xl font-semibold text-fg">서열표 묶음</h1>
         <p className="text-sm text-fg-sub">내 기록과 함께 보려면 로그인해 주세요.</p>
-        <Link href="/login" className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           로그인
         </Link>
       </section>
