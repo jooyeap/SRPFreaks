@@ -85,7 +85,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
         onClick={() => setOpen(true)}
         aria-label="곡 검색"
         title="곡 검색"
-        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-chip-on-bg text-chip-on-fg shadow-lg"
+        className="fixed bottom-[calc(var(--tabbar-h)+1rem)] right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-chip-on-bg text-chip-on-fg shadow-lg"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <circle cx="11" cy="11" r="7" />

@@ -2,6 +2,7 @@ import type { NavIconName } from "@/lib/nav";
 
 /** 24x24 선 아이콘(외부 라이브러리 없이 직접 그린다). 글자 옆에 두는 장식이라 화면 읽기 프로그램에는 숨긴다(aria-hidden). */
 const PATHS: Record<NavIconName, string> = {
+  home: "M3 11l9-8 9 8v10a1 1 0 01-1 1h-5v-7H9v7H4a1 1 0 01-1-1z",
   songs: "M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zM21 16a3 3 0 11-6 0 3 3 0 016 0z",
   table: "M3 3h18v18H3zM3 9h18M3 15h18M9 3v18",
   rating: "M12 3l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.8 6.1 21l1.2-6.5L2.5 9.9l6.6-.9z",
