@@ -18,12 +18,12 @@ function mix(percent: number): string {
  * 칸 지도: 묶음(서열표는 기준 난이도, 곡 목록은 레벨 폴더) 하나가 한 칸이다. 칸마다 기록 퍼센트, `기록/전체`,
  * 단계 비율 막대가 있고, 많이 채울수록 칸이 진해진다.
  * 칸 전체가 링크라서 누르면 그 묶음으로 간다 (터치 영역이 넉넉하다).
- * 넓은 화면(lg, 1024px 이상)에서는 칸이 더 많이 들어가고, 칸 아래에 EXC / FC / SS / S / S 미만 개수 칩도 보인다(칸이 넓어져 비는 자리를 채운다).
+ * 넓은 화면(lg, 1024px 이상)에서는 칸이 2열로 넓어지고, 칸 오른쪽에 EXC / FC / SS / S / S 미만 개수 칩이 보인다(넓어져 비는 자리를 채운다).
  * 모바일은 3열이라 칸이 좁아서 칩을 숨긴다. 칩은 글자가 같이 있어 색만으로 구분하지 않는다.
  */
 export function ProgressTiles({ groups, label }: { groups: readonly ProgressGroup[]; label: string }) {
   return (
-    <ul aria-label={label} className="grid grid-cols-3 gap-2 lg:grid-cols-4">
+    <ul aria-label={label} className="grid grid-cols-3 gap-2 lg:grid-cols-2">
       {groups.map((g) => {
         const done = isDone(g.recorded, g.total);
         const tint = tileTint(g.recorded, g.total);
@@ -31,19 +31,22 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
           <li key={g.key} data-done={done ? "true" : undefined}>
             <Link
               href={g.href}
-              className="flex h-full flex-col gap-1.5 rounded-[10px] border p-2 hover:opacity-90"
+              className="flex h-full flex-col gap-1.5 rounded-[10px] border p-2 hover:opacity-90 lg:flex-row lg:items-center lg:gap-4 lg:p-3"
               style={{ background: mix(tint.fill), borderColor: mix(tint.line) }}
             >
-              <span className={`truncate font-num text-xs font-semibold ${done ? "text-done-text" : "text-fg-sub"}`}>{g.label}</span>
-              <span className="font-num text-xl font-bold leading-none text-fg">
-                {percentOf(g.recorded, g.total)}
-                <span className="text-[10px] font-medium text-fg-dim">%</span>
+              {/* 왼쪽: 이름 · 퍼센트 · 기록/전체 · 막대. 데스크톱에서는 오른쪽 칩과 나란히 놓인다 */}
+              <span className="flex flex-col gap-1.5 lg:w-40 lg:shrink-0">
+                <span className={`truncate font-num text-xs font-semibold ${done ? "text-done-text" : "text-fg-sub"}`}>{g.label}</span>
+                <span className="font-num text-xl font-bold leading-none text-fg">
+                  {percentOf(g.recorded, g.total)}
+                  <span className="text-[10px] font-medium text-fg-dim">%</span>
+                </span>
+                <span className="font-num text-[11px] text-fg-dim">
+                  {g.recorded}/{g.total}
+                </span>
+                <StageBar counts={g} total={g.total} className="h-1" done={done} />
               </span>
-              <span className="font-num text-[11px] text-fg-dim">
-                {g.recorded}/{g.total}
-              </span>
-              <StageBar counts={g} total={g.total} className="h-1" done={done} />
-              <span className="hidden flex-wrap gap-1 lg:flex">
+              <span className="hidden min-w-0 flex-1 flex-wrap justify-end gap-1 lg:flex">
                 {chipsOf(g).map((chip) => (
                   <span
                     key={chip.key}
