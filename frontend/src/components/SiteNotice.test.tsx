@@ -1,8 +1,11 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+
+// SiteHeader 안의 DesktopNav가 현재 경로를 읽는다
+vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 
 describe("고지 문구", () => {
   it("상단에는 고지를 두지 않고, 고지는 하단에서 보여 준다", () => {
