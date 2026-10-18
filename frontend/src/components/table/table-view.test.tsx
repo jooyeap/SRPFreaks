@@ -196,6 +196,25 @@ describe("TierGroupSection 접기", () => {
     expect(screen.queryByText("Banana")).not.toBeInTheDocument();
   });
 
+  it("모바일은 접힌 묶음에서 칩과 기록 수를 숨기고(md 이상은 보임), 펼치면 보인다", () => {
+    render(<TierGroupSection group={group({ entries })} includeZero={false} collapsible />);
+    const chips = screen.getByRole("list", { name: "내 달성 현황" });
+    const recorded = screen.getByText(/기록 \d+\/\d+/);
+    // jsdom은 CSS를 계산하지 않으므로 클래스로 확인한다: 접힘 = 모바일 숨김 + md 이상 표시
+    expect(chips).toHaveClass("hidden", "md:flex");
+    expect(recorded).toHaveClass("hidden", "md:flex");
+    fireEvent.click(screen.getByRole("button", { name: /5\.8/ }));
+    expect(chips).toHaveClass("flex");
+    expect(chips).not.toHaveClass("hidden");
+    expect(recorded).not.toHaveClass("hidden");
+  });
+
+  it("묶음 화면(collapsible 아님)은 항상 펼쳐 있어서 칩과 기록 수가 숨겨지지 않는다", () => {
+    render(<TierGroupSection group={group({ entries })} includeZero={false} />);
+    expect(screen.getByRole("list", { name: "내 달성 현황" })).not.toHaveClass("hidden");
+    expect(screen.getByText(/기록 \d+\/\d+/)).not.toHaveClass("hidden");
+  });
+
   it("collapsible이 아니면(묶음 화면) 버튼 없이 항상 펼쳐 있다", () => {
     render(<TierGroupSection group={group({ entries })} includeZero={false} />);
     expect(screen.queryByRole("button", { name: /5\.8/ })).not.toBeInTheDocument();
