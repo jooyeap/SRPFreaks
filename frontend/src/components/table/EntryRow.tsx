@@ -9,10 +9,10 @@ import type { TableEntryResponse } from "@/lib/api-types";
 
 /**
  * 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. 랭크 70 · 채보 190 · 달성률 90px(폭 1200px 시안, 곡 목록과 같은 값). 채보 열은 파트·난이도·레벨 알약 하나다.
- * 열 순서: 막대 · 곡명 · 점수(레이팅에 찍히는 값, 티어 색) · 랭크(달성 단계) · 채보 · 달성률 · 추천 · 속성 · 기록 버튼 (랭크는 곡명 오른쪽이다, 2026-10-08).
+ * 열 순서: 막대 · 곡명 · 랭크(달성 단계) · 채보 · 달성률 · 추천 · 속성 · 점수(레이팅에 찍히는 값, 티어 색) · 기록 버튼 (점수는 오른쪽 묶음 끝, 랭크는 곡명 오른쪽이다, 2026-10-08).
  */
 export const ROW_GRID =
-  "md:grid md:grid-cols-[4px_minmax(0,1fr)_52px_70px_190px_90px_44px_52px_48px] md:items-center md:gap-x-3";
+  "md:grid md:grid-cols-[4px_minmax(0,1fr)_70px_190px_90px_44px_52px_60px_48px] md:items-center md:gap-x-3";
 
 /** 데스크톱 표의 머리 행 (모바일에서는 보이지 않는다). */
 export function TableHeadRow() {
@@ -20,12 +20,12 @@ export function TableHeadRow() {
     <div className={`hidden bg-table-head px-3 py-2 text-xs text-fg-dim ${ROW_GRID}`} aria-hidden="true">
       <span />
       <span>곡명</span>
-      <span>점수</span>
       <span>랭크</span>
       <span>채보</span>
       <span>달성률</span>
       <span>추천</span>
       <span>속성</span>
+      <span>점수</span>
       <span />
     </div>
   );
@@ -63,8 +63,6 @@ export function EntryRow({
           {entry.title}
         </Link>
       </span>
-      {/* 점수(레이팅에 찍히는 값)는 랭크 앞 칸이다. 기록이 없으면 비워 둔다 */}
-      <span>{stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}</span>
       {/* 랭크(달성 단계)는 곡명 오른쪽 고정 폭 칸이다. 기록이 없어도 자리를 비워 두어 채보 칸 위치가 줄마다 같다 */}
       <span>{stage ? <StageBadge stage={stage} /> : null}</span>
       <span>
@@ -79,6 +77,8 @@ export function EntryRow({
       <span className="text-fg-sub">
         {entry.pattern ?? EMPTY_MARK}
       </span>
+      {/* 점수(레이팅에 찍히는 값)는 달성률·추천·속성과 같은 오른쪽 묶음의 끝, 기록 버튼 앞 칸이다. 기록이 없으면 비워 둔다 */}
+      <span>{stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}</span>
       <span>
         {onRecord ? (
           <button
