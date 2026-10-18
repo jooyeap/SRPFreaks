@@ -100,6 +100,9 @@ export function TierGroupSection({
   const entries = sortEntries(group.entries, sort);
   const title = formatTier(group.tier);
   const reached = groupStage(group);
+  // 모바일은 접힌 묶음에서 칩과 `기록 n/전체`를 숨기고(제목·n개·평균만 한 줄), 펼치면 보인다. 데스크톱(md 이상)은 접혀 있어도 모두 보인다.
+  // 곡 목록의 레벨 폴더(FolderSection)와 같은 규칙이다. 접을 수 없는 묶음 화면은 항상 펼쳐 있으므로 늘 보인다.
+  const detailClass = expanded ? "flex" : "hidden md:flex";
   return (
     <section aria-label={`레이팅 상수 난이도 ${title}`} className="overflow-hidden rounded-[14px] border border-line bg-card">
       {/* 묶음 전체가 한 단계 이상이면 곡 카드와 같은 왼쪽 막대와 배경을 머리에 준다. 단계 글자는 칩이 이미 보여 준다 */}
@@ -131,7 +134,7 @@ export function TierGroupSection({
             </>
           )}
         </h2>
-        <ul className="flex flex-wrap items-center gap-1.5" aria-label="내 달성 현황">
+        <ul className={`${detailClass} flex-wrap items-center gap-1.5`} aria-label="내 달성 현황">
           {chipsOf(group).map((chip) => (
             <li
               key={chip.key}
@@ -145,7 +148,7 @@ export function TierGroupSection({
           ))}
         </ul>
         <p className="ml-auto flex items-baseline gap-2 text-sm text-fg-sub">
-          <span className="text-xs text-fg-dim">
+          <span className={`${detailClass} text-xs text-fg-dim`}>
             기록 {group.recorded}/{group.total}
           </span>
           <span>
