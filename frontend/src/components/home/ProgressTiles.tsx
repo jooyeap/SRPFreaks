@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StageBar } from "@/components/table/StageBar";
+import { chipsOf } from "@/components/table/TierGroupSection";
 import type { ProgressGroup } from "@/lib/difficulty-table";
 import { percentOf, tileTint } from "@/lib/progress";
 
@@ -17,10 +18,12 @@ function mix(percent: number): string {
  * 칸 지도: 묶음(서열표는 기준 난이도, 곡 목록은 레벨 폴더) 하나가 한 칸이다. 칸마다 기록 퍼센트, `기록/전체`,
  * 단계 비율 막대가 있고, 많이 채울수록 칸이 진해진다.
  * 칸 전체가 링크라서 누르면 그 묶음으로 간다 (터치 영역이 넉넉하다).
+ * 넓은 화면(lg, 1024px 이상)에서는 칸이 더 많이 들어가고, 칸 아래에 EXC / FC / SS / S / S 미만 개수 칩도 보인다(칸이 넓어져 비는 자리를 채운다).
+ * 모바일은 3열이라 칸이 좁아서 칩을 숨긴다. 칩은 글자가 같이 있어 색만으로 구분하지 않는다.
  */
 export function ProgressTiles({ groups, label }: { groups: readonly ProgressGroup[]; label: string }) {
   return (
-    <ul aria-label={label} className="grid grid-cols-3 gap-2">
+    <ul aria-label={label} className="grid grid-cols-3 gap-2 lg:grid-cols-4">
       {groups.map((g) => {
         const done = isDone(g.recorded, g.total);
         const tint = tileTint(g.recorded, g.total);
@@ -40,6 +43,19 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
                 {g.recorded}/{g.total}
               </span>
               <StageBar counts={g} total={g.total} className="h-1" done={done} />
+              <span className="hidden flex-wrap gap-1 lg:flex">
+                {chipsOf(g).map((chip) => (
+                  <span
+                    key={chip.key}
+                    data-stage={chip.stage ?? undefined}
+                    className={`rounded-md border border-chip-line px-1.5 py-px text-[11px] ${
+                      chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
+                    }`}
+                  >
+                    {chip.label} <span className="font-num">{chip.count}</span>
+                  </span>
+                ))}
+              </span>
             </Link>
           </li>
         );

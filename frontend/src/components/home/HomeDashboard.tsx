@@ -12,6 +12,7 @@ import {
   fetchDifficultyTables,
   pickRatingTable,
   tableKeys,
+  decidedGroups,
   tableProgress,
 } from "@/lib/difficulty-table";
 import { folderProgress } from "@/lib/progress";
@@ -52,7 +53,8 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
   });
 
   const tablePanel: ProgressPanel = groups.data
-    ? { kind: "ready", progress: tableProgress(groups.data) }
+    // 기준 난이도가 없는 `미정` 묶음은 서열표 화면과 같이 홈 서열표 진행도에서도 뺀다(합계·칸 지도 모두)
+    ? { kind: "ready", progress: tableProgress(decidedGroups(groups.data)) }
     : groups.isError || tables.isError
       ? { kind: "error" }
       : tables.isSuccess && tableId === null
