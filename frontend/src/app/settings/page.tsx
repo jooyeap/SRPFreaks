@@ -27,7 +27,8 @@ export default function SettingsPage() {
   }
   const card = "flex flex-col gap-3 rounded-[14px] border border-line bg-card p-4";
   return (
-    <section className="mx-auto flex w-full max-w-md flex-col gap-3">
+    // 모바일은 폭 448px(max-w-md) 한 열, 데스크톱(md 이상)은 시안대로 760px까지 넓힌다
+    <section className="mx-auto flex w-full max-w-md flex-col gap-3 md:max-w-[760px]">
       <h1 className="text-xl font-semibold text-fg">설정</h1>
       <section aria-label="계정" className={card}>
         <h2 className="text-xs font-bold text-fg-sub">계정</h2>

@@ -49,6 +49,21 @@ describe("설정 화면", () => {
     expect(screen.queryByRole("link", { name: "가져오기 설정" })).toBeNull();
   });
 
+  it("데스크톱은 폭 760px까지 넓어지고 모바일은 448px 한 열이다", async () => {
+    fetchMock.mockResolvedValueOnce(
+      json({
+        accessToken: "t",
+        tokenType: "Bearer",
+        expiresIn: 900,
+        user: { id: 1, email: "a@example.com", nickname: null, role: "USER", createdAt: "2026-10-01T00:00:00Z" },
+      }),
+    );
+    renderPage();
+    await screen.findByText("a@example.com");
+    const page = screen.getByRole("heading", { name: "설정", level: 1 }).parentElement!;
+    expect(page).toHaveClass("max-w-md", "md:max-w-[760px]");
+  });
+
   it("로그인하지 않았으면 로그인 링크만 보여 준다", async () => {
     fetchMock.mockResolvedValueOnce(json({ code: "UNAUTHORIZED", message: "로그인이 필요합니다." }, 401));
     renderPage();
