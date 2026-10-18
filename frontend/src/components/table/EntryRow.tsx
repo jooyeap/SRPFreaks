@@ -8,11 +8,11 @@ import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 
 /**
- * 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. 채보 열(116px)은 파트·난이도·레벨 알약 하나다.
+ * 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. 랭크 70 · 채보 190 · 달성률 90px(폭 1200px 시안, 곡 목록과 같은 값). 채보 열은 파트·난이도·레벨 알약 하나다.
  * 열 순서: 막대 · 곡명 · 점수(레이팅에 찍히는 값, 티어 색) · 랭크(달성 단계) · 채보 · 달성률 · 추천 · 속성 · 기록 버튼 (랭크는 곡명 오른쪽이다, 2026-10-08).
  */
 export const ROW_GRID =
-  "md:grid md:grid-cols-[4px_minmax(0,1fr)_52px_40px_116px_64px_44px_52px_48px] md:items-center md:gap-x-3";
+  "md:grid md:grid-cols-[4px_minmax(0,1fr)_52px_70px_190px_90px_44px_52px_48px] md:items-center md:gap-x-3";
 
 /** 데스크톱 표의 머리 행 (모바일에서는 보이지 않는다). */
 export function TableHeadRow() {

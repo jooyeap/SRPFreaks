@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { DifficultyTableView } from "@/components/table/DifficultyTableView";
+import { ROW_GRID } from "@/components/table/EntryRow";
 import { StageBadge } from "@/components/table/StageBadge";
 import { DEFAULT_VIEW_STATE } from "@/lib/table-view-state";
 import { TierGroupSection, groupStage } from "@/components/table/TierGroupSection";
@@ -440,6 +441,28 @@ describe("DifficultyTableView", () => {
     fireEvent.click(recommend.getByRole("button", { name: "전체" }));
     await waitFor(() => expect(lastEntryParams().has("recommend")).toBe(false));
     expect(recommend.getByRole("button", { name: "전체" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("데스크톱: 필터가 한 카드에 가로로 놓이고(md:flex-row) 모바일은 세로 접이식 패널 그대로다", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group()])) : json([table])),
+    );
+    renderView();
+    await screen.findByRole("button", { name: /^필터/ });
+    const panel = document.getElementById("table-filters");
+    expect(panel).not.toBeNull();
+    // 모바일 기본: 접혀 있고(hidden) 펼치면 세로(flex-col)
+    expect(panel).toHaveClass("hidden", "flex-col");
+    // 데스크톱: 항상 보이고 가로로 놓이며 넘치면 줄바꿈
+    expect(panel).toHaveClass("md:flex", "md:flex-row", "md:flex-wrap");
+    // 파트·추천·속성·정렬·평균 계산이 모두 이 카드 안에 있다
+    for (const name of ["파트", "추천", "속성", "평균 계산"]) {
+      expect(panel).toContainElement(screen.getByRole("group", { name }));
+    }
+  });
+
+  it("표형 열 너비: 랭크 70 · 채보 190 · 달성률 90px (머리 행과 행이 같은 값을 쓴다)", () => {
+    expect(ROW_GRID).toContain("_70px_190px_90px_");
   });
 
   it("여러 개를 고르면 접힌 줄 요약에 모두 보인다", async () => {
