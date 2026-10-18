@@ -75,53 +75,59 @@ export function SetlistTab({ userId }: { userId: number }) {
   const addedIds = new Set(items.map((i) => i.songDifficultyId));
   const full = items.length >= SETLIST_LIMIT;
   return (
-    <div className="flex flex-col gap-3">
-      <SetlistSearch userId={userId} addedIds={addedIds} full={full} />
-      <SetlistRecommend userId={userId} addedIds={addedIds} full={full} />
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-fg-sub">
-          완료 <span className="font-num text-fg">{done}</span> / 전체 <span className="font-num text-fg">{items.length}</span>
-          <span className="text-fg-dim"> (최대 {SETLIST_LIMIT}곡)</span>
-        </p>
-        <button
-          type="button"
-          disabled={done === 0 || clear.isPending}
-          onClick={() => clear.mutate()}
-          className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
-        >
-          {clear.isPending ? "비우는 중" : "완료한 곡 비우기"}
-        </button>
+    // 모바일·태블릿(lg 미만): 한 줄로 쌓는다(검색 → 추천 → 내 세트리스트). 데스크톱(lg 이상): 두 열(시안) — 왼쪽 검색·추천, 오른쪽 내 세트리스트.
+    // 두 묶음 사이 간격(gap-3)은 안쪽 간격과 같아서 모바일 모양은 이전과 같다.
+    <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
+      <div className="flex flex-col gap-3">
+        <SetlistSearch userId={userId} addedIds={addedIds} full={full} />
+        <SetlistRecommend userId={userId} addedIds={addedIds} full={full} />
       </div>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm text-fg-sub">
+            완료 <span className="font-num text-fg">{done}</span> / 전체 <span className="font-num text-fg">{items.length}</span>
+            <span className="text-fg-dim"> (최대 {SETLIST_LIMIT}곡)</span>
+          </p>
+          <button
+            type="button"
+            disabled={done === 0 || clear.isPending}
+            onClick={() => clear.mutate()}
+            className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
+          >
+            {clear.isPending ? "비우는 중" : "완료한 곡 비우기"}
+          </button>
+        </div>
 
-      {items.length === 0 ? (
-        <p className="text-sm text-fg-sub">
-          담은 곡이 없습니다. 위 검색창에서 오늘 칠 곡을 찾아 담아 보세요.
-        </p>
-      ) : (
-        <>
-          <ul aria-label="세트리스트" className="flex flex-col gap-2">
-            {pageItems.map((item) => (
-              <SetlistRow
-                key={item.id}
-                item={item}
-                removing={remove.isPending && remove.variables === item.id}
-                onRecord={() =>
-                  setRecording({
-                    songDifficultyId: item.songDifficultyId,
-                    title: item.title,
-                    part: item.part,
-                    difficulty: item.difficulty,
-                    level: item.level,
-                    tier: item.tier,
-                  })
-                }
-                onRemove={() => remove.mutate(item.id)}
-              />
-            ))}
-          </ul>
-          <Pager page={page} totalPages={totalPages} onChange={setPage} />
-        </>
-      )}
+        {items.length === 0 ? (
+          <p className="text-sm text-fg-sub">
+            담은 곡이 없습니다. 위 검색창에서 오늘 칠 곡을 찾아 담아 보세요.
+          </p>
+        ) : (
+          <>
+            <ul aria-label="세트리스트" className="flex flex-col gap-2">
+              {pageItems.map((item) => (
+                <SetlistRow
+                  key={item.id}
+                  item={item}
+                  removing={remove.isPending && remove.variables === item.id}
+                  onRecord={() =>
+                    setRecording({
+                      songDifficultyId: item.songDifficultyId,
+                      title: item.title,
+                      part: item.part,
+                      difficulty: item.difficulty,
+                      level: item.level,
+                      tier: item.tier,
+                    })
+                  }
+                  onRemove={() => remove.mutate(item.id)}
+                />
+              ))}
+            </ul>
+            <Pager page={page} totalPages={totalPages} onChange={setPage} />
+          </>
+        )}
+      </div>
 
       <RecordDialog chart={recording} onClose={() => setRecording(null)} />
     </div>

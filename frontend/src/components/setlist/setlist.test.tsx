@@ -97,6 +97,23 @@ describe("세트리스트", () => {
       expect(rows[1]).toHaveTextContent("미완료");
     });
 
+    it("데스크톱(lg 이상)은 두 열: 왼쪽 검색·추천, 오른쪽 내 세트리스트. 모바일은 한 줄로 쌓는다", async () => {
+      listed = [item(1)];
+      renderWith(<SetlistTab userId={1} />);
+      const list = await screen.findByRole("list", { name: "세트리스트" });
+      const search = screen.getByRole("region", { name: "곡 검색해서 담기" });
+      const recommend = screen.getByRole("region", { name: "내 실력대 추천" });
+      const root = search.parentElement!.parentElement!;
+      expect(root).toHaveClass("flex-col", "lg:grid", "lg:grid-cols-2");
+      // 검색과 추천은 같은 왼쪽 묶음, 세트리스트는 다른(오른쪽) 묶음이다
+      expect(recommend.parentElement).toBe(search.parentElement);
+      expect(root).toContainElement(list);
+      expect(search.parentElement).not.toContainElement(list);
+      // 모바일 순서(검색 → 추천 → 세트리스트)는 DOM 순서 그대로다
+      expect(search.compareDocumentPosition(recommend) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(recommend.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
     it("비어 있으면 담는 방법을 안내하고 비우기 버튼은 막혀 있다", async () => {
       renderWith(<SetlistTab userId={1} />);
       expect(await screen.findByText(/담은 곡이 없습니다/)).toBeInTheDocument();
