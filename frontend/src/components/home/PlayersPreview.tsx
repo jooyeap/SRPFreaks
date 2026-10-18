@@ -38,7 +38,7 @@ export function PlayersPreview({ viewerId }: { viewerId: number }) {
           에서 공개할 수 있습니다.
         </p>
       ) : (
-        <ul className="overflow-hidden rounded-[14px] border border-line bg-card">
+        <ul className="overflow-hidden rounded-2xl border border-line bg-card">
           {data.content.map((player) => (
             <PlayerRow key={player.userId} player={player} viewerId={viewerId} />
           ))}

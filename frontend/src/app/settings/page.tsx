@@ -19,13 +19,13 @@ export default function SettingsPage() {
       <section className="flex flex-col items-start gap-3">
         <h1 className="text-xl font-semibold text-fg">설정</h1>
         <p className="text-sm text-fg-sub">설정을 바꾸려면 로그인해 주세요.</p>
-        <Link href="/login" className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           로그인
         </Link>
       </section>
     );
   }
-  const card = "flex flex-col gap-3 rounded-[14px] border border-line bg-card p-4";
+  const card = "flex flex-col gap-3 rounded-2xl border border-line bg-card p-4";
   return (
     // 모바일은 폭 448px(max-w-md) 한 열, 데스크톱(md 이상)은 시안대로 760px까지 넓힌다
     <section className="mx-auto flex w-full max-w-md flex-col gap-3 md:max-w-[760px]">
@@ -81,7 +81,7 @@ export default function SettingsPage() {
           로그아웃
         </button>
       </section>
-      <section aria-label="회원 탈퇴" className="flex flex-col gap-3 rounded-[14px] border border-danger bg-card p-4">
+      <section aria-label="회원 탈퇴" className="flex flex-col gap-3 rounded-2xl border border-danger bg-card p-4">
         <h2 className="text-xs font-bold text-danger">회원 탈퇴</h2>
         <p className="text-xs leading-relaxed text-fg-sub">탈퇴하면 계정과 모든 기록이 바로 삭제되고 되돌릴 수 없습니다.</p>
         <Link

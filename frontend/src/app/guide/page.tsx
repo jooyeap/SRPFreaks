@@ -53,7 +53,7 @@ export default function GuidePage() {
 
       <section aria-label="한눈에 보기" className="grid gap-2.5 sm:grid-cols-3">
         {SUMMARY.map((item) => (
-          <div key={item.head} className="flex items-center gap-3.5 rounded-xl border border-line bg-card px-4 py-3.5 sm:flex-col sm:items-start sm:gap-2">
+          <div key={item.head} className="flex items-center gap-3.5 rounded-2xl border border-line bg-card px-4 py-3.5 sm:flex-col sm:items-start sm:gap-2">
             <span className="font-num w-[76px] shrink-0 text-xl font-bold text-fg sm:w-auto">{item.head}</span>
             <span className="text-[13px] leading-relaxed text-fg-sub">{item.text}</span>
           </div>
@@ -63,7 +63,7 @@ export default function GuidePage() {
       <section aria-label="포함 기준" className="space-y-3">
         <h2 className="text-lg font-bold text-fg">포함 기준</h2>
 
-        <div className="space-y-3 rounded-xl border border-line bg-card p-4">
+        <div className="space-y-3 rounded-2xl border border-line bg-card p-4">
           <h3 className="text-[15px] font-bold text-done-text">포함되는 채보</h3>
           <ul className="space-y-2.5 text-[13px] leading-relaxed text-fg-sub">
             {INCLUDED.map((line) => (
@@ -75,7 +75,7 @@ export default function GuidePage() {
           </ul>
         </div>
 
-        <div className="space-y-3 rounded-xl border border-line bg-card p-4">
+        <div className="space-y-3 rounded-2xl border border-line bg-card p-4">
           <h3 className="text-[15px] font-bold text-fg-sub">포함되지 않는 채보</h3>
           <ul className="space-y-2.5 text-[13px] leading-relaxed text-fg-sub">
             <li className="flex items-start gap-2">
@@ -98,7 +98,7 @@ export default function GuidePage() {
           <p className="text-xs leading-relaxed text-fg-dim">제외된 채보도 기록은 그대로 남습니다.</p>
         </div>
 
-        <div className="space-y-2.5 rounded-xl border border-line bg-card p-4">
+        <div className="space-y-2.5 rounded-2xl border border-line bg-card p-4">
           <h3 className="text-[15px] font-bold text-fg">고르는 방식</h3>
           <ul className="list-disc space-y-2 pl-[18px] text-[13px] leading-relaxed text-fg-sub">
             {SELECTION.map((line) => (
@@ -107,7 +107,7 @@ export default function GuidePage() {
           </ul>
         </div>
 
-        <div className="space-y-2.5 rounded-xl border border-line bg-card p-4">
+        <div className="space-y-2.5 rounded-2xl border border-line bg-card p-4">
           <h3 className="text-[15px] font-bold text-fg">기록 관리</h3>
           <p className="text-[13px] leading-relaxed text-fg-sub">부정한 방법으로 입력한 기록은 운영자가 삭제할 수 있습니다.</p>
         </div>
@@ -123,7 +123,7 @@ export default function GuidePage() {
         </p>
         <ConstantTable />
         {/* 참고: 달성률 1%가 점수로 얼마인지. 값은 계수(DEFAULT_COEFFICIENTS)에서 계산한다 */}
-        <div className="space-y-2.5 rounded-xl border border-line bg-card p-4">
+        <div className="space-y-2.5 rounded-2xl border border-line bg-card p-4">
           <h3 className="text-[15px] font-bold text-fg">참고: 달성률 1%의 점수</h3>
           <ul className="list-disc space-y-2 pl-[18px] text-[13px] leading-relaxed text-fg-sub">
             <li>

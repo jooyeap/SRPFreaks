@@ -52,7 +52,7 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
   const data = list.data;
 
   return (
-    <section aria-label="레이팅 기록" className="flex flex-col gap-3 rounded-[14px] border border-line bg-card p-4">
+    <section aria-label="레이팅 기록" className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
       <div>
         <h2 className="text-[15px] font-bold text-fg">레이팅 기록</h2>
         <p className="mt-0.5 text-xs text-fg-sub">누른 시점의 레이팅을 남겨 두고, 얼마나 올랐는지 날짜별로 비교합니다. 하루에 한 번, 점수가 달라졌을 때만 기록할 수 있습니다.</p>

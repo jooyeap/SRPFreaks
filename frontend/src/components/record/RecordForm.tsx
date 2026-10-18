@@ -205,7 +205,7 @@ export function RecordForm({
         </div>
         <div className="flex w-28 shrink-0 flex-col gap-1.5">
           <span className="text-xs font-bold text-fg-dim">달성 표시</span>
-          <div aria-live="polite" className="flex h-[54px] items-center justify-center rounded-xl border border-line bg-card">
+          <div aria-live="polite" className="flex h-[54px] items-center justify-center rounded-2xl border border-line bg-card">
             {stage ? <StageBadge stage={stage} /> : <span className="text-fg-faint">–</span>}
           </div>
           <p className="text-[11px] text-fg-faint">자동 계산</p>
@@ -218,7 +218,7 @@ export function RecordForm({
       ) : null}
 
       {chart.tier !== undefined && chart.tier !== null ? (
-        <div aria-live="polite" className="flex flex-col gap-1 rounded-xl border border-line bg-card px-3.5 py-2.5">
+        <div aria-live="polite" className="flex flex-col gap-1 rounded-2xl border border-line bg-card px-3.5 py-2.5">
           <div className="flex items-baseline justify-between">
           <span className="text-xs font-bold text-fg-dim">
             예상 점수 <span className="font-normal">· 레이팅 상수 난이도 {formatTier(chart.tier)}</span>
@@ -236,7 +236,7 @@ export function RecordForm({
       ) : null}
 
       <div className="flex flex-col gap-1">
-        <label className="flex h-[46px] items-center justify-between rounded-xl border border-line bg-card px-3.5 text-sm font-bold text-fg">
+        <label className="flex h-[46px] items-center justify-between rounded-2xl border border-line bg-card px-3.5 text-sm font-bold text-fg">
           풀콤보(0 miss)
           <input
             type="checkbox"

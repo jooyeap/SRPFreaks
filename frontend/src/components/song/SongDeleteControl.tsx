@@ -55,7 +55,7 @@ export function SongDeleteControl({
   if (confirming) {
     const what = confirming === "song" ? `'${songTitle}' 곡과 모든 채보를` : `'${songTitle}'의 ${chartLabel ?? "이 채보"}를`;
     return (
-      <div role="group" aria-label="삭제 확인" className="flex flex-col gap-2 rounded-xl border border-line bg-card p-3">
+      <div role="group" aria-label="삭제 확인" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
         <p className="text-sm text-fg">{what} 삭제할까요? 목록·서열표·레이팅에서 빠지고, 삭제 내용은 관리 기록에 남습니다.</p>
         {message ? (
           <p role="alert" className="text-sm text-fg">

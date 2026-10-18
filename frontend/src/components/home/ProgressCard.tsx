@@ -34,7 +34,7 @@ export function ProgressCard({ table, songs }: { table: ProgressPanel; songs: Pr
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="group" aria-label="진행도 종류" className="flex gap-1.5 rounded-xl border border-line bg-card p-1">
+      <div role="group" aria-label="진행도 종류" className="flex gap-1.5 rounded-2xl border border-line bg-card p-1">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -50,7 +50,7 @@ export function ProgressCard({ table, songs }: { table: ProgressPanel; songs: Pr
         ))}
       </div>
 
-      <section aria-label={`${tab.name} 진행도`} className="flex flex-col gap-4 rounded-[14px] border border-line bg-card p-4">
+      <section aria-label={`${tab.name} 진행도`} className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-num text-[17px] font-bold text-fg">{tab.name} 진행도</h2>
           <Link href={tab.href} className="text-xs text-fg-sub hover:text-fg">

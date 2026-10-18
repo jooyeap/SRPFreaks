@@ -34,7 +34,7 @@ export function Segmented<T extends string>({
               type="button"
               aria-pressed={on}
               onClick={() => onChange(item.value)}
-              className={`rounded-md px-3 py-1 text-sm ${
+              className={`min-h-10 rounded-lg px-3.5 py-1 text-sm ${
                 on ? "bg-card font-bold text-fg shadow-sm ring-1 ring-chip-line" : "text-fg-dim hover:text-fg"
               }`}
             >
@@ -85,7 +85,7 @@ export function CheckChip({ pressed, onClick, children }: { pressed: boolean; on
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-sm ${
+      className={`inline-flex min-h-11 items-center gap-1 rounded-[10px] border px-3.5 py-1 text-sm ${
         pressed ? "border-check-line bg-check-bg font-bold text-check-fg" : "border-chip-line text-fg-sub hover:text-fg"
       }`}
     >

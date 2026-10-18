@@ -90,7 +90,7 @@ export function SongListView({
         {/* 모바일: 필터 버튼으로 펼치는 패널. 데스크톱(md 이상)은 항상 보인다. (시안의 아래에서 올라오는 시트 대신 접이식 패널을 쓴다 — 서열표 필터와 같은 방식) */}
         <SongListFilterPanel
           id="song-filters"
-          className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-xl border border-line bg-card p-3 md:contents`}
+          className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:contents`}
           filters={filters}
           versions={versions}
           onChange={onFiltersChange}

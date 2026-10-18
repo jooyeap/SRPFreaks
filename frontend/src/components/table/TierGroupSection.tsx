@@ -104,7 +104,7 @@ export function TierGroupSection({
   // 곡 목록의 레벨 폴더(FolderSection)와 같은 규칙이다. 접을 수 없는 묶음 화면은 항상 펼쳐 있으므로 늘 보인다.
   const detailClass = expanded ? "flex" : "hidden md:flex";
   return (
-    <section aria-label={`레이팅 상수 난이도 ${title}`} className="overflow-hidden rounded-[14px] border border-line bg-card">
+    <section aria-label={`레이팅 상수 난이도 ${title}`} className="overflow-hidden rounded-2xl border border-line bg-card">
       {/* 묶음 전체가 한 단계 이상이면 곡 카드와 같은 왼쪽 막대와 배경을 머리에 준다. 단계 글자는 칩이 이미 보여 준다 */}
       <header
         data-stage={reached ?? undefined}

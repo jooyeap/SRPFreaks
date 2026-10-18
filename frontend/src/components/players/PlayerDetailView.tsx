@@ -57,7 +57,7 @@ export function PlayerDetailView({
       href="/players"
       aria-label="유저 목록으로"
       title="유저 목록으로"
-      className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+      className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
     >
       <span aria-hidden="true">←</span>
     </Link>
@@ -96,7 +96,7 @@ export function PlayerDetailView({
         <span className="font-num">{data.nickname}</span>님의 레이팅
       </h1>
       {target ? (
-        <div role="alertdialog" aria-label="기록 삭제 확인" className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4">
+        <div role="alertdialog" aria-label="기록 삭제 확인" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
           <p className="text-sm text-fg">
             <span className="font-num">{data.nickname}</span>님의 &lsquo;{target.title}&rsquo; 기록을 모두 삭제할까요? 삭제한 기록은 되돌릴 수 없고, 관리
             기록에 남습니다.
@@ -106,7 +106,7 @@ export function PlayerDetailView({
               type="button"
               disabled={deletion.isPending}
               onClick={() => deletion.mutate(target)}
-              className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+              className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
             >
               {deletion.isPending ? "삭제 중" : "삭제"}
             </button>
@@ -117,7 +117,7 @@ export function PlayerDetailView({
                 deletion.reset();
                 setTarget(null);
               }}
-              className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+              className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
             >
               취소
             </button>

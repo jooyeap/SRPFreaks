@@ -27,7 +27,7 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
     { label: "S", stage: "S", count: group.s },
   ] as const;
   return (
-    <section aria-label="서열표 정보" className="flex flex-col gap-3 rounded-[14px] border border-line bg-card px-4 py-3.5">
+    <section aria-label="서열표 정보" className="flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3.5">
       <h2 className="sr-only">서열표 정보</h2>
       <dl className="grid grid-cols-3 gap-2.5 text-sm">
         <div>
@@ -125,7 +125,7 @@ export function GroupSongList({ group, index }: { group: TierGroupResponse; inde
           </Link>
         ) : null}
       </h2>
-      <ul ref={listRef} className="relative max-h-[22rem] overflow-y-auto rounded-[14px] border border-line bg-card">
+      <ul ref={listRef} className="relative max-h-[22rem] overflow-y-auto rounded-2xl border border-line bg-card">
         {group.entries.map((entry, i) => (
           <GroupSongItem key={entry.entryId} entry={entry} current={i === index} itemRef={i === index ? currentRef : undefined} />
         ))}

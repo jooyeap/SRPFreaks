@@ -24,7 +24,7 @@ function SuggestionsContent() {
       <section className="flex flex-col items-start gap-3">
         <h1 className="text-xl font-semibold text-fg">건의하기</h1>
         <p className="text-sm text-fg-sub">건의를 보내려면 로그인해 주세요.</p>
-        <Link href="/login" className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           로그인
         </Link>
       </section>

@@ -66,7 +66,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
       href="/table"
       aria-label="서열표로"
       title="서열표로"
-      className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+      className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
     >
       <span aria-hidden="true">←</span>
     </Link>
@@ -96,7 +96,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
     <div className="flex flex-col gap-4">
       {back}
       {groups.data ? <TierFolderNav groups={groups.data} currentTier={rawGroup.tier} /> : null}
-      <div className="flex flex-col gap-2 rounded-xl border border-line bg-card p-3">
+      <div className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
         <TableFilterPanel filters={filters} onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} />
       </div>
       <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />

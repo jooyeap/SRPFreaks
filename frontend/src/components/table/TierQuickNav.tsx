@@ -65,7 +65,7 @@ export function TierQuickNav({ groups }: { groups: readonly TierGroupResponse[] 
           id={panelId}
           aria-label="난이도 바로가기"
           // 목록이 길어도 화면을 넘지 않게 높이를 제한하고 안에서 스크롤한다. 폭은 작은 화면(360px)에서도 들어가게 잡는다
-          className="absolute left-0 top-full z-30 mt-2 max-h-[60vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-line bg-card p-3"
+          className="absolute left-0 top-full z-30 mt-2 max-h-[60vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-line bg-card p-4"
         >
           <ul className="grid grid-cols-4 gap-2">
             {groups.map((g) => {

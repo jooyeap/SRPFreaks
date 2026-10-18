@@ -41,7 +41,7 @@ export function SetlistSearch({ userId, addedIds, full }: { userId: number; adde
   });
 
   return (
-    <section aria-label="곡 검색해서 담기" className="flex flex-col gap-2 rounded-xl border border-line bg-card p-3">
+    <section aria-label="곡 검색해서 담기" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
       <h2 className="text-sm font-bold text-fg">곡 검색해서 담기</h2>
       <div className="flex">
         <SongSearchBox

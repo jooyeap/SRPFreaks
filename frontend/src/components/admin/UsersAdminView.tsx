@@ -29,7 +29,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" aria-label="관리로" title="관리로" className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+        <Link href="/admin" aria-label="관리로" title="관리로" className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
           <span aria-hidden="true">←</span>
         </Link>
         <h1 className="text-xl font-semibold text-fg">사용자</h1>
@@ -44,7 +44,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
         </p>
       ) : (
         <>
-          <ul aria-label="사용자 목록" className="overflow-hidden rounded-[14px] border border-line bg-card">
+          <ul aria-label="사용자 목록" className="overflow-hidden rounded-2xl border border-line bg-card">
             {data.content.map((user) => (
               <UserRow key={user.id} viewerId={viewerId} page={page} user={user} />
             ))}

@@ -57,7 +57,7 @@ export function ConfirmDialog({
           onCancel();
         }
       }}
-      className="m-auto w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-line bg-card p-5 text-fg backdrop:bg-black/60"
+      className="m-auto w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-5 text-fg backdrop:bg-black/60"
     >
       <h2 id="confirm-dialog-title" className="text-lg font-extrabold">
         {title}

@@ -10,7 +10,7 @@ import { chartScore, guideRows, GUIDE_RATES } from "@/lib/rating-guide";
 export function ConstantTable() {
   const rows = guideRows();
   return (
-    <div className="space-y-3 rounded-xl border border-line bg-card px-2 py-3">
+    <div className="space-y-3 rounded-2xl border border-line bg-card px-2 py-3">
       <table className="w-full table-fixed border-separate border-spacing-0.5 text-center">
         <caption className="sr-only">레이팅 상수표: 슈랜플 난이도와 달성률별 채보 점수</caption>
         <colgroup>

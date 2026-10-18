@@ -25,7 +25,7 @@ export function RatingEntryCard({
       data-stage={entry.stage}
       // max-[359px]: 360px 미만에서는 `Guitar | MAS 9.80` 알약(약 114px)이 곡명 칸보다 넓어 점수 칸을 덮는다.
       // 그 폭에서만 순위·재킷·여백을 줄여 알약이 들어갈 자리를 만든다 (360px 이상은 그대로).
-      className="stage-tint relative flex items-center gap-3 overflow-hidden rounded-xl border border-line bg-card py-2 pl-4 pr-3 max-[359px]:gap-2 max-[359px]:pl-3 max-[359px]:pr-2"
+      className="stage-tint relative flex items-center gap-3 overflow-hidden rounded-2xl border border-line bg-card py-2 pl-4 pr-3 max-[359px]:gap-2 max-[359px]:pl-3 max-[359px]:pr-2"
     >
       {/* 왼쪽 띠는 점수의 플레이어 티어 색 하나다(상수표 칸과 같은 색, lib/chart-tier.ts). 색만으로 전달하지 않는다: 점수 숫자가 오른쪽에 있다 */}
       <span {...chartTierAttrs(entry.score)} className="tier-bar tier-bar-v absolute inset-y-0 left-0 w-1.5" aria-hidden="true" />

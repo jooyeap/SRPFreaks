@@ -69,7 +69,7 @@ function FolderDetail({ axis, folder, includeZero }: { axis: StatsAxis; folder: 
   const counts = folderStageCounts(folder);
   const reached = groupStage(counts);
   return (
-    <section aria-label={`${title} 상세`} className="flex flex-col gap-3 rounded-[14px] border border-line bg-card p-4">
+    <section aria-label={`${title} 상세`} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h3 className="font-num text-lg font-semibold text-fg">
           {title} <span className="ml-1 text-sm font-normal text-fg-sub">{folder.total}개</span>

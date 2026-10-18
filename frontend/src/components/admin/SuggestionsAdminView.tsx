@@ -156,7 +156,7 @@ function ReviewItem({
   const [status, setStatus] = useState<SuggestionStatus>(item.status);
   const [note, setNote] = useState(item.adminNote ?? "");
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4">
+    <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-[17px] font-bold text-fg">{item.title}</h2>
         <time dateTime={item.createdAt} className="shrink-0 font-num text-xs text-fg-dim">
@@ -207,7 +207,7 @@ function ReviewItem({
             disabled={pending}
             onClick={() => onSave(status, note)}
             aria-label={`${item.title} 처리 저장`}
-            className="rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+            className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
           >
             {pending ? "저장 중" : "저장"}
           </button>

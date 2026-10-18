@@ -87,7 +87,7 @@ export function SuggestionsView({
         <>
           <ul aria-label="내 건의 목록" className="flex flex-col gap-3">
             {mine.data.content.map((item) => (
-              <li key={item.id} className="flex flex-col gap-2 rounded-xl border border-line bg-card p-4">
+              <li key={item.id} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
                 <div className="flex items-baseline justify-between gap-3">
                   <h3 className="text-[17px] font-bold text-fg">{item.title}</h3>
                   <time dateTime={item.createdAt} className="shrink-0 font-num text-xs text-fg-dim">

@@ -44,7 +44,7 @@ export function PlayerListView({ viewerId }: { viewerId: number }) {
         <p className="text-sm text-fg-sub">아직 공개한 유저가 없습니다.</p>
       ) : (
         <>
-          <ul aria-label="유저 목록" className="overflow-hidden rounded-[14px] border border-line bg-card">
+          <ul aria-label="유저 목록" className="overflow-hidden rounded-2xl border border-line bg-card">
             {data.content.map((player) => (
               <PlayerRow key={player.userId} player={player} viewerId={viewerId} />
             ))}

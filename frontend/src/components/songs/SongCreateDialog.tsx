@@ -280,7 +280,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
             type="button"
             onClick={() => append(emptyChart())}
             disabled={fields.length >= MAX_CHARTS}
-            className="self-start rounded-lg border border-chip-line px-3 py-1.5 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
+            className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1.5 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
           >
             채보 추가
           </button>

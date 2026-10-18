@@ -25,7 +25,7 @@ export function RatingTargetPlanner({ userId, skill }: { userId: number; skill: 
   const bodyId = useId();
 
   return (
-    <section aria-label="레이팅 예상 값" className="rounded-[14px] border border-line bg-card">
+    <section aria-label="레이팅 예상 값" className="rounded-2xl border border-line bg-card">
       <button
         type="button"
         aria-expanded={open}

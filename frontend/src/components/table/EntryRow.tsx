@@ -50,7 +50,7 @@ export function EntryRow({
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`hidden border-t border-row-line px-3 py-2 text-sm md:grid ${ROW_GRID} ${stage ? "stage-tint" : ""}`}
+      className={`hidden min-h-[52px] border-t border-row-line px-3 py-2 text-sm md:grid ${ROW_GRID} ${stage ? "stage-tint" : ""}`}
     >
       <span className={`h-8 w-1 rounded ${stage ? "stage-bar" : "bg-transparent"}`} aria-hidden="true" />
       {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. (ROW_GRID의 재킷 열도 함께 뺐다) */}

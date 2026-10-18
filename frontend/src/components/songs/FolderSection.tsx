@@ -65,7 +65,7 @@ export function FolderSection({
     <section
       aria-label={`레벨 ${title}`}
       className={
-        isSub ? "overflow-hidden rounded-[10px] border border-line bg-table-head" : "overflow-hidden rounded-[14px] border border-line bg-card"
+        isSub ? "overflow-hidden rounded-[10px] border border-line bg-table-head" : "overflow-hidden rounded-2xl border border-line bg-card"
       }
     >
       <HeadingTag>
