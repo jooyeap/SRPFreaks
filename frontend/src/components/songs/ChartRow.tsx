@@ -5,8 +5,9 @@ import { formatRate } from "@/lib/format";
 import type { ChartRowResponse } from "@/lib/api-types";
 import { songListDetailHref } from "@/lib/song-list";
 
-/** 데스크톱 열: 곡명 · 랭크(달성 단계) · 채보 알약(파트·난이도·레벨) · 달성률. 모든 행이 같은 열 너비를 써서 줄마다 위치가 맞는다. */
-const ROW_GRID = "md:grid md:grid-cols-[minmax(0,1fr)_40px_116px_56px] md:items-center md:gap-x-3";
+/** 데스크톱 열: 곡명 · 랭크(달성 단계) · 채보 알약(파트·난이도·레벨) · 달성률. 모든 행이 같은 열 너비를 써서 줄마다 위치가 맞는다. 열 머리글(ChartList)도 같은 값을 쓴다. */
+export const ROW_COLUMNS = "md:grid-cols-[minmax(0,1fr)_70px_190px_90px]";
+const ROW_GRID = `md:grid ${ROW_COLUMNS} md:items-center md:gap-x-3`;
 
 /**
  * 곡 목록의 채보 한 줄 (모바일·데스크톱 공용, 폭에 따라 배치만 바뀐다).
@@ -44,7 +45,7 @@ export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }
           <span className="inline-block w-9 md:order-2 md:w-auto">{stage ? <StageBadge stage={stage} /> : null}</span>
         </p>
       </div>
-      <span className={`shrink-0 text-right font-num text-sm font-semibold md:order-4 ${stage ? "stage-text" : "text-fg-faint"}`}>
+      <span className={`shrink-0 text-right font-num text-sm font-semibold md:order-4 md:text-base ${stage ? "stage-text" : "text-fg-faint"}`}>
         {formatRate(row.mine?.rate)}
       </span>
     </li>

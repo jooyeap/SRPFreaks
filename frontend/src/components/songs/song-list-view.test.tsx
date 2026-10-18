@@ -295,4 +295,43 @@ describe("SongListView", () => {
     renderView();
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
+
+  it("데스크톱: 검색창과 필터가 한 카드 안에 있고, 필터 패널은 칸으로 풀려(md:contents) 한 줄에 놓인다", async () => {
+    renderView();
+    await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+    const search = screen.getByRole("searchbox", { name: "곡 검색" });
+    const filters = document.getElementById("song-filters");
+    expect(filters).not.toBeNull();
+    // 검색창과 필터 패널의 가장 가까운 공통 조상이 카드(md:border md:bg-card)다
+    const card = filters!.parentElement!;
+    expect(card).toContainElement(search);
+    expect(card).toHaveClass("md:flex-row", "md:border", "md:bg-card");
+    expect(filters).toHaveClass("md:contents");
+    // 모바일 전용 필터 버튼은 데스크톱에서 숨긴다
+    expect(screen.getByRole("button", { name: "필터" })).toHaveClass("md:hidden");
+  });
+
+  it("데스크톱: 평균 계산 토글이 제목 줄 오른쪽 격자 칸(md:col-start-2 md:row-start-1)에 놓인다", async () => {
+    renderView();
+    await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+    const toggleCell = screen.getByRole("button", { name: "0% 미포함" }).closest(".md\\:col-start-2");
+    expect(toggleCell).not.toBeNull();
+    expect(toggleCell).toHaveClass("md:row-start-1");
+    // 모바일 순서는 그대로: 토글은 DOM에서 폴더 목록(첫 폴더 머리)보다 앞에 있다
+    const folderHead = screen.getByRole("button", { name: /9\.50 ~ 9\.99/ });
+    expect(toggleCell!.compareDocumentPosition(folderHead) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("데스크톱: 채보 목록 위에 열 머리글(곡명·랭크·채보·달성률)이 있고 화면 읽기 프로그램에는 숨긴다", async () => {
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    const list = await screen.findByRole("list", { name: "9.50 ~ 9.99 채보" });
+    const header = list.previousElementSibling as HTMLElement;
+    expect(header).toHaveAttribute("aria-hidden", "true");
+    expect(header).toHaveClass("hidden", "md:grid");
+    expect(header.textContent).toBe("곡명랭크채보달성률");
+    // 머리글과 행이 같은 열 너비를 쓴다
+    expect(header.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px]");
+    expect(list.querySelector("li")?.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px]");
+  });
 });

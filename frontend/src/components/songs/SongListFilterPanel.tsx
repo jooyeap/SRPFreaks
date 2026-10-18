@@ -64,7 +64,7 @@ export function SongListFilterPanel({
       <button
         type="button"
         onClick={() => onChange({ ...EMPTY_SONG_FILTERS, q: filters.q })}
-        className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+        className="self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg md:self-auto"
       >
         초기화
       </button>
