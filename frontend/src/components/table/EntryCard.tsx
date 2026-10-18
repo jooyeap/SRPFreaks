@@ -8,8 +8,8 @@ import type { TableEntryResponse } from "@/lib/api-types";
 
 /**
  * 서열표 한 줄 (모바일). 재킷 칸을 숨기면서 4열 카드 격자 대신 한 줄 행으로 바꿨다.
- * 왼쪽: 곡명, 그 아래 `Guitar | MAS 9.80` 알약 + 달성 단계 + 속성. 오른쪽: 달성률, 추천, 기록 입력 버튼(+).
- * 기록이 있으면 단계 배지 앞에 레이팅 점수(티어 색)를 둔다(2026-10-10). 기록이 있으면 data-stage를 붙여 왼쪽 4px 막대와 배경 틴트, 곡명·달성률 색을 같은 단계 색으로 맞춘다 (데스크톱 표의 EntryRow와 같은 규칙).
+ * 왼쪽: 곡명, 그 아래 `Guitar | MAS 9.80` 알약 + 달성 단계 + 속성. 오른쪽: 달성률, 그 아래 추천 + 레이팅 점수(티어 색), 기록 입력 버튼(+).
+ * 레이팅 점수는 2026-10-10에 단계 배지 앞(왼쪽)에 뒀다가 2026-10-18에 달성률·추천과 같은 오른쪽 묶음으로 옮겼다. 기록이 있으면 data-stage를 붙여 왼쪽 4px 막대와 배경 틴트, 곡명·달성률 색을 같은 단계 색으로 맞춘다 (데스크톱 표의 EntryRow와 같은 규칙).
  */
 export function EntryCard({
   entry,
@@ -39,7 +39,6 @@ export function EntryCard({
         </Link>
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
-          {stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}
           {stage ? <StageBadge stage={stage} /> : null}
           <span className="text-xs text-fg-dim">속성 {entry.pattern ?? EMPTY_MARK}</span>
         </p>
@@ -48,7 +47,11 @@ export function EntryCard({
         <span className={`font-num text-sm font-semibold ${stage ? "stage-text" : "text-fg-faint"}`}>
           {formatRate(entry.mine?.rate)}
         </span>
-        <RecommendBadge value={entry.recommend} />
+        {/* 추천과 점수(레이팅)는 달성률 아래 같은 줄에 나란히 둔다. 기록이 없으면 점수는 비워 둔다 */}
+        <span className="flex items-center gap-1.5">
+          <RecommendBadge value={entry.recommend} />
+          {stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}
+        </span>
       </div>
       {onRecord ? (
         <button
