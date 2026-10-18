@@ -140,17 +140,16 @@ describe("HomeDashboard", () => {
     expect(screen.getByText("123.45")).toBeInTheDocument();
 
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    expect(progress).toHaveTextContent("기록 24/32");
+    expect(progress).toHaveTextContent("기록 24/30"); // 미정 묶음(2개)은 합계에서도 뺀다
     const legend = within(progress).getByRole("list", { name: "전체 달성 현황" });
     expect(within(legend).getByLabelText("달성 단계 EXC").closest("li")).toHaveTextContent("21");
-    expect(legend).toHaveTextContent("기록 없음8");
+    expect(legend).toHaveTextContent("기록 없음6");
     // 묶음별 진행: 각 줄은 묶음 페이지로 가는 링크
     const rows = within(within(progress).getByRole("list", { name: "묶음별 진행" })).getAllByRole("link");
     expect(rows.map((r) => r.getAttribute("href"))).toEqual([
       "/table/folder/5.8",
       "/table/folder/5.0",
-      "/table/folder/undecided",
-    ]);
+    ]); // 기준 난이도가 없는 미정 묶음은 칸 지도에 없다
     expect(rows[0]).toHaveTextContent("4/10");
     // 기록이 모두 채워진 묶음(5.0, 20/20)만 완료 색(막대·기준 난이도 글자)이 붙는다. `완료` 글자는 쓰지 않는다
     expect(rows[0].closest("li")).not.toHaveAttribute("data-done");
@@ -160,9 +159,10 @@ describe("HomeDashboard", () => {
     expect(rows[1].querySelector(".text-done-text")).not.toBeNull();
     // 완료한 줄은 막대에 완료 색 테두리가 붙는다 (막대 안은 단계 비율 칸이다)
     expect(rows[1].querySelector("[data-stage-bar].ring-done")).not.toBeNull();
+    // 넓은 화면에서 보이는 단계 칩(EXC/FC/SS/S/S 미만 개수)이 칸마다 있고, 숫자가 글자로 있다
+    expect(rows[1]).toHaveTextContent("EXC 20");
     expect(rows[0].querySelector("[data-stage-bar].ring-done")).toBeNull();
-    expect(rows[2].closest("li")).not.toHaveAttribute("data-done"); // 기록 0/2는 완료가 아니다
-    // 다음 목표: SS 이상(EXC 21 + SS 1 = 22곡)을 다음 10곡 단위(30곡)까지. 가장 빈 구간은 5.8(4/10, 미정은 후보가 아니다)
+    // 다음 목표: SS 이상(EXC 21 + SS 1 = 22곡)을 다음 10곡 단위(30곡)까지. 가장 빈 구간은 5.8(4/10)
     expect(progress).toHaveTextContent("SS 이상 22곡 → 30곡까지 8곡 남음");
     expect(progress).not.toHaveTextContent("약함"); // 칸에는 약함 뱃지를 달지 않는다(구분이 어렵다). 안내 문장과 링크만 있다
     expect(progress).toHaveTextContent("5.8 구간이 가장 비어 있어요. 기록 없는 채보 6곡");
