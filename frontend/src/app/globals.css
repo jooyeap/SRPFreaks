@@ -254,6 +254,10 @@ body {
 [data-tier="RAINBOW_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ff6b6b, #ffd93d, #6bff95, #6bd5ff, #c084fc, #ff6bd6); --tier-glow: 0 0 20px rgb(192 132 252 / 0.65); }
 [data-tier="HASUBONG"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffe27a, #ff7eb6, #c084fc, #22d3ee); --tier-glow: 0 0 26px rgb(255 126 182 / 0.75); }
 
+:root { --tabbar-h: 0px; } /* 하단 탭바 높이. lg 미만에서만 값이 생기고, 떠 있는 버튼·토스트·본문 여백이 이 값만큼 위로 올라간다 */
+@media (max-width: 1023.98px) {
+  :root { --tabbar-h: calc(3.5rem + env(safe-area-inset-bottom)); }
+}
 :root { --tier-glow: 0 0 0 transparent; } /* 빛 없음 기본값 (Bronze 미만). 위 [data-tier] 규칙이 더 가까워서 덮어쓴다 */
 .tier-chip { background: var(--tier-fill); color: var(--stage-chip-fg); }
 .tier-bar { background: var(--tier-fill); }

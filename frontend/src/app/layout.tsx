@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Chakra_Petch, Noto_Sans_KR } from "next/font/google";
 import type { ReactNode } from "react";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { NicknameNotice } from "@/components/NicknameNotice";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -34,12 +35,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="flex min-h-full flex-col bg-page font-sans text-fg">
+      <body className="flex min-h-full flex-col bg-page pb-[var(--tabbar-h)] font-sans text-fg">
         <Providers>
           <SiteHeader />
           <NicknameNotice />
           <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6">{children}</main>
           <SiteFooter />
+          <MobileTabBar />
         </Providers>
       </body>
     </html>

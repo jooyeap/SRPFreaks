@@ -30,7 +30,7 @@ export function ScrollTopButton({ lifted = false }: { lifted?: boolean }) {
       title="맨 위로"
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       className={`fixed right-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-chip-line bg-card text-fg shadow-lg hover:bg-table-head ${
-        lifted ? "bottom-[max(5rem,calc(env(safe-area-inset-bottom)+4rem))]" : "bottom-[max(1rem,env(safe-area-inset-bottom))]"
+        lifted ? "bottom-[calc(var(--tabbar-h)+5rem)]" : "bottom-[calc(var(--tabbar-h)+1rem)]"
       }`}
     >
       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
