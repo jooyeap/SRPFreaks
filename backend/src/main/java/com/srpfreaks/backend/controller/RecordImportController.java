@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
  * 사이트 화면에서 최근 플레이를 확인하고 저장하는 API (D40). 가져오기 토큰 없이 **로그인한 계정(Access Token)** 으로 부른다.
  * 공식 페이지의 북마클릿은 값을 읽어 사이트 창으로 넘기기만 하고, 이 API를 부르는 것은 사이트 화면(사용자의 확인 뒤)이다.
  * 사용자는 인증에서만 정하고 요청 본문에 사용자 id를 받지 않는다. 요청 본문은 로그에 남기지 않는다.
- * `/imports/**`(가져오기 토큰 전용, D34)와 경로가 달라서 서로 인증 방식이 섞이지 않는다.
  */
 @RestController
 @RequestMapping("/api/v1/record-imports")

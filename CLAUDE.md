@@ -103,7 +103,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 - 기록은 직접 입력하거나 사진 입력(D16)으로 넣는다. 사진은 저장하지 않고, 플레이어 이름·ID는 읽지 않는다.
 
 ## 범위와 기록 규칙 (D15)
-- **보류 추가(D18)**: 공식 사이트 곡 목록·스킬 페이지 가져오기, `official_records`, `import_unmatched`. 다시 켤 때까지 만들지 않는다. **D34로 되살린 것은 최근 플레이 가져오기(가져오기 토큰 포함)뿐이다.**
+- **보류 추가(D18)**: 공식 사이트 곡 목록·스킬 페이지 가져오기, `official_records`, `import_unmatched`. 다시 켤 때까지 만들지 않는다. **D34로 되살린 것은 최근 플레이 가져오기뿐이다**(D40: 토큰 없이 사이트 화면에서 미리보기 후 저장, 옛 토큰 방식은 제거).
 - **유저 목록(D26)은 구현됨**: 본인이 공개를 선택(`users.profile_public`, 기본 비공개, 설정은 `PATCH /users/me/visibility`)한 유저의 닉네임·티어·총점 목록(`/players`)과 읽기 전용 유저 상세(`/players/{userId}`, 비공개·없는 유저는 404). 이메일·역할·Google ID는 내보내지 않는다. 설계는 `docs/DESIGN.md` 18.2.
 - **공지사항(D30)은 구현됨**: ROOT·ADMIN이 쓰고(`/admin/notices`) 로그인한 사용자가 읽는다(`/notices`). 본문은 글자만 저장·표시하고 HTML을 해석하지 않는다. 고정·분류·댓글·알림은 만들지 않는다. 설계는 `docs/DESIGN.md` D30, 화면은 `docs/DESIGN-UI.md` 18장.
 - **건의사항(D35)은 구현됨**: 로그인한 사용자가 곡 추가·개선사항·버그 제보·기타를 보내고(`/suggestions`, 하루 5건) 본인 것의 처리 상태·답변을 본다. ROOT·ADMIN이 `/admin/suggestions`에서 상태·답변을 남기고 `audit_logs`에 기록한다. 본문은 글자만, 이미지 첨부·알림 없음. **곡 건의는 관리자가 직접 등록하며 자동 등록은 하지 않는다.** 기록·유저 신고(D14)는 계속 만들지 않는다. 설계는 `docs/DESIGN.md` D35, 화면은 `docs/DESIGN-UI.md` 22장.

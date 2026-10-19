@@ -1,8 +1,8 @@
 /**
- * 최근 플레이 가져오기 북마클릿(D34).
+ * 최근 플레이 가져오기 북마클릿(D34, D40).
  *
  * 사용자가 공식 최근 플레이 페이지(stage_result)를 연 상태에서 북마크를 누르면, 그 페이지에 이미 보이는 값만 읽어
- * 우리 서버(/api/v1/imports/recent-plays)로 보낸다. 다른 페이지를 불러오지 않고(한 페이지 = 한 번 실행 = 최대 5곡),
+ * 우리 사이트의 /import 창으로 넘긴다(서버와 직접 통신하지 않는다). 다른 페이지를 불러오지 않고(한 페이지 = 한 번 실행 = 최대 5곡),
  * Konami 계정·쿠키·페이지 전체 HTML은 읽지도 보내지도 않는다. 읽는 값은 곡명, 난이도 클래스, 판정 수, 달성률, 옵션 클래스, 플레이 시각뿐이다.
  *
  * 읽기만 하고 해석하지 않는다: 옵션/난이도 판정과 풀콤보 판정은 서버가 한다. 그래서 이 코드는 읽는 위치(selector)만 안다.
@@ -78,35 +78,16 @@ function srpReadPlays(doc){
 }
 `;
 
-const REASON_LABELS: Record<string, string> = {
-  UNSUPPORTED_GAME_TYPE: "기타/베이스가 아닌 플레이",
-  TRANSLATED_PAGE: "번역된 페이지에서 읽음",
-  OPTION_NOT_SUPPORTED: "옵션이 S.RANDOM+/BUTTON OFF/AUTO OFF가 아님",
-  UNKNOWN_DIFFICULTY: "지원하지 않는 난이도",
-  SONG_NOT_FOUND: "곡 목록에 없음",
-  AMBIGUOUS_SONG: "같은 이름의 곡이 여러 개",
-  INVALID_VALUE: "값이 올바르지 않음",
-  LOWER_THAN_BEST: "기존 기록보다 낮음",
-  NOT_IMPROVED: "기존 기록과 같음",
-};
 
 /**
- * 북마클릿 안에서 쓰는 결과 안내 함수 소스. 사유 이름 → 한글 표와, 공식 페이지 위에 띄우는 안내 창(srpModal)을 같이 넣는다.
- * 안내 창은 alert 대신 쓴다: 처리 중에도 반응이 보이고, 결과·제외된 곡·링크를 한 화면에 담을 수 있다.
- * 글자는 textContent로만 넣고(서버 응답 글자가 HTML로 해석되지 않는다), 모양은 element.style로 지정한다
+ * 북마클릿 안에서 쓰는 안내 함수 소스: 공식 페이지 위에 띄우는 안내 창(srpModal).
+ * 안내 창은 alert 대신 쓴다: 안내 문장과 사이트 열기 링크를 한 화면에 담을 수 있다.
+ * 글자는 textContent로만 넣고(글자가 HTML로 해석되지 않는다), 모양은 element.style로 지정한다
  * (style 속성 문자열은 공식 페이지의 CSP에 막힐 수 있어서 쓰지 않는다).
  * 창에는 translate="no"를 단다: 번역된 페이지에 끼워 넣은 글을 브라우저가 다시 번역해 안내 문장이 잘려 나왔다.
  */
 function senderSource(): string {
   return `
-var SRP_REASONS=${JSON.stringify(REASON_LABELS)};
-function srpSummary(res){
-  var lines=['저장 '+res.saved+'곡, 건너뜀 '+res.skipped+'곡'];
-  var keys=Object.keys(res.skippedByReason||{});
-  for(var i=0;i<keys.length;i++){lines.push('- '+(SRP_REASONS[keys[i]]||keys[i])+': '+res.skippedByReason[keys[i]]+'곡');}
-  if(res.excludedSongs&&res.excludedSongs.length){lines.push('');lines.push('곡 목록에 없어 제외한 곡:');for(var j=0;j<res.excludedSongs.length;j++){lines.push('· '+res.excludedSongs[j]);}}
-  return lines.join('\\n');
-}
 function srpStyle(el,css){for(var k in css){if(Object.prototype.hasOwnProperty.call(css,k)){el.style[k]=css[k];}}}
 function srpModal(title,body,link){
   var old=document.getElementById('srp-import-modal');
@@ -150,41 +131,6 @@ function srpModal(title,body,link){
   close.focus();
 }
 `;
-}
-
-/**
- * 북마클릿 본문(함수 호출 형태의 JS)을 만든다.
- * @param apiBase 우리 서버 API 주소(예: https://example.com/api/v1). 이 값은 설정 화면을 연 사이트의 주소에서 만든다.
- * @param token 가져오기 토큰 원문(srpi_…). 북마크에 들어가므로 화면에서 주의를 안내한다.
- */
-export function buildBookmarkletSource(apiBase: string, token: string): string {
-  const siteBase = apiBase.replace(/\/api\/v1\/?$/, "");
-  return `(function(){
-${READER_SOURCE}
-${senderSource()}
-var TITLE='SRPFreaks 최근 플레이 가져오기';
-if(location.hostname!==${JSON.stringify(OFFICIAL_HOST)}||location.pathname.indexOf(${JSON.stringify(OFFICIAL_PATH_PART)})<0){srpModal(TITLE,'최근 플레이 페이지(stage_result)에서 실행해 주세요.');return;}
-var read=srpReadPlays(document);
-if(!read.plays.length){srpModal(TITLE,'읽을 수 있는 플레이가 없습니다.'+(read.unreadable?' (읽지 못한 항목 '+read.unreadable+'개)':''));return;}
-var translated=false;
-for(var t=0;t<read.plays.length;t++){if(read.plays[t].translated){translated=true;}}
-if(translated){srpModal(TITLE,'이 페이지가 번역된 상태라 곡명을 정확히 읽을 수 없어 보내지 않았습니다.\\n\\n주소창 오른쪽의 번역 아이콘에서 "원본 보기"를 누르고(또는 일본어는 번역하지 않기를 선택하고) 페이지를 새로고침한 뒤 다시 눌러 주세요.');return;}
-srpModal(TITLE,'플레이 '+read.plays.length+'곡을 서버로 보내는 중입니다...');
-fetch(${JSON.stringify(apiBase)}+'/imports/recent-plays',{method:'POST',headers:{'Authorization':'Bearer '+${JSON.stringify(token)},'Content-Type':'application/json'},body:JSON.stringify({plays:read.plays})})
-.then(function(r){
-  if(r.status===401){throw new Error('가져오기 토큰이 올바르지 않거나 폐기되었습니다. 설정에서 다시 발급해 주세요.');}
-  if(r.status===429){throw new Error('요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.');}
-  if(!r.ok){throw new Error('가져오지 못했습니다. (오류 '+r.status+')');}
-  return r.json();
-})
-.then(function(res){srpModal(res.saved>0?'가져오기 완료':'가져오기 결과',srpSummary(res)+(read.unreadable?'\\n\\n읽지 못한 항목 '+read.unreadable+'개는 보내지 않았습니다.':''),${JSON.stringify(siteBase)});})
-.catch(function(e){srpModal(TITLE,e&&e.message&&e.message.indexOf('Failed to fetch')<0?e.message:'서버에 연결하지 못했습니다. 공식 사이트가 외부 연결을 막았을 수 있습니다.');});
-})();`;
-}
-
-/** 북마크 주소(`javascript:…`)로 만든다. */
-export function buildBookmarkletHref(apiBase: string, token: string): string {
-  return "javascript:" + encodeURIComponent(buildBookmarkletSource(apiBase, token));
 }
 
 /**
