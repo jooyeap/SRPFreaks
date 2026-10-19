@@ -90,19 +90,19 @@ describe("북마클릿 읽기", () => {
 });
 
 describe("북마클릿 실행", () => {
-  const alertMock = vi.fn();
   const fetchMock = vi.fn();
   const API = "https://srp.example.com/api/v1";
 
   function run(location: { hostname: string; pathname: string }) {
-    const fn = new Function("document", "location", "fetch", "alert", buildBookmarkletSource(API, "srpi_token"));
-    fn(document, location, fetchMock, alertMock);
+    const fn = new Function("document", "location", "fetch", buildBookmarkletSource(API, "srpi_token"));
+    fn(document, location, fetchMock);
   }
   const flush = () => new Promise((r) => setTimeout(r, 0));
   const OFFICIAL = { hostname: "p.eagate.573.jp", pathname: "/game/gfdm/gitadora_galaxywave_delta/p/playdata/stage_result.html" };
+  const modal = () => document.getElementById("srp-import-modal");
+  const modalText = () => modal()?.textContent ?? "";
 
   beforeEach(() => {
-    alertMock.mockReset();
     fetchMock.mockReset();
     document.body.innerHTML = block({});
   });
@@ -113,16 +113,23 @@ describe("북마클릿 실행", () => {
   it("공식 최근 플레이 페이지가 아니면 보내지 않고 안내한다", () => {
     run({ hostname: "example.com", pathname: "/" });
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining("stage_result"));
+    expect(modalText()).toContain("stage_result");
   });
 
-  it("읽은 값을 토큰과 함께 한 번만 보내고 결과를 안내한다", async () => {
-    fetchMock.mockResolvedValue({
+  it("누르면 바로 처리 중 창이 뜨고, 읽은 값을 토큰과 함께 한 번만 보낸 뒤 같은 창이 결과로 바뀐다", async () => {
+    let finish: (v: unknown) => void = () => undefined;
+    fetchMock.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    run(OFFICIAL);
+
+    // 서버 응답 전: 처리 중 안내가 보이고 창은 하나뿐이다
+    expect(modalText()).toContain("서버로 보내는 중");
+    expect(modal()).toHaveAttribute("role", "dialog");
+
+    finish({
       ok: true,
       status: 200,
       json: () => Promise.resolve({ saved: 0, skipped: 1, skippedByReason: { SONG_NOT_FOUND: 1 }, results: [], excludedSongs: ["Stargazer"] }),
     });
-    run(OFFICIAL);
     await flush();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -131,31 +138,64 @@ describe("북마클릿 실행", () => {
     expect(init.method).toBe("POST");
     expect((init.headers as Record<string, string>).Authorization).toBe("Bearer srpi_token");
     expect(JSON.parse(String(init.body)).plays).toHaveLength(1);
-    const message = String(alertMock.mock.calls[0][0]);
-    expect(message).toContain("저장 0곡, 건너뜀 1곡");
-    expect(message).toContain("곡 목록에 없음: 1곡");
-    expect(message).toContain("· Stargazer");
+    expect(document.querySelectorAll("#srp-import-modal")).toHaveLength(1);
+    expect(modalText()).toContain("저장 0곡, 건너뜀 1곡");
+    expect(modalText()).toContain("곡 목록에 없음: 1곡");
+    expect(modalText()).toContain("· Stargazer");
+  });
+
+  it("저장된 곡이 있으면 완료 제목과 SRPFreaks 링크를 보여 주고, 확인을 누르면 창이 닫힌다", async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ saved: 1, skipped: 0, skippedByReason: {}, results: [], excludedSongs: [] }) });
+    run(OFFICIAL);
+    await flush();
+    expect(modalText()).toContain("가져오기 완료");
+    const link = modal()?.querySelector("a");
+    expect(link).toHaveAttribute("href", "https://srp.example.com");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    const close = Array.from(modal()?.querySelectorAll("button") ?? []).find((el) => el.textContent === "확인");
+    close?.click();
+    expect(modal()).toBeNull();
+  });
+
+  it("서버가 준 글자는 HTML로 해석하지 않고 글자로만 보여 준다", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ saved: 0, skipped: 1, skippedByReason: {}, results: [], excludedSongs: ["<img src=x onerror=alert(1)>"] }),
+    });
+    run(OFFICIAL);
+    await flush();
+    expect(modal()?.querySelector("img")).toBeNull();
+    expect(modalText()).toContain("<img src=x onerror=alert(1)>");
+  });
+
+  it("번역된 페이지에서는 서버로 보내지 않고 번역을 끄라고 안내한다", () => {
+    document.body.innerHTML = block({ translated: true });
+    run(OFFICIAL);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(modalText()).toContain("번역된 상태");
+    expect(modalText()).toContain("원본 보기");
   });
 
   it("토큰이 거절되면(401) 다시 발급하라고 안내한다", async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 401, json: () => Promise.resolve({}) });
     run(OFFICIAL);
     await flush();
-    expect(String(alertMock.mock.calls[0][0])).toContain("다시 발급");
+    expect(modalText()).toContain("다시 발급");
   });
 
   it("연결 자체가 막히면 그 가능성을 안내한다", async () => {
     fetchMock.mockRejectedValue(new TypeError("Failed to fetch"));
     run(OFFICIAL);
     await flush();
-    expect(String(alertMock.mock.calls[0][0])).toContain("외부 연결");
+    expect(modalText()).toContain("외부 연결");
   });
 
   it("읽을 플레이가 없으면 보내지 않는다", () => {
     document.body.innerHTML = "<p>없음</p>";
     run(OFFICIAL);
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(alertMock).toHaveBeenCalledWith(expect.stringContaining("읽을 수 있는 플레이가 없습니다"));
+    expect(modalText()).toContain("읽을 수 있는 플레이가 없습니다");
   });
 
   it("북마크 주소는 javascript: 로 시작하고 `//` 주석이 없는 한 덩어리다", () => {
