@@ -502,7 +502,7 @@ com.srpfreaks.backend
 | 서열표 목록 | GET `/difficulty-tables` | USER+ |
 | 서열표 값 수정·채보 추가 (D27) | PUT `/admin/difficulty-tables/{tableId}/entries/{songDifficultyId}` (본문 `tierLabel`(null=미정), `recommend`(상/중/하/null), `pattern`(단일/복합/이중/삼중/레이팅 제외/null), `ratingEnabled`(true/false, 생략하면 기존 값 유지·새 줄은 꺼짐, D28). 보낸 값으로 교체, 표에 없으면 추가, `?` 해제, 표 revision +1, 감사 로그) | ROOT·ADMIN |
 | 유저 채보 기록 삭제 (D29) | DELETE `/admin/players/{userId}/charts/{songDifficultyId}/records` (그 유저의 그 채보 기록 전부 삭제, 204. 없으면 404. 감사 로그 `RECORD_ADMIN_DELETE`) | ROOT·ADMIN |
-| 공지사항 목록 (D30) | GET `/notices` (최근 순 페이지) | 로그인한 사용자 |
+| 공지사항 목록·상세 (D30) | GET `/notices` (최근 순 페이지), GET `/notices/{noticeId}` (한 건, 없으면 404) | 로그인한 사용자 |
 | 공지사항 쓰기·수정·삭제 (D30) | POST `/admin/notices`, PUT·DELETE `/admin/notices/{noticeId}` (본문 `title`(1~100자), `content`(1~5000자), 감사 로그) | ROOT·ADMIN |
 | 건의 보내기·내 목록 (D35) | POST `/suggestions` (본문 `category`, `title`(1~100자), `content`(1~2000자). 24시간에 5건까지, 넘으면 429), GET `/suggestions/me` (본인 것만, 최근 순 페이지) | 로그인한 사용자 |
 | 건의 관리 (D35) | GET `/admin/suggestions?category=&status=&page=&size=`, GET `/admin/suggestions/received-count`, PATCH `/admin/suggestions/{id}` (본문 `status`, `adminNote`(선택, 500자), 감사 로그) | ROOT·ADMIN |
