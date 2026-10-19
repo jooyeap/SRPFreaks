@@ -57,7 +57,7 @@ describe("받은 플레이 이어서 처리 모달", () => {
     expect(await screen.findByText("공식 페이지에서 받은 플레이가 있습니다")).toBeInTheDocument();
     expect(screen.getByText(/1곡을 받았습니다/)).toBeInTheDocument();
     expect(window.location.hash).toBe("");
-    fireEvent.click(screen.getByRole("button", { name: "이어서 처리" }));
+    fireEvent.click(await screen.findByRole("button", { name: "이어서 처리" }));
     expect(push).toHaveBeenCalledWith("/import");
     expect(screen.queryByText("공식 페이지에서 받은 플레이가 있습니다")).toBeNull();
   });

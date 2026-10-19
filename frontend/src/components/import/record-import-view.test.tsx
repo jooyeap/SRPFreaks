@@ -119,6 +119,20 @@ describe("최근 플레이 가져오기 화면", () => {
     expect(screen.getByText(/토큰은 필요 없습니다/)).toBeInTheDocument();
   });
 
+  it("주소창 실행용 스크립트를 javascript: 없이 복사한다(브라우저가 붙여넣은 접두사를 지우기 때문)", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    clearHandoff();
+    renderIt();
+    fireEvent.click(await screen.findByRole("button", { name: "실행용 스크립트 복사" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const copied = String(writeText.mock.calls[0][0]);
+    expect(copied.startsWith("javascript:")).toBe(false);
+    expect(decodeURIComponent(copied)).toContain("srpfreaks-import");
+    expect(decodeURIComponent(copied)).not.toContain("srpi_");
+    expect(screen.getByText(/직접 입력해야 합니다/)).toBeInTheDocument();
+  });
+
   it("일반 사용자에게는 준비 중 안내만 보인다", async () => {
     fetchMock.mockImplementation((input) => Promise.resolve(String(input).endsWith("/auth/refresh") ? login("USER") : json({})));
     renderIt();
