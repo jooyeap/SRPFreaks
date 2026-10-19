@@ -60,9 +60,16 @@ export default function GuidePage() {
         ))}
       </section>
 
-      <section aria-label="포함 기준" className="space-y-3">
-        <h2 className="text-lg font-bold text-fg">포함 기준</h2>
-
+      {/* 상세 설명은 처음에 접어 둔다: 대부분은 한눈에 보기만 읽으면 되기 때문이다. 브라우저 기본 <details>라 JS 없이 열고 닫히고,
+          열림 상태는 기본으로 보조 기술에 전달된다. 접힌 줄에도 ▸/▾ 글자 표시를 둬서 색이나 위치에만 기대지 않는다. */}
+      <details className="group space-y-3" aria-label="포함 기준">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-2xl border border-line bg-card px-4 text-lg font-bold text-fg [&::-webkit-details-marker]:hidden">
+          <span aria-hidden="true" className="font-num text-sm text-fg-dim group-open:hidden">▸</span>
+          <span aria-hidden="true" className="font-num hidden text-sm text-fg-dim group-open:inline">▾</span>
+          <h2 className="text-lg font-bold text-fg">포함 기준</h2>
+          <span className="ml-auto text-xs font-normal text-fg-dim">상세 설명</span>
+        </summary>
+        <div className="space-y-3 pt-3">
         <div className="space-y-3 rounded-2xl border border-line bg-card p-4">
           <h3 className="text-[15px] font-bold text-done-text">포함되는 채보</h3>
           <ul className="space-y-2.5 text-[13px] leading-relaxed text-fg-sub">
@@ -111,7 +118,8 @@ export default function GuidePage() {
           <h3 className="text-[15px] font-bold text-fg">기록 관리</h3>
           <p className="text-[13px] leading-relaxed text-fg-sub">부정한 방법으로 입력한 기록은 운영자가 삭제할 수 있습니다.</p>
         </div>
-      </section>
+        </div>
+      </details>
 
       <section aria-label="레이팅 상수표" className="space-y-3">
         <h2 className="text-lg font-bold text-fg">레이팅 상수표</h2>
@@ -121,6 +129,9 @@ export default function GuidePage() {
         <p className="text-[13px] leading-relaxed text-fg-sub">
           곡별 레이팅의 최고 수치는 달성률 <b className="text-fg">100%가 아니라 95%</b>입니다. 95%를 넘어도 점수는 더 오르지 않습니다.
         </p>
+        <p className="text-[13px] leading-relaxed text-fg-sub">
+          예를 들어 Gold는 합계 8,000점이라 한 곡당 8,000 ÷ 40 = <b className="font-num text-fg">200점</b>이고, 점수가 200 이상인 칸이 Gold 색입니다.
+        </p>
         <ConstantTable />
         {/* 참고: 달성률 1%가 점수로 얼마인지. 값은 계수(DEFAULT_COEFFICIENTS)에서 계산한다 */}
         <div className="space-y-2.5 rounded-2xl border border-line bg-card p-4">
@@ -129,6 +140,9 @@ export default function GuidePage() {
             <li>
               달성률 {DEFAULT_COEFFICIENTS.capRate}%에서 {DEFAULT_COEFFICIENTS.maxRate}% 사이는 곡 난이도와 관계없이 1%마다 약{" "}
               <b className="font-num text-fg">{pointsPerPercentAboveCap().toFixed(2)}점</b>씩 오릅니다.
+            </li>
+            <li>
+              내부 상수가 4 높은 곡의 S(80%)와 4 낮은 곡의 SS(95%)는 점수가 같습니다.
             </li>
             <li>
               {DEFAULT_COEFFICIENTS.capRate}% 아래는 곡마다 다릅니다. 내부 상수가 클수록 1%의 점수도 커지며, 상수 20인 곡은 1%마다 정확히 4점입니다.
