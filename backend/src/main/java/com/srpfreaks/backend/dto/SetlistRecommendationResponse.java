@@ -15,14 +15,14 @@ import java.util.List;
  * - INSUFFICIENT : 단일 / 그 외 채보가 모자라 평균을 믿기 어렵다. 목록은 비어 있고 ratedSingle·ratedOther와 requiredSingle·requiredOther 개수로 안내한다.
  * - UNAVAILABLE  : 레이팅 서열표가 없다.
  * 범위(ssMin~sMax)는 평균 대비 차이이고, customRange가 true면 사용자가 직접 정한 값이다(false면 서버 기본값).
- * 두 묶음은 같은 page / size(묶음마다 size개)로 넘기고, totalPages는 둘 중 긴 쪽 기준이다.
+ * 두 묶음은 각각 따로 쪽을 넘긴다(ssPage / sPage, 묶음마다 size개). ssTotalPages·sTotalPages도 묶음별이다.
  */
 public record SetlistRecommendationResponse(Status status, BigDecimal baseTier,
                                             BigDecimal ssMin, BigDecimal ssMax, BigDecimal sMin, BigDecimal sMax,
                                             boolean customRange,
                                             int ratedSingle, int ratedOther, int requiredSingle, int requiredOther,
                                             List<Item> ssChallenge, List<Item> sFill,
-                                            int page, int size, int totalPages) {
+                                            int ssPage, int sPage, int size, int ssTotalPages, int sTotalPages) {
 
     public enum Status { READY, STARTER, INSUFFICIENT, UNAVAILABLE }
 

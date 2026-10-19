@@ -47,12 +47,13 @@ public class SetlistController {
         return setlistService.list(user.id(), page, size);
     }
 
-    /** 내 평균 난이도 기준 추천(SS 도전 / S 채우기). 두 묶음을 같은 page로 size개씩 돌려준다(D37). */
+    /** 내 평균 난이도 기준 추천(SS 도전 / S 채우기). 두 묶음을 각각 자기 쪽(ssPage, sPage)으로 size개씩 돌려준다(D37). */
     @GetMapping("/recommendations")
     public SetlistRecommendationResponse recommendations(@AuthenticationPrincipal AuthenticatedUser user,
-                                                         @RequestParam(defaultValue = "0") int page,
+                                                         @RequestParam(defaultValue = "0") int ssPage,
+                                                         @RequestParam(defaultValue = "0") int sPage,
                                                          @RequestParam(defaultValue = "" + SetlistRecommendService.DEFAULT_PAGE_SIZE) int size) {
-        return recommendService.recommend(user.id(), page, size);
+        return recommendService.recommend(user.id(), ssPage, sPage, size);
     }
 
     /** 내 추천 범위를 직접 정한다(평균 난이도 대비 차이). 없으면 만들고 있으면 고친다. */

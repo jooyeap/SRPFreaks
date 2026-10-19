@@ -93,7 +93,7 @@ class SetlistRecommendServiceTest {
     void 쿼리는_두_범위를_합친_구간으로_한_번만_조회한다() {
         givenCandidates();
 
-        service.recommend(1L, 0, 5);
+        service.recommend(1L, 0, 0, 5);
 
         ArgumentCaptor<BigDecimal> lo = ArgumentCaptor.forClass(BigDecimal.class);
         ArgumentCaptor<BigDecimal> hi = ArgumentCaptor.forClass(BigDecimal.class);
@@ -106,7 +106,7 @@ class SetlistRecommendServiceTest {
     void 기본_범위를_쓰면_customRange가_false이고_서버_기본_범위를_내려준다() {
         givenCandidates();
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(r.customRange()).isFalse();
         assertThat(r.ssMin()).isEqualByComparingTo("-0.6");
@@ -128,7 +128,7 @@ class SetlistRecommendServiceTest {
                 cand(4, "7.20", null, false),     // S 기준 상한 경계 -> 포함
                 cand(5, "6.20", "70.00", false)); // S 기준 하한 경계 -> 포함
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 10);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 10);
 
         assertThat(r.customRange()).isTrue();
         assertThat(r.ssMin()).isEqualByComparingTo("-1.00");
@@ -150,7 +150,7 @@ class SetlistRecommendServiceTest {
                 cand(4, "6.00", "80.00", true),   // FC(달성률은 낮아도 단계는 FC) -> SS 이상이라 제외
                 cand(5, "6.00", "100.00", true)); // EXC -> 제외
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.READY);
         assertThat(r.baseTier()).isEqualByComparingTo("6.20");
@@ -167,7 +167,7 @@ class SetlistRecommendServiceTest {
                 cand(4, "6.10", "70.00", false),  // SS 기준 상한 경계(두 범위가 겹치는 곳) -> SS 기준에만
                 cand(5, "6.40", "95.00", false)); // SS -> 제외
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(ids(r.ssChallenge())).containsExactly(4L);
         assertThat(ids(r.sFill())).containsExactlyInAnyOrder(1L, 2L);
@@ -177,7 +177,7 @@ class SetlistRecommendServiceTest {
     void 평균보다_어려운_곡은_SS_기준에_넣지_않는다() {
         givenCandidates(cand(1, "6.30", null, false), cand(2, "6.60", null, false));
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(r.ssChallenge()).isEmpty();
         assertThat(ids(r.sFill())).containsExactlyInAnyOrder(1L, 2L);
@@ -187,7 +187,7 @@ class SetlistRecommendServiceTest {
     void 범위_밖_후보는_쿼리가_돌려줘도_걸러낸다() {
         givenCandidates(cand(1, "6.70", null, false), cand(2, "5.50", null, false));
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(r.ssChallenge()).isEmpty();
         assertThat(r.sFill()).isEmpty();
@@ -203,7 +203,7 @@ class SetlistRecommendServiceTest {
                 cand(14, "6.10", "70.00", false), // 같은 차이·같은 달성률이면 id 순
                 cand(15, "5.90", "70.00", false));// 차이 0.3: 가까운 묶음 뒤
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 10);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 10);
 
         assertThat(ids(r.ssChallenge())).containsExactly(13L, 11L, 14L, 10L, 15L, 12L);
     }
@@ -212,7 +212,7 @@ class SetlistRecommendServiceTest {
     void 기록이_있으면_내_최고_기록과_단계를_함께_내려준다() {
         givenCandidates(cand(1, "6.10", "85.50", false), cand(2, "6.10", null, false));
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(r.ssChallenge().get(0).mine()).isNull();   // 차이가 같으면 기록 없는 채보가 먼저
         assertThat(r.ssChallenge().get(1).mine().rate()).isEqualByComparingTo("85.50");
@@ -221,18 +221,36 @@ class SetlistRecommendServiceTest {
     }
 
     @Test
-    void 두_묶음을_같은_페이지로_size개씩_자르고_전체_페이지는_긴_쪽_기준이다() {
+    void 두_묶음을_size개씩_자르고_묶음마다_전체_페이지를_센다() {
         givenCandidates(
                 cand(1, "6.10", null, false), cand(2, "6.10", null, false), cand(3, "6.10", null, false),
                 cand(4, "6.10", null, false), cand(5, "6.10", null, false),     // SS 기준 5개
                 cand(6, "6.50", null, false));                                  // S 기준 1개
 
-        SetlistRecommendationResponse first = service.recommend(1L, 0, 2);
+        SetlistRecommendationResponse first = service.recommend(1L, 0, 0, 2);
 
         assertThat(first.size()).isEqualTo(2);
-        assertThat(first.totalPages()).isEqualTo(3);   // 5개 / 2개씩 = 3쪽
+        assertThat(first.ssTotalPages()).isEqualTo(3);   // SS 기준 5개 / 2개씩 = 3쪽
+        assertThat(first.sTotalPages()).isEqualTo(1);    // S 기준 1개 = 1쪽
         assertThat(ids(first.ssChallenge())).containsExactly(1L, 2L);
         assertThat(ids(first.sFill())).containsExactly(6L);
+    }
+
+    @Test
+    void 두_묶음은_각자_자기_쪽을_넘긴다() {
+        givenCandidates(
+                cand(1, "6.10", null, false), cand(2, "6.10", null, false), cand(3, "6.10", null, false),   // SS 기준 3개
+                cand(6, "6.50", null, false), cand(7, "6.50", null, false), cand(8, "6.50", null, false));  // S 기준 3개
+
+        // SS 기준은 2쪽(index 1), S 기준은 1쪽(index 0)
+        SetlistRecommendationResponse r = service.recommend(1L, 1, 0, 2);
+
+        assertThat(r.ssPage()).isEqualTo(1);
+        assertThat(r.sPage()).isZero();
+        assertThat(ids(r.ssChallenge())).containsExactly(3L);
+        assertThat(ids(r.sFill())).containsExactly(6L, 7L);
+        assertThat(r.ssTotalPages()).isEqualTo(2);
+        assertThat(r.sTotalPages()).isEqualTo(2);
     }
 
     @Test
@@ -241,20 +259,21 @@ class SetlistRecommendServiceTest {
                 cand(1, "6.10", null, false), cand(2, "6.10", null, false), cand(3, "6.10", null, false),
                 cand(6, "6.50", null, false));
 
-        assertThat(ids(service.recommend(1L, 1, 2).ssChallenge())).containsExactly(3L);
-        assertThat(service.recommend(1L, 1, 2).sFill()).isEmpty();            // S 기준은 1쪽에 없다
-        assertThat(service.recommend(1L, 99, 2).ssChallenge()).isEmpty();     // 범위를 넘으면 빈 목록(오류 아님)
+        assertThat(ids(service.recommend(1L, 1, 1, 2).ssChallenge())).containsExactly(3L);
+        assertThat(service.recommend(1L, 1, 1, 2).sFill()).isEmpty();            // S 기준은 1쪽에 없다
+        assertThat(service.recommend(1L, 99, 99, 2).ssChallenge()).isEmpty();     // 범위를 넘으면 빈 목록(오류 아님)
     }
 
     @Test
     void 잘못된_page와_size는_허용_범위로_맞춘다() {
         givenCandidates();
 
-        SetlistRecommendationResponse r = service.recommend(1L, -3, 99);
+        SetlistRecommendationResponse r = service.recommend(1L, -3, -3, 99);
 
-        assertThat(r.page()).isZero();
+        assertThat(r.ssPage()).isZero();
+        assertThat(r.sPage()).isZero();
         assertThat(r.size()).isEqualTo(SetlistRecommendService.MAX_PAGE_SIZE);
-        assertThat(service.recommend(1L, 0, 0).size()).isEqualTo(1);
+        assertThat(service.recommend(1L, 0, 0, 0).size()).isEqualTo(1);
     }
 
     @Test
@@ -262,7 +281,7 @@ class SetlistRecommendServiceTest {
         givenTable();
         when(estimator.estimate(1L)).thenReturn(PlayLevelEstimate.insufficient(3, 8));
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.INSUFFICIENT);
         assertThat(r.baseTier()).isNull();
@@ -272,7 +291,8 @@ class SetlistRecommendServiceTest {
         assertThat(r.ratedOther()).isEqualTo(8);
         assertThat(r.requiredSingle()).isEqualTo(5);
         assertThat(r.requiredOther()).isEqualTo(9);
-        assertThat(r.totalPages()).isZero();
+        assertThat(r.ssTotalPages()).isZero();
+        assertThat(r.sTotalPages()).isZero();
         verify(mapper, never()).findCandidates(anyLong(), anyString(), anyLong(), anyString(), any(), any());
     }
 
@@ -287,7 +307,7 @@ class SetlistRecommendServiceTest {
                         cand(3, "4.80", "70.00", false),  // A -> 포함
                         cand(4, "5.30", null, false)));   // 상한 밖 -> 걸러낸다
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.STARTER);
         assertThat(r.baseTier()).isEqualByComparingTo("5.2");
@@ -303,7 +323,7 @@ class SetlistRecommendServiceTest {
         when(difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
-        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
         assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.UNAVAILABLE);
         assertThat(r.baseTier()).isNull();
