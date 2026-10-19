@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 236" width="440" height="236" role="img" aria-label="PC에서 SRP 가져오기 버튼을 마우스로 누른 채 위쪽 북마크 바로 끌어다 놓는 모습">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#FFE27A"/></marker></defs>
+<rect x="2" y="2" width="436" height="232" rx="10" fill="#1B2130" stroke="#3A4358"/>
+<rect x="2" y="2" width="436" height="28" rx="10" fill="#12151C"/>
+<rect x="12" y="8" width="118" height="22" rx="6" fill="#1B2130"/>
+<text x="24" y="23" font-size="10" fill="#EEF0F6" font-family="sans-serif">SRPFreaks</text>
+<rect x="12" y="36" width="416" height="22" rx="11" fill="#0F1218"/>
+<text x="28" y="51" font-size="10" fill="#A0A9BC" font-family="sans-serif">srpfreaks.com/import</text>
+<rect x="2" y="62" width="436" height="28" fill="#181D27"/>
+<line x1="2" y1="90" x2="438" y2="90" stroke="#2A3142"/>
+<text x="12" y="80" font-size="9" fill="#A0A9BC" font-family="sans-serif">북마크 바</text>
+<rect x="66" y="68" width="48" height="16" rx="4" fill="#2A3142"/>
+<rect x="120" y="68" width="60" height="16" rx="4" fill="#2A3142"/>
+<rect x="186" y="68" width="44" height="16" rx="4" fill="#2A3142"/>
+<rect x="240" y="66" width="120" height="20" rx="5" fill="none" stroke="#FFE27A" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="300" y="80" font-size="10" fill="#FFE27A" text-anchor="middle" font-weight="700" font-family="sans-serif">여기에 놓기</text>
+<circle cx="372" cy="76" r="9" fill="#FFE27A"/><text x="372" y="80" font-size="11" fill="#0F1218" text-anchor="middle" font-weight="800" font-family="sans-serif">3</text>
+<rect x="14" y="100" width="412" height="124" rx="8" fill="#181D27" stroke="#2A3142"/>
+<text x="28" y="122" font-size="11" fill="#EEF0F6" font-weight="700" font-family="sans-serif">사용 방법</text>
+<rect x="28" y="168" width="124" height="34" rx="9" fill="#EEF0F6"/>
+<text x="90" y="190" font-size="12" fill="#0F1218" text-anchor="middle" font-weight="800" font-family="sans-serif">SRP 가져오기</text>
+<circle cx="24" cy="158" r="9" fill="#FFE27A"/><text x="24" y="162" font-size="11" fill="#0F1218" text-anchor="middle" font-weight="800" font-family="sans-serif">1</text>
+<path d="M104 160 C104 128 190 140 262 94" fill="none" stroke="#FFE27A" stroke-width="2.2" stroke-dasharray="6 4" marker-end="url(#ah)"/>
+<rect x="150" y="122" width="100" height="20" rx="5" fill="#EEF0F6" opacity="0.55"/>
+<text x="200" y="136" font-size="10" fill="#0F1218" text-anchor="middle" font-weight="700" font-family="sans-serif">SRP 가져오기</text>
+<circle cx="258" cy="132" r="9" fill="#FFE27A"/><text x="258" y="136" font-size="11" fill="#0F1218" text-anchor="middle" font-weight="800" font-family="sans-serif">2</text>
+<path d="M126 188 L126 210 L132 205 L137 215 L141 213 L136 203 L143 203 Z" fill="#fff" stroke="#0F1218" stroke-width="1"/>
+</svg>
