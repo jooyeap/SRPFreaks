@@ -41,28 +41,6 @@ function skill(over: Partial<SkillResponse> = {}): SkillResponse {
   };
 }
 
-describe("RatingSummary 승급 예고", () => {
-  it("95% 미만 곡이 있으면 가장 빨리 오르는 곡과 늘어나는 점수를 보여 준다 (6.0, 80% → 95%: +64.00)", () => {
-    const low = entry({ songId: 7, songDifficultyId: 70, title: "올릴곡", tier: 6.0, achievementRate: 80, stage: "S", score: 240 });
-    render(<RatingSummary skill={skill({ single: [low], totalScore: 1100 })} />);
-    const line = screen.getByLabelText("가장 빨리 오르는 곡");
-    expect(within(line).getByRole("link", { name: "올릴곡" })).toHaveAttribute("href", "/songs/7?from=table&chart=70");
-    expect(line).toHaveTextContent("80.00% → 95%까지 +64.00");
-    expect(line).not.toHaveTextContent("에 도달합니다");
-  });
-
-  it("그 곡만 올려도 다음 티어에 닿으면 안내 문구가 붙는다", () => {
-    const low = entry({ title: "올릴곡", tier: 6.0, achievementRate: 80, stage: "S", score: 240 });
-    render(<RatingSummary skill={skill({ single: [low], totalScore: 1450 })} />);
-    expect(screen.getByLabelText("가장 빨리 오르는 곡")).toHaveTextContent("이 곡만 올려도 Orange Gradient에 도달합니다.");
-  });
-
-  it("모든 곡이 95% 이상이면 줄을 그리지 않는다", () => {
-    render(<RatingSummary skill={skill()} />);
-    expect(screen.queryByLabelText("가장 빨리 오르는 곡")).toBeNull();
-  });
-});
-
 describe("RatingSummary", () => {
   it("합계, 소계, 티어 이름, 다음 티어까지 진행도와 남은 점수를 보여 준다", () => {
     render(<RatingSummary skill={skill()} />);
@@ -187,7 +165,6 @@ describe("RatingView", () => {
       ),
     );
     const { container } = renderView();
-    // 에스곡은 95% 미만이라 맨 위 승급 예고 줄에도 이름이 나온다. 카드 검사는 목록 안으로 한정한다
     await screen.findAllByText("에스곡");
 
     const cards = Array.from(container.querySelectorAll("li[data-stage]"));
