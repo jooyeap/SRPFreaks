@@ -99,7 +99,7 @@ function BookmarkGuide() {
       <GuideImage
         src="/import-guide/bookmark-drag.png"
         alt="북마크 바에 SRP 가져오기 북마크가 추가된 브라우저 화면"
-        caption="북마크 바에 SRP 가져오기가 추가된 모습(개인 정보는 가렸습니다)."
+        caption="북마크 바에 SRP 가져오기가 추가된 모습."
       />
       <details className="rounded-xl border border-chip-line p-3">
         <summary className="min-h-8 cursor-pointer text-sm font-bold text-fg">북마크 없이 주소창에서 실행하기 (모바일)</summary>
@@ -118,7 +118,7 @@ function BookmarkGuide() {
         <GuideImage
           src="/import-guide/address-bar.png"
           alt="주소창에 j를 입력하고 복사한 스크립트를 붙여넣은 브라우저 화면"
-          caption="주소창에 j를 입력한 뒤 붙여넣은 모습(개인 정보는 가렸습니다)."
+          caption="주소창에 j를 입력한 뒤 붙여넣은 모습."
         />
         <p className="mt-2 text-xs text-fg-sub">브라우저가 붙여넣은 글자가 javascript:로 시작하면 그 부분을 지우기 때문에, 맨 앞 j만 직접 입력합니다. 일부 앱 안의 브라우저에서는 실행되지 않을 수 있습니다.</p>
       </details>
