@@ -1,8 +1,9 @@
 /**
  * 최근 플레이 가져오기 북마클릿(D34, D40).
  *
- * 사용자가 공식 최근 플레이 페이지(stage_result)를 연 상태에서 북마크를 누르면, 그 페이지에 이미 보이는 값만 읽어
- * 우리 사이트의 /import 창으로 넘긴다(서버와 직접 통신하지 않는다). 다른 페이지를 불러오지 않고(한 페이지 = 한 번 실행 = 최대 5곡),
+ * 사용자가 공식 최근 플레이 페이지(stage_result)를 연 상태에서 북마크를 누르면, 그 페이지와 같은 목록의 1~4쪽(최대 20곡)을
+ * 사용자 브라우저가 같은 사이트 안에서 불러와(같은 출처 fetch, 사용자의 로그인 상태 그대로) 값만 읽어
+ * 우리 사이트의 /import 창으로 넘긴다(우리 서버는 공식 사이트와 통신하지 않는다). 쪽 사이에 0.4초씩 쉰다.
  * Konami 계정·쿠키·페이지 전체 HTML은 읽지도 보내지도 않는다. 읽는 값은 곡명, 난이도 클래스, 판정 수, 달성률, 옵션 클래스, 플레이 시각뿐이다.
  *
  * 읽기만 하고 해석하지 않는다: 옵션/난이도 판정과 풀콤보 판정은 서버가 한다. 그래서 이 코드는 읽는 위치(selector)만 안다.
@@ -152,10 +153,38 @@ if(!read.plays.length){srpModal(TITLE,'읽을 수 있는 플레이가 없습니�
 var translated=false;
 for(var t=0;t<read.plays.length;t++){if(read.plays[t].translated){translated=true;}}
 if(translated){srpModal(TITLE,'이 페이지가 번역된 상태라 곡명을 정확히 읽을 수 없어 아무것도 보내지 않았습니다.\\n\\n주소창 오른쪽의 번역 아이콘에서 "원본 보기"를 누르고(또는 일본어는 번역하지 않기를 선택하고) 페이지를 새로고침한 뒤 다시 눌러 주세요.');return;}
-var url=${JSON.stringify(base)}+'/import#srp='+encodeURIComponent(JSON.stringify({plays:read.plays,unreadable:read.unreadable}));
-var w=null;
-try{w=window.open(url,'srpfreaks-import');}catch(e){w=null;}
-if(!w){srpModal(TITLE,'플레이 '+read.plays.length+'곡을 읽었습니다. 아래 버튼으로 SRPFreaks를 열어 이어서 처리해 주세요.',url);}
+var MAXP=4;
+var search=location.search||'';
+var cur=1;var pm=search.match(/[?&]page=([0-9]+)/);if(pm){cur=parseInt(pm[1],10)||1;}
+var kept=[];var qs=search.replace(/^\\?/,'').split('&');
+for(var qi=0;qi<qs.length;qi++){if(qs[qi]&&qs[qi].indexOf('page=')!==0){kept.push(qs[qi]);}}
+if(!kept.length){kept=['stype=','gtype='];}
+var pages={};var failed=0;
+function srpSend(){
+  var plays=[];var unreadable=0;
+  for(var n=1;n<=MAXP;n++){if(pages[n]){plays=plays.concat(pages[n].plays);unreadable+=pages[n].unreadable;}}
+  var prev=document.getElementById('srp-import-modal');
+  if(prev&&prev.parentNode){prev.parentNode.removeChild(prev);}
+  var url=${JSON.stringify(base)}+'/import#srp='+encodeURIComponent(JSON.stringify({plays:plays,unreadable:unreadable}));
+  var w=null;
+  try{w=window.open(url,'srpfreaks-import');}catch(e){w=null;}
+  if(!w){srpModal(TITLE,'플레이 '+plays.length+'곡을 읽었습니다. 아래 버튼으로 SRPFreaks를 열어 이어서 처리해 주세요.',url);return;}
+  if(failed){srpModal(TITLE,plays.length+'곡을 보냈습니다. 불러오지 못한 쪽이 '+failed+'개 있습니다. 그 쪽은 해당 페이지에서 다시 실행해 주세요.');}
+}
+function srpLoad(n){
+  if(n>MAXP){srpSend();return;}
+  if(n===cur){pages[n]=read;srpLoad(n+1);return;}
+  var u=location.pathname+'?'+kept.join('&')+'&page='+n;
+  window.fetch(u,{credentials:'same-origin'}).then(function(r){if(!r.ok){throw new Error('http');}return r.text();}).then(function(txt){
+    pages[n]=srpReadPlays(new window.DOMParser().parseFromString(txt,'text/html'));
+  },function(){failed++;}).then(function(){setTimeout(function(){srpLoad(n+1);},400);},function(){failed++;setTimeout(function(){srpLoad(n+1);},400);});
+}
+if(typeof window.fetch==='function'&&typeof window.DOMParser==='function'){
+  srpModal(TITLE,'최근 플레이 '+MAXP+'쪽을 읽는 중입니다. 잠시만 기다려 주세요.');
+  srpLoad(1);
+}else{
+  pages[cur]=read;srpSend();
+}
 })();`;
 }
 
