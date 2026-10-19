@@ -119,16 +119,12 @@ function Group({
                     <span className="text-xs text-fg-dim">
                       상수 <span className="font-num">{formatTier(item.tier)}</span>
                     </span>
-                    {/* 기록 유무는 색이 아니라 글자로 보인다 */}
-                    {stage ? (
-                      <span className="flex items-center gap-1 text-xs text-fg-sub">
-                        <StageBadge stage={stage} />
-                        <span className="font-num">{formatRate(item.mine?.rate)}</span>
-                      </span>
-                    ) : (
-                      <span className="text-xs text-fg-dim">기록 없음</span>
-                    )}
                   </p>
+                </div>
+                {/* 내 랭크(달성 단계)와 달성률은 오른쪽에 모은다. 기록 유무는 색이 아니라 글자로 보인다 */}
+                <div className="shrink-0 text-right">
+                  {stage ? <StageBadge stage={stage} /> : <span className="text-xs text-fg-dim">기록 없음</span>}
+                  {stage ? <span className="mt-0.5 block font-num text-xs text-fg-sub">{formatRate(item.mine?.rate)}</span> : null}
                 </div>
                 <button
                   type="button"

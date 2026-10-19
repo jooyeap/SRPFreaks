@@ -131,18 +131,18 @@ class SetlistRecommendServiceTest {
     }
 
     @Test
-    void 기록_없는_채보가_먼저_그다음_달성률_낮은_순_평균에_가까운_순_id_순() {
+    void 평균에_가까운_순이_먼저_같으면_기록_없음_달성률_낮은_순_id_순() {
         givenCandidates(
                 cand(10, "6.20", "90.00", false),
                 cand(11, "6.20", "70.00", false),
                 cand(12, "6.40", null, false),
-                cand(13, "6.20", null, false),    // 기록 없음끼리는 평균에 가까운 순
-                cand(14, "6.20", "70.00", false), // 같은 달성률이면 id 순
-                cand(15, "6.10", "70.00", false));// 같은 달성률이면 평균에 더 가까운(차이 0.1) 순 -> 11,14(0.0) 뒤
+                cand(13, "6.20", null, false),    // 차이 0.0 안에서는 기록 없음이 먼저
+                cand(14, "6.20", "70.00", false), // 같은 차이·같은 달성률이면 id 순
+                cand(15, "6.10", "70.00", false));// 차이 0.1: 달성률이 같아도 차이 0.0 묶음 뒤
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 10);
 
-        assertThat(ids(r.ssChallenge())).containsExactly(13L, 12L, 11L, 14L, 15L, 10L);
+        assertThat(ids(r.ssChallenge())).containsExactly(13L, 11L, 14L, 10L, 15L, 12L);
     }
 
     @Test
@@ -151,7 +151,7 @@ class SetlistRecommendServiceTest {
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
 
-        assertThat(r.ssChallenge().get(0).mine()).isNull();   // 기록 없는 채보가 먼저
+        assertThat(r.ssChallenge().get(0).mine()).isNull();   // 차이가 같으면 기록 없는 채보가 먼저
         assertThat(r.ssChallenge().get(1).mine().rate()).isEqualByComparingTo("85.50");
         assertThat(r.ssChallenge().get(1).mine().stage()).isEqualTo(AchievementStage.S);
         assertThat(r.ssChallenge().get(1).title()).isEqualTo("곡1");
