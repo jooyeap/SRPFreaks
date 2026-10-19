@@ -51,8 +51,10 @@ class SettingAdminServiceTest {
                 setting("rating.score_multiplier", "20"), setting("rating.list_single", "15"),
                 setting("rating.list_other", "25"), setting("rating.note_option", "SUPER_RANDOM_PLUS"),
                 setting("ui.show_song_images", "false"), setting("contact.takedown_email", "a@example.com"),
-                setting("setlist.recommend_range_ss", "0.3"), setting("setlist.recommend_range_s", "0.5"),
-                setting("setlist.recommend_min_entries", "10")));
+                setting("setlist.recommend_ss_min", "-0.6"), setting("setlist.recommend_ss_max", "-0.1"),
+                setting("setlist.recommend_s_min", "-0.1"), setting("setlist.recommend_s_max", "0.4"),
+                setting("setlist.recommend_min_single", "5"), setting("setlist.recommend_min_other", "9"),
+                setting("setlist.recommend_starter_tier", "5.2")));
         lenient().when(appSettingRepository.findAll()).thenReturn(settings);
         lenient().when(appSettingRepository.findAllWithUpdatedBy()).thenReturn(settings);
         lenient().when(appSettingRepository.findById(any(String.class))).thenAnswer(invocation ->
@@ -141,19 +143,19 @@ class SettingAdminServiceTest {
 
     @Test
     void 세트리스트_추천_설정은_규칙에_맞는_값을_받는다() {
-        // S 범위(0.5) 이하라 통과
-        assertThat(service.update(1L, "setlist.recommend_range_ss", "0.4").value()).isEqualTo("0.4");
-        // SS 범위가 0.4가 된 뒤에도 S 범위는 0.4 이상이면 된다
-        assertThat(service.update(1L, "setlist.recommend_range_s", "0.4").value()).isEqualTo("0.4");
-        assertThat(service.update(1L, "setlist.recommend_min_entries", "20").value()).isEqualTo("20");
+        assertThat(service.update(1L, "setlist.recommend_ss_max", "-0.2").value()).isEqualTo("-0.2");   // ss_min(-0.6) 이상이라 통과
+        assertThat(service.update(1L, "setlist.recommend_s_min", "-0.2").value()).isEqualTo("-0.2");
+        assertThat(service.update(1L, "setlist.recommend_min_single", "6").value()).isEqualTo("6");
+        assertThat(service.update(1L, "setlist.recommend_starter_tier", "5.0").value()).isEqualTo("5.0");
     }
 
     @Test
     void 세트리스트_추천_설정이_규칙에_어긋나면_거절한다() {
-        assertRejected("setlist.recommend_range_ss", "0.6");       // S 범위(0.5)보다 크면 안 된다
-        assertRejected("setlist.recommend_range_ss", "0");         // 0 이하
-        assertRejected("setlist.recommend_range_s", "0.2");        // SS 범위(0.3)보다 작으면 안 된다
-        assertRejected("setlist.recommend_min_entries", "0");
-        assertRejected("setlist.recommend_min_entries", "열");
+        assertRejected("setlist.recommend_ss_min", "0");           // ss_max(-0.1)보다 크면 안 된다
+        assertRejected("setlist.recommend_ss_max", "-0.7");        // ss_min(-0.6)보다 작으면 안 된다
+        assertRejected("setlist.recommend_s_max", "-0.2");         // s_min(-0.1)보다 작으면 안 된다
+        assertRejected("setlist.recommend_min_single", "0");
+        assertRejected("setlist.recommend_min_other", "열");
+        assertRejected("setlist.recommend_starter_tier", "0");
     }
 }

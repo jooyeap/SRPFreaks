@@ -56,3 +56,15 @@ export function clearDoneSetlist(): Promise<{ removed: number }> {
 export function doneCount(items: readonly SetlistItemResponse[]): number {
   return items.filter((item) => item.done).length;
 }
+
+/** 평균 대비 차이를 부호가 보이게 쓴다(음수는 평균보다 쉬운 곡): -0.6 -> `−0.6`, 0.4 -> `+0.4`, 0 -> `±0`. 소수 첫째 자리까지, 필요하면 둘째 자리. */
+export function formatTierOffset(value: number): string {
+  if (value === 0) return "±0";
+  const text = String(Math.round(Math.abs(value) * 100) / 100);
+  return `${value < 0 ? "\u2212" : "+"}${text}`;
+}
+
+/** 추천 묶음 제목 옆의 범위 글자. `평균 −0.6 ~ −0.1` */
+export function formatOffsetRange(min: number, max: number): string {
+  return `평균 ${formatTierOffset(min)} ~ ${formatTierOffset(max)}`;
+}

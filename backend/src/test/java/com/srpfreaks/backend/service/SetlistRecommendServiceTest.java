@@ -52,16 +52,24 @@ class SetlistRecommendServiceTest {
         table = DifficultyTable.create("SRN+ 서열표", null, NoteOption.SUPER_RANDOM_PLUS);
         ReflectionTestUtils.setField(table, "id", 3L);
         when(appSettingRepository.findAll()).thenReturn(List.of(
-                AppSetting.create("setlist.recommend_range_ss", "0.3", null),
-                AppSetting.create("setlist.recommend_range_s", "0.5", null),
-                AppSetting.create("setlist.recommend_min_entries", "10", null)));
+                AppSetting.create("setlist.recommend_ss_min", "-0.6", null),
+                AppSetting.create("setlist.recommend_ss_max", "-0.1", null),
+                AppSetting.create("setlist.recommend_s_min", "-0.1", null),
+                AppSetting.create("setlist.recommend_s_max", "0.4", null),
+                AppSetting.create("setlist.recommend_min_single", "5", null),
+                AppSetting.create("setlist.recommend_min_other", "9", null),
+                AppSetting.create("setlist.recommend_starter_tier", "5.2", null)));
+    }
+
+    private void givenTable() {
+        when(difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE))
+                .thenReturn(Optional.of(table));
     }
 
     /** 평균 난이도가 6.20인 사용자로 맞추고, 쿼리가 돌려줄 후보를 정한다. */
     private void givenCandidates(RecommendCandidate... candidates) {
-        when(difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE))
-                .thenReturn(Optional.of(table));
-        when(estimator.estimate(1L)).thenReturn(Optional.of(BASE));
+        givenTable();
+        when(estimator.estimate(1L)).thenReturn(PlayLevelEstimate.ready(BASE, 15, 25));
         when(mapper.findCandidates(eq(1L), eq("SUPER_RANDOM_PLUS"), eq(3L), eq(PatternType.EXCLUDED.getLabel()), any(), any()))
                 .thenReturn(List.of(candidates));
     }
@@ -77,7 +85,7 @@ class SetlistRecommendServiceTest {
     }
 
     @Test
-    void 쿼리는_더_넓은_S_범위로_한_번만_조회한다() {
+    void 쿼리는_두_범위를_합친_구간으로_한_번만_조회한다() {
         givenCandidates();
 
         service.recommend(1L, 0, 5);
@@ -85,34 +93,35 @@ class SetlistRecommendServiceTest {
         ArgumentCaptor<BigDecimal> lo = ArgumentCaptor.forClass(BigDecimal.class);
         ArgumentCaptor<BigDecimal> hi = ArgumentCaptor.forClass(BigDecimal.class);
         verify(mapper).findCandidates(eq(1L), anyString(), eq(3L), anyString(), lo.capture(), hi.capture());
-        assertThat(lo.getValue()).isEqualByComparingTo("5.70");   // 6.20 - 0.5
-        assertThat(hi.getValue()).isEqualByComparingTo("6.70");   // 6.20 + 0.5
+        assertThat(lo.getValue()).isEqualByComparingTo("5.60");   // 6.20 + min(-0.6, -0.1)
+        assertThat(hi.getValue()).isEqualByComparingTo("6.60");   // 6.20 + max(-0.1, 0.4)
     }
 
     @Test
-    void SS_도전은_평균_플러스_마이너스_0점3_안의_기록_없음_또는_SS_미만이다_경계_포함() {
+    void SS_기준은_평균보다_쉬운_쪽_5점6_6점1_안의_기록_없음_또는_SS_미만이다_경계_포함() {
         givenCandidates(
-                cand(1, "6.50", null, false),     // 평균 + 0.30 (경계) 기록 없음 -> 포함
-                cand(2, "5.90", "90.00", false),  // 평균 - 0.30 (경계) S -> 포함
-                cand(3, "6.20", "95.00", false),  // SS -> 제외
-                cand(4, "6.20", "80.00", true),   // FC(달성률은 낮아도 단계는 FC) -> SS 이상이라 제외
-                cand(5, "6.20", "100.00", true)); // EXC -> 제외
+                cand(1, "6.10", null, false),     // 평균 - 0.10 (상한 경계) 기록 없음 -> 포함
+                cand(2, "5.60", "90.00", false),  // 평균 - 0.60 (하한 경계) S -> 포함
+                cand(3, "6.00", "95.00", false),  // SS -> 제외
+                cand(4, "6.00", "80.00", true),   // FC(달성률은 낮아도 단계는 FC) -> SS 이상이라 제외
+                cand(5, "6.00", "100.00", true)); // EXC -> 제외
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
 
+        assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.READY);
         assertThat(r.baseTier()).isEqualByComparingTo("6.20");
         assertThat(ids(r.ssChallenge())).containsExactlyInAnyOrder(1L, 2L);
-        assertThat(r.sFill()).isEmpty();   // SS 이상 기록은 S 채우기에도 없다
+        assertThat(r.sFill()).isEmpty();   // SS 이상 기록은 S 기준에도 없다
     }
 
     @Test
-    void S_채우기는_0점3_밖_0점5_안의_기록_없음_또는_S_미만이고_SS_도전과_겹치지_않는다() {
+    void S_기준은_평균_근처에서_위쪽_6점1_6점6_안의_기록_없음_또는_S_미만이고_SS_기준과_겹치지_않는다() {
         givenCandidates(
-                cand(1, "6.60", null, false),     // 평균 + 0.40, 기록 없음 -> S 채우기
-                cand(2, "5.70", "70.00", false),  // 평균 - 0.50 (경계), A -> S 채우기
-                cand(3, "6.70", "85.00", false),  // 평균 + 0.50, S -> S 이상이라 제외
-                cand(4, "6.30", "70.00", false),  // 0.3 안 -> SS 도전에만 (S 채우기에 또 나오지 않는다)
-                cand(5, "6.60", "95.00", false)); // SS -> 제외
+                cand(1, "6.60", null, false),     // 평균 + 0.40 (상한 경계), 기록 없음 -> S 기준
+                cand(2, "6.30", "70.00", false),  // 평균 + 0.10, A -> S 기준
+                cand(3, "6.50", "85.00", false),  // S -> S 이상이라 제외
+                cand(4, "6.10", "70.00", false),  // SS 기준 상한 경계(두 범위가 겹치는 곳) -> SS 기준에만
+                cand(5, "6.40", "95.00", false)); // SS -> 제외
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
 
@@ -121,8 +130,18 @@ class SetlistRecommendServiceTest {
     }
 
     @Test
+    void 평균보다_어려운_곡은_SS_기준에_넣지_않는다() {
+        givenCandidates(cand(1, "6.30", null, false), cand(2, "6.60", null, false));
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+
+        assertThat(r.ssChallenge()).isEmpty();
+        assertThat(ids(r.sFill())).containsExactlyInAnyOrder(1L, 2L);
+    }
+
+    @Test
     void 범위_밖_후보는_쿼리가_돌려줘도_걸러낸다() {
-        givenCandidates(cand(1, "6.80", null, false), cand(2, "5.50", null, false));
+        givenCandidates(cand(1, "6.70", null, false), cand(2, "5.50", null, false));
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
 
@@ -133,12 +152,12 @@ class SetlistRecommendServiceTest {
     @Test
     void 평균에_가까운_순이_먼저_같으면_기록_없음_달성률_낮은_순_id_순() {
         givenCandidates(
-                cand(10, "6.20", "90.00", false),
-                cand(11, "6.20", "70.00", false),
-                cand(12, "6.40", null, false),
-                cand(13, "6.20", null, false),    // 차이 0.0 안에서는 기록 없음이 먼저
-                cand(14, "6.20", "70.00", false), // 같은 차이·같은 달성률이면 id 순
-                cand(15, "6.10", "70.00", false));// 차이 0.1: 달성률이 같아도 차이 0.0 묶음 뒤
+                cand(10, "6.10", "90.00", false),
+                cand(11, "6.10", "70.00", false),
+                cand(12, "5.60", null, false),
+                cand(13, "6.10", null, false),    // 차이 0.1 안에서는 기록 없음이 먼저
+                cand(14, "6.10", "70.00", false), // 같은 차이·같은 달성률이면 id 순
+                cand(15, "5.90", "70.00", false));// 차이 0.3: 가까운 묶음 뒤
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 10);
 
@@ -147,7 +166,7 @@ class SetlistRecommendServiceTest {
 
     @Test
     void 기록이_있으면_내_최고_기록과_단계를_함께_내려준다() {
-        givenCandidates(cand(1, "6.20", "85.50", false), cand(2, "6.20", null, false));
+        givenCandidates(cand(1, "6.10", "85.50", false), cand(2, "6.10", null, false));
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
 
@@ -160,9 +179,9 @@ class SetlistRecommendServiceTest {
     @Test
     void 두_묶음을_같은_페이지로_size개씩_자르고_전체_페이지는_긴_쪽_기준이다() {
         givenCandidates(
-                cand(1, "6.20", null, false), cand(2, "6.20", null, false), cand(3, "6.20", null, false),
-                cand(4, "6.20", null, false), cand(5, "6.20", null, false),     // SS 도전 5개
-                cand(6, "6.60", null, false));                                  // S 채우기 1개
+                cand(1, "6.10", null, false), cand(2, "6.10", null, false), cand(3, "6.10", null, false),
+                cand(4, "6.10", null, false), cand(5, "6.10", null, false),     // SS 기준 5개
+                cand(6, "6.50", null, false));                                  // S 기준 1개
 
         SetlistRecommendationResponse first = service.recommend(1L, 0, 2);
 
@@ -175,11 +194,11 @@ class SetlistRecommendServiceTest {
     @Test
     void 뒤쪽_페이지와_범위를_넘은_페이지를_처리한다() {
         givenCandidates(
-                cand(1, "6.20", null, false), cand(2, "6.20", null, false), cand(3, "6.20", null, false),
-                cand(6, "6.60", null, false));
+                cand(1, "6.10", null, false), cand(2, "6.10", null, false), cand(3, "6.10", null, false),
+                cand(6, "6.50", null, false));
 
         assertThat(ids(service.recommend(1L, 1, 2).ssChallenge())).containsExactly(3L);
-        assertThat(service.recommend(1L, 1, 2).sFill()).isEmpty();            // S 채우기는 1쪽에 없다
+        assertThat(service.recommend(1L, 1, 2).sFill()).isEmpty();            // S 기준은 1쪽에 없다
         assertThat(service.recommend(1L, 99, 2).ssChallenge()).isEmpty();     // 범위를 넘으면 빈 목록(오류 아님)
     }
 
@@ -195,19 +214,44 @@ class SetlistRecommendServiceTest {
     }
 
     @Test
-    void 평균_난이도를_추정할_수_없으면_추천하지_않고_쿼리도_하지_않는다() {
-        when(difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE))
-                .thenReturn(Optional.of(table));
-        when(estimator.estimate(1L)).thenReturn(Optional.empty());
+    void 단일_또는_그_외가_모자라면_추천하지_않고_개수만_알려_주며_쿼리도_하지_않는다() {
+        givenTable();
+        when(estimator.estimate(1L)).thenReturn(PlayLevelEstimate.insufficient(3, 8));
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
 
+        assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.INSUFFICIENT);
         assertThat(r.baseTier()).isNull();
         assertThat(r.ssChallenge()).isEmpty();
         assertThat(r.sFill()).isEmpty();
-        assertThat(r.rangeSs()).isEqualByComparingTo("0.3");
+        assertThat(r.ratedSingle()).isEqualTo(3);
+        assertThat(r.ratedOther()).isEqualTo(8);
+        assertThat(r.requiredSingle()).isEqualTo(5);
+        assertThat(r.requiredOther()).isEqualTo(9);
         assertThat(r.totalPages()).isZero();
         verify(mapper, never()).findCandidates(anyLong(), anyString(), anyLong(), anyString(), any(), any());
+    }
+
+    @Test
+    void 신규_사용자는_입문_난이도_이하의_S_미만_채보만_S_기준으로_받는다() {
+        givenTable();
+        when(estimator.estimate(1L)).thenReturn(PlayLevelEstimate.newPlayer());
+        when(mapper.findCandidates(eq(1L), eq("SUPER_RANDOM_PLUS"), eq(3L), eq(PatternType.EXCLUDED.getLabel()), any(), any()))
+                .thenReturn(List.of(
+                        cand(1, "5.20", null, false),     // 상한 경계, 기록 없음 -> 포함
+                        cand(2, "5.00", "85.00", false),  // S -> 제외
+                        cand(3, "4.80", "70.00", false),  // A -> 포함
+                        cand(4, "5.30", null, false)));   // 상한 밖 -> 걸러낸다
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+
+        assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.STARTER);
+        assertThat(r.baseTier()).isEqualByComparingTo("5.2");
+        assertThat(r.ssChallenge()).isEmpty();                   // SS 기준은 보여 주지 않는다
+        assertThat(ids(r.sFill())).containsExactly(1L, 3L);      // 5.2에 가까운 순
+        ArgumentCaptor<BigDecimal> hi = ArgumentCaptor.forClass(BigDecimal.class);
+        verify(mapper).findCandidates(eq(1L), anyString(), eq(3L), anyString(), any(), hi.capture());
+        assertThat(hi.getValue()).isEqualByComparingTo("5.2");
     }
 
     @Test
@@ -217,6 +261,7 @@ class SetlistRecommendServiceTest {
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
 
+        assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.UNAVAILABLE);
         assertThat(r.baseTier()).isNull();
         verifyNoInteractions(estimator, mapper);
     }
