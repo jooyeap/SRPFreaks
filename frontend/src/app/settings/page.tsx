@@ -40,6 +40,10 @@ export default function SettingsPage() {
           <span className="shrink-0 text-fg-sub">이메일</span>
           <span className="min-w-0 truncate font-bold text-fg">{user.email}</span>
         </div>
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className="text-fg-sub">역할</span>
+          <span className="font-bold text-fg">{user.role}</span>
+        </div>
         <p className="text-xs leading-relaxed text-fg-dim">비밀번호는 저장하지 않습니다. 로그인은 Google 계정으로만 합니다.</p>
       </section>
       <section aria-label="닉네임 설정" className={card}>
