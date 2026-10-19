@@ -81,7 +81,7 @@ function BookmarkGuide() {
         <li>기타도라 공식 사이트의 <b className="text-fg">최근 플레이</b> 페이지(주소에 stage_result 포함, 번역 끔)를 엽니다.</li>
         <li>그 페이지에서 북마크를 누릅니다. 다른 페이지에서는 동작하지 않고 안내만 뜹니다.</li>
         <li>이 화면이 열리면서 읽은 값이 전달됩니다. 토큰은 필요 없습니다.</li>
-        <li>아래에서 확인하고 저장합니다. 다음 페이지는 같은 방법으로 이어서 보냅니다.</li>
+        <li>아래에서 확인하고 저장합니다. 한 번 누르면 최근 플레이 1~4쪽(최대 20곡)을 함께 읽어 옵니다.</li>
       </ol>
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <a
@@ -155,7 +155,7 @@ function PlayRow({
     note = result.previousBestRate === null ? "첫 기록" : `새 기록 · ${formatRate(result.previousBestRate)} → ${formatRate(play.rate / 100)}`;
   } else if (result.reason) {
     const label = SKIP_REASON_LABELS[result.reason];
-    // 지원하지 않는 난이도는 공식 페이지의 난이도 클래스(예: gf_ext)를 함께 보여 준다(새 난이도를 확인해 추가하기 위함)
+    // 지원하지 않는 난이도는 공식 페이지의 난이도 클래스(예: dm_ext)를 함께 보여 준다(새 난이도를 확인해 추가하기 위함)
     note = result.reason === "UNKNOWN_DIFFICULTY"
       ? `건너뜀 · ${label} (${play.difficultyClass.slice(0, 40)})`
       : excluded ? `제외 · ${label}` : result.previousBestRate !== null && result.reason === "LOWER_THAN_BEST" ? `건너뜀 · 기존 기록(${formatRate(result.previousBestRate)})보다 낮음` : `건너뜀 · ${label}`;

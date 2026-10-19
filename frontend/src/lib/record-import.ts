@@ -74,11 +74,13 @@ export function playStage(play: ReadPlay): AchievementStage {
   return achievementStage(play.rate / 100, playFullCombo(play)) ?? "C";
 }
 
-/** 공식 난이도 클래스 → 파트·난이도 표기(`gf_mst` → Guitar / MAS). 모르는 클래스는 null. */
+const DIFFICULTY_LABELS: Record<string, string> = { bsc: "BSC", adv: "ADV", ext: "EXT", mst: "MAS" };
+
+/** 공식 난이도 클래스 → 파트·난이도 표기(`gf_mst` → Guitar / MAS, `bass_ext` → Bass / EXT). 모르는 클래스는 null. */
 export function describePlayChart(difficultyClass: string): string | null {
-  if (difficultyClass === "gf_mst") return "Guitar | MAS";
-  if (difficultyClass === "bass_mst") return "Bass | MAS";
-  return null;
+  const m = /^(gf|bass)_(bsc|adv|ext|mst)$/.exec(difficultyClass);
+  if (!m) return null;
+  return `${m[1] === "gf" ? "Guitar" : "Bass"} | ${DIFFICULTY_LABELS[m[2]]}`;
 }
 
 /** 같은 플레이를 다시 받았는지 가르는 키. 공식 페이지의 플레이 시각 + 곡 + 난이도. */

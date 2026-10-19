@@ -117,7 +117,10 @@ describe("토큰 없는 북마클릿(D40)", () => {
     const source = buildHandoffBookmarkletSource(SITE);
     expect(source).not.toContain("srpi_");
     expect(source).not.toContain("Authorization");
-    expect(source).not.toContain("fetch(");
+    // 우리 서버로 보내는 fetch는 없다: fetch는 공식 사이트 안의 같은 출처 주소(location.pathname)로만 쓴다
+    expect(source).not.toContain(`fetch(${JSON.stringify(SITE)}`);
+    expect(source).toContain("window.fetch(u,{credentials:'same-origin'})");
+    expect(source).toContain("var u=location.pathname+'?'");
     expect(source).toContain(SITE);
     expect(buildHandoffBookmarkletHref(SITE).startsWith("javascript:")).toBe(true);
   });
@@ -168,5 +171,75 @@ describe("토큰 없는 북마클릿(D40)", () => {
     run(OFFICIAL);
     expect(openMock).not.toHaveBeenCalled();
     expect(modal()?.textContent).toContain("읽을 수 있는 플레이가 없습니다");
+  });
+});
+
+describe("1~4쪽 자동 읽기(D40 개정)", () => {
+  const SITE = "https://srp.example.com";
+  const PATH = "/game/gfdm/gitadora_galaxywave_delta/p/playdata/stage_result.html";
+  const openMock = vi.fn();
+
+  /** 쪽 번호별 HTML을 돌려주는 가짜 fetch. pages에 없는 쪽은 빈 목록, fail에 든 쪽은 오류 */
+  function fakeWindow(pages: Record<number, string>, fail: number[] = []) {
+    const urls: string[] = [];
+    const fetchMock = vi.fn((url: string) => {
+      urls.push(url);
+      const n = Number(/page=(\d+)/.exec(url)?.[1]);
+      if (fail.includes(n)) return Promise.resolve({ ok: false, text: () => Promise.resolve("") });
+      return Promise.resolve({ ok: true, text: () => Promise.resolve(pages[n] ?? "<p>없음</p>") });
+    });
+    return { win: { open: openMock, fetch: fetchMock, DOMParser }, urls };
+  }
+  async function run(search: string, win: object) {
+    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE));
+    fn(document, { hostname: "p.eagate.573.jp", pathname: PATH, search }, win);
+    await vi.advanceTimersByTimeAsync(3000);
+  }
+  const payload = () => {
+    const url = (openMock.mock.calls[0] as [string])[0];
+    return JSON.parse(decodeURIComponent(url.slice(`${SITE}/import#srp=`.length))) as { plays: { title: string }[]; unreadable: number };
+  };
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    openMock.mockReset();
+    openMock.mockReturnValue({});
+    document.body.innerHTML = block({ title: "P1" });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    document.body.innerHTML = "";
+  });
+
+  it("1쪽에서 실행하면 2~4쪽을 같은 사이트 주소로 불러와 쪽 순서대로 한 번에 보낸다", async () => {
+    const { win, urls } = fakeWindow({ 2: block({ title: "P2" }), 3: block({ title: "P3a" }) + block({ title: "P3b" }), 4: block({ title: "P4" }) });
+    await run("", win);
+    expect(urls).toEqual([`${PATH}?stype=&gtype=&page=2`, `${PATH}?stype=&gtype=&page=3`, `${PATH}?stype=&gtype=&page=4`]);
+    expect(openMock).toHaveBeenCalledTimes(1);
+    expect(payload().plays.map((p) => p.title)).toEqual(["P1", "P2", "P3a", "P3b", "P4"]);
+  });
+
+  it("2쪽에서 실행하면 현재 화면은 다시 불러오지 않고, 다른 조건(stype 등)은 그대로 쓴다", async () => {
+    document.body.innerHTML = block({ title: "P2" });
+    const { win, urls } = fakeWindow({ 1: block({ title: "P1" }), 3: block({ title: "P3" }) });
+    await run("?page=2&stype=1&gtype=gf", win);
+    expect(urls).toEqual([`${PATH}?stype=1&gtype=gf&page=1`, `${PATH}?stype=1&gtype=gf&page=3`, `${PATH}?stype=1&gtype=gf&page=4`]);
+    expect(payload().plays.map((p) => p.title)).toEqual(["P1", "P2", "P3"]);
+  });
+
+  it("불러오지 못한 쪽이 있어도 나머지는 보내고 그 사실을 안내한다", async () => {
+    const { win } = fakeWindow({ 2: block({ title: "P2" }), 4: block({ title: "P4" }) }, [3]);
+    await run("", win);
+    expect(payload().plays.map((p) => p.title)).toEqual(["P1", "P2", "P4"]);
+    expect(document.getElementById("srp-import-modal")?.textContent).toContain("불러오지 못한 쪽이 1개");
+  });
+
+  it("읽는 동안 안내를 띄우고, 보낸 뒤에는 지운다", async () => {
+    const { win } = fakeWindow({});
+    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE));
+    fn(document, { hostname: "p.eagate.573.jp", pathname: PATH, search: "" }, win);
+    expect(document.getElementById("srp-import-modal")?.textContent).toContain("읽는 중");
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(document.getElementById("srp-import-modal")).toBeNull();
   });
 });
