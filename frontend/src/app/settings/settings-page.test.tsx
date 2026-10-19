@@ -75,6 +75,8 @@ describe("설정 화면", () => {
     );
     renderPage();
     expect(await screen.findByRole("link", { name: "가져오기 설정" })).toHaveAttribute("href", "/settings/import");
+    expect(screen.getByText("역할")).toBeInTheDocument();
+    expect(screen.getByText("ROOT")).toBeInTheDocument();
   });
 
   it("로그인하지 않았으면 로그인 링크만 보여 준다", async () => {
