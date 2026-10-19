@@ -46,7 +46,7 @@ describe("설정 화면", () => {
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "탈퇴하기" })).toHaveAttribute("href", "/settings/withdraw");
     // 최근 플레이 가져오기는 모두에게 열려 있다(lib/features.ts, 2026-10-19)
-    expect(screen.getByRole("link", { name: "가져오기 설정" })).toHaveAttribute("href", "/settings/import");
+    expect(screen.getByRole("link", { name: "가져오기 화면으로" })).toHaveAttribute("href", "/import");
   });
 
   it("데스크톱은 폭 760px까지 넓어지고 모바일은 448px 한 열이다", async () => {
@@ -64,7 +64,7 @@ describe("설정 화면", () => {
     expect(page).toHaveClass("max-w-md", "md:max-w-[760px]");
   });
 
-  it("ROOT에게는 가져오기 설정 링크가 보인다", async () => {
+  it("ROOT에게도 가져오기 화면 링크가 보인다", async () => {
     fetchMock.mockResolvedValueOnce(
       json({
         accessToken: "t",
@@ -74,7 +74,7 @@ describe("설정 화면", () => {
       }),
     );
     renderPage();
-    expect(await screen.findByRole("link", { name: "가져오기 설정" })).toHaveAttribute("href", "/settings/import");
+    expect(await screen.findByRole("link", { name: "가져오기 화면으로" })).toHaveAttribute("href", "/import");
     expect(screen.getByText("역할")).toBeInTheDocument();
     expect(screen.getByText("ROOT")).toBeInTheDocument();
   });

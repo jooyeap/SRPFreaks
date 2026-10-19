@@ -55,12 +55,12 @@ export default function SettingsPage() {
       {canUseImport(user.role) ? (
         <section aria-label="최근 플레이 가져오기" className={card}>
           <h2 className="text-xs font-bold text-fg-sub">최근 플레이 가져오기</h2>
-          <p className="text-xs leading-relaxed text-fg-sub">공식 사이트의 최근 플레이 결과를 가져오는 데 쓰는 토큰을 관리합니다.</p>
+          <p className="text-xs leading-relaxed text-fg-sub">공식 사이트의 최근 플레이 결과를 미리 확인하고 가져옵니다. 토큰은 필요 없습니다.</p>
           <Link
-            href="/settings/import"
+            href="/import"
             className="flex h-11 items-center justify-center rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
           >
-            가져오기 설정
+            가져오기 화면으로
           </Link>
         </section>
       ) : null}
