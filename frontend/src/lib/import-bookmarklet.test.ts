@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildBookmarkletHref, buildBookmarkletSource, READER_SOURCE, type ReadResult } from "@/lib/import-bookmarklet";
+import {
+  buildBookmarkletHref,
+  buildBookmarkletSource,
+  buildHandoffBookmarkletHref,
+  buildHandoffBookmarkletSource,
+  READER_SOURCE,
+  type ReadResult,
+} from "@/lib/import-bookmarklet";
 
 /** 공식 최근 플레이 한 건(.sr_list_tb)의 구조를 본뜬 테스트용 HTML. 실제 샘플(Stargazer, Bass MASTER)의 위치와 클래스를 따른다. */
 function block(opts: {
@@ -210,5 +217,76 @@ describe("북마클릿 실행", () => {
     const source = decodeURIComponent(href.slice("javascript:".length));
     expect(source).toBe(buildBookmarkletSource(API, "srpi_token"));
     expect(source.replace(/https:\/\//g, "")).not.toContain("//");
+  });
+});
+
+describe("토큰 없는 북마클릿(D40)", () => {
+  const SITE = "https://srp.example.com";
+  const OFFICIAL = { hostname: "p.eagate.573.jp", pathname: "/game/gfdm/gitadora_galaxywave_delta/p/playdata/stage_result.html" };
+  const openMock = vi.fn();
+  const modal = () => document.getElementById("srp-import-modal");
+
+  function run(location: { hostname: string; pathname: string }) {
+    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE));
+    fn(document, location, { open: openMock });
+  }
+
+  beforeEach(() => {
+    openMock.mockReset();
+    document.body.innerHTML = block({});
+  });
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("토큰·서버 주소 없이 사이트 주소만 들어 있고, 서버와 직접 통신하지 않는다", () => {
+    const source = buildHandoffBookmarkletSource(SITE);
+    expect(source).not.toContain("srpi_");
+    expect(source).not.toContain("Authorization");
+    expect(source).not.toContain("fetch(");
+    expect(source).toContain(SITE);
+    expect(buildHandoffBookmarkletHref(SITE).startsWith("javascript:")).toBe(true);
+  });
+
+  it("읽은 값을 같은 이름의 창으로 사이트 /import#srp= 조각에 담아 연다", () => {
+    openMock.mockReturnValue({});
+    run(OFFICIAL);
+    expect(openMock).toHaveBeenCalledTimes(1);
+    const [url, name] = openMock.mock.calls[0] as [string, string];
+    expect(name).toBe("srpfreaks-import");
+    expect(url.startsWith(`${SITE}/import#srp=`)).toBe(true);
+    const payload = JSON.parse(decodeURIComponent(url.slice(`${SITE}/import#srp=`.length)));
+    expect(payload.plays).toHaveLength(1);
+    expect(payload.plays[0].title).toBe("Stargazer");
+    expect(payload.unreadable).toBe(0);
+    expect(modal()).toBeNull();
+  });
+
+  it("창을 열지 못하면(팝업 차단) 같은 주소의 링크가 있는 안내 창을 보여 준다", () => {
+    openMock.mockReturnValue(null);
+    run(OFFICIAL);
+    const link = modal()?.querySelector("a");
+    expect(link?.getAttribute("href")?.startsWith(`${SITE}/import#srp=`)).toBe(true);
+    expect(modal()?.textContent).toContain("1곡을 읽었습니다");
+  });
+
+  it("공식 최근 플레이 페이지가 아니면 열지 않고 안내한다", () => {
+    run({ hostname: "example.com", pathname: "/" });
+    expect(openMock).not.toHaveBeenCalled();
+    expect(modal()?.textContent).toContain("stage_result");
+  });
+
+  it("번역된 페이지에서는 아무것도 보내지 않고 번역을 끄라고 안내한다", () => {
+    document.body.innerHTML = block({ translated: true });
+    run(OFFICIAL);
+    expect(openMock).not.toHaveBeenCalled();
+    expect(modal()?.textContent).toContain("원본 보기");
+  });
+
+  it("읽을 플레이가 없으면 열지 않는다", () => {
+    document.body.innerHTML = "<p>없음</p>";
+    run(OFFICIAL);
+    expect(openMock).not.toHaveBeenCalled();
+    expect(modal()?.textContent).toContain("읽을 수 있는 플레이가 없습니다");
   });
 });

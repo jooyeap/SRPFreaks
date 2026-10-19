@@ -186,3 +186,34 @@ fetch(${JSON.stringify(apiBase)}+'/imports/recent-plays',{method:'POST',headers:
 export function buildBookmarkletHref(apiBase: string, token: string): string {
   return "javascript:" + encodeURIComponent(buildBookmarkletSource(apiBase, token));
 }
+
+/**
+ * 토큰 없는 북마클릿 본문 (D40). 공식 페이지에서 값을 읽어 사이트의 `/import#srp=<JSON>`으로 넘기기만 한다.
+ * 서버와 직접 통신하지 않으므로 토큰이 필요 없고, 북마크에는 사이트 주소만 들어 있다(비밀값 없음).
+ * 같은 이름(srpfreaks-import)의 창을 재사용해서 다음 쪽을 보낼 때도 같은 탭에 이어서 쌓인다.
+ * 창을 막으면(팝업 차단) 안내 창에 같은 주소의 링크를 둔다.
+ * @param siteBase 사이트 주소(예: https://srpfreaks.com). 설정 화면을 연 사이트의 origin에서 만든다.
+ */
+export function buildHandoffBookmarkletSource(siteBase: string): string {
+  const base = siteBase.replace(/\/+$/, "");
+  return `(function(){
+${READER_SOURCE}
+${senderSource()}
+var TITLE='SRPFreaks 최근 플레이 가져오기';
+if(location.hostname!==${JSON.stringify(OFFICIAL_HOST)}||location.pathname.indexOf(${JSON.stringify(OFFICIAL_PATH_PART)})<0){srpModal(TITLE,'최근 플레이 페이지(stage_result)에서 실행해 주세요.');return;}
+var read=srpReadPlays(document);
+if(!read.plays.length){srpModal(TITLE,'읽을 수 있는 플레이가 없습니다.'+(read.unreadable?' (읽지 못한 항목 '+read.unreadable+'개)':''));return;}
+var translated=false;
+for(var t=0;t<read.plays.length;t++){if(read.plays[t].translated){translated=true;}}
+if(translated){srpModal(TITLE,'이 페이지가 번역된 상태라 곡명을 정확히 읽을 수 없어 아무것도 보내지 않았습니다.\\n\\n주소창 오른쪽의 번역 아이콘에서 "원본 보기"를 누르고(또는 일본어는 번역하지 않기를 선택하고) 페이지를 새로고침한 뒤 다시 눌러 주세요.');return;}
+var url=${JSON.stringify(base)}+'/import#srp='+encodeURIComponent(JSON.stringify({plays:read.plays,unreadable:read.unreadable}));
+var w=null;
+try{w=window.open(url,'srpfreaks-import');}catch(e){w=null;}
+if(!w){srpModal(TITLE,'플레이 '+read.plays.length+'곡을 읽었습니다. 아래 버튼으로 SRPFreaks를 열어 이어서 처리해 주세요.',url);}
+})();`;
+}
+
+/** 토큰 없는 북마크 주소(`javascript:…`). */
+export function buildHandoffBookmarkletHref(siteBase: string): string {
+  return "javascript:" + encodeURIComponent(buildHandoffBookmarkletSource(siteBase));
+}
