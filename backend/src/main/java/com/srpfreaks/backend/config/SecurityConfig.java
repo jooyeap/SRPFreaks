@@ -87,9 +87,10 @@ public class SecurityConfig {
                         "/api/v1/auth/google", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                 // 헬스체크(서버 생존 여부만 응답한다). 운영에서는 nginx가 바깥 요청을 막고 내부(Docker)만 부른다
                 .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                // 가져오기 기능을 꺼 둔 동안(app.import-api.enabled=false)은 토큰 발급·폐기와 가져오기 경로를 모두 막는다
-                .requestMatchers(request -> !appProperties.getImportApi().isEnabled() && isImportApiPath(request.getRequestURI()))
-                        .denyAll()
+                // 가져오기 기능을 모두에게 열기 전(app.import-api.enabled=false)에는 토큰 발급·조회·폐기를 ROOT만 할 수 있다(ROOT가 먼저 시험해 보는 단계).
+                // 가져오기 API(/imports/**)는 가져오기 토큰만 받고, 이 토큰은 위 경로에서만 만들어지므로 일반 사용자는 쓸 수 없다.
+                .requestMatchers(request -> !appProperties.getImportApi().isEnabled() && isImportTokenPath(request.getRequestURI()))
+                        .hasRole("ROOT")
                 // 가져오기 경로는 가져오기 전용 토큰(ROLE_IMPORT)만 들어올 수 있다. 로그인 토큰(ROLE_USER 등)은 여기서 403이다.
                 // 반대로 가져오기 토큰은 이 경로 밖에서는 인증되지 않으므로 다른 API를 부를 수 없다.
                 .requestMatchers("/api/v1/imports/**").hasRole("IMPORT")
@@ -105,9 +106,9 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /** 가져오기 기능(D34)에 속한 경로: 가져오기 API와 토큰 발급·조회·폐기. 기능을 꺼 둘 때 한꺼번에 막는 대상이다. */
-    static boolean isImportApiPath(String uri) {
-        return uri.startsWith(ImportTokenAuthenticationFilter.PATH_PREFIX) || uri.equals("/api/v1/import-token");
+    /** 가져오기 토큰 발급·조회·폐기 경로(D34). 기능을 모두에게 열기 전에는 ROOT만 부를 수 있다. */
+    static boolean isImportTokenPath(String uri) {
+        return uri.equals("/api/v1/import-token");
     }
 
     /**

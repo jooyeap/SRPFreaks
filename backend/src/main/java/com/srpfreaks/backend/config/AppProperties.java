@@ -61,7 +61,7 @@ public class AppProperties {
     @Getter
     @Setter
     public static class ImportApi {
-        /** false이면 가져오기 토큰 API와 가져오기 API를 모두 막는다(403). 공식 페이지에서 동작을 확인하기 전까지 기본은 꺼 둔다. */
+        /** true이면 모든 로그인 사용자가 가져오기 토큰을 발급할 수 있다. false(기본)이면 토큰 발급·조회·폐기는 ROOT만 가능하다(공식 페이지에서 동작을 확인하는 동안). */
         private boolean enabled = false;
         /** 가져오기 경로에만 허용하는 Origin(쿠키 없이). 기본은 공식 사이트 주소다. 와일드카드(*)는 쓰지 않는다. */
         private List<String> allowedOrigins = new ArrayList<>(List.of("https://p.eagate.573.jp"));
