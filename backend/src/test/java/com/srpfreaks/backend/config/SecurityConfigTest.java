@@ -80,12 +80,15 @@ class SecurityConfigTest {
     }
 
     @Test
-    void 가져오기_기능을_모두에게_열기_전_ROOT만_부를_수_있는_경로는_토큰_API뿐이다() {
-        assertThat(SecurityConfig.isImportTokenPath("/api/v1/import-token")).isTrue();
+    void 가져오기_기능을_모두에게_열기_전_ROOT만_부를_수_있는_경로는_토큰_API와_사이트_화면용_API뿐이다() {
+        assertThat(SecurityConfig.isImportRootGatedPath("/api/v1/import-token")).isTrue();
+        assertThat(SecurityConfig.isImportRootGatedPath("/api/v1/record-imports/preview")).isTrue();
+        assertThat(SecurityConfig.isImportRootGatedPath("/api/v1/record-imports/commit")).isTrue();
         // 가져오기 API는 가져오기 토큰(ROLE_IMPORT)만 받는 별도 규칙이라 여기에 포함하지 않는다
-        assertThat(SecurityConfig.isImportTokenPath("/api/v1/imports/recent-plays")).isFalse();
-        assertThat(SecurityConfig.isImportTokenPath("/api/v1/users/me")).isFalse();
-        assertThat(SecurityConfig.isImportTokenPath("/api/v1/import-token/extra")).isFalse();
+        assertThat(SecurityConfig.isImportRootGatedPath("/api/v1/imports/recent-plays")).isFalse();
+        assertThat(SecurityConfig.isImportRootGatedPath("/api/v1/users/me")).isFalse();
+        assertThat(SecurityConfig.isImportRootGatedPath("/api/v1/import-token/extra")).isFalse();
+        assertThat(SecurityConfig.isImportRootGatedPath("/api/v1/record-imports")).isFalse();
     }
 
     @Test
