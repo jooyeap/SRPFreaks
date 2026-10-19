@@ -2,6 +2,7 @@ package com.srpfreaks.backend.service;
 
 import com.srpfreaks.backend.dto.SetlistRecommendationResponse;
 import com.srpfreaks.backend.dto.SetlistRecommendationResponse.Item;
+import com.srpfreaks.backend.dto.SetlistRecommendationResponse.Status;
 import com.srpfreaks.backend.dto.TableEntryResponse.MyRecord;
 import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.AppSetting;
@@ -28,11 +29,13 @@ import java.util.stream.Collectors;
 /**
  * 세트리스트 추천(D37). 내 평균 난이도(PlayLevelEstimator)를 기준으로 오늘 도전해 볼 채보를 두 묶음으로 골라 준다.
  *
- * - SS 도전: 평균 ± setlist.recommend_range_ss 안, 기록이 없거나 SS 미만(FC·EXC는 SS 이상으로 본다 - 달성 단계 규칙, D24).
- * - S 채우기: 평균 ± setlist.recommend_range_s(더 넓다) 안, 기록이 없거나 S 미만이고 SS 도전에 들어가지 않은 것.
+ * - SS 기준: 평균 + ssMin ~ ssMax 안(기본 -0.6 ~ -0.1, 평균보다 쉬운 쪽), 기록이 없거나 SS 미만(FC·EXC는 SS 이상으로 본다 - 달성 단계 규칙, D24).
+ * - S 기준: 평균 + sMin ~ sMax 안(기본 -0.1 ~ +0.4), 기록이 없거나 S 미만이고 SS 기준에 들어가지 않은 것.
+ * - 레이팅 목록이 비어 있으면(신규) 평균이 없으므로 기준 난이도 starterTier(5.2) 이하에서 S 미만인 채보만 S 기준으로 보여 준다(STARTER).
+ * - 단일 / 그 외 채보가 최소 개수 미만이면 추천하지 않고 개수만 알려 준다(INSUFFICIENT).
  * - 이미 세트리스트에 담은 채보와 레이팅 대상이 아닌 채보(미정·레이팅 제외·반영 꺼짐)는 쿼리에서 빠진다.
- * - 정렬: 평균 난이도에 가까운 순이 먼저(내 실력대에 가장 맞는 곡이 위), 같으면 기록 없는 채보, 내 최고 달성률이 낮은 순, 채보 id 순(요청마다 순서가 바뀌지 않게).
- * - 두 묶음을 같은 page로 size개씩 넘긴다. 조회는 넓은 범위 한 번이고 단계 판정·정렬·페이지는 여기(Java)에서 한다.
+ * - 정렬: 기준 난이도(평균 또는 starterTier)에 가까운 순이 먼저, 같으면 기록 없는 채보, 내 최고 달성률이 낮은 순, 채보 id 순(요청마다 순서가 바뀌지 않게).
+ * - 두 묶음을 같은 page로 size개씩 넘긴다. 조회는 두 범위를 합친 한 번이고 단계 판정·정렬·페이지는 여기(Java)에서 한다.
  * userId는 토큰에서만 오고, 남의 기록은 쿼리에서 user_id 조건으로 섞이지 않는다.
  */
 @Service
@@ -60,32 +63,68 @@ public class SetlistRecommendService {
 
         Optional<DifficultyTable> table = difficultyTableRepository
                 .findFirstByNoteOptionAndStatusOrderByIdAsc(RECORD_OPTION, TableStatus.ACTIVE);
-        Optional<BigDecimal> base = table.isEmpty() ? Optional.empty() : playLevelEstimator.estimate(userId);
-        if (base.isEmpty()) {
-            return SetlistRecommendationResponse.unavailable(config.rangeSs(), config.rangeS(), pageIndex, pageSize);
+        if (table.isEmpty()) {
+            return empty(Status.UNAVAILABLE, null, 0, 0, config, pageIndex, pageSize);
         }
 
-        BigDecimal baseTier = base.get();
-        List<RecommendCandidate> candidates = recommendMapper.findCandidates(userId, RECORD_OPTION.name(),
-                table.get().getId(), PatternType.EXCLUDED.getLabel(),
-                baseTier.subtract(config.rangeS()), baseTier.add(config.rangeS()));
+        PlayLevelEstimate estimate = playLevelEstimator.estimate(userId);
+        return switch (estimate.status()) {
+            case INSUFFICIENT -> empty(Status.INSUFFICIENT, null, estimate.ratedSingle(), estimate.ratedOther(),
+                    config, pageIndex, pageSize);
+            case NEW_PLAYER -> starter(userId, table.get(), config, pageIndex, pageSize);
+            case READY -> ready(userId, table.get(), estimate, config, pageIndex, pageSize);
+        };
+    }
 
-        Comparator<RecommendCandidate> order = order(baseTier);
+    private SetlistRecommendationResponse ready(Long userId, DifficultyTable table, PlayLevelEstimate estimate,
+                                                SetlistRecommendConfig config, int pageIndex, int pageSize) {
+        BigDecimal base = estimate.tier();
+        // 두 범위를 합친 가장 넓은 구간으로 한 번만 조회하고, 각 묶음의 범위는 아래에서 다시 거른다
+        BigDecimal lo = base.add(config.ssMin().min(config.sMin()));
+        BigDecimal hi = base.add(config.ssMax().max(config.sMax()));
+        List<RecommendCandidate> candidates = recommendMapper.findCandidates(userId, RECORD_OPTION.name(),
+                table.getId(), PatternType.EXCLUDED.getLabel(), lo, hi);
+
+        Comparator<RecommendCandidate> order = order(base);
         List<RecommendCandidate> ss = candidates.stream()
-                .filter(c -> within(c, baseTier, config.rangeSs()) && below(c, AchievementStage.SS))
+                .filter(c -> within(c, base, config.ssMin(), config.ssMax()) && below(c, AchievementStage.SS))
                 .sorted(order).toList();
         List<RecommendCandidate> s = candidates.stream()
-                .filter(c -> !ss.contains(c) && within(c, baseTier, config.rangeS()) && below(c, AchievementStage.S))
+                .filter(c -> !ss.contains(c) && within(c, base, config.sMin(), config.sMax()) && below(c, AchievementStage.S))
                 .sorted(order).toList();
+        return response(Status.READY, base, estimate.ratedSingle(), estimate.ratedOther(), config, ss, s, pageIndex, pageSize);
+    }
 
+    /** 레이팅 목록이 비어 있는 신규 사용자: starterTier 이하에서 S 미만인 채보만, S 기준 묶음으로. */
+    private SetlistRecommendationResponse starter(Long userId, DifficultyTable table, SetlistRecommendConfig config,
+                                                  int pageIndex, int pageSize) {
+        BigDecimal top = config.starterTier();
+        List<RecommendCandidate> candidates = recommendMapper.findCandidates(userId, RECORD_OPTION.name(),
+                table.getId(), PatternType.EXCLUDED.getLabel(), BigDecimal.ZERO, top);
+        List<RecommendCandidate> s = candidates.stream()
+                .filter(c -> c.tier().compareTo(top) <= 0 && below(c, AchievementStage.S))
+                .sorted(order(top)).toList();
+        return response(Status.STARTER, top, 0, 0, config, List.of(), s, pageIndex, pageSize);
+    }
+
+    private static SetlistRecommendationResponse response(Status status, BigDecimal base, int ratedSingle, int ratedOther,
+                                                          SetlistRecommendConfig config, List<RecommendCandidate> ss,
+                                                          List<RecommendCandidate> s, int pageIndex, int pageSize) {
         int totalPages = Math.max(pages(ss.size(), pageSize), pages(s.size(), pageSize));
-        return new SetlistRecommendationResponse(baseTier, config.rangeSs(), config.rangeS(),
+        return new SetlistRecommendationResponse(status, base, config.ssMin(), config.ssMax(), config.sMin(), config.sMax(),
+                ratedSingle, ratedOther, config.minSingle(), config.minOther(),
                 slice(ss, pageIndex, pageSize), slice(s, pageIndex, pageSize), pageIndex, pageSize, totalPages);
     }
 
-    /** 기준 난이도가 baseTier ± range 안(경계 포함)인가. */
-    private static boolean within(RecommendCandidate c, BigDecimal baseTier, BigDecimal range) {
-        return c.tier().subtract(baseTier).abs().compareTo(range) <= 0;
+    private static SetlistRecommendationResponse empty(Status status, BigDecimal base, int ratedSingle, int ratedOther,
+                                                       SetlistRecommendConfig config, int pageIndex, int pageSize) {
+        return response(status, base, ratedSingle, ratedOther, config, List.of(), List.of(), pageIndex, pageSize);
+    }
+
+    /** 기준 난이도가 base + min ~ base + max 안(경계 포함)인가. */
+    private static boolean within(RecommendCandidate c, BigDecimal base, BigDecimal min, BigDecimal max) {
+        BigDecimal diff = c.tier().subtract(base);
+        return diff.compareTo(min) >= 0 && diff.compareTo(max) <= 0;
     }
 
     /** 기록이 없거나, 기록의 달성 단계가 limit보다 낮은가. (SS 미만 = S 이하, FC·EXC는 SS 이상이다) */

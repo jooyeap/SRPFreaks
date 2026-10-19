@@ -416,15 +416,28 @@ export interface RecommendationItem {
   mine: MyRecord | null;
 }
 
+/** 추천 상태. READY = 평균 기준, STARTER = 기록 없는 신규(입문 난이도 이하), INSUFFICIENT = 단일/그 외 데이터 부족, UNAVAILABLE = 서열표 없음. */
+export type RecommendationStatus = "READY" | "STARTER" | "INSUFFICIENT" | "UNAVAILABLE";
+
 /**
- * 세트리스트 추천. baseTier = 내 평균 난이도(레이팅 상수 난이도 기준)이고, 추정할 근거가 모자라면 null(목록도 비어 있다).
- * ssChallenge = 평균 ± rangeSs 안에서 기록이 없거나 SS 미만, sFill = 평균 ± rangeS 안에서 기록이 없거나 S 미만이며 SS 도전에 없는 것.
+ * 세트리스트 추천. status에 따라 화면이 달라진다.
+ * READY: baseTier = 내 평균 난이도. ssChallenge = 평균 + ssMin~ssMax 안에서 기록이 없거나 SS 미만(SS 기준),
+ *        sFill = 평균 + sMin~sMax 안에서 기록이 없거나 S 미만이며 SS 기준에 없는 것(S 기준). 범위 값은 평균 대비 차이(음수 = 더 쉬운 곡).
+ * STARTER: baseTier = 입문 기준 난이도(이 이하만 sFill에 온다), ssChallenge는 비어 있다.
+ * INSUFFICIENT: 목록은 비어 있고 ratedSingle·ratedOther와 requiredSingle·requiredOther 개수로 안내한다. baseTier는 null.
  * 두 묶음은 같은 page로 묶음마다 size개씩 온다. totalPages는 둘 중 긴 쪽 기준.
  */
 export interface SetlistRecommendationResponse {
+  status: RecommendationStatus;
   baseTier: number | null;
-  rangeSs: number;
-  rangeS: number;
+  ssMin: number;
+  ssMax: number;
+  sMin: number;
+  sMax: number;
+  ratedSingle: number;
+  ratedOther: number;
+  requiredSingle: number;
+  requiredOther: number;
   ssChallenge: RecommendationItem[];
   sFill: RecommendationItem[];
   page: number;

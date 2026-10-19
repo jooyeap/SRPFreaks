@@ -26,7 +26,10 @@ function pageOf(content: SetlistItemResponse[]) {
 function rec(id: number, over: Partial<RecommendationItem> = {}): RecommendationItem {
   return { songDifficultyId: id, songId: 300 + id, title: `추천곡${id}`, part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 6.2, mine: null, ...over };
 }
-const NO_BASE: SetlistRecommendationResponse = { baseTier: null, rangeSs: 0.3, rangeS: 0.5, ssChallenge: [], sFill: [], page: 0, size: 5, totalPages: 0 };
+const NO_BASE: SetlistRecommendationResponse = {
+  status: "UNAVAILABLE", baseTier: null, ssMin: -0.6, ssMax: -0.1, sMin: -0.1, sMax: 0.4,
+  ratedSingle: 0, ratedOther: 0, requiredSingle: 5, requiredOther: 9, ssChallenge: [], sFill: [], page: 0, size: 5, totalPages: 0,
+};
 
 const AUTH = {
   accessToken: "t", tokenType: "Bearer", expiresIn: 900,
@@ -218,10 +221,10 @@ describe("세트리스트", () => {
   describe("내 실력대 추천", () => {
     const recommendCalls = () => fetchMock.mock.calls.filter(([input]) => String(input).includes("/setlist/recommendations"));
     const based = (over: Partial<SetlistRecommendationResponse> = {}): SetlistRecommendationResponse => ({
-      baseTier: 6.2, rangeSs: 0.3, rangeS: 0.5, ssChallenge: [], sFill: [], page: 0, size: 5, totalPages: 1, ...over,
+      ...NO_BASE, status: "READY", baseTier: 6.2, totalPages: 1, ...over,
     });
 
-    it("평균 난이도와 SS 도전·S 채우기 두 묶음을 보여 주고, 기록이 없으면 글자로 알린다", async () => {
+    it("평균 난이도와 SS 기준·S 기준 두 묶음을 보여 주고, 기록이 없으면 글자로 알린다", async () => {
       recommended = based({
         ssChallenge: [rec(1), rec(2, { mine: { rate: 90.5, fullCombo: false, stage: "S" } })],
         sFill: [rec(3, { tier: 6.6 })],
@@ -230,14 +233,14 @@ describe("세트리스트", () => {
 
       const section = await screen.findByRole("region", { name: "내 실력대 추천" });
       expect(await within(section).findByText(/내 평균 난이도/)).toHaveTextContent("6.2");
-      expect(within(section).getByRole("heading", { name: /SS 도전/ })).toHaveTextContent("평균 ±0.3");
-      expect(within(section).getByRole("heading", { name: /S 채우기/ })).toHaveTextContent("평균 ±0.5");
-      const ss = within(within(section).getByRole("list", { name: "SS 도전 추천" })).getAllByRole("listitem");
+      expect(within(section).getByRole("heading", { name: /SS 기준/ })).toHaveTextContent("평균 \u22120.6 ~ \u22120.1");
+      expect(within(section).getByRole("heading", { name: /^S 기준/ })).toHaveTextContent("평균 \u22120.1 ~ +0.4");
+      const ss = within(within(section).getByRole("list", { name: "SS 기준 추천" })).getAllByRole("listitem");
       expect(ss[0]).toHaveTextContent("추천곡1");
       expect(ss[0]).toHaveTextContent("기록 없음");
       expect(ss[1]).toHaveTextContent("90.50");
       expect(ss[1]).toHaveTextContent("S");
-      const s = within(within(section).getByRole("list", { name: "S 채우기 추천" })).getAllByRole("listitem");
+      const s = within(within(section).getByRole("list", { name: "S 기준 추천" })).getAllByRole("listitem");
       expect(s[0]).toHaveTextContent("추천곡3");
     });
 
@@ -246,16 +249,39 @@ describe("세트리스트", () => {
       renderWith(<SetlistTab userId={1} />);
 
       const section = await screen.findByRole("region", { name: "내 실력대 추천" });
-      expect(await within(section).findByRole("list", { name: "SS 도전 추천" })).toBeInTheDocument();
+      expect(await within(section).findByRole("list", { name: "SS 기준 추천" })).toBeInTheDocument();
       expect(within(section).getByText("추천할 채보가 없습니다.")).toBeInTheDocument();
     });
 
-    it("평균 난이도를 구할 수 없으면 기록이 더 쌓이면 추천한다는 안내만 보인다", async () => {
+    it("서열표가 없으면 추천할 수 없다는 안내만 보인다", async () => {
       renderWith(<SetlistTab userId={1} />);
 
       const section = await screen.findByRole("region", { name: "내 실력대 추천" });
-      expect(await within(section).findByText(/기록이 더 쌓이면 추천해 드려요/)).toBeInTheDocument();
+      expect(await within(section).findByText(/아직 추천할 수 없습니다/)).toBeInTheDocument();
       expect(within(section).queryByRole("button")).toBeNull();
+    });
+
+    it("단일/그 외 데이터가 모자라면 개수와 함께 더 채워 달라고 안내하고 목록은 없다", async () => {
+      recommended = { ...NO_BASE, status: "INSUFFICIENT", ratedSingle: 3, ratedOther: 8 };
+      renderWith(<SetlistTab userId={1} />);
+
+      const section = await screen.findByRole("region", { name: "내 실력대 추천" });
+      const text = await within(section).findByText(/데이터가 적어 추천하기 어렵습니다/);
+      expect(text).toHaveTextContent("단일 3/5곡");
+      expect(text).toHaveTextContent("그 외 8/9곡");
+      expect(text).toHaveTextContent("기록을 더 채워 주세요");
+      expect(within(section).queryByRole("list")).toBeNull();
+    });
+
+    it("기록이 없는 신규는 입문 난이도 이하의 S 기준만 보여 주고 SS 기준은 없다", async () => {
+      recommended = based({ status: "STARTER", baseTier: 5.2, sFill: [rec(4, { tier: 5.1 })] });
+      renderWith(<SetlistTab userId={1} />);
+
+      const section = await screen.findByRole("region", { name: "내 실력대 추천" });
+      expect(await within(section).findByText(/아직 레이팅에 든 기록이 없어/)).toHaveTextContent("5.2");
+      expect(within(section).getByRole("heading", { name: /^S 기준/ })).toHaveTextContent("기준 난이도 5.2 이하");
+      expect(within(section).queryByRole("heading", { name: /SS 기준/ })).toBeNull();
+      expect(within(within(section).getByRole("list", { name: "S 기준 추천" })).getAllByRole("listitem")[0]).toHaveTextContent("추천곡4");
     });
 
     it("담기를 누르면 그 채보를 POST로 담고 추천을 다시 불러온다", async () => {

@@ -9,14 +9,15 @@ import { StageBadge } from "@/components/table/StageBadge";
 import { ApiError } from "@/lib/api";
 import type { RecommendationItem } from "@/lib/api-types";
 import { formatRate, formatTier } from "@/lib/format";
-import { addToSetlist, fetchRecommendations, SETLIST_LIMIT, setlistKeys } from "@/lib/setlist";
+import { addToSetlist, fetchRecommendations, formatOffsetRange, SETLIST_LIMIT, setlistKeys } from "@/lib/setlist";
 
 /**
  * 내 실력대 추천 (D37): 내 레이팅 목록의 평균 난이도를 기준으로 오늘 도전해 볼 채보를 두 묶음으로 보여 준다.
- * - SS 도전: 평균 ± rangeSs 안에서 기록이 없거나 SS 미만인 채보
- * - S 채우기: 평균 ± rangeS(더 넓다) 안에서 기록이 없거나 S 미만인 채보
+ * - SS 기준: 평균보다 쉬운 쪽(ssMin~ssMax)에서 기록이 없거나 SS 미만인 채보
+ * - S 기준: 평균 근처에서 위쪽(sMin~sMax)에서 기록이 없거나 S 미만인 채보
+ * 상태별 화면: READY 두 묶음 / STARTER 기록이 없는 신규는 입문 난이도 이하의 S 기준만 / INSUFFICIENT 단일·그 외 데이터가 적다는 안내만.
  * 줄마다 `담기`를 누른다(한꺼번에 담는 버튼은 없다). 담으면 서버가 그 채보를 추천에서 빼므로 목록이 새로 채워진다.
- * 레이팅 채보가 모자라 평균을 구할 수 없으면 안내만 보인다. 범위 숫자는 서버 설정 값이라 화면에 하드코딩하지 않는다.
+ * 범위 숫자와 개수는 서버 설정 값이라 화면에 하드코딩하지 않는다.
  */
 export function SetlistRecommend({ userId, addedIds, full }: { userId: number; addedIds: ReadonlySet<number>; full: boolean }) {
   const queryClient = useQueryClient();
@@ -48,26 +49,39 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
         <p role="alert" className="text-sm text-fg">
           {result.error instanceof ApiError ? result.error.message : "추천을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
         </p>
-      ) : result.data.baseTier === null ? (
-        <p className="text-sm text-fg-sub">기록이 더 쌓이면 추천해 드려요. 레이팅 목록에 채보가 어느 정도 모이면 내 평균 난이도를 기준으로 골라 드립니다.</p>
+      ) : result.data.status === "UNAVAILABLE" ? (
+        <p className="text-sm text-fg-sub">아직 추천할 수 없습니다. 서열표가 준비되면 보여 드려요.</p>
+      ) : result.data.status === "INSUFFICIENT" ? (
+        <p className="text-sm text-fg-sub">
+          데이터가 적어 추천하기 어렵습니다. 레이팅 목록에 단일 {result.data.ratedSingle}/{result.data.requiredSingle}곡, 그 외 {result.data.ratedOther}/
+          {result.data.requiredOther}곡이 있습니다. 기록을 더 채워 주세요.
+        </p>
       ) : (
         <>
-          <p className="text-xs text-fg-sub">
-            내 평균 난이도 <span className="font-num text-fg">{formatTier(result.data.baseTier)}</span> 기준입니다.
-          </p>
+          {result.data.status === "STARTER" ? (
+            <p className="text-xs text-fg-sub">
+              아직 레이팅에 든 기록이 없어 기준 난이도 <span className="font-num text-fg">{formatTier(result.data.baseTier)}</span> 이하의 곡을 S 기준으로 보여 드려요.
+            </p>
+          ) : (
+            <p className="text-xs text-fg-sub">
+              내 평균 난이도 <span className="font-num text-fg">{formatTier(result.data.baseTier)}</span> 기준입니다.
+            </p>
+          )}
           {full ? <p className="text-xs text-fg-sub">{SETLIST_LIMIT}곡이 모두 담겨 있습니다. 곡을 빼면 새로 담을 수 있습니다.</p> : null}
+          {result.data.status === "READY" ? (
+            <Group
+              title="SS 기준"
+              range={formatOffsetRange(result.data.ssMin, result.data.ssMax)}
+              items={result.data.ssChallenge}
+              addedIds={addedIds}
+              full={full}
+              pendingId={add.isPending ? add.variables?.songDifficultyId : undefined}
+              onAdd={(item) => add.mutate(item)}
+            />
+          ) : null}
           <Group
-            title="SS 도전"
-            range={result.data.rangeSs}
-            items={result.data.ssChallenge}
-            addedIds={addedIds}
-            full={full}
-            pendingId={add.isPending ? add.variables?.songDifficultyId : undefined}
-            onAdd={(item) => add.mutate(item)}
-          />
-          <Group
-            title="S 채우기"
-            range={result.data.rangeS}
+            title="S 기준"
+            range={result.data.status === "STARTER" ? `기준 난이도 ${formatTier(result.data.baseTier)} 이하` : formatOffsetRange(result.data.sMin, result.data.sMax)}
             items={result.data.sFill}
             addedIds={addedIds}
             full={full}
@@ -91,7 +105,7 @@ function Group({
   onAdd,
 }: {
   title: string;
-  range: number;
+  range: string;
   items: readonly RecommendationItem[];
   addedIds: ReadonlySet<number>;
   full: boolean;
@@ -101,7 +115,7 @@ function Group({
   return (
     <div className="flex flex-col gap-1">
       <h3 className="text-xs font-bold text-fg-sub">
-        {title} <span className="font-normal text-fg-dim">(평균 ±{range})</span>
+        {title} <span className="font-normal text-fg-dim">({range})</span>
       </h3>
       {items.length === 0 ? (
         <p className="text-sm text-fg-dim">추천할 채보가 없습니다.</p>
