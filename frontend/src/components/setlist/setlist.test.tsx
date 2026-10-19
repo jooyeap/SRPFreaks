@@ -27,7 +27,7 @@ function rec(id: number, over: Partial<RecommendationItem> = {}): Recommendation
   return { songDifficultyId: id, songId: 300 + id, title: `추천곡${id}`, part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 6.2, mine: null, ...over };
 }
 const NO_BASE: SetlistRecommendationResponse = {
-  status: "UNAVAILABLE", baseTier: null, ssMin: -0.6, ssMax: -0.1, sMin: -0.1, sMax: 0.4,
+  status: "UNAVAILABLE", baseTier: null, ssMin: -0.6, ssMax: -0.1, sMin: -0.1, sMax: 0.4, customRange: false,
   ratedSingle: 0, ratedOther: 0, requiredSingle: 5, requiredOther: 9, ssChallenge: [], sFill: [], page: 0, size: 5, totalPages: 0,
 };
 
@@ -61,6 +61,7 @@ describe("세트리스트", () => {
       const url = String(input);
       const method = init?.method ?? "GET";
       if (url.endsWith("/auth/refresh")) return Promise.resolve(loggedIn ? json(AUTH) : json({ code: "AUTH_FAILED", message: "로그인이 필요합니다." }, 401));
+      if (url.includes("/setlist/recommend-range")) return Promise.resolve(method === "DELETE" ? new Response(null, { status: 204 }) : json({ ssMin: -1, ssMax: -0.1, sMin: -0.1, sMax: 0.75 }));
       if (url.includes("/setlist/recommendations")) return Promise.resolve(json(recommended));
       if (url.includes("/setlist/done")) return Promise.resolve(json({ removed: listed.filter((i) => i.done).length }));
       if (url.includes("/setlist") && method === "POST") return Promise.resolve(json(item(9), 201));
@@ -219,6 +220,8 @@ describe("세트리스트", () => {
     });
   });
   describe("내 실력대 추천", () => {
+    const rangeCalls = (method: string) =>
+      fetchMock.mock.calls.filter(([input, init]) => String(input).includes("/setlist/recommend-range") && (init?.method ?? "GET") === method);
     const recommendCalls = () => fetchMock.mock.calls.filter(([input]) => String(input).includes("/setlist/recommendations"));
     const based = (over: Partial<SetlistRecommendationResponse> = {}): SetlistRecommendationResponse => ({
       ...NO_BASE, status: "READY", baseTier: 6.2, totalPages: 1, ...over,
@@ -282,6 +285,67 @@ describe("세트리스트", () => {
       expect(within(section).getByRole("heading", { name: /^S 기준/ })).toHaveTextContent("기준 난이도 5.2 이하");
       expect(within(section).queryByRole("heading", { name: /SS 기준/ })).toBeNull();
       expect(within(within(section).getByRole("list", { name: "S 기준 추천" })).getAllByRole("listitem")[0]).toHaveTextContent("추천곡4");
+    });
+
+    it("범위 조정을 열어 값을 바꿔 저장하면 PUT으로 보내고 추천을 다시 불러온다", async () => {
+      recommended = based({ ssChallenge: [rec(1)] });
+      renderWith(<SetlistTab userId={1} />);
+
+      fireEvent.click(await screen.findByRole("button", { name: /범위 조정/ }));
+      const form = screen.getByRole("form", { name: "추천 범위 조정" });
+      expect(within(form).getByLabelText("SS 기준 하위 값")).toHaveValue("-0.6");
+      expect(within(form).getByLabelText("S 기준 상위 값")).toHaveValue("0.4");
+      fireEvent.change(within(form).getByLabelText("SS 기준 하위 값"), { target: { value: "-1" } });
+      fireEvent.change(within(form).getByLabelText("S 기준 상위 값"), { target: { value: "0.75" } });
+      fireEvent.click(within(form).getByRole("button", { name: "저장" }));
+
+      await waitFor(() => expect(rangeCalls("PUT")).toHaveLength(1));
+      expect(JSON.parse(String(rangeCalls("PUT")[0][1]?.body))).toEqual({ ssMin: -1, ssMax: -0.1, sMin: -0.1, sMax: 0.75 });
+      await waitFor(() => expect(recommendCalls().length).toBeGreaterThanOrEqual(2));
+      await waitFor(() => expect(screen.queryByRole("form", { name: "추천 범위 조정" })).toBeNull());
+    });
+
+    it("하위 값이 상위 값보다 크거나 형식·범위가 틀리면 저장하지 않고 안내한다", async () => {
+      recommended = based();
+      renderWith(<SetlistTab userId={1} />);
+
+      fireEvent.click(await screen.findByRole("button", { name: /범위 조정/ }));
+      const form = screen.getByRole("form", { name: "추천 범위 조정" });
+      fireEvent.change(within(form).getByLabelText("SS 기준 하위 값"), { target: { value: "0" } });
+      fireEvent.change(within(form).getByLabelText("S 기준 하위 값"), { target: { value: "abc" } });
+      fireEvent.change(within(form).getByLabelText("S 기준 상위 값"), { target: { value: "3.5" } });
+      fireEvent.click(within(form).getByRole("button", { name: "저장" }));
+
+      expect(await within(form).findByText("하위 값은 상위 값보다 클 수 없습니다.")).toBeInTheDocument();
+      expect(within(form).getByText(/숫자로 입력해 주세요/)).toBeInTheDocument();
+      expect(within(form).getByText(/사이로 입력해 주세요/)).toBeInTheDocument();
+      expect(rangeCalls("PUT")).toHaveLength(0);
+    });
+
+    it("직접 정한 범위면 안내가 보이고 기본값으로 누르면 DELETE로 되돌린다. 기본 범위일 땐 막혀 있다", async () => {
+      recommended = based({ customRange: true, ssMin: -1 });
+      renderWith(<SetlistTab userId={1} />);
+
+      expect(await screen.findByText("직접 정한 범위를 쓰고 있습니다.")).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /범위 조정/ }));
+      const form = screen.getByRole("form", { name: "추천 범위 조정" });
+      expect(within(form).getByLabelText("SS 기준 하위 값")).toHaveValue("-1");
+      fireEvent.click(within(form).getByRole("button", { name: "기본값으로" }));
+
+      await waitFor(() => expect(rangeCalls("DELETE")).toHaveLength(1));
+    });
+
+    it("기본 범위일 때는 기본값으로 버튼이 막혀 있고, 신규(STARTER)·데이터 부족 화면에는 범위 조정이 없다", async () => {
+      recommended = based();
+      const first = renderWith(<SetlistTab userId={1} />);
+      fireEvent.click(await screen.findByRole("button", { name: /범위 조정/ }));
+      expect(screen.getByRole("button", { name: "기본값으로" })).toBeDisabled();
+      first.unmount();
+
+      recommended = based({ status: "STARTER", baseTier: 5.2 });
+      renderWith(<SetlistTab userId={1} />);
+      await screen.findByText(/아직 레이팅에 든 기록이 없어/);
+      expect(screen.queryByRole("button", { name: /범위 조정/ })).toBeNull();
     });
 
     it("담기를 누르면 그 채보를 POST로 담고 추천을 다시 불러온다", async () => {

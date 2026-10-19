@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { apiFetch } from "@/lib/api";
 import type { ChartRowResponse, PageResponse, SetlistItemResponse, SetlistRecommendationResponse } from "@/lib/api-types";
 
@@ -67,4 +68,57 @@ export function formatTierOffset(value: number): string {
 /** 추천 묶음 제목 옆의 범위 글자. `평균 −0.6 ~ −0.1` */
 export function formatOffsetRange(min: number, max: number): string {
   return `평균 ${formatTierOffset(min)} ~ ${formatTierOffset(max)}`;
+}
+
+// ---- 추천 범위 직접 설정 (D37) ---------------------------------------------------------------------
+
+/** 서버(SetlistRecommendRangeService)·DB CHECK와 같은 한계다. 서버도 다시 검사한다. */
+export const RANGE_LIMIT = 3;
+
+/** 입력 글자를 숫자로 바꾼다. 소수 둘째 자리까지, 앞에 부호(-, 유니코드 마이너스, +) 허용. 형식이 틀리면 null. */
+export function parseOffset(text: string): number | null {
+  const normalized = text.trim().replace("\u2212", "-");
+  if (!/^[+-]?\d+(\.\d{1,2})?$/.test(normalized)) return null;
+  return Number(normalized);
+}
+
+const offsetField = z
+  .string()
+  .refine((v) => parseOffset(v) !== null, "숫자로 입력해 주세요. (소수 둘째 자리까지)")
+  .refine((v) => {
+    const n = parseOffset(v);
+    return n === null || Math.abs(n) <= RANGE_LIMIT;
+  }, `\u2212${RANGE_LIMIT} ~ +${RANGE_LIMIT} 사이로 입력해 주세요.`);
+
+/** 폼 값은 글자 그대로 들고 있다가 저장할 때 숫자로 바꾼다(입력 중인 "-" 같은 중간 상태를 그대로 보이기 위해). */
+export const recommendRangeSchema = z
+  .object({ ssMin: offsetField, ssMax: offsetField, sMin: offsetField, sMax: offsetField })
+  .superRefine((values, ctx) => {
+    for (const [min, max] of [["ssMin", "ssMax"], ["sMin", "sMax"]] as const) {
+      const lo = parseOffset(values[min]);
+      const hi = parseOffset(values[max]);
+      if (lo !== null && hi !== null && lo > hi) ctx.addIssue({ code: "custom", path: [min], message: "하위 값은 상위 값보다 클 수 없습니다." });
+    }
+  });
+export type RecommendRangeValues = z.infer<typeof recommendRangeSchema>;
+
+export interface RecommendRangeBody {
+  ssMin: number;
+  ssMax: number;
+  sMin: number;
+  sMax: number;
+}
+
+/** 서버에 보내는 값. 형식은 recommendRangeSchema가 이미 확인했다. */
+export function toRangeBody(values: RecommendRangeValues): RecommendRangeBody {
+  return { ssMin: Number(parseOffset(values.ssMin)), ssMax: Number(parseOffset(values.ssMax)), sMin: Number(parseOffset(values.sMin)), sMax: Number(parseOffset(values.sMax)) };
+}
+
+export function saveRecommendRange(body: RecommendRangeBody): Promise<RecommendRangeBody> {
+  return apiFetch<RecommendRangeBody>("/setlist/recommend-range", { method: "PUT", body });
+}
+
+/** 기본값으로 되돌린다(내 설정을 지운다). */
+export function resetRecommendRange(): Promise<void> {
+  return apiFetch<void>("/setlist/recommend-range", { method: "DELETE" });
 }

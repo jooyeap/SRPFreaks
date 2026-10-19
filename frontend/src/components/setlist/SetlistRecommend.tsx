@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pager } from "@/components/Pager";
+import { RecommendRangeForm } from "@/components/setlist/RecommendRangeForm";
 import { useToast } from "@/components/Toast";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
@@ -17,12 +18,13 @@ import { addToSetlist, fetchRecommendations, formatOffsetRange, SETLIST_LIMIT, s
  * - S 기준: 평균 근처에서 위쪽(sMin~sMax)에서 기록이 없거나 S 미만인 채보
  * 상태별 화면: READY 두 묶음 / STARTER 기록이 없는 신규는 입문 난이도 이하의 S 기준만 / INSUFFICIENT 단일·그 외 데이터가 적다는 안내만.
  * 줄마다 `담기`를 누른다(한꺼번에 담는 버튼은 없다). 담으면 서버가 그 채보를 추천에서 빼므로 목록이 새로 채워진다.
- * 범위 숫자와 개수는 서버 설정 값이라 화면에 하드코딩하지 않는다.
+ * 범위 숫자와 개수는 서버 값이라 화면에 하드코딩하지 않는다. `범위 조정`으로 사용자가 SS·S 범위를 직접 정할 수 있다(저장하면 내 설정, 기본값으로 되돌릴 수 있다).
  */
 export function SetlistRecommend({ userId, addedIds, full }: { userId: number; addedIds: ReadonlySet<number>; full: boolean }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [page, setPage] = useState(0);
+  const [adjusting, setAdjusting] = useState(false);
 
   const result = useQuery({
     queryKey: setlistKeys.recommend(userId, page),
@@ -67,6 +69,20 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
               내 평균 난이도 <span className="font-num text-fg">{formatTier(result.data.baseTier)}</span> 기준입니다.
             </p>
           )}
+          {result.data.status === "READY" ? (
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                aria-expanded={adjusting}
+                onClick={() => setAdjusting((open) => !open)}
+                className="flex min-h-9 w-fit items-center gap-1 rounded-lg border border-chip-line px-3 text-sm text-fg hover:bg-table-head"
+              >
+                범위 조정 {adjusting ? "\u25B4" : "\u25BE"}
+              </button>
+              {result.data.customRange && !adjusting ? <p className="text-xs text-fg-sub">직접 정한 범위를 쓰고 있습니다.</p> : null}
+              {adjusting ? <RecommendRangeForm current={result.data} onDone={() => setAdjusting(false)} /> : null}
+            </div>
+          ) : null}
           {full ? <p className="text-xs text-fg-sub">{SETLIST_LIMIT}곡이 모두 담겨 있습니다. 곡을 빼면 새로 담을 수 있습니다.</p> : null}
           {result.data.status === "READY" ? (
             <Group
