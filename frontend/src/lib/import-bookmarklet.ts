@@ -90,7 +90,12 @@ const REASON_LABELS: Record<string, string> = {
   NOT_IMPROVED: "기존 기록과 같음",
 };
 
-/** 북마클릿 안에서 쓰는 결과 안내 함수 소스. 사유 이름 → 한글 표를 같이 넣는다. */
+/**
+ * 북마클릿 안에서 쓰는 결과 안내 함수 소스. 사유 이름 → 한글 표와, 공식 페이지 위에 띄우는 안내 창(srpModal)을 같이 넣는다.
+ * 안내 창은 alert 대신 쓴다: 처리 중에도 반응이 보이고, 결과·제외된 곡·링크를 한 화면에 담을 수 있다.
+ * 글자는 textContent로만 넣고(서버 응답 글자가 HTML로 해석되지 않는다), 모양은 element.style로 지정한다
+ * (style 속성 문자열은 공식 페이지의 CSP에 막힐 수 있어서 쓰지 않는다).
+ */
 function senderSource(): string {
   return `
 var SRP_REASONS=${JSON.stringify(REASON_LABELS)};
@@ -101,6 +106,46 @@ function srpSummary(res){
   if(res.excludedSongs&&res.excludedSongs.length){lines.push('');lines.push('곡 목록에 없어 제외한 곡:');for(var j=0;j<res.excludedSongs.length;j++){lines.push('· '+res.excludedSongs[j]);}}
   return lines.join('\\n');
 }
+function srpStyle(el,css){for(var k in css){if(Object.prototype.hasOwnProperty.call(css,k)){el.style[k]=css[k];}}}
+function srpModal(title,body,link){
+  var old=document.getElementById('srp-import-modal');
+  if(old&&old.parentNode){old.parentNode.removeChild(old);}
+  var overlay=document.createElement('div');
+  overlay.id='srp-import-modal';
+  overlay.setAttribute('role','dialog');
+  overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('aria-label','SRPFreaks 최근 플레이 가져오기');
+  srpStyle(overlay,{position:'fixed',left:'0',top:'0',right:'0',bottom:'0',zIndex:'2147483647',background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center'});
+  var box=document.createElement('div');
+  srpStyle(box,{background:'#1b1f2a',color:'#f2f4f8',padding:'20px',borderRadius:'12px',width:'calc(100% - 32px)',maxWidth:'420px',maxHeight:'80vh',overflowY:'auto',fontSize:'14px',lineHeight:'1.6',fontFamily:'sans-serif',boxSizing:'border-box',textAlign:'left'});
+  var h=document.createElement('div');
+  h.textContent=title;
+  srpStyle(h,{fontSize:'16px',fontWeight:'bold',marginBottom:'10px'});
+  var p=document.createElement('div');
+  p.textContent=body;
+  srpStyle(p,{whiteSpace:'pre-line',marginBottom:'16px'});
+  var row=document.createElement('div');
+  srpStyle(row,{display:'flex',gap:'8px',justifyContent:'flex-end',flexWrap:'wrap'});
+  if(link){
+    var a=document.createElement('a');
+    a.textContent='SRPFreaks 열기';
+    a.href=link;
+    a.target='_blank';
+    a.rel='noopener noreferrer';
+    srpStyle(a,{padding:'8px 14px',borderRadius:'8px',border:'1px solid #4b5368',color:'#f2f4f8',textDecoration:'none',fontSize:'14px'});
+    row.appendChild(a);
+  }
+  var close=document.createElement('button');
+  close.type='button';
+  close.textContent='확인';
+  srpStyle(close,{padding:'8px 18px',borderRadius:'8px',border:'0',background:'#f2f4f8',color:'#111827',fontSize:'14px',fontWeight:'bold',cursor:'pointer'});
+  close.onclick=function(){if(overlay.parentNode){overlay.parentNode.removeChild(overlay);}};
+  row.appendChild(close);
+  box.appendChild(h);box.appendChild(p);box.appendChild(row);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  close.focus();
+}
 `;
 }
 
@@ -110,12 +155,18 @@ function srpSummary(res){
  * @param token 가져오기 토큰 원문(srpi_…). 북마크에 들어가므로 화면에서 주의를 안내한다.
  */
 export function buildBookmarkletSource(apiBase: string, token: string): string {
+  const siteBase = apiBase.replace(/\/api\/v1\/?$/, "");
   return `(function(){
 ${READER_SOURCE}
 ${senderSource()}
-if(location.hostname!==${JSON.stringify(OFFICIAL_HOST)}||location.pathname.indexOf(${JSON.stringify(OFFICIAL_PATH_PART)})<0){alert('최근 플레이 페이지(stage_result)에서 실행해 주세요.');return;}
+var TITLE='SRPFreaks 최근 플레이 가져오기';
+if(location.hostname!==${JSON.stringify(OFFICIAL_HOST)}||location.pathname.indexOf(${JSON.stringify(OFFICIAL_PATH_PART)})<0){srpModal(TITLE,'최근 플레이 페이지(stage_result)에서 실행해 주세요.');return;}
 var read=srpReadPlays(document);
-if(!read.plays.length){alert('읽을 수 있는 플레이가 없습니다.'+(read.unreadable?' (읽지 못한 항목 '+read.unreadable+'개)':''));return;}
+if(!read.plays.length){srpModal(TITLE,'읽을 수 있는 플레이가 없습니다.'+(read.unreadable?' (읽지 못한 항목 '+read.unreadable+'개)':''));return;}
+var translated=false;
+for(var t=0;t<read.plays.length;t++){if(read.plays[t].translated){translated=true;}}
+if(translated){srpModal(TITLE,'이 페이지가 번역된 상태라 곡명을 정확히 읽을 수 없어 보내지 않았습니다.\\n\\n주소창 오른쪽의 번역 아이콘에서 "원본 보기"를 누르고(또는 일본어는 번역하지 않기를 선택하고) 페이지를 새로고침한 뒤 다시 눌러 주세요.');return;}
+srpModal(TITLE,'플레이 '+read.plays.length+'곡을 서버로 보내는 중입니다...');
 fetch(${JSON.stringify(apiBase)}+'/imports/recent-plays',{method:'POST',headers:{'Authorization':'Bearer '+${JSON.stringify(token)},'Content-Type':'application/json'},body:JSON.stringify({plays:read.plays})})
 .then(function(r){
   if(r.status===401){throw new Error('가져오기 토큰이 올바르지 않거나 폐기되었습니다. 설정에서 다시 발급해 주세요.');}
@@ -123,8 +174,8 @@ fetch(${JSON.stringify(apiBase)}+'/imports/recent-plays',{method:'POST',headers:
   if(!r.ok){throw new Error('가져오지 못했습니다. (오류 '+r.status+')');}
   return r.json();
 })
-.then(function(res){alert(srpSummary(res)+(read.unreadable?'\\n\\n읽지 못한 항목 '+read.unreadable+'개는 보내지 않았습니다.':''));})
-.catch(function(e){alert(e&&e.message&&e.message.indexOf('Failed to fetch')<0?e.message:'서버에 연결하지 못했습니다. 공식 사이트가 외부 연결을 막았을 수 있습니다.');});
+.then(function(res){srpModal(res.saved>0?'가져오기 완료':'가져오기 결과',srpSummary(res)+(read.unreadable?'\\n\\n읽지 못한 항목 '+read.unreadable+'개는 보내지 않았습니다.':''),${JSON.stringify(siteBase)});})
+.catch(function(e){srpModal(TITLE,e&&e.message&&e.message.indexOf('Failed to fetch')<0?e.message:'서버에 연결하지 못했습니다. 공식 사이트가 외부 연결을 막았을 수 있습니다.');});
 })();`;
 }
 

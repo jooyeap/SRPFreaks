@@ -693,6 +693,7 @@ com.srpfreaks.backend
 | 날짜 | 내용 |
 |---|---|
 | 2026-10-16 | **D32 확장.** 스냅샷 곡별 상세(`skill_snapshot_entries`, V6)와 비교 API 2개 추가, 기록 저장 응답에 `ratingChange`, `GET /records`에 `sort=entered` 추가. 화면은 DESIGN-UI 5·10·19장 |
+| 2026-10-19 | 가져오기 북마클릿의 알림창(alert)을 **페이지 위 안내 창**(처리 중 → 결과)으로 바꾸고, 번역된 페이지는 서버로 보내지 않고 안내만 한다(설계의 "번역 흔적이 있으면 실행을 멈춘다"와 일치). 북마클릿 코드는 북마크 자체에 들어 있어서 **이전에 만든 북마크는 예전 동작 그대로**이므로 설정 화면에서 다시 발급해 북마크를 새로 만들어야 한다 |
 | 2026-10-19 | 가져오기를 **ROOT 전용 시험 단계**로 다시 켬: `app.import-api.enabled=false`(기본)이면 `/import-token` 발급·조회·폐기는 **ROOT만** 가능하고(이전에는 전부 403), `/imports/**`는 가져오기 토큰만 받는다(일반 사용자는 토큰을 만들 수 없어 쓸 수 없다). 프론트는 `lib/features.ts`의 `canUseImport(role)`로 ROOT에게만 설정 카드·화면을 보여 준다. 모두에게 열 때는 `IMPORT_FEATURE_ENABLED=true`와 서버 `IMPORT_API_ENABLED=true`를 함께 켠다 |
 | 2026-10-13 | 가져오기 기능을 **꺼 둠**: 서버 `app.import-api.enabled`(환경변수 `IMPORT_API_ENABLED`, 기본 false)가 false이면 `/imports/**`와 `/import-token`이 403, 프론트는 `lib/features.ts`의 `IMPORT_FEATURE_ENABLED`(false)로 설정 화면의 카드를 숨기고 `/settings/import`에 `준비 중`을 보여 준다. 공식 페이지에서의 동작을 확인한 뒤 둘 다 켠다. (확인 중 CORS 설정 순서 문제는 수정했다) |
 | 2026-10-13 | 가져오기 북마클릿 구현(D34 4단계): `import-bookmarklet.ts`(읽기·전송·결과 안내), 설정 화면에서 발급 직후 북마크 링크·주소 복사 제공. 공식 페이지에서의 실제 동작(CSP)은 미확인 |
@@ -962,7 +963,7 @@ com.srpfreaks.backend
 - 실행 결과(저장·건너뜀·제외된 곡)를 읽는 쪽과 SRPFreaks 화면 모두에서 보여 준다.
 
 **구현 상태 (북마클릿, 4단계)**
-- 읽는 코드는 `frontend/src/lib/import-bookmarklet.ts`의 `READER_SOURCE` 한 곳이다(위 표의 위치를 그대로 쓴다). 토큰이 들어간 `javascript:` 북마크를 설정 > 가져오기 설정에서 발급 직후에만 만들어 준다(토큰 원문은 그때만 알 수 있다). 한 번 누르면 지금 연 페이지의 플레이만 읽어 `POST /imports/recent-plays`로 보내고 결과를 알림창으로 보여 준다.
+- 읽는 코드는 `frontend/src/lib/import-bookmarklet.ts`의 `READER_SOURCE` 한 곳이다(위 표의 위치를 그대로 쓴다). 토큰이 들어간 `javascript:` 북마크를 설정 > 가져오기 설정에서 발급 직후에만 만들어 준다(토큰 원문은 그때만 알 수 있다). 한 번 누르면 지금 연 페이지의 플레이만 읽어 `POST /imports/recent-plays`로 보내고 결과를 **공식 페이지 위의 안내 창**으로 보여 준다(2026-10-19: 알림창에서 변경. 누르면 바로 `처리 중` 창이 뜨고 응답이 오면 같은 창이 결과·건너뜀 사유·제외된 곡·SRPFreaks 링크로 바뀐다. 글자는 textContent로만 넣고 스타일은 element.style로 지정해 공식 페이지의 CSP에 걸리지 않게 한다. **번역된 페이지**(html 번역 클래스나 `font[dir=auto]`)이면 서버로 보내지 않고 번역을 끄라는 안내만 보인다).
 - 읽지 못한 항목(값이 비었거나 숫자가 아님)은 보내지 않고 개수만 알린다. 서버를 믿지 않는 구조라 옵션·난이도·풀콤보 판정은 서버가 다시 한다.
 
 **아직 확인하지 못한 것**
