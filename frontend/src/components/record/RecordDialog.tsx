@@ -24,7 +24,19 @@ function bestOf(records: readonly RecordResponse[] | undefined): RecordResponse 
  * 직접 처리해 준다. 이 세 가지를 직접 만들면 접근성 버그가 생기기 쉬워서 기본 기능에 맡겼다.
  * 모바일은 아래에서 올라오는 시트, 데스크톱(md 이상)은 가운데 창이다 (DESIGN-UI 10장).
  */
-export function RecordDialog({ chart, onClose }: { chart: RecordChart | null; onClose: () => void }) {
+export function RecordDialog({
+  chart,
+  onClose,
+  nextChartAfterSave,
+}: {
+  chart: RecordChart | null;
+  onClose: () => void;
+  /**
+   * 저장한 뒤 이어서 입력할 다음 채보를 돌려주면 창을 닫지 않고 그 채보로 바꾼다(한 손 모드에서 세트리스트를 차례로 입력할 때).
+   * 생략하거나 null을 돌려주면 평소처럼 창을 닫는다. 삭제는 항상 창을 닫는다.
+   */
+  nextChartAfterSave?: (saved: RecordChart) => RecordChart | null;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   // 입력 중인 값이 있으면 바깥 클릭으로 닫지 않는다(모바일에서 시트 밖을 잘못 눌러 입력이 사라지는 일 방지)
   const dirtyRef = useRef(false);
@@ -39,6 +51,15 @@ export function RecordDialog({ chart, onClose }: { chart: RecordChart | null; on
     setSwitched(null);
     onClose();
   }, [onClose]);
+  const handleSaved = useCallback(() => {
+    const next = active && nextChartAfterSave ? nextChartAfterSave(active) : null;
+    if (next) {
+      // 저장이 끝나 입력 중인 값이 없으므로 바로 바꾼다 (RecordDialogBody의 key가 바뀌어 폼이 새로 만들어진다)
+      setSwitched(next);
+    } else {
+      close();
+    }
+  }, [active, nextChartAfterSave, close]);
   const switchTo = useCallback(
     (next: RecordChart) => {
       // 입력 중인 값이 있으면 옮기지 않는다 (바깥 클릭으로 닫히지 않게 하는 것과 같은 이유)
@@ -92,7 +113,7 @@ export function RecordDialog({ chart, onClose }: { chart: RecordChart | null; on
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
           <RecentCharts currentChartId={active.songDifficultyId} onPick={switchTo} />
-          <RecordDialogBody key={active.songDifficultyId} chart={active} onClose={close} onDirtyChange={onDirtyChange} />
+          <RecordDialogBody key={active.songDifficultyId} chart={active} onClose={close} onSaved={handleSaved} onDirtyChange={onDirtyChange} />
         </>
       ) : null}
     </dialog>
@@ -108,10 +129,12 @@ export function RecordDialog({ chart, onClose }: { chart: RecordChart | null; on
 function RecordDialogBody({
   chart,
   onClose,
+  onSaved,
   onDirtyChange,
 }: {
   chart: RecordChart;
   onClose: () => void;
+  onSaved: () => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const chartId = chart.songDifficultyId;
@@ -198,7 +221,7 @@ function RecordDialogBody({
               chart={chart}
               record={editing ?? undefined}
               userId={user?.id}
-              onSaved={onClose}
+              onSaved={onSaved}
               onDeleted={onClose}
               onCancel={onClose}
               onDirtyChange={onDirtyChange}
