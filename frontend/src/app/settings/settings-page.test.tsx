@@ -45,7 +45,7 @@ describe("설정 화면", () => {
     expect(screen.getByLabelText("닉네임")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "탈퇴하기" })).toHaveAttribute("href", "/settings/withdraw");
-    // 최근 플레이 가져오기는 동작 확인 전까지 꺼 둔다(lib/features.ts)
+    // 최근 플레이 가져오기는 동작 확인 전까지 ROOT에게만 보인다(lib/features.ts)
     expect(screen.queryByRole("link", { name: "가져오기 설정" })).toBeNull();
   });
 
@@ -62,6 +62,19 @@ describe("설정 화면", () => {
     await screen.findByText("a@example.com");
     const page = screen.getByRole("heading", { name: "설정", level: 1 }).parentElement!;
     expect(page).toHaveClass("max-w-md", "md:max-w-[760px]");
+  });
+
+  it("ROOT에게는 가져오기 설정 링크가 보인다", async () => {
+    fetchMock.mockResolvedValueOnce(
+      json({
+        accessToken: "t",
+        tokenType: "Bearer",
+        expiresIn: 900,
+        user: { id: 1, email: "root@example.com", nickname: null, role: "ROOT", createdAt: "2026-10-01T00:00:00Z" },
+      }),
+    );
+    renderPage();
+    expect(await screen.findByRole("link", { name: "가져오기 설정" })).toHaveAttribute("href", "/settings/import");
   });
 
   it("로그인하지 않았으면 로그인 링크만 보여 준다", async () => {

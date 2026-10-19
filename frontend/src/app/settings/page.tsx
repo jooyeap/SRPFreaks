@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { NicknameForm } from "@/components/settings/NicknameForm";
 import { canSeeAdminMenu } from "@/lib/admin";
-import { IMPORT_FEATURE_ENABLED } from "@/lib/features";
+import { canUseImport } from "@/lib/features";
 import { ProfileVisibilityForm } from "@/components/settings/ProfileVisibilityForm";
 
 /** 설정 화면: 계정 정보, 닉네임, 유저 목록 공개 여부, 로그아웃, 탈퇴로 가는 링크. 내 정보이므로 로그인이 필요하다. */
@@ -48,7 +48,7 @@ export default function SettingsPage() {
       <section aria-label="유저 목록 공개 설정" className={card}>
         <ProfileVisibilityForm user={user} />
       </section>
-      {IMPORT_FEATURE_ENABLED ? (
+      {canUseImport(user.role) ? (
         <section aria-label="최근 플레이 가져오기" className={card}>
           <h2 className="text-xs font-bold text-fg-sub">최근 플레이 가져오기</h2>
           <p className="text-xs leading-relaxed text-fg-sub">공식 사이트의 최근 플레이 결과를 가져오는 데 쓰는 토큰을 관리합니다.</p>
