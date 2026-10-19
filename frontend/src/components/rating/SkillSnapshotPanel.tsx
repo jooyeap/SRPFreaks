@@ -5,6 +5,7 @@ import { SnapshotCompare } from "@/components/rating/SnapshotCompare";
 import { useToast } from "@/components/Toast";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
+import { playerTierKey } from "@/lib/chart-tier";
 import { formatScore } from "@/lib/format";
 import {
   blockReasonText,
@@ -95,7 +96,10 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
                   <div className="flex items-center justify-between gap-3">
                     <span className="font-num text-sm text-fg-sub">{row.date}</span>
                     <span className="flex items-center gap-2">
-                      <span className="font-num text-base font-semibold text-fg">{formatScore(row.totalScore)}</span>
+                      {/* 총점은 그 점수의 플레이어 티어 색 글자다(레이팅 카드와 같은 규칙). 숫자가 그대로 보이므로 색만으로 전달하지 않는다 */}
+                      <span data-tier={playerTierKey(row.totalScore)} className="tier-score font-num text-base font-semibold">
+                        {formatScore(row.totalScore)}
+                      </span>
                       {/* 증감은 부호 글자(▲ +/▼ -)가 있어서 색은 보조다 */}
                       <span data-direction={change.direction} className={`font-num w-20 text-right text-sm ${change.direction === "up" ? "text-done-text" : "text-fg-sub"}`}>
                         {change.text}

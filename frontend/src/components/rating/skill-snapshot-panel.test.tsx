@@ -71,6 +71,15 @@ describe("SkillSnapshotPanel", () => {
     expect(items[1]).toHaveTextContent("–");
   });
 
+  it("총점 글자는 그 점수의 플레이어 티어 색을 갖고, 숫자는 그대로 보인다", async () => {
+    rows = [row(3, "2026-10-19", 8135.47, 108.97), row(2, "2026-10-13", 7472.03, 3626.61), row(1, "2026-10-10", 3845.42, null)];
+    renderPanel();
+    const list = await screen.findByRole("list", { name: "레이팅 기록 목록" });
+    expect(within(list).getByText("8135.47")).toHaveAttribute("data-tier", "GOLD");
+    expect(within(list).getByText("7472.03")).toHaveAttribute("data-tier", "BRONZE");
+    expect(within(list).getByText("3845.42")).toHaveAttribute("data-tier", "GREEN_GRADIENT");
+  });
+
   it("내려간 기록은 ▼ -로 보인다", async () => {
     rows = [row(2, "2026-10-09", 110, -10), row(1, "2026-10-01", 120, null)];
     renderPanel();

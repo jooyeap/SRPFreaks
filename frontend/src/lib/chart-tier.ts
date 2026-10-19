@@ -62,6 +62,21 @@ export function chartTier(score: number): ChartTier {
   return { key: current.key };
 }
 
+/**
+ * 레이팅 합계(총점)가 속한 플레이어 티어 key. 서버와 같이 소수는 버리고 정수부로 구간을 찾는다(티어는 소수 버림, DESIGN.md 7장).
+ * 레이팅 기록 목록처럼 서버가 티어를 같이 주지 않는 화면에서 총점 글자 색을 정할 때 쓴다.
+ */
+export function playerTierKey(totalScore: number): string {
+  const whole = Math.floor(totalScore);
+  let current = PLAYER_TIER_MINS[0];
+  for (const tier of PLAYER_TIER_MINS) {
+    if (whole >= tier.min) {
+      current = tier;
+    }
+  }
+  return current.key;
+}
+
 /** 요소에 붙일 속성. CSS가 `data-tier`로 색과 빛을 정한다. */
 export function chartTierAttrs(score: number): { "data-tier": string } {
   return { "data-tier": chartTier(score).key };

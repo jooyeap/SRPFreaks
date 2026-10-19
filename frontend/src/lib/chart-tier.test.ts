@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chartTier, chartTierAttrs, chartTierStart, PLAYER_TIER_MINS, previewScore, ratedScore } from "@/lib/chart-tier";
+import { chartTier, chartTierAttrs, playerTierKey, chartTierStart, PLAYER_TIER_MINS, previewScore, ratedScore } from "@/lib/chart-tier";
 
 describe("chartTierStart", () => {
   it("티어 최소 점수를 40으로 나눈다 (Iridescent 9500 -> 237.5, Alien 10000 -> 250, HSB 11000 -> 275)", () => {
@@ -81,5 +81,22 @@ describe("ratedScore", () => {
     expect(ratedScore(5.8, 90, { ...ok, pattern: null })).toBeNull();
     expect(ratedScore(5.8, 90, { ...ok, pattern: "레이팅 제외" })).toBeNull();
     expect(ratedScore(null, 90, ok)).toBeNull();
+  });
+});
+
+describe("playerTierKey (레이팅 합계 → 티어, 정수부 기준)", () => {
+  it("구간 경계는 아래쪽 값을 포함하고 소수는 버린다", () => {
+    expect(playerTierKey(0)).toBe("WHITE");
+    expect(playerTierKey(7999.99)).toBe("SILVER"); // 정수부 7999 < 8000
+    expect(playerTierKey(8000)).toBe("GOLD");
+    expect(playerTierKey(11000)).toBe("HSB");
+    expect(playerTierKey(12345.6)).toBe("HSB");
+  });
+
+  it("레이팅 기록 화면의 예시 점수가 속한 티어", () => {
+    expect(playerTierKey(8135.47)).toBe("GOLD");
+    expect(playerTierKey(8026.5)).toBe("GOLD");
+    expect(playerTierKey(7472.03)).toBe("BRONZE");
+    expect(playerTierKey(3845.42)).toBe("GREEN_GRADIENT");
   });
 });
