@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { canUseImport } from "@/lib/features";
+import { ImportProcessor, type DoneInfo } from "@/components/import/ImportProcessor";
 import { consumeFragment, useHandoff } from "@/lib/import-handoff";
 
 /**
@@ -12,14 +12,15 @@ import { consumeFragment, useHandoff } from "@/lib/import-handoff";
  * 값은 주소 조각(#srp=)으로 오므로 이 컴포넌트가 먼저 받아서 보관소에 쌓고 주소에서 지운다.
  * 모달의 표시 여부는 상태를 따로 두지 않고 "받은 시각(updatedAt)이 닫은 시각보다 뒤인가"로 계산한다
  * (새로 받으면 다시 뜨고, 닫으면 다음에 받을 때까지 조용하다).
- * 모달은 /import 화면에서는 띄우지 않는다(이미 그 화면에서 처리한다).
+ * 로그인한 사용자는 모달 안에서 바로 미리보기·저장·결과 확인까지 한다(ImportProcessor), 화면 이동 없이 원래 보던 화면 위에서 끝난다.
+ * 저장 전에 창을 닫거나 브라우저를 종료해도 플레이는 보관소(6시간)에 남아서, 다음 화면 로드 때 이 모달이 다시 뜬다.
+ * "완료" 상태는 저장 뒤 pending이 비어도 결과 화면을 유지하려고 여기서 들고 있는다.
  */
 export function ImportHandoff() {
   const { status, user } = useAuth();
-  const pathname = usePathname();
-  const router = useRouter();
   const handoff = useHandoff();
   const [dismissedAt, setDismissedAt] = useState(0);
+  const [done, setDone] = useState<DoneInfo | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -33,7 +34,8 @@ export function ImportHandoff() {
   }, []);
 
   const eligible = status === "anonymous" || canUseImport(user?.role);
-  const open = eligible && status !== "loading" && handoff.pending.length > 0 && handoff.updatedAt > dismissedAt && pathname !== "/import";
+  const loggedIn = status === "authenticated" && !!user;
+  const open = eligible && status !== "loading" && ((handoff.pending.length > 0 && handoff.updatedAt > dismissedAt) || (loggedIn && done !== null));
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -48,43 +50,36 @@ export function ImportHandoff() {
 
   if (!open) return null;
 
-  const close = () => setDismissedAt(Date.now());
-  const loggedIn = status === "authenticated";
+  const close = () => {
+    setDismissedAt(Date.now());
+    setDone(null);
+  };
 
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby="import-handoff-title"
       onClose={close}
-      className="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-5 text-fg backdrop:bg-black/60"
+      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-5 text-fg backdrop:bg-black/60"
     >
-      <h2 id="import-handoff-title" className="text-lg font-extrabold">
-        공식 페이지에서 받은 플레이가 있습니다
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-fg-sub">
-        {handoff.pending.length}곡을 받았습니다. {loggedIn ? "내용을 확인하고 저장하면 내 기록에 반영됩니다. 아직 저장되지 않았습니다." : "로그인한 뒤 이어서 처리할 수 있습니다. 아직 저장되지 않았습니다."}
-      </p>
-      <div className="mt-5 flex gap-2.5">
-        <button type="button" onClick={close} className="h-11 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
-          나중에
-        </button>
-        {loggedIn ? (
-          <button
-            type="button"
-            onClick={() => {
-              close();
-              router.push("/import");
-            }}
-            className="h-11 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg"
-          >
-            이어서 처리
-          </button>
-        ) : (
-          <Link href="/login" onClick={close} className="flex h-11 flex-1 items-center justify-center rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg">
-            로그인
-          </Link>
-        )}
-      </div>
+      {loggedIn && user ? (
+        <ImportProcessor userId={user.id} done={done} onDone={setDone} onClose={close} />
+      ) : (
+        <>
+          <h2 id="import-handoff-title" className="text-lg font-extrabold">
+            공식 페이지에서 받은 플레이가 있습니다
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-fg-sub">{handoff.pending.length}곡을 받았습니다. 로그인한 뒤 이어서 처리할 수 있습니다. 아직 저장되지 않았습니다.</p>
+          <div className="mt-5 flex gap-2.5">
+            <button type="button" onClick={close} className="h-11 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
+              나중에
+            </button>
+            <Link href="/login" onClick={close} className="flex h-11 flex-1 items-center justify-center rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg">
+              로그인
+            </Link>
+          </div>
+        </>
+      )}
     </dialog>
   );
 }

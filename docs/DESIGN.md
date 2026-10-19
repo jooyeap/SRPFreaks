@@ -690,6 +690,7 @@ com.srpfreaks.backend
 | 2026-10-19 | 가져오기 북마클릿의 알림창(alert)을 **페이지 위 안내 창**(처리 중 → 결과)으로 바꾸고, 번역된 페이지는 서버로 보내지 않고 안내만 한다(설계의 "번역 흔적이 있으면 실행을 멈춘다"와 일치). 북마클릿 코드는 북마크 자체에 들어 있어서 **이전에 만든 북마크는 예전 동작 그대로**이므로 설정 화면에서 다시 발급해 북마크를 새로 만들어야 한다 |
 | 2026-10-19 | **D40 추가**(가져오기 방식 변경). 서버에 로그인 계정용 `POST /record-imports/preview`·`/commit` 추가(미리보기는 저장하지 않음, 결과 건에 `previousBestRate`), `enabled=false` 동안 이 경로도 ROOT 전용. 화면·북마클릿 변경은 다음 단계 |
 | 2026-10-19 | D40 화면: `/import`(받은 플레이 미리보기·선택 저장), `이어서 처리` 모달, 토큰 없는 북마클릿(`#srp=` 전달). 전달 방식을 `postMessage`에서 URL 조각으로 확정 |
+| 2026-10-19 | D40 (6) 개정: 받은 플레이의 미리보기·저장·결과를 `/import` 화면이 아니라 **어느 화면에서든 뜨는 모달**에서 처리(`ImportProcessor`). 저장 전에 종료돼도 보관소(localStorage 6시간)에 남아 다음 화면 로드 때 모달이 다시 뜬다 |
 | 2026-10-19 | **옛 가져오기 토큰 방식 제거**(D40 (7)): `/import-token`·`/imports/**`·토큰 필터·전용 Rate Limit/CORS·`import_tokens`(V13)·`/settings/import` 화면 삭제. 설정 `app.import-api.allowed-origins`·`rate-limit.import-per-minute`·환경변수 `IMPORT_ALLOWED_ORIGINS`도 없앰. `IMPORT_API_ENABLED`는 `/record-imports`를 닫는 스위치로 남김 |
 | 2026-10-19 | 가져오기를 **모두에게 열었다**: 서버 `app.import-api.enabled` 기본값을 true로, 프론트 `IMPORT_FEATURE_ENABLED`를 true로 바꿈(`IMPORT_API_ENABLED=false`로 다시 ROOT 전용으로 되돌릴 수 있다). 이용규약 확인은 공개 조건에서 제외(D34 (7)) |
 | 2026-10-19 | 가져오기를 **ROOT 전용 시험 단계**로 다시 켬: `app.import-api.enabled=false`(기본)이면 `/import-token` 발급·조회·폐기는 **ROOT만** 가능하고(이전에는 전부 403), `/imports/**`는 가져오기 토큰만 받는다(일반 사용자는 토큰을 만들 수 없어 쓸 수 없다). 프론트는 `lib/features.ts`의 `canUseImport(role)`로 ROOT에게만 설정 카드·화면을 보여 준다. 모두에게 열 때는 `IMPORT_FEATURE_ENABLED=true`와 서버 `IMPORT_API_ENABLED=true`를 함께 켠다 |
