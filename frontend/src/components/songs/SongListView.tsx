@@ -57,10 +57,10 @@ export function SongListView({
   const total = folders.data ? `${folders.data.totalSongs}곡 · ${folders.data.totalCharts}개` : null;
 
   return (
-    // 모바일은 세로 한 줄(flex-col). 데스크톱(md 이상)은 2열 격자로 바꿔 제목 줄 오른쪽 끝에 `평균 계산` 토글을 둔다(시안).
+    // 모바일은 세로 한 줄(flex-col). 데스크톱(md 이상)은 2열 격자로 바꿔 제목 줄 오른쪽 끝에 `평균 계산` 토글을 둔다(시안). 제목 줄도 md에서는 세로 가운데 정렬이라 `곡 등록` 버튼과 토글의 높이·세로 위치가 같다.
     // 토글은 DOM에서는 폴더 목록 바로 위(모바일 위치)에 그대로 두고, 격자 자리만 CSS로 제목 줄 오른쪽(md:col-start-2 md:row-start-1)으로 옮긴다.
     <div className="flex flex-col gap-4 md:grid md:grid-cols-[1fr_auto] md:items-start md:gap-x-3">
-      <div className="flex items-start justify-between gap-3 md:col-start-1 md:row-start-1">
+      <div className="flex items-start justify-between gap-3 md:col-start-1 md:row-start-1 md:items-center">
         <div>
           <h1 className="text-xl font-semibold text-fg">곡 목록</h1>
           {total ? <p className="mt-1 text-sm text-fg-sub font-num">{total}</p> : null}
