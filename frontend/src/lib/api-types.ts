@@ -442,7 +442,10 @@ export interface SetlistRecommendationResponse {
   requiredOther: number;
   ssChallenge: RecommendationItem[];
   sFill: RecommendationItem[];
-  page: number;
+  /** 두 묶음은 각자 자기 쪽을 넘긴다. */
+  ssPage: number;
+  sPage: number;
   size: number;
-  totalPages: number;
+  ssTotalPages: number;
+  sTotalPages: number;
 }

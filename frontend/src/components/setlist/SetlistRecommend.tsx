@@ -23,12 +23,14 @@ import { addToSetlist, fetchRecommendations, formatOffsetRange, SETLIST_LIMIT, s
 export function SetlistRecommend({ userId, addedIds, full }: { userId: number; addedIds: ReadonlySet<number>; full: boolean }) {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const [page, setPage] = useState(0);
+  // SS 기준과 S 기준은 각자 자기 쪽을 넘긴다(한쪽을 넘겨도 다른 쪽 목록은 그대로)
+  const [ssPage, setSsPage] = useState(0);
+  const [sPage, setSPage] = useState(0);
   const [adjusting, setAdjusting] = useState(false);
 
   const result = useQuery({
-    queryKey: setlistKeys.recommend(userId, page),
-    queryFn: ({ signal }) => fetchRecommendations(page, signal),
+    queryKey: setlistKeys.recommend(userId, ssPage, sPage),
+    queryFn: ({ signal }) => fetchRecommendations(ssPage, sPage, signal),
     placeholderData: keepPreviousData, // 쪽을 넘기는 동안 이전 목록을 유지해 화면이 깜빡이지 않는다
   });
 
@@ -89,6 +91,9 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
               title="SS 기준"
               range={formatOffsetRange(result.data.ssMin, result.data.ssMax)}
               items={result.data.ssChallenge}
+              page={ssPage}
+              totalPages={result.data.ssTotalPages}
+              onPage={setSsPage}
               addedIds={addedIds}
               full={full}
               pendingId={add.isPending ? add.variables?.songDifficultyId : undefined}
@@ -99,12 +104,14 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
             title="S 기준"
             range={result.data.status === "STARTER" ? `기준 난이도 ${formatTier(result.data.baseTier)} 이하` : formatOffsetRange(result.data.sMin, result.data.sMax)}
             items={result.data.sFill}
+            page={sPage}
+            totalPages={result.data.sTotalPages}
+            onPage={setSPage}
             addedIds={addedIds}
             full={full}
             pendingId={add.isPending ? add.variables?.songDifficultyId : undefined}
             onAdd={(item) => add.mutate(item)}
           />
-          <Pager page={page} totalPages={result.data.totalPages} onChange={setPage} />
         </>
       )}
     </section>
@@ -115,6 +122,9 @@ function Group({
   title,
   range,
   items,
+  page,
+  totalPages,
+  onPage,
   addedIds,
   full,
   pendingId,
@@ -123,6 +133,9 @@ function Group({
   title: string;
   range: string;
   items: readonly RecommendationItem[];
+  page: number;
+  totalPages: number;
+  onPage: (page: number) => void;
   addedIds: ReadonlySet<number>;
   full: boolean;
   pendingId: number | undefined;
@@ -170,6 +183,7 @@ function Group({
           })}
         </ul>
       )}
+      <Pager page={page} totalPages={totalPages} onChange={onPage} />
     </div>
   );
 }

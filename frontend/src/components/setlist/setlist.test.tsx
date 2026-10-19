@@ -28,7 +28,7 @@ function rec(id: number, over: Partial<RecommendationItem> = {}): Recommendation
 }
 const NO_BASE: SetlistRecommendationResponse = {
   status: "UNAVAILABLE", baseTier: null, ssMin: -0.6, ssMax: -0.1, sMin: -0.1, sMax: 0.4, customRange: false,
-  ratedSingle: 0, ratedOther: 0, requiredSingle: 5, requiredOther: 9, ssChallenge: [], sFill: [], page: 0, size: 5, totalPages: 0,
+  ratedSingle: 0, ratedOther: 0, requiredSingle: 5, requiredOther: 9, ssChallenge: [], sFill: [], ssPage: 0, sPage: 0, size: 5, ssTotalPages: 0, sTotalPages: 0,
 };
 
 const AUTH = {
@@ -224,7 +224,7 @@ describe("세트리스트", () => {
       fetchMock.mock.calls.filter(([input, init]) => String(input).includes("/setlist/recommend-range") && (init?.method ?? "GET") === method);
     const recommendCalls = () => fetchMock.mock.calls.filter(([input]) => String(input).includes("/setlist/recommendations"));
     const based = (over: Partial<SetlistRecommendationResponse> = {}): SetlistRecommendationResponse => ({
-      ...NO_BASE, status: "READY", baseTier: 6.2, totalPages: 1, ...over,
+      ...NO_BASE, status: "READY", baseTier: 6.2, ssTotalPages: 1, sTotalPages: 1, ...over,
     });
 
     it("평균 난이도와 SS 기준·S 기준 두 묶음을 보여 주고, 기록이 없으면 글자로 알린다", async () => {
@@ -369,14 +369,21 @@ describe("세트리스트", () => {
       expect(screen.getByRole("button", { name: "추천곡8 세트리스트에 담기" })).toBeDisabled(); // 30곡이 찼다
     });
 
-    it("추천이 여러 쪽이면 다음을 눌러 다음 쪽을 요청한다", async () => {
-      recommended = based({ ssChallenge: [rec(1)], totalPages: 2 });
+    it("SS 기준과 S 기준은 각자 쪽을 넘긴다: 한쪽의 다음을 눌러도 다른 쪽 번호는 그대로다", async () => {
+      recommended = based({ ssChallenge: [rec(1)], sFill: [rec(2)], ssTotalPages: 2, sTotalPages: 3 });
       renderWith(<SetlistTab userId={1} />);
 
       const section = await screen.findByRole("region", { name: "내 실력대 추천" });
-      fireEvent.click(await within(section).findByRole("button", { name: "다음" }));
+      const ss = (await within(section).findByRole("heading", { name: /SS 기준/ })).parentElement as HTMLElement;
+      const s = within(section).getByRole("heading", { name: /^S 기준/ }).parentElement as HTMLElement;
+      expect(within(ss).getByText("1 / 2")).toBeInTheDocument();
+      expect(within(s).getByText("1 / 3")).toBeInTheDocument();
 
-      await waitFor(() => expect(recommendCalls().some(([input]) => String(input).includes("page=1"))).toBe(true));
+      fireEvent.click(within(s).getByRole("button", { name: "다음" }));
+      await waitFor(() => expect(recommendCalls().some(([input]) => String(input).includes("ssPage=0") && String(input).includes("sPage=1"))).toBe(true));
+
+      fireEvent.click(within(ss).getByRole("button", { name: "다음" }));
+      await waitFor(() => expect(recommendCalls().some(([input]) => String(input).includes("ssPage=1") && String(input).includes("sPage=1"))).toBe(true));
     });
   });
 });
