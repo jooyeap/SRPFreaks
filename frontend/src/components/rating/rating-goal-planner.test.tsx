@@ -39,25 +39,37 @@ describe("RatingGoalPlanner", () => {
     expect(screen.getByLabelText("목표 점수")).toHaveAttribute("placeholder", "지금 1000.00");
   });
 
-  it("목표를 입력하면 곡 하나로 닿는 경로를 보여 준다 (1040: 에이곡 80.00% → 89.38%)", async () => {
+  it("목표를 입력하면 근처 폴더 평균과 구간 경로를 보여 준다 (1040: 평균 난이도 근처는 6.0 폴더 평균 85%, 에이곡 → 85%, 씨곡 → 94.38% 도전)", async () => {
     openAndType("1040");
     const list = await screen.findByRole("list", { name: "목표까지 올릴 곡" });
     const items = within(list).getAllByRole("listitem");
-    expect(items).toHaveLength(1);
+    // 직접 계산: 근처 6.0 폴더(에이 80%·씨 90%) 평균 85%라 85%까지가 현실적. 에이곡 80→85는 +21.33, 남은 18.67은 씨곡 90%→95% 쪽(도전):
+    // 282.667 + 18.667 = 301.333 → V = 15.0667 → 80 + 3.0667/3.2×15 = 94.375 → 94.38
+    expect(items).toHaveLength(2);
     expect(within(items[0]).getByRole("link", { name: "에이곡" })).toHaveAttribute("href", "/songs/1?from=table&chart=10");
-    expect(items[0]).toHaveTextContent("80.00% → 89.38%");
-    expect(items[0]).toHaveTextContent("+40.00");
+    expect(items[0]).toHaveTextContent("80.00% → 85.00%");
+    expect(items[0]).toHaveTextContent("+21.33");
+    expect(items[0]).not.toHaveTextContent("도전");
+    expect(items[1]).toHaveTextContent("씨곡");
+    expect(items[1]).toHaveTextContent("90.00% → 94.38%");
+    expect(items[1]).toHaveTextContent("도전");
+    expect(screen.getByText(/내 평균 난이도 근처 폴더/)).toHaveTextContent("6.0 평균 85.00% (2곡)");
     expect(screen.getByText(/목표까지/)).toHaveTextContent("+40.00");
-    expect(screen.getByText(/목표까지/)).toHaveTextContent("곡 1개를 올리면 달성합니다");
+    expect(screen.getByText(/목표까지/)).toHaveTextContent("곡 2개를 올리면 달성합니다");
+    expect(screen.queryByText(/근처 폴더만으로는 모자라서/)).toBeNull();
   });
 
-  it("한 곡으로 모자라면 여러 곡을 순서대로 보여 준다 (1100 = 64 + 21.33 + 14.67 → 3곡, 마지막은 93.44%)", async () => {
+  it("근처 폴더만으로 모자라면 다른 난이도의 곡도 넣고 알린다 (1100: 근처 최대 +85.33 → 비곡 90%→95% 포함, 에이곡 80%→93.44%)", async () => {
     openAndType("1100");
     const items = within(await screen.findByRole("list", { name: "목표까지 올릴 곡" })).getAllByRole("listitem");
     expect(items).toHaveLength(3);
     expect(items[0]).toHaveTextContent("에이곡");
-    expect(items[0]).toHaveTextContent("80.00% → 95.00%");
-    expect(items[2]).toHaveTextContent("93.44%");
+    expect(items[0]).toHaveTextContent("80.00% → 93.44%");
+    expect(items[1]).toHaveTextContent("씨곡");
+    expect(items[1]).toHaveTextContent("90.00% → 95.00%");
+    expect(items[2]).toHaveTextContent("비곡");
+    expect(items[2]).toHaveTextContent("90.00% → 95.00%");
+    expect(screen.getByText(/근처 폴더만으로는 모자라서/)).toBeInTheDocument();
   });
 
   it("목록 안의 곡을 모두 올려도 모자라면 모자란 점수를 알려 준다 (1200: 106.67만 오르고 93.33 모자람)", async () => {
