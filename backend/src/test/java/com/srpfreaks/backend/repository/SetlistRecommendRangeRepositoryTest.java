@@ -3,13 +3,13 @@ package com.srpfreaks.backend.repository;
 import com.srpfreaks.backend.entity.SetlistRecommendRange;
 import com.srpfreaks.backend.entity.User;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -20,7 +20,10 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** 사용자별 추천 범위를 실제 MySQL에서 확인한다(내 설정만, 초기화, DB CHECK·UNIQUE). Docker가 필요하다. */
+/**
+ * 사용자별 추천 범위를 실제 MySQL에서 확인한다(내 설정만, 초기화, DB CHECK·UNIQUE). Docker가 필요하다.
+ * EntityManager로 직접 flush하면 Spring이 예외를 변환하지 않아 Hibernate의 ConstraintViolationException(PersistenceException)이 그대로 나온다.
+ */
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -91,7 +94,7 @@ class SetlistRecommendRangeRepositoryTest {
         assertThatThrownBy(() -> {
             em.persist(range(me, "-1.00", "-0.50", "0.00", "1.00"));
             em.flush();
-        }).isInstanceOf(DataIntegrityViolationException.class);
+        }).isInstanceOf(PersistenceException.class);
     }
 
     @Test
@@ -99,7 +102,7 @@ class SetlistRecommendRangeRepositoryTest {
         assertThatThrownBy(() -> {
             em.persist(range(me, "-0.10", "-0.60", "-0.10", "0.40"));
             em.flush();
-        }).isInstanceOf(DataIntegrityViolationException.class);
+        }).isInstanceOf(PersistenceException.class);
     }
 
     @Test
@@ -107,6 +110,6 @@ class SetlistRecommendRangeRepositoryTest {
         assertThatThrownBy(() -> {
             em.persist(range(other, "-0.60", "-0.10", "-0.10", "3.50"));
             em.flush();
-        }).isInstanceOf(DataIntegrityViolationException.class);
+        }).isInstanceOf(PersistenceException.class);
     }
 }
