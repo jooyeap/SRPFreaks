@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { canUseImport } from "@/lib/features";
 import { ImportProcessor, type DoneInfo } from "@/components/import/ImportProcessor";
-import { consumeFragment, useHandoff } from "@/lib/import-handoff";
+import { clearHandoff, consumeFragment, isFreshArrival, useHandoff } from "@/lib/import-handoff";
+import { playKey, previewRecentPlays } from "@/lib/record-import";
 
 /**
  * 공식 페이지의 북마클릿이 넘긴 플레이가 있으면, 어느 화면에서든 모달로 "이어서 처리"를 안내한다 (D40).
@@ -35,7 +37,26 @@ export function ImportHandoff() {
 
   const eligible = status === "anonymous" || canUseImport(user?.role);
   const loggedIn = status === "authenticated" && !!user;
-  const open = eligible && status !== "loading" && ((handoff.pending.length > 0 && handoff.updatedAt > dismissedAt) || (loggedIn && done !== null));
+  const pendingOpen = handoff.pending.length > 0 && handoff.updatedAt > dismissedAt;
+  // 남아 있던 플레이는 먼저 조용히 미리보기만 해서, 저장할 기록이 하나도 없으면 안내 없이 비운다(있을 때만 모달을 띄운다)
+  // (방금 받은 것이 아니라 저장소에서 읽어 온 것 = 이전에 처리하지 못하고 남은 것, 예: 비정상 종료)
+  const restored = !isFreshArrival(handoff);
+  const peekKeys = handoff.pending.map(playKey).join("\n");
+  // 처리 모달이 같은 키로 미리보기를 이미 받아 둔 경우(방금 받은 플레이)에는 확인 대상이 아니다
+  const peekEnabled = loggedIn && pendingOpen && restored && done === null;
+  const peek = useQuery({
+    queryKey: ["import-preview", user?.id ?? 0, peekKeys],
+    queryFn: () => previewRecentPlays(handoff.pending),
+    enabled: peekEnabled,
+    staleTime: 0,
+    gcTime: 0,
+  });
+  const nothingToSave = peekEnabled && peek.isSuccess && !peek.data.results.some((r) => r.saved);
+  useEffect(() => {
+    if (nothingToSave) clearHandoff();
+  }, [nothingToSave]);
+  const waitingPeek = peekEnabled && !peek.isError && (peek.isPending || nothingToSave);
+  const open = eligible && status !== "loading" && ((pendingOpen && !waitingPeek) || (loggedIn && done !== null));
 
   useEffect(() => {
     const dialog = dialogRef.current;

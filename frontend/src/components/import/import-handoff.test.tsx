@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ImportHandoff } from "@/components/import/ImportHandoff";
 import { clearAccessToken } from "@/lib/auth-token";
-import { addPlays, clearHandoff, resetHandoffCache } from "@/lib/import-handoff";
+import { addPlays, clearHandoff, getHandoff, resetHandoffCache } from "@/lib/import-handoff";
 import type { ReadPlay } from "@/lib/import-bookmarklet";
 
 const push = vi.fn();
@@ -17,6 +17,13 @@ function login(role: "USER" | "ROOT") {
   return json({ accessToken: "t", tokenType: "Bearer", expiresIn: 900, user: { id: 1, email: "a@example.com", nickname: null, role, createdAt: "2026-10-01T00:00:00Z" } });
 }
 const play: ReadPlay = { playedAtMs: 1791796344469, gameType: "gf", title: "A", difficultyClass: "gf_mst", rate: 9650, ok: 0, miss: 1, translated: false, options: [] };
+
+// 이전 방문에서 받아 둔 것처럼 보이게 받은 시각을 과거로 돌린다
+function backdate() {
+  const raw = JSON.parse(window.localStorage.getItem("srp-import-handoff") ?? "{}");
+  window.localStorage.setItem("srp-import-handoff", JSON.stringify({ ...raw, updatedAt: Date.now() - 60_000 }));
+  resetHandoffCache();
+}
 
 describe("받은 플레이 이어서 처리 모달", () => {
   const fetchMock = vi.fn<typeof fetch>();
@@ -84,5 +91,34 @@ describe("받은 플레이 이어서 처리 모달", () => {
     renderIt();
     expect(await screen.findByRole("link", { name: "로그인" })).toHaveAttribute("href", "/login");
     expect(screen.getByText("공식 페이지에서 받은 플레이가 있습니다")).toBeInTheDocument();
+  });
+
+  it("이전에 남은 플레이에 저장할 기록이 없으면 안내 없이 비운다", async () => {
+    addPlays([play], 0);
+    backdate();
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(
+        String(input).endsWith("/auth/refresh")
+          ? login("ROOT")
+          : json({ saved: 0, skipped: 1, skippedByReason: { LOWER_THAN_BEST: 1 }, excludedSongs: [], results: [{ index: 0, title: "A", saved: false, reason: "LOWER_THAN_BEST", previousBestRate: 99 }] }),
+      ),
+    );
+    renderIt();
+    await waitFor(() => expect(getHandoff().pending).toHaveLength(0));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("이전에 남은 플레이에 저장할 기록이 있으면 모달이 뜬다", async () => {
+    addPlays([play], 0);
+    backdate();
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(
+        String(input).endsWith("/auth/refresh")
+          ? login("ROOT")
+          : json({ saved: 1, skipped: 0, skippedByReason: {}, excludedSongs: [], results: [{ index: 0, title: "A", saved: true, reason: null, previousBestRate: null }] }),
+      ),
+    );
+    renderIt();
+    expect(await screen.findByText("받은 플레이 1곡")).toBeInTheDocument();
   });
 });

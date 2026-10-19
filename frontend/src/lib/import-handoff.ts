@@ -135,6 +135,14 @@ export function parseFragment(hash: string): { plays: ReadPlay[]; unreadable: nu
 }
 
 /** 받은 플레이를 쌓는다. 같은 플레이(시각+곡+난이도)는 한 번만 둔다. 새로 들어온 곡 수를 돌려준다. */
+// 이 화면을 연 뒤 방금 받은 것의 시각(메모리에만 둔다). 저장소에서 읽어 온 것(이전 방문에서 남은 것)과 구분하는 데 쓴다
+let freshAt = 0;
+
+/** 방금 이 화면에서 받은 플레이인가(false면 이전에 받아 두고 처리하지 못한 것). */
+export function isFreshArrival(state: HandoffState): boolean {
+  return state.updatedAt === freshAt;
+}
+
 export function addPlays(incoming: ReadPlay[], unreadable: number): number {
   const current = getHandoff();
   const pendingKeys = new Set(current.pending.map(playKey));
@@ -150,7 +158,9 @@ export function addPlays(incoming: ReadPlay[], unreadable: number): number {
       added += 1;
     }
   }
-  set({ pending, receivedKeys: [...received], unreadable, updatedAt: Date.now() });
+  const updatedAt = Date.now();
+  freshAt = updatedAt; // set()이 구독자를 바로 깨우므로 먼저 기록한다
+  set({ pending, receivedKeys: [...received], unreadable, updatedAt });
   return added;
 }
 
@@ -185,6 +195,7 @@ export function pagesReceived(state: HandoffState): number {
 
 /** 테스트용: 메모리 캐시를 버려 저장소에서 다시 읽게 한다. */
 export function resetHandoffCache(): void {
+  freshAt = 0;
   cache = EMPTY;
   loaded = false;
 }
