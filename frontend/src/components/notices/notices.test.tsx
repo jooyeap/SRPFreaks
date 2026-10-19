@@ -57,24 +57,10 @@ describe("NoticesView", () => {
     expect(items[0]).toHaveTextContent("두 번째");
     expect(items[0]).toHaveTextContent("2026-10-09"); // UTC 15:30은 서울에서 다음 날 00:30
     expect(screen.queryByRole("form")).not.toBeInTheDocument();
-    // 목록에는 본문이 없고, 눌러서 상세로 들어가야 보인다
+    // 목록에는 본문이 없고 상세 페이지 링크만 있다
     expect(screen.queryByText(/줄1/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "두 번째 상세 보기" }));
-    expect(screen.getByRole("heading", { name: "두 번째" })).toBeInTheDocument();
-    expect(screen.getByText(/줄1/)).toBeInTheDocument();
+    expect(within(items[0]).getByRole("link")).toHaveAttribute("href", "/notices/2");
     expect(screen.queryByRole("button", { name: /고치기|삭제/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "← 목록으로" }));
-    expect(screen.getByRole("list", { name: "공지사항 목록" })).toBeInTheDocument();
-  });
-
-  it("HTML은 해석하지 않고 글자 그대로 보여 준다", async () => {
-    fetchMock.mockResolvedValue(json(pageOf([notice(1, "제목", "<b>굵게</b><script>alert(1)</script>")])));
-    const { container } = renderView(false);
-
-    fireEvent.click(await screen.findByRole("button", { name: "제목 상세 보기" }));
-    expect(await screen.findByText("<b>굵게</b><script>alert(1)</script>")).toBeInTheDocument();
-    expect(container.querySelector("script")).toBeNull();
-    expect(container.querySelector("b")).toBeNull();
   });
 
   it("공지가 없으면 안내 문구를 보여 준다", async () => {
@@ -135,46 +121,6 @@ describe("NoticesView", () => {
 
     expect(await within(form).findByText("권한이 없습니다.")).toBeInTheDocument();
     expect(within(form).getByLabelText("제목")).toHaveValue("제목");
-  });
-
-  it("관리자가 고치면 PUT으로 보낸다", async () => {
-    fetchMock.mockImplementation((_input, init) =>
-      Promise.resolve(init?.method === "PUT" ? json(notice(1, "고친 제목", "내용")) : json(pageOf([notice(1, "원래 제목", "내용")]))),
-    );
-    renderView(true);
-    fireEvent.click(await screen.findByRole("button", { name: "원래 제목 상세 보기" }));
-    fireEvent.click(await screen.findByRole("button", { name: "원래 제목 고치기" }));
-    const form = screen.getByRole("form", { name: "공지 고치기" });
-    expect(within(form).getByLabelText("제목")).toHaveValue("원래 제목");
-    fireEvent.change(within(form).getByLabelText("제목"), { target: { value: "고친 제목" } });
-    fireEvent.click(within(form).getByRole("button", { name: "저장" }));
-
-    await waitFor(() => expect(fetchMock.mock.calls.some((c) => c[1]?.method === "PUT")).toBe(true));
-    const put = fetchMock.mock.calls.find((c) => c[1]?.method === "PUT");
-    expect(String(put?.[0])).toContain("/admin/notices/1");
-    expect(JSON.parse(String(put?.[1]?.body))).toEqual({ title: "고친 제목", content: "내용" });
-    await waitFor(() => expect(screen.queryByRole("form", { name: "공지 고치기" })).not.toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "← 목록으로" })).toBeInTheDocument(); // 저장하면 상세로 돌아온다
-  });
-
-  it("삭제는 확인을 거치고, 취소하면 요청하지 않는다", async () => {
-    fetchMock.mockImplementation((_input, init) =>
-      Promise.resolve(init?.method === "DELETE" ? new Response(null, { status: 204 }) : json(pageOf([notice(1, "지울 공지", "내용")]))),
-    );
-    renderView(true);
-    fireEvent.click(await screen.findByRole("button", { name: "지울 공지 상세 보기" }));
-    fireEvent.click(await screen.findByRole("button", { name: "지울 공지 삭제" }));
-    const dialog = screen.getByRole("alertdialog", { name: "공지 삭제 확인" });
-    fireEvent.click(within(dialog).getByRole("button", { name: "취소" }));
-    expect(fetchMock.mock.calls.some((c) => c[1]?.method === "DELETE")).toBe(false);
-
-    fireEvent.click(screen.getByRole("button", { name: "지울 공지 삭제" }));
-    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "삭제" }));
-    await waitFor(() => expect(fetchMock.mock.calls.some((c) => c[1]?.method === "DELETE")).toBe(true));
-    const del = fetchMock.mock.calls.find((c) => c[1]?.method === "DELETE");
-    expect(String(del?.[0])).toContain("/admin/notices/1");
-    // 삭제하면 상세를 닫고 목록으로 돌아간다
-    await waitFor(() => expect(screen.queryByRole("button", { name: "← 목록으로" })).not.toBeInTheDocument());
   });
 
   it("페이지를 넘기면 다음 페이지를 요청한다", async () => {

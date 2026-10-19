@@ -80,6 +80,19 @@ class NoticeServiceTest {
     }
 
     @Test
+    void 한_건을_보면_응답_형식으로_돌려주고_없으면_404이다() {
+        when(noticeRepository.findById(3L)).thenReturn(Optional.of(notice(3L, "제목", "내용")));
+        when(noticeRepository.findById(99L)).thenReturn(Optional.empty());
+
+        NoticeResponse response = service.get(3L);
+
+        assertThat(response.id()).isEqualTo(3L);
+        assertThat(response.title()).isEqualTo("제목");
+        assertThatThrownBy(() -> service.get(99L))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND));
+    }
+
+    @Test
     void 쓰면_저장하고_감사_로그를_남긴다() {
         when(noticeRepository.save(any(Notice.class))).thenAnswer(inv -> {
             Notice saved = inv.getArgument(0);

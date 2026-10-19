@@ -36,7 +36,7 @@ export function HomeNotices({ viewerId }: { viewerId: number }) {
         <ul className="overflow-hidden rounded-2xl border border-line bg-card">
           {data.content.map((notice) => (
             <li key={notice.id} className="border-t border-row-line first:border-t-0">
-              <Link href="/notices" className="flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 hover:bg-table-head">
+              <Link href={`/notices/${notice.id}`} className="flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 hover:bg-table-head">
                 <span className="min-w-0 truncate text-sm font-semibold text-fg">{notice.title}</span>
                 <time dateTime={notice.createdAt} className="shrink-0 font-num text-xs text-fg-dim">
                   {formatPlayedDate(notice.createdAt)}

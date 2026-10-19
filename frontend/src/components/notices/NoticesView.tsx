@@ -1,22 +1,14 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 import { useToast } from "@/components/Toast";
 import { NoticeForm } from "@/components/notices/NoticeForm";
 import { ApiError } from "@/lib/api";
-import type { NoticeResponse } from "@/lib/api-types";
 import { formatPlayedDate } from "@/lib/format";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
-import {
-  createNotice,
-  deleteNotice,
-  fetchNotices,
-  noticeKeys,
-  NOTICES_PAGE_SIZE,
-  updateNotice,
-  type NoticeValues,
-} from "@/lib/notices";
+import { createNotice, fetchNotices, noticeKeys, NOTICES_PAGE_SIZE, type NoticeValues } from "@/lib/notices";
 
 function messageOf(error: unknown): string | null {
   if (!error) {
@@ -26,18 +18,13 @@ function messageOf(error: unknown): string | null {
 }
 
 /**
- * 공지사항 (D30). 로그인한 사용자는 최근 순으로 읽고, canWrite(ADMIN·ROOT)이면 쓰기·고치기·삭제도 할 수 있다.
- * 본문은 글자로만 그린다(줄바꿈만 살리고 HTML은 해석하지 않는다). 쓰기 권한은 서버가 다시 검사한다(403).
+ * 공지사항 목록 (D30). 게시판처럼 제목·작성일만 최근 순으로 보여 주고, 줄을 누르면 상세 페이지(/notices/{id})로 간다.
+ * 쓰기 폼은 canWrite(ADMIN·ROOT)일 때만 보인다(권한은 서버가 다시 검사한다). 고치기·삭제는 상세 페이지에서 한다.
  */
 export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite: boolean }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
-  // 고치는 중인 공지와 삭제 확인 중인 공지의 id (한 번에 하나씩)
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  // 게시판처럼 목록에서 한 건을 눌러 상세로 들어간다(null이면 목록). 상세는 현재 페이지 목록의 값을 그대로 쓴다
-  const [openId, setOpenId] = useState<number | null>(null);
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: noticeKeys.list(viewerId, page, NOTICES_PAGE_SIZE),
@@ -45,81 +32,16 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
     placeholderData: keepPreviousData,
   });
 
-  // 쓰기·고치기·삭제는 목록과 감사 로그(관리 작업은 거기에 남는다)를 오래된 것으로 표시한다
-  const refresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: noticeKeys.all });
-    await queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });
-  };
   const toast = useToast();
   const create = useMutation({
     mutationFn: (values: NoticeValues) => createNotice(values),
     onSuccess: async () => {
       toast("공지사항을 등록했습니다.");
-      await refresh();
+      // 목록과 감사 로그(관리 작업은 거기에 남는다)를 오래된 것으로 표시한다
+      await queryClient.invalidateQueries({ queryKey: noticeKeys.all });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });
     },
   });
-  const update = useMutation({
-    mutationFn: ({ id, values }: { id: number; values: NoticeValues }) => updateNotice(id, values),
-    onSuccess: async () => {
-      setEditingId(null);
-      toast("공지사항을 수정했습니다.");
-      await refresh();
-    },
-  });
-  const remove = useMutation({
-    mutationFn: (id: number) => deleteNotice(id),
-    onSuccess: async () => {
-      setDeletingId(null);
-      setOpenId(null); // 지운 공지의 상세는 닫고 목록으로 돌아간다
-      toast("공지사항을 삭제했습니다.");
-      await refresh();
-    },
-  });
-
-  const opened = openId === null ? undefined : data?.content.find((n) => n.id === openId);
-
-  // 상세: 한 건의 제목·날짜·본문과(쓰기 권한이면) 고치기·삭제. 목록으로 돌아가면 보던 페이지가 그대로 남는다
-  if (opened) {
-    return (
-      <div className="flex flex-col gap-4">
-        <button
-          type="button"
-          onClick={() => {
-            setEditingId(null);
-            setDeletingId(null);
-            setOpenId(null);
-          }}
-          className="inline-flex min-h-11 w-fit items-center rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
-        >
-          ← 목록으로
-        </button>
-        <NoticeItem
-          notice={opened}
-          canWrite={canWrite}
-          editing={editingId === opened.id}
-          deleting={deletingId === opened.id}
-          updatePending={update.isPending}
-          updateError={editingId === opened.id ? messageOf(update.error) : null}
-          removePending={remove.isPending}
-          removeError={deletingId === opened.id ? messageOf(remove.error) : null}
-          onEdit={() => {
-            update.reset();
-            setDeletingId(null);
-            setEditingId(opened.id);
-          }}
-          onCancelEdit={() => setEditingId(null)}
-          onSave={(values) => update.mutateAsync({ id: opened.id, values })}
-          onAskDelete={() => {
-            remove.reset();
-            setEditingId(null);
-            setDeletingId(opened.id);
-          }}
-          onCancelDelete={() => setDeletingId(null)}
-          onConfirmDelete={() => remove.mutate(opened.id)}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -146,21 +68,16 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
         <p className="text-sm text-fg-sub">등록된 공지사항이 없습니다.</p>
       ) : (
         <>
-          {/* 게시판 목록: 제목 한 줄 + 작성일. 본문은 눌러서 들어간 상세에서만 보인다 */}
+          {/* 게시판 목록: 제목 한 줄 + 작성일. 본문은 상세 페이지에서만 보인다 */}
           <ul aria-label="공지사항 목록" className="overflow-hidden rounded-2xl border border-line bg-card">
             {data.content.map((notice) => (
               <li key={notice.id} className="border-t border-line first:border-t-0">
-                <button
-                  type="button"
-                  onClick={() => setOpenId(notice.id)}
-                  aria-label={`${notice.title} 상세 보기`}
-                  className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-table-head"
-                >
+                <Link href={`/notices/${notice.id}`} className="flex min-h-12 items-center justify-between gap-3 px-4 py-3 hover:bg-table-head">
                   <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-fg">{notice.title}</span>
                   <time dateTime={notice.createdAt} className="shrink-0 font-num text-xs text-fg-dim">
                     {formatPlayedDate(notice.createdAt)}
                   </time>
-                </button>
+                </Link>
               </li>
             ))}
           </ul>
@@ -188,114 +105,5 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
         </>
       )}
     </div>
-  );
-}
-
-function NoticeItem({
-  notice,
-  canWrite,
-  editing,
-  deleting,
-  updatePending,
-  updateError,
-  removePending,
-  removeError,
-  onEdit,
-  onCancelEdit,
-  onSave,
-  onAskDelete,
-  onCancelDelete,
-  onConfirmDelete,
-}: {
-  notice: NoticeResponse;
-  canWrite: boolean;
-  editing: boolean;
-  deleting: boolean;
-  updatePending: boolean;
-  updateError: string | null;
-  removePending: boolean;
-  removeError: string | null;
-  onEdit: () => void;
-  onCancelEdit: () => void;
-  onSave: (values: NoticeValues) => Promise<unknown>;
-  onAskDelete: () => void;
-  onCancelDelete: () => void;
-  onConfirmDelete: () => void;
-}) {
-  if (editing) {
-    return (
-      <div>
-        <NoticeForm
-          label="공지 고치기"
-          initial={{ title: notice.title, content: notice.content }}
-          submitLabel="저장"
-          pending={updatePending}
-          error={updateError}
-          onSubmit={onSave}
-          onCancel={onCancelEdit}
-        />
-      </div>
-    );
-  }
-  return (
-    <article className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
-      <div className="flex flex-col gap-1 border-b border-line pb-3">
-        <h1 className="text-lg font-bold text-fg">{notice.title}</h1>
-        <time dateTime={notice.createdAt} className="font-num text-xs text-fg-dim">
-          {formatPlayedDate(notice.createdAt)}
-        </time>
-      </div>
-      {/* 글자로만 그린다: 줄바꿈은 살리고(whitespace-pre-wrap) HTML은 해석하지 않는다 */}
-      <p className="whitespace-pre-wrap break-words text-sm text-fg">{notice.content}</p>
-      {canWrite ? (
-        deleting ? (
-          <div role="alertdialog" aria-label="공지 삭제 확인" className="flex flex-col gap-2">
-            <p className="text-sm text-fg">이 공지를 삭제할까요? 삭제한 공지는 되돌릴 수 없습니다.</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={removePending}
-                onClick={onConfirmDelete}
-                className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
-              >
-                {removePending ? "삭제 중" : "삭제"}
-              </button>
-              <button
-                type="button"
-                disabled={removePending}
-                onClick={onCancelDelete}
-                className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
-              >
-                취소
-              </button>
-            </div>
-            {removeError ? (
-              <p role="alert" className="text-sm text-fg">
-                {removeError}
-              </p>
-            ) : null}
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={onEdit}
-              aria-label={`${notice.title} 고치기`}
-              className="rounded-lg border border-chip-line px-3 py-1 text-xs text-fg-sub hover:text-fg"
-            >
-              고치기
-            </button>
-            <button
-              type="button"
-              onClick={onAskDelete}
-              aria-label={`${notice.title} 삭제`}
-              className="rounded-lg border border-chip-line px-3 py-1 text-xs text-fg-sub hover:text-fg"
-            >
-              삭제
-            </button>
-          </div>
-        )
-      ) : null}
-    </article>
   );
 }

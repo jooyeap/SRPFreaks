@@ -42,6 +42,12 @@ public class NoticeService {
                 NoticeResponse::from);
     }
 
+    /** 한 건 보기. 없으면 404(다른 목록 API와 같이 존재 여부 외에 알려 주는 것이 없다). */
+    @Transactional(readOnly = true)
+    public NoticeResponse get(Long noticeId) {
+        return NoticeResponse.from(noticeRepository.findById(noticeId).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND)));
+    }
+
     public NoticeResponse create(Long actorId, NoticeRequest request) {
         Notice notice = noticeRepository.save(
                 Notice.create(userRepository.getReferenceById(actorId), request.title(), request.content()));

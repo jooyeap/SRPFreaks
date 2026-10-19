@@ -35,7 +35,7 @@ describe("HomeNotices", () => {
     expect(screen.queryByText("본문은 홈에 보이지 않는다")).toBeNull();
     // 3건만 요청한다
     expect(String(fetchMock.mock.calls[0][0])).toContain("size=3");
-    expect(screen.getByRole("link", { name: /세 번째/ })).toHaveAttribute("href", "/notices");
+    expect(screen.getByRole("link", { name: /세 번째/ })).toHaveAttribute("href", "/notices/3");
   });
 
   it("공지가 없으면 안내만 보여 준다", async () => {
