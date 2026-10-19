@@ -56,6 +56,13 @@ function group(over: Partial<TierGroupResponse>): TierGroupResponse {
 const players: PlayerSummaryResponse[] = [
   { userId: 7, rank: 1, nickname: "あか", tier: { key: "GOLD", displayName: "Gold", minScore: 5500, nextMinScore: 6000, nextDisplayName: "Platinum" }, totalScore: 5842.6 },
 ];
+const noticesPage: PageResponse<{ id: number; title: string; content: string; createdAt: string; updatedAt: string }> = {
+  content: [{ id: 1, title: "점검 안내", content: "본문", createdAt: "2026-10-18T15:30:00Z", updatedAt: "2026-10-18T15:30:00Z" }],
+  page: 0,
+  size: 3,
+  totalElements: 1,
+  totalPages: 1,
+};
 const playersPage: PageResponse<PlayerSummaryResponse> = { content: players, page: 0, size: 5, totalElements: 1, totalPages: 1 };
 
 function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
@@ -126,6 +133,7 @@ describe("HomeDashboard", () => {
       const url = String(input);
       if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
       if (url.includes("/skills/me")) return Promise.resolve(json(skill));
+      if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
       if (url.includes("/players")) return Promise.resolve(json(playersPage));
       if (url.includes("/entries")) {
         const page: PageResponse<TierGroupResponse> = { content: groups, page: 0, size: 20, totalElements: 3, totalPages: 1 };
@@ -136,6 +144,15 @@ describe("HomeDashboard", () => {
     renderView();
 
     expect(screen.getByRole("heading", { name: /홍길동님의 홈/ })).toBeInTheDocument();
+    // 공지사항: 제목 줄과 전체 보기 링크, 최근 공지 제목
+    const notices = await screen.findByRole("region", { name: "공지사항" });
+    expect(within(notices).getByRole("link", { name: "전체 보기" })).toHaveAttribute("href", "/notices");
+    expect(await within(notices).findByText("점검 안내")).toBeInTheDocument();
+    // 바로가기 3개에는 아이콘(장식)이 붙는다: 이름은 글자 그대로이고 아이콘은 화면 읽기 프로그램에 숨겨진다
+    for (const name of ["곡 목록", "서열표", "마이페이지"]) {
+      const link = screen.getAllByRole("link").find((el) => el.textContent?.includes(name) && el.querySelector("svg[aria-hidden='true']"));
+      expect(link, `${name} 바로가기 아이콘`).toBeDefined();
+    }
     expect(await screen.findByLabelText("플레이어 티어 White")).toBeInTheDocument();
     expect(screen.getByText("123.45")).toBeInTheDocument();
 
@@ -182,6 +199,7 @@ describe("HomeDashboard", () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
+      if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
       if (url.includes("/players")) return Promise.resolve(json({ ...playersPage, content: [], totalElements: 0, totalPages: 0 }));
       return Promise.resolve(url.includes("/skills/me") ? json(skill) : json([{ ...table, noteOption: "NORMAL" }]));
     });
@@ -195,6 +213,7 @@ describe("HomeDashboard", () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
+      if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
       if (url.includes("/players")) return Promise.resolve(json({ code: "INTERNAL", message: "x", timestamp: "t" }, 500));
       return Promise.resolve(url.includes("/skills/me") ? json(skill) : json([{ ...table, noteOption: "NORMAL" }]));
     });
@@ -208,6 +227,7 @@ describe("HomeDashboard", () => {
       const url = String(input);
       if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
       if (url.includes("/skills/me")) return Promise.resolve(json({ code: "INTERNAL", message: "x", timestamp: "t" }, 500));
+      if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
       if (url.includes("/players")) return Promise.resolve(json(playersPage));
       if (url.includes("/entries")) {
         const page: PageResponse<TierGroupResponse> = { content: groups, page: 0, size: 20, totalElements: 3, totalPages: 1 };
@@ -224,6 +244,7 @@ describe("HomeDashboard", () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
+      if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
       if (url.includes("/players")) return Promise.resolve(json(playersPage));
       return Promise.resolve(url.includes("/skills/me") ? json(skill) : json([{ ...table, noteOption: "NORMAL" }]));
     });
