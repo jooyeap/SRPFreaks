@@ -36,6 +36,8 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
   // 고치는 중인 공지와 삭제 확인 중인 공지의 id (한 번에 하나씩)
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  // 게시판처럼 목록에서 한 건을 눌러 상세로 들어간다(null이면 목록). 상세는 현재 페이지 목록의 값을 그대로 쓴다
+  const [openId, setOpenId] = useState<number | null>(null);
 
   const { data, isPending, isError, error } = useQuery({
     queryKey: noticeKeys.list(viewerId, page, NOTICES_PAGE_SIZE),
@@ -68,10 +70,56 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
     mutationFn: (id: number) => deleteNotice(id),
     onSuccess: async () => {
       setDeletingId(null);
+      setOpenId(null); // 지운 공지의 상세는 닫고 목록으로 돌아간다
       toast("공지사항을 삭제했습니다.");
       await refresh();
     },
   });
+
+  const opened = openId === null ? undefined : data?.content.find((n) => n.id === openId);
+
+  // 상세: 한 건의 제목·날짜·본문과(쓰기 권한이면) 고치기·삭제. 목록으로 돌아가면 보던 페이지가 그대로 남는다
+  if (opened) {
+    return (
+      <div className="flex flex-col gap-4">
+        <button
+          type="button"
+          onClick={() => {
+            setEditingId(null);
+            setDeletingId(null);
+            setOpenId(null);
+          }}
+          className="inline-flex min-h-11 w-fit items-center rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
+        >
+          ← 목록으로
+        </button>
+        <NoticeItem
+          notice={opened}
+          canWrite={canWrite}
+          editing={editingId === opened.id}
+          deleting={deletingId === opened.id}
+          updatePending={update.isPending}
+          updateError={editingId === opened.id ? messageOf(update.error) : null}
+          removePending={remove.isPending}
+          removeError={deletingId === opened.id ? messageOf(remove.error) : null}
+          onEdit={() => {
+            update.reset();
+            setDeletingId(null);
+            setEditingId(opened.id);
+          }}
+          onCancelEdit={() => setEditingId(null)}
+          onSave={(values) => update.mutateAsync({ id: opened.id, values })}
+          onAskDelete={() => {
+            remove.reset();
+            setEditingId(null);
+            setDeletingId(opened.id);
+          }}
+          onCancelDelete={() => setDeletingId(null)}
+          onConfirmDelete={() => remove.mutate(opened.id)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -98,33 +146,22 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
         <p className="text-sm text-fg-sub">등록된 공지사항이 없습니다.</p>
       ) : (
         <>
-          <ul aria-label="공지사항 목록" className="flex flex-col gap-3">
+          {/* 게시판 목록: 제목 한 줄 + 작성일. 본문은 눌러서 들어간 상세에서만 보인다 */}
+          <ul aria-label="공지사항 목록" className="overflow-hidden rounded-2xl border border-line bg-card">
             {data.content.map((notice) => (
-              <NoticeItem
-                key={notice.id}
-                notice={notice}
-                canWrite={canWrite}
-                editing={editingId === notice.id}
-                deleting={deletingId === notice.id}
-                updatePending={update.isPending}
-                updateError={editingId === notice.id ? messageOf(update.error) : null}
-                removePending={remove.isPending}
-                removeError={deletingId === notice.id ? messageOf(remove.error) : null}
-                onEdit={() => {
-                  update.reset();
-                  setDeletingId(null);
-                  setEditingId(notice.id);
-                }}
-                onCancelEdit={() => setEditingId(null)}
-                onSave={(values) => update.mutateAsync({ id: notice.id, values })}
-                onAskDelete={() => {
-                  remove.reset();
-                  setEditingId(null);
-                  setDeletingId(notice.id);
-                }}
-                onCancelDelete={() => setDeletingId(null)}
-                onConfirmDelete={() => remove.mutate(notice.id)}
-              />
+              <li key={notice.id} className="border-t border-line first:border-t-0">
+                <button
+                  type="button"
+                  onClick={() => setOpenId(notice.id)}
+                  aria-label={`${notice.title} 상세 보기`}
+                  className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-table-head"
+                >
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-fg">{notice.title}</span>
+                  <time dateTime={notice.createdAt} className="shrink-0 font-num text-xs text-fg-dim">
+                    {formatPlayedDate(notice.createdAt)}
+                  </time>
+                </button>
+              </li>
             ))}
           </ul>
           <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">
@@ -187,7 +224,7 @@ function NoticeItem({
 }) {
   if (editing) {
     return (
-      <li>
+      <div>
         <NoticeForm
           label="공지 고치기"
           initial={{ title: notice.title, content: notice.content }}
@@ -197,14 +234,14 @@ function NoticeItem({
           onSubmit={onSave}
           onCancel={onCancelEdit}
         />
-      </li>
+      </div>
     );
   }
   return (
-    <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-[17px] font-bold text-fg">{notice.title}</h2>
-        <time dateTime={notice.createdAt} className="shrink-0 font-num text-xs text-fg-dim">
+    <article className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
+      <div className="flex flex-col gap-1 border-b border-line pb-3">
+        <h1 className="text-lg font-bold text-fg">{notice.title}</h1>
+        <time dateTime={notice.createdAt} className="font-num text-xs text-fg-dim">
           {formatPlayedDate(notice.createdAt)}
         </time>
       </div>
@@ -259,6 +296,6 @@ function NoticeItem({
           </div>
         )
       ) : null}
-    </li>
+    </article>
   );
 }
