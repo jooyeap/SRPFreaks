@@ -14,6 +14,7 @@ import { StageBadge } from "@/components/table/StageBadge";
 import { ApiError } from "@/lib/api";
 import type { SetlistItemResponse } from "@/lib/api-types";
 import { EMPTY_MARK, formatRate, formatTier } from "@/lib/format";
+import { useOneHandMode } from "@/lib/one-hand";
 import {
   clearDoneSetlist,
   doneCount,
@@ -23,6 +24,18 @@ import {
   SETLIST_PAGE_SIZE,
   setlistKeys,
 } from "@/lib/setlist";
+
+/** 세트리스트 줄을 기록 창이 받는 채보 정보로 바꾼다 */
+function toRecordChart(item: SetlistItemResponse): RecordChart {
+  return {
+    songDifficultyId: item.songDifficultyId,
+    title: item.title,
+    part: item.part,
+    difficulty: item.difficulty,
+    level: item.level,
+    tier: item.tier,
+  };
+}
 
 function errorText(error: unknown): string {
   return error instanceof ApiError ? error.message : "처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
@@ -37,12 +50,28 @@ export function SetlistTab({ userId }: { userId: number }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [recording, setRecording] = useState<RecordChart | null>(null);
+  const oneHand = useOneHandMode();
 
   const list = useQuery({ queryKey: setlistKeys.list(userId), queryFn: ({ signal }) => fetchSetlist(signal) });
   const items = list.data?.content ?? [];
   const { page, totalPages, pageItems, setPage } = usePaged(items, SETLIST_PAGE_SIZE);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: setlistKeys.all });
+
+  /**
+   * 한 손 모드에서 기록을 저장하면 창을 닫지 않고 세트리스트의 다음 곡으로 넘어간다(게임장에서 곡마다 창을 다시 여는 수고를 줄인다).
+   * 지금 곡 뒤쪽에서 아직 완료하지 않은 첫 줄, 없으면 앞쪽의 첫 미완료 줄이다. 방금 저장한 곡은 서버의 완료 표시가 아직 안 바뀌었을 수 있어 직접 뺀다.
+   * 더 입력할 곡이 없으면 null을 돌려줘서 창이 평소처럼 닫힌다. 한 손 모드가 꺼져 있으면 항상 null이다(기존 동작 그대로).
+   */
+  const nextChartAfterSave = (saved: RecordChart): RecordChart | null => {
+    if (!oneHand) {
+      return null;
+    }
+    const index = items.findIndex((item) => item.songDifficultyId === saved.songDifficultyId);
+    const order = [...items.slice(index + 1), ...items.slice(0, Math.max(index, 0))];
+    const next = order.find((item) => !item.done && item.songDifficultyId !== saved.songDifficultyId);
+    return next ? toRecordChart(next) : null;
+  };
   const remove = useMutation({
     mutationFn: (id: number) => removeFromSetlist(id),
     onSuccess: async () => {
@@ -110,16 +139,7 @@ export function SetlistTab({ userId }: { userId: number }) {
                   key={item.id}
                   item={item}
                   removing={remove.isPending && remove.variables === item.id}
-                  onRecord={() =>
-                    setRecording({
-                      songDifficultyId: item.songDifficultyId,
-                      title: item.title,
-                      part: item.part,
-                      difficulty: item.difficulty,
-                      level: item.level,
-                      tier: item.tier,
-                    })
-                  }
+                  onRecord={() => setRecording(toRecordChart(item))}
                   onRemove={() => remove.mutate(item.id)}
                 />
               ))}
@@ -129,7 +149,7 @@ export function SetlistTab({ userId }: { userId: number }) {
         )}
       </div>
 
-      <RecordDialog chart={recording} onClose={() => setRecording(null)} />
+      <RecordDialog chart={recording} onClose={() => setRecording(null)} nextChartAfterSave={nextChartAfterSave} />
     </div>
   );
 }
