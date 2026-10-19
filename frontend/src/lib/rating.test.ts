@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlayerTierResponse, SkillEntryResponse, SkillResponse } from "@/lib/api-types";
-import { atRiskEntries, goalHint, skillKeys, tierProgress } from "@/lib/rating";
+import { atRiskEntries, goalHint, quickestRise, skillKeys, tierProgress } from "@/lib/rating";
 
 const orange: PlayerTierResponse = {
   key: "ORANGE",
@@ -98,5 +98,52 @@ describe("goalHint (레이팅 목표 안내)", () => {
 
   it("최고 티어이면 목표가 없다", () => {
     expect(goalHint(skillOf({ tier: top }))).toBeNull();
+  });
+});
+
+describe("quickestRise (티어 승급 예고)", () => {
+  // 직접 계산: 6.0(R=15) 80% = 15×0.8×20 = 240 → 95%는 304, 늘어나는 점수 64.
+  //           7.0(R=20) 90% = (16 + 3.2×10/15)×20 = 362.67 → 95%는 384, 늘어나는 점수 21.33.
+  const entryOf = (over: Partial<SkillEntryResponse>): SkillEntryResponse =>
+    ({ rank: 1, songDifficultyId: 1, songId: 1, title: "곡", tier: 6.0, achievementRate: 80, score: 240, ...over }) as SkillEntryResponse;
+  const skillOf = (single: SkillEntryResponse[], other: SkillEntryResponse[], total: number, tier = orange): SkillResponse =>
+    ({ totalScore: total, tier, single, other, singleLimit: 15, otherLimit: 25 }) as unknown as SkillResponse;
+
+  it("95%까지 올렸을 때 점수가 가장 많이 늘어나는 곡 하나를 고른다 (6.0/80% +64 > 7.0/90% +21.33)", () => {
+    const a = entryOf({ songId: 1, title: "A", tier: 6.0, achievementRate: 80, score: 240 });
+    const b = entryOf({ songId: 2, songDifficultyId: 2, title: "B", tier: 7.0, achievementRate: 90, score: 362.67 });
+    const rise = quickestRise(skillOf([b], [a], 1100));
+    expect(rise?.entry.title).toBe("A");
+    expect(rise?.gain).toBeCloseTo(64, 5);
+    expect(rise?.newTotal).toBeCloseTo(1164, 5);
+    expect(rise?.reachesNext).toBe(false); // 다음 티어(1500)까지는 아직 멀다
+  });
+
+  it("그 곡만 올려도 다음 티어에 닿으면 reachesNext가 true다 (합계 1450 + 64 = 1514 ≥ 1500)", () => {
+    const a = entryOf({});
+    expect(quickestRise(skillOf([a], [], 1450))?.reachesNext).toBe(true);
+    // 경계: 합계 + 증가량이 정확히 1500이면 도달 (1436 + 64)
+    expect(quickestRise(skillOf([a], [], 1436))?.reachesNext).toBe(true);
+    expect(quickestRise(skillOf([a], [], 1435.99))?.reachesNext).toBe(false);
+  });
+
+  it("이미 95% 이상인 곡은 올릴 여지가 없어 건너뛴다", () => {
+    const done = entryOf({ achievementRate: 95, score: 304 });
+    const max = entryOf({ achievementRate: 100, score: 304, songId: 2, songDifficultyId: 2 });
+    expect(quickestRise(skillOf([done], [max], 1100))).toBeNull();
+  });
+
+  it("목록이 비었으면 null이다", () => {
+    expect(quickestRise(skillOf([], [], 0))).toBeNull();
+  });
+
+  it("최고 티어(더 올라갈 티어 없음)이면 null이다", () => {
+    expect(quickestRise(skillOf([entryOf({})], [], 12000, top))).toBeNull();
+  });
+
+  it("증가량이 같으면 목록 앞쪽(단일 먼저)을 고른다", () => {
+    const s = entryOf({ songId: 1, title: "단일곡" });
+    const o = entryOf({ songId: 2, songDifficultyId: 2, title: "복합곡" });
+    expect(quickestRise(skillOf([s], [o], 1100))?.entry.title).toBe("단일곡");
   });
 });
