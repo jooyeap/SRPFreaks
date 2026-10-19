@@ -16,6 +16,7 @@ const FIELD = "w-full rounded-[10px] border border-line bg-card px-3 py-2 text-f
 
 /**
  * 목표 레이팅: 목표 합계를 직접 입력하면 "어떤 곡을 몇 %까지 올리면 닿는지" 경로를 보여 준다 (계산은 lib/rating-goal.ts).
+ * 경로는 80/85/90/95% 구간 단위이고, 평균 난이도 근처 폴더의 곡을 폴더 평균에 맞춰 현실적인 순서로 고른다. 평균보다 높은 구간은 `도전`으로 표시한다.
  * 입력값은 저장하지 않는다(새로고침하면 비어 있다). 서열표·곡 마스터 같은 다른 요청도 보내지 않고, 이미 받은 내 레이팅 목록만 쓴다.
  * 처음에는 접혀 있다(레이팅 목록이 먼저 보이게). 입력하는 즉시 계산한다.
  */
@@ -108,6 +109,18 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
 
       {plan ? (
         <div aria-live="polite" className="flex flex-col gap-2">
+          {plan.folders.length > 0 ? (
+            <p className="text-xs text-fg-sub">
+              내 평균 난이도 근처 폴더:{" "}
+              {plan.folders.map((f, i) => (
+                <span key={f.tier}>
+                  {i > 0 ? " · " : ""}
+                  <span className="font-num text-fg">{f.tier.toFixed(1)}</span> 평균 <span className="font-num text-fg">{formatRate(f.averageRate)}%</span> ({f.count}곡)
+                </span>
+              ))}
+            </p>
+          ) : null}
+          {plan.widened ? <p className="text-xs text-fg-sub">근처 폴더만으로는 모자라서 다른 난이도의 곡도 포함했습니다.</p> : null}
           <p className="text-sm text-fg">
             목표까지 <span className="font-num font-semibold">+{formatScore(plan.needed)}</span>
             {plan.reachable ? (
@@ -120,7 +133,7 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
           </p>
           {plan.reachable ? null : (
             <p role="alert" className="text-sm text-fg">
-              목록 안의 곡을 모두 95%까지 올려도 <span className="font-num font-semibold">+{formatScore(plan.maxGain)}</span>만 늘어나서{" "}
+              쓸 수 있는 곡을 모두 95%까지 올려도 <span className="font-num font-semibold">+{formatScore(plan.maxGain)}</span>만 늘어나서{" "}
               <span className="font-num font-semibold">{formatScore(plan.shortfall)}</span>점이 모자랍니다. 더 높은 난이도의 곡을 레이팅 목록에 넣어야 합니다.
             </p>
           )}
@@ -138,6 +151,7 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
                   <span className="font-num">
                     {formatRate(step.fromRate)}% → <span className="font-semibold text-fg">{formatRate(step.toRate)}%</span>
                   </span>
+                  {step.challenge ? <span className="rounded-md border border-chip-line px-1.5 py-0.5 text-[11px] text-fg">도전</span> : null}
                   <span className="font-num text-fg">+{formatScore(step.gain)}</span>
                 </li>
               ))}
@@ -149,7 +163,7 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
             </p>
           ) : null}
           <p className="text-xs leading-relaxed text-fg-dim">
-            지금 레이팅 목록에 있는 곡만 계산합니다. 곡은 95%까지 올릴 수 있고(95%에서 점수가 최대), 목록 밖의 곡을 새로 넣는 경우는 반영하지 않습니다.
+            지금 레이팅 목록에 있는 곡만 계산합니다. 곡은 80·85·90·95% 구간 단위로 올리고(95%에서 점수가 최대), 폴더 평균보다 높은 구간은 도전으로 표시합니다. 목록 밖의 곡을 새로 넣는 경우는 반영하지 않습니다.
           </p>
         </div>
       ) : null}
