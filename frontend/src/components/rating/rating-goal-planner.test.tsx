@@ -48,7 +48,7 @@ describe("RatingGoalPlanner", () => {
     expect(items[0]).toHaveTextContent("80.00% → 89.38%");
     expect(items[0]).toHaveTextContent("+40.00");
     expect(screen.getByText(/목표까지/)).toHaveTextContent("+40.00");
-    expect(screen.getByText(/목표까지/)).toHaveTextContent("곡 1개를 올리면 닿습니다");
+    expect(screen.getByText(/목표까지/)).toHaveTextContent("곡 1개를 올리면 달성합니다");
   });
 
   it("한 곡으로 모자라면 여러 곡을 순서대로 보여 준다 (1100 = 64 + 21.33 + 14.67 → 3곡, 마지막은 93.44%)", async () => {

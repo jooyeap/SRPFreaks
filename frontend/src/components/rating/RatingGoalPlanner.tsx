@@ -112,7 +112,7 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
             목표까지 <span className="font-num font-semibold">+{formatScore(plan.needed)}</span>
             {plan.reachable ? (
               <>
-                , 곡 <span className="font-num font-semibold">{plan.steps.length}</span>개를 올리면 닿습니다.
+                , 곡 <span className="font-num font-semibold">{plan.steps.length}</span>개를 올리면 달성합니다.
               </>
             ) : (
               "."
