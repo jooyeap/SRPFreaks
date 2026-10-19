@@ -28,6 +28,17 @@ function messageOf(error: unknown): string {
   return error instanceof ApiError ? error.message : "처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
 }
 
+function GuideImage({ src, alt, caption }: { src: string; alt: string; caption: string }) {
+  return (
+    <figure className="mt-2 flex flex-col gap-1">
+      {/* 정적 안내 이미지(개인 정보는 가림 처리). next/image 최적화가 필요 없는 작은 파일이라 일반 img를 쓴다 */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={alt} width={954} height={118} loading="lazy" className="h-auto w-full rounded-lg border border-line" />
+      <figcaption className="text-xs text-fg-sub">{caption}</figcaption>
+    </figure>
+  );
+}
+
 /** 북마크 만들기 + 사용 방법. 토큰이 필요 없고 북마크에는 사이트 주소만 들어 있다. */
 function BookmarkGuide() {
   const toast = useToast();
@@ -85,6 +96,11 @@ function BookmarkGuide() {
         </button>
       </div>
       <p className="text-xs text-fg-sub">링크를 북마크 바로 끌어다 놓거나, 주소를 복사해 새 북마크의 URL칸에 붙여넣습니다.</p>
+      <GuideImage
+        src="/import-guide/bookmark-drag.png"
+        alt="북마크 바에 SRP 가져오기 북마크가 추가된 브라우저 화면"
+        caption="북마크 바에 SRP 가져오기가 추가된 모습(개인 정보는 가렸습니다)."
+      />
       <details className="rounded-xl border border-chip-line p-3">
         <summary className="min-h-8 cursor-pointer text-sm font-bold text-fg">북마크 없이 주소창에서 실행하기 (모바일)</summary>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-fg-sub">
@@ -99,6 +115,11 @@ function BookmarkGuide() {
             주소창에 <b className="font-num text-fg">j</b> 한 글자만 입력하고, 바로 뒤에 복사한 내용을 붙여넣어 이동합니다.
           </li>
         </ol>
+        <GuideImage
+          src="/import-guide/address-bar.png"
+          alt="주소창에 j를 입력하고 복사한 스크립트를 붙여넣은 브라우저 화면"
+          caption="주소창에 j를 입력한 뒤 붙여넣은 모습(개인 정보는 가렸습니다)."
+        />
         <p className="mt-2 text-xs text-fg-sub">브라우저가 붙여넣은 글자가 javascript:로 시작하면 그 부분을 지우기 때문에, 맨 앞 j만 직접 입력합니다. 일부 앱 안의 브라우저에서는 실행되지 않을 수 있습니다.</p>
       </details>
     </section>

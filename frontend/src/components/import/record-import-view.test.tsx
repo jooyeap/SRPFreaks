@@ -135,6 +135,14 @@ describe("최근 플레이 가져오기 화면", () => {
     expect(screen.getByText(/맨 앞 j만 직접 입력합니다/)).toBeInTheDocument();
   });
 
+  it("안내 스크린샷 두 장을 대체 텍스트와 함께 보여 준다", async () => {
+    clearHandoff();
+    renderIt();
+    const bookmark = await screen.findByRole("img", { name: /북마크 바에 SRP 가져오기/ });
+    expect(bookmark).toHaveAttribute("src", "/import-guide/bookmark-drag.png");
+    expect(screen.getByRole("img", { name: /주소창에 j를 입력/ })).toHaveAttribute("src", "/import-guide/address-bar.png");
+  });
+
   it("일반 사용자도 가져오기 화면을 쓸 수 있고 준비 중 안내는 보이지 않는다", async () => {
     clearHandoff();
     fetchMock.mockImplementation((input) => Promise.resolve(String(input).endsWith("/auth/refresh") ? login("USER") : json({})));
