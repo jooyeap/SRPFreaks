@@ -135,10 +135,11 @@ describe("최근 플레이 가져오기 화면", () => {
     expect(screen.getByText(/맨 앞 j만 직접 입력합니다/)).toBeInTheDocument();
   });
 
-  it("일반 사용자에게는 준비 중 안내만 보인다", async () => {
+  it("일반 사용자도 가져오기 화면을 쓸 수 있고 준비 중 안내는 보이지 않는다", async () => {
+    clearHandoff();
     fetchMock.mockImplementation((input) => Promise.resolve(String(input).endsWith("/auth/refresh") ? login("USER") : json({})));
     renderIt();
-    expect(await screen.findByText("이 기능은 아직 준비 중입니다.")).toBeInTheDocument();
-    expect(fetchMock.mock.calls.some(([u]) => String(u).includes("/record-imports/"))).toBe(false);
+    expect(await screen.findByText(/받은 플레이가 없습니다/)).toBeInTheDocument();
+    expect(screen.queryByText("이 기능은 아직 준비 중입니다.")).toBeNull();
   });
 });

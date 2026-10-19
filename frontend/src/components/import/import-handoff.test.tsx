@@ -85,12 +85,11 @@ describe("받은 플레이 이어서 처리 모달", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("준비 중인 일반 사용자에게는 모달을 보이지 않는다", async () => {
+  it("일반 사용자에게도 받은 플레이 모달이 보인다(모두에게 열려 있다)", async () => {
     fetchMock.mockResolvedValue(login("USER"));
     addPlays([play], 0);
     renderIt();
-    await act(async () => {});
-    expect(screen.queryByText("공식 페이지에서 받은 플레이가 있습니다")).toBeNull();
+    expect(await screen.findByText("공식 페이지에서 받은 플레이가 있습니다")).toBeInTheDocument();
   });
 
   it("로그아웃 상태면 로그인으로 안내한다", async () => {

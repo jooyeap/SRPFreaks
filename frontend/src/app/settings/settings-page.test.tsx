@@ -45,8 +45,8 @@ describe("설정 화면", () => {
     expect(screen.getByLabelText("닉네임")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "탈퇴하기" })).toHaveAttribute("href", "/settings/withdraw");
-    // 최근 플레이 가져오기는 동작 확인 전까지 ROOT에게만 보인다(lib/features.ts)
-    expect(screen.queryByRole("link", { name: "가져오기 설정" })).toBeNull();
+    // 최근 플레이 가져오기는 모두에게 열려 있다(lib/features.ts, 2026-10-19)
+    expect(screen.getByRole("link", { name: "가져오기 설정" })).toHaveAttribute("href", "/settings/import");
   });
 
   it("데스크톱은 폭 760px까지 넓어지고 모바일은 448px 한 열이다", async () => {
