@@ -23,7 +23,10 @@ describe("가져오기 표시 규칙", () => {
   it("난이도 클래스를 파트와 난이도로 바꾼다", () => {
     expect(describePlayChart("gf_mst")).toBe("Guitar | MAS");
     expect(describePlayChart("bass_mst")).toBe("Bass | MAS");
-    expect(describePlayChart("gf_ext")).toBeNull();
+    expect(describePlayChart("gf_ext")).toBe("Guitar | EXT");
+    expect(describePlayChart("bass_adv")).toBe("Bass | ADV");
+    expect(describePlayChart("gf_bsc")).toBe("Guitar | BSC");
+    expect(describePlayChart("dm_ext")).toBeNull();
   });
 
   it("곡 목록에 없는 사유만 제외로 본다", () => {

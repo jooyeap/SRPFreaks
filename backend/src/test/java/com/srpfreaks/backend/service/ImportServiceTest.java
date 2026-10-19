@@ -221,7 +221,7 @@ class ImportServiceTest {
 
     @Test
     void 확인되지_않은_난이도_클래스는_건너뛴다() {
-        assertThat(run(play("Alpha", "gf_ext", 5000, 1, 1)).skippedByReason())
+        assertThat(run(play("Alpha", "dm_ext", 5000, 1, 1)).skippedByReason())
                 .containsEntry(ImportSkipReason.UNKNOWN_DIFFICULTY, 1);
     }
 

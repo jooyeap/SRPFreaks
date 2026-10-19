@@ -61,9 +61,19 @@ public class ImportService {
     /** 시계가 조금 어긋난 기기를 봐주는 여유. 이보다 미래의 플레이 시각은 받지 않는다 */
     private static final Duration FUTURE_TOLERANCE = Duration.ofDays(1);
 
-    /** 확인된 난이도 클래스만 읽는다. ADV/EXT는 실제 값이 확인되면 여기에 추가한다(DESIGN.md 18.4.0). */
+    /**
+     * 읽는 난이도 클래스. 구조는 `{gf|bass}_{bsc|adv|ext|mst}`다. mst는 샘플로 확인했고, 드럼의 `dm_ext`·`dm_adv`로
+     * 같은 구조임을 확인해 나머지를 같은 규칙으로 추가했다. 기타/베이스의 bsc·adv·ext 값은 실제 플레이로 재확인한다(DESIGN.md 18.4.0).
+     * 모르는 클래스는 UNKNOWN_DIFFICULTY로 건너뛰므로, 이름이 다르면 저장되지 않을 뿐 다른 채보로 잘못 저장되지는 않는다.
+     */
     private static final Map<String, ChartKey> DIFFICULTY_CLASSES = Map.of(
+            "gf_bsc", new ChartKey(InstrumentPart.GUITAR, DifficultyType.BASIC),
+            "gf_adv", new ChartKey(InstrumentPart.GUITAR, DifficultyType.ADVANCED),
+            "gf_ext", new ChartKey(InstrumentPart.GUITAR, DifficultyType.EXTREME),
             "gf_mst", new ChartKey(InstrumentPart.GUITAR, DifficultyType.MASTER),
+            "bass_bsc", new ChartKey(InstrumentPart.BASS, DifficultyType.BASIC),
+            "bass_adv", new ChartKey(InstrumentPart.BASS, DifficultyType.ADVANCED),
+            "bass_ext", new ChartKey(InstrumentPart.BASS, DifficultyType.EXTREME),
             "bass_mst", new ChartKey(InstrumentPart.BASS, DifficultyType.MASTER));
 
     record ChartKey(InstrumentPart part, DifficultyType difficulty) {
