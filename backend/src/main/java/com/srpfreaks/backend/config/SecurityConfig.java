@@ -3,8 +3,6 @@ package com.srpfreaks.backend.config;
 import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.common.error.JsonErrorWriter;
 import com.srpfreaks.backend.repository.UserRepository;
-import com.srpfreaks.backend.service.ImportTokenService;
-import com.srpfreaks.backend.security.ImportTokenAuthenticationFilter;
 import com.srpfreaks.backend.security.JwtAuthenticationFilter;
 import com.srpfreaks.backend.security.JwtTokenProvider;
 import com.srpfreaks.backend.security.RateLimitFilter;
@@ -47,17 +45,11 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtTokenProvider jwtTokenProvider,
                                            UserRepository userRepository,
-                                           ImportTokenService importTokenService,
                                            AppProperties appProperties,
                                            Clock clock) throws Exception {
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtTokenProvider, userRepository);
         RateLimitFilter rateLimitFilter = new RateLimitFilter(
                 new RateLimiter(appProperties.getRateLimit().getAuthPerMinute(), clock), clock);
-        // 가져오기는 로그인과 횟수가 섞이지 않게 제한기를 따로 둔다
-        RateLimitFilter importRateLimitFilter = new RateLimitFilter(
-                new RateLimiter(appProperties.getRateLimit().getImportPerMinute(), clock), clock,
-                ImportTokenAuthenticationFilter.PATH_PREFIX);
-        ImportTokenAuthenticationFilter importTokenFilter = new ImportTokenAuthenticationFilter(importTokenService);
 
         http
             // Access Token을 Authorization 헤더로 보내는 stateless API라 세션/CSRF 쿠키를 쓰지 않는다.
@@ -87,31 +79,24 @@ public class SecurityConfig {
                         "/api/v1/auth/google", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                 // 헬스체크(서버 생존 여부만 응답한다). 운영에서는 nginx가 바깥 요청을 막고 내부(Docker)만 부른다
                 .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                // 가져오기 기능을 모두에게 열기 전(app.import-api.enabled=false)에는 토큰 발급·조회·폐기와 사이트 화면용 미리보기·저장을 ROOT만 할 수 있다(ROOT가 먼저 시험해 보는 단계).
-                // 가져오기 API(/imports/**)는 가져오기 토큰만 받고, 이 토큰은 위 경로에서만 만들어지므로 일반 사용자는 쓸 수 없다.
+                // 가져오기 기능을 닫아 둘 때(app.import-api.enabled=false)에는 사이트 화면용 미리보기·저장(/record-imports)을 ROOT만 할 수 있다(문제가 생겼을 때 되돌리는 스위치).
                 .requestMatchers(request -> !appProperties.getImportApi().isEnabled() && isImportRootGatedPath(request.getRequestURI()))
                         .hasRole("ROOT")
-                // 가져오기 경로는 가져오기 전용 토큰(ROLE_IMPORT)만 들어올 수 있다. 로그인 토큰(ROLE_USER 등)은 여기서 403이다.
-                // 반대로 가져오기 토큰은 이 경로 밖에서는 인증되지 않으므로 다른 API를 부를 수 없다.
-                .requestMatchers("/api/v1/imports/**").hasRole("IMPORT")
                 .requestMatchers("/api/v1/**").authenticated()
                 // 그 밖의 모든 경로(/error, 문서 경로 포함)는 막는다
                 .anyRequest().denyAll())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-            // JWT 필터 다음에 와야 한다: 가져오기 경로에서는 JWT가 만든 로그인 상태를 지우고 가져오기 토큰만 인정한다
-            .addFilterAfter(importTokenFilter, JwtAuthenticationFilter.class)
-            .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class)
-            .addFilterBefore(importRateLimitFilter, JwtAuthenticationFilter.class);
+            .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }
 
     /**
-     * 가져오기 토큰 발급·조회·폐기(D34)와 사이트 화면용 미리보기·저장(`/record-imports`, D40) 경로.
-     * 기능을 모두에게 열기 전(app.import-api.enabled=false)에는 ROOT만 부를 수 있다.
+     * 사이트 화면용 미리보기·저장(`/record-imports`, D40) 경로.
+     * 기능을 닫아 둘 때(app.import-api.enabled=false)에는 ROOT만 부를 수 있다.
      */
     static boolean isImportRootGatedPath(String uri) {
-        return uri.equals("/api/v1/import-token") || uri.startsWith(RECORD_IMPORT_PREFIX);
+        return uri.startsWith(RECORD_IMPORT_PREFIX);
     }
 
     static final String RECORD_IMPORT_PREFIX = "/api/v1/record-imports/";
@@ -132,27 +117,8 @@ public class SecurityConfig {
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // 가져오기 경로만 공식 사이트(북마클릿이 실행되는 페이지)의 Origin을 허용한다. 쿠키는 쓰지 않고(credentials 없음),
-        // 가져오기 토큰을 Authorization 헤더로 받는다.
-        // 순서가 중요하다: UrlBasedCorsConfigurationSource는 "가장 구체적인 패턴"이 아니라 먼저 등록된 일치 패턴을 쓴다.
-        // /api/**를 먼저 등록하면 가져오기 경로도 그 설정(공식 사이트 Origin 불허)으로 처리돼 사전 요청(preflight)이 막힌다.
-        source.registerCorsConfiguration("/api/v1/imports/**", importCorsConfiguration(appProperties));
         source.registerCorsConfiguration("/api/**", config);
         return source;
-    }
-
-    CorsConfiguration importCorsConfiguration(AppProperties appProperties) {
-        List<String> origins = appProperties.getImportApi().getAllowedOrigins();
-        if (origins.stream().anyMatch(o -> o.contains("*"))) {
-            throw new IllegalStateException("가져오기 허용 Origin에는 와일드카드(*)를 쓸 수 없습니다.");
-        }
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(origins);
-        config.setAllowedMethods(List.of("POST", "OPTIONS"));
-        config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        config.setAllowCredentials(false);
-        config.setMaxAge(3600L);
-        return config;
     }
 
     /** ROOT > ADMIN > USER. 상위 권한은 하위 권한이 가능한 일을 모두 할 수 있다 (D22). */

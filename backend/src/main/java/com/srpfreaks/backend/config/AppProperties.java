@@ -53,17 +53,13 @@ public class AppProperties {
     public static class RateLimit {
         /** 로그인/재발급/로그아웃 요청을 IP당 1분에 허용하는 횟수. */
         private int authPerMinute = 10;
-        /** 가져오기 요청을 IP당 1분에 허용하는 횟수. 공식 페이지 한 장(5곡)이 한 요청이라 4장을 가져와도 4번이다. */
-        private int importPerMinute = 20;
     }
 
-    /** 가져오기 API(D34) 설정. 북마클릿이 공식 페이지에서 직접 부르므로 그 Origin만 따로 허용한다. */
+    /** 최근 플레이 가져오기(D40) 설정. */
     @Getter
     @Setter
     public static class ImportApi {
-        /** true이면 모든 로그인 사용자가 가져오기 토큰을 발급할 수 있다. false(기본)이면 토큰 발급·조회·폐기는 ROOT만 가능하다(공식 페이지에서 동작을 확인하는 동안). */
+        /** true이면 모든 로그인 사용자가 사이트 화면용 가져오기(/record-imports)를 쓸 수 있다. false이면 ROOT만 가능하다(문제가 생겼을 때 되돌리는 스위치). 클래스 기본값은 false이고 application.yml이 true로 켠다. */
         private boolean enabled = false;
-        /** 가져오기 경로에만 허용하는 Origin(쿠키 없이). 기본은 공식 사이트 주소다. 와일드카드(*)는 쓰지 않는다. */
-        private List<String> allowedOrigins = new ArrayList<>(List.of("https://p.eagate.573.jp"));
     }
 }
