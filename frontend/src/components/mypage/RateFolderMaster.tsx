@@ -40,17 +40,20 @@ export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAx
                   } ${isSelected ? "border-fg ring-1 ring-fg" : "border-line hover:bg-table-head"}`}
                 >
                   {reached ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
-                  <span className="flex items-baseline gap-2">
+                  {/* 폭이 18rem이라 한 줄에 다 담으면 큰 숫자(196개, 88.18%)에서 줄이 갈린다. 윗줄: 제목 · 개수 · 평균(오른쪽), 아랫줄: 단계 막대 · 기록 수(오른쪽). 글자는 줄바꿈하지 않는다 */}
+                  <span className="flex items-baseline gap-2 whitespace-nowrap">
                     <span className="font-num text-base font-semibold text-fg">{folderLabel(axis, folder.key)}</span>
                     <span className="text-xs text-fg-sub">{folder.total}개</span>
-                    <span className="ml-auto text-xs text-fg-dim">
-                      기록 {folder.recorded}/{folder.total}
-                    </span>
-                    <span className="text-xs text-fg-sub">
+                    <span className="ml-auto text-xs text-fg-sub">
                       평균 <span className="font-num font-semibold text-fg">{formatFolderAverage(folderAverage(folder, includeZero))}</span>
                     </span>
                   </span>
-                  <StageBar counts={counts} total={folder.total} className="h-1.5" />
+                  <span className="flex items-center gap-2">
+                    <StageBar counts={counts} total={folder.total} className="h-1.5 min-w-0 flex-1" />
+                    <span className="shrink-0 whitespace-nowrap text-xs text-fg-dim">
+                      기록 {folder.recorded}/{folder.total}
+                    </span>
+                  </span>
                 </button>
               </li>
             );
