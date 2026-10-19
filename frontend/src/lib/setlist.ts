@@ -9,7 +9,7 @@ export const setlistKeys = {
   // 검색 결과에는 내 기록이 섞여 있으므로 사용자 id를 넣는다
   search: (userId: number, q: string, page: number) => ["setlist", "search", userId, q, page] as const,
   // 추천은 내 기록·세트리스트에 따라 달라진다. "setlist"로 시작해서 기록 저장·담기·빼기 때 함께 무효화된다
-  recommend: (userId: number, page: number) => ["setlist", "recommend", userId, page] as const,
+  recommend: (userId: number, ssPage: number, sPage: number) => ["setlist", "recommend", userId, ssPage, sPage] as const,
 };
 
 /** 서버(SetlistItem.MAX_ITEMS)와 같은 한도다. 서버도 다시 검사한다. */
@@ -37,8 +37,8 @@ export function searchCharts(q: string, page: number, signal?: AbortSignal): Pro
 export const RECOMMEND_PAGE_SIZE = 5;
 
 /** 내 평균 난이도 기준 추천(SS 도전 / S 채우기). 이미 담은 채보는 서버가 빼고 준다. */
-export function fetchRecommendations(page: number, signal?: AbortSignal): Promise<SetlistRecommendationResponse> {
-  return apiFetch<SetlistRecommendationResponse>("/setlist/recommendations", { query: { page, size: RECOMMEND_PAGE_SIZE }, signal });
+export function fetchRecommendations(ssPage: number, sPage: number, signal?: AbortSignal): Promise<SetlistRecommendationResponse> {
+  return apiFetch<SetlistRecommendationResponse>("/setlist/recommendations", { query: { ssPage, sPage, size: RECOMMEND_PAGE_SIZE }, signal });
 }
 
 export function addToSetlist(songDifficultyId: number): Promise<SetlistItemResponse> {
