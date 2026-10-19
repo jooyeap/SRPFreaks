@@ -1,26 +1,31 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useId, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { ChartBadge } from "@/components/table/Badges";
 import type { SkillResponse } from "@/lib/api-types";
+import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { formatRate, formatScore } from "@/lib/format";
 import { goalFormSchema, goalPlan, type GoalFormValues } from "@/lib/rating-goal";
 
 /** 경로가 길면(목표가 멀면 곡이 많다) 앞쪽만 보이고 나머지는 개수로 알린다 */
 const VISIBLE_STEPS = 8;
+/** 밀려나는 곡도 많으면 앞쪽만 보이고 나머지는 개수로 알린다 */
+const VISIBLE_DISPLACED = 5;
 
 const FIELD = "w-full rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
 /**
  * 목표 레이팅: 목표 합계를 직접 입력하면 "어떤 곡을 몇 %까지 올리면 닿는지" 경로를 보여 준다 (계산은 lib/rating-goal.ts).
  * 경로는 80/85/90/95% 구간 단위이고, 평균 난이도 근처 폴더의 곡을 폴더 평균에 맞춰 현실적인 순서로 고른다. 평균보다 높은 구간은 `도전`으로 표시한다.
- * 입력값은 저장하지 않는다(새로고침하면 비어 있다). 서열표·곡 마스터 같은 다른 요청도 보내지 않고, 이미 받은 내 레이팅 목록만 쓴다.
- * 처음에는 접혀 있다(레이팅 목록이 먼저 보이게). 입력하는 즉시 계산한다.
+ * 입력값은 저장하지 않는다(새로고침하면 비어 있다). 후보는 내 레이팅 목록과 서열표(목록 밖 채보와 내 기록)다.
+ * 서열표는 레이팅 예상 값·서열표 화면과 같은 쿼리 키라 이미 받았으면 다시 받지 않는다. 받지 못하면 목록 안의 곡만으로 계산한다.
+ * 처음에는 접혀 있다(레이팅 목록이 먼저 보이게). 열었을 때 서열표를 받고, 입력하는 즉시 계산한다.
  */
-export function RatingGoalPlanner({ skill }: { skill: SkillResponse }) {
+export function RatingGoalPlanner({ userId, skill }: { userId: number; skill: SkillResponse }) {
   const [open, setOpen] = useState(false);
   const bodyId = useId();
 
@@ -43,15 +48,28 @@ export function RatingGoalPlanner({ skill }: { skill: SkillResponse }) {
       </button>
       {open ? (
         <div id={bodyId} className="border-t border-line px-4 py-3">
-          <GoalBody skill={skill} />
+          <GoalBody userId={userId} skill={skill} />
         </div>
       ) : null}
     </section>
   );
 }
 
-function GoalBody({ skill }: { skill: SkillResponse }) {
+function GoalBody({ userId, skill }: { userId: number; skill: SkillResponse }) {
   const inputId = useId();
+  const tables = useQuery({
+    queryKey: tableKeys.list,
+    queryFn: ({ signal }) => fetchDifficultyTables(signal),
+    select: pickRatingTable,
+  });
+  const tableId = tables.data?.id ?? null;
+  const groups = useQuery({
+    queryKey: allGroupsKey(userId, tableId ?? 0),
+    queryFn: ({ signal }) => fetchAllTierGroups(tableId ?? 0, signal),
+    enabled: tableId !== null,
+  });
+  const loadingPool = tables.isPending || (tableId !== null && groups.isPending);
+  const poolFailed = tables.isError || groups.isError;
   const {
     register,
     control,
@@ -63,7 +81,7 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
 
   // 형식이 맞는 값만 계산한다. 비었거나 형식이 틀리면 결과 대신 위의 오류 문구가 보인다
   const parsed = goalFormSchema.safeParse({ target: raw });
-  const plan = parsed.success ? goalPlan(skill, Number(parsed.data.target)) : null;
+  const plan = parsed.success ? goalPlan(skill, Number(parsed.data.target), groups.data) : null;
   const alreadyReached = parsed.success && plan === null;
 
   const nextMin = skill.tier.nextMinScore;
@@ -107,6 +125,9 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
         <p className="text-sm text-fg">이미 목표를 넘었습니다. 지금 레이팅은 {formatScore(skill.totalScore)}입니다.</p>
       ) : null}
 
+      {plan && loadingPool ? <p className="text-xs text-fg-sub">서열표를 불러오는 중입니다. 목록 밖의 곡은 불러온 뒤 반영됩니다.</p> : null}
+      {plan && poolFailed ? <p className="text-xs text-fg-sub">서열표를 불러오지 못해 레이팅 목록 안의 곡만 계산했습니다.</p> : null}
+
       {plan ? (
         <div aria-live="polite" className="flex flex-col gap-2">
           {plan.folders.length > 0 ? (
@@ -149,8 +170,9 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
                   </Link>
                   <ChartBadge part={step.entry.part} difficulty={step.entry.difficulty} level={step.entry.level} />
                   <span className="font-num">
-                    {formatRate(step.fromRate)}% → <span className="font-semibold text-fg">{formatRate(step.toRate)}%</span>
+                    {step.fromRate === null ? "기록 없음" : `${formatRate(step.fromRate)}%`} → <span className="font-semibold text-fg">{formatRate(step.toRate)}%</span>
                   </span>
+                  {step.entering ? <span className="rounded-md border border-chip-line px-1.5 py-0.5 text-[11px] text-fg">목록 진입</span> : null}
                   {step.challenge ? <span className="rounded-md border border-chip-line px-1.5 py-0.5 text-[11px] text-fg">도전</span> : null}
                   <span className="font-num text-fg">+{formatScore(step.gain)}</span>
                 </li>
@@ -162,8 +184,30 @@ function GoalBody({ skill }: { skill: SkillResponse }) {
               외 <span className="font-num">{plan.steps.length - VISIBLE_STEPS}</span>곡은 같은 방식으로 올리면 됩니다(여지가 큰 순서).
             </p>
           ) : null}
+          {plan.displaced.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-semibold text-fg-sub">이 경로로 목록에서 밀려나는 곡</p>
+              <ul aria-label="목록에서 밀려나는 곡" className="flex flex-col gap-1">
+                {plan.displaced.slice(0, VISIBLE_DISPLACED).map((d) => (
+                  <li key={d.entry.songDifficultyId} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-sub">
+                    <span className="text-[13px] text-fg">{d.entry.title}</span>
+                    <ChartBadge part={d.entry.part} difficulty={d.entry.difficulty} level={d.entry.level} />
+                    <span className="font-num">
+                      {formatRate(d.rate)}% · {formatScore(d.score)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {plan.displaced.length > VISIBLE_DISPLACED ? (
+                <p className="text-xs text-fg-dim">
+                  외 <span className="font-num">{plan.displaced.length - VISIBLE_DISPLACED}</span>곡
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <p className="text-xs leading-relaxed text-fg-dim">
-            지금 레이팅 목록에 있는 곡만 계산합니다. 곡은 80·85·90·95% 구간 단위로 올리고(95%에서 점수가 최대), 폴더 평균보다 높은 구간은 도전으로 표시합니다. 목록 밖의 곡을 새로 넣는 경우는 반영하지 않습니다.
+            레이팅 목록과 서열표의 곡을 후보로 계산합니다. 곡은 80·85·90·95% 구간 단위로 올리고(95%에서 점수가 최대), 폴더 평균보다 높은 구간은 도전으로 표시합니다.
+            목록 밖의 곡이 들어오면 목록 맨 아래 곡이 밀려나므로, 늘어나는 점수는 밀려난 곡을 뺀 값입니다.
           </p>
         </div>
       ) : null}
