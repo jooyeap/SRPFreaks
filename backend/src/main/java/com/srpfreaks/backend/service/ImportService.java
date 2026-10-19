@@ -46,7 +46,7 @@ import java.util.Set;
  *  2) 같은 채보가 여럿이면 달성률이 높은 것부터 처리한다
  *  3) 내 기존 최고 기록보다 낮으면 저장하지 않는다(같으면 풀콤보를 새로 얻을 때만 저장)
  * 마스터에 없는 곡은 자동으로 만들지 않고 건너뛰고 곡명을 알려 준다.
- * 모든 작업의 사용자는 가져오기 토큰에서 정해진 userId뿐이다(요청에 사용자 id를 받지 않는다).
+ * 모든 작업의 사용자는 인증에서 정해진 userId뿐이다(요청에 사용자 id를 받지 않는다). 가져오기 토큰 경로와 로그인 계정용 `record-imports`(미리보기·저장)가 이 서비스를 같이 쓴다.
  */
 @Service
 @RequiredArgsConstructor
@@ -80,8 +80,22 @@ public class ImportService {
     private final UserRepository userRepository;
     private final Clock clock;
 
+    /** 가져오기 토큰 경로와 저장 API가 쓴다: 걸러서 실제로 저장한다. */
     @Transactional
     public ImportResultResponse importRecentPlays(Long userId, ImportRecentPlaysRequest request) {
+        return process(userId, request, true);
+    }
+
+    /**
+     * 미리보기: 저장과 같은 규칙으로 걸러서 건별 결과만 돌려주고 아무것도 저장하지 않는다(읽기 전용 트랜잭션).
+     * 결과의 saved는 "지금 저장하면 저장될 건"이다. 저장 API는 요청을 다시 같은 규칙으로 검증하므로 미리보기 값을 믿지 않는다.
+     */
+    @Transactional(readOnly = true)
+    public ImportResultResponse previewRecentPlays(Long userId, ImportRecentPlaysRequest request) {
+        return process(userId, request, false);
+    }
+
+    private ImportResultResponse process(Long userId, ImportRecentPlaysRequest request, boolean commit) {
         User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
         Instant now = clock.instant();
         List<ImportPlayRequest> plays = request.plays();
@@ -128,7 +142,7 @@ public class ImportService {
             candidates.add(new Candidate(i, play, chart, rate, isFullCombo(play), Instant.ofEpochMilli(play.playedAtMs())));
         }
 
-        saveImproved(user, candidates, results);
+        saveImproved(user, candidates, results, commit);
 
         List<ImportPlayResult> list = List.of(results);
         Map<ImportSkipReason, Integer> byReason = new EnumMap<>(ImportSkipReason.class);
@@ -150,7 +164,7 @@ public class ImportService {
      * 비교 대상은 곡 목록·서열표와 같은 "대표 기록"(findBestByUser: 최고 달성률, 하나라도 FC면 FC)이다.
      * 풀콤보는 기록 전체에서 한 번이라도 얻었으면 단계(FC)에 이미 반영돼 있으므로, 같은 달성률에서는 FC를 새로 얻을 때만 저장한다.
      */
-    private void saveImproved(User user, List<Candidate> candidates, ImportPlayResult[] results) {
+    private void saveImproved(User user, List<Candidate> candidates, ImportPlayResult[] results, boolean commit) {
         Map<Long, RecordBest> bests = new HashMap<>();
         optionRecordRepository.findBestByUser(user.getId(), SAVED_OPTION).forEach(b -> bests.put(b.songDifficultyId(), b));
 
@@ -173,15 +187,18 @@ public class ImportService {
                     reason = ImportSkipReason.NOT_IMPROVED;
                 }
             }
+            BigDecimal previous = best == null ? null : best.bestRate();
             if (reason != null) {
-                results[c.index()] = new ImportPlayResult(c.index(), c.play().title(), false, reason);
+                results[c.index()] = new ImportPlayResult(c.index(), c.play().title(), false, reason, previous);
                 continue;
             }
-            optionRecordRepository.save(OptionRecord.create(user, c.chart(), SAVED_OPTION, c.rate(), c.fullCombo(),
-                    c.playedAt(), Platform.ARCADE, null));
+            if (commit) {
+                optionRecordRepository.save(OptionRecord.create(user, c.chart(), SAVED_OPTION, c.rate(), c.fullCombo(),
+                        c.playedAt(), Platform.ARCADE, null));
+            }
             bests.put(chartId, new RecordBest(chartId,
                     best == null ? c.rate() : best.bestRate().max(c.rate()), c.fullCombo() || (best != null && best.fullCombo())));
-            results[c.index()] = new ImportPlayResult(c.index(), c.play().title(), true, null);
+            results[c.index()] = new ImportPlayResult(c.index(), c.play().title(), true, null, previous);
         }
     }
 

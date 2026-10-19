@@ -310,4 +310,51 @@ class ImportServiceTest {
         assertThat(result.results()).extracting(r -> r.index()).containsExactly(0, 1, 2);
         verify(optionRecordRepository, times(2)).save(any());
     }
+
+    // ---- 미리보기(D40): 저장 없이 같은 규칙으로 결과만 돌려준다 ----
+
+    private ImportResultResponse preview(ImportPlayRequest... plays) {
+        return service.previewRecentPlays(USER_ID, new ImportRecentPlaysRequest(List.of(plays)));
+    }
+
+    @Test
+    void 미리보기는_저장하지_않고_저장될_건을_saved로_알려_준다() {
+        ImportResultResponse result = preview(play("Alpha", "gf_mst", 7387, 2, 5));
+
+        assertThat(result.saved()).isEqualTo(1);
+        assertThat(result.results().get(0).saved()).isTrue();
+        assertThat(result.results().get(0).previousBestRate()).isNull(); // 첫 기록
+        verify(optionRecordRepository, never()).save(any());
+    }
+
+    @Test
+    void 미리보기도_저장과_같은_이유로_건너뛰고_기존_최고_기록을_함께_준다() {
+        best(alphaGuitar, "90.00", false);
+
+        ImportResultResponse lower = preview(play("Alpha", "gf_mst", 8000, 1, 1));
+        assertThat(lower.results().get(0).saved()).isFalse();
+        assertThat(lower.results().get(0).reason()).isEqualTo(ImportSkipReason.LOWER_THAN_BEST);
+        assertThat(lower.results().get(0).previousBestRate()).isEqualByComparingTo("90.00");
+
+        ImportResultResponse higher = preview(play("Alpha", "gf_mst", 9650, 1, 1));
+        assertThat(higher.results().get(0).saved()).isTrue();
+        assertThat(higher.results().get(0).previousBestRate()).isEqualByComparingTo("90.00");
+        verify(optionRecordRepository, never()).save(any());
+    }
+
+    @Test
+    void 미리보기에서도_곡_목록에_없는_곡은_제외곡으로_알려_준다() {
+        ImportResultResponse result = preview(play("없는곡", "gf_mst", 8000, 1, 1));
+
+        assertThat(result.excludedSongs()).containsExactly("없는곡");
+        assertThat(result.results().get(0).reason()).isEqualTo(ImportSkipReason.SONG_NOT_FOUND);
+    }
+
+    @Test
+    void 저장은_미리보기와_달리_기록을_남긴다() {
+        ImportResultResponse result = run(play("Alpha", "gf_mst", 9650, 1, 1));
+
+        assertThat(result.results().get(0).saved()).isTrue();
+        assertThat(savedOnce().getAchievementRate()).isEqualByComparingTo("96.50");
+    }
 }
