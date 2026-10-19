@@ -3,8 +3,11 @@ package com.srpfreaks.backend.controller;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.SetlistAddRequest;
 import com.srpfreaks.backend.dto.SetlistItemResponse;
+import com.srpfreaks.backend.dto.SetlistRecommendRangeRequest;
+import com.srpfreaks.backend.dto.SetlistRecommendRangeResponse;
 import com.srpfreaks.backend.dto.SetlistRecommendationResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
+import com.srpfreaks.backend.service.SetlistRecommendRangeService;
 import com.srpfreaks.backend.service.SetlistRecommendService;
 import com.srpfreaks.backend.service.SetlistService;
 import jakarta.validation.Valid;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,6 +38,7 @@ public class SetlistController {
 
     private final SetlistService setlistService;
     private final SetlistRecommendService recommendService;
+    private final SetlistRecommendRangeService rangeService;
 
     @GetMapping
     public PageResponse<SetlistItemResponse> list(@AuthenticationPrincipal AuthenticatedUser user,
@@ -48,6 +53,20 @@ public class SetlistController {
                                                          @RequestParam(defaultValue = "0") int page,
                                                          @RequestParam(defaultValue = "" + SetlistRecommendService.DEFAULT_PAGE_SIZE) int size) {
         return recommendService.recommend(user.id(), page, size);
+    }
+
+    /** 내 추천 범위를 직접 정한다(평균 난이도 대비 차이). 없으면 만들고 있으면 고친다. */
+    @PutMapping("/recommend-range")
+    public SetlistRecommendRangeResponse saveRange(@AuthenticationPrincipal AuthenticatedUser user,
+                                                   @Valid @RequestBody SetlistRecommendRangeRequest request) {
+        return rangeService.save(user.id(), request);
+    }
+
+    /** 기본 범위로 되돌린다. */
+    @DeleteMapping("/recommend-range")
+    public ResponseEntity<Void> resetRange(@AuthenticationPrincipal AuthenticatedUser user) {
+        rangeService.reset(user.id());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping

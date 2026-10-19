@@ -434,6 +434,8 @@ export interface SetlistRecommendationResponse {
   ssMax: number;
   sMin: number;
   sMax: number;
+  /** 사용자가 직접 정한 범위를 쓰면 true(기본 범위면 false). */
+  customRange: boolean;
   ratedSingle: number;
   ratedOther: number;
   requiredSingle: number;

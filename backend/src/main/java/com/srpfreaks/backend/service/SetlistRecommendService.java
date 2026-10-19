@@ -11,11 +11,13 @@ import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.PatternType;
+import com.srpfreaks.backend.entity.SetlistRecommendRange;
 import com.srpfreaks.backend.entity.TableStatus;
 import com.srpfreaks.backend.mapper.RecommendCandidate;
 import com.srpfreaks.backend.mapper.SetlistRecommendMapper;
 import com.srpfreaks.backend.repository.AppSettingRepository;
 import com.srpfreaks.backend.repository.DifficultyTableRepository;
+import com.srpfreaks.backend.repository.SetlistRecommendRangeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 /**
  * 세트리스트 추천(D37). 내 평균 난이도(PlayLevelEstimator)를 기준으로 오늘 도전해 볼 채보를 두 묶음으로 골라 준다.
  *
+ * - 범위는 서버 기본값이고, 사용자가 직접 정한 값(setlist_recommend_ranges)이 있으면 그 값을 쓴다.
  * - SS 기준: 평균 + ssMin ~ ssMax 안(기본 -0.6 ~ -0.1, 평균보다 쉬운 쪽), 기록이 없거나 SS 미만(FC·EXC는 SS 이상으로 본다 - 달성 단계 규칙, D24).
  * - S 기준: 평균 + sMin ~ sMax 안(기본 -0.1 ~ +0.4), 기록이 없거나 S 미만이고 SS 기준에 들어가지 않은 것.
  * - 레이팅 목록이 비어 있으면(신규) 평균이 없으므로 기준 난이도 starterTier(5.2) 이하에서 S 미만인 채보만 S 기준으로 보여 준다(STARTER).
@@ -53,6 +56,7 @@ public class SetlistRecommendService {
     private final DifficultyTableRepository difficultyTableRepository;
     private final SetlistRecommendMapper recommendMapper;
     private final PlayLevelEstimator playLevelEstimator;
+    private final SetlistRecommendRangeRepository rangeRepository;
 
     /** 잘못된 page/size는 400이 아니라 허용 범위로 맞춘다(목록 API 공통 방식). */
     public SetlistRecommendationResponse recommend(Long userId, int page, int size) {
@@ -60,24 +64,32 @@ public class SetlistRecommendService {
         int pageIndex = Math.max(page, 0);
         SetlistRecommendConfig config = SetlistRecommendConfig.from(appSettingRepository.findAll().stream()
                 .collect(Collectors.toMap(AppSetting::getKey, AppSetting::getValue)));
+        // 사용자가 직접 정한 범위가 있으면 서버 기본 범위 대신 쓴다(개수·입문 난이도는 서버 설정 그대로)
+        Optional<SetlistRecommendRange> custom = rangeRepository.findByUserId(userId);
+        if (custom.isPresent()) {
+            SetlistRecommendRange r = custom.get();
+            config = config.withRanges(r.getSsMin(), r.getSsMax(), r.getSMin(), r.getSMax());
+        }
+        boolean customRange = custom.isPresent();
 
         Optional<DifficultyTable> table = difficultyTableRepository
                 .findFirstByNoteOptionAndStatusOrderByIdAsc(RECORD_OPTION, TableStatus.ACTIVE);
         if (table.isEmpty()) {
-            return empty(Status.UNAVAILABLE, null, 0, 0, config, pageIndex, pageSize);
+            return empty(Status.UNAVAILABLE, null, 0, 0, config, customRange, pageIndex, pageSize);
         }
 
         PlayLevelEstimate estimate = playLevelEstimator.estimate(userId);
         return switch (estimate.status()) {
             case INSUFFICIENT -> empty(Status.INSUFFICIENT, null, estimate.ratedSingle(), estimate.ratedOther(),
-                    config, pageIndex, pageSize);
-            case NEW_PLAYER -> starter(userId, table.get(), config, pageIndex, pageSize);
-            case READY -> ready(userId, table.get(), estimate, config, pageIndex, pageSize);
+                    config, customRange, pageIndex, pageSize);
+            case NEW_PLAYER -> starter(userId, table.get(), config, customRange, pageIndex, pageSize);
+            case READY -> ready(userId, table.get(), estimate, config, customRange, pageIndex, pageSize);
         };
     }
 
     private SetlistRecommendationResponse ready(Long userId, DifficultyTable table, PlayLevelEstimate estimate,
-                                                SetlistRecommendConfig config, int pageIndex, int pageSize) {
+                                                SetlistRecommendConfig config, boolean customRange,
+                                                int pageIndex, int pageSize) {
         BigDecimal base = estimate.tier();
         // 두 범위를 합친 가장 넓은 구간으로 한 번만 조회하고, 각 묶음의 범위는 아래에서 다시 거른다
         BigDecimal lo = base.add(config.ssMin().min(config.sMin()));
@@ -92,33 +104,35 @@ public class SetlistRecommendService {
         List<RecommendCandidate> s = candidates.stream()
                 .filter(c -> !ss.contains(c) && within(c, base, config.sMin(), config.sMax()) && below(c, AchievementStage.S))
                 .sorted(order).toList();
-        return response(Status.READY, base, estimate.ratedSingle(), estimate.ratedOther(), config, ss, s, pageIndex, pageSize);
+        return response(Status.READY, base, estimate.ratedSingle(), estimate.ratedOther(), config, customRange, ss, s, pageIndex, pageSize);
     }
 
     /** 레이팅 목록이 비어 있는 신규 사용자: starterTier 이하에서 S 미만인 채보만, S 기준 묶음으로. */
     private SetlistRecommendationResponse starter(Long userId, DifficultyTable table, SetlistRecommendConfig config,
-                                                  int pageIndex, int pageSize) {
+                                                  boolean customRange, int pageIndex, int pageSize) {
         BigDecimal top = config.starterTier();
         List<RecommendCandidate> candidates = recommendMapper.findCandidates(userId, RECORD_OPTION.name(),
                 table.getId(), PatternType.EXCLUDED.getLabel(), BigDecimal.ZERO, top);
         List<RecommendCandidate> s = candidates.stream()
                 .filter(c -> c.tier().compareTo(top) <= 0 && below(c, AchievementStage.S))
                 .sorted(order(top)).toList();
-        return response(Status.STARTER, top, 0, 0, config, List.of(), s, pageIndex, pageSize);
+        return response(Status.STARTER, top, 0, 0, config, customRange, List.of(), s, pageIndex, pageSize);
     }
 
     private static SetlistRecommendationResponse response(Status status, BigDecimal base, int ratedSingle, int ratedOther,
-                                                          SetlistRecommendConfig config, List<RecommendCandidate> ss,
-                                                          List<RecommendCandidate> s, int pageIndex, int pageSize) {
+                                                          SetlistRecommendConfig config, boolean customRange,
+                                                          List<RecommendCandidate> ss, List<RecommendCandidate> s,
+                                                          int pageIndex, int pageSize) {
         int totalPages = Math.max(pages(ss.size(), pageSize), pages(s.size(), pageSize));
-        return new SetlistRecommendationResponse(status, base, config.ssMin(), config.ssMax(), config.sMin(), config.sMax(),
+        return new SetlistRecommendationResponse(status, base, config.ssMin(), config.ssMax(), config.sMin(), config.sMax(), customRange,
                 ratedSingle, ratedOther, config.minSingle(), config.minOther(),
                 slice(ss, pageIndex, pageSize), slice(s, pageIndex, pageSize), pageIndex, pageSize, totalPages);
     }
 
     private static SetlistRecommendationResponse empty(Status status, BigDecimal base, int ratedSingle, int ratedOther,
-                                                       SetlistRecommendConfig config, int pageIndex, int pageSize) {
-        return response(status, base, ratedSingle, ratedOther, config, List.of(), List.of(), pageIndex, pageSize);
+                                                       SetlistRecommendConfig config, boolean customRange,
+                                                       int pageIndex, int pageSize) {
+        return response(status, base, ratedSingle, ratedOther, config, customRange, List.of(), List.of(), pageIndex, pageSize);
     }
 
     /** 기준 난이도가 base + min ~ base + max 안(경계 포함)인가. */
