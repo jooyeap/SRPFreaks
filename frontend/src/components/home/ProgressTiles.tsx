@@ -18,8 +18,8 @@ function mix(percent: number): string {
  * 칸 지도: 묶음(서열표는 기준 난이도, 곡 목록은 레벨 폴더) 하나가 한 칸이다. 칸마다 기록 퍼센트, `기록/전체`,
  * 단계 비율 막대가 있고, 많이 채울수록 칸이 진해진다.
  * 칸 전체가 링크라서 누르면 그 묶음으로 간다 (터치 영역이 넉넉하다).
- * 열은 모바일·데스크톱 모두 3열이다. 넓은 화면(lg, 1024px 이상)에서는 칸 오른편에 개수 칩이 두 줄(EXC·FC / SS·S·S 미만)로 보이고 막대는 칸 아래에 전체 폭으로 깔린다.
- * 모바일은 3열이라 칸이 좁아서 칩을 숨긴다. 칩은 글자가 같이 있어 색만으로 구분하지 않는다.
+ * 열은 모든 폭에서 3열이다. sm(640px) 이상에서는 칸 오른편에 개수 칩이 두 줄(EXC·FC / SS·S·S 미만)로 보이고 막대는 칸 아래에 전체 폭으로 깔린다(칸이 넓어져 생기는 빈 자리를 채운다).
+ * 640px 미만(폰)은 3열이라 칸이 좁아서 칩을 숨긴다. 칩은 글자가 같이 있어 색만으로 구분하지 않는다.
  */
 export function ProgressTiles({ groups, label }: { groups: readonly ProgressGroup[]; label: string }) {
   return (
@@ -35,7 +35,7 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
               className="flex h-full flex-col gap-1.5 rounded-[10px] border p-2 hover:opacity-90 lg:p-3"
               style={{ background: mix(tint.fill), borderColor: mix(tint.line) }}
             >
-              {/* 위줄: 왼쪽 이름·퍼센트·기록/전체, 데스크톱에서는 오른편에 단계 칩이 두 줄(EXC·FC / SS·S·S 미만)로 놓인다. 막대는 아래에 전체 폭 */}
+              {/* 위줄: 왼쪽 이름·퍼센트·기록/전체, sm 이상에서는 오른편에 단계 칩이 두 줄(EXC·FC / SS·S·S 미만)로 놓인다. 막대는 아래에 전체 폭 */}
               <span className="flex items-center justify-between gap-2">
                 <span className="flex min-w-0 flex-col gap-1.5">
                   <span className={`truncate font-num text-xs font-semibold ${done ? "text-done-text" : "text-fg-sub"}`}>{g.label}</span>
@@ -47,7 +47,7 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
                     {g.recorded}/{g.total}
                   </span>
                 </span>
-                <span className="hidden shrink-0 flex-col items-end gap-1 lg:flex">
+                <span className="hidden shrink-0 flex-col items-end gap-1 sm:flex">
                   {[chips.slice(0, 2), chips.slice(2)].map((row, i) => (
                     <span key={i} className="flex gap-1">
                       {row.map((chip) => (

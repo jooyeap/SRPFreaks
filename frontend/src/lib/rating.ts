@@ -1,6 +1,5 @@
 import { apiFetch } from "@/lib/api";
 import type { PlayerTierResponse, SkillEntryResponse, SkillResponse } from "@/lib/api-types";
-import { chartScore, DEFAULT_COEFFICIENTS } from "@/lib/rating-guide";
 
 /**
  * 레이팅 쿼리 키. 사용자 id를 넣어 계정이 바뀌어도 이전 사용자의 캐시를 보지 않게 한다.
@@ -91,43 +90,4 @@ export function goalHint(skill: SkillResponse): GoalHint | null {
   });
   const best = groups.reduce((a, b) => (b.needScore < a.needScore ? b : a));
   return { nextDisplayName: progress.nextDisplayName, remaining: progress.remaining, ...best };
-}
-
-export interface QuickestRise {
-  /** 95%까지 올렸을 때 점수가 가장 많이 늘어나는 내 목록의 곡 */
-  entry: SkillEntryResponse;
-  /** 그 곡을 95%까지 올렸을 때 늘어나는 점수(점, 소수 그대로) */
-  gain: number;
-  /** 그 곡만 올렸을 때의 합계 */
-  newTotal: number;
-  /** 그 곡만 올려도 다음 티어에 도달하는가 */
-  reachesNext: boolean;
-}
-
-/**
- * 티어 승급 예고 (D38 이후 편의 기능): 내 레이팅 목록 안에서 "달성률을 95%까지 올리면 점수가 가장 많이 늘어나는 곡" 하나.
- * 점수는 95%에서 최대가 되므로(설명서) 그 곡의 올릴 수 있는 여지는 `95%일 때 점수 − 지금 점수`다. 식은 서버와 같은 chartScore를 쓴다.
- * 목록 밖의 곡(후보곡)은 보지 않는다: 이미 목록에 있는 곡만 올려도 합계가 그대로 늘어나므로 계산이 단순하고, 밀려나는 곡을 따질 필요가 없다.
- * 더 올라갈 티어가 없거나(최고 티어), 올릴 곡이 없으면(모두 95% 이상·난이도 없음) null이다. 점수가 같으면 목록 앞쪽(단일 먼저, 순위 높은 쪽)이다.
- */
-export function quickestRise(skill: SkillResponse): QuickestRise | null {
-  const next = skill.tier.nextMinScore;
-  if (next === null) {
-    return null;
-  }
-  let best: { entry: SkillEntryResponse; gain: number } | null = null;
-  for (const entry of [...skill.single, ...skill.other]) {
-    if (entry.achievementRate >= DEFAULT_COEFFICIENTS.maxRate) {
-      continue;
-    }
-    const gain = chartScore(Math.round(entry.tier * 10), DEFAULT_COEFFICIENTS.maxRate) - entry.score;
-    if (gain > 0.005 && (best === null || gain > best.gain)) {
-      best = { entry, gain };
-    }
-  }
-  if (best === null) {
-    return null;
-  }
-  const newTotal = skill.totalScore + best.gain;
-  return { entry: best.entry, gain: best.gain, newTotal, reachesNext: newTotal >= next };
 }
