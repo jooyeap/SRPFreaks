@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * - SS 도전: 평균 ± setlist.recommend_range_ss 안, 기록이 없거나 SS 미만(FC·EXC는 SS 이상으로 본다 - 달성 단계 규칙, D24).
  * - S 채우기: 평균 ± setlist.recommend_range_s(더 넓다) 안, 기록이 없거나 S 미만이고 SS 도전에 들어가지 않은 것.
  * - 이미 세트리스트에 담은 채보와 레이팅 대상이 아닌 채보(미정·레이팅 제외·반영 꺼짐)는 쿼리에서 빠진다.
- * - 정렬: 기록 없는 채보가 먼저, 그다음 내 최고 달성률이 낮은 순, 평균 난이도에 가까운 순, 채보 id 순(요청마다 순서가 바뀌지 않게).
+ * - 정렬: 평균 난이도에 가까운 순이 먼저(내 실력대에 가장 맞는 곡이 위), 같으면 기록 없는 채보, 내 최고 달성률이 낮은 순, 채보 id 순(요청마다 순서가 바뀌지 않게).
  * - 두 묶음을 같은 page로 size개씩 넘긴다. 조회는 넓은 범위 한 번이고 단계 판정·정렬·페이지는 여기(Java)에서 한다.
  * userId는 토큰에서만 오고, 남의 기록은 쿼리에서 user_id 조건으로 섞이지 않는다.
  */
@@ -99,10 +99,11 @@ public class SetlistRecommendService {
     }
 
     private static Comparator<RecommendCandidate> order(BigDecimal baseTier) {
+        // 가까운 순이 첫 기준이다. 예전에는 기록 없음이 먼저여서 평균에서 먼 곡이 맨 위에 올 수 있었다.
         return Comparator
-                .comparing((RecommendCandidate c) -> c.bestRate() != null)      // false(기록 없음)가 먼저
+                .comparing((RecommendCandidate c) -> c.tier().subtract(baseTier).abs())
+                .thenComparing(c -> c.bestRate() != null)                       // false(기록 없음)가 먼저
                 .thenComparing(c -> c.bestRate() == null ? BigDecimal.ZERO : c.bestRate())
-                .thenComparing(c -> c.tier().subtract(baseTier).abs())
                 .thenComparing(RecommendCandidate::songDifficultyId);
     }
 
