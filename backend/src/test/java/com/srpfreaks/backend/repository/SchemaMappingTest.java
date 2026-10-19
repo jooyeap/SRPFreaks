@@ -40,6 +40,7 @@ import org.testcontainers.mysql.MySQLContainer;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,7 +70,13 @@ class SchemaMappingTest {
     @Test
     void 시드_데이터가_들어_있다() {
         Number tiers = (Number) em.createNativeQuery("select count(*) from player_tiers").getSingleResult();
-        assertThat(tiers.intValue()).isEqualTo(20);
+        // V1이 20단계를 넣고, V10(D38)이 하수봉을 HSB로 옮기고 Iridescent·Alien 두 행을 더해 22단계가 된다
+        assertThat(tiers.intValue()).isEqualTo(22);
+        @SuppressWarnings("unchecked")
+        List<Object[]> top = em.createNativeQuery(
+                "select tier_key, min_score from player_tiers where min_score >= 9500 order by min_score").getResultList();
+        assertThat(top).extracting(row -> row[0] + ":" + ((Number) row[1]).intValue())
+                .containsExactly("IRIDESCENT:9500", "ALIEN:10000", "HSB:11000");
 
         AppSetting pivot = em.find(AppSetting.class, "rating.pivot");
         assertThat(pivot).isNotNull();
