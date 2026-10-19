@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { NavIcon } from "@/components/NavIcon";
 import { Skeleton } from "@/components/Skeleton";
+import { ImportEntryLink } from "@/components/import/ImportEntryLink";
 import { HomeNotices } from "@/components/home/HomeNotices";
 import { PlayersPreview } from "@/components/home/PlayersPreview";
 import { ProgressCard, type ProgressPanel } from "@/components/home/ProgressCard";
@@ -88,6 +89,8 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       )}
 
       <ProgressCard table={tablePanel} songs={songsPanel} />
+
+      <ImportEntryLink />
 
       <PlayersPreview viewerId={userId} />
 
