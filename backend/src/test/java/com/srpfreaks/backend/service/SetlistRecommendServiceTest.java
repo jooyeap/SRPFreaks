@@ -10,7 +10,10 @@ import com.srpfreaks.backend.entity.TableStatus;
 import com.srpfreaks.backend.mapper.RecommendCandidate;
 import com.srpfreaks.backend.mapper.SetlistRecommendMapper;
 import com.srpfreaks.backend.repository.AppSettingRepository;
+import com.srpfreaks.backend.entity.SetlistRecommendRange;
+import com.srpfreaks.backend.entity.User;
 import com.srpfreaks.backend.repository.DifficultyTableRepository;
+import com.srpfreaks.backend.repository.SetlistRecommendRangeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,13 +45,15 @@ class SetlistRecommendServiceTest {
     @Mock DifficultyTableRepository difficultyTableRepository;
     @Mock SetlistRecommendMapper mapper;
     @Mock PlayLevelEstimator estimator;
+    @Mock SetlistRecommendRangeRepository rangeRepository;
 
     SetlistRecommendService service;
     DifficultyTable table;
 
     @BeforeEach
     void setUp() {
-        service = new SetlistRecommendService(appSettingRepository, difficultyTableRepository, mapper, estimator);
+        service = new SetlistRecommendService(appSettingRepository, difficultyTableRepository, mapper, estimator, rangeRepository);
+        when(rangeRepository.findByUserId(1L)).thenReturn(Optional.empty());
         table = DifficultyTable.create("SRN+ 서열표", null, NoteOption.SUPER_RANDOM_PLUS);
         ReflectionTestUtils.setField(table, "id", 3L);
         when(appSettingRepository.findAll()).thenReturn(List.of(
@@ -95,6 +100,45 @@ class SetlistRecommendServiceTest {
         verify(mapper).findCandidates(eq(1L), anyString(), eq(3L), anyString(), lo.capture(), hi.capture());
         assertThat(lo.getValue()).isEqualByComparingTo("5.60");   // 6.20 + min(-0.6, -0.1)
         assertThat(hi.getValue()).isEqualByComparingTo("6.60");   // 6.20 + max(-0.1, 0.4)
+    }
+
+    @Test
+    void 기본_범위를_쓰면_customRange가_false이고_서버_기본_범위를_내려준다() {
+        givenCandidates();
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 5);
+
+        assertThat(r.customRange()).isFalse();
+        assertThat(r.ssMin()).isEqualByComparingTo("-0.6");
+        assertThat(r.ssMax()).isEqualByComparingTo("-0.1");
+        assertThat(r.sMin()).isEqualByComparingTo("-0.1");
+        assertThat(r.sMax()).isEqualByComparingTo("0.4");
+    }
+
+    @Test
+    void 사용자가_정한_범위가_있으면_기본_범위_대신_쓰고_조회_구간도_그에_맞춘다() {
+        User user = User.create("sub-1", "a@example.com", "tester");
+        // SS 기준 -1.0 ~ -0.5, S 기준 0.0 ~ 1.0 (평균 6.20 -> SS 5.20~5.70, S 6.20~7.20)
+        when(rangeRepository.findByUserId(1L)).thenReturn(Optional.of(SetlistRecommendRange.create(user,
+                new BigDecimal("-1.00"), new BigDecimal("-0.50"), new BigDecimal("0.00"), new BigDecimal("1.00"))));
+        givenCandidates(
+                cand(1, "5.20", null, false),     // SS 기준 하한 경계 -> 포함
+                cand(2, "5.70", null, false),     // SS 기준 상한 경계 -> 포함
+                cand(3, "6.10", null, false),     // 기본 범위였다면 SS 기준이지만 지금은 어느 범위에도 없다 -> 제외
+                cand(4, "7.20", null, false),     // S 기준 상한 경계 -> 포함
+                cand(5, "6.20", "70.00", false)); // S 기준 하한 경계 -> 포함
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 10);
+
+        assertThat(r.customRange()).isTrue();
+        assertThat(r.ssMin()).isEqualByComparingTo("-1.00");
+        assertThat(ids(r.ssChallenge())).containsExactlyInAnyOrder(1L, 2L);
+        assertThat(ids(r.sFill())).containsExactlyInAnyOrder(4L, 5L);
+        ArgumentCaptor<BigDecimal> lo = ArgumentCaptor.forClass(BigDecimal.class);
+        ArgumentCaptor<BigDecimal> hi = ArgumentCaptor.forClass(BigDecimal.class);
+        verify(mapper).findCandidates(eq(1L), anyString(), eq(3L), anyString(), lo.capture(), hi.capture());
+        assertThat(lo.getValue()).isEqualByComparingTo("5.20");   // 6.20 + min(-1.0, 0.0)
+        assertThat(hi.getValue()).isEqualByComparingTo("7.20");   // 6.20 + max(-0.5, 1.0)
     }
 
     @Test

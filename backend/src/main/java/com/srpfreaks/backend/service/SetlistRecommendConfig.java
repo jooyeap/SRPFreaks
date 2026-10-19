@@ -32,6 +32,11 @@ public record SetlistRecommendConfig(BigDecimal ssMin, BigDecimal ssMax, BigDeci
         }
     }
 
+    /** 사용자가 정한 범위로 바꾼 사본(개수·입문 난이도는 서버 설정 그대로). 같은 규칙 검사를 다시 거친다. */
+    public SetlistRecommendConfig withRanges(BigDecimal ssMin, BigDecimal ssMax, BigDecimal sMin, BigDecimal sMax) {
+        return new SetlistRecommendConfig(ssMin, ssMax, sMin, sMax, minSingle, minOther, starterTier);
+    }
+
     public static SetlistRecommendConfig from(Map<String, String> settings) {
         return new SetlistRecommendConfig(
                 decimal(settings, "recommend_ss_min"), decimal(settings, "recommend_ss_max"),
