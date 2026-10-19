@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
+import type { SkillEntryResponse, SkillResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import { goalPlan } from "@/lib/rating-goal";
 
 // 직접 계산한 값 (설명서 식: V = R×min(A,80)/100 + 3.2×min(max(A−80,0),15)/15, 점수 = V×20)
@@ -40,7 +40,9 @@ describe("goalPlan (목표 레이팅, 80/85/90/95 구간)", () => {
     expect(step?.fromRate).toBe(82);
     // 248.533 + 10 = 258.533 → V = 12.9267, 가산 0.9267 → 80 + 0.9267/3.2×15 = 84.34375 → 둘째 자리 올림 84.35
     expect(step?.toRate).toBe(84.35);
-    expect(step?.gain).toBeCloseTo(10, 6);
+    // 달성률을 둘째 자리로 올림하므로 실제 증가분은 필요한 10보다 조금 크다 (10.0267)
+    expect(step?.gain).toBeGreaterThanOrEqual(10);
+    expect(step?.gain).toBeLessThan(10.05);
     expect(step?.challenge).toBe(false);
   });
 
@@ -58,7 +60,8 @@ describe("goalPlan (목표 레이팅, 80/85/90/95 구간)", () => {
     expect(plan?.steps.map((s) => s.entry.title)).toEqual(["E2", "E1"]);
     // E1: 210 → 240(80%) +30, 남은 10을 85% 단계에서 채움: 240 + 10 = 250 → V = 12.5 → 80 + 0.5/3.2×15 = 82.34375 → 82.35
     expect(plan?.steps[1].toRate).toBe(82.35);
-    expect(plan?.steps[1].gain).toBeCloseTo(40, 3); // 입력 점수를 소수 넷째 자리까지만 적어서 오차가 조금 있다
+    expect(plan?.steps[1].gain).toBeGreaterThanOrEqual(40 - 0.001); // 둘째 자리 올림 때문에 조금 크다(40.027)
+    expect(plan?.steps[1].gain).toBeLessThan(40.05);
     expect(plan?.shortfall).toBe(0);
   });
 
@@ -130,5 +133,87 @@ describe("goalPlan (목표 레이팅, 80/85/90/95 구간)", () => {
     const plan = goalPlan(skillOf([E1], [], 1000), 1094);
     expect(plan?.reachable).toBe(true);
     expect(plan?.steps[0].toRate).toBe(95);
+  });
+});
+
+// ---- 목록 밖의 곡 (서열표 pool) -----------------------------------------------------------------------
+// 단일 목록 한도를 2로 줄여 밀려남을 확인한다. 직접 계산한 값:
+//   6.0(R=15): 90% 282.667, 95% 304   |   7.0(R=20): 70% = 20×0.7×20 = 280, 80% = 20×0.8×20 = 320
+function tableEntry(id: number, pattern: string | null, rate: number | null, over: Partial<TableEntryResponse> = {}): TableEntryResponse {
+  return {
+    entryId: id, songDifficultyId: id, songId: id, title: `T${id}`, part: "GUITAR", difficulty: "MASTER", level: 9, pattern, ratingEnabled: true,
+    mine: rate === null ? null : { rate, fullCombo: false, stage: "S" }, ...over,
+  } as TableEntryResponse;
+}
+function group(tier: number, entries: TableEntryResponse[]): TierGroupResponse {
+  return { tier, entries } as unknown as TierGroupResponse;
+}
+function smallSkill(single: SkillEntryResponse[], other: SkillEntryResponse[], total: number): SkillResponse {
+  return { totalScore: total, single, other, singleLimit: 2, otherLimit: 25 } as unknown as SkillResponse;
+}
+const S1 = entry(101, "S1", 6.0, 90, 282.6667);
+const S2 = entry(102, "S2", 6.0, 95, 304);
+
+describe("goalPlan 목록 밖의 곡", () => {
+  it("목록 밖 채보를 올려 들어오면 맨 아래 곡이 밀려나고 늘어나는 점수는 밀려난 곡을 뺀 값이다 (+30: 7.0 70% → 78.17%)", () => {
+    // 목록(단일 2): S1 282.667, S2 304 → 합계 586.667. 목록 밖 7.0 채보(70% = 280)는 맨 아래(282.667)보다 낮아 밖에 있다.
+    // 근처 폴더(6.0)만으로는 S1 → 95%의 +21.33뿐이라 모자라 전체로 넓힌다.
+    // S1을 95%로 올리면 맨 아래가 304가 되고, 7.0 채보는 304 + 8.667 = 312.667이 되면 닿는다:
+    //   V = 15.6333 → 15.6333/20 = 78.1667% → 올림 78.17% (점수 312.68).
+    // 이때 7.0 채보가 들어오며 맨 아래 곡(S1)이 밀려나므로 S1을 올린 것은 쓸모가 없어 경로에서 빠진다. 최종 증가분 = 312.68 − 282.667 = 30.01
+    const out = tableEntry(201, "단일", 70);
+    const plan = goalPlan(smallSkill([S1, S2], [], 586.6667), 616.6667, [group(6.0, []), group(7.0, [out])]);
+    expect(plan?.reachable).toBe(true);
+    expect(plan?.widened).toBe(true);
+    expect(plan?.steps).toHaveLength(1);
+    expect(plan?.steps[0]).toMatchObject({ fromRate: 70, toRate: 78.17, entering: true });
+    expect(plan?.steps[0].entry.title).toBe("T201");
+    expect(plan?.steps[0].gain).toBeCloseTo(30.0133, 2);
+    expect(plan?.displaced).toHaveLength(1);
+    expect(plan?.displaced[0]).toMatchObject({ rate: 90 });
+    expect(plan?.displaced[0].entry.title).toBe("S1");
+    expect(plan?.displaced[0].score).toBeCloseTo(282.6667, 3);
+  });
+
+  it("목록이 아직 차지 않았으면 기록 없는 채보도 들어올 수 있고 기록 없음에서 시작하며 최소 80%부터다 (한도 2에 1곡뿐)", () => {
+    // S 70% = 210. 목록에 자리가 있어서(1/2) 목록 밖 채보는 점수가 0보다 크기만 하면 들어온다.
+    // +100: 근처(6.0) 안에서 S가 80%(+30)로 먼저 올라가고, 남은 70은 기록 없는 T301이 채운다.
+    // 70만 채우려면 23.34%면 되지만 한 번도 안 친 곡에 어색한 목표가 되지 않게 80%부터로 둔다: 15×0.8×20 = 240
+    const low = entry(110, "S", 6.0, 70, 210);
+    const none = tableEntry(301, "단일", null);
+    const plan = goalPlan(smallSkill([low], [], 210), 310, [group(6.0, [none])]);
+    expect(plan?.reachable).toBe(true);
+    expect(plan?.steps.map((s) => s.entry.title)).toEqual(["S", "T301"]);
+    expect(plan?.steps[0]).toMatchObject({ fromRate: 70, toRate: 80, entering: false });
+    expect(plan?.steps[1]).toMatchObject({ fromRate: null, toRate: 80, entering: true });
+    expect(plan?.steps[1].gain).toBeCloseTo(240, 3);
+    expect(plan?.displaced).toEqual([]);
+  });
+
+  it("레이팅 반영이 꺼진 채보와 속성이 없거나 레이팅 제외인 채보는 후보에 넣지 않는다", () => {
+    const eligible = tableEntry(201, "단일", 70);
+    const off = tableEntry(202, "단일", 94, { ratingEnabled: false });
+    const none = tableEntry(203, null, 94);
+    const excluded = tableEntry(204, "레이팅 제외", 94);
+    const withJunk = goalPlan(smallSkill([S1, S2], [], 586.6667), 616.6667, [group(7.0, [eligible, off, none, excluded])]);
+    const clean = goalPlan(smallSkill([S1, S2], [], 586.6667), 616.6667, [group(7.0, [eligible])]);
+    expect(withJunk?.steps.map((s) => s.entry.title)).toEqual(clean?.steps.map((s) => s.entry.title));
+    expect(withJunk?.steps.map((s) => s.entry.title)).not.toContain("T202");
+    expect(withJunk?.steps.map((s) => s.entry.title)).not.toContain("T203");
+    expect(withJunk?.steps.map((s) => s.entry.title)).not.toContain("T204");
+  });
+
+  it("복합·이중·삼중 채보는 그 외 목록에 들어가므로 단일 목록의 곡을 밀어내지 않는다", () => {
+    // 단일 목록은 꽉 차 있고(2/2), 그 외 목록은 비어 있다. 6.0 복합 채보(70% = 210)는 그 외 목록에 그냥 들어오고 단일 곡은 밀려나지 않는다.
+    const other = tableEntry(401, "복합", 70);
+    const plan = goalPlan(smallSkill([S1, S2], [], 586.6667), 600, [group(6.0, [other])]);
+    expect(plan?.displaced).toEqual([]);
+    expect(plan?.steps.some((s) => s.entry.title === "T401" && s.entering)).toBe(true);
+  });
+
+  it("pool을 주지 않으면 내 레이팅 목록 안의 곡만으로 계산한다", () => {
+    const plan = goalPlan(smallSkill([S1, S2], [], 586.6667), 600);
+    expect(plan?.steps.map((s) => s.entry.title)).toEqual(["S1"]);
+    expect(plan?.displaced).toEqual([]);
   });
 });

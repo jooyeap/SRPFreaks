@@ -1,7 +1,8 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RatingGoalPlanner } from "@/components/rating/RatingGoalPlanner";
-import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
+import type { DifficultyTableResponse, SkillEntryResponse, SkillResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 
 // 직접 계산: A 6.0/80% = 240 (95%는 304, 여지 64), B 7.0/90% = 362.67 (95%는 384, 여지 21.33), C 6.0/90% = 282.67 (여지 21.33)
 function entry(id: number, title: string, tier: number, rate: number, score: number): SkillEntryResponse {
@@ -22,15 +23,45 @@ const skill: SkillResponse = {
   other: [entry(1, "에이곡", 6.0, 80, 240), entry(3, "씨곡", 6.0, 90, 282.6667)],
 };
 
-function openAndType(value: string) {
-  render(<RatingGoalPlanner skill={skill} />);
-  fireEvent.click(screen.getByRole("button", { name: /목표 레이팅/ }));
-  fireEvent.change(screen.getByLabelText("목표 점수"), { target: { value } });
-}
+const table: DifficultyTableResponse = { id: 3, name: "SRN+ 서열표", instrumentPart: "GUITAR", noteOption: "SUPER_RANDOM_PLUS", status: "ACTIVE", revision: 1 };
+const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
 
 describe("RatingGoalPlanner", () => {
+  const fetchMock = vi.fn<typeof fetch>();
+  /** 서열표 묶음(목록 밖 채보). 기본은 비어 있어 목록 안의 곡만으로 계산한다 */
+  let groups: TierGroupResponse[] = [];
+  let tableFails = false;
+
+  beforeEach(() => {
+    groups = [];
+    tableFails = false;
+    fetchMock.mockReset();
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (tableFails) return Promise.resolve(new Response(JSON.stringify({ code: "INTERNAL", message: "x" }), { status: 500, headers: { "Content-Type": "application/json" } }));
+      return Promise.resolve(url.includes("/entries") ? json({ content: groups, page: 0, size: 20, totalElements: groups.length, totalPages: 1 }) : json([table]));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  function renderPlanner(s: SkillResponse = skill) {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+      <QueryClientProvider client={client}>
+        <RatingGoalPlanner userId={1} skill={s} />
+      </QueryClientProvider>,
+    );
+  }
+
+  function openAndType(value: string, s: SkillResponse = skill) {
+    renderPlanner(s);
+    fireEvent.click(screen.getByRole("button", { name: /목표 레이팅/ }));
+    fireEvent.change(screen.getByLabelText("목표 점수"), { target: { value } });
+  }
+
   it("처음에는 접혀 있고 입력칸이 보이지 않는다", () => {
-    render(<RatingGoalPlanner skill={skill} />);
+    renderPlanner();
     const toggle = screen.getByRole("button", { name: /목표 레이팅/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByLabelText("목표 점수")).toBeNull();
@@ -97,8 +128,51 @@ describe("RatingGoalPlanner", () => {
     expect(screen.queryByRole("list", { name: "목표까지 올릴 곡" })).toBeNull();
   });
 
+  describe("목록 밖의 곡", () => {
+    // 단일 목록 한도 2: S1 6.0 90% = 282.667, S2 6.0 95% = 304 (합계 586.667). 목록 밖 7.0 채보는 70% = 280이라 맨 아래(282.667)보다 낮다.
+    const small: SkillResponse = {
+      ...skill,
+      totalScore: 586.6667,
+      singleLimit: 2,
+      single: [entry(1, "에스원", 6.0, 90, 282.6667), entry(2, "에스투", 6.0, 95, 304)],
+      other: [],
+    };
+    const outside: TableEntryResponse = {
+      entryId: 9, songDifficultyId: 900, songId: 90, title: "밖의곡", addedVersion: null, part: "GUITAR", difficulty: "MASTER", level: 9.8,
+      tierUncertain: false, recommend: null, recommendUncertain: false, pattern: "단일", patternUncertain: false, ratingEnabled: true,
+      mine: { rate: 70, fullCombo: false, stage: "C" },
+    };
+    const folder = (tier: number, entries: TableEntryResponse[]): TierGroupResponse => ({
+      tier, total: entries.length, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries,
+    });
+
+    it("목록 밖 곡이 들어오면 `목록 진입`과 밀려나는 곡을 보여 준다 (+30: 70.00% → 78.17%, 에스원이 밀려남)", async () => {
+      groups = [folder(7.0, [outside])];
+      openAndType("616.67", small);
+      const list = await screen.findByRole("list", { name: "목표까지 올릴 곡" });
+      await waitFor(() => expect(within(list).getAllByRole("listitem")[0]).toHaveTextContent("밖의곡"));
+      const items = within(list).getAllByRole("listitem");
+      expect(items).toHaveLength(1);
+      expect(items[0]).toHaveTextContent("70.00% → 78.17%");
+      expect(items[0]).toHaveTextContent("목록 진입");
+      const displaced = screen.getByRole("list", { name: "목록에서 밀려나는 곡" });
+      expect(within(displaced).getByText("에스원")).toBeInTheDocument();
+      expect(displaced).toHaveTextContent("90.00% · 282.67");
+      expect(screen.getByText(/밀려난 곡을 뺀 값/)).toBeInTheDocument();
+    });
+
+    it("서열표를 받지 못하면 안내하고 레이팅 목록 안의 곡만으로 계산한다", async () => {
+      tableFails = true;
+      openAndType("600", small);
+      expect(await screen.findByText(/서열표를 불러오지 못해 레이팅 목록 안의 곡만 계산했습니다/)).toBeInTheDocument();
+      const items = within(await screen.findByRole("list", { name: "목표까지 올릴 곡" })).getAllByRole("listitem");
+      expect(items[0]).toHaveTextContent("에스원");
+      expect(screen.queryByRole("list", { name: "목록에서 밀려나는 곡" })).toBeNull();
+    });
+  });
+
   it("다음 티어 버튼이 목표를 그 티어 최소 점수(1500)로 채운다", async () => {
-    render(<RatingGoalPlanner skill={skill} />);
+    renderPlanner();
     fireEvent.click(screen.getByRole("button", { name: /목표 레이팅/ }));
     fireEvent.click(screen.getByRole("button", { name: "Orange Gradient (1500)로 정하기" }));
     expect(screen.getByLabelText("목표 점수")).toHaveValue("1500");
@@ -108,7 +182,7 @@ describe("RatingGoalPlanner", () => {
 
   it("최고 티어이면 다음 티어 버튼이 없다", () => {
     const top: SkillResponse = { ...skill, tier: { key: "HSB", displayName: "HSB", minScore: 11000, nextDisplayName: null, nextMinScore: null } };
-    render(<RatingGoalPlanner skill={top} />);
+    renderPlanner(top);
     fireEvent.click(screen.getByRole("button", { name: /목표 레이팅/ }));
     expect(screen.queryByRole("button", { name: /로 정하기/ })).toBeNull();
   });
