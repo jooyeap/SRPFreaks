@@ -2,7 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { NavIcon } from "@/components/NavIcon";
 import { Skeleton } from "@/components/Skeleton";
+import { HomeNotices } from "@/components/home/HomeNotices";
 import { PlayersPreview } from "@/components/home/PlayersPreview";
 import { ProgressCard, type ProgressPanel } from "@/components/home/ProgressCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
@@ -19,10 +21,11 @@ import { folderProgress } from "@/lib/progress";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 
+// 아이콘은 헤더 메뉴·하단 탭바와 같은 것을 쓴다(lib/nav.ts): 곡 목록 = songs, 서열표 = table, 마이페이지 = rating
 const SHORTCUTS = [
-  { href: "/songs", title: "곡 목록", description: "레벨 폴더별로 전체 곡을 보고 검색합니다." },
-  { href: "/table", title: "서열표", description: "레이팅 상수 난이도별로 채보를 보고 기록을 입력합니다." },
-  { href: "/me", title: "마이페이지", description: "내 레이팅(단일 15·복합·이중·삼중 25 목록)과 달성 현황을 확인합니다." },
+  { href: "/songs", title: "곡 목록", icon: "songs", description: "레벨 폴더별로 전체 곡을 보고 검색합니다." },
+  { href: "/table", title: "서열표", icon: "table", description: "레이팅 상수 난이도별로 채보를 보고 기록을 입력합니다." },
+  { href: "/me", title: "마이페이지", icon: "rating", description: "내 레이팅(단일 15·복합·이중·삼중 25 목록)과 달성 현황을 확인합니다." },
 ] as const;
 
 /**
@@ -72,6 +75,8 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
         <span className="font-num">{name}</span>님의 홈
       </h1>
 
+      <HomeNotices viewerId={userId} />
+
       {skill.data ? (
         <Link href="/me" className="block rounded-2xl hover:opacity-95" aria-label="마이페이지로">
           <RatingSummary skill={skill.data} />
@@ -90,7 +95,10 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
         {SHORTCUTS.map((item) => (
           <li key={item.href}>
             <Link href={item.href} className="flex h-full flex-col gap-1 rounded-lg border border-line bg-card p-4 hover:bg-table-head">
-              <span className="text-base font-semibold text-fg">{item.title}</span>
+              <span className="flex items-center gap-2 text-base font-semibold text-fg">
+                <NavIcon name={item.icon} />
+                {item.title}
+              </span>
               <span className="text-sm text-fg-sub">{item.description}</span>
             </Link>
           </li>
