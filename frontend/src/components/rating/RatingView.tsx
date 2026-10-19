@@ -9,6 +9,7 @@ import { RatingSummary } from "@/components/rating/RatingSummary";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { RatingInsights } from "@/components/rating/RatingInsights";
+import { RatingGoalPlanner } from "@/components/rating/RatingGoalPlanner";
 import { RatingTargetPlanner } from "@/components/rating/RatingTargetPlanner";
 import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
@@ -141,6 +142,7 @@ export function RatingView({ userId }: { userId: number }) {
         afterSummary={
           <>
             <RatingInsights userId={userId} />
+            <RatingGoalPlanner skill={data} />
             <RatingTargetPlanner userId={userId} skill={data} />
           </>
         }
