@@ -91,6 +91,22 @@ describe("최근 플레이 가져오기 화면", () => {
     expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith("/record-imports/commit"))).toBe(false);
   });
 
+  it("지원하지 않는 난이도는 공식 난이도 클래스를 함께 보여 준다", async () => {
+    clearHandoff();
+    addPlays([play("E", 9000, { difficultyClass: "gf_ext" })], 0);
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(login("USER"));
+      if (url.endsWith("/record-imports/preview"))
+        return Promise.resolve(
+          json({ saved: 0, skipped: 1, skippedByReason: { UNKNOWN_DIFFICULTY: 1 }, excludedSongs: [], results: [{ index: 0, title: "E", saved: false, reason: "UNKNOWN_DIFFICULTY", previousBestRate: null }] }),
+        );
+      return Promise.resolve(json({}));
+    });
+    renderIt();
+    expect(await screen.findByText("건너뜀 · 지원하지 않는 난이도 (gf_ext)")).toBeInTheDocument();
+  });
+
   it("체크를 풀면 그 곡은 저장하지 않고, 고른 곡만 보낸 뒤 레이팅 변화를 보여 준다", async () => {
     renderIt();
     fireEvent.click(await screen.findByRole("checkbox", { name: "B 저장" }));
