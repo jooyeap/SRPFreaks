@@ -10,7 +10,7 @@ import { ApiError } from "@/lib/api";
 import { canUseImport } from "@/lib/features";
 import { formatRate, formatScore } from "@/lib/format";
 import { clearHandoff, MAX_PAGES, pagesReceived, removePlays, useHandoff } from "@/lib/import-handoff";
-import { buildHandoffBookmarkletHref, type ReadPlay } from "@/lib/import-bookmarklet";
+import { buildHandoffBookmarkletHref, buildHandoffBookmarkletSource, type ReadPlay } from "@/lib/import-bookmarklet";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
 import {
   commitRecentPlays,
@@ -48,6 +48,20 @@ function BookmarkGuide() {
     }
   }
 
+  /**
+   * 주소창에 직접 붙여넣어 실행하는 방법(북마크를 만들기 어려운 모바일용).
+   * 브라우저(Chrome·Safari 등)는 붙여넣은 글자 맨 앞의 `javascript:`를 보안상 지우므로, 그 부분을 뺀 본문만 복사하고
+   * 사용자가 `javascript:`를 직접 입력한 뒤 붙여넣게 안내한다. 본문은 북마크와 같은 코드(URL 인코딩)이고 토큰·비밀값이 없다.
+   */
+  async function copyBody() {
+    try {
+      await navigator.clipboard.writeText(encodeURIComponent(buildHandoffBookmarkletSource(window.location.origin)));
+      toast("실행용 스크립트를 복사했습니다.");
+    } catch {
+      toast("복사하지 못했습니다. 브라우저의 복사 권한을 확인해 주세요.");
+    }
+  }
+
   return (
     <section aria-label="사용 방법" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
       <h2 className="text-xs font-bold text-fg-sub">사용 방법 (북마크는 한 번만 추가)</h2>
@@ -70,6 +84,22 @@ function BookmarkGuide() {
         </button>
       </div>
       <p className="text-xs text-fg-sub">링크를 북마크 바로 끌어다 놓거나, 주소를 복사해 새 북마크의 URL칸에 붙여넣습니다.</p>
+      <details className="rounded-xl border border-chip-line p-3">
+        <summary className="min-h-8 cursor-pointer text-sm font-bold text-fg">북마크 없이 주소창에서 실행하기 (모바일)</summary>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-fg-sub">
+          <li>
+            <button type="button" onClick={() => void copyBody()} className="h-9 rounded-lg border border-chip-line px-3 text-sm font-bold text-fg">
+              실행용 스크립트 복사
+            </button>{" "}
+            를 누릅니다.
+          </li>
+          <li>공식 최근 플레이 페이지(번역 끔)를 연 상태에서 주소창을 누르고 기존 주소를 지웁니다.</li>
+          <li>
+            먼저 <b className="font-num text-fg">javascript:</b>를 직접 입력한 뒤, 바로 뒤에 복사한 내용을 붙여넣고 이동합니다.
+          </li>
+        </ol>
+        <p className="mt-2 text-xs text-fg-sub">브라우저가 붙여넣은 글자의 맨 앞 javascript:를 지우기 때문에 직접 입력해야 합니다. 일부 앱 안의 브라우저에서는 실행되지 않을 수 있습니다.</p>
+      </details>
     </section>
   );
 }
