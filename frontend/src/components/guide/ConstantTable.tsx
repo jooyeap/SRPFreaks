@@ -1,4 +1,4 @@
-import { chartTierAttrs, chartTierStart, HASUBONG_BAND_COUNT, HASUBONG_BAND_STEP, PLAYER_TIER_MINS } from "@/lib/chart-tier";
+import { chartTierAttrs, chartTierStart, PLAYER_TIER_MINS } from "@/lib/chart-tier";
 import { chartScore, guideRows, GUIDE_RATES } from "@/lib/rating-guide";
 
 /**
@@ -80,23 +80,9 @@ export function ConstantTable() {
               <span aria-hidden="true" data-tier={tier.key} className="chart-swatch block h-3 w-full max-w-9 rounded-sm" />
               <span className="font-num text-[10px] text-fg-dim">
                 {chartTierStart(tier.min)}
-                {tier.key === "HASUBONG" ? "~" : ""}
+                {tier.key === "HSB" ? "~" : ""}
               </span>
               <span className="sr-only">{tier.name}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-[11px] leading-relaxed text-fg-dim">
-          하수봉 기준({chartTierStart(9500)}점) 위는 {HASUBONG_BAND_STEP}점마다 색과 빛이 바뀝니다(아래 6단계, 가장 높은 단계는 테두리 추가).
-        </p>
-        <ul aria-label="하수봉 단계" className="grid grid-cols-6 gap-x-1">
-          {Array.from({ length: HASUBONG_BAND_COUNT }, (_, i) => (
-            <li key={i} className="flex flex-col items-center gap-0.5">
-              <span aria-hidden="true" data-tier="HASUBONG" data-glow={i + 1} className="chart-swatch block h-3 w-full max-w-9 rounded-sm" />
-              <span className="font-num text-[10px] text-fg-dim">
-                {chartTierStart(9500) + i * HASUBONG_BAND_STEP}
-                {i === HASUBONG_BAND_COUNT - 1 ? "~" : ""}
-              </span>
             </li>
           ))}
         </ul>

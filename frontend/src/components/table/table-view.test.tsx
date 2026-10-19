@@ -138,11 +138,11 @@ describe("TierGroupSection", () => {
 
   it("기록이 있는 줄은 레이팅에 찍히는 점수를 티어 색으로 보인다 (5.8, 96.5% -> 272.00)", () => {
     render(<TierGroupSection group={group({ entries: [entry({ entryId: 1 }), entry({ entryId: 2, title: "기록없음", mine: null })] })} includeZero={false} />);
-    // 기록 있는 곡만 카드 + 줄 하나씩. 점수 = (13×0.8 + 3.2) × 20, 하수봉 기준(237.5)을 넘어 data-glow가 붙는다
+    // 기록 있는 곡만 카드 + 줄 하나씩. 점수 = (13×0.8 + 3.2) × 20, 272는 Alien 구간(250 이상 275 미만)이다
     const scores = screen.getAllByLabelText("레이팅 점수 272.00");
     expect(scores).toHaveLength(2);
     expect(scores[0]).toHaveTextContent("272.00");
-    expect(scores[0]).toHaveAttribute("data-tier", "HASUBONG");
+    expect(scores[0]).toHaveAttribute("data-tier", "ALIEN");
     expect(scores[0]).toHaveClass("chart-cell");
     expect(screen.queryAllByLabelText(/레이팅 점수/)).toHaveLength(2);
   });

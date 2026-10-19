@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 import { chartTier, chartTierAttrs, chartTierStart, PLAYER_TIER_MINS, previewScore, ratedScore } from "@/lib/chart-tier";
 
 describe("chartTierStart", () => {
-  it("티어 최소 점수를 40으로 나눈다 (하수봉 9500 -> 237.5)", () => {
+  it("티어 최소 점수를 40으로 나눈다 (Iridescent 9500 -> 237.5, Alien 10000 -> 250, HSB 11000 -> 275)", () => {
     expect(chartTierStart(9500)).toBe(237.5);
+    expect(chartTierStart(10000)).toBe(250);
+    expect(chartTierStart(11000)).toBe(275);
     expect(chartTierStart(500)).toBe(12.5);
     expect(chartTierStart(0)).toBe(0);
   });
 
-  it("티어는 20단계이고 최소 점수가 오름차순이다", () => {
-    expect(PLAYER_TIER_MINS).toHaveLength(20);
+  it("티어는 22단계이고 최소 점수가 오름차순이다", () => {
+    expect(PLAYER_TIER_MINS).toHaveLength(22);
     const mins = PLAYER_TIER_MINS.map((t) => t.min);
     expect([...mins].sort((a, b) => a - b)).toEqual(mins);
   });
@@ -20,31 +22,17 @@ describe("chartTier", () => {
     expect(chartTier(12.49).key).toBe("WHITE");
     expect(chartTier(12.5).key).toBe("WHITE_GRADIENT");
     expect(chartTier(237.49).key).toBe("RAINBOW_GRADIENT");
-    expect(chartTier(237.5).key).toBe("HASUBONG");
+    expect(chartTier(237.5).key).toBe("IRIDESCENT");
+    expect(chartTier(249.99).key).toBe("IRIDESCENT");
+    expect(chartTier(250).key).toBe("ALIEN");
+    expect(chartTier(274.99).key).toBe("ALIEN");
+    expect(chartTier(275).key).toBe("HSB");
+    expect(chartTier(384).key).toBe("HSB"); // 7.0, 95%: 가장 높은 칸
   });
 
   it("0점과 음수는 가장 낮은 티어다", () => {
     expect(chartTier(0).key).toBe("WHITE");
     expect(chartTier(-5).key).toBe("WHITE");
-  });
-
-  it("최고 티어 아래에서는 빛 단계가 없다", () => {
-    expect(chartTier(237.49).glow).toBe(0);
-    expect(chartTier(160).glow).toBe(0);
-  });
-
-  it("최고 티어에서는 25점마다 단계가 오른다 (237.5 → 1, 262.5 → 2, … 362.5 → 6)", () => {
-    expect(chartTier(237.5).glow).toBe(1);
-    expect(chartTier(262.49).glow).toBe(1);
-    expect(chartTier(262.5).glow).toBe(2);
-    expect(chartTier(287.5).glow).toBe(3);
-    expect(chartTier(304).glow).toBe(3);
-    expect(chartTier(312.5).glow).toBe(4);
-    expect(chartTier(337.5).glow).toBe(5);
-    expect(chartTier(362.49).glow).toBe(5);
-    expect(chartTier(362.5).glow).toBe(6);
-    expect(chartTier(384).glow).toBe(6);
-    expect(chartTier(500).glow).toBe(6); // 더 올라가도 6단계에서 멈춘다
   });
 
   it("상수표의 직접 계산한 예시 칸", () => {
@@ -57,12 +45,9 @@ describe("chartTier", () => {
 });
 
 describe("chartTierAttrs", () => {
-  it("빛이 없으면 data-glow를 붙이지 않는다", () => {
+  it("data-tier 하나만 붙인다 (예전 data-glow 빛 단계는 없다)", () => {
     expect(chartTierAttrs(80)).toEqual({ "data-tier": "GREEN" });
-  });
-
-  it("빛이 있으면 단계를 문자열로 붙인다", () => {
-    expect(chartTierAttrs(384)).toEqual({ "data-tier": "HASUBONG", "data-glow": "6" });
+    expect(chartTierAttrs(384)).toEqual({ "data-tier": "HSB" });
   });
 });
 

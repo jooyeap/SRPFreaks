@@ -51,16 +51,14 @@ describe("RecordForm", () => {
 
     fireEvent.change(rateInput(), { target: { value: "95" } });
     const top = screen.getByText("304.00"); // 15×0.8 + 3.2 = 15.2, ×20
-    expect(top).toHaveAttribute("data-tier", "HASUBONG");
-    expect(top).toHaveAttribute("data-glow", "3");
+    expect(top).toHaveAttribute("data-tier", "HSB"); // 304는 275 이상
 
     fireEvent.change(rateInput(), { target: { value: "80" } });
-    expect(screen.getByText("240.00")).toHaveAttribute("data-glow", "1");
+    expect(screen.getByText("240.00")).toHaveAttribute("data-tier", "IRIDESCENT"); // 237.5 이상 250 미만
 
     fireEvent.change(rateInput(), { target: { value: "50" } }); // 15×0.5×20 = 150 -> Red
     const low = screen.getByText("150.00");
     expect(low).toHaveAttribute("data-tier", "RED");
-    expect(low).not.toHaveAttribute("data-glow");
   });
 
   it("달성률이 범위 밖이면 점수를 계산하지 않고, 레이팅 상수 난이도가 없으면 점수 칸을 그리지 않는다", () => {

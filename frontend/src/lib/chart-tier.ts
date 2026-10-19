@@ -5,9 +5,9 @@ import { chartScore } from "@/lib/rating-guide";
  *
  * 생각: 레이팅은 40곡(단일 15 + 그 외 25)의 점수 합이고 티어는 그 합의 구간이다. 그래서 "이 곡 점수를 40곡 모두에서 냈다면
  * 어느 티어일까"를 곡 점수 = 티어 최소 점수 ÷ 40 으로 비교해 색을 고른다. 색 값은 globals.css의 `[data-tier="…"]`에 있고,
- * 여기서는 어느 티어인지(key)와 빛 단계(glow)만 정한다.
+ * 여기서는 어느 티어인지(key)만 정한다.
  *
- * 티어 최소 점수는 DB(player_tiers, V1 시드)의 값을 그대로 옮긴 것이다. 서버에서 ROOT가 구간표를 바꾸면 이 표도 같이 고쳐야 한다
+ * 티어 최소 점수는 DB(player_tiers, V1 시드 + V10)의 값을 그대로 옮긴 것이다. 서버에서 ROOT가 구간표를 바꾸면 이 표도 같이 고쳐야 한다
  * (설명서 상수표처럼 로그인 없이 보는 화면이 있어 API로 읽지 않는다).
  */
 export const PLAYER_TIER_MINS: readonly { key: string; name: string; min: number }[] = [
@@ -30,33 +30,28 @@ export const PLAYER_TIER_MINS: readonly { key: string; name: string; min: number
   { key: "GOLD", name: "Gold", min: 8000 },
   { key: "RAINBOW", name: "Rainbow", min: 8500 },
   { key: "RAINBOW_GRADIENT", name: "Rainbow Gradient", min: 9000 },
-  { key: "HASUBONG", name: "하수봉", min: 9500 },
+  { key: "IRIDESCENT", name: "Iridescent", min: 9500 },
+  { key: "ALIEN", name: "Alien", min: 10000 },
+  { key: "HSB", name: "HSB", min: 11000 },
 ];
 
 /** 레이팅에 들어가는 채보 수: 단일 15 + 그 외 25 (rating.list_single + rating.list_other 기본값) */
 export const RATED_CHART_COUNT = 40;
 
-/** 곡 점수 기준의 티어 구간 시작점 (티어 최소 점수 ÷ 40). 하수봉은 237.5. */
+/** 곡 점수 기준의 티어 구간 시작점 (티어 최소 점수 ÷ 40). Iridescent는 237.5, Alien은 250, HSB는 275. */
 export function chartTierStart(min: number): number {
   return min / RATED_CHART_COUNT;
 }
 
-/**
- * 최고 티어(하수봉) 구간 안의 단계 폭과 개수. 점수 대부분이 237.5 이상인 상수표 윗부분이 한 색으로만 보여서
- * (2026-10-10) 237.5부터 25점마다 단계를 올린다: 237.5 / 262.5 / 287.5 / 312.5 / 337.5 / 362.5 (최대 점수 384까지 6단계).
- * 단계마다 색(채움)과 빛이 달라서 색만 봐도 구간을 알 수 있다(globals.css의 [data-glow]).
- */
-export const HASUBONG_BAND_STEP = 25;
-export const HASUBONG_BAND_COUNT = 6;
-
 export interface ChartTier {
   /** player_tiers의 tier_key. CSS `[data-tier]`가 색을 정한다 */
   key: string;
-  /** 0 = 단계 없음. 최고 티어(하수봉) 구간에서만 1~6 (점수가 높을수록 높은 단계). CSS data-glow의 값이다 */
-  glow: 0 | 1 | 2 | 3 | 4 | 5 | 6;
 }
 
-/** 점수(소수 그대로, 반올림 전)가 속한 티어와 빛 단계. 음수는 가장 낮은 티어로 본다. */
+/**
+ * 점수(소수 그대로, 반올림 전)가 속한 티어. 음수는 가장 낮은 티어로 본다.
+ * 예전에는 최고 티어 안을 25점마다 6단계(빛)로 나눴지만, 그 구간이 Iridescent / Alien / HSB 세 티어가 되었다(D38).
+ */
 export function chartTier(score: number): ChartTier {
   let current = PLAYER_TIER_MINS[0];
   for (const tier of PLAYER_TIER_MINS) {
@@ -64,18 +59,12 @@ export function chartTier(score: number): ChartTier {
       current = tier;
     }
   }
-  const top = PLAYER_TIER_MINS[PLAYER_TIER_MINS.length - 1];
-  if (current.key !== top.key) {
-    return { key: current.key, glow: 0 };
-  }
-  const band = Math.floor((score - chartTierStart(top.min)) / HASUBONG_BAND_STEP) + 1;
-  return { key: current.key, glow: Math.min(HASUBONG_BAND_COUNT, band) as ChartTier["glow"] };
+  return { key: current.key };
 }
 
-/** 요소에 붙일 속성. CSS가 `data-tier`로 색을, `data-glow`로 빛 세기를 정한다. 빛이 없으면 data-glow는 붙이지 않는다. */
-export function chartTierAttrs(score: number): { "data-tier": string; "data-glow"?: string } {
-  const tier = chartTier(score);
-  return tier.glow > 0 ? { "data-tier": tier.key, "data-glow": String(tier.glow) } : { "data-tier": tier.key };
+/** 요소에 붙일 속성. CSS가 `data-tier`로 색과 빛을 정한다. */
+export function chartTierAttrs(score: number): { "data-tier": string } {
+  return { "data-tier": chartTier(score).key };
 }
 
 /**

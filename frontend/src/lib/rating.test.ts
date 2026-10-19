@@ -10,9 +10,9 @@ const orange: PlayerTierResponse = {
   nextMinScore: 1500,
 };
 const top: PlayerTierResponse = {
-  key: "HASUBONG",
-  displayName: "하수봉",
-  minScore: 9500,
+  key: "HSB",
+  displayName: "HSB",
+  minScore: 11000,
   nextDisplayName: null,
   nextMinScore: null,
 };
