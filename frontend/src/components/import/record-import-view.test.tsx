@@ -132,7 +132,7 @@ describe("최근 플레이 가져오기 화면", () => {
     renderIt();
     expect(await screen.findByText(/받은 플레이가 없습니다/)).toBeInTheDocument();
     expect(screen.getByText("SRP 가져오기")).toBeInTheDocument();
-    expect(screen.getByText(/토큰은 필요 없습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/토큰이나 계정 정보는 필요 없습니다/)).toBeInTheDocument();
     expect(screen.getByText(/다른 페이지에서는 동작하지 않고 안내만 뜹니다/)).toBeInTheDocument();
   });
 
@@ -141,6 +141,7 @@ describe("최근 플레이 가져오기 화면", () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     clearHandoff();
     renderIt();
+    fireEvent.click(await screen.findByRole("tab", { name: "모바일" }));
     fireEvent.click(await screen.findByRole("button", { name: "실행용 스크립트 복사" }));
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     const copied = String(writeText.mock.calls[0][0]);
@@ -152,12 +153,29 @@ describe("최근 플레이 가져오기 화면", () => {
     expect(screen.getByText(/맨 앞 j만 직접 입력합니다/)).toBeInTheDocument();
   });
 
-  it("안내 스크린샷 두 장을 대체 텍스트와 함께 보여 준다", async () => {
+  it("PC 탭: 끌어다 놓기 그림과 북마크 바 스크린샷, 공식 사이트 경로, 저장 기준, 실행 오류 안내를 보여 준다", async () => {
     clearHandoff();
     renderIt();
-    const bookmark = await screen.findByRole("img", { name: /북마크 바에 SRP 가져오기/ });
-    expect(bookmark).toHaveAttribute("src", "/import-guide/bookmark-drag.png");
+    expect(await screen.findByRole("tab", { name: "PC", selected: true })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /끌어서 놓는 방법/ })).toHaveAttribute("src", "/import-guide/bookmark-drag-howto.svg");
+    expect(screen.getByRole("img", { name: /북마크 바에 SRP 가져오기/ })).toHaveAttribute("src", "/import-guide/bookmark-drag.png");
+    expect(screen.getByText("상단 플레이 데이터")).toBeInTheDocument();
+    expect(screen.getByText("좌측 슬라이드바 플레이 이력")).toBeInTheDocument();
+    expect(screen.getByText("어떤 기록이 저장되나요?")).toBeInTheDocument();
+    expect(screen.getByText(/필요시 건의하기로 이어집니다/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "실행 오류" })).toBeInTheDocument();
+    expect(screen.getByText("번역을 켜 둔 상태예요")).toBeInTheDocument();
+    // PC 탭에는 주소창용 안내가 없다
+    expect(screen.queryByRole("button", { name: "실행용 스크립트 복사" })).toBeNull();
+  });
+
+  it("모바일 탭: 주소창 스크린샷과 j 입력 안내를 보여 주고 PC 전용 그림은 숨긴다", async () => {
+    clearHandoff();
+    renderIt();
+    fireEvent.click(await screen.findByRole("tab", { name: "모바일" }));
     expect(screen.getByRole("img", { name: /주소창에 j를 입력/ })).toHaveAttribute("src", "/import-guide/address-bar.png");
+    expect(screen.queryByRole("img", { name: /끌어서 놓는 방법/ })).toBeNull();
+    expect(screen.getByText(/맨 앞 j만 직접 입력합니다/)).toBeInTheDocument();
   });
 
   it("일반 사용자도 가져오기 화면을 쓸 수 있고 준비 중 안내는 보이지 않는다", async () => {
