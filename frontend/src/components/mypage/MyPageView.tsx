@@ -1,5 +1,6 @@
 "use client";
 
+import { ImportEntryLink } from "@/components/import/ImportEntryLink";
 import { RatingView } from "@/components/rating/RatingView";
 import { SetlistTab } from "@/components/setlist/SetlistTab";
 import { StatsTab } from "@/components/mypage/StatsTab";
@@ -15,6 +16,8 @@ export function MyPageView({ userId, state, onStateChange }: { userId: number; s
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-xl font-semibold text-fg">마이페이지</h1>
+
+      <ImportEntryLink />
 
       <div role="tablist" aria-label="마이페이지 탭" className="flex gap-1 rounded-xl border border-line bg-table-head p-1">
         {MY_PAGE_TABS.map((t) => {
