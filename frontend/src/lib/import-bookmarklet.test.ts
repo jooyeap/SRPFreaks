@@ -169,6 +169,12 @@ describe("북마클릿 실행", () => {
     expect(modalText()).toContain("<img src=x onerror=alert(1)>");
   });
 
+  it("안내 창은 브라우저 번역 대상에서 뺀다(번역된 페이지에서 안내 글이 바뀌어 보이던 문제)", () => {
+    run({ hostname: "example.com", pathname: "/" });
+    expect(modal()).toHaveAttribute("translate", "no");
+    expect(modal()).toHaveClass("notranslate");
+  });
+
   it("번역된 페이지에서는 서버로 보내지 않고 번역을 끄라고 안내한다", () => {
     document.body.innerHTML = block({ translated: true });
     run(OFFICIAL);

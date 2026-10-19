@@ -95,6 +95,7 @@ const REASON_LABELS: Record<string, string> = {
  * 안내 창은 alert 대신 쓴다: 처리 중에도 반응이 보이고, 결과·제외된 곡·링크를 한 화면에 담을 수 있다.
  * 글자는 textContent로만 넣고(서버 응답 글자가 HTML로 해석되지 않는다), 모양은 element.style로 지정한다
  * (style 속성 문자열은 공식 페이지의 CSP에 막힐 수 있어서 쓰지 않는다).
+ * 창에는 translate="no"를 단다: 번역된 페이지에 끼워 넣은 글을 브라우저가 다시 번역해 안내 문장이 잘려 나왔다.
  */
 function senderSource(): string {
   return `
@@ -114,6 +115,8 @@ function srpModal(title,body,link){
   overlay.id='srp-import-modal';
   overlay.setAttribute('role','dialog');
   overlay.setAttribute('aria-modal','true');
+  overlay.setAttribute('translate','no');
+  overlay.className='notranslate';
   overlay.setAttribute('aria-label','SRPFreaks 최근 플레이 가져오기');
   srpStyle(overlay,{position:'fixed',left:'0',top:'0',right:'0',bottom:'0',zIndex:'2147483647',background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center'});
   var box=document.createElement('div');
