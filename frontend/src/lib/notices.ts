@@ -5,6 +5,7 @@ import type { NoticeResponse, PageResponse } from "@/lib/api-types";
 /** 공지 쿼리 키. 보는 사람(viewerId)을 넣는 이유는 다른 화면과 같다(계정이 바뀌어도 이전 캐시가 보이지 않게). */
 export const noticeKeys = {
   all: ["notices"] as const,
+  detail: (viewerId: number, noticeId: number) => ["notices", "detail", viewerId, noticeId] as const,
   list: (viewerId: number, page: number, size: number) => ["notices", "list", viewerId, page, size] as const,
 };
 
@@ -30,6 +31,10 @@ export type NoticeValues = z.infer<typeof noticeSchema>;
 
 export function fetchNotices(page: number, size: number, signal?: AbortSignal): Promise<PageResponse<NoticeResponse>> {
   return apiFetch<PageResponse<NoticeResponse>>("/notices", { query: { page, size }, signal });
+}
+
+export function fetchNotice(noticeId: number, signal?: AbortSignal): Promise<NoticeResponse> {
+  return apiFetch<NoticeResponse>(`/notices/${noticeId}`, { signal });
 }
 
 // 아래 셋은 ADMIN·ROOT만 부를 수 있다. 권한은 서버가 검사하고, 화면은 버튼을 보일지만 정한다.
