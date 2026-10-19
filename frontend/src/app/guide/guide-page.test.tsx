@@ -51,7 +51,7 @@ describe("레이팅 설명서", () => {
     expect(cells[6]).toHaveTextContent("304");
   });
 
-  it("칸마다 점수에 맞는 플레이어 티어 색(data-tier)이 붙고, 최고 티어를 넘으면 빛 단계(data-glow)가 붙는다", () => {
+  it("칸마다 점수에 맞는 플레이어 티어 색(data-tier)이 붙고, 최상위 세 티어(Iridescent / Alien / HSB)도 나뉜다", () => {
     render(<GuidePage />);
     const table = screen.getByRole("table", { name: /레이팅 상수표/ });
     const rows = within(table).getAllByRole("row");
@@ -60,27 +60,30 @@ describe("레이팅 설명서", () => {
     const top = cellsOf(rows[1]); // 7.0 행: 70% ... 95%
     const topRight = top[top.length - 1]; // 7.0, 95% = 384 -> 하수봉, 가장 높은 단계(6)
     expect(topRight).toHaveTextContent("384");
-    expect(topRight).toHaveAttribute("data-tier", "HASUBONG");
-    expect(topRight).toHaveAttribute("data-glow", "6");
-    // 6.0 행 95% = 304 -> 하수봉 3단계(287.5~312.5) / 6.0 행 80% = 240 -> 하수봉 1단계
+    expect(topRight).toHaveAttribute("data-tier", "HSB");
+    // 6.0 행 95% = 304 -> HSB(275 이상) / 85% = 261 -> Alien(250~275) / 80% = 240 -> Iridescent(237.5~250)
     const row60 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "6.0") as HTMLElement;
     const c60 = cellsOf(row60);
-    expect(c60[5]).toHaveAttribute("data-glow", "3");
+    expect(c60[5]).toHaveAttribute("data-tier", "HSB");
+    expect(c60[3]).toHaveTextContent("261");
+    expect(c60[3]).toHaveAttribute("data-tier", "ALIEN");
     expect(c60[2]).toHaveTextContent("240");
-    expect(c60[2]).toHaveAttribute("data-glow", "1");
+    expect(c60[2]).toHaveAttribute("data-tier", "IRIDESCENT");
     // 5.5 행: 80% = 160 -> Red(빛 없음), 5.0 행 80% = 80 -> Green
     const row55 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "5.5") as HTMLElement;
     expect(cellsOf(row55)[2]).toHaveAttribute("data-tier", "RED");
-    expect(cellsOf(row55)[2]).not.toHaveAttribute("data-glow");
     const row50 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "5.0") as HTMLElement;
     expect(cellsOf(row50)[2]).toHaveAttribute("data-tier", "GREEN");
   });
 
-  it("색 기준 범례에 20개 티어의 곡 점수 기준이 글자로 있다 (하수봉 237.5)", () => {
+  it("색 기준 범례에 22개 티어의 곡 점수 기준이 글자로 있다 (Iridescent 237.5, Alien 250, HSB 275~)", () => {
     render(<GuidePage />);
-    expect(screen.getByText("237.5~")).toBeInTheDocument();
+    expect(screen.getByText("237.5")).toBeInTheDocument();
+    expect(screen.getByText("250")).toBeInTheDocument();
+    expect(screen.getByText("275~")).toBeInTheDocument();
     expect(screen.getByText("12.5")).toBeInTheDocument();
-    expect(screen.getByText("하수봉")).toBeInTheDocument();
+    expect(screen.getByText("HSB")).toBeInTheDocument();
+    expect(screen.queryByText("하수봉")).toBeNull();
   });
 
   it("부정한 기록은 운영자가 삭제할 수 있다는 안내를 보여 준다", () => {

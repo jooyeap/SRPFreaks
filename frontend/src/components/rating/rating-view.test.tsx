@@ -121,7 +121,7 @@ describe("RatingView", () => {
     expect(regions[regions.length - 1]).toBe(panel); // 마지막 구역
   });
 
-  it("곡별 점수 숫자는 점수에 맞는 플레이어 티어 색이고, 하수봉 기준(237.5)을 넘으면 빛 단계가 붙는다", async () => {
+  it("곡별 점수 숫자는 점수에 맞는 플레이어 티어 색이고, Alien 기준(250)을 넘으면 Alien 색이다", async () => {
     fetchMock.mockResolvedValueOnce(
       json(
         skill({
@@ -132,15 +132,13 @@ describe("RatingView", () => {
     );
     renderView();
     const high = await screen.findByText("264.00");
-    expect(high).toHaveAttribute("data-tier", "HASUBONG");
-    expect(high).toHaveAttribute("data-glow", "2"); // 264 = 262.5 이상
+    expect(high).toHaveAttribute("data-tier", "ALIEN"); // 264는 250 이상 275 미만
     expect(high).toHaveClass("tier-score");
     const mid = screen.getByText("160.50");
     expect(mid).toHaveAttribute("data-tier", "RED"); // 150 이상 162.5 미만
-    expect(mid).not.toHaveAttribute("data-glow");
     // 카드 왼쪽 띠는 점수의 티어 색 하나다 (단계 색 띠는 없다)
     const bars = document.querySelectorAll("li .tier-bar");
-    expect(bars[0]).toHaveAttribute("data-tier", "HASUBONG");
+    expect(bars[0]).toHaveAttribute("data-tier", "ALIEN");
     expect(bars[0]).toHaveClass("tier-bar-v"); // 세로 띠는 그라데이션이 위→아래로 흐른다
     expect(bars[1]).toHaveAttribute("data-tier", "RED");
     expect(document.querySelectorAll("li .stage-bar")).toHaveLength(0);
