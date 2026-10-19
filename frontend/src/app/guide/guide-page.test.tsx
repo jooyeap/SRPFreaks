@@ -17,6 +17,24 @@ describe("레이팅 설명서", () => {
     expect(screen.getByText("제외된 채보도 기록은 그대로 남습니다.")).toBeInTheDocument();
   });
 
+  it("포함 기준은 처음에 접혀 있고(details), 한눈에 보기와 상수표는 접히지 않는다", () => {
+    const { container } = render(<GuidePage />);
+    const details = container.querySelector("details");
+    expect(details).not.toBeNull();
+    expect(details).not.toHaveAttribute("open");
+    expect(within(details as HTMLElement).getByRole("heading", { level: 2, name: "포함 기준" })).toBeInTheDocument();
+    // 접기 안에는 포함 기준 카드만 있고, 요약 카드와 상수표는 밖에 있다
+    expect(details).not.toContainElement(screen.getByRole("region", { name: "한눈에 보기" }));
+    expect(details).not.toContainElement(screen.getByRole("table", { name: /레이팅 상수표/ }));
+    expect(container.querySelectorAll("details")).toHaveLength(1);
+  });
+
+  it("상수표 설명에 Gold 예시(8,000 ÷ 40 = 200점)와 S·SS 점수 일치 참고가 있다", () => {
+    render(<GuidePage />);
+    expect(screen.getByText(/8,000 ÷ 40 =/)).toHaveTextContent("200점");
+    expect(screen.getByText(/S\(80%\)와 4 낮은 곡의 SS\(95%\)는 점수가 같습니다/)).toBeInTheDocument();
+  });
+
   it("상수표는 7.0~4.9의 22행이고 값이 글자로 들어 있다", () => {
     render(<GuidePage />);
     const table = screen.getByRole("table", { name: /레이팅 상수표/ });
