@@ -117,6 +117,7 @@ describe("최근 플레이 가져오기 화면", () => {
     expect(await screen.findByText(/받은 플레이가 없습니다/)).toBeInTheDocument();
     expect(screen.getByText("SRP 가져오기")).toBeInTheDocument();
     expect(screen.getByText(/토큰은 필요 없습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/다른 페이지에서는 동작하지 않고 안내만 뜹니다/)).toBeInTheDocument();
   });
 
   it("주소창 실행용 스크립트는 맨 앞 j를 뺀 avascript:...로 복사한다(브라우저가 붙여넣은 javascript: 접두사를 지우기 때문)", async () => {

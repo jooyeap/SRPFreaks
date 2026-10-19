@@ -78,7 +78,8 @@ function BookmarkGuide() {
     <section aria-label="사용 방법" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
       <h2 className="text-xs font-bold text-fg-sub">사용 방법 (북마크는 한 번만 추가)</h2>
       <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-fg-sub">
-        <li>공식 최근 플레이 페이지(번역 끔)에서 북마크를 누릅니다.</li>
+        <li>기타도라 공식 사이트의 <b className="text-fg">최근 플레이</b> 페이지(주소에 stage_result 포함, 번역 끔)를 엽니다.</li>
+        <li>그 페이지에서 북마크를 누릅니다. 다른 페이지에서는 동작하지 않고 안내만 뜹니다.</li>
         <li>이 화면이 열리면서 읽은 값이 전달됩니다. 토큰은 필요 없습니다.</li>
         <li>아래에서 확인하고 저장합니다. 다음 페이지는 같은 방법으로 이어서 보냅니다.</li>
       </ol>
