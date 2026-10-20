@@ -32,32 +32,29 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
   return (
     <section aria-label={t("Song.tableInfo")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3.5">
       <h2 className="sr-only">{t("Song.tableInfo")}</h2>
-      {/* 레이팅 상수 난이도는 왼쪽, 추천과 레벨은 오른쪽에 모아 값이 오른쪽 끝에 맞게 한다.
-          (360px 폭에서 3등분하면 `레이팅 상수 난이도 ?`가 두 줄로 꺾여 ?가 아래로 내려갔다. 라벨은 한 줄로 고정한다.) */}
-      <dl className="flex items-start justify-between gap-x-3 text-sm">
-        <div>
+      {/* 왼쪽: `? 레이팅 상수 난이도` 아래에 큰 값. 오른쪽: 같은 줄(라벨 줄)에 `추천 상`, `레벨 9.15`를 라벨 바로 옆에 값이 오게 둔다.
+          (360px 폭에서 3등분하면 라벨이 두 줄로 꺾여 ?가 아래로 내려갔고, 값이 라벨 밑에 있으면 오른쪽 끝에 붙지 않아 이렇게 바꿨다.) */}
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 text-sm">
+        <div className="row-span-2">
           <dt className="flex items-center gap-1 whitespace-nowrap text-xs text-fg-dim">
-            {t("Song.ratingConstant")} <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
+            <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
+            {t("Song.ratingConstant")}
           </dt>
           <dd className="font-num text-[22px] font-bold leading-tight text-fg">
             {formatTier(group.tier, t)}
           </dd>
         </div>
-        <div className="flex items-start gap-6 text-right">
-          <div>
-            <dt className="whitespace-nowrap text-xs leading-6 text-fg-dim">{t("Nav.importBadge")}</dt>
-            <dd className="flex justify-end">
-              {entry.recommend ? (
-                <RecommendBadge value={entry.recommend} />
-              ) : (
-                <span className="text-fg-faint">{EMPTY_MARK}</span>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="whitespace-nowrap text-xs leading-6 text-fg-dim">{t("Song.fieldLevel")}</dt>
-            <dd className="font-num text-[22px] font-bold leading-tight text-fg">{formatLevel(entry.level)}</dd>
-          </div>
+        <div className="flex h-6 items-center justify-end gap-1.5 self-start">
+          <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Nav.importBadge")}</dt>
+          <dd className="flex items-center">
+            {entry.recommend ? (
+              <RecommendBadge value={entry.recommend} />
+            ) : (
+              <span className="text-fg-faint">{EMPTY_MARK}</span>
+            )}
+          </dd>
+          <dt className="ml-3 whitespace-nowrap text-xs text-fg-dim">{t("Song.fieldLevel")}</dt>
+          <dd className="font-num text-base font-bold leading-none text-fg">{formatLevel(entry.level)}</dd>
         </div>
       </dl>
       <p className="border-t border-row-line pt-2.5 text-xs text-fg-dim">
