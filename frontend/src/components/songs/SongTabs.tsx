@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect } from "react";
+import { rememberSongTab } from "@/lib/song-tab";
 
 /**
  * 곡 화면 맨 위의 `서열표 | 곡 목록` 전환 탭. 두 화면을 한 메뉴(곡)로 합쳤지만 주소와 필터 상태(쿼리)는 각자 그대로 두려고,
@@ -11,6 +15,10 @@ const TABS = [
 ] as const;
 
 export function SongTabs({ current }: { current: (typeof TABS)[number]["key"] }) {
+  // 이 화면을 본 것을 기억해서 다음에 `곡` 메뉴가 같은 탭으로 들어가게 한다
+  useEffect(() => {
+    rememberSongTab(current);
+  }, [current]);
   return (
     <nav aria-label="곡 보기 전환" className="mb-4 flex gap-1 border-b border-line">
       {TABS.map((tab) => {

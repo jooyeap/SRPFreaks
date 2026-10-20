@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isActivePath } from "@/components/DesktopNav";
 import { NavIcon } from "@/components/NavIcon";
-import { MORE_ITEMS, TAB_ITEMS } from "@/lib/nav";
+import { MORE_ITEMS, SONG_PATHS, TAB_ITEMS } from "@/lib/nav";
+import { useSongHomeHref } from "@/lib/song-tab";
 
 const TAB_CLASS = "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[11px]";
 
@@ -19,6 +20,7 @@ const TAB_CLASS = "flex h-14 min-w-0 flex-1 flex-col items-center justify-center
  */
 export function MobileTabBar() {
   const pathname = usePathname();
+  const songHref = useSongHomeHref();
   const [moreOpen, setMoreOpen] = useState(false);
 
   // Esc로 닫는다. 화면을 이동하면(pathname 변경) 시트 안 링크 클릭 핸들러가 닫아 준다.
@@ -77,7 +79,7 @@ export function MobileTabBar() {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={item.match === SONG_PATHS ? songHref : item.href}
               aria-label={item.name}
               aria-current={active ? "page" : undefined}
               onClick={() => setMoreOpen(false)}

@@ -61,8 +61,9 @@ export const NAV_ITEMS: readonly {
   href: string;
   label: string;
   icon: NavIconName;
+  match?: readonly string[];
 }[] = [
-  { href: "/table", label: "곡", icon: "songs" },
+  { href: "/table", label: "곡", icon: "songs", match: SONG_PATHS },
   { href: "/me", label: "마이페이지", icon: "rating" },
   { href: "/players", label: "유저", icon: "players" },
   { href: "/guide", label: "설명서", icon: "guide" },

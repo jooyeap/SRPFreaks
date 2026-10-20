@@ -5,7 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminNavLink } from "@/components/AdminNavLink";
 import { AuthControls } from "@/components/AuthControls";
 import { NavIcon } from "@/components/NavIcon";
-import { NAV_ITEMS } from "@/lib/nav";
+import { NAV_ITEMS, SONG_PATHS } from "@/lib/nav";
+import { useSongHomeHref } from "@/lib/song-tab";
 
 const FOCUSABLE = "a[href], button:not([disabled])";
 
@@ -18,6 +19,7 @@ const ITEM_CLASS = "flex items-center gap-3 rounded-xl px-3 py-3 text-base font-
  * 패널은 열려 있을 때만 그린다. 닫힌 상태의 DOM에 링크가 이중으로 남지 않아 화면 읽기 프로그램에도 한 번만 읽힌다.
  */
 export function MobileMenu() {
+  const songHref = useSongHomeHref();
   const [open, setOpen] = useState(false);
   const openerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -116,7 +118,7 @@ export function MobileMenu() {
             </div>
             <nav aria-label="주요 메뉴" className="flex flex-col gap-1">
               {NAV_ITEMS.map((item) => (
-                <Link key={item.href} href={item.href} className={ITEM_CLASS}>
+                <Link key={item.href} href={item.match === SONG_PATHS ? songHref : item.href} className={ITEM_CLASS}>
                   <NavIcon name={item.icon} />
                   {item.label}
                 </Link>
