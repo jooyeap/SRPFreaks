@@ -45,6 +45,12 @@ public class SongAdminService {
     // ---------------------------------------------------------------- 곡
 
     public SongDetailResponse createSong(Long actorId, SongRequest request) {
+        // 같은 이름의 곡을 또 만들면 가져오기가 "같은 이름의 곡이 여러 개"로 제외하고, 곡 목록에도 같은 곡이 두 번 나온다.
+        // 다른 파트·난이도 채보가 필요하면 새 곡이 아니라 기존 곡에 채보를 추가해야 한다.
+        String normalized = SongTitle.normalize(request.title().strip());
+        if (songRepository.findActiveTitles().stream().anyMatch(t -> SongTitle.normalize(t).equals(normalized))) {
+            throw new ApiException(ErrorCode.SONG_TITLE_DUPLICATE);
+        }
         Song song = Song.create(request.title().strip(), blankToNull(request.artist()),
                 blankToNull(request.source()), userRepository.getReferenceById(actorId));
         song.changeMeta(blankToNull(request.addedVersion()), blankToNull(request.titleFolder()),

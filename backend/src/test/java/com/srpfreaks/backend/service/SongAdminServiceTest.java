@@ -111,6 +111,29 @@ class SongAdminServiceTest {
     }
 
     @Test
+    void 같은_이름의_곡이_이미_있으면_등록하지_않고_409다() {
+        // 대소문자·공백·전각/반각이 달라도 같은 이름이다(가져오기가 곡을 찾을 때와 같은 정규화)
+        when(songRepository.findActiveTitles()).thenReturn(List.of("Ｄｏｕｗａ Kairou"));
+
+        assertThatThrownBy(() -> service.createSong(ACTOR, request("douwa  kairou", null)))
+                .isInstanceOfSatisfying(ApiException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SONG_TITLE_DUPLICATE));
+
+        verify(songRepository, never()).save(any());
+        verify(auditLogRepository, never()).save(any());
+    }
+
+    @Test
+    void 이름이_다르면_등록한다() {
+        when(songRepository.findActiveTitles()).thenReturn(List.of("다른 곡"));
+        when(songRepository.save(any(Song.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.createSong(ACTOR, request("새 곡", null));
+
+        verify(songRepository).save(any(Song.class));
+    }
+
+    @Test
     void 같은_표기는_한_번만_저장한다() {
         when(songRepository.save(any(Song.class))).thenAnswer(i -> {
             Song s = i.getArgument(0);
