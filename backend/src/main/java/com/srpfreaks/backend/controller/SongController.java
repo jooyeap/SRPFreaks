@@ -5,6 +5,7 @@ import com.srpfreaks.backend.dto.SongDetailResponse;
 import com.srpfreaks.backend.dto.SongRequest;
 import com.srpfreaks.backend.dto.SongSuggestionResponse;
 import com.srpfreaks.backend.dto.SongSummaryResponse;
+import com.srpfreaks.backend.dto.SongTitleCheckResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.SongAdminService;
 import com.srpfreaks.backend.service.SongQueryService;
@@ -53,6 +54,13 @@ public class SongController {
     @GetMapping("/suggest")
     public List<SongSuggestionResponse> suggest(@RequestParam(required = false) String q) {
         return songSuggestService.suggest(q);
+    }
+
+    /** 곡명 중복 실시간 확인(ROOT·ADMIN). 등록·수정 창에서 이름을 입력하는 동안 부른다. 수정이면 자기 곡 id를 excludeSongId로 보낸다. */
+    @GetMapping("/title-check")
+    @PreAuthorize("hasRole('ADMIN')")
+    public SongTitleCheckResponse titleCheck(@RequestParam String title, @RequestParam(required = false) Long excludeSongId) {
+        return songAdminService.checkTitle(title, excludeSongId);
     }
 
     @GetMapping("/{songId}")
