@@ -10,11 +10,12 @@ const ACTIVE = `${BASE} bg-table-head font-bold text-fg`;
 const IDLE = `${BASE} text-fg-sub hover:text-fg`;
 
 /** 현재 경로가 이 메뉴 항목의 화면인가. 홈("/")은 정확히 같을 때만, 나머지는 하위 경로(/songs/12 등)도 같은 메뉴로 본다. */
-export function isActivePath(pathname: string, href: string): boolean {
+export function isActivePath(pathname: string, href: string, match?: readonly string[]): boolean {
   if (href === "/") {
     return pathname === "/";
   }
-  return pathname === href || pathname.startsWith(`${href}/`);
+  // match가 있으면 그 경로들 중 하나라도 해당하면 같은 메뉴다 (곡 메뉴 = /songs + /table)
+  return (match ?? [href]).some((base) => pathname === base || pathname.startsWith(`${base}/`));
 }
 
 /**
@@ -24,12 +25,12 @@ export function isActivePath(pathname: string, href: string): boolean {
  */
 export function DesktopNav() {
   const pathname = usePathname();
-  const items = [...DESKTOP_NAV_ITEMS, MY_PAGE_ITEM];
+  const items: readonly { href: string; label: string; match?: readonly string[] }[] = [...DESKTOP_NAV_ITEMS, MY_PAGE_ITEM];
   return (
     <nav aria-label="주요 메뉴" className="hidden flex-1 items-center gap-1 lg:flex">
       {items.map((item) => {
         // 관리 링크는 마이페이지 바로 앞에 끼운다 (ADMIN·ROOT에게만 그려진다)
-        const active = isActivePath(pathname, item.href);
+        const active = isActivePath(pathname, item.href, item.match);
         return (
           <span key={item.href} className="contents">
             {item.href === MY_PAGE_ITEM.href ? <AdminNavLink className={IDLE} /> : null}

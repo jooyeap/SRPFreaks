@@ -26,6 +26,10 @@ describe("isActivePath", () => {
     expect(isActivePath("/songs/12", "/songs")).toBe(true);
     // 접두사만 같은 다른 경로(/songsX)는 같은 메뉴가 아니다
     expect(isActivePath("/songsX", "/songs")).toBe(false);
+    // match가 있으면 그 경로 어디서든 같은 메뉴다 (곡 메뉴 = 곡 목록 + 서열표)
+    expect(isActivePath("/songs/12", "/table", ["/songs", "/table"])).toBe(true);
+    expect(isActivePath("/table/folder/6.5", "/table", ["/songs", "/table"])).toBe(true);
+    expect(isActivePath("/me", "/table", ["/songs", "/table"])).toBe(false);
   });
 });
 
@@ -53,7 +57,7 @@ describe("DesktopNav", () => {
     const names = within(nav)
       .getAllByRole("link")
       .map((link) => link.textContent);
-    expect(names).toEqual(["홈", "곡 목록", "서열표", "유저", "공지", "건의", "설명서", "마이페이지"]);
+    expect(names).toEqual(["홈", "곡", "유저", "공지", "건의", "설명서", "마이페이지"]);
     expect(within(nav).getByRole("link", { name: "홈" })).toHaveAttribute("href", "/");
     expect(within(nav).getByRole("link", { name: "마이페이지" })).toHaveAttribute("href", "/me");
   });
@@ -70,10 +74,16 @@ describe("DesktopNav", () => {
     pathname = "/songs/12";
     fetchMock.mockResolvedValue(json({}, 401));
     renderNav();
-    expect(screen.getByRole("link", { name: "곡 목록" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "곡 목록" })).toHaveClass("font-bold");
-    expect(screen.getByRole("link", { name: "서열표" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "곡" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "곡" })).toHaveClass("font-bold");
     expect(screen.getByRole("link", { name: "홈" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("서열표 화면에서도 곡 메뉴가 강조된다", () => {
+    pathname = "/table";
+    fetchMock.mockResolvedValue(json({}, 401));
+    renderNav();
+    expect(screen.getByRole("link", { name: "곡" })).toHaveAttribute("aria-current", "page");
   });
 
   it("관리 링크는 USER에게 보이지 않는다", async () => {

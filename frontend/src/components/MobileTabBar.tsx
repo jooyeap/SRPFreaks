@@ -2,12 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { isActivePath } from "@/components/DesktopNav";
 import { NavIcon } from "@/components/NavIcon";
-import { TAB_ITEMS } from "@/lib/nav";
+import { MORE_ITEMS, TAB_ITEMS } from "@/lib/nav";
+
+const TAB_CLASS = "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[11px]";
 
 /**
- * lg(1024px) 미만 화면 하단에 고정되는 탭바(홈 · 곡 · 서열표 · 마이). lg 이상은 헤더의 가로 메뉴(DesktopNav)가 있어 숨긴다.
+ * lg(1024px) 미만 화면 하단에 고정되는 탭바(홈 · 곡 · 마이 · 더보기). lg 이상은 헤더의 가로 메뉴(DesktopNav)가 있어 숨긴다.
+ * `더보기`는 링크가 아니라 버튼이다: 누르면 자주 쓰지 않는 화면(가져오기·공지·유저·건의·설명서·설정)을 담은 시트가 탭바 위로 열린다.
  * 높이는 56px + 아이폰 하단 안전 영역이고, 같은 값을 CSS 변수 `--tabbar-h`(globals.css)로 두어
  * 본문 아래 여백·맨 위로 버튼·곡 검색 버튼·토스트가 탭바에 가려지지 않게 한다.
  * 현재 화면은 굵은 글자 + 진한 색 + aria-current로 알린다(색만으로 구분하지 않는다).
@@ -15,28 +19,86 @@ import { TAB_ITEMS } from "@/lib/nav";
  */
 export function MobileTabBar() {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  // Esc로 닫는다. 화면을 이동하면(pathname 변경) 시트 안 링크 클릭 핸들러가 닫아 준다.
+  useEffect(() => {
+    if (!moreOpen) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMoreOpen(false);
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [moreOpen]);
+
   return (
-    <nav
-      aria-label="하단 메뉴"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
-    >
-      {TAB_ITEMS.map((item) => {
-        const active = isActivePath(pathname, item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-label={item.name}
-            aria-current={active ? "page" : undefined}
-            className={`flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] ${
-              active ? "font-bold text-fg" : "text-fg-dim hover:text-fg"
-            }`}
+    <>
+      {moreOpen ? (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          {/* 바깥을 누르면 닫는다. 키보드 사용자는 Esc나 더보기 버튼을 쓴다 */}
+          <div className="absolute inset-0 bg-black/55" onClick={() => setMoreOpen(false)} aria-hidden="true" />
+          <section
+            aria-label="더보기"
+            className="absolute inset-x-0 bottom-[var(--tabbar-h)] rounded-t-2xl border border-b-0 border-line bg-card px-4 pb-4 pt-3"
           >
-            <NavIcon name={item.icon} className="h-5 w-5" />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+            <h2 className="px-1 pb-1 text-[13px] font-bold text-fg-dim">더보기</h2>
+            <ul>
+              {MORE_ITEMS.map((item) => (
+                <li key={item.href} className="border-b border-line last:border-b-0">
+                  <Link
+                    href={item.href}
+                    onClick={() => setMoreOpen(false)}
+                    className="flex min-h-[52px] items-center gap-2.5 px-1 text-[15px] text-fg"
+                  >
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge ? (
+                      <span className="rounded bg-chip-on-bg px-2 py-0.5 font-num text-[11px] font-bold text-chip-on-fg">{item.badge}</span>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-center text-[11px] text-fg-dim">
+              <strong>비공식 팬 프로젝트</strong> · KONAMI와 무관
+            </p>
+          </section>
+        </div>
+      ) : null}
+      <nav
+        aria-label="하단 메뉴"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
+      >
+        {TAB_ITEMS.map((item) => {
+          const active = !moreOpen && isActivePath(pathname, item.href, item.match);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-label={item.name}
+              aria-current={active ? "page" : undefined}
+              onClick={() => setMoreOpen(false)}
+              className={`${TAB_CLASS} ${active ? "font-bold text-fg" : "text-fg-dim hover:text-fg"}`}
+            >
+              <NavIcon name={item.icon} className="h-5 w-5" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={moreOpen}
+          onClick={() => setMoreOpen((open) => !open)}
+          className={`${TAB_CLASS} ${moreOpen ? "font-bold text-fg" : "text-fg-dim hover:text-fg"}`}
+        >
+          <NavIcon name="more" className="h-5 w-5" />
+          <span>더보기</span>
+        </button>
+      </nav>
+    </>
   );
 }

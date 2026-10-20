@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { SongTabs } from "@/components/songs/SongTabs";
 import { DifficultyTableView } from "@/components/table/DifficultyTableView";
 import { viewStateFromParams, viewStateToQuery, type TableViewState } from "@/lib/table-view-state";
 
@@ -23,26 +24,41 @@ function TableContent() {
   const onStateChange = useCallback(
     (next: TableViewState) => {
       const query = viewStateToQuery(next);
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
     },
     [router, pathname],
   );
 
   if (status === "loading") {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return (
+      <>
+        <SongTabs current="table" />
+        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+      </>
+    );
   }
   if (status === "anonymous" || !user) {
     return (
-      <section className="flex flex-col items-start gap-3">
-        <h1 className="text-xl font-semibold text-fg">서열표</h1>
-        <p className="text-sm text-fg-sub">내 기록과 함께 보려면 로그인해 주세요.</p>
-        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-          로그인
-        </Link>
-      </section>
+      <>
+        <SongTabs current="table" />
+        <section className="flex flex-col items-start gap-3">
+          <h1 className="text-xl font-semibold text-fg">서열표</h1>
+          <p className="text-sm text-fg-sub">내 기록과 함께 보려면 로그인해 주세요.</p>
+          <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+            로그인
+          </Link>
+        </section>
+      </>
     );
   }
-  return <DifficultyTableView userId={user.id} canRegister={user.role !== "USER"} state={state} onStateChange={onStateChange} />;
+  return (
+    <>
+      <SongTabs current="table" />
+      <DifficultyTableView userId={user.id} canRegister={user.role !== "USER"} state={state} onStateChange={onStateChange} />
+    </>
+  );
 }
 
 export default function TablePage() {
