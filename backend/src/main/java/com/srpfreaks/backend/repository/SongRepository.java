@@ -21,8 +21,8 @@ public interface SongRepository extends JpaRepository<Song, Long> {
      * 삭제되지 않은 모든 곡의 곡명. 곡 등록 때 "같은 이름이 이미 있는가"를 볼 때만 쓴다.
      * 정규화(NFKC)는 SQL로 할 수 없어서 자바에서 비교하고, 곡 수가 수천 개 수준이라 한 번에 읽어도 부담이 없다.
      */
-    @Query("select s.title from Song s where s.deleted = false")
-    List<String> findActiveTitles();
+    @Query("select new com.srpfreaks.backend.repository.ActiveSongTitle(s.id, s.title) from Song s where s.deleted = false")
+    List<ActiveSongTitle> findActiveTitles();
 
     /**
      * 곡 검색: 곡명, 아티스트, 곡명 표기/별칭(정규화된 값)에 키워드가 들어 있는 곡.

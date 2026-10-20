@@ -5,6 +5,7 @@ import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.DifficultyCreateRequest;
 import com.srpfreaks.backend.dto.DifficultyUpdateRequest;
 import com.srpfreaks.backend.dto.SongRequest;
+import com.srpfreaks.backend.dto.SongTitleCheckResponse;
 import com.srpfreaks.backend.dto.SongTitleRequest;
 import com.srpfreaks.backend.entity.AuditLog;
 import com.srpfreaks.backend.entity.DifficultyType;
@@ -15,6 +16,7 @@ import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
 import com.srpfreaks.backend.entity.TitleKind;
 import com.srpfreaks.backend.entity.User;
+import com.srpfreaks.backend.repository.ActiveSongTitle;
 import com.srpfreaks.backend.repository.AuditLogRepository;
 import com.srpfreaks.backend.repository.SongDifficultyRepository;
 import com.srpfreaks.backend.repository.SongRepository;
@@ -113,7 +115,7 @@ class SongAdminServiceTest {
     @Test
     void 같은_이름의_곡이_이미_있으면_등록하지_않고_409다() {
         // 대소문자·공백·전각/반각이 달라도 같은 이름이다(가져오기가 곡을 찾을 때와 같은 정규화)
-        when(songRepository.findActiveTitles()).thenReturn(List.of("Ｄｏｕｗａ Kairou"));
+        when(songRepository.findActiveTitles()).thenReturn(List.of(new ActiveSongTitle(9L, "Ｄｏｕｗａ Kairou")));
 
         assertThatThrownBy(() -> service.createSong(ACTOR, request("douwa  kairou", null)))
                 .isInstanceOfSatisfying(ApiException.class,
@@ -125,7 +127,7 @@ class SongAdminServiceTest {
 
     @Test
     void 이름이_다르면_등록한다() {
-        when(songRepository.findActiveTitles()).thenReturn(List.of("다른 곡"));
+        when(songRepository.findActiveTitles()).thenReturn(List.of(new ActiveSongTitle(9L, "다른 곡")));
         when(songRepository.save(any(Song.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.createSong(ACTOR, request("새 곡", null));
@@ -159,6 +161,37 @@ class SongAdminServiceTest {
         assertThat(song.getTitle()).isEqualTo("바뀐 곡명");
         verify(songTitleRepository, never()).deleteAllBySongId(any());
         assertThat(savedAudit().getAction()).isEqualTo("SONG_UPDATE");
+    }
+
+    @Test
+    void 곡_이름을_다른_곡과_같게_고치면_409다() {
+        when(songRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(song(1L)));
+        when(songRepository.findActiveTitles()).thenReturn(List.of(new ActiveSongTitle(1L, "원래 곡명"), new ActiveSongTitle(2L, "남의 곡")));
+
+        assertThatThrownBy(() -> service.updateSong(ACTOR, 1L, request("남의  곡", null)))
+                .isInstanceOfSatisfying(ApiException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SONG_TITLE_DUPLICATE));
+        verify(auditLogRepository, never()).save(any());
+    }
+
+    @Test
+    void 곡_수정에서_자기_이름_그대로는_중복이_아니다() {
+        Song song = song(1L);
+        when(songRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(song));
+        when(songRepository.findActiveTitles()).thenReturn(List.of(new ActiveSongTitle(1L, "원래 곡명")));
+
+        service.updateSong(ACTOR, 1L, request("원래 곡명", null)); // 아티스트 같은 다른 칸만 고치는 경우
+
+        assertThat(song.getTitle()).isEqualTo("원래 곡명");
+    }
+
+    @Test
+    void 곡명_중복_확인은_이미_있는_곡을_알려_주고_자기_곡은_제외한다() {
+        when(songRepository.findActiveTitles()).thenReturn(List.of(new ActiveSongTitle(5L, "童話回廊")));
+
+        assertThat(service.checkTitle(" 童話 回廊 ", null)).isEqualTo(new SongTitleCheckResponse(true, 5L, "童話回廊"));
+        assertThat(service.checkTitle("童話回廊", 5L).duplicate()).isFalse();
+        assertThat(service.checkTitle("다른 곡", null).duplicate()).isFalse();
     }
 
     @Test
