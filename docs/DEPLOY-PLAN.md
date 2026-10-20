@@ -30,3 +30,26 @@
 3. 서버에서는 `git pull --ff-only` 후 선택한 서비스만 `up -d --build` 한다. DB 컨테이너·볼륨과 `.env.prod`는 건드리지 않는다.
 - 주의: 서버 보안 그룹의 22번 포트가 "내 IP만"이면 GitHub 러너가 접속하지 못한다. 그때는 포트 허용 범위를 조정하거나 SSM 방식으로 바꾼다.
 - 백엔드를 배포하면 Flyway가 새 마이그레이션을 적용한다. 스키마를 바꾸는 배포는 먼저 서버 DB 백업(`mysqldump`)을 확인한다.
+
+## DB 백업·복구 (2026-10-20)
+
+**백업 설정 (서버에서 한 번)**
+1. `chmod +x ~/gitalog/scripts/deploy/backup-db.sh`
+2. 한 번 손으로 실행해 본다: `~/gitalog/scripts/deploy/backup-db.sh` → `~/backups/srpfreaks-날짜.sql.gz`가 생기고 `백업 완료`가 나오면 성공이다.
+3. cron 등록(`crontab -e`): `17 19 * * * ~/gitalog/scripts/deploy/backup-db.sh >> ~/backups/backup.log 2>&1` (매일 04:17 KST = 19:17 UTC)
+4. 보관: 기본 14일(`BACKUP_KEEP_DAYS`로 변경). 서버 디스크가 작으니 `du -sh ~/backups`를 가끔 확인한다.
+5. (선택) S3에도 올리려면 서버에 aws cli와 쓰기 권한을 준 뒤 cron 줄 앞에 `BACKUP_S3_BUCKET=s3://버킷/경로`를 붙인다. 서버 디스크가 망가져도 남는 사본이 필요하면 이 단계가 중요하다.
+
+스크립트가 하는 일과 안전장치: 비밀번호를 명령줄에 쓰지 않고(db 컨테이너 안 환경변수), 파일은 소유자만 읽게(600) 두며, 압축 손상·덤프 미완료·비정상적으로 작은 파일이면 실패로 끝낸다(성공한 척하지 않음). 서비스를 멈추지 않는다(`--single-transaction`).
+
+**복구 (장애 때만, 신중하게)**
+1. 먼저 지금 상태를 한 번 더 백업해 둔다(복구가 잘못될 때를 대비).
+2. 복구할 파일 확인: `ls -lh ~/backups`
+3. 백엔드를 멈춘다: `docker compose --env-file .env.prod -f docker-compose.prod.yml stop backend`
+4. 복구: `gzip -dc ~/backups/srpfreaks-날짜.sql.gz | docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T db sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" srpfreaks'`
+5. 백엔드를 다시 켠다: `... up -d backend` → Flyway가 스키마 상태를 확인한다. 화면에서 로그인과 레이팅이 보이는지 확인한다.
+- 복구 연습은 따로 만든 빈 DB(예: `srpfreaks_restore`)에 먼저 해 보면 안전하다. 백업은 한 번도 복구해 보지 않으면 있는 것이 아니다.
+
+## 사이트 감시 (2026-10-20)
+- `.github/workflows/uptime.yml`: 10분마다 홈(200)과 인증 없는 API(401)를 확인하고, HTTPS 인증서 만료가 14일 아래로 남으면 실패한다. 실패하면 GitHub가 저장소 소유자에게 알림을 보낸다(GitHub 앱의 알림을 켜 두면 모바일로 온다).
+- 배포 직후에는 `deploy.yml`의 `배포 후 점검`이 같은 확인을 한 번 더 한다.
