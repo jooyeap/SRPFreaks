@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
  */
 export function SiteHeader() {
   return (
-    <header className="border-b border-line bg-card">
+    <header className="border-b border-line bg-card pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex w-full max-w-[1200px] items-center gap-x-4 px-4 py-2.5">
         <Link href="/" className="font-num text-lg font-semibold tracking-wide text-fg">
           SRPFreaks
