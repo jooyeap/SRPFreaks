@@ -1,9 +1,10 @@
 # CI: 푸시·PR 때마다 백엔드·프론트 테스트와 빌드를 자동으로 돌린다. (배포는 별도 워크플로로 나중에 추가)
 name: CI
 
+# 푸시는 main만 돌린다. feature 브랜치는 PR을 열면 pull_request로 돈다(둘 다 돌리면 같은 검사가 두 번 실행돼 시간만 두 배가 된다)
 on:
   push:
-    branches: [main, "feature/**"]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -54,8 +55,31 @@ jobs:
                           print(f"::error title={case.get('classname')}.{case.get('name')}::{msg}")
           PY
 
+  # 테스트를 둘로 나눠(--shard) 동시에 돌린다. 테스트 파일 수백 개가 파일마다 jsdom을 새로 만들어 느려서, 나누면 시간이 거의 반으로 준다
+  frontend-test:
+    name: 프론트 테스트 (${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: 테스트
+        run: npx vitest run --shard=${{ matrix.shard }}/2
+
   frontend:
-    name: 프론트 검사·테스트·빌드
+    name: 프론트 검사·빌드
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -69,12 +93,17 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Next.js 빌드 캐시: 소스가 크게 바뀌지 않으면 컴파일을 건너뛰어 빌드가 빨라진다
+      - uses: actions/cache@v4
+        with:
+          path: frontend/.next/cache
+          key: nextjs-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-${{ hashFiles('frontend/src/**') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-
       - name: 린트
         run: npm run lint
       - name: 타입 검사
         run: npm run typecheck
-      - name: 테스트
-        run: npm test
       # 빌드가 되는지만 확인한다. 값은 빌드용 더미이고 결과물은 어디에도 올리지 않는다
       - name: 빌드
         run: npm run build

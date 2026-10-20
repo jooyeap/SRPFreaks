@@ -1,0 +1,46 @@
+# 의존성 업데이트를 PR로 알려 준다. 자동으로 합치지는 않는다(CI를 통과해도 사람이 확인한 뒤 합친다).
+# 한꺼번에 PR이 쏟아지지 않도록 주 1회, 종류별로 묶고, 열려 있는 PR 수를 제한한다.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "chore"
+
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    # Spring Boot는 큰 버전을 함부로 올리지 않는다(설계 문서의 호환 확인 후 직접 올린다)
+    ignore:
+      - dependency-name: "org.springframework.boot"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: "chore"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore"
