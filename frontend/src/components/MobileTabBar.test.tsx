@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { SONG_TAB_KEY, resetSongTabForTest } from "@/lib/song-tab";
 import { MobileTabBar } from "@/components/MobileTabBar";
 
 let pathname = "/";
@@ -8,6 +9,8 @@ vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 describe("MobileTabBar", () => {
   beforeEach(() => {
     pathname = "/";
+    localStorage.removeItem(SONG_TAB_KEY);
+    resetSongTabForTest();
   });
 
   it("홈 · 곡 · 마이 링크와 더보기 버튼이 순서대로 있다", () => {
@@ -91,5 +94,12 @@ describe("MobileTabBar", () => {
     fireEvent.click(more());
     fireEvent.click(more());
     expect(screen.queryByRole("region", { name: "더보기" })).toBeNull();
+  });
+
+  it("곡 탭은 마지막으로 본 탭(곡 목록)으로 들어간다", () => {
+    localStorage.setItem(SONG_TAB_KEY, "songs");
+    resetSongTabForTest();
+    render(<MobileTabBar />);
+    expect(screen.getByRole("link", { name: "곡" })).toHaveAttribute("href", "/songs");
   });
 });

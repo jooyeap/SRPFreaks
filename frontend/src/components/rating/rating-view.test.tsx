@@ -98,6 +98,8 @@ describe("RatingView", () => {
     expect(within(single).getByLabelText("달성 단계 SS")).toBeInTheDocument();
     expect(within(single).getByText("264.00")).toBeInTheDocument();
     expect(within(single).getByText("96.50")).toBeInTheDocument();
+    // 카드에 순위 숫자 칸은 없다(점수가 티어 색으로 강조된다)
+    expect(within(single).queryByLabelText("1위")).toBeNull();
     expect(within(single).getByText(/상수/)).toHaveTextContent("기준 5.8 · 상수 14.00 · 단일");
 
     const other = screen.getByRole("region", { name: "복합·이중·삼중" });

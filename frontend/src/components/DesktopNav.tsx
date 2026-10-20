@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminNavLink } from "@/components/AdminNavLink";
-import { DESKTOP_NAV_ITEMS, MY_PAGE_ITEM } from "@/lib/nav";
+import { DESKTOP_NAV_ITEMS, MY_PAGE_ITEM, SONG_PATHS } from "@/lib/nav";
+import { useSongHomeHref } from "@/lib/song-tab";
 
 const BASE = "flex min-h-9 items-center whitespace-nowrap rounded-lg px-3 text-sm";
 const ACTIVE = `${BASE} bg-table-head font-bold text-fg`;
@@ -25,6 +26,7 @@ export function isActivePath(pathname: string, href: string, match?: readonly st
  */
 export function DesktopNav() {
   const pathname = usePathname();
+  const songHref = useSongHomeHref();
   const items: readonly { href: string; label: string; match?: readonly string[] }[] = [...DESKTOP_NAV_ITEMS, MY_PAGE_ITEM];
   return (
     <nav aria-label="주요 메뉴" className="hidden flex-1 items-center gap-1 lg:flex">
@@ -34,7 +36,7 @@ export function DesktopNav() {
         return (
           <span key={item.href} className="contents">
             {item.href === MY_PAGE_ITEM.href ? <AdminNavLink className={IDLE} /> : null}
-            <Link href={item.href} className={active ? ACTIVE : IDLE} aria-current={active ? "page" : undefined}>
+            <Link href={item.match === SONG_PATHS ? songHref : item.href} className={active ? ACTIVE : IDLE} aria-current={active ? "page" : undefined}>
               {item.label}
             </Link>
           </span>
