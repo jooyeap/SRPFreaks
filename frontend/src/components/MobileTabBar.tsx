@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminNavLink } from "@/components/AdminNavLink";
@@ -21,6 +22,8 @@ const TAB_CLASS = "flex h-14 min-w-0 flex-1 flex-col items-center justify-center
  * z-40: ☰ 슬라이드 메뉴(z-50)보다 아래, 일반 화면보다 위. 모달(dialog)은 top layer라 항상 탭바 위에 뜬다.
  */
 export function MobileTabBar() {
+  const t = useTranslations("Nav");
+  const tc = useTranslations("Common");
   const pathname = usePathname();
   const songHref = useSongHomeHref();
   const { status, user, logout } = useAuth();
@@ -47,10 +50,10 @@ export function MobileTabBar() {
           {/* 바깥을 누르면 닫는다. 키보드 사용자는 Esc나 더보기 버튼을 쓴다 */}
           <div className="absolute inset-0 bg-black/55" onClick={() => setMoreOpen(false)} aria-hidden="true" />
           <section
-            aria-label="더보기"
+            aria-label={t("more")}
             className="absolute inset-x-0 bottom-[var(--tabbar-h)] max-h-[calc(100dvh-var(--tabbar-h)-3rem)] overflow-y-auto rounded-t-2xl border border-b-0 border-line bg-card px-4 pb-4 pt-3"
           >
-            <h2 className="px-1 pb-1 text-[13px] font-bold text-fg-dim">더보기</h2>
+            <h2 className="px-1 pb-1 text-[13px] font-bold text-fg-dim">{t("more")}</h2>
             <ul>
               {MORE_ITEMS.map((item) => (
                 <li key={item.href} className="border-b border-line last:border-b-0">
@@ -59,9 +62,9 @@ export function MobileTabBar() {
                     onClick={() => setMoreOpen(false)}
                     className="flex min-h-[52px] items-center gap-2.5 px-1 text-[15px] text-fg"
                   >
-                    <span className="flex-1">{item.label}</span>
+                    <span className="flex-1">{t(item.label)}</span>
                     {item.badge ? (
-                      <span className="rounded bg-chip-on-bg px-2 py-0.5 font-num text-[11px] font-bold text-chip-on-fg">{item.badge}</span>
+                      <span className="rounded bg-chip-on-bg px-2 py-0.5 font-num text-[11px] font-bold text-chip-on-fg">{t(item.badge)}</span>
                     ) : null}
                   </Link>
                 </li>
@@ -82,22 +85,22 @@ export function MobileTabBar() {
                   }}
                   className="flex min-h-[52px] w-full items-center px-1 text-left text-[15px] text-fg-sub"
                 >
-                  로그아웃
+                  {t("logout")}
                 </button>
               ) : status === "anonymous" ? (
                 <Link href="/login" onClick={() => setMoreOpen(false)} className="flex min-h-[52px] items-center px-1 text-[15px] text-fg">
-                  로그인
+                  {t("login")}
                 </Link>
               ) : null}
             </div>
             <p className="mt-2 text-center text-[11px] text-fg-dim">
-              <strong>비공식 팬 프로젝트</strong> · KONAMI와 무관
+              <strong>{tc("unofficial")}</strong> · {t("notKonami")}
             </p>
           </section>
         </div>
       ) : null}
       <nav
-        aria-label="하단 메뉴"
+        aria-label={t("bottom")}
         className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         {TAB_ITEMS.map((item) => {
@@ -106,13 +109,13 @@ export function MobileTabBar() {
             <Link
               key={item.href}
               href={item.match === SONG_PATHS ? songHref : item.href}
-              aria-label={item.name}
+              aria-label={t(item.name)}
               aria-current={active ? "page" : undefined}
               onClick={() => setMoreOpen(false)}
               className={`${TAB_CLASS} ${active ? "font-bold text-fg" : "text-fg-dim hover:text-fg"}`}
             >
               <NavIcon name={item.icon} className="h-5 w-5" />
-              <span>{item.label}</span>
+              <span>{t(item.label)}</span>
             </Link>
           );
         })}
@@ -124,7 +127,7 @@ export function MobileTabBar() {
           className={`${TAB_CLASS} ${moreOpen ? "font-bold text-fg" : "text-fg-dim hover:text-fg"}`}
         >
           <NavIcon name="more" className="h-5 w-5" />
-          <span>더보기</span>
+          <span>{t("more")}</span>
         </button>
       </nav>
     </>

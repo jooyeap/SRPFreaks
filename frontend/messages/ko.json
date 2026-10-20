@@ -1,0 +1,47 @@
+{
+  "Meta": {
+    "description": "GITADORA 플레이 기록을 SRN+ 옵션으로 저장하고 레이팅 목록을 계산하는 비공식 팬 프로젝트"
+  },
+  "Common": {
+    "retry": "다시 시도",
+    "retrying": "불러오는 중…",
+    "loading": "불러오는 중입니다.",
+    "unofficial": "비공식 팬 프로젝트"
+  },
+  "Locale": {
+    "label": "언어",
+    "ko": "한국어",
+    "ja": "日本語",
+    "switchTo": "언어를 {language}(으)로 바꾸기"
+  },
+  "Nav": {
+    "main": "주요 메뉴",
+    "bottom": "하단 메뉴",
+    "home": "홈",
+    "songs": "곡",
+    "players": "유저",
+    "notices": "공지",
+    "suggestions": "건의",
+    "guide": "설명서",
+    "myPage": "마이페이지",
+    "myShort": "마이",
+    "more": "더보기",
+    "import": "최근 플레이 가져오기",
+    "importBadge": "추천",
+    "settings": "설정",
+    "admin": "관리",
+    "login": "로그인",
+    "logout": "로그아웃",
+    "notKonami": "KONAMI와 무관"
+  },
+  "Footer": {
+    "notKonami": "KONAMI와 무관한 팬 사이트입니다.",
+    "rights": "곡·음원·게임 화면·명칭 등 모든 저작권과 상표 등 권리는 KONAMI에 있습니다.",
+    "privacy": "개인정보 처리방침",
+    "contact": "문의·삭제 요청:",
+    "tableCredit": "서열표(레이팅 상수 난이도) 정보 제공·설계:"
+  },
+  "Offline": {
+    "banner": "인터넷에 연결되어 있지 않습니다. 연결되면 다시 시도해 주세요."
+  }
+}

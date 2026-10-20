@@ -1,0 +1,47 @@
+{
+  "Meta": {
+    "description": "GITADORAのプレイ記録をSRN+オプションで保存し、レーティングリストを計算する非公式ファンプロジェクト"
+  },
+  "Common": {
+    "retry": "もう一度試す",
+    "retrying": "読み込み中…",
+    "loading": "読み込み中です。",
+    "unofficial": "非公式ファンプロジェクト"
+  },
+  "Locale": {
+    "label": "言語",
+    "ko": "한국어",
+    "ja": "日本語",
+    "switchTo": "言語を{language}に切り替える"
+  },
+  "Nav": {
+    "main": "メインメニュー",
+    "bottom": "下部メニュー",
+    "home": "ホーム",
+    "songs": "曲",
+    "players": "ユーザー",
+    "notices": "お知らせ",
+    "suggestions": "ご意見",
+    "guide": "ガイド",
+    "myPage": "マイページ",
+    "myShort": "マイ",
+    "more": "その他",
+    "import": "直近プレイの取り込み",
+    "importBadge": "おすすめ",
+    "settings": "設定",
+    "admin": "管理",
+    "login": "ログイン",
+    "logout": "ログアウト",
+    "notKonami": "KONAMIとは無関係"
+  },
+  "Footer": {
+    "notKonami": "KONAMIとは無関係のファンサイトです。",
+    "rights": "楽曲・音源・ゲーム画面・名称などの著作権・商標等の権利はすべてKONAMIに帰属します。",
+    "privacy": "プライバシーポリシー",
+    "contact": "お問い合わせ・削除依頼:",
+    "tableCredit": "序列表（レーティング定数難易度）の情報提供・設計:"
+  },
+  "Offline": {
+    "banner": "インターネットに接続されていません。接続されたらもう一度お試しください。"
+  }
+}
