@@ -167,13 +167,17 @@ describe("한 손 입력 모드", () => {
     it("null을 돌려주면 평소처럼 창을 닫는다", async () => {
       const onClose = renderDialog(() => null);
       await saveWith("96.5");
-      await waitFor(() => expect(onClose).toHaveBeenCalled());
+      await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
+      fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
+      expect(onClose).toHaveBeenCalled();
     });
 
     it("함수를 주지 않으면(다른 화면) 평소처럼 창을 닫는다", async () => {
       const onClose = renderDialog(undefined);
       await saveWith("96.5");
-      await waitFor(() => expect(onClose).toHaveBeenCalled());
+      await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
+      fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
+      expect(onClose).toHaveBeenCalled();
     });
   });
 });

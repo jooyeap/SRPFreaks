@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/Toast";
 import { RecentCharts } from "@/components/record/RecentCharts";
 import { RecordForm, type RecordChart } from "@/components/record/RecordForm";
+import { SaveResultCard, type SaveOutcome } from "@/components/record/SaveResultCard";
 import { RecordList } from "@/components/record/RecordList";
 import { formatRate } from "@/lib/format";
 import { fetchRecordsOfChart, recordKeys, recordOriginText, type RecordResponse } from "@/lib/records";
@@ -46,20 +47,28 @@ export function RecordDialog({
   const toast = useToast();
   // "최근 입력한 곡"으로 옮겨 간 채보. 창을 닫으면 비워서 다음에 열 때는 부모가 준 채보로 열린다
   const [switched, setSwitched] = useState<RecordChart | null>(null);
+  // 저장 직후 결과 카드. 세트리스트로 이어 입력할 때(다음 채보가 있을 때)는 흐름을 끊지 않으려고 카드 없이 바로 넘어간다
+  const [outcome, setOutcome] = useState<SaveOutcome | null>(null);
   const active = chart ? (switched ?? chart) : null;
   const close = useCallback(() => {
     setSwitched(null);
+    setOutcome(null);
     onClose();
   }, [onClose]);
-  const handleSaved = useCallback(() => {
-    const next = active && nextChartAfterSave ? nextChartAfterSave(active) : null;
-    if (next) {
-      // 저장이 끝나 입력 중인 값이 없으므로 바로 바꾼다 (RecordDialogBody의 key가 바뀌어 폼이 새로 만들어진다)
-      setSwitched(next);
-    } else {
-      close();
-    }
-  }, [active, nextChartAfterSave, close]);
+  const handleSaved = useCallback(
+    (_saved: RecordResponse, result: SaveOutcome) => {
+      const next = active && nextChartAfterSave ? nextChartAfterSave(active) : null;
+      if (next) {
+        // 저장이 끝나 입력 중인 값이 없으므로 바로 바꾼다 (RecordDialogBody의 key가 바뀌어 폼이 새로 만들어진다)
+        setSwitched(next);
+      } else {
+        // 창을 닫지 않고 같은 창에서 결과를 보여 준다. 입력 중인 값은 없다(저장됨)
+        dirtyRef.current = false;
+        setOutcome(result);
+      }
+    },
+    [active, nextChartAfterSave],
+  );
   const switchTo = useCallback(
     (next: RecordChart) => {
       // 입력 중인 값이 있으면 옮기지 않는다 (바깥 클릭으로 닫히지 않게 하는 것과 같은 이유)
@@ -112,8 +121,14 @@ export function RecordDialog({
       {active ? (
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
-          <RecentCharts currentChartId={active.songDifficultyId} onPick={switchTo} />
-          <RecordDialogBody key={active.songDifficultyId} chart={active} onClose={close} onSaved={handleSaved} onDirtyChange={onDirtyChange} />
+          {outcome ? (
+            <SaveResultCard outcome={outcome} onClose={close} />
+          ) : (
+            <>
+              <RecentCharts currentChartId={active.songDifficultyId} onPick={switchTo} />
+              <RecordDialogBody key={active.songDifficultyId} chart={active} onClose={close} onSaved={handleSaved} onDirtyChange={onDirtyChange} />
+            </>
+          )}
         </>
       ) : null}
     </dialog>
@@ -134,7 +149,7 @@ function RecordDialogBody({
 }: {
   chart: RecordChart;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (saved: RecordResponse, outcome: SaveOutcome) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const chartId = chart.songDifficultyId;

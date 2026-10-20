@@ -25,6 +25,7 @@ import {
   type RecordResponse,
 } from "@/lib/records";
 import { chartTierAttrs, previewScore } from "@/lib/chart-tier";
+import type { SaveOutcome } from "@/components/record/SaveResultCard";
 import { OneHandPad } from "@/components/record/OneHandPad";
 import { RatingPreviewLine } from "@/components/record/RatingPreviewLine";
 import { formatRate, formatScore, formatTier } from "@/lib/format";
@@ -71,7 +72,7 @@ export function RecordForm({
   record?: RecordResponse;
   /** 로그인한 사용자 id. 있으면 입력 중 "예상 레이팅"을 보인다(내 레이팅 목록을 받아 계산) */
   userId?: number;
-  onSaved: (saved: RecordResponse) => void;
+  onSaved: (saved: RecordResponse, outcome: SaveOutcome) => void;
   onDeleted?: () => void;
   onCancel: () => void;
   /** 입력값이 처음과 달라졌는지 알린다. 창이 바깥 클릭으로 닫혀 입력이 사라지는 일을 막는 데 쓴다 */
@@ -139,7 +140,13 @@ export function RecordForm({
       // 레이팅이 어떻게 바뀌었는지(새로 들어갔으면 NEW)를 같이 보여 준다. 서버가 못 주면 저장 문구만 보인다
       const ratingText = ratingChangeText(saved.ratingChange);
       toast(ratingText ? `${savedText} ${ratingText}` : savedText);
-      onSaved(saved);
+      // 결과 카드용 값: 달성률/FC 전후(수정일 때만 이전 값을 안다)와 레이팅 변화. 단계·점수는 카드가 계산한다
+      onSaved(saved, {
+        before: record ? { rate: record.achievementRate, fullCombo: record.fullCombo } : null,
+        after: { rate: saved.achievementRate, fullCombo: saved.fullCombo },
+        tier: chart.tier ?? null,
+        ratingChange: saved.ratingChange ?? null,
+      });
     },
     onError: (error) => {
       // 서버가 필드별 오류를 주면 해당 입력칸 아래에 보여 준다
