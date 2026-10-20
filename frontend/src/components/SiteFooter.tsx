@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ContactLine } from "@/components/ContactLine";
 import { TableCredit } from "@/components/TableCredit";
+import { BUILD_SHA } from "@/lib/build-info";
 
 /**
  * 모든 화면 하단 고지 (DESIGN-UI 1장). 공식 서비스로 오해되지 않도록 항상 보이게 둔다.
@@ -18,6 +19,8 @@ export function SiteFooter() {
           <p className="font-semibold text-fg-sub">{tc("unofficial")}</p>
           <p>{t("notKonami")}</p>
           <p>{t("rights")}</p>
+          {/* 배포가 반영됐는지 화면에서 바로 확인하는 용도. 언어와 무관한 값이라 번역하지 않는다 */}
+          <p className="font-num text-[11px]">build {BUILD_SHA}</p>
         </div>
         <div className="space-y-1 sm:text-right">
           <TableCredit />

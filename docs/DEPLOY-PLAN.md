@@ -53,3 +53,9 @@
 ## 사이트 감시 (2026-10-20)
 - `.github/workflows/uptime.yml`: 10분마다 홈(200)과 인증 없는 API(401)를 확인하고, HTTPS 인증서 만료가 14일 아래로 남으면 실패한다. 실패하면 GitHub가 저장소 소유자에게 알림을 보낸다(GitHub 앱의 알림을 켜 두면 모바일로 온다).
 - 배포 직후에는 `deploy.yml`의 `배포 후 점검`이 같은 확인을 한 번 더 한다.
+
+## 배포 반영 확인과 서버 점검 (2026-10-20)
+- **배경**: 프론트를 다시 빌드하지 않은 채(`target`을 `backend`로만 고른 경우 등) 워크플로가 성공으로 끝나, 화면이 옛 버전인 채로 모르고 지나간 적이 있다.
+- **빌드 커밋 표시**: 배포 때 서버가 `git rev-parse --short=7 HEAD`를 `GIT_SHA`로 넘기고(`docker-compose.prod.yml`의 빌드 인자), `frontend/Dockerfile`이 `NEXT_PUBLIC_GIT_SHA`로 코드에 고정한다. 푸터의 `build abc1234`와 `GET /version`(`{"sha":"abc1234"}`, 캐시 안 함)에서 볼 수 있다. 비밀값이 아니다. 값이 없으면 `dev`(로컬·테스트), 직접 compose를 실행하면 `unknown`.
+- **자동 검증**: `deploy.yml`의 `배포 버전 확인`이 방금 배포한 브랜치의 커밋과 `/version`의 값을 비교한다(최대 약 2분 재시도). 다르면 실패하고 GitHub 알림이 온다. 프론트를 배포하는 경우(`frontend`, `frontend + backend`)에만 확인한다. **백엔드 버전은 아직 확인하지 않는다.**
+- **서버 점검 워크플로** `.github/workflows/server-ops.yml`(수동 실행): `상태 확인`(서버 커밋, 컨테이너, 이미지 시각, 실행 중 프론트의 빌드 커밋, 프론트 로그 30줄, 읽기 전용) / `프론트 강제 재생성`(캐시 없이 다시 빌드 + nginx 재시작) / `nginx 재시작`. 결과는 실행 화면의 Summary에도 남는다. DB·`.env.prod`·백엔드 로그는 다루지 않는다.

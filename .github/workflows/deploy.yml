@@ -88,6 +88,8 @@ jobs:
           git fetch origin
           git checkout "$REF"
           git pull --ff-only origin "$REF"
+          # 프론트 이미지에 "어느 커밋으로 빌드했는지"를 넣는다(푸터·/version). 배포 후 점검이 이 값을 확인한다.
+          export GIT_SHA="$(git rev-parse --short=7 HEAD)"
           # $SERVICES는 일부러 따옴표 없이 쓴다 (서비스 이름이 여러 개일 수 있다)
           docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build $SERVICES
           docker compose --env-file .env.prod -f docker-compose.prod.yml ps
@@ -115,6 +117,27 @@ jobs:
           check "$SITE_URL/api/v1/notices" 401
           # 헬스체크는 바깥에서 404로 막혀 있어야 한다(노출되면 안 된다)
           check "$SITE_URL/actuator/health" 404
+
+      # 프론트를 다시 빌드했다면, 사이트가 알려 주는 빌드 커밋(/version)이 방금 배포한 브랜치의 커밋과 같은지 확인한다.
+      # "워크플로는 성공인데 옛 화면"(프론트가 안 바뀐 경우)을 초록불로 지나치지 않고 실패로 드러내려는 것이다.
+      # 백엔드만 배포했으면 프론트는 그대로라 건너뛴다.
+      - name: 배포 버전 확인
+        if: contains(inputs.target, 'frontend')
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://srpfreaks.com' }}
+          REF: ${{ inputs.ref }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          want=$(gh api "repos/$REPO/commits/$REF" --jq '.sha[0:7]')
+          echo "기대 커밋: $want ($REF)"
+          for i in $(seq 1 12); do
+            got=$(curl -s --max-time 10 "$SITE_URL/version" | jq -r '.sha // empty' 2>/dev/null || true)
+            if [ "$got" = "$want" ]; then echo "OK   $SITE_URL/version -> $got"; exit 0; fi
+            echo "WAIT $SITE_URL/version -> '${got:-없음}' (기대 $want, 시도 $i/12)"; sleep 10
+          done
+          echo "::error title=배포 버전 불일치::사이트의 프론트 커밋이 '${got:-없음}'입니다. 기대값은 $want 입니다. Server Ops의 '상태 확인'으로 서버를 확인하세요."
+          exit 1
 
       - name: SSH 키 지우기
         if: always()
