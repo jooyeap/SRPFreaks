@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
-import { SongDeleteControl } from "@/components/song/SongDeleteControl";
+import { SongManageDialog } from "@/components/song/SongManageDialog";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { SongHeader } from "@/components/song/SongHeader";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
@@ -53,6 +53,7 @@ export function SongDetailView({
   const [recordOpen, setRecordOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<TableEntryTarget | null>(null);
   const [songEdit, setSongEdit] = useState<SongEditTarget | null>(null);
+  const [manageOpen, setManageOpen] = useState(false);
 
   const song = useQuery({
     queryKey: songKeys.detail(songId),
@@ -167,46 +168,14 @@ export function SongDetailView({
         <div className="contents md:flex md:flex-col md:gap-4">
           <div className="order-1 flex flex-col gap-4 md:order-none">
             <SongHeader song={data} chart={chart} pattern={isTable ? (found?.entry.pattern ?? null) : null} />
-            {canShowTableEdit ? (
+            {canEditTable ? (
               <button
                 type="button"
-                onClick={openTableEdit}
+                onClick={() => setManageOpen(true)}
                 className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
               >
-                {found ? t("Song.editTableEntry") : t("Song.addToTable")}
+                {t("Song.manage")}
               </button>
-            ) : null}
-            {canEditTable ? (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSongEdit({ kind: "song", song: data })}
-                  className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
-                >
-                  {t("Song.editSong")}
-                </button>
-                {chart ? (
-                  <button
-                    type="button"
-                    onClick={() => setSongEdit({ kind: "chart", song: data, chart })}
-                    className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
-                  >
-                    {t("Song.editChart")}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-            {canEditTable ? (
-              <SongDeleteControl
-                songId={data.id}
-                songTitle={data.title}
-                chartId={chart?.id ?? null}
-                chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
-                onDeleted={(target) => {
-                  // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
-                  router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
-                }}
-              />
             ) : null}
           </div>
           <div className="order-3 flex flex-col gap-4 md:order-none">
@@ -260,6 +229,24 @@ export function SongDetailView({
       />
       <TableEntryEditDialog target={editTarget} onClose={() => setEditTarget(null)} />
       <SongEditDialog target={songEdit} onClose={() => setSongEdit(null)} />
+      {canEditTable ? (
+        <SongManageDialog
+          open={manageOpen}
+          onClose={() => setManageOpen(false)}
+          tableEditLabel={canShowTableEdit ? (found ? t("Song.editTableEntry") : t("Song.addToTable")) : null}
+          onEditTable={openTableEdit}
+          onEditSong={() => setSongEdit({ kind: "song", song: data })}
+          onEditChart={chart ? () => setSongEdit({ kind: "chart", song: data, chart }) : null}
+          songId={data.id}
+          songTitle={data.title}
+          chartId={chart?.id ?? null}
+          chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
+          onDeleted={(target) => {
+            // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
+            router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
