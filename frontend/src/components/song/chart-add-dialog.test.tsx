@@ -99,6 +99,27 @@ describe("ChartAddDialog", () => {
     expect(body(1)).toMatchObject({ tierLabel: 4.5 });
   });
 
+  it("서열표를 받았으면 레이팅 반영 체크가 기본 꺼짐으로 있고, 켜면 서열표 저장 본문에 true로 보낸다", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ id: 99, songId: 77, instrumentPart: "GUITAR", difficultyType: "ADVANCED", level: 5.5, noteCount: null }, 201))
+      .mockResolvedValueOnce(json({}));
+    renderDialog(3);
+    const check = screen.getByRole("checkbox", { name: "레이팅 반영" });
+    expect(check).not.toBeChecked();
+    fireEvent.click(check);
+    fireEvent.change(screen.getByLabelText("레벨"), { target: { value: "5.5" } });
+    fireEvent.change(screen.getByLabelText("레이팅 상수 난이도"), { target: { value: "4.5" } });
+    fireEvent.click(screen.getByRole("button", { name: "추가" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(body(1)).toMatchObject({ tierLabel: 4.5, ratingEnabled: true });
+  });
+
+  it("서열표를 받지 못했으면(tableId 없음) 레이팅 반영 체크도 없다", () => {
+    renderDialog(null);
+    expect(screen.queryByRole("checkbox", { name: "레이팅 반영" })).toBeNull();
+  });
+
   it("레벨을 비우면 보내지 않고 안내한다", async () => {
     renderDialog(null);
     fireEvent.click(screen.getByRole("button", { name: "추가" }));

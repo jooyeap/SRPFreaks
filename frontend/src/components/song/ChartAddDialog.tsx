@@ -207,6 +207,15 @@ function ChartAddForm({
             {errors.tier.message}
           </p>
         ) : null}
+        {tableId !== null ? (
+          <div className="flex flex-col gap-1">
+            <label className="flex min-h-9 items-center gap-2 text-sm text-fg-sub">
+              <input type="checkbox" className="size-4" {...register("ratingEnabled")} />
+              {t("ChartAdd.rating")}
+            </label>
+            <p className="text-xs text-fg-dim">{t("Song.offNote")}</p>
+          </div>
+        ) : null}
       </fieldset>
 
       <p className="text-xs text-fg-dim">

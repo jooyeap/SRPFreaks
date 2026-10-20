@@ -57,6 +57,31 @@ describe("SongCreateButton / 곡 등록 창", () => {
     expect(screen.getByLabelText("채보 1 속성")).toBeInTheDocument();
   });
 
+  it("서열표 모드에서 레이팅 반영 체크는 기본 꺼짐이고, 켜면 서열표 저장 본문에 true로 보낸다", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ id: 77 }, 201))
+      .mockResolvedValueOnce(json({ id: 501 }, 201))
+      .mockResolvedValueOnce(json({}));
+    renderButton(3);
+    open();
+    const check = screen.getByRole("checkbox", { name: "채보 1 레이팅 반영" });
+    expect(check).not.toBeChecked(); // 새로 추가하는 줄은 꺼짐으로 시작한다(D28)
+    fireEvent.click(check);
+    fireEvent.change(screen.getByLabelText("곡명"), { target: { value: "새 곡" } });
+    fireEvent.change(screen.getByLabelText("채보 1 레벨"), { target: { value: "9.5" } });
+    fireEvent.change(screen.getByLabelText("채보 1 레이팅 상수 난이도"), { target: { value: "5.8" } });
+    fireEvent.click(screen.getByRole("button", { name: "등록" }));
+
+    expect(await screen.findByText("곡을 등록했습니다.")).toBeInTheDocument();
+    expect(bodyOf(2)).toMatchObject({ tierLabel: 5.8, ratingEnabled: true });
+  });
+
+  it("곡 목록 모드에는 레이팅 반영 체크가 없다", () => {
+    renderButton();
+    open();
+    expect(screen.queryByRole("checkbox", { name: "채보 1 레이팅 반영" })).toBeNull();
+  });
+
   it("비워 두고 등록하면 검사 문구가 나오고 서버를 부르지 않는다", async () => {
     renderButton();
     open();

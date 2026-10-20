@@ -247,6 +247,21 @@ describe("SongDetailView", () => {
     return await screen.findByRole("dialog", { name: "곡 관리" });
   }
 
+  it("레이팅 반영이 꺼진 채보는 서열표 정보에 이유를 알려 주고, 켜진 채보에는 보이지 않는다", async () => {
+    const view = renderView("table", 10);
+    await screen.findByRole("region", { name: "서열표 정보" });
+    expect(screen.queryByText(/레이팅 반영이 꺼져 있어/)).toBeNull();
+    view.unmount();
+
+    mainEntry.ratingEnabled = false;
+    try {
+      renderView("table", 10);
+      expect(await screen.findByText(/레이팅 반영이 꺼져 있어/)).toBeInTheDocument();
+    } finally {
+      mainEntry.ratingEnabled = true;
+    }
+  });
+
   it("일반 사용자에게는 관리 버튼이 없다", async () => {
     renderView("table", 10);
     await screen.findByRole("region", { name: "서열표 정보" });
