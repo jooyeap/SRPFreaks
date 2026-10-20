@@ -24,6 +24,7 @@ import {
   SETLIST_PAGE_SIZE,
   setlistKeys,
 } from "@/lib/setlist";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 /** 세트리스트 줄을 기록 창이 받는 채보 정보로 바꾼다 */
 function toRecordChart(item: SetlistItemResponse): RecordChart {
@@ -94,9 +95,9 @@ export function SetlistTab({ userId }: { userId: number }) {
   }
   if (list.isError) {
     return (
-      <p role="alert" className="text-sm text-fg">
+      <ErrorRetry onRetry={() => void list.refetch()} retrying={list.isFetching}>
         {list.error instanceof ApiError ? list.error.message : "세트리스트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-      </p>
+      </ErrorRetry>
     );
   }
 

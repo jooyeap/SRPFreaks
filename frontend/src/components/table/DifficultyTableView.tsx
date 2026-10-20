@@ -27,6 +27,7 @@ import type { TableEntryResponse } from "@/lib/api-types";
 import { DEFAULT_VIEW_STATE, type TableViewState } from "@/lib/table-view-state";
 import type { TableSort } from "@/lib/table-sort";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 /** 접힌 필터 줄에 보여 줄 요약. 걸린 필터가 없으면 "전체". */
 function filterSummary(filters: TableFilters, includeZero: boolean): string {
@@ -112,7 +113,11 @@ export function DifficultyTableView({
     return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
   }
   if (tables.isError) {
-    return <p role="alert" className="text-sm text-fg">{errorMessage(tables.error)}</p>;
+    return (
+      <ErrorRetry onRetry={() => void tables.refetch()} retrying={tables.isFetching}>
+        {errorMessage(tables.error)}
+      </ErrorRetry>
+    );
   }
   if (!table) {
     return <p className="text-sm text-fg-sub">SRN+ 서열표가 아직 없습니다.</p>;
@@ -172,7 +177,9 @@ export function DifficultyTableView({
       </div>
 
       {entries.isError ? (
-        <p role="alert" className="text-sm text-fg">{errorMessage(entries.error)}</p>
+        <ErrorRetry onRetry={() => void entries.refetch()} retrying={entries.isFetching}>
+          {errorMessage(entries.error)}
+        </ErrorRetry>
       ) : !data ? (
         <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
       ) : data.content.length === 0 ? (

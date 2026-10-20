@@ -19,6 +19,7 @@ import {
   songListKeys,
   type SongListFilters,
 } from "@/lib/song-list";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 function errorMessage(error: unknown): string {
   return error instanceof ApiError ? error.message : "곡 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
@@ -98,7 +99,9 @@ export function SongListView({
       </div>
 
       {folders.isError ? (
-        <p role="alert" className="text-sm text-fg md:col-span-2">{errorMessage(folders.error)}</p>
+        <ErrorRetry className="md:col-span-2" onRetry={() => void folders.refetch()} retrying={folders.isFetching}>
+          {errorMessage(folders.error)}
+        </ErrorRetry>
       ) : !folders.data ? (
         <p className="text-sm text-fg-sub md:col-span-2">불러오는 중입니다.</p>
       ) : folders.data.folders.length === 0 ? (

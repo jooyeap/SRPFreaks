@@ -16,6 +16,7 @@ import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTabl
 import { difficultyLabel, formatTier, partLabel } from "@/lib/format";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -130,9 +131,9 @@ export function SongDetailView({
     return (
       <div className="flex flex-col gap-4">
         {backBar}
-        <p role="alert" className="text-sm text-fg">
+        <ErrorRetry onRetry={() => void song.refetch()} retrying={song.isFetching}>
           {errorMessage(song.error)}
-        </p>
+        </ErrorRetry>
       </div>
     );
   }

@@ -16,6 +16,7 @@ import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 import { formatScore } from "@/lib/format";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 function Group({
   title,
@@ -116,7 +117,7 @@ export function RatingBody({
  * 마이페이지의 레이팅 탭 본문(제목과 탭은 MyPageView가 그린다). 로그인한 사용자만 이 컴포넌트를 그린다. 서버는 항상 토큰의 사용자 본인 목록만 돌려준다.
  */
 export function RatingView({ userId }: { userId: number }) {
-  const { data, isPending, isError, error } = useQuery({
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: skillKeys.me(userId),
     queryFn: ({ signal }) => fetchMySkill(signal),
   });
@@ -131,9 +132,9 @@ export function RatingView({ userId }: { userId: number }) {
   }
   if (isError) {
     return (
-      <p role="alert" className="text-sm text-fg">
+      <ErrorRetry onRetry={() => void refetch()} retrying={isFetching}>
         {error instanceof ApiError ? error.message : "레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-      </p>
+      </ErrorRetry>
     );
   }
 

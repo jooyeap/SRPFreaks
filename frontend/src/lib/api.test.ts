@@ -305,3 +305,23 @@ describe("토큰 보관 (보안)", () => {
     expect(sessionStorage.length).toBe(0);
   });
 });
+
+describe("느린 망 대비", () => {
+  it("조회(GET)는 시간 제한 신호를 붙이고, 쓰기는 붙이지 않는다", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(json({}))); // 호출마다 새 Response (본문은 한 번만 읽을 수 있다)
+    await apiFetch("/songs");
+    await apiFetch("/records", { method: "POST", body: {} });
+    expect(call(0).init.signal).toBeInstanceOf(AbortSignal);
+    expect(call(1).init.signal).toBeUndefined();
+  });
+
+  it("시간이 지나 끊긴 조회는 '응답이 늦어지고 있습니다' 오류(TIMEOUT)로 바꾼다", async () => {
+    fetchMock.mockRejectedValueOnce(new DOMException("timed out", "TimeoutError"));
+    await expect(apiFetch("/songs")).rejects.toMatchObject({ status: 0, code: "TIMEOUT", message: expect.stringContaining("늦어지고") });
+  });
+
+  it("화면을 떠나며 취소한 요청(AbortError)은 오류로 바꾸지 않고 그대로 던진다", async () => {
+    fetchMock.mockRejectedValueOnce(new DOMException("aborted", "AbortError"));
+    await expect(apiFetch("/songs")).rejects.toMatchObject({ name: "AbortError" });
+  });
+});

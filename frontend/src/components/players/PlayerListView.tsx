@@ -7,6 +7,7 @@ import { PlayerRow } from "@/components/players/PlayerRow";
 import { ApiError } from "@/lib/api";
 import { fetchPlayers, PLAYERS_PAGE_SIZE, playerKeys } from "@/lib/players";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 /**
  * 유저 목록 (D26). 본인이 공개를 켠 유저의 닉네임·플레이어 티어·총점만 보이고, 누르면 읽기 전용 상세로 간다.
@@ -15,7 +16,7 @@ import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 export function PlayerListView({ viewerId }: { viewerId: number }) {
   const [page, setPage] = useState(0);
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
-  const { data, isPending, isError, error } = useQuery({
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: playerKeys.list(viewerId, page, PLAYERS_PAGE_SIZE),
     queryFn: ({ signal }) => fetchPlayers(page, PLAYERS_PAGE_SIZE, signal),
     placeholderData: keepPreviousData, // 페이지를 넘기는 동안 이전 화면을 유지한다 (깜빡임 방지)
@@ -37,9 +38,9 @@ export function PlayerListView({ viewerId }: { viewerId: number }) {
       {isPending ? (
         <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
       ) : isError ? (
-        <p role="alert" className="text-sm text-fg">
+        <ErrorRetry onRetry={() => void refetch()} retrying={isFetching}>
           {error instanceof ApiError ? error.message : "유저 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-        </p>
+        </ErrorRetry>
       ) : data.content.length === 0 ? (
         <p className="text-sm text-fg-sub">아직 공개한 유저가 없습니다.</p>
       ) : (

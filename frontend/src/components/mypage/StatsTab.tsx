@@ -15,6 +15,7 @@ import { fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficu
 import { overallStages } from "@/lib/my-page";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 import { fetchLevelRateFolders, fetchTierRateFolders, statsKeys, type StatsAxis } from "@/lib/rate-folders";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 const AXES: readonly { value: StatsAxis; label: string }[] = [
   { value: "level", label: "레벨 폴더" },
@@ -43,7 +44,9 @@ export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis:
       {overall.data ? (
         <OverallStageCard stages={overall.data} />
       ) : overall.isError ? (
-        <p role="alert" className="text-sm text-fg">달성 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <ErrorRetry onRetry={() => void overall.refetch()} retrying={overall.isFetching}>
+          달성 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+        </ErrorRetry>
       ) : (
         <Skeleton label="달성 현황을 불러오는 중입니다." className="h-[8.5rem]" />
       )}
@@ -97,7 +100,11 @@ function TierFolders({ userId, includeZero }: { userId: number; includeZero: boo
     return <p className="text-sm text-fg-sub">사용할 수 있는 서열표가 아직 없습니다.</p>;
   }
   if (tables.isError) {
-    return <p role="alert" className="text-sm text-fg">{errorMessage(tables.error)}</p>;
+    return (
+      <ErrorRetry onRetry={() => void tables.refetch()} retrying={tables.isFetching}>
+        {errorMessage(tables.error)}
+      </ErrorRetry>
+    );
   }
   return <FolderList axis="tier" query={q} includeZero={includeZero} emptyText="서열표에 레이팅 상수 난이도가 정해진 채보가 아직 없습니다." />;
 }
@@ -110,7 +117,7 @@ function FolderList({
 }: {
   axis: StatsAxis;
   includeZero: boolean;
-  query: { data?: RateFolderListResponse; isError: boolean; error: unknown };
+  query: { data?: RateFolderListResponse; isError: boolean; error: unknown; refetch: () => unknown; isFetching: boolean };
   emptyText: string;
 }) {
   if (query.data) {
@@ -121,7 +128,11 @@ function FolderList({
     );
   }
   if (query.isError) {
-    return <p role="alert" className="text-sm text-fg">{errorMessage(query.error)}</p>;
+    return (
+      <ErrorRetry onRetry={() => void query.refetch()} retrying={query.isFetching}>
+        {errorMessage(query.error)}
+      </ErrorRetry>
+    );
   }
   return <Skeleton label="통계를 불러오는 중입니다." className="h-72" />;
 }
