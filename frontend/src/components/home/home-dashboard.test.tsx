@@ -14,6 +14,7 @@ import type {
 } from "@/lib/api-types";
 import { tableProgress } from "@/lib/difficulty-table";
 import { folderProgress } from "@/lib/progress";
+import { WELCOME_HIDDEN_KEY, resetWelcomeGuideForTest } from "@/lib/welcome-guide";
 
 const table: DifficultyTableResponse = {
   id: 3,
@@ -125,8 +126,56 @@ describe("HomeDashboard", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
+    localStorage.removeItem(WELCOME_HIDDEN_KEY);
+    resetWelcomeGuideForTest();
   });
   afterEach(() => vi.unstubAllGlobals());
+
+  function mockHome(skillBody: SkillResponse) {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
+      if (url.includes("/skills/me")) return Promise.resolve(json(skillBody));
+      if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
+      if (url.includes("/players")) return Promise.resolve(json(playersPage));
+      if (url.includes("/entries")) {
+        const page: PageResponse<TierGroupResponse> = { content: groups, page: 0, size: 20, totalElements: 3, totalPages: 1 };
+        return Promise.resolve(json(page));
+      }
+      return Promise.resolve(json([table]));
+    });
+  }
+
+  it("레이팅 목록이 비어 있으면 시작 안내를 보이고, 숨기면 이 기기에 기억한다", async () => {
+    mockHome(skill); // single/other가 비어 있다
+    renderView();
+    const guide = await screen.findByRole("region", { name: "시작하기" });
+    expect(within(guide).getByText("0/3 완료")).toBeInTheDocument();
+    expect(within(guide).getByRole("link", { name: "가져오는 방법 보기" })).toHaveAttribute("href", "/import");
+    expect(within(guide).getByRole("link", { name: "서열표로 이동" })).toHaveAttribute("href", "/table");
+    // 가져오기 안내가 겹치므로 별도 가져오기 카드는 없다
+    expect(screen.queryByRole("link", { name: /최근 플레이 가져오기.*한 번에 기록으로/ })).toBeNull();
+
+    fireEvent.click(within(guide).getByRole("button", { name: "시작 안내 숨기기" }));
+    expect(screen.queryByRole("region", { name: "시작하기" })).toBeNull();
+    expect(localStorage.getItem(WELCOME_HIDDEN_KEY)).toBe("1");
+    // 숨기면 평소의 가져오기 카드가 돌아온다
+    expect(screen.getByRole("link", { name: /최근 플레이 가져오기/ })).toBeInTheDocument();
+  });
+
+  it("레이팅 목록에 기록이 있으면 시작 안내를 보이지 않는다", async () => {
+    mockHome({ ...skill, single: [{ songDifficultyId: 1 }] } as unknown as SkillResponse);
+    renderView();
+    // 레이팅 요약이 그려진 뒤(= 레이팅 응답이 도착한 뒤)에도 시작 안내는 없다
+    expect(await screen.findByRole("link", { name: "마이페이지로" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "시작하기" })).toBeNull();
+  });
+
+  it("레이팅을 불러오기 전에는 시작 안내를 깜빡이지 않는다", () => {
+    mockHome(skill);
+    renderView();
+    expect(screen.queryByRole("region", { name: "시작하기" })).toBeNull();
+  });
 
   it("내 레이팅 요약, 서열표 진행도(전체·묶음별), 바로가기를 보여 준다", async () => {
     fetchMock.mockImplementation((input) => {

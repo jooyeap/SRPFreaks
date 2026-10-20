@@ -5,6 +5,7 @@ import Link from "next/link";
 import { NavIcon } from "@/components/NavIcon";
 import { Skeleton } from "@/components/Skeleton";
 import { ImportEntryLink } from "@/components/import/ImportEntryLink";
+import { WelcomeGuide } from "@/components/home/WelcomeGuide";
 import { HomeNotices } from "@/components/home/HomeNotices";
 import { PlayersPreview } from "@/components/home/PlayersPreview";
 import { ProgressCard, type ProgressPanel } from "@/components/home/ProgressCard";
@@ -21,6 +22,7 @@ import {
 import { folderProgress } from "@/lib/progress";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
+import { useWelcomeHidden } from "@/lib/welcome-guide";
 
 // 아이콘은 헤더 메뉴·하단 탭바와 같은 것을 쓴다(lib/nav.ts): 곡 목록 = songs, 서열표 = table, 마이페이지 = rating
 const SHORTCUTS = [
@@ -56,6 +58,10 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
     queryFn: ({ signal }) => fetchChartFolders(signal),
   });
 
+  // 시작 안내: 레이팅 목록이 비어 있고(= 레이팅에 반영되는 기록이 아직 없고) 숨기지 않았을 때만. 기록이 생기면 저절로 사라진다
+  const welcomeHidden = useWelcomeHidden();
+  const showWelcome = !welcomeHidden && skill.data !== undefined && skill.data.single.length + skill.data.other.length === 0;
+
   const tablePanel: ProgressPanel = groups.data
     // 기준 난이도가 없는 `미정` 묶음은 서열표 화면과 같이 홈 서열표 진행도에서도 뺀다(합계·칸 지도 모두)
     ? { kind: "ready", progress: tableProgress(decidedGroups(groups.data)) }
@@ -76,6 +82,8 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
         <span className="font-num">{name}</span>님의 홈
       </h1>
 
+      {showWelcome ? <WelcomeGuide /> : null}
+
       <HomeNotices viewerId={userId} />
 
       {skill.data ? (
@@ -90,7 +98,8 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
 
       <ProgressCard table={tablePanel} songs={songsPanel} />
 
-      <ImportEntryLink />
+      {/* 시작 안내에 가져오기 카드가 이미 있으면 중복이라 뺀다 */}
+      {showWelcome ? null : <ImportEntryLink />}
 
       <PlayersPreview viewerId={userId} />
 
