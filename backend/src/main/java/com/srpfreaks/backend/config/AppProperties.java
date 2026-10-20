@@ -51,8 +51,10 @@ public class AppProperties {
     @Getter
     @Setter
     public static class RateLimit {
-        /** 로그인/재발급/로그아웃 요청을 IP당 1분에 허용하는 횟수. */
+        /** 로그인(/auth/google) 요청을 IP당 1분에 허용하는 횟수. 무차별 대입을 늦추려고 작게 둔다. */
         private int authPerMinute = 10;
+        /** 재발급(/auth/refresh)·로그아웃 요청을 IP당 1분에 허용하는 횟수. 화면을 열 때마다 불리고, 오락실 Wi-Fi처럼 한 IP를 여러 사람이 쓸 수 있어 넉넉하게 둔다. */
+        private int refreshPerMinute = 60;
     }
 
     /** 최근 플레이 가져오기(D40) 설정. */

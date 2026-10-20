@@ -438,7 +438,8 @@ com.srpfreaks.backend
 - **인증 실패 응답**: 구글 토큰 오류, 만료·재사용된 refresh, 차단된 계정은 모두 `AUTH_FAILED` 하나로 응답한다.
 - **ROOT 부트스트랩**: `ROOT_EMAIL`과 같은 이메일(대소문자 무시)로 **처음 가입하는 계정만**, 그리고 ROOT가 아직 없을 때만 ROOT가 된다. 기존 계정은 승격하지 않고, 같은 이메일이라도 `google_sub`가 다르면 로그인을 거부한다(계정 탈취 방지).
 - **공개 경로**: `POST /api/v1/auth/google|refresh|logout` 뿐이다. `/api/v1/**`는 인증 필요, 나머지(`/error`, 문서 경로 포함)는 모두 막는다. springdoc을 쓰려면 개발 환경에서만 열도록 따로 설정해야 한다.
-- **Rate Limit**: `/api/v1/auth/**`에 IP별 1분 10회(`app.rate-limit.auth-per-minute`), 서버 메모리 방식(EC2 1대 기준. 서버를 늘리면 공유 저장소 필요).
+- **Rate Limit**: IP별 1분당 로그인(`/auth/google`) 10회(`app.rate-limit.auth-per-minute`), 재발급(`/auth/refresh`)·로그아웃 60회(`app.rate-limit.refresh-per-minute`). 재발급은 화면을 열 때마다 불리고 오락실 Wi-Fi·이동통신 공용 IP처럼 한 주소를 여러 사람이 쓸 수 있어 로그인보다 넉넉하게 둔다(2026-10-20). 서버 메모리 방식(EC2 1대 기준. 서버를 늘리면 공유 저장소 필요).
+- **관리 API 방어선**: `/api/v1/admin/**`은 주소 단계에서도 ADMIN 이상만 통과시킨다(컨트롤러의 `@PreAuthorize`와 이중). nginx는 `server_tokens off`로 버전을 숨긴다(2026-10-20).
 - **보안 헤더**: CSP(`default-src 'none'; frame-ancestors 'none'`), Referrer-Policy, Permissions-Policy, X-Frame-Options, Cache-Control(no-store), HSTS(https 요청).
 - **회원 탈퇴 (구현됨, 로컬 검증 전)**: `DELETE /users/me` → 204. `users` 행 하나만 지우고 나머지는 FK가 처리한다(기록·refresh 토큰은 CASCADE, 감사 로그·곡 등록자·설정 수정자는 SET NULL). 응답의 Set-Cookie로 refresh 쿠키도 지운다. ROOT도 막지 않는다(같은 ROOT_EMAIL로 다시 가입하면 ROOT가 된다). 화면은 `/settings/withdraw`(되돌릴 수 없다는 안내 + 확인 체크 후 버튼 활성).
 - **아직 안 한 것**: 만료·폐기된 refresh_tokens 정리 작업(배치).
@@ -691,6 +692,7 @@ com.srpfreaks.backend
 | 2026-10-19 | **D40 추가**(가져오기 방식 변경). 서버에 로그인 계정용 `POST /record-imports/preview`·`/commit` 추가(미리보기는 저장하지 않음, 결과 건에 `previousBestRate`), `enabled=false` 동안 이 경로도 ROOT 전용. 화면·북마클릿 변경은 다음 단계 |
 | 2026-10-19 | D40 화면: `/import`(받은 플레이 미리보기·선택 저장), `이어서 처리` 모달, 토큰 없는 북마클릿(`#srp=` 전달). 전달 방식을 `postMessage`에서 URL 조각으로 확정 |
 | 2026-10-19 | D40 (6) 개정: 받은 플레이의 미리보기·저장·결과를 `/import` 화면이 아니라 **어느 화면에서든 뜨는 모달**에서 처리(`ImportProcessor`). 저장 전에 종료돼도 보관소(localStorage 6시간)에 남아 다음 화면 로드 때 모달이 다시 뜬다 |
+| 2026-10-20 | 보안 점검 반영: 재발급·로그아웃 Rate Limit을 로그인과 분리해 60회/분으로 완화(공용 IP 대응), `/api/v1/admin/**` 주소 단계 ADMIN 방어선, nginx `server_tokens off` |
 | 2026-10-19 | **옛 가져오기 토큰 방식 제거**(D40 (7)): `/import-token`·`/imports/**`·토큰 필터·전용 Rate Limit/CORS·`import_tokens`(V13)·`/settings/import` 화면 삭제. 설정 `app.import-api.allowed-origins`·`rate-limit.import-per-minute`·환경변수 `IMPORT_ALLOWED_ORIGINS`도 없앰. `IMPORT_API_ENABLED`는 `/record-imports`를 닫는 스위치로 남김 |
 | 2026-10-19 | 가져오기를 **모두에게 열었다**: 서버 `app.import-api.enabled` 기본값을 true로, 프론트 `IMPORT_FEATURE_ENABLED`를 true로 바꿈(`IMPORT_API_ENABLED=false`로 다시 ROOT 전용으로 되돌릴 수 있다). 이용규약 확인은 공개 조건에서 제외(D34 (7)) |
 | 2026-10-19 | 가져오기를 **ROOT 전용 시험 단계**로 다시 켬: `app.import-api.enabled=false`(기본)이면 `/import-token` 발급·조회·폐기는 **ROOT만** 가능하고(이전에는 전부 403), `/imports/**`는 가져오기 토큰만 받는다(일반 사용자는 토큰을 만들 수 없어 쓸 수 없다). 프론트는 `lib/features.ts`의 `canUseImport(role)`로 ROOT에게만 설정 카드·화면을 보여 준다. 모두에게 열 때는 `IMPORT_FEATURE_ENABLED=true`와 서버 `IMPORT_API_ENABLED=true`를 함께 켠다 |

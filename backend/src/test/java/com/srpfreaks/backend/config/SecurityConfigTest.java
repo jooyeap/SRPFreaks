@@ -57,4 +57,13 @@ class SecurityConfigTest {
     void 클래스_기본값은_닫힘이고_운영_설정이_연다() {
         assertThat(new AppProperties().getImportApi().isEnabled()).isFalse();
     }
+
+    @Test
+    void 요청_제한은_로그인은_엄격하게_재발급은_넉넉하게_둔다() {
+        AppProperties.RateLimit limits = new AppProperties().getRateLimit();
+        // 로그인은 무차별 대입 대상이라 작게, 재발급은 화면을 열 때마다 불리고 공용 IP(오락실)를 고려해 크게
+        assertThat(limits.getAuthPerMinute()).isEqualTo(10);
+        assertThat(limits.getRefreshPerMinute()).isEqualTo(60);
+        assertThat(limits.getRefreshPerMinute()).isGreaterThan(limits.getAuthPerMinute());
+    }
 }
