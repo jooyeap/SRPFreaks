@@ -21,6 +21,9 @@ ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID \
     NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules node_modules
 COPY . .
+# GIT_SHA: 배포 때 서버가 넘기는 커밋 7자리(푸터와 /version에 보인다). 소스 복사 "뒤에" 두어, 값이 바뀌면 빌드 단계가 캐시 없이 다시 돌게 한다.
+ARG GIT_SHA=unknown
+ENV NEXT_PUBLIC_GIT_SHA=$GIT_SHA
 RUN npm run build
 
 # ---------- 3단계: 실행 ----------

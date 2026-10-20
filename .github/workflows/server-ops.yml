@@ -107,6 +107,9 @@ jobs:
               echo "== origin/main =="
               git log -1 --format='%h %ad %s' --date=iso origin/main
               show_state
+              echo "== 실행 중인 프론트의 빌드 커밋 =="
+              $DC exec -T frontend wget -qO- http://127.0.0.1:3000/version || echo "(가져오지 못했습니다)"
+              echo
               echo "== 프론트 로그 (끝 30줄) =="
               $DC logs --tail 30 frontend
               ;;
@@ -115,6 +118,7 @@ jobs:
               git fetch origin
               git checkout "$REF"
               git pull --ff-only origin "$REF"
+              export GIT_SHA="$(git rev-parse --short=7 HEAD)" # 푸터·/version에 보이는 빌드 커밋
               # --no-cache: 옛 빌드 캐시를 쓰지 않고, --force-recreate: 이미지가 같아도 컨테이너를 새로 만든다
               $DC build --no-cache frontend
               $DC up -d --force-recreate frontend
