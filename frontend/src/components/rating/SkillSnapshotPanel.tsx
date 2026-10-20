@@ -15,6 +15,7 @@ import {
   formatChange,
   snapshotKeys,
 } from "@/lib/skill-snapshot";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 /**
  * 레이팅 기록 (D32, DESIGN-UI 5장). 레이팅 화면 맨 아래.
@@ -78,9 +79,9 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
       </div>
 
       {list.isError ? (
-        <p role="alert" className="text-sm text-fg">
+        <ErrorRetry onRetry={() => void list.refetch()} retrying={list.isFetching}>
           {list.error instanceof ApiError ? list.error.message : "기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-        </p>
+        </ErrorRetry>
       ) : !data ? (
         <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
       ) : data.content.length === 0 ? (

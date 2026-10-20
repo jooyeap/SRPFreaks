@@ -11,6 +11,7 @@ import { ApiError } from "@/lib/api";
 import type { RecommendationItem } from "@/lib/api-types";
 import { formatRate, formatTier } from "@/lib/format";
 import { addToSetlist, fetchRecommendations, formatOffsetRange, SETLIST_LIMIT, setlistKeys } from "@/lib/setlist";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 /**
  * 내 실력대 추천 (D37): 내 레이팅 목록의 평균 난이도를 기준으로 오늘 도전해 볼 채보를 두 묶음으로 보여 준다.
@@ -50,9 +51,9 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
       {result.isPending ? (
         <p className="text-sm text-fg-sub">추천을 불러오는 중입니다.</p>
       ) : result.isError ? (
-        <p role="alert" className="text-sm text-fg">
+        <ErrorRetry onRetry={() => void result.refetch()} retrying={result.isFetching}>
           {result.error instanceof ApiError ? result.error.message : "추천을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-        </p>
+        </ErrorRetry>
       ) : result.data.status === "UNAVAILABLE" ? (
         <p className="text-sm text-fg-sub">아직 추천할 수 없습니다. 서열표가 준비되면 보여 드려요.</p>
       ) : result.data.status === "INSUFFICIENT" ? (

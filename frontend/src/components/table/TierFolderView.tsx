@@ -27,6 +27,7 @@ import {
 } from "@/lib/difficulty-table";
 import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
 import type { TableEntryResponse } from "@/lib/api-types";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 function errorMessage(error: unknown): string {
   return error instanceof ApiError ? error.message : "묶음을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
@@ -79,7 +80,12 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
     return (
       <div className="flex flex-col gap-4">
         {back}
-        <p role="alert" className="text-sm text-fg">{errorMessage(tables.error ?? groups.error)}</p>
+        <ErrorRetry
+          onRetry={() => void (tables.isError ? tables.refetch() : groups.refetch())}
+          retrying={tables.isFetching || groups.isFetching}
+        >
+          {errorMessage(tables.error ?? groups.error)}
+        </ErrorRetry>
       </div>
     );
   }

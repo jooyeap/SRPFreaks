@@ -7,6 +7,9 @@ export const API_BASE = "/api/v1";
 /** 서버가 준 문구가 없을 때 쓰는 일반 안내 (서버 내부 내용은 화면에 보여 주지 않는다). */
 const GENERIC_ERROR_MESSAGE = "서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.";
 const NETWORK_ERROR_MESSAGE = "네트워크 연결을 확인해 주세요.";
+const TIMEOUT_ERROR_MESSAGE = "응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.";
+/** 조회(GET)는 이 시간 안에 응답이 없으면 끊고 다시 시도하게 한다. 느린 망에서 로딩 표시만 계속 도는 것을 막는다. */
+export const GET_TIMEOUT_MS = 15_000;
 
 /**
  * API 오류. code는 서버의 ErrorCode 이름(NOT_FOUND, VALIDATION_ERROR ...)이고,
@@ -115,6 +118,15 @@ function buildUrl(path: string, query?: Record<string, QueryValue>): string {
   return queryString ? `${url}?${queryString}` : url;
 }
 
+/** 호출한 쪽이 준 취소 신호와 시간 제한 신호를 하나로 합친다. 지원하지 않는 환경에서는 시간 제한 없이 그대로 쓴다. */
+function withTimeout(signal: AbortSignal | undefined): AbortSignal | undefined {
+  if (typeof AbortSignal === "undefined" || typeof AbortSignal.timeout !== "function" || typeof AbortSignal.any !== "function") {
+    return signal;
+  }
+  const timeout = AbortSignal.timeout(GET_TIMEOUT_MS);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+}
+
 async function send(path: string, options: ApiRequestOptions): Promise<Response> {
   const headers = new Headers();
   if (options.auth !== false) {
@@ -128,15 +140,21 @@ async function send(path: string, options: ApiRequestOptions): Promise<Response>
     headers.set("Content-Type", "application/json");
     body = JSON.stringify(options.body);
   }
+  const method = options.method ?? "GET";
+  // 시간 제한은 조회에만 건다. 저장 같은 쓰기는 서버에서 이미 처리됐는데 화면만 실패로 보이면 중복 저장을 부를 수 있어서 끊지 않는다.
+  const signal = method === "GET" ? withTimeout(options.signal) : options.signal;
   try {
     return await fetch(buildUrl(path, options.query), {
-      method: options.method ?? "GET",
+      method,
       headers,
       body,
-      signal: options.signal,
+      signal,
       credentials: "same-origin",
     });
   } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      throw new ApiError(0, "TIMEOUT", TIMEOUT_ERROR_MESSAGE);
+    }
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error; // 화면을 떠나며 취소한 요청은 오류로 취급하지 않는다
     }

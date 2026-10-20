@@ -16,6 +16,7 @@ import {
   type SongListFilters,
   songListKeys,
 } from "@/lib/song-list";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 /**
  * 레벨 폴더 하나. 큰 폴더(0.5 단위)를 펼치면 안에 0.05 단위 하위 폴더(같은 컴포넌트, level="sub")가 나오고,
@@ -116,9 +117,9 @@ export function FolderSection({
             ))}
           </div>
         ) : pages.isError ? (
-          <p role="alert" className="p-3 text-sm text-fg">
+          <ErrorRetry className="p-3" onRetry={() => void pages.refetch()} retrying={pages.isFetching}>
             {pages.error instanceof ApiError ? pages.error.message : "곡 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-          </p>
+          </ErrorRetry>
         ) : !pages.data ? (
           <p className="p-3 text-sm text-fg-sub">불러오는 중입니다.</p>
         ) : (

@@ -23,6 +23,7 @@ import { folderProgress } from "@/lib/progress";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 import { useWelcomeHidden } from "@/lib/welcome-guide";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 // 아이콘은 헤더 메뉴·하단 탭바와 같은 것을 쓴다(lib/nav.ts): 곡 목록 = songs, 서열표 = table, 마이페이지 = rating
 const SHORTCUTS = [
@@ -91,7 +92,9 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
           <RatingSummary skill={skill.data} />
         </Link>
       ) : skill.isError ? (
-        <p role="alert" className="text-sm text-fg">레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <ErrorRetry onRetry={() => void skill.refetch()} retrying={skill.isFetching}>
+          레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+        </ErrorRetry>
       ) : (
         <Skeleton label="레이팅을 불러오는 중입니다." className="h-[7.5rem]" />
       )}

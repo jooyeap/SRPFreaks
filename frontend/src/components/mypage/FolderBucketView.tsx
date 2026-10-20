@@ -20,6 +20,7 @@ import {
 } from "@/lib/rate-folders";
 import { songListDetailHref } from "@/lib/song-list";
 import type { InstrumentPart } from "@/lib/types";
+import { ErrorRetry } from "@/components/ErrorRetry";
 
 const PART_OPTIONS: readonly { value: InstrumentPart; label: string }[] = [
   { value: "GUITAR", label: "Guitar" },
@@ -108,7 +109,12 @@ export function FolderBucketView({
       {tables.isSuccess && tableId === null ? (
         <p className="text-sm text-fg-sub">사용할 수 있는 서열표가 아직 없습니다.</p>
       ) : pages.isError || tables.isError ? (
-        <p role="alert" className="text-sm text-fg">{errorMessage(pages.error ?? tables.error)}</p>
+        <ErrorRetry
+          onRetry={() => void (tables.isError ? tables.refetch() : pages.refetch())}
+          retrying={pages.isFetching || tables.isFetching}
+        >
+          {errorMessage(pages.error ?? tables.error)}
+        </ErrorRetry>
       ) : !pages.data ? (
         <Skeleton label="목록을 불러오는 중입니다." className="h-72" />
       ) : rows.length === 0 ? (
