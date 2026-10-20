@@ -16,11 +16,14 @@ export function SongHeader({
   song,
   chart,
   pattern,
+  action,
 }: {
   song: SongDetailResponse;
   chart: SongChartResponse | null;
   /** 서열표에서 고른 채보의 속성. null/undefined이면 칩을 그리지 않는다 */
   pattern?: string | null;
+  /** 곡명 줄 오른쪽에 둘 버튼(ROOT·ADMIN의 `관리`). 없으면 그리지 않는다 */
+  action?: React.ReactNode;
 }) {
   const t = useTranslations();
   return (
@@ -39,7 +42,10 @@ export function SongHeader({
           ) : null}
         </div>
         <div className="flex flex-col gap-1">
-          <h1 className="break-words font-num text-[26px] font-bold leading-[1.15] text-fg">{song.title}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="min-w-0 break-words font-num text-[26px] font-bold leading-[1.15] text-fg">{song.title}</h1>
+            {action ? <div className="shrink-0">{action}</div> : null}
+          </div>
           {song.artist ? <p className="break-words text-[13px] text-fg-dim">{song.artist}</p> : null}
         </div>
         <p className="flex flex-wrap items-center gap-1.5">

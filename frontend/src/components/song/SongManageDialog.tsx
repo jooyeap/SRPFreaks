@@ -19,6 +19,7 @@ export function SongManageDialog({
   onEditTable,
   onEditSong,
   onEditChart,
+  onAddChart,
   songId,
   songTitle,
   chartId,
@@ -33,6 +34,8 @@ export function SongManageDialog({
   onEditSong: () => void;
   /** null이면 `채보 수정` 항목을 숨긴다(보고 있는 채보가 없을 때) */
   onEditChart: (() => void) | null;
+  /** null이면 `채보 추가` 항목을 숨긴다(파트·난이도 8가지가 이미 모두 있을 때) */
+  onAddChart: (() => void) | null;
   songId: number;
   songTitle: string;
   chartId: number | null;
@@ -94,6 +97,11 @@ export function SongManageDialog({
               <button type="button" onClick={pick(onEditSong)} className={ROW}>
                 {t("Song.editSong")}
               </button>
+              {onAddChart ? (
+                <button type="button" onClick={pick(onAddChart)} className={ROW}>
+                  {t("Song.addChart")}
+                </button>
+              ) : null}
               {onEditChart ? (
                 <button type="button" onClick={pick(onEditChart)} className={ROW}>
                   {t("Song.editChart")}
