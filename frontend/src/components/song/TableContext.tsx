@@ -32,19 +32,15 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
   return (
     <section aria-label={t("Song.tableInfo")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3.5">
       <h2 className="sr-only">{t("Song.tableInfo")}</h2>
-      {/* 왼쪽: `? 레이팅 상수 난이도` 아래에 큰 값. 오른쪽: 같은 줄(라벨 줄)에 `추천 상`, `레벨 9.15`를 라벨 바로 옆에 값이 오게 둔다.
-          (360px 폭에서 3등분하면 라벨이 두 줄로 꺾여 ?가 아래로 내려갔고, 값이 라벨 밑에 있으면 오른쪽 끝에 붙지 않아 이렇게 바꿨다.) */}
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 text-sm">
-        <div className="row-span-2">
-          <dt className="flex items-center gap-1 whitespace-nowrap text-xs text-fg-dim">
-            <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
-            {t("Song.ratingConstant")}
-          </dt>
-          <dd className="font-num text-[22px] font-bold leading-tight text-fg">
-            {formatTier(group.tier, t)}
-          </dd>
+      {/* 첫 줄: 도움말 `?` 하나. 둘째 줄: `레이팅 상수 난이도 7.0 · 추천 상 · 레벨 9.15`를 라벨 옆에 값이 오게 한 줄로 둔다.
+          (360px에서 라벨 아래에 큰 값을 두거나 3등분하면 라벨이 꺾이고 ?가 내려가서 이 모양으로 정했다. 폭이 모자라면 줄이 바뀌도록 flex-wrap.) */}
+      <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
+      <dl className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-sm">
+        <div className="flex items-center gap-1.5">
+          <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Song.ratingConstant")}</dt>
+          <dd className="font-num text-lg font-bold leading-none text-fg">{formatTier(group.tier, t)}</dd>
         </div>
-        <div className="flex h-6 items-center justify-end gap-1.5 self-start">
+        <div className="flex items-center gap-1.5">
           <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Nav.importBadge")}</dt>
           <dd className="flex items-center">
             {entry.recommend ? (
@@ -53,8 +49,10 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
               <span className="text-fg-faint">{EMPTY_MARK}</span>
             )}
           </dd>
-          <dt className="ml-3 whitespace-nowrap text-xs text-fg-dim">{t("Song.fieldLevel")}</dt>
-          <dd className="font-num text-base font-bold leading-none text-fg">{formatLevel(entry.level)}</dd>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Song.fieldLevel")}</dt>
+          <dd className="font-num text-lg font-bold leading-none text-fg">{formatLevel(entry.level)}</dd>
         </div>
       </dl>
       <p className="border-t border-row-line pt-2.5 text-xs text-fg-dim">

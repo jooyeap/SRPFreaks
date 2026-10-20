@@ -67,7 +67,7 @@ export function TermHelp({ term, label }: { term: TermKey; label: string }) {
           id={panelId}
           role="dialog"
           aria-label={t("helpLabel", { label })}
-          className="absolute left-0 top-full z-30 mt-2 flex w-64 max-w-[80vw] flex-col gap-2 rounded-xl border border-chip-on-bg bg-table-head p-3 text-left font-sans font-normal shadow-lg"
+          className="absolute left-0 top-full z-30 mt-2 flex w-64 max-w-[80vw] flex-col gap-2 whitespace-normal rounded-xl border border-chip-on-bg bg-table-head p-3 text-left font-sans font-normal shadow-lg"
         >
           <span className="text-[13px] font-bold text-fg">{t(help.title)}</span>
           <span className="flex flex-col gap-1.5 text-xs leading-relaxed text-fg-sub">
