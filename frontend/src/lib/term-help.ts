@@ -14,11 +14,11 @@ export interface TermHelp {
 export const TERM_HELP: Record<TermKey, TermHelp> = {
   single: {
     title: "단일이 뭔가요?",
-    lines: ["채보의 속성이 하나뿐인 채보입니다. 이 중 점수가 높은 15개가 레이팅에 들어갑니다."],
+    lines: ["단일 코드로 이루어진 채보입니다. 이 중 점수가 높은 15개가 레이팅에 들어갑니다."],
   },
   other: {
     title: "복합·이중·삼중이 뭔가요?",
-    lines: ["속성이 둘 이상 섞인 채보입니다. 이 중 점수가 높은 25개가 레이팅에 들어갑니다."],
+    lines: ["2중, 3중 코드로 이루어진 곡, 종합적으로 요구하는 곡은 복합으로 분류됩니다. 이 중 점수가 높은 25개가 레이팅에 들어갑니다."],
   },
   ratingConstant: {
     title: "레이팅 상수 난이도가 뭔가요?",
