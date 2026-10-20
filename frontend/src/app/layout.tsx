@@ -3,6 +3,7 @@ import { Chakra_Petch, Noto_Sans_KR } from "next/font/google";
 import type { ReactNode } from "react";
 import { MobileTabBar } from "@/components/MobileTabBar";
 import { ImportHandoff } from "@/components/import/ImportHandoff";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { NicknameNotice } from "@/components/NicknameNotice";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className="flex min-h-full flex-col bg-page pb-[var(--tabbar-h)] font-sans text-fg">
         <Providers>
           <SiteHeader />
+          <OfflineBanner />
           <NicknameNotice />
           <ImportHandoff />
           <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6">{children}</main>

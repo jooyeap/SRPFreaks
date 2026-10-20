@@ -9,6 +9,7 @@ import { RecordForm, type RecordChart } from "@/components/record/RecordForm";
 import { SaveResultCard, type SaveOutcome } from "@/components/record/SaveResultCard";
 import { RecordList } from "@/components/record/RecordList";
 import { formatRate } from "@/lib/format";
+import { useWakeLock } from "@/lib/wake-lock";
 import { fetchRecordsOfChart, recordKeys, recordOriginText, type RecordResponse } from "@/lib/records";
 
 /** 달성률이 가장 높은 기록(서열표에 보이는 기록). 같으면 목록 앞(더 최근) */
@@ -50,6 +51,8 @@ export function RecordDialog({
   // 저장 직후 결과 카드. 세트리스트로 이어 입력할 때(다음 채보가 있을 때)는 흐름을 끊지 않으려고 카드 없이 바로 넘어간다
   const [outcome, setOutcome] = useState<SaveOutcome | null>(null);
   const active = chart ? (switched ?? chart) : null;
+  // 기록 창이 열려 있는 동안 화면이 꺼지지 않게 한다(게임 사이에 달성률을 옮겨 적는 동안)
+  useWakeLock(active !== null);
   const close = useCallback(() => {
     setSwitched(null);
     setOutcome(null);
