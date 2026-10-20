@@ -3,6 +3,7 @@ import { EMPTY_MARK, formatPlayedDate, formatRate, partLabel, difficultyLabel, f
 import type { MyRecord } from "@/lib/api-types";
 import type { RecordResponse } from "@/lib/records";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 /**
  * 내 기록: SRN+ 최고 기록 1줄 (D25: 옵션별 5줄은 쓰지 않는다). 기록이 없으면 `–`.
@@ -23,15 +24,16 @@ export function MyRecordCard({
   emphasizeSrn: boolean;
   onRecord: () => void;
 }) {
+  const t = useTranslations();
   const stage = mine?.stage ?? null;
   const fancy = stage === "FC" || stage === "EXC";
   return (
-    <section aria-label="내 기록" className="flex flex-col gap-3 rounded-lg border border-line bg-card p-4">
+    <section aria-label={t("Song.myRecord")} className="flex flex-col gap-3 rounded-lg border border-line bg-card p-4">
       <h2 className="text-sm font-semibold text-fg-sub">
-        내 기록
+        {t("Song.myRecord")}
         {chart ? (
           <span className="ml-2 font-normal text-fg-dim">
-            {partLabel(chart.part)} {difficultyLabel(chart.difficulty)} {formatLevel(chart.level)} 기준
+            {t("Chart.chartBasis", { chart: `${partLabel(chart.part)} ${difficultyLabel(chart.difficulty)} ${formatLevel(chart.level)}` })}
           </span>
         ) : null}
       </h2>
@@ -57,7 +59,7 @@ export function MyRecordCard({
         </span>
       </div>
 
-      {emphasizeSrn ? <p className="text-xs text-fg-dim">서열표는 SRN+, Premium Free 기준입니다.</p> : null}
+      {emphasizeSrn ? <p className="text-xs text-fg-dim">{t("Song.tableBasis")}</p> : null}
 
       <button
         type="button"
@@ -65,7 +67,7 @@ export function MyRecordCard({
         disabled={!chart}
         className="h-11 w-full rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-50"
       >
-        기록 등록
+        {t("Song.addRecord")}
       </button>
     </section>
   );

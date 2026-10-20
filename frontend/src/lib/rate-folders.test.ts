@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { koT } from "@/i18n/ko-translator";
 import type { RateBucketKey, RateFolderResponse } from "@/lib/api-types";
 import {
   bucketBadges,
@@ -72,8 +73,8 @@ describe("bucket helpers", () => {
   });
 
   it("폴더 제목과 목록 주소", () => {
-    expect(folderLabel("level", 9.5)).toBe("9.50 ~ 9.99");
-    expect(folderLabel("tier", 5.8)).toBe("5.8");
+    expect(folderLabel("level", 9.5, koT)).toBe("9.50 ~ 9.99");
+    expect(folderLabel("tier", 5.8, koT)).toBe("5.8");
     expect(bucketListHref("tier", 5.8, "BELOW")).toBe("/me/folder?axis=tier&key=5.80&bucket=BELOW");
   });
 });

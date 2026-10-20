@@ -1,13 +1,17 @@
 import type { SongDetailResponse } from "@/lib/api-types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { koT } from "@/i18n/ko-translator";
+
+const songCreateSchema = makeSongCreateSchema(koT);
+const chartEditSchema = makeChartEditSchema(koT);
 import {
-  chartEditSchema,
+  makeChartEditSchema,
   emptyChart,
   emptySongCreate,
   MAX_CHARTS,
   newProgress,
   registerSong,
-  songCreateSchema,
+  makeSongCreateSchema,
   songToEditValues,
   toChartBody,
   toSongBody,
@@ -226,17 +230,17 @@ describe("검색 키워드(별칭)", () => {
 
   it("addAlias: 앞뒤 공백을 빼고 목록 끝에 더하며 입력 배열은 바꾸지 않는다", () => {
     const current = ["a"];
-    const result = addAlias(current, "  b  ", 5);
+    const result = addAlias(current, "  b  ", 5, koT);
     expect(result).toEqual({ ok: true, aliases: ["a", "b"] });
     expect(current).toEqual(["a"]);
   });
 
   it("addAlias: 빈 값 · 너무 긴 값 · 중복(대소문자·공백·전각 무시) · 한도 초과는 막는다", () => {
-    expect(addAlias([], "   ", 5)).toEqual({ ok: false, message: "키워드를 입력해 주세요." });
-    expect(addAlias([], "x".repeat(256), 5)).toEqual({ ok: false, message: "키워드는 255자 이하여야 합니다." });
-    expect(addAlias(["Test Song"], "ｔｅｓｔsong", 5)).toEqual({ ok: false, message: "이미 등록된 키워드입니다." });
-    expect(addAlias(["a", "b"], "c", 2)).toEqual({ ok: false, message: "키워드는 2개까지 등록할 수 있습니다." });
-    expect(addAlias([], "x".repeat(255), 5).ok).toBe(true);
+    expect(addAlias([], "   ", 5, koT)).toEqual({ ok: false, message: "키워드를 입력해 주세요." });
+    expect(addAlias([], "x".repeat(256), 5, koT)).toEqual({ ok: false, message: "키워드는 255자 이하여야 합니다." });
+    expect(addAlias(["Test Song"], "ｔｅｓｔsong", 5, koT)).toEqual({ ok: false, message: "이미 등록된 키워드입니다." });
+    expect(addAlias(["a", "b"], "c", 2, koT)).toEqual({ ok: false, message: "키워드는 2개까지 등록할 수 있습니다." });
+    expect(addAlias([], "x".repeat(255), 5, koT).ok).toBe(true);
   });
 
   it("toSongUpdateBody: 키워드가 그대로면 titles를 보내지 않고, 바뀌면 별칭이 아닌 기존 표기와 함께 통째로 보낸다", () => {

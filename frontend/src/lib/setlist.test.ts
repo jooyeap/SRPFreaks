@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { koT as t } from "@/i18n/ko-translator";
 import type { SetlistItemResponse } from "@/lib/api-types";
 import { doneCount, formatOffsetRange, formatTierOffset } from "@/lib/setlist";
 
@@ -25,7 +26,7 @@ describe("추천 범위 표기", () => {
   });
 
   it("범위를 `평균 하한 ~ 상한`으로 쓴다", () => {
-    expect(formatOffsetRange(-0.6, -0.1)).toBe("평균 \u22120.6 ~ \u22120.1");
-    expect(formatOffsetRange(-0.1, 0.4)).toBe("평균 \u22120.1 ~ +0.4");
+    expect(formatOffsetRange(-0.6, -0.1, t)).toBe("평균 \u22120.6 ~ \u22120.1");
+    expect(formatOffsetRange(-0.1, 0.4, t)).toBe("평균 \u22120.1 ~ +0.4");
   });
 });

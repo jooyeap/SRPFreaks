@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { apiFetch } from "@/lib/api";
+import type { Translator } from "@/i18n/translator";
 import type { ChartRowResponse, PageResponse, SetlistItemResponse, SetlistRecommendationResponse } from "@/lib/api-types";
 
 /** 세트리스트 쿼리 키. 앞부분 "setlist"는 records.ts의 AFFECTED_QUERY_KEYS와 같다: 기록을 저장/수정/삭제하면 무효화되어 완료 표시가 바로 바뀐다. */
@@ -66,8 +67,8 @@ export function formatTierOffset(value: number): string {
 }
 
 /** 추천 묶음 제목 옆의 범위 글자. `평균 −0.6 ~ −0.1` */
-export function formatOffsetRange(min: number, max: number): string {
-  return `평균 ${formatTierOffset(min)} ~ ${formatTierOffset(max)}`;
+export function formatOffsetRange(min: number, max: number, t: Translator): string {
+  return t("Setlist.offsetRange", { min: formatTierOffset(min), max: formatTierOffset(max) });
 }
 
 // ---- 추천 범위 직접 설정 (D37) ---------------------------------------------------------------------
@@ -82,25 +83,30 @@ export function parseOffset(text: string): number | null {
   return Number(normalized);
 }
 
-const offsetField = z
+function makeOffsetField(t: Translator) {
+  return z
   .string()
-  .refine((v) => parseOffset(v) !== null, "숫자로 입력해 주세요. (소수 둘째 자리까지)")
+  .refine((v) => parseOffset(v) !== null, t("Validation.offsetNumber"))
   .refine((v) => {
     const n = parseOffset(v);
     return n === null || Math.abs(n) <= RANGE_LIMIT;
-  }, `\u2212${RANGE_LIMIT} ~ +${RANGE_LIMIT} 사이로 입력해 주세요.`);
+  }, t("Validation.offsetRange", { limit: RANGE_LIMIT }));
+}
 
 /** 폼 값은 글자 그대로 들고 있다가 저장할 때 숫자로 바꾼다(입력 중인 "-" 같은 중간 상태를 그대로 보이기 위해). */
-export const recommendRangeSchema = z
+export function makeRecommendRangeSchema(t: Translator) {
+  const offsetField = makeOffsetField(t);
+  return z
   .object({ ssMin: offsetField, ssMax: offsetField, sMin: offsetField, sMax: offsetField })
   .superRefine((values, ctx) => {
     for (const [min, max] of [["ssMin", "ssMax"], ["sMin", "sMax"]] as const) {
       const lo = parseOffset(values[min]);
       const hi = parseOffset(values[max]);
-      if (lo !== null && hi !== null && lo > hi) ctx.addIssue({ code: "custom", path: [min], message: "하위 값은 상위 값보다 클 수 없습니다." });
+      if (lo !== null && hi !== null && lo > hi) ctx.addIssue({ code: "custom", path: [min], message: t("Validation.rangeOrder") });
     }
   });
-export type RecommendRangeValues = z.infer<typeof recommendRangeSchema>;
+}
+export type RecommendRangeValues = z.infer<ReturnType<typeof makeRecommendRangeSchema>>;
 
 export interface RecommendRangeBody {
   ssMin: number;
@@ -109,7 +115,7 @@ export interface RecommendRangeBody {
   sMax: number;
 }
 
-/** 서버에 보내는 값. 형식은 recommendRangeSchema가 이미 확인했다. */
+/** 서버에 보내는 값. 형식은 makeRecommendRangeSchema가 이미 확인했다. */
 export function toRangeBody(values: RecommendRangeValues): RecommendRangeBody {
   return { ssMin: Number(parseOffset(values.ssMin)), ssMax: Number(parseOffset(values.ssMax)), sMin: Number(parseOffset(values.sMin)), sMax: Number(parseOffset(values.sMax)) };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import type { RecordChart } from "@/components/record/RecordForm";
 import { previewRatingChange, ratingPreviewText } from "@/lib/rating-preview";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
@@ -22,6 +23,7 @@ export function RatingPreviewLine({
   score: number | null;
   record?: RecordResponse;
 }) {
+  const t = useTranslations();
   const skill = useQuery({
     queryKey: skillKeys.me(userId),
     queryFn: ({ signal }) => fetchMySkill(signal),
@@ -37,6 +39,6 @@ export function RatingPreviewLine({
     return null;
   }
   return (
-    <p className={`text-xs ${preview.entered ? "font-bold text-fg" : "text-fg-sub"}`}>{ratingPreviewText(preview)}</p>
+    <p className={`text-xs ${preview.entered ? "font-bold text-fg" : "text-fg-sub"}`}>{ratingPreviewText(preview, t)}</p>
   );
 }

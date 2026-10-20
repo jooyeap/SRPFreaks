@@ -6,21 +6,23 @@ import { NicknameForm } from "@/components/settings/NicknameForm";
 import { canSeeAdminMenu } from "@/lib/admin";
 import { canUseImport } from "@/lib/features";
 import { ProfileVisibilityForm } from "@/components/settings/ProfileVisibilityForm";
+import { useTranslations } from "next-intl";
 
 /** 설정 화면: 계정 정보, 닉네임, 유저 목록 공개 여부, 로그아웃, 탈퇴로 가는 링크. 내 정보이므로 로그인이 필요하다. */
 export default function SettingsPage() {
+  const t = useTranslations();
   const { status, user, logout } = useAuth();
 
   if (status === "loading") {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   if (status === "anonymous" || !user) {
     return (
       <section className="flex flex-col items-start gap-3">
-        <h1 className="text-xl font-semibold text-fg">설정</h1>
-        <p className="text-sm text-fg-sub">설정을 바꾸려면 로그인해 주세요.</p>
+        <h1 className="text-xl font-semibold text-fg">{t("Nav.settings")}</h1>
+        <p className="text-sm text-fg-sub">{t("SettingsPage.lead")}</p>
         <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-          로그인
+          {t("Nav.login")}
         </Link>
       </section>
     );
@@ -29,70 +31,70 @@ export default function SettingsPage() {
   return (
     // 모바일은 폭 448px(max-w-md) 한 열, 데스크톱(md 이상)은 시안대로 760px까지 넓힌다
     <section className="mx-auto flex w-full max-w-md flex-col gap-3 md:max-w-[760px]">
-      <h1 className="text-xl font-semibold text-fg">설정</h1>
-      <section aria-label="계정" className={card}>
-        <h2 className="text-xs font-bold text-fg-sub">계정</h2>
+      <h1 className="text-xl font-semibold text-fg">{t("Nav.settings")}</h1>
+      <section aria-label={t("SettingsPage.account")} className={card}>
+        <h2 className="text-xs font-bold text-fg-sub">{t("SettingsPage.account")}</h2>
         <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="text-fg-sub">로그인 방식</span>
+          <span className="text-fg-sub">{t("SettingsPage.loginMethod")}</span>
           <span className="font-bold text-fg">Google</span>
         </div>
         <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="shrink-0 text-fg-sub">이메일</span>
+          <span className="shrink-0 text-fg-sub">{t("SettingsPage.email")}</span>
           <span className="min-w-0 truncate font-bold text-fg">{user.email}</span>
         </div>
         <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="text-fg-sub">역할</span>
+          <span className="text-fg-sub">{t("SettingsPage.role")}</span>
           <span className="font-bold text-fg">{user.role}</span>
         </div>
-        <p className="text-xs leading-relaxed text-fg-dim">비밀번호는 저장하지 않습니다. 로그인은 Google 계정으로만 합니다.</p>
+        <p className="text-xs leading-relaxed text-fg-dim">{t("SettingsPage.noPassword")}</p>
       </section>
-      <section aria-label="닉네임 설정" className={card}>
+      <section aria-label={t("SettingsPage.nicknameAria")} className={card}>
         <NicknameForm initialNickname={user.nickname} />
       </section>
-      <section aria-label="유저 목록 공개 설정" className={card}>
+      <section aria-label={t("SettingsPage.visibilityAria")} className={card}>
         <ProfileVisibilityForm user={user} />
       </section>
       {canUseImport(user.role) ? (
-        <section aria-label="최근 플레이 가져오기" className={card}>
-          <h2 className="text-xs font-bold text-fg-sub">최근 플레이 가져오기</h2>
-          <p className="text-xs leading-relaxed text-fg-sub">공식 사이트의 최근 플레이 결과를 미리 확인하고 가져옵니다. 토큰은 필요 없습니다.</p>
+        <section aria-label={t("Nav.import")} className={card}>
+          <h2 className="text-xs font-bold text-fg-sub">{t("Nav.import")}</h2>
+          <p className="text-xs leading-relaxed text-fg-sub">{t("SettingsPage.importLead")}</p>
           <Link
             href="/import"
             className="flex h-11 items-center justify-center rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
           >
-            가져오기 화면으로
+            {t("SettingsPage.importBtn")}
           </Link>
         </section>
       ) : null}
       {canSeeAdminMenu(user.role) ? (
-        <section aria-label="관리" className={card}>
-          <h2 className="text-xs font-bold text-fg-sub">관리</h2>
+        <section aria-label={t("Nav.admin")} className={card}>
+          <h2 className="text-xs font-bold text-fg-sub">{t("Nav.admin")}</h2>
           <Link
             href="/admin"
             className="flex h-11 items-center justify-center rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
           >
-            관리 화면
+            {t("SettingsPage.adminBtn")}
           </Link>
         </section>
       ) : null}
-      <section aria-label="로그인 상태" className={card}>
-        <h2 className="text-xs font-bold text-fg-sub">로그인 상태</h2>
+      <section aria-label={t("SettingsPage.loginState")} className={card}>
+        <h2 className="text-xs font-bold text-fg-sub">{t("SettingsPage.loginState")}</h2>
         <button
           type="button"
           onClick={() => void logout()}
           className="h-11 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
         >
-          로그아웃
+          {t("Nav.logout")}
         </button>
       </section>
-      <section aria-label="회원 탈퇴" className="flex flex-col gap-3 rounded-2xl border border-danger bg-card p-4">
-        <h2 className="text-xs font-bold text-danger">회원 탈퇴</h2>
-        <p className="text-xs leading-relaxed text-fg-sub">탈퇴하면 계정과 모든 기록이 바로 삭제되고 되돌릴 수 없습니다.</p>
+      <section aria-label={t("Pages.withdrawTitle")} className="flex flex-col gap-3 rounded-2xl border border-danger bg-card p-4">
+        <h2 className="text-xs font-bold text-danger">{t("Pages.withdrawTitle")}</h2>
+        <p className="text-xs leading-relaxed text-fg-sub">{t("SettingsPage.withdrawLead")}</p>
         <Link
           href="/settings/withdraw"
           className="flex h-11 items-center justify-center rounded-xl border border-danger text-sm font-extrabold text-danger hover:bg-table-head"
         >
-          탈퇴하기
+          {t("Settings.withdrawBtn")}
         </Link>
       </section>
     </section>

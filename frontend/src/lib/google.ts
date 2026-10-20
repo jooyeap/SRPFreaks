@@ -1,3 +1,4 @@
+import { clientMessage } from "@/i18n/client-messages";
 /**
  * Google 로그인(Google Identity Services) 스크립트 로더와 필요한 만큼의 타입.
  *
@@ -45,7 +46,7 @@ let loadPromise: Promise<GoogleAccountsId> | null = null;
 /** 스크립트를 한 번만 불러온다. 실패하면 다음에 다시 시도할 수 있게 캐시를 비운다. */
 export function loadGoogleIdentity(): Promise<GoogleAccountsId> {
   if (typeof window === "undefined") {
-    return Promise.reject(new Error("브라우저에서만 사용할 수 있습니다."));
+    return Promise.reject(new Error(clientMessage("Api.browserOnly", "브라우저에서만 사용할 수 있습니다.")));
   }
   if (window.google?.accounts.id) {
     return Promise.resolve(window.google.accounts.id);
@@ -61,10 +62,10 @@ export function loadGoogleIdentity(): Promise<GoogleAccountsId> {
         if (id) {
           resolve(id);
         } else {
-          reject(new Error("구글 로그인을 불러오지 못했습니다."));
+          reject(new Error(clientMessage("Api.googleLoadFailed", "구글 로그인을 불러오지 못했습니다.")));
         }
       };
-      script.onerror = () => reject(new Error("구글 로그인을 불러오지 못했습니다."));
+      script.onerror = () => reject(new Error(clientMessage("Api.googleLoadFailed", "구글 로그인을 불러오지 못했습니다.")));
       document.head.appendChild(script);
     }).catch((error: unknown) => {
       loadPromise = null;

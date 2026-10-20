@@ -13,8 +13,43 @@
  * 테스트(import-bookmarklet.test.ts)는 실제로 배포되는 이 문자열을 그대로 실행해서 확인한다.
  */
 
+import type { Translator } from "@/i18n/translator";
+
 export const OFFICIAL_HOST = "p.eagate.573.jp";
 export const OFFICIAL_PATH_PART = "/playdata/stage_result";
+
+/**
+ * 공식 페이지 위에 띄우는 안내 창의 문구. 북마클릿은 공식 사이트에서 실행되어 이 앱의 번역 함수를 쓸 수 없으므로,
+ * 북마크를 만들 때(= 화면 언어가 정해진 때) 문구를 소스에 담아 둔다. `{count}` 같은 자리는 북마클릿 안에서 채운다.
+ */
+export interface BookmarkletMessages {
+  title: string;
+  open: string;
+  ok: string;
+  wrongPage: string;
+  noPlays: string;
+  unreadable: string;
+  translated: string;
+  openManually: string;
+  sentFailed: string;
+  loading: string;
+}
+
+/** 지금 화면 언어의 안내 문구. 자리 표시(`{n}` 등)는 번역 함수가 채우지 않도록 같은 글자로 되돌려 넣는다. */
+export function bookmarkletMessages(t: Translator): BookmarkletMessages {
+  return {
+    title: t("Import.bmTitle"),
+    open: t("Import.bmOpen"),
+    ok: t("Import.bmOk"),
+    wrongPage: t("Import.bmWrongPage"),
+    noPlays: t("Import.bmNoPlays"),
+    unreadable: t("Import.bmUnreadable", { n: "{n}" }),
+    translated: t("Import.bmTranslated"),
+    openManually: t("Import.bmOpenManually", { count: "{count}" }),
+    sentFailed: t("Import.bmSentFailed", { count: "{count}", failed: "{failed}" }),
+    loading: t("Import.bmLoading", { max: "{max}" }),
+  };
+}
 
 /** 읽은 한 건. 서버 ImportPlayRequest와 같은 모양이다. */
 export interface ReadPlay {
@@ -89,6 +124,7 @@ function srpReadPlays(doc){
  */
 function senderSource(): string {
   return `
+function srpFmt(s,o){for(var k in o){if(Object.prototype.hasOwnProperty.call(o,k)){s=s.split('{'+k+'}').join(String(o[k]));}}return s;}
 function srpStyle(el,css){for(var k in css){if(Object.prototype.hasOwnProperty.call(css,k)){el.style[k]=css[k];}}}
 function srpModal(title,body,link){
   var old=document.getElementById('srp-import-modal');
@@ -99,7 +135,7 @@ function srpModal(title,body,link){
   overlay.setAttribute('aria-modal','true');
   overlay.setAttribute('translate','no');
   overlay.className='notranslate';
-  overlay.setAttribute('aria-label','SRPFreaks 최근 플레이 가져오기');
+  overlay.setAttribute('aria-label',MSG.title);
   srpStyle(overlay,{position:'fixed',left:'0',top:'0',right:'0',bottom:'0',zIndex:'2147483647',background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center'});
   var box=document.createElement('div');
   srpStyle(box,{background:'#1b1f2a',color:'#f2f4f8',padding:'20px',borderRadius:'12px',width:'calc(100% - 32px)',maxWidth:'420px',maxHeight:'80vh',overflowY:'auto',fontSize:'14px',lineHeight:'1.6',fontFamily:'sans-serif',boxSizing:'border-box',textAlign:'left'});
@@ -113,7 +149,7 @@ function srpModal(title,body,link){
   srpStyle(row,{display:'flex',gap:'8px',justifyContent:'flex-end',flexWrap:'wrap'});
   if(link){
     var a=document.createElement('a');
-    a.textContent='SRPFreaks 열기';
+    a.textContent=MSG.open;
     a.href=link;
     a.target='_blank';
     a.rel='noopener noreferrer';
@@ -122,7 +158,7 @@ function srpModal(title,body,link){
   }
   var close=document.createElement('button');
   close.type='button';
-  close.textContent='확인';
+  close.textContent=MSG.ok;
   srpStyle(close,{padding:'8px 18px',borderRadius:'8px',border:'0',background:'#f2f4f8',color:'#111827',fontSize:'14px',fontWeight:'bold',cursor:'pointer'});
   close.onclick=function(){if(overlay.parentNode){overlay.parentNode.removeChild(overlay);}};
   row.appendChild(close);
@@ -141,18 +177,19 @@ function srpModal(title,body,link){
  * 창을 막으면(팝업 차단) 안내 창에 같은 주소의 링크를 둔다.
  * @param siteBase 사이트 주소(예: https://srpfreaks.com). 설정 화면을 연 사이트의 origin에서 만든다.
  */
-export function buildHandoffBookmarkletSource(siteBase: string): string {
+export function buildHandoffBookmarkletSource(siteBase: string, messages: BookmarkletMessages): string {
   const base = siteBase.replace(/\/+$/, "");
   return `(function(){
+var MSG=${JSON.stringify(messages)};
 ${READER_SOURCE}
 ${senderSource()}
-var TITLE='SRPFreaks 최근 플레이 가져오기';
-if(location.hostname!==${JSON.stringify(OFFICIAL_HOST)}||location.pathname.indexOf(${JSON.stringify(OFFICIAL_PATH_PART)})<0){srpModal(TITLE,'최근 플레이 페이지(stage_result)에서 실행해 주세요.');return;}
+var TITLE=MSG.title;
+if(location.hostname!==${JSON.stringify(OFFICIAL_HOST)}||location.pathname.indexOf(${JSON.stringify(OFFICIAL_PATH_PART)})<0){srpModal(TITLE,MSG.wrongPage);return;}
 var read=srpReadPlays(document);
-if(!read.plays.length){srpModal(TITLE,'읽을 수 있는 플레이가 없습니다.'+(read.unreadable?' (읽지 못한 항목 '+read.unreadable+'개)':''));return;}
+if(!read.plays.length){srpModal(TITLE,MSG.noPlays+(read.unreadable?' '+srpFmt(MSG.unreadable,{n:read.unreadable}):''));return;}
 var translated=false;
 for(var t=0;t<read.plays.length;t++){if(read.plays[t].translated){translated=true;}}
-if(translated){srpModal(TITLE,'이 페이지가 번역된 상태라 곡명을 정확히 읽을 수 없어 아무것도 보내지 않았습니다.\\n\\n주소창 오른쪽의 번역 아이콘에서 "원본 보기"를 누르고(또는 일본어는 번역하지 않기를 선택하고) 페이지를 새로고침한 뒤 다시 눌러 주세요.');return;}
+if(translated){srpModal(TITLE,MSG.translated);return;}
 var MAXP=4;
 var search=location.search||'';
 var cur=1;var pm=search.match(/[?&]page=([0-9]+)/);if(pm){cur=parseInt(pm[1],10)||1;}
@@ -168,8 +205,8 @@ function srpSend(){
   var url=${JSON.stringify(base)}+'/import#srp='+encodeURIComponent(JSON.stringify({plays:plays,unreadable:unreadable}));
   var w=null;
   try{w=window.open(url,'srpfreaks-import');}catch(e){w=null;}
-  if(!w){srpModal(TITLE,'플레이 '+plays.length+'곡을 읽었습니다. 아래 버튼으로 SRPFreaks를 열어 이어서 처리해 주세요.',url);return;}
-  if(failed){srpModal(TITLE,plays.length+'곡을 보냈습니다. 불러오지 못한 쪽이 '+failed+'개 있습니다. 그 쪽은 해당 페이지에서 다시 실행해 주세요.');}
+  if(!w){srpModal(TITLE,srpFmt(MSG.openManually,{count:plays.length}),url);return;}
+  if(failed){srpModal(TITLE,srpFmt(MSG.sentFailed,{count:plays.length,failed:failed}));}
 }
 function srpLoad(n){
   if(n>MAXP){srpSend();return;}
@@ -180,7 +217,7 @@ function srpLoad(n){
   },function(){failed++;}).then(function(){setTimeout(function(){srpLoad(n+1);},400);},function(){failed++;setTimeout(function(){srpLoad(n+1);},400);});
 }
 if(typeof window.fetch==='function'&&typeof window.DOMParser==='function'){
-  srpModal(TITLE,'최근 플레이 '+MAXP+'쪽을 읽는 중입니다. 잠시만 기다려 주세요.');
+  srpModal(TITLE,srpFmt(MSG.loading,{max:MAXP}));
   srpLoad(1);
 }else{
   pages[cur]=read;srpSend();
@@ -189,6 +226,6 @@ if(typeof window.fetch==='function'&&typeof window.DOMParser==='function'){
 }
 
 /** 토큰 없는 북마크 주소(`javascript:…`). */
-export function buildHandoffBookmarkletHref(siteBase: string): string {
-  return "javascript:" + encodeURIComponent(buildHandoffBookmarkletSource(siteBase));
+export function buildHandoffBookmarkletHref(siteBase: string, messages: BookmarkletMessages): string {
+  return "javascript:" + encodeURIComponent(buildHandoffBookmarkletSource(siteBase, messages));
 }

@@ -21,14 +21,16 @@ import {
 import { songListDetailHref } from "@/lib/song-list";
 import type { InstrumentPart } from "@/lib/types";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
 const PART_OPTIONS: readonly { value: InstrumentPart; label: string }[] = [
   { value: "GUITAR", label: "Guitar" },
   { value: "BASS", label: "Bass" },
 ];
 
-function errorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : "목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+function errorMessage(error: unknown, t: Translator): string {
+  return error instanceof ApiError ? error.message : t("MyPage.listFailed");
 }
 
 /**
@@ -45,6 +47,7 @@ export function FolderBucketView({
   state: FolderViewState;
   onStateChange: (state: FolderViewState) => void;
 }) {
+  const t = useTranslations();
   // 서열표 난이도 기준일 때만 서열표 id가 필요하다
   const tables = useQuery({
     queryKey: tableKeys.list,
@@ -66,32 +69,32 @@ export function FolderBucketView({
   const rows = pages.data?.pages.flatMap((p) => p.content) ?? [];
   const total = pages.data?.pages[0]?.totalElements ?? 0;
   const backHref = `/me?${myPageStateToQuery({ tab: "stats", axis: state.axis })}`;
-  const title = folderLabel(state.axis, state.key);
+  const title = folderLabel(state.axis, state.key, t);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Link href={backHref} aria-label="통계로" title="통계로" className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+        <Link href={backHref} aria-label={t("MyPage.backToStats")} title={t("MyPage.backToStats")} className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
           <span aria-hidden="true">←</span>
         </Link>
         <div>
           <h1 className="font-num text-lg font-semibold text-fg">{title}</h1>
           <p className="text-sm text-fg-sub">
-            {state.axis === "level" ? "레벨 폴더" : "레이팅 상수 난이도"} · {bucketLabel(state.bucket)}
-            {pages.data ? <span className="ml-2 font-num text-fg">{total}개</span> : null}
+            {t("MyPage.axisHeader", { axis: state.axis })} · {bucketLabel(state.bucket, t)}
+            {pages.data ? <span className="ml-2 font-num text-fg">{t("Songs.chartCount", { count: total })}</span> : null}
           </p>
         </div>
       </div>
 
       <div className="flex flex-col gap-2">
         <FilterChips
-          label="파트"
+          label={t("Songs.part")}
           options={PART_OPTIONS}
           selected={state.part}
           onChange={(part) => onStateChange({ ...state, part })}
         />
         <label className="flex flex-wrap items-center gap-1.5 text-xs text-fg-dim">
-          <span className="mr-1">정렬</span>
+          <span className="mr-1">{t("MyPage.sortLabel")}</span>
           <select
             value={state.sort}
             onChange={(e) => onStateChange({ ...state, sort: e.target.value as FolderChartSort })}
@@ -99,7 +102,7 @@ export function FolderBucketView({
           >
             {FOLDER_SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
-                {o.label}
+                {t(o.labelKey)}
               </option>
             ))}
           </select>
@@ -107,22 +110,22 @@ export function FolderBucketView({
       </div>
 
       {tables.isSuccess && tableId === null ? (
-        <p className="text-sm text-fg-sub">사용할 수 있는 서열표가 아직 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("MyPage.noTables")}</p>
       ) : pages.isError || tables.isError ? (
         <ErrorRetry
           onRetry={() => void (tables.isError ? tables.refetch() : pages.refetch())}
           retrying={pages.isFetching || tables.isFetching}
         >
-          {errorMessage(pages.error ?? tables.error)}
+          {errorMessage(pages.error ?? tables.error, t)}
         </ErrorRetry>
       ) : !pages.data ? (
-        <Skeleton label="목록을 불러오는 중입니다." className="h-72" />
+        <Skeleton label={t("MyPage.listLoading")} className="h-72" />
       ) : rows.length === 0 ? (
-        <p className="text-sm text-fg-sub">이 조건에 맞는 채보가 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("MyPage.noMatch")}</p>
       ) : (
         <div className="overflow-hidden rounded-2xl border border-line bg-card">
           <ChartList
-            label={`${title} ${bucketLabel(state.bucket)} 채보`}
+            label={t("MyPage.bucketChartsLabel", { title, bucket: bucketLabel(state.bucket, t) })}
             rows={rows}
             hasMore={pages.hasNextPage}
             loadingMore={pages.isFetchingNextPage}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const SHOW_AFTER_PX = 600;
 
@@ -9,6 +10,7 @@ const SHOW_AFTER_PX = 600;
  * lifted: 같은 자리에 다른 떠 있는 버튼(서열표의 곡 검색 48px)이 있으면 그 위로 올린다.
  */
 export function ScrollTopButton({ lifted = false }: { lifted?: boolean }) {
+  const t = useTranslations("Common");
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -26,8 +28,8 @@ export function ScrollTopButton({ lifted = false }: { lifted?: boolean }) {
   return (
     <button
       type="button"
-      aria-label="맨 위로"
-      title="맨 위로"
+      aria-label={t("scrollTop")}
+      title={t("scrollTop")}
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       className={`fixed right-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-chip-line bg-card text-fg shadow-lg hover:bg-table-head ${
         lifted ? "bottom-[calc(var(--tabbar-h)+5rem)]" : "bottom-[calc(var(--tabbar-h)+1rem)]"

@@ -7,9 +7,10 @@ import {
   SUGGESTION_CATEGORIES,
   SUGGESTION_CONTENT_MAX,
   SUGGESTION_TITLE_MAX,
-  suggestionSchema,
+  makeSuggestionSchema,
   type SuggestionValues,
 } from "@/lib/suggestions";
+import { useTranslations } from "next-intl";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -28,16 +29,17 @@ export function SuggestionForm({
   error: string | null;
   onSubmit: (values: SuggestionValues) => Promise<unknown>;
 }) {
+  const t = useTranslations();
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<SuggestionValues>({ resolver: zodResolver(suggestionSchema), defaultValues: initial });
+  } = useForm<SuggestionValues>({ resolver: zodResolver(makeSuggestionSchema(t)), defaultValues: initial });
 
   return (
     <form
-      aria-label="건의 보내기"
+      aria-label={t("Suggestions.sendAria")}
       noValidate
       onSubmit={handleSubmit(async (values) => {
         try {
@@ -50,17 +52,17 @@ export function SuggestionForm({
       className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4"
     >
       <label className="flex flex-col gap-1 text-sm text-fg-sub">
-        종류
+        {t("Suggestions.fieldCategory")}
         <select className={FIELD} {...register("category")}>
           {SUGGESTION_CATEGORIES.map((category) => (
             <option key={category} value={category}>
-              {CATEGORY_LABELS[category]}
+              {t(CATEGORY_LABELS[category])}
             </option>
           ))}
         </select>
       </label>
       <label className="flex flex-col gap-1 text-sm text-fg-sub">
-        제목
+        {t("Common.fieldTitle")}
         <input type="text" maxLength={SUGGESTION_TITLE_MAX + 50} className={FIELD} {...register("title")} />
       </label>
       {errors.title ? (
@@ -69,7 +71,7 @@ export function SuggestionForm({
         </p>
       ) : null}
       <label className="flex flex-col gap-1 text-sm text-fg-sub">
-        내용
+        {t("Common.fieldContent")}
         <textarea rows={6} maxLength={SUGGESTION_CONTENT_MAX + 200} className={FIELD} {...register("content")} />
       </label>
       {errors.content ? (
@@ -88,7 +90,7 @@ export function SuggestionForm({
           disabled={pending}
           className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
         >
-          {pending ? "보내는 중" : "건의 보내기"}
+          {pending ? t("Suggestions.sending") : t("Suggestions.sendAria")}
         </button>
       </div>
     </form>

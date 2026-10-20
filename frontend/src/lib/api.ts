@@ -1,10 +1,12 @@
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/auth-token";
+import { clientMessage } from "@/i18n/client-messages";
+import { SERVER_ERRORS } from "@/i18n/server-errors";
 import type { ApiErrorBody, AuthResponse } from "@/lib/api-types";
 
 /** 모든 API는 /api/v1 아래에 있다. 같은 도메인으로 요청하므로(개발 중에는 Next rewrite) CORS가 필요 없다. */
 export const API_BASE = "/api/v1";
 
-/** 서버가 준 문구가 없을 때 쓰는 일반 안내 (서버 내부 내용은 화면에 보여 주지 않는다). */
+/** 서버가 준 문구가 없을 때 쓰는 일반 안내(한국어 기본값. 화면에서는 `Api.*` 번역을 먼저 쓴다) (서버 내부 내용은 화면에 보여 주지 않는다). */
 const GENERIC_ERROR_MESSAGE = "서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.";
 const NETWORK_ERROR_MESSAGE = "네트워크 연결을 확인해 주세요.";
 const TIMEOUT_ERROR_MESSAGE = "응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.";
@@ -153,12 +155,12 @@ async function send(path: string, options: ApiRequestOptions): Promise<Response>
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
-      throw new ApiError(0, "TIMEOUT", TIMEOUT_ERROR_MESSAGE);
+      throw new ApiError(0, "TIMEOUT", clientMessage("Api.timeout", TIMEOUT_ERROR_MESSAGE));
     }
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error; // 화면을 떠나며 취소한 요청은 오류로 취급하지 않는다
     }
-    throw new ApiError(0, "NETWORK_ERROR", NETWORK_ERROR_MESSAGE);
+    throw new ApiError(0, "NETWORK_ERROR", clientMessage("Api.network", NETWORK_ERROR_MESSAGE));
   }
 }
 
@@ -167,12 +169,15 @@ async function toApiError(response: Response): Promise<ApiError> {
   try {
     const body = (await response.json()) as Partial<ApiErrorBody>;
     if (typeof body.code === "string" && typeof body.message === "string") {
-      return new ApiError(response.status, body.code, body.message, body.fieldErrors ?? null);
+      // 서버의 고정 문구면 현재 언어로 바꿔 보여 준다(서비스가 직접 쓴 문구는 그대로)
+      const known = SERVER_ERRORS[body.code];
+      const message = known && known.message === body.message ? clientMessage(known.key, body.message) : body.message;
+      return new ApiError(response.status, body.code, message, body.fieldErrors ?? null);
     }
   } catch {
     // JSON이 아닌 응답(프록시 오류 페이지 등)
   }
-  return new ApiError(response.status, "UNKNOWN_ERROR", GENERIC_ERROR_MESSAGE);
+  return new ApiError(response.status, "UNKNOWN_ERROR", clientMessage("Api.generic", GENERIC_ERROR_MESSAGE));
 }
 
 /**

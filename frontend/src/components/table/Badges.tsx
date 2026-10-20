@@ -1,5 +1,7 @@
 import { difficultyLabel, formatLevel, partLabel } from "@/lib/format";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
+import { recommendLabel } from "@/lib/chart-labels";
+import { useTranslations } from "next-intl";
 
 /**
  * 파트 · 난이도 · 레벨을 한 알약으로 보여 준다 (예: `Guitar | MAS 9.80`).
@@ -64,6 +66,7 @@ export function PartBadge({ part }: { part: InstrumentPart }) {
  * 값이 확정되지 않았더라도(API의 *Uncertain) `?`는 붙이지 않고 값만 보여 준다.
  */
 export function RecommendBadge({ value }: { value: string | null }) {
+  const t = useTranslations();
   if (!value) {
     return null;
   }
@@ -74,6 +77,6 @@ export function RecommendBadge({ value }: { value: string | null }) {
         ? "border-[var(--rec-mid-line)] text-fg-sub"
         : "border-[var(--rec-low-line)] text-fg-faint";
   return (
-    <span className={`inline-block rounded border px-1.5 py-px text-[11px] font-bold leading-4 ${style}`}>{value}</span>
+    <span className={`inline-block rounded border px-1.5 py-px text-[11px] font-bold leading-4 ${style}`}>{recommendLabel(value, t)}</span>
   );
 }

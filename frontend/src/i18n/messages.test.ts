@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ja from "../../messages/ja.json";
 import ko from "../../messages/ko.json";
+import { SERVER_ERRORS } from "@/i18n/server-errors";
 
 type Tree = { [key: string]: string | Tree };
 
@@ -40,6 +41,18 @@ describe("번역 문구 파일", () => {
   it("두 언어의 자리표시자({이름})가 같다 (값이 빠지거나 철자가 다르면 화면에 그대로 보인다)", () => {
     for (const [key, text] of Object.entries(koFlat)) {
       expect(placeholders(jaFlat[key] ?? ""), key).toEqual(placeholders(text));
+    }
+  });
+
+  it("작은따옴표(')는 ICU에서 이스케이프 문자라 문구 안에서는 두 번('')으로 써야 그대로 보인다", () => {
+    for (const [key, text] of [...Object.entries(koFlat), ...Object.entries(jaFlat)]) {
+      expect(/(?<!')'(?!')/.test(text), key).toBe(false);
+    }
+  });
+  it("서버 오류 코드 표가 ko.json의 ServerErrors와 같다 (서버 고정 문구 비교용)", () => {
+    for (const [code, { message, key }] of Object.entries(SERVER_ERRORS)) {
+      expect(key, code).toBe(`ServerErrors.${code}`);
+      expect(koFlat[key], code).toBe(message);
     }
   });
 });

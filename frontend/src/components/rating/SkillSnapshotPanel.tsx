@@ -16,6 +16,7 @@ import {
   snapshotKeys,
 } from "@/lib/skill-snapshot";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
 
 /**
  * 레이팅 기록 (D32, DESIGN-UI 5장). 레이팅 화면 맨 아래.
@@ -24,6 +25,7 @@ import { ErrorRetry } from "@/components/ErrorRetry";
  * 같은 검사를 서버도 한다(화면의 버튼 상태는 편의일 뿐 규칙의 근거가 아니다).
  */
 export function SkillSnapshotPanel({ userId }: { userId: number }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [openId, setOpenId] = useState<number | null>(null); // 비교를 펼친 줄(한 번에 하나)
@@ -42,7 +44,7 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
   const record = useMutation({
     mutationFn: createSnapshot,
     onSuccess: async () => {
-      toast("레이팅을 기록했습니다.");
+      toast(t("Rating.snapshotSaved"));
       setPage(0); // 방금 만든 줄이 맨 위에 보이게 첫 페이지로 돌아간다
       await queryClient.invalidateQueries({ queryKey: snapshotKeys.all(userId) });
       await queryClient.invalidateQueries({ queryKey: snapshotKeys.status(userId) });
@@ -54,10 +56,10 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
   const data = list.data;
 
   return (
-    <section aria-label="레이팅 기록" className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
+    <section aria-label={t("Rating.snapshotTitle")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
       <div>
-        <h2 className="text-[15px] font-bold text-fg">레이팅 기록</h2>
-        <p className="mt-0.5 text-xs text-fg-sub">누른 시점의 레이팅을 남겨 두고, 얼마나 올랐는지 날짜별로 비교합니다. 하루에 한 번, 점수가 달라졌을 때만 기록할 수 있습니다.</p>
+        <h2 className="text-[15px] font-bold text-fg">{t("Rating.snapshotTitle")}</h2>
+        <p className="mt-0.5 text-xs text-fg-sub">{t("Rating.snapshotLead")}</p>
       </div>
 
       <div className="flex flex-col items-start gap-1.5">
@@ -67,28 +69,28 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
           onClick={() => record.mutate()}
           className="rounded-full bg-chip-on-bg px-4 py-1.5 text-sm font-semibold text-chip-on-fg enabled:hover:opacity-90 disabled:bg-table-head disabled:text-disabled"
         >
-          {record.isPending ? "기록 중입니다." : "지금 레이팅 기록하기"}
+          {record.isPending ? t("Rating.snapshotSaving") : t("Rating.snapshotSave")}
         </button>
-        {blocked ? <p className="text-xs text-fg-sub">{blockReasonText(blocked)}</p> : null}
-        {status.isError ? <p className="text-xs text-fg-sub">기록할 수 있는지 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.</p> : null}
+        {blocked ? <p className="text-xs text-fg-sub">{blockReasonText(blocked, t)}</p> : null}
+        {status.isError ? <p className="text-xs text-fg-sub">{t("Rating.statusFailed")}</p> : null}
         {record.isError ? (
           <p role="alert" className="text-xs text-fg">
-            {record.error instanceof ApiError ? record.error.message : "기록하지 못했습니다. 잠시 후 다시 시도해 주세요."}
+            {record.error instanceof ApiError ? record.error.message : t("Rating.snapshotFailed")}
           </p>
         ) : null}
       </div>
 
       {list.isError ? (
         <ErrorRetry onRetry={() => void list.refetch()} retrying={list.isFetching}>
-          {list.error instanceof ApiError ? list.error.message : "기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
+          {list.error instanceof ApiError ? list.error.message : t("Rating.snapshotsLoadFailed")}
         </ErrorRetry>
       ) : !data ? (
-        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : data.content.length === 0 ? (
-        <p className="text-sm text-fg-sub">아직 기록한 레이팅이 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("Rating.noSnapshots")}</p>
       ) : (
         <>
-          <ul aria-label="레이팅 기록 목록" className="flex flex-col">
+          <ul aria-label={t("Rating.snapshotListAria")} className="flex flex-col">
             {data.content.map((row) => {
               const change = formatChange(row.change);
               const opened = openId === row.id;
@@ -110,11 +112,11 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
                         <button
                           type="button"
                           aria-expanded={opened}
-                          aria-label={`${row.date} 기록을 이전 기록과 비교`}
+                          aria-label={t("Rating.compareWithPrevAria", { date: row.date })}
                           onClick={() => setOpenId(opened ? null : row.id)}
                           className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
                         >
-                          {opened ? "닫기" : "비교"}
+                          {opened ? t("Table.close") : t("Rating.compare")}
                         </button>
                       ) : (
                         <span className="w-[3.25rem]" aria-hidden="true" />
@@ -127,14 +129,14 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
             })}
           </ul>
           {data.totalPages > 1 ? (
-            <nav aria-label="기록 페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">
+            <nav aria-label={t("Rating.snapshotPagerAria")} className="flex items-center justify-center gap-3 text-sm text-fg-sub">
               <button
                 type="button"
                 disabled={page <= 0}
                 onClick={() => setPage((p) => Math.max(p - 1, 0))}
                 className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
               >
-                이전
+                {t("Common.prev")}
               </button>
               <span className="font-num">
                 {data.page + 1} / {data.totalPages}
@@ -145,7 +147,7 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
                 onClick={() => setPage((p) => p + 1)}
                 className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
               >
-                다음
+                {t("Common.next")}
               </button>
             </nav>
           ) : null}

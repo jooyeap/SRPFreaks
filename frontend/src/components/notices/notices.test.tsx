@@ -3,7 +3,10 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NoticesView } from "@/components/notices/NoticesView";
 import type { NoticeResponse, PageResponse } from "@/lib/api-types";
-import { noticeSchema } from "@/lib/notices";
+import { koT } from "@/i18n/ko-translator";
+import { makeNoticeSchema } from "@/lib/notices";
+
+const noticeSchema = makeNoticeSchema(koT);
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { hasRoleAtLeast } from "@/lib/admin";
 import type { Role } from "@/lib/api-types";
+import { useTranslations } from "next-intl";
 
 /**
  * 관리 화면 공통 문지기: 불러오는 중 / 로그인 안 함 / 역할 부족을 걸러 내고, 통과하면 보는 사람의 id와 역할을 넘긴다.
@@ -20,18 +21,19 @@ export function AdminGate({
   minRole?: Role;
   children: (viewerId: number, role: Role) => ReactNode;
 }) {
+  const t = useTranslations();
   const { status, user } = useAuth();
 
   if (status === "loading") {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   if (status === "anonymous" || !user) {
     return (
       <section className="flex flex-col items-start gap-3">
         <h1 className="text-xl font-semibold text-fg">{title}</h1>
-        <p className="text-sm text-fg-sub">관리 화면을 보려면 로그인해 주세요.</p>
+        <p className="text-sm text-fg-sub">{t("Admin.loginLead")}</p>
         <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-          로그인
+          {t("Nav.login")}
         </Link>
       </section>
     );
@@ -41,7 +43,7 @@ export function AdminGate({
       <section className="flex flex-col gap-2">
         <h1 className="text-xl font-semibold text-fg">{title}</h1>
         <p role="alert" className="text-sm text-fg">
-          권한이 없습니다.
+          {t("Admin.noPermission")}
         </p>
       </section>
     );

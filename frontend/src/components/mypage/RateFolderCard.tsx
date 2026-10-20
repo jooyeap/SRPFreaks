@@ -11,12 +11,14 @@ import {
   bucketListHref,
   bucketStage,
   BUCKETS,
+  bucketLabel,
   folderAverage,
   folderLabel,
   folderStageCounts,
   formatFolderAverage,
   type StatsAxis,
 } from "@/lib/rate-folders";
+import { useTranslations } from "next-intl";
 
 /** 구간 앞 칩 글자. A 미만(B·C)은 합쳐서 보이고, 미플레이는 단계가 없다. */
 const BUCKET_CHIP: Record<RateBucketKey, string> = {
@@ -37,14 +39,15 @@ const BUCKET_CHIP: Record<RateBucketKey, string> = {
  * 95~100% 구간에는 막대 아래에 MAX(100.00)와 FC(풀콤보, 100 미만) 개수를 뱃지로 따로 보인다.
  */
 export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis; folder: RateFolderResponse; includeZero: boolean }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
-  const title = folderLabel(axis, folder.key);
+  const title = folderLabel(axis, folder.key, t);
   const counts = folderStageCounts(folder);
   const reached = groupStage(counts);
   const bodyId = `rate-folder-${axis}-${folder.key.toFixed(2)}`;
 
   return (
-    <section aria-label={`${axis === "level" ? "레벨" : "레이팅 상수 난이도"} ${title}`} className="overflow-hidden rounded-2xl border border-line bg-card">
+    <section aria-label={t("MyPage.folderAria", { axis, title })} className="overflow-hidden rounded-2xl border border-line bg-card">
       <h3>
         <button
           type="button"
@@ -57,20 +60,20 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
           {reached ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
           <span className="flex w-full flex-wrap items-baseline gap-x-3 gap-y-1">
             <span className="font-num text-lg font-semibold text-fg">
-              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{folder.total}개</span>
+              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{t("Songs.chartCount", { count: folder.total })}</span>
             </span>
             {/* 모두 달성한 폴더는 단계 글자도 같이 보인다(색만으로 전달하지 않는다) */}
             {reached ? (
               <span data-stage={reached} className="stage-text font-num text-xs font-bold">
-                전부 {reached} 이상
+                {t("MyPage.allAtLeast", { stage: reached })}
               </span>
             ) : null}
             <span className="ml-auto flex items-baseline gap-2 text-sm text-fg-sub">
               <span className="text-xs text-fg-dim">
-                기록 {folder.recorded}/{folder.total}
+                {t("MyPage.recordedCount", { recorded: folder.recorded, total: folder.total })}
               </span>
               <span>
-                평균 <span className="font-num font-semibold text-fg">{formatFolderAverage(folderAverage(folder, includeZero))}</span>
+                {t.rich("MyPage.averageRich", { n: (c) => <span className="font-num font-semibold text-fg">{c}</span>, value: formatFolderAverage(folderAverage(folder, includeZero)) })}
               </span>
               <span aria-hidden="true" className="text-fg-dim">
                 {open ? "▴" : "▾"}
@@ -89,7 +92,7 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
                     chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
                   }`}
                 >
-                  {chip.label} <span className="font-num">{chip.count}</span>
+                  {chip.stage ? chip.label : t("Progress.belowS")} <span className="font-num">{chip.count}</span>
                 </span>
               ))}
             </span>
@@ -110,11 +113,13 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
  * className으로 배치(세로 목록 / 2열 격자)만 바꾼다.
  */
 export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 border-t border-row-line p-2.5" }: { axis: StatsAxis; folder: RateFolderResponse; className?: string }) {
-  const title = folderLabel(axis, folder.key);
+  const t = useTranslations();
+  const title = folderLabel(axis, folder.key, t);
   const badges = bucketBadges(folder, "R95");
   return (
-    <ul aria-label={`${title} 달성률 구간`} className={className}>
-      {BUCKETS.map(({ key, label }) => {
+    <ul aria-label={t("MyPage.bucketsAria", { title })} className={className}>
+      {BUCKETS.map(({ key }) => {
+        const label = bucketLabel(key, t);
         const count = bucketCount(folder, key);
         const stage = bucketStage(key);
         // 막대는 구간 안의 단계로 나눠 칠한다: 95~100은 MAX(EXC) · FC · SS 순, 나머지는 한 칸. 칸 너비는 폴더 전체 채보 대비다
@@ -131,7 +136,7 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
             <Link
               href={bucketListHref(axis, folder.key, key)}
               className="flex flex-col gap-1.5 px-3 py-2 hover:bg-table-head"
-              aria-label={`${label} ${count}개 보기`}
+              aria-label={t("MyPage.bucketOpenAria", { label: bucketLabel(key, t), count })}
             >
               <span className="flex items-center gap-2">
                 {/* 단계 글자를 채운 칩으로 같이 보인다(색만으로 구분하지 않는다) */}
@@ -144,7 +149,7 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
                 <span className="text-sm text-fg">{label}</span>
                 <span className="ml-auto flex items-baseline gap-1 text-sm text-fg">
                   <span className="font-num font-semibold">{count}</span>
-                  <span className="text-xs text-fg-sub">곡</span>
+                  <span className="text-xs text-fg-sub">{t("MyPage.songUnit")}</span>
                   <span aria-hidden="true" className="ml-1 text-fg-dim">›</span>
                 </span>
               </span>

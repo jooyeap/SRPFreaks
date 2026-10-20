@@ -1,6 +1,8 @@
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { ChartBadge } from "@/components/table/Badges";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
+import { useTranslations } from "next-intl";
+import { patternLabel } from "@/lib/chart-labels";
 
 const CHIP = "rounded-lg border border-chip-line px-2 py-0.5 text-xs font-bold text-fg-sub";
 
@@ -20,8 +22,9 @@ export function SongHeader({
   /** 서열표에서 고른 채보의 속성. null/undefined이면 칩을 그리지 않는다 */
   pattern?: string | null;
 }) {
+  const t = useTranslations();
   return (
-    <section aria-label="곡 정보" className="flex items-stretch gap-3.5">
+    <section aria-label={t("Song.songInfo")} className="flex items-stretch gap-3.5">
       {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
       {/* <SongJacket className="h-[124px] w-[124px] rounded-[18px]">
         {chart ? <span data-difficulty={chart.difficultyType} className="diff-band absolute inset-x-0 bottom-0 h-1.5" /> : null}
@@ -31,7 +34,7 @@ export function SongHeader({
         <div className="flex min-h-[26px] justify-end">
           {pattern ? (
             <span className="rounded-lg border border-chip-line bg-card px-2.5 py-0.5 text-[13px] font-bold text-fg">
-              속성 {pattern}
+              {t("Chart.patternValue", { pattern: patternLabel(pattern, t) })}
             </span>
           ) : null}
         </div>

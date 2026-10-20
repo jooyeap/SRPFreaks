@@ -13,6 +13,7 @@ import type {
   TierGroupResponse,
 } from "@/lib/api-types";
 import { tableProgress } from "@/lib/difficulty-table";
+import { koT } from "@/i18n/ko-translator";
 import { folderProgress } from "@/lib/progress";
 import { WELCOME_HIDDEN_KEY, resetWelcomeGuideForTest } from "@/lib/welcome-guide";
 
@@ -80,7 +81,7 @@ const groups = [group({ tier: 5.8 }), group({ tier: 5.0, total: 20, recorded: 20
 
 describe("tableProgress", () => {
   it("묶음별 개수를 합치고 묶음 순서를 유지한다", () => {
-    const p = tableProgress(groups);
+    const p = tableProgress(groups, koT);
     expect(p).toMatchObject({ total: 32, recorded: 24, exc: 21, fc: 0, ss: 1, s: 1, belowS: 1 });
     expect(p.groups.map((g) => g.label)).toEqual(["5.8", "5.0", "미정"]);
   });
@@ -90,7 +91,7 @@ describe("tableProgress", () => {
       group({ tier: 6.5, total: 5, recorded: 4, exc: 0, fc: 1, ss: 1, s: 1, belowS: 1 }),
       group({ tier: 6.4, total: 7, recorded: 1, exc: 0, fc: 0, ss: 0, s: 0, belowS: 1 }),
       group({ tier: null, total: 2, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 }),
-    ]);
+    ], koT);
     expect(p.groups.map((g) => g.label)).toEqual(["6.5 이상", "6.4", "미정"]);
     expect(p.groups[0]).toMatchObject({ key: "merged-high", href: "/table", total: 8, recorded: 6, exc: 1, fc: 1, ss: 1, s: 2, belowS: 1 });
     expect(p.groups[1].href).toBe("/table/folder/6.4");
@@ -98,14 +99,14 @@ describe("tableProgress", () => {
     expect(p).toMatchObject({ total: 17, recorded: 7 });
   });
   it("6.5 바로 아래(6.4)와 정확히 6.5는 0.1 단위 정수로 비교한다 (부동소수 오차 없음)", () => {
-    const p = tableProgress([group({ tier: 6.5 }), group({ tier: 6.4 })]);
+    const p = tableProgress([group({ tier: 6.5 }), group({ tier: 6.4 })], koT);
     expect(p.groups.map((g) => g.label)).toEqual(["6.5 이상", "6.4"]);
   });
   it("6.5 이상이 하나도 없으면 합친 줄을 만들지 않는다", () => {
-    expect(tableProgress([group({ tier: 5.8 })]).groups.map((g) => g.label)).toEqual(["5.8"]);
+    expect(tableProgress([group({ tier: 5.8 })], koT).groups.map((g) => g.label)).toEqual(["5.8"]);
   });
   it("묶음이 없으면 모두 0", () => {
-    expect(tableProgress([])).toMatchObject({ total: 0, recorded: 0, groups: [] });
+    expect(tableProgress([], koT)).toMatchObject({ total: 0, recorded: 0, groups: [] });
   });
 });
 
@@ -317,7 +318,7 @@ describe("ProgressCard 도넛", () => {
   const CIRCUMFERENCE = 2 * Math.PI * 40;
 
   it("EXC/FC/SS/S/S 미만을 개수 비율대로 높은 단계부터 이어 붙인다 (개수 0인 호는 만들지 않는다)", () => {
-    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })]))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })], koT))} songs={loading} />);
     const arcs = arcsOf(screen.getByRole("region", { name: "서열표 진행도" }));
     expect(arcs.map((a) => a.stage)).toEqual(["EXC", "FC", "S", "A"]);
     expect(arcs[0].length).toBeCloseTo(0.1 * CIRCUMFERENCE, 3);
@@ -329,7 +330,7 @@ describe("ProgressCard 도넛", () => {
   });
 
   it("가운데에 기록 퍼센트와 기록/전체를 글자로 보여 주고, 범례에 기록 없음 개수가 있다", () => {
-    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })]))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     expect(card).toHaveTextContent("60%");
     expect(card).toHaveTextContent("기록 6/10");
@@ -337,7 +338,7 @@ describe("ProgressCard 도넛", () => {
   });
 
   it("전체가 0이면 호 없이 0%만 보인다", () => {
-    render(<ProgressCard table={ready(tableProgress([]))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     expect(arcsOf(card)).toHaveLength(0);
     expect(card).toHaveTextContent("0%");
@@ -357,7 +358,7 @@ describe("ProgressCard 칸 지도", () => {
           tableProgress([
             group({ tier: 6.6, total: 4, recorded: 4, exc: 2, fc: 0, ss: 0, s: 0, belowS: 2 }),
             group({ tier: 6.5, total: 4, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 }),
-          ]),
+          ], koT),
         )}
         songs={loading}
       />,
@@ -373,7 +374,7 @@ describe("ProgressCard 칸 지도", () => {
   });
 
   it("기록이 모두 채워진 칸에만 완료 색이 붙고 `완료` 글자는 쓰지 않는다", () => {
-    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, s: 0, belowS: 0 })]))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, s: 0, belowS: 0 })], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     // 완료한 칸은 하나이고, 그 칸의 막대(모바일 줄용·카드용 두 배치)가 모두 완료 색을 쓴다
     const doneTiles = card.querySelectorAll('li[data-done="true"]');
@@ -388,7 +389,7 @@ describe("ProgressCard 칸 지도", () => {
 
 describe("ProgressCard 모바일 표형 줄", () => {
   it("줄마다 구간·달성 %·단계별 개수(0은 -)가 있고, 단계 이름은 머리글과 숨은 글자로 함께 전한다", () => {
-    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.6, total: 55, recorded: 16, exc: 0, fc: 0, ss: 2, s: 14, belowS: 0 })]))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.6, total: 55, recorded: 16, exc: 0, fc: 0, ss: 2, s: 14, belowS: 0 })], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     const row = within(card).getByRole("list", { name: "묶음별 진행" }).querySelector("li a")!;
     const mobile = row.querySelector("span.sm\\:hidden")!;
@@ -409,7 +410,7 @@ describe("ProgressCard 모바일 표형 줄", () => {
 
 describe("ProgressCard 탭", () => {
   it("곡 목록 탭은 레벨 폴더 통계를 합쳐 보여 주고 칸은 곡 목록으로 간다", () => {
-    render(<ProgressCard table={ready(tableProgress([group({})]))} songs={ready(folderProgress(foldersBody.folders))} />);
+    render(<ProgressCard table={ready(tableProgress([group({})], koT))} songs={ready(folderProgress(foldersBody.folders))} />);
     expect(screen.getByRole("button", { name: "서열표" })).toHaveAttribute("aria-pressed", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "곡 목록" }));

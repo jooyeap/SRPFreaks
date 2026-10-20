@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { countNicknameChars, nicknameSchema, normalizeNickname } from "@/lib/nickname";
+import { koT } from "@/i18n/ko-translator";
+import { countNicknameChars, makeNicknameSchema, normalizeNickname } from "@/lib/nickname";
+
+const nicknameSchema = makeNicknameSchema(koT);
 
 const ok = (value: string) => nicknameSchema.safeParse(value);
 

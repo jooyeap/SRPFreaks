@@ -20,9 +20,11 @@ import {
   type ImportPlayResult,
 } from "@/lib/record-import";
 import { AFFECTED_QUERY_KEYS } from "@/lib/records";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
-function messageOf(error: unknown): string {
-  return error instanceof ApiError ? error.message : "처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+function messageOf(error: unknown, t: Translator): string {
+  return error instanceof ApiError ? error.message : t("Common.actionFailed");
 }
 
 function PlayRow({
@@ -36,17 +38,22 @@ function PlayRow({
   checked: boolean;
   onToggle: () => void;
 }) {
+  const t = useTranslations();
   const excluded = isExcludedReason(result.reason);
   const chart = describePlayChart(play.difficultyClass);
   let note: string;
   if (result.saved) {
-    note = result.previousBestRate === null ? "첫 기록" : `새 기록 · ${formatRate(result.previousBestRate)} → ${formatRate(play.rate / 100)}`;
+    note = result.previousBestRate === null ? t("Import.noteFirst") : t("Import.noteNew", { before: formatRate(result.previousBestRate), after: formatRate(play.rate / 100) });
   } else if (result.reason) {
-    const label = SKIP_REASON_LABELS[result.reason];
+    const label = t(SKIP_REASON_LABELS[result.reason]);
     // 지원하지 않는 난이도는 공식 페이지의 난이도 클래스(예: dm_ext)를 함께 보여 준다(새 난이도를 확인해 추가하기 위함)
     note = result.reason === "UNKNOWN_DIFFICULTY"
-      ? `건너뜀 · ${label} (${play.difficultyClass.slice(0, 40)})`
-      : excluded ? `제외 · ${label}` : result.previousBestRate !== null && result.reason === "LOWER_THAN_BEST" ? `건너뜀 · 기존 기록(${formatRate(result.previousBestRate)})보다 낮음` : `건너뜀 · ${label}`;
+      ? t("Import.skippedUnknown", { label, cls: play.difficultyClass.slice(0, 40) })
+      : excluded
+        ? t("Import.excluded", { label })
+        : result.previousBestRate !== null && result.reason === "LOWER_THAN_BEST"
+          ? t("Import.skippedLower", { rate: formatRate(result.previousBestRate) })
+          : t("Import.skipped", { label });
   } else {
     note = "";
   }
@@ -57,7 +64,7 @@ function PlayRow({
         checked={result.saved && checked}
         disabled={!result.saved}
         onChange={onToggle}
-        aria-label={`${play.title} ${result.saved ? "저장" : "저장 안 함"}`}
+        aria-label={result.saved ? t("Import.ariaSave", { title: play.title }) : t("Import.ariaNoSave", { title: play.title })}
         className="size-5 shrink-0"
       />
       <div className="min-w-0 flex-1">
@@ -66,7 +73,7 @@ function PlayRow({
         <div className={`mt-0.5 text-xs ${excluded ? "text-weak-text" : result.saved ? "text-fg" : "text-fg-sub"}`}>{note}</div>
         {excluded && (
           <Link href={`/suggestions?category=SONG_REQUEST&title=${encodeURIComponent(play.title.slice(0, 100))}`} className="mt-0.5 inline-flex min-h-8 items-center text-xs underline">
-            곡 추가 건의하기
+            {t("Songs.requestSong")}
           </Link>
         )}
       </div>
@@ -84,11 +91,11 @@ export interface DoneInfo {
   after: number | null;
 }
 
-export function ratingLine(done: DoneInfo): string | null {
+export function ratingLine(done: DoneInfo, t: Translator): string | null {
   if (done.before === null || done.after === null) return null;
   const diff = Math.round((done.after - done.before) * 100) / 100;
-  if (diff === 0) return "레이팅은 그대로입니다.";
-  return `레이팅 ${diff > 0 ? "+" : "-"}${formatScore(Math.abs(diff))} (${formatScore(done.before)} → ${formatScore(done.after)})`;
+  if (diff === 0) return t("Record.ratingSame");
+  return t("Record.ratingChange", { sign: diff > 0 ? "+" : "-", change: formatScore(Math.abs(diff)), before: formatScore(done.before), after: formatScore(done.after) });
 }
 
 /**
@@ -96,6 +103,7 @@ export function ratingLine(done: DoneInfo): string | null {
  * 저장이 끝나면 보관소의 pending이 비므로, "완료" 상태(done)는 모달(부모)이 들고 있다가 결과 화면을 계속 보여 준다.
  */
 export function ImportProcessor({ userId, done, onDone, onClose }: { userId: number; done: DoneInfo | null; onDone: (info: DoneInfo) => void; onClose: () => void }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const handoff = useHandoff();
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set());
@@ -145,11 +153,11 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
   }
 
   if (pending.length === 0) {
-    const line = done ? ratingLine(done) : null;
+    const line = done ? ratingLine(done, t) : null;
     return (
       <div className="flex flex-col gap-3">
         <h2 id="import-handoff-title" className="text-lg font-extrabold">
-          {done ? (done.saved > 0 ? `✓ ${done.saved}곡을 저장했습니다` : "저장된 기록이 없습니다") : "받은 플레이가 없습니다"}
+          {done ? (done.saved > 0 ? t("Import.doneSaved", { count: done.saved }) : t("Import.doneNone")) : t("Import.nonePending")}
         </h2>
         {line && (
           <p role="status" className="text-sm text-fg-sub">
@@ -158,14 +166,14 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
         )}
         <div className="flex gap-2">
           <Link href="/me" onClick={onClose} className="flex min-h-12 flex-1 items-center justify-center rounded-xl border border-chip-line text-sm font-medium text-fg">
-            내 기록 보기
+            {t("Import.viewRecords")}
           </Link>
           <Link href="/me?tab=rating" onClick={onClose} className="flex min-h-12 flex-1 items-center justify-center rounded-xl bg-chip-on-bg text-sm font-bold text-chip-on-fg">
-            내 레이팅 보기
+            {t("Record.viewRating")}
           </Link>
         </div>
         <button type="button" onClick={onClose} className="min-h-11 rounded-xl border border-chip-line text-sm font-medium text-fg-sub hover:text-fg">
-          닫기
+          {t("Common.close")}
         </button>
       </div>
     );
@@ -175,25 +183,25 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between gap-2">
         <h2 id="import-handoff-title" className="text-lg font-extrabold">
-          받은 플레이 {pending.length}곡
+          {t("Import.receivedHeading", { count: pending.length })}
         </h2>
         <span className="text-xs text-fg-sub">
-          {donePages}/{MAX_PAGES}쪽
+          {t("Import.pagesRead", { done: donePages, max: MAX_PAGES })}
         </span>
       </div>
-      <p className="text-xs leading-relaxed text-fg-sub">아직 저장되지 않았습니다. 확인한 뒤 저장해 주세요. 같은 곡을 다시 보내도 중복 저장되지 않으며, SRN+ 옵션 기록만 저장합니다.</p>
-      {preview.isPending && <p className="text-sm text-fg-sub">확인하는 중입니다.</p>}
+      <p className="text-xs leading-relaxed text-fg-sub">{t("Import.notSavedYet")}</p>
+      {preview.isPending && <p className="text-sm text-fg-sub">{t("Import.checking")}</p>}
       {preview.isError && (
         <p role="alert" className="text-sm text-danger">
-          {messageOf(preview.error)}
+          {messageOf(preview.error, t)}
         </p>
       )}
       {results && (
         <>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full border border-chip-line px-2.5 py-1 font-bold text-fg">✓ 저장 예정 {selected.length}</span>
-            <span className="rounded-full border border-chip-line px-2.5 py-1 text-fg-sub">건너뜀 {skippedCount}</span>
-            {excludedCount > 0 && <span className="rounded-full border border-weak-line px-2.5 py-1 text-weak-text">제외 {excludedCount}</span>}
+            <span className="rounded-full border border-chip-line px-2.5 py-1 font-bold text-fg">{t("Import.willSave", { count: selected.length })}</span>
+            <span className="rounded-full border border-chip-line px-2.5 py-1 text-fg-sub">{t("Import.skippedChip", { count: skippedCount })}</span>
+            {excludedCount > 0 && <span className="rounded-full border border-weak-line px-2.5 py-1 text-weak-text">{t("Import.excludedChip", { count: excludedCount })}</span>}
           </div>
           {/* 20곡까지 올 수 있어서 목록만 스크롤한다(버튼은 항상 보인다) */}
           <ul className="max-h-[45vh] overflow-y-auto">
@@ -206,7 +214,7 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
       )}
       {commit.isError && (
         <p role="alert" className="text-sm text-danger">
-          {messageOf(commit.error)}
+          {messageOf(commit.error, t)}
         </p>
       )}
       <div className="flex gap-2">
@@ -219,7 +227,7 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
           disabled={commit.isPending}
           className="min-h-12 rounded-xl border border-chip-line px-4 text-sm font-medium text-fg disabled:opacity-60"
         >
-          취소
+          {t("Common.cancel")}
         </button>
         <button
           type="button"
@@ -227,7 +235,7 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
           disabled={commit.isPending || !results || selected.length === 0}
           className="min-h-12 flex-1 rounded-xl bg-chip-on-bg text-[15px] font-bold text-chip-on-fg disabled:opacity-60"
         >
-          {commit.isPending ? "저장하는 중" : `${selected.length}곡 저장`}
+          {commit.isPending ? t("Import.savingNow") : t("Import.saveN", { count: selected.length })}
         </button>
       </div>
     </div>

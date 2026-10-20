@@ -5,6 +5,7 @@ import { useToast } from "@/components/Toast";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import { deleteChart, deleteSong, SONG_DELETE_AFFECTED_KEYS } from "@/lib/song-admin";
+import { useTranslations } from "next-intl";
 
 type Target = "song" | "chart";
 
@@ -30,6 +31,7 @@ export function SongDeleteControl({
   chartLabel: string | null;
   onDeleted: (target: Target) => void;
 }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const [confirming, setConfirming] = useState<Target | null>(null);
 
@@ -38,7 +40,7 @@ export function SongDeleteControl({
     mutationFn: (target: Target) => (target === "song" ? deleteSong(songId) : deleteChart(chartId ?? 0)),
     onSuccess: (_data, target) => {
       setConfirming(null);
-      toast(target === "song" ? "곡을 삭제했습니다." : "채보를 삭제했습니다.");
+      toast(target === "song" ? t("Song.songDeleted") : t("Song.chartDeleted"));
       // 화면을 먼저 옮긴다. 목록을 먼저 새로 받으면 지워진 곡의 상세 조회가 404가 되어 오류 화면이 잠깐 보인다.
       onDeleted(target);
       void Promise.all(SONG_DELETE_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
@@ -49,14 +51,17 @@ export function SongDeleteControl({
     mutation.error instanceof ApiError
       ? mutation.error.message
       : mutation.error
-        ? "삭제하지 못했습니다. 잠시 후 다시 시도해 주세요."
+        ? t("Song.deleteFailed")
         : null;
 
   if (confirming) {
-    const what = confirming === "song" ? `'${songTitle}' 곡과 모든 채보를` : `'${songTitle}'의 ${chartLabel ?? "이 채보"}를`;
+    const sentence =
+      confirming === "song"
+        ? t("Song.confirmSong", { title: songTitle })
+        : t("Song.confirmChart", { title: songTitle, chart: chartLabel ?? t("Song.thisChart") });
     return (
-      <div role="group" aria-label="삭제 확인" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
-        <p className="text-sm text-fg">{what} 삭제할까요? 목록·서열표·레이팅에서 빠지고, 삭제 내용은 관리 기록에 남습니다.</p>
+      <div role="group" aria-label={t("Song.deleteConfirm")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+        <p className="text-sm text-fg">{sentence}</p>
         {message ? (
           <p role="alert" className="text-sm text-fg">
             {message}
@@ -69,7 +74,7 @@ export function SongDeleteControl({
             onClick={() => mutation.mutate(confirming)}
             className="h-10 rounded-xl bg-chip-on-bg px-5 text-sm font-extrabold text-chip-on-fg disabled:opacity-60"
           >
-            {mutation.isPending ? "삭제 중" : "삭제"}
+            {mutation.isPending ? t("Song.deleting") : t("Song.delete")}
           </button>
           <button
             type="button"
@@ -80,7 +85,7 @@ export function SongDeleteControl({
             }}
             className="h-10 rounded-xl border border-chip-line px-5 text-sm font-bold text-fg-sub hover:text-fg"
           >
-            취소
+            {t("Common.cancel")}
           </button>
         </div>
       </div>
@@ -91,11 +96,11 @@ export function SongDeleteControl({
     <div className="flex flex-wrap gap-2">
       {chartId !== null ? (
         <button type="button" onClick={() => setConfirming("chart")} className={BTN}>
-          채보 삭제
+          {t("Song.deleteChart")}
         </button>
       ) : null}
       <button type="button" onClick={() => setConfirming("song")} className={BTN}>
-        곡 삭제
+        {t("Song.deleteSong")}
       </button>
     </div>
   );

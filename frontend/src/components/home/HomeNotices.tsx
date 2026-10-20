@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { formatPlayedDate } from "@/lib/format";
 import { fetchNotices, noticeKeys } from "@/lib/notices";
+import { useTranslations } from "next-intl";
 
 const PREVIEW_SIZE = 3;
 
@@ -13,25 +14,27 @@ const PREVIEW_SIZE = 3;
  * 공지 화면의 첫 페이지(10건)와 쿼리 키 크기만 다르다: 홈은 3건만 받는다.
  */
 export function HomeNotices({ viewerId }: { viewerId: number }) {
+  const t = useTranslations("Home");
+  const tc = useTranslations("Common");
   const { data, isPending, isError } = useQuery({
     queryKey: noticeKeys.list(viewerId, 0, PREVIEW_SIZE),
     queryFn: ({ signal }) => fetchNotices(0, PREVIEW_SIZE, signal),
   });
 
   return (
-    <section aria-label="공지사항" className="flex flex-col gap-2">
+    <section aria-label={t("noticesAria")} className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3 px-1">
-        <h2 className="text-[17px] font-bold text-fg">공지사항</h2>
+        <h2 className="text-[17px] font-bold text-fg">{t("noticesTitle")}</h2>
         <Link href="/notices" className="text-xs text-fg-sub hover:text-fg">
-          전체 보기
+          {tc("viewAll")}
         </Link>
       </div>
       {isPending ? (
-        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{tc("loading")}</p>
       ) : isError ? (
-        <p className="text-sm text-fg-sub">공지사항을 불러오지 못했습니다.</p>
+        <p className="text-sm text-fg-sub">{t("noticesLoadFailed")}</p>
       ) : data.content.length === 0 ? (
-        <p className="text-sm text-fg-sub">등록된 공지가 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("noticesEmpty")}</p>
       ) : (
         <ul className="overflow-hidden rounded-2xl border border-line bg-card">
           {data.content.map((notice) => (

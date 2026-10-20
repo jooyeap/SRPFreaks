@@ -17,12 +17,14 @@ import { difficultyLabel, formatTier, partLabel } from "@/lib/format";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: unknown, t: Translator): string {
   if (error instanceof ApiError) {
-    return error.status === 404 ? "곡을 찾을 수 없습니다." : error.message;
+    return error.status === 404 ? t("Songs.notFoundSong") : error.message;
   }
-  return "곡 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+  return t("Song.loadFailed");
 }
 
 /**
@@ -46,6 +48,7 @@ export function SongDetailView({
   /** ROOT·ADMIN이면 true. 서열표 값(기준 난이도·추천도·속성) 수정 버튼을 보여 준다. 서버도 권한을 다시 검사한다. */
   canEditTable?: boolean;
 }) {
+  const t = useTranslations();
   const router = useRouter();
   const [recordOpen, setRecordOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<TableEntryTarget | null>(null);
@@ -102,16 +105,16 @@ export function SongDetailView({
       <button
         type="button"
         onClick={() => router.back()}
-        aria-label="뒤로"
-        title="뒤로"
+        aria-label={t("Song.back")}
+        title={t("Song.back")}
         className="min-h-9 min-w-11 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
       >
         <span aria-hidden="true">←</span>
       </button>
-      <span className="text-sm font-semibold text-fg">곡 상세</span>
+      <span className="text-sm font-semibold text-fg">{t("Songs.detailTitle")}</span>
       {origin === "table" && found ? (
         <span className="rounded-lg border border-chip-line px-2 py-0.5 text-xs text-fg-sub">
-          SRN+ 서열표 · <span className="font-num">{formatTier(found.group.tier)}</span>
+          {t.rich("Song.tableHeading", { tier: formatTier(found.group.tier, t), num: (chunks) => <span className="font-num">{chunks}</span> })}
         </span>
       ) : (
         <span aria-hidden="true" className="w-12" />
@@ -123,7 +126,7 @@ export function SongDetailView({
     return (
       <div className="flex flex-col gap-4">
         {backBar}
-        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       </div>
     );
   }
@@ -132,7 +135,7 @@ export function SongDetailView({
       <div className="flex flex-col gap-4">
         {backBar}
         <ErrorRetry onRetry={() => void song.refetch()} retrying={song.isFetching}>
-          {errorMessage(song.error)}
+          {errorMessage(song.error, t)}
         </ErrorRetry>
       </div>
     );
@@ -170,7 +173,7 @@ export function SongDetailView({
                 onClick={openTableEdit}
                 className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
               >
-                {found ? "서열표 값 수정" : "서열표에 추가"}
+                {found ? t("Song.editTableEntry") : t("Song.addToTable")}
               </button>
             ) : null}
             {canEditTable ? (
@@ -180,7 +183,7 @@ export function SongDetailView({
                   onClick={() => setSongEdit({ kind: "song", song: data })}
                   className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
                 >
-                  곡 정보 수정
+                  {t("Song.editSong")}
                 </button>
                 {chart ? (
                   <button
@@ -188,7 +191,7 @@ export function SongDetailView({
                     onClick={() => setSongEdit({ kind: "chart", song: data, chart })}
                     className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
                   >
-                    채보 수정
+                    {t("Song.editChart")}
                   </button>
                 ) : null}
               </div>
@@ -214,8 +217,8 @@ export function SongDetailView({
                 ) : (
                   <p className="rounded-lg border border-line bg-card p-4 text-sm text-fg-sub">
                     {groupsQuery.isPending && tableId !== null
-                      ? "서열표 정보를 불러오는 중입니다."
-                      : "이 채보는 서열표에 없습니다."}
+                      ? t("Song.tableLoading")
+                      : t("Song.notInTable")}
                   </p>
                 )}
                 {groups ? <OtherCharts charts={entriesOfSong(groups, data.id).filter((e) => e.songDifficultyId !== chart?.id)} /> : null}

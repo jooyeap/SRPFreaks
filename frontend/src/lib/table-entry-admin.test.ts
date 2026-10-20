@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { TableEntryResponse } from "@/lib/api-types";
-import { tableEntrySchema, tableEntryToFormValues, toTableEntryBody } from "@/lib/table-entry-admin";
+import { koT } from "@/i18n/ko-translator";
+import { makeTableEntrySchema, tableEntryToFormValues, toTableEntryBody } from "@/lib/table-entry-admin";
 
 const entry: TableEntryResponse = {
   entryId: 1,
@@ -21,7 +22,7 @@ const entry: TableEntryResponse = {
 };
 
 function check(tier: string, recommend = "", pattern = "") {
-  return tableEntrySchema.safeParse({ tier, recommend, pattern, ratingEnabled: false });
+  return makeTableEntrySchema(koT).safeParse({ tier, recommend, pattern, ratingEnabled: false });
 }
 
 describe("tableEntrySchema", () => {
