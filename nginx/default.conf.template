@@ -42,6 +42,9 @@ server {
     add_header X-Frame-Options           "DENY" always;
     add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
 
+    # 응답 헤더와 오류 화면에 nginx 버전을 싣지 않는다 (알려진 취약점을 노린 탐색을 어렵게)
+    server_tokens off;
+
     # 업로드 기능이 없어서 요청 크기를 작게 제한한다
     client_max_body_size 1m;
 

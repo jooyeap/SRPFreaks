@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * 보안 설정. 기본 정책은 deny all이고, 공개할 경로만 아래에서 명시적으로 연다.
  *
- * 필터 순서: CORS → (RateLimit) → JWT 인증 → 권한 검사.
+ * 필터 순서: CORS → (RateLimit: 로그인·재발급·로그아웃 각각) → JWT 인증 → 권한 검사.
  * JwtAuthenticationFilter / RateLimitFilter는 @Component로 만들지 않고 여기서 직접 생성한다.
  * @Component로 두면 스프링 부트가 보안 체인과 별개로 서블릿 필터로 한 번 더 등록해서 두 번 실행되기 때문이다.
  */
@@ -48,8 +48,15 @@ public class SecurityConfig {
                                            AppProperties appProperties,
                                            Clock clock) throws Exception {
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtTokenProvider, userRepository);
-        RateLimitFilter rateLimitFilter = new RateLimitFilter(
-                new RateLimiter(appProperties.getRateLimit().getAuthPerMinute(), clock), clock);
+        // 요청 제한은 IP 기준이라, 오락실 Wi-Fi나 이동통신 공용 IP처럼 한 주소를 여러 사람이 쓰면 서로 영향을 준다.
+        // 그래서 무차별 대입 대상인 로그인(/google)만 엄격하게(기본 10회/분) 막고, 화면을 열 때마다 불리는
+        // 재발급(/refresh)과 로그아웃은 넉넉하게(기본 60회/분) 둔다. 필터마다 제한기를 따로 써서 횟수가 섞이지 않는다.
+        RateLimitFilter loginRateLimit = new RateLimitFilter(
+                new RateLimiter(appProperties.getRateLimit().getAuthPerMinute(), clock), clock, "/api/v1/auth/google");
+        RateLimitFilter refreshRateLimit = new RateLimitFilter(
+                new RateLimiter(appProperties.getRateLimit().getRefreshPerMinute(), clock), clock, "/api/v1/auth/refresh");
+        RateLimitFilter logoutRateLimit = new RateLimitFilter(
+                new RateLimiter(appProperties.getRateLimit().getRefreshPerMinute(), clock), clock, "/api/v1/auth/logout");
 
         http
             // Access Token을 Authorization 헤더로 보내는 stateless API라 세션/CSRF 쿠키를 쓰지 않는다.
@@ -82,11 +89,16 @@ public class SecurityConfig {
                 // 가져오기 기능을 닫아 둘 때(app.import-api.enabled=false)에는 사이트 화면용 미리보기·저장(/record-imports)을 ROOT만 할 수 있다(문제가 생겼을 때 되돌리는 스위치).
                 .requestMatchers(request -> !appProperties.getImportApi().isEnabled() && isImportRootGatedPath(request.getRequestURI()))
                         .hasRole("ROOT")
+                // 관리 API는 주소 단계에서도 ADMIN 이상으로 막는다(방어를 한 겹 더). 컨트롤러의 @PreAuthorize를 깜빡해도 일반 사용자에게 열리지 않는다.
+                // 더 높은 권한(ROOT 전용)이 필요한 곳은 각 메서드의 @PreAuthorize가 계속 맡는다.
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/**").authenticated()
                 // 그 밖의 모든 경로(/error, 문서 경로 포함)는 막는다
                 .anyRequest().denyAll())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
+            .addFilterBefore(loginRateLimit, JwtAuthenticationFilter.class)
+            .addFilterBefore(refreshRateLimit, JwtAuthenticationFilter.class)
+            .addFilterBefore(logoutRateLimit, JwtAuthenticationFilter.class);
 
         return http.build();
     }
