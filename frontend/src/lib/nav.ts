@@ -55,18 +55,3 @@ export const MORE_ITEMS: readonly {
   { href: "/guide", label: "설명서" },
   { href: "/settings", label: "설정" },
 ];
-
-/** 주 메뉴 항목. lg 미만 화면의 슬라이드 메뉴(MobileMenu)가 이 목록을 쓴다. `관리`는 역할에 따라 보이므로 AdminNavLink가 따로 맡는다. */
-export const NAV_ITEMS: readonly {
-  href: string;
-  label: string;
-  icon: NavIconName;
-  match?: readonly string[];
-}[] = [
-  { href: "/table", label: "곡", icon: "songs", match: SONG_PATHS },
-  { href: "/me", label: "마이페이지", icon: "rating" },
-  { href: "/players", label: "유저", icon: "players" },
-  { href: "/guide", label: "설명서", icon: "guide" },
-  { href: "/notices", label: "공지", icon: "notices" },
-  { href: "/suggestions", label: "건의", icon: "suggestions" },
-];

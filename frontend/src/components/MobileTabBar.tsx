@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { AdminNavLink } from "@/components/AdminNavLink";
+import { useAuth } from "@/components/AuthProvider";
 import { isActivePath } from "@/components/DesktopNav";
 import { NavIcon } from "@/components/NavIcon";
 import { MORE_ITEMS, SONG_PATHS, TAB_ITEMS } from "@/lib/nav";
@@ -11,8 +13,8 @@ import { useSongHomeHref } from "@/lib/song-tab";
 const TAB_CLASS = "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[11px]";
 
 /**
- * lg(1024px) 미만 화면 하단에 고정되는 탭바(홈 · 곡 · 마이 · 더보기). lg 이상은 헤더의 가로 메뉴(DesktopNav)가 있어 숨긴다.
- * `더보기`는 링크가 아니라 버튼이다: 누르면 자주 쓰지 않는 화면(가져오기·공지·유저·건의·설명서·설정)을 담은 시트가 탭바 위로 열린다.
+ * lg(1024px) 미만 화면 하단에 고정되는 탭바(홈 · 곡 · 마이 · 더보기). 예전 헤더의 ☰ 메뉴는 이 `더보기`로 합쳤다. lg 이상은 헤더의 가로 메뉴(DesktopNav)가 있어 숨긴다.
+ * `더보기`는 링크가 아니라 버튼이다: 누르면 자주 쓰지 않는 화면(가져오기·공지·유저·건의·설명서·설정)과 관리(ADMIN·ROOT)·로그인/로그아웃을 담은 시트가 탭바 위로 열린다.
  * 높이는 56px + 아이폰 하단 안전 영역이고, 같은 값을 CSS 변수 `--tabbar-h`(globals.css)로 두어
  * 본문 아래 여백·맨 위로 버튼·곡 검색 버튼·토스트가 탭바에 가려지지 않게 한다.
  * 현재 화면은 굵은 글자 + 진한 색 + aria-current로 알린다(색만으로 구분하지 않는다).
@@ -21,6 +23,7 @@ const TAB_CLASS = "flex h-14 min-w-0 flex-1 flex-col items-center justify-center
 export function MobileTabBar() {
   const pathname = usePathname();
   const songHref = useSongHomeHref();
+  const { status, user, logout } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
 
   // Esc로 닫는다. 화면을 이동하면(pathname 변경) 시트 안 링크 클릭 핸들러가 닫아 준다.
@@ -45,7 +48,7 @@ export function MobileTabBar() {
           <div className="absolute inset-0 bg-black/55" onClick={() => setMoreOpen(false)} aria-hidden="true" />
           <section
             aria-label="더보기"
-            className="absolute inset-x-0 bottom-[var(--tabbar-h)] rounded-t-2xl border border-b-0 border-line bg-card px-4 pb-4 pt-3"
+            className="absolute inset-x-0 bottom-[var(--tabbar-h)] max-h-[calc(100dvh-var(--tabbar-h)-3rem)] overflow-y-auto rounded-t-2xl border border-b-0 border-line bg-card px-4 pb-4 pt-3"
           >
             <h2 className="px-1 pb-1 text-[13px] font-bold text-fg-dim">더보기</h2>
             <ul>
@@ -64,6 +67,29 @@ export function MobileTabBar() {
                 </li>
               ))}
             </ul>
+            {/* 관리(ADMIN·ROOT만)와 계정 줄: 예전 ☰ 메뉴에 있던 것을 이 시트로 합쳤다. 시트 안 링크는 눌러서 이동하면 닫힌다 */}
+            <div className="border-t border-line">
+              <AdminNavLink
+                onClick={() => setMoreOpen(false)}
+                className="flex min-h-[52px] items-center border-b border-line px-1 text-[15px] text-fg"
+              />
+              {status === "authenticated" && user ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    void logout();
+                  }}
+                  className="flex min-h-[52px] w-full items-center px-1 text-left text-[15px] text-fg-sub"
+                >
+                  로그아웃
+                </button>
+              ) : status === "anonymous" ? (
+                <Link href="/login" onClick={() => setMoreOpen(false)} className="flex min-h-[52px] items-center px-1 text-[15px] text-fg">
+                  로그인
+                </Link>
+              ) : null}
+            </div>
             <p className="mt-2 text-center text-[11px] text-fg-dim">
               <strong>비공식 팬 프로젝트</strong> · KONAMI와 무관
             </p>
