@@ -1093,6 +1093,7 @@
     "BAD_REQUEST": "不正なリクエストです。",
     "NOT_FOUND": "見つかりません。",
     "CONFLICT": "すでに登録されています。",
+    "SONG_TITLE_DUPLICATE": "同じ名前の曲がすでに登録されています。曲一覧で確認してください。",
     "SNAPSHOT_ALREADY_TODAY": "今日はすでに記録しました。明日もう一度記録してください。",
     "SNAPSHOT_NO_CHANGE": "前回の記録とスコアが同じため記録できません。",
     "SNAPSHOT_NO_RECORDS": "レーティングに入る記録がないため記録できません。",

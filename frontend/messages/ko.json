@@ -1093,6 +1093,7 @@
     "BAD_REQUEST": "잘못된 요청입니다.",
     "NOT_FOUND": "찾을 수 없습니다.",
     "CONFLICT": "이미 등록되어 있습니다.",
+    "SONG_TITLE_DUPLICATE": "같은 이름의 곡이 이미 등록되어 있습니다. 곡 목록에서 확인해 주세요.",
     "SNAPSHOT_ALREADY_TODAY": "오늘은 이미 기록했습니다. 내일 다시 기록해 주세요.",
     "SNAPSHOT_NO_CHANGE": "마지막 기록과 점수가 같아 기록할 수 없습니다.",
     "SNAPSHOT_NO_RECORDS": "레이팅에 들어간 기록이 없어 기록할 수 없습니다.",
