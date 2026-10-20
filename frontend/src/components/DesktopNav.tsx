@@ -20,7 +20,7 @@ export function isActivePath(pathname: string, href: string, match?: readonly st
 }
 
 /**
- * 데스크톱(lg 이상) 헤더의 가로 메뉴. lg 미만에서는 숨기고 ☰ 슬라이드 메뉴(MobileMenu)를 쓴다.
+ * 데스크톱(lg 이상) 헤더의 가로 메뉴. lg 미만에서는 숨기고 하단 탭바(MobileTabBar)의 `더보기`를 쓴다.
  * 현재 화면은 배경 + 굵은 글자로 강조하고 aria-current="page"를 단다(색만으로 구분하지 않는다).
  * usePathname을 쓰려고 클라이언트 컴포넌트로 뒀다. 헤더 자체는 서버 컴포넌트로 남는다.
  */
