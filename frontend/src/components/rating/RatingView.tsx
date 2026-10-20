@@ -8,6 +8,7 @@ import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
+import { TermHelp } from "@/components/TermHelp";
 import { RatingInsights } from "@/components/rating/RatingInsights";
 import { RatingGoalPlanner } from "@/components/rating/RatingGoalPlanner";
 import { RatingTargetPlanner } from "@/components/rating/RatingTargetPlanner";
@@ -37,6 +38,7 @@ function Group({
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-num text-[17px] font-bold text-fg">
           {title}{" "}
+          <TermHelp term={title === "단일" ? "single" : "other"} label={title} />{" "}
           <span className="font-num text-sm font-normal text-fg-sub">
             {entries.length}/{limit}
           </span>
