@@ -624,3 +624,7 @@
 - 글꼴: 본문은 Noto Sans KR 다음에 Noto Sans JP로 넘어간다(`--font-sans`). 일본어 글자가 한글 글꼴에 없을 때 이 글꼴이 쓰인다.
 - 곡 제목·아티스트·난이도 표기(MASTER, EXT 등)·`SRN+`·`FC`/`EXC` 같은 표식은 번역하지 않는다.
 - 문구는 `frontend/messages/{ko,ja}.json`에 있고 컴포넌트에는 직접 쓰지 않는다. 새 문구를 넣으면 두 파일에 같은 키를 넣는다(테스트가 확인).
+- 번역 방식: 컴포넌트는 `useTranslations()`(루트)로 `t("Ns.key")`를 쓴다. 컴포넌트 밖의 도우미 함수는 `t: Translator`를 매개변수로 받고, 표나 상수는 문구 대신 `MessageKey`를 들고 있다가 화면에서 풀어 쓴다. 폼 검사(Zod)는 `makeXxxSchema(t)` 팩토리로 만들어 `useMemo`로 쓴다.
+- 컴포넌트 밖에서 만드는 오류 문구(`api.ts`, `google.ts`)는 `Providers`가 등록한 번역기(`i18n/client-messages.ts`)를 쓴다. 서버가 보낸 고정 문구(`ErrorCode`)는 `i18n/server-errors.ts` 표와 같을 때만 번역한다.
+- 서버 값(속성 `단일`, 추천도 `상` 등)은 한국어 그대로 주고받고 화면 글자만 `patternLabel`/`recommendLabel`로 바꾼다.
+- 번역이 애매한 항목은 `docs/I18N-GLOSSARY.md`에 모은다. 새로 애매한 번역이 생기면 거기에 한 줄 추가한다.
