@@ -326,11 +326,35 @@ describe("ProgressCard 칸 지도", () => {
   it("기록이 모두 채워진 칸에만 완료 색이 붙고 `완료` 글자는 쓰지 않는다", () => {
     render(<ProgressCard table={ready(tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, s: 0, belowS: 0 })]))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
-    expect(card.querySelectorAll("[data-stage-bar].ring-done")).toHaveLength(1);
+    // 완료한 칸은 하나이고, 그 칸의 막대(모바일 줄용·카드용 두 배치)가 모두 완료 색을 쓴다
+    const doneTiles = card.querySelectorAll('li[data-done="true"]');
+    expect(doneTiles).toHaveLength(1);
+    expect(doneTiles[0].querySelectorAll("[data-stage-bar].ring-done")).toHaveLength(2);
     expect(card).not.toHaveTextContent("완료");
     // 비어 있는 구간이 없으면 안내와 약함 표시를 만들지 않는다
     expect(card).not.toHaveTextContent("약함");
     expect(within(card).queryByRole("link", { name: "구간 보기" })).toBeNull();
+  });
+});
+
+describe("ProgressCard 모바일 표형 줄", () => {
+  it("줄마다 구간·달성 %·단계별 개수(0은 -)가 있고, 단계 이름은 머리글과 숨은 글자로 함께 전한다", () => {
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.6, total: 55, recorded: 16, exc: 0, fc: 0, ss: 2, s: 14, belowS: 0 })]))} songs={loading} />);
+    const card = screen.getByRole("region", { name: "서열표 진행도" });
+    const row = within(card).getByRole("list", { name: "묶음별 진행" }).querySelector("li a")!;
+    const mobile = row.querySelector("span.sm\\:hidden")!;
+    expect(mobile).toHaveTextContent("5.6");
+    expect(mobile).toHaveTextContent("16/55");
+    expect(mobile).toHaveTextContent("29%");
+    // EXC FC SS S S 미만 순서로 숫자만(0은 -), 단계 이름은 sr-only 글자
+    expect(mobile.textContent).toContain("EXC -");
+    expect(mobile.textContent).toContain("SS 2");
+    expect(mobile.textContent).toContain("S 14");
+    expect(mobile.textContent).toContain("S 미만 -");
+    // 머리글은 목록 밖에 한 번만 있고 보조 기술에는 숨긴다
+    const header = card.querySelector('div[aria-hidden="true"].sm\\:hidden')!;
+    expect(header).toHaveTextContent("구간");
+    expect(header).toHaveTextContent("S 미만");
   });
 });
 
