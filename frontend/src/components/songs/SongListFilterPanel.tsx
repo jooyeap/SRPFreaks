@@ -2,6 +2,7 @@ import { CheckChip, FilterChips, type ChipOption } from "@/components/table/Filt
 import { difficultyLabel } from "@/lib/format";
 import { EMPTY_SONG_FILTERS, type SongListFilters } from "@/lib/song-list";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 const PART_OPTIONS: readonly ChipOption<InstrumentPart>[] = [
   { value: "GUITAR", label: "Guitar" },
@@ -26,6 +27,7 @@ export function SongListFilterPanel({
   versions: readonly string[];
   onChange: (next: SongListFilters) => void;
 }) {
+  const t = useTranslations();
   const toggleDifficulty = (d: DifficultyType) =>
     onChange({
       ...filters,
@@ -34,11 +36,11 @@ export function SongListFilterPanel({
 
   return (
     <div id={id} className={className}>
-      <FilterChips label="파트" options={PART_OPTIONS} selected={filters.part} onChange={(part) => onChange({ ...filters, part })} />
-      <div role="group" aria-label="난이도" className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-xs text-fg-dim">난이도</span>
+      <FilterChips label={t("Songs.part")} options={PART_OPTIONS} selected={filters.part} onChange={(part) => onChange({ ...filters, part })} />
+      <div role="group" aria-label={t("Songs.difficulty")} className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-xs text-fg-dim">{t("Songs.difficulty")}</span>
         <CheckChip pressed={filters.difficulties.length === 0} onClick={() => onChange({ ...filters, difficulties: [] })}>
-          전체
+          {t("Songs.all")}
         </CheckChip>
         {DIFFICULTIES.map((d) => (
           <CheckChip key={d} pressed={filters.difficulties.includes(d)} onClick={() => toggleDifficulty(d)}>
@@ -47,13 +49,13 @@ export function SongListFilterPanel({
         ))}
       </div>
       <label className="flex flex-wrap items-center gap-1.5 text-xs text-fg-dim">
-        <span className="mr-1">버전</span>
+        <span className="mr-1">{t("Songs.version")}</span>
         <select
           value={filters.version ?? ""}
           onChange={(e) => onChange({ ...filters, version: e.target.value === "" ? null : e.target.value })}
           className="min-h-11 rounded-[10px] border border-chip-line bg-card px-3 py-1 text-sm text-fg"
         >
-          <option value="">전체</option>
+          <option value="">{t("Songs.all")}</option>
           {versions.map((v) => (
             <option key={v} value={v}>
               {v}
@@ -66,7 +68,7 @@ export function SongListFilterPanel({
         onClick={() => onChange({ ...EMPTY_SONG_FILTERS, q: filters.q })}
         className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg md:self-auto"
       >
-        초기화
+        {t("Songs.reset")}
       </button>
     </div>
   );

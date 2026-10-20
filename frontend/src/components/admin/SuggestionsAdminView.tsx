@@ -21,14 +21,16 @@ import {
   SUGGESTIONS_PAGE_SIZE,
 } from "@/lib/suggestions";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-sm text-fg";
 
-function messageOf(error: unknown): string | null {
+function messageOf(error: unknown, t: Translator): string | null {
   if (!error) {
     return null;
   }
-  return error instanceof ApiError ? error.message : "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+  return error instanceof ApiError ? error.message : t("Common.saveFailed");
 }
 
 /**
@@ -36,6 +38,7 @@ function messageOf(error: unknown): string | null {
  * 처리는 감사 로그에 기록된다(서버). 보낸 사람은 닉네임만 보인다. 권한은 서버가 다시 검사한다(403).
  */
 export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [category, setCategory] = useState<SuggestionCategory | "">("");
@@ -57,7 +60,7 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
     mutationFn: ({ id, status: next, adminNote }: { id: number; status: SuggestionStatus; adminNote: string }) =>
       reviewSuggestion(id, { status: next, adminNote }),
     onSuccess: async () => {
-      toast("처리 내용을 저장했습니다.");
+      toast(t("Admin.reviewSaved"));
       await queryClient.invalidateQueries({ queryKey: suggestionKeys.all });
       await queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });
     },
@@ -66,17 +69,17 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-fg">건의 관리</h1>
+        <h1 className="text-xl font-semibold text-fg">{t("Admin.suggestionsTitle")}</h1>
         {count.data ? (
           <p className="mt-1 text-sm text-fg-sub">
-            접수 대기 <span className="font-num">{count.data.received}</span>건
+            {t.rich("Admin.receivedCount", { count: count.data.received, n: (c) => <span className="font-num">{c}</span> })}
           </p>
         ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2">
         <label className="flex items-center gap-2 text-sm text-fg-sub">
-          종류
+          {t("Suggestions.fieldCategory")}
           <select
             className={FIELD}
             value={category}
@@ -85,16 +88,16 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
               setPage(0);
             }}
           >
-            <option value="">전체</option>
+            <option value="">{t("Songs.all")}</option>
             {SUGGESTION_CATEGORIES.map((item) => (
               <option key={item} value={item}>
-                {CATEGORY_LABELS[item]}
+                {t(CATEGORY_LABELS[item])}
               </option>
             ))}
           </select>
         </label>
         <label className="flex items-center gap-2 text-sm text-fg-sub">
-          상태
+          {t("Admin.status")}
           <select
             className={FIELD}
             value={status}
@@ -103,10 +106,10 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
               setPage(0);
             }}
           >
-            <option value="">전체</option>
+            <option value="">{t("Songs.all")}</option>
             {SUGGESTION_STATUSES.map((item) => (
               <option key={item} value={item}>
-                {STATUS_LABELS[item]}
+                {t(STATUS_LABELS[item])}
               </option>
             ))}
           </select>
@@ -114,22 +117,22 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
       </div>
 
       {list.isPending ? (
-        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : list.isError ? (
         <p role="alert" className="text-sm text-fg">
-          {list.error instanceof ApiError ? list.error.message : "건의 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
+          {list.error instanceof ApiError ? list.error.message : t("Admin.suggestionsLoadFailed")}
         </p>
       ) : list.data.content.length === 0 ? (
-        <p className="text-sm text-fg-sub">조건에 맞는 건의가 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("Admin.suggestionsEmpty")}</p>
       ) : (
         <>
-          <ul aria-label="건의 목록" className="flex flex-col gap-3">
+          <ul aria-label={t("Admin.suggestionsListAria")} className="flex flex-col gap-3">
             {list.data.content.map((item) => (
               <ReviewItem
                 key={`${item.id}-${item.updatedAt}`}
                 item={item}
                 pending={review.isPending && review.variables?.id === item.id}
-                error={review.variables?.id === item.id ? messageOf(review.error) : null}
+                error={review.variables?.id === item.id ? messageOf(review.error, t) : null}
                 onSave={(next, adminNote) => review.mutate({ id: item.id, status: next, adminNote })}
               />
             ))}
@@ -153,6 +156,7 @@ function ReviewItem({
   error: string | null;
   onSave: (status: SuggestionStatus, adminNote: string) => void;
 }) {
+  const t = useTranslations();
   const [status, setStatus] = useState<SuggestionStatus>(item.status);
   const [note, setNote] = useState(item.adminNote ?? "");
   return (
@@ -164,31 +168,31 @@ function ReviewItem({
         </time>
       </div>
       <div className="flex items-center gap-2 text-xs text-fg-sub">
-        <span>{CATEGORY_LABELS[item.category]}</span>
+        <span>{t(CATEGORY_LABELS[item.category])}</span>
         <StatusLabel status={item.status} />
-        <span>보낸 사람 {item.authorNickname}</span>
+        <span>{t("Admin.sentBy", { name: item.authorNickname })}</span>
       </div>
       <p className="whitespace-pre-wrap break-words text-sm text-fg">{item.content}</p>
       <div className="flex flex-col gap-2 border-t border-line pt-2">
         <label className="flex items-center gap-2 text-sm text-fg-sub">
-          상태
+          {t("Admin.status")}
           <select
-            aria-label={`${item.title} 상태`}
+            aria-label={t("Admin.statusAria", { title: item.title })}
             className={FIELD}
             value={status}
             onChange={(event) => setStatus(event.target.value as SuggestionStatus)}
           >
             {SUGGESTION_STATUSES.map((value) => (
               <option key={value} value={value}>
-                {STATUS_LABELS[value]}
+                {t(STATUS_LABELS[value])}
               </option>
             ))}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm text-fg-sub">
-          답변 (선택)
+          {t("Admin.replyLabel")}
           <textarea
-            aria-label={`${item.title} 답변`}
+            aria-label={t("Admin.replyAria", { title: item.title })}
             rows={2}
             maxLength={SUGGESTION_NOTE_MAX}
             className={FIELD}
@@ -206,10 +210,10 @@ function ReviewItem({
             type="button"
             disabled={pending}
             onClick={() => onSave(status, note)}
-            aria-label={`${item.title} 처리 저장`}
+            aria-label={t("Admin.reviewSaveAria", { title: item.title })}
             className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
           >
-            {pending ? "저장 중" : "저장"}
+            {pending ? t("Common.saving") : t("Common.save")}
           </button>
         </div>
       </div>

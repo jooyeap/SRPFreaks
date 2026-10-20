@@ -1,4 +1,5 @@
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
+import type { Translator } from "@/i18n/translator";
 
 /** 값이 없을 때(기록 없음 등) 화면에 쓰는 표시 */
 export const EMPTY_MARK = "–";
@@ -45,10 +46,10 @@ export function difficultyLabel(difficulty: DifficultyType): string {
   return DIFFICULTY_LABELS[difficulty];
 }
 
-/** 서열표 기준 난이도 표기: 0.1 단위 (6 -> "6.0"). 값이 없으면 `미정`. */
-export function formatTier(tier: number | null | undefined): string {
+/** 서열표 기준 난이도 표기: 0.1 단위 (6 -> "6.0"). 값이 없으면 `미정`(번역 함수가 언어에 맞게 돌려준다). */
+export function formatTier(tier: number | null | undefined, t: Translator): string {
   if (tier === null || tier === undefined || !Number.isFinite(tier)) {
-    return "미정";
+    return t("Common.undecided");
   }
   return tier.toFixed(1);
 }

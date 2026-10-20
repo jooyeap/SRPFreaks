@@ -17,6 +17,7 @@ import {
   songListKeys,
 } from "@/lib/song-list";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
 
 /**
  * 레벨 폴더 하나. 큰 폴더(0.5 단위)를 펼치면 안에 0.05 단위 하위 폴더(같은 컴포넌트, level="sub")가 나오고,
@@ -40,6 +41,7 @@ export function FolderSection({
   /** top: 0.5 단위 큰 폴더, sub: 그 안의 0.05 단위 하위 폴더 */
   level?: "top" | "sub";
 }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const isSub = level === "sub";
   const subFolders = folder.subFolders ?? [];
@@ -64,7 +66,7 @@ export function FolderSection({
 
   return (
     <section
-      aria-label={`레벨 ${title}`}
+      aria-label={t("Songs.levelFolderAria", { title })}
       className={
         isSub ? "overflow-hidden rounded-[10px] border border-line bg-table-head" : "overflow-hidden rounded-2xl border border-line bg-card"
       }
@@ -80,7 +82,7 @@ export function FolderSection({
         >
           {reached ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
           <span className={`font-num font-semibold text-fg ${isSub ? "text-base" : "text-lg"}`}>
-            {title} <span className="ml-1 text-sm font-normal text-fg-sub">{folder.total}개</span>
+            {title} <span className="ml-1 text-sm font-normal text-fg-sub">{t("Songs.chartCount", { count: folder.total })}</span>
           </span>
           <span className={`${detailClass} flex-wrap items-center gap-1.5`}>
             {chipsOf(folder).map((chip) => (
@@ -91,16 +93,16 @@ export function FolderSection({
                   chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
                 }`}
               >
-                {chip.label} <span className="font-num">{chip.count}</span>
+                {chip.stage ? chip.label : t("Progress.belowS")} <span className="font-num">{chip.count}</span>
               </span>
             ))}
           </span>
           <span className="ml-auto flex items-baseline gap-2 text-sm text-fg-sub">
             <span className={`${detailClass} text-xs text-fg-dim`}>
-              기록 {folder.recorded}/{folder.total}
+              {t("Songs.recordedOf", { recorded: folder.recorded, total: folder.total })}
             </span>
             <span>
-              평균{" "}
+              {t("Songs.average")}{" "}
               <span className="font-num font-semibold text-fg">{average === null ? EMPTY_MARK : `${average.toFixed(2)}%`}</span>
             </span>
             <span aria-hidden="true" className="text-fg-dim">
@@ -118,13 +120,13 @@ export function FolderSection({
           </div>
         ) : pages.isError ? (
           <ErrorRetry className="p-3" onRetry={() => void pages.refetch()} retrying={pages.isFetching}>
-            {pages.error instanceof ApiError ? pages.error.message : "곡 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
+            {pages.error instanceof ApiError ? pages.error.message : t("Songs.loadFailed")}
           </ErrorRetry>
         ) : !pages.data ? (
-          <p className="p-3 text-sm text-fg-sub">불러오는 중입니다.</p>
+          <p className="p-3 text-sm text-fg-sub">{t("Common.loading")}</p>
         ) : (
           <ChartList
-            label={`${title} 채보`}
+            label={t("Songs.chartsAria", { title })}
             rows={pages.data.pages.flatMap((p) => p.content)}
             hasMore={pages.hasNextPage}
             loadingMore={pages.isFetchingNextPage}

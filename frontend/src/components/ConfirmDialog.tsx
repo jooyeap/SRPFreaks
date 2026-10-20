@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 /**
  * 확인 창 (삭제처럼 되돌릴 수 없는 동작 앞에 둔다). 브라우저 기본 <dialog>(showModal)를 쓴다:
@@ -26,6 +27,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("Common");
   const ref = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -71,7 +73,7 @@ export function ConfirmDialog({
           disabled={pending}
           className="h-11 flex-1 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg disabled:opacity-60"
         >
-          취소
+          {t("cancel")}
         </button>
         <button
           type="button"
@@ -79,7 +81,7 @@ export function ConfirmDialog({
           disabled={pending}
           className="h-11 flex-1 rounded-xl border border-danger text-sm font-bold text-danger disabled:opacity-60"
         >
-          {pending ? `${confirmLabel} 중` : confirmLabel}
+          {pending ? t("pendingLabel", { label: confirmLabel }) : confirmLabel}
         </button>
       </div>
     </dialog>

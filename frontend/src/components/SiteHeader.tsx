@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthControls } from "@/components/AuthControls";
 import { DesktopNav } from "@/components/DesktopNav";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 /**
@@ -20,6 +21,7 @@ export function SiteHeader() {
           <div className="hidden sm:block">
             <AuthControls />
           </div>
+          <LocaleSwitcher />
           <ThemeToggle />
         </div>
       </div>

@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 import type { ReadPlay } from "@/lib/import-bookmarklet";
 import { achievementStage } from "@/lib/stage";
 import type { AchievementStage } from "@/lib/types";
+import type { MessageKey } from "@/i18n/translator";
 
 /**
  * 최근 플레이 가져오기 화면용 API와 표시 규칙 (D40).
@@ -39,16 +40,16 @@ export interface ImportResult {
   excludedSongs: string[];
 }
 
-export const SKIP_REASON_LABELS: Record<ImportSkipReason, string> = {
-  UNSUPPORTED_GAME_TYPE: "기타/베이스가 아닌 플레이",
-  TRANSLATED_PAGE: "번역된 페이지에서 읽음",
-  OPTION_NOT_SUPPORTED: "옵션이 S.RANDOM+가 아님",
-  UNKNOWN_DIFFICULTY: "지원하지 않는 난이도",
-  SONG_NOT_FOUND: "곡 목록에 없음",
-  AMBIGUOUS_SONG: "같은 이름의 곡이 여러 개",
-  INVALID_VALUE: "값이 올바르지 않음",
-  LOWER_THAN_BEST: "기존 기록보다 낮음",
-  NOT_IMPROVED: "기존 기록과 같음",
+export const SKIP_REASON_LABELS: Record<ImportSkipReason, MessageKey> = {
+  UNSUPPORTED_GAME_TYPE: "Import.skipUnsupportedGame",
+  TRANSLATED_PAGE: "Import.skipTranslated",
+  OPTION_NOT_SUPPORTED: "Import.skipOption",
+  UNKNOWN_DIFFICULTY: "Import.skipDifficulty",
+  SONG_NOT_FOUND: "Import.skipSongNotFound",
+  AMBIGUOUS_SONG: "Import.skipAmbiguous",
+  INVALID_VALUE: "Import.skipInvalid",
+  LOWER_THAN_BEST: "Import.skipLower",
+  NOT_IMPROVED: "Import.skipNotImproved",
 };
 
 /** 곡 목록에 없어서 "제외"로 보여 주는 사유(나머지는 "건너뜀"). 제외한 곡은 곡 추가 건의로 이어 준다. */

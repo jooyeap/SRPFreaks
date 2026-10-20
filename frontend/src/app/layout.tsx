@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Chakra_Petch, Noto_Sans_KR } from "next/font/google";
+import { Chakra_Petch, Noto_Sans_JP, Noto_Sans_KR } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { MobileTabBar } from "@/components/MobileTabBar";
 import { ImportHandoff } from "@/components/import/ImportHandoff";
@@ -17,6 +19,12 @@ const notoSansKr = Noto_Sans_KR({
   preload: false,
 });
 
+// 일본어 글꼴. 한글 글꼴(Noto Sans KR)에는 일본어 한자·가나가 없어서, 글자를 찾지 못하면 이 글꼴로 넘어간다(--font-sans의 순서).
+const notoSansJp = Noto_Sans_JP({
+  variable: "--font-noto-sans-jp",
+  preload: false,
+});
+
 // 숫자·영문 라벨: Chakra Petch (가변 글꼴이 아니라서 쓰는 굵기를 적는다)
 const chakraPetch = Chakra_Petch({
   variable: "--font-chakra-petch",
@@ -24,13 +32,16 @@ const chakraPetch = Chakra_Petch({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "SRPFreaks",
-  description: "GITADORA 플레이 기록을 SRN+ 옵션으로 저장하고 레이팅 목록을 계산하는 비공식 팬 프로젝트",
-  // iOS "홈 화면에 추가" 아이콘과 전체 화면 실행
-  icons: { apple: "/icons/apple-touch-icon.png" },
-  appleWebApp: { capable: true, title: "SRPFreaks", statusBarStyle: "black-translucent" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("Meta");
+  return {
+    title: "SRPFreaks",
+    description: t("description"),
+    // iOS "홈 화면에 추가" 아이콘과 전체 화면 실행
+    icons: { apple: "/icons/apple-touch-icon.png" },
+    appleWebApp: { capable: true, title: "SRPFreaks", statusBarStyle: "black-translucent" },
+  };
+}
 
 // 휴대폰 주소창·상태 표시줄 색을 테마 바탕색에 맞춘다. viewportFit=cover: 노치·홈 바 영역까지 쓰고 safe-area 여백은 화면이 직접 둔다(탭바가 이미 처리한다)
 export const viewport: Viewport = {
@@ -41,15 +52,21 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await getLocale(); // 쿠키·브라우저 언어로 정한 이번 요청의 언어 (src/i18n/request.ts)
   return (
     // suppressHydrationWarning: 아래 스크립트가 React보다 먼저 <html data-theme>을 바꾸기 때문에
     // 서버가 그린 속성과 달라 보이는 것이 정상이다. 이 요소의 속성 차이만 경고에서 제외한다.
-    <html lang="ko" suppressHydrationWarning className={`${notoSansKr.variable} ${chakraPetch.variable} h-full antialiased`}>
+    <html
+      lang={locale}
+      suppressHydrationWarning
+      className={`${notoSansKr.variable} ${notoSansJp.variable} ${chakraPetch.variable} h-full antialiased`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body className="flex min-h-full flex-col bg-page pb-[var(--tabbar-h)] font-sans text-fg">
+        <NextIntlClientProvider>
         <Providers>
           <SiteHeader />
           <OfflineBanner />
@@ -59,6 +76,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <SiteFooter />
           <MobileTabBar />
         </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

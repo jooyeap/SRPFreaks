@@ -11,6 +11,8 @@ import type {
 import type { InstrumentPart } from "@/lib/types";
 import type { StageCounts } from "@/components/table/StageBar";
 import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
+import type { Translator } from "@/i18n/translator";
+import type { MessageKey } from "@/i18n/translator";
 
 /** 통계 쿼리 키. 앞부분 "stats"는 records.ts의 AFFECTED_QUERY_KEYS와 같다: 기록을 저장/수정/삭제하면 무효화된다. 내 기록이 섞이므로 사용자 id를 넣는다. */
 export const statsKeys = {
@@ -33,11 +35,14 @@ export const BUCKETS: readonly { key: RateBucketKey; label: string }[] = [
   { key: "R85", label: "85 ~ 89.99%" },
   { key: "R80", label: "80 ~ 84.99%" },
   { key: "R73", label: "73 ~ 79.99%" },
-  { key: "BELOW", label: "73% 미만" },
-  { key: "UNPLAYED", label: "미플레이" },
+  { key: "BELOW", label: "" },
+  { key: "UNPLAYED", label: "" },
 ];
 
-export function bucketLabel(key: RateBucketKey): string {
+export function bucketLabel(key: RateBucketKey, t: Translator): string {
+  // 숫자 구간(95 ~ 100%)은 어느 언어에서나 같아서 표의 글자를 쓰고, 글자가 들어가는 두 구간만 번역한다
+  if (key === "BELOW") return t("MyPage.bucketBelow");
+  if (key === "UNPLAYED") return t("MyPage.bucketUnplayed");
   return BUCKETS.find((b) => b.key === key)?.label ?? key;
 }
 
@@ -109,8 +114,8 @@ export function bucketCount(folder: RateFolderResponse, key: RateBucketKey): num
 export type StatsAxis = "level" | "tier";
 
 /** 폴더 제목. 레벨 폴더는 `9.50 ~ 9.99`(0.5 단위), 서열표 난이도는 `5.8`. */
-export function folderLabel(axis: StatsAxis, key: number): string {
-  return axis === "level" ? `${formatLevel(key)} ~ ${formatLevel(key + 0.49)}` : formatTier(key);
+export function folderLabel(axis: StatsAxis, key: number, t: Translator): string {
+  return axis === "level" ? `${formatLevel(key)} ~ ${formatLevel(key + 0.49)}` : formatTier(key, t);
 }
 
 /** 폴더 안 채보 목록 화면 주소. key는 소수 둘째 자리 문자열(부동소수 비교를 피한다). */
@@ -123,10 +128,10 @@ export function bucketListHref(axis: StatsAxis, key: number, bucket: RateBucketK
 
 export type FolderChartSort = "LEVEL" | "RATE_DESC" | "RATE_ASC";
 
-export const FOLDER_SORT_OPTIONS: readonly { value: FolderChartSort; label: string }[] = [
-  { value: "LEVEL", label: "레벨 높은 순" },
-  { value: "RATE_DESC", label: "내 달성률 높은 순" },
-  { value: "RATE_ASC", label: "내 달성률 낮은 순" },
+export const FOLDER_SORT_OPTIONS: readonly { value: FolderChartSort; labelKey: MessageKey }[] = [
+  { value: "LEVEL", labelKey: "MyPage.sortLevel" },
+  { value: "RATE_DESC", labelKey: "MyPage.sortRateDesc" },
+  { value: "RATE_ASC", labelKey: "MyPage.sortRateAsc" },
 ];
 
 /** 폴더 목록 화면의 상태. 전부 주소 쿼리에 두어 새로고침·뒤로가기에도 유지된다. 폴더나 구간이 올바르지 않으면 null이다. */

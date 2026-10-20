@@ -13,12 +13,13 @@ import {
   RECOMMEND_CHOICES,
   saveTableEntry,
   TABLE_ENTRY_AFFECTED_KEYS,
-  tableEntrySchema,
+  makeTableEntrySchema,
   tableEntryToFormValues,
   toTableEntryBody,
   type TableEntryFormValues,
 } from "@/lib/table-entry-admin";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 /** 수정할 서열표 줄. entry가 null이면 표에 아직 없는 채보라서 저장하면 새 줄로 추가된다. */
 export interface TableEntryTarget {
@@ -39,6 +40,7 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
  * (바깥 클릭 차단, 포커스 가두기, Esc 닫기를 브라우저가 처리한다). 모바일은 아래에서 올라오는 시트, md 이상은 가운데 창이다.
  */
 export function TableEntryEditDialog({ target, onClose }: { target: TableEntryTarget | null; onClose: () => void }) {
+  const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export function TableEntryEditDialog({ target, onClose }: { target: TableEntryTa
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
           <h2 id="table-entry-dialog-title" className="mb-3 text-lg font-extrabold">
-            {target.entry ? "서열표 값 수정" : "서열표에 추가"}
+            {target.entry ? t("Song.editTableEntry") : t("Song.addToTable")}
           </h2>
           {/* key: 다른 채보로 열면 폼을 새로 만들어 초기값이 맞게 한다 */}
           <TableEntryForm key={target.songDifficultyId} target={target} onDone={onClose} />
@@ -97,8 +99,10 @@ export function TableEntryEditDialog({ target, onClose }: { target: TableEntryTa
 }
 
 function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: () => void }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const defaultValues = useMemo(() => tableEntryToFormValues(target.tier, target.entry), [target]);
+  const schema = useMemo(() => makeTableEntrySchema(t), [t]);
   const {
     register,
     handleSubmit,
@@ -106,7 +110,7 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
     setValue,
     control,
     formState: { errors },
-  } = useForm<TableEntryFormValues>({ resolver: zodResolver(tableEntrySchema), defaultValues, mode: "onTouched" });
+  } = useForm<TableEntryFormValues>({ resolver: zodResolver(schema), defaultValues, mode: "onTouched" });
 
   // 레이팅 반영 스위치는 입력칸이 아니라 켜짐/꺼짐 버튼이라 register 대신 useWatch/setValue로 다룬다
   // (watch 대신 useWatch: React Compiler 린트가 watch를 허용하지 않는다)
@@ -121,7 +125,7 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
     mutationFn: (values: TableEntryFormValues) =>
       saveTableEntry(target.tableId, target.songDifficultyId, toTableEntryBody(values)),
     onSuccess: async () => {
-      toast("서열표 값을 저장했습니다.");
+      toast(t("Song.entrySaved"));
       await Promise.all(TABLE_ENTRY_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onDone();
     },
@@ -144,7 +148,7 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
     failure instanceof ApiError && !failure.fieldErrors
       ? failure.message
       : failure && !(failure instanceof ApiError)
-        ? "저장하지 못했습니다. 잠시 후 다시 시도해 주세요."
+        ? t("Song.saveFailed")
         : null;
 
   return (
@@ -158,21 +162,21 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
 
       <div className="flex flex-col gap-1">
         <label htmlFor="entry-tier" className="text-sm text-fg-sub">
-          레이팅 상수 난이도
+          {t("Song.ratingConstant")}
         </label>
         <input
           id="entry-tier"
           type="text"
           inputMode="decimal"
           autoComplete="off"
-          placeholder="비우면 미정"
+          placeholder={t("Song.emptyIsUndecided")}
           aria-invalid={errors.tier ? true : undefined}
           aria-describedby="entry-tier-hint"
           className={`${FIELD} w-40 font-num`}
           {...register("tier")}
         />
         <p id="entry-tier-hint" className="text-[11px] text-fg-faint">
-          0.0 이상, 소수 첫째 자리까지 · 비우면 미정(레이팅에서 제외)
+          {t("Song.tierHint")}
         </p>
         {errors.tier ? (
           <p role="alert" className="text-sm text-fg">
@@ -184,10 +188,10 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
       <div className="flex flex-wrap gap-4">
         <div className="flex flex-col gap-1">
           <label htmlFor="entry-recommend" className="text-sm text-fg-sub">
-            추천도
+            {t("Song.recommendLevel")}
           </label>
           <select id="entry-recommend" className={FIELD} {...register("recommend")}>
-            <option value="">없음</option>
+            <option value="">{t("Song.none")}</option>
             {RECOMMEND_CHOICES.map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -202,10 +206,10 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="entry-pattern" className="text-sm text-fg-sub">
-            속성
+            {t("Song.pattern")}
           </label>
           <select id="entry-pattern" className={FIELD} {...register("pattern")}>
-            <option value="">없음</option>
+            <option value="">{t("Song.none")}</option>
             {PATTERN_CHOICES.map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -223,11 +227,11 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-3">
           <span id="entry-rating-label" className="text-sm text-fg-sub">
-            레이팅 반영
+            {t("Song.ratingEnabled")}
           </span>
           <span className="flex items-center gap-2">
             {/* 색만으로 구분하지 않도록 켜짐/꺼짐 글자를 같이 보여 준다 */}
-            <span className="font-num text-xs font-semibold text-fg">{ratingEnabled ? "켜짐" : "꺼짐"}</span>
+            <span className="font-num text-xs font-semibold text-fg">{ratingEnabled ? t("Song.on") : t("Song.off")}</span>
             <button
               type="button"
               role="switch"
@@ -249,18 +253,17 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
           </span>
         </div>
         <p id="entry-rating-hint" className="text-[11px] text-fg-faint">
-          꺼 두면 레이팅 상수 난이도와 속성이 있어도 모든 사용자의 레이팅에서 빠지고, 기록은 그대로 남습니다.
+          {t("Song.offNote")}
         </p>
         {switchIneffective ? (
           <p role="status" className="text-sm text-fg">
-            지금 값으로는 계산에 들어가지 않습니다. 레이팅 상수 난이도와 속성(레이팅 제외 아님)이 필요합니다.
+            {t("Song.notCounted")}
           </p>
         ) : null}
       </div>
 
       <p className="text-xs text-fg-dim">
-        레이팅 상수 난이도와 속성이 모두 있어야 레이팅에 들어갑니다. 속성이 없거나 레이팅 제외이면 기록만 남습니다. 저장하면 모든 사용자의
-        서열표와 레이팅에 반영되고, 변경 내용은 관리 기록에 남습니다.
+        {t("Song.entryNote")}
       </p>
 
       {serverMessage ? (
@@ -275,14 +278,14 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
           onClick={onDone}
           className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
         >
-          취소
+          {t("Common.cancel")}
         </button>
         <button
           type="submit"
           disabled={mutation.isPending}
           className="h-12 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-60"
         >
-          {mutation.isPending ? "저장 중" : target.entry ? "저장" : "추가"}
+          {mutation.isPending ? t("Song.saving") : target.entry ? t("Song.save") : t("Song.add")}
         </button>
       </div>
     </form>

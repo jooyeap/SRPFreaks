@@ -1,6 +1,7 @@
 "use client";
 
 import { padInput, type PadKey } from "@/lib/one-hand";
+import { useTranslations } from "next-intl";
 
 const KEYS: readonly PadKey[] = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "back"];
 
@@ -26,14 +27,15 @@ export function OneHandPad({
   fullComboLocked: boolean;
   onToggleFullCombo: () => void;
 }) {
+  const t = useTranslations();
   return (
-    <div aria-label="한 손 입력" role="group" className="flex flex-col gap-2.5">
+    <div aria-label={t("Record.oneHandAria")} role="group" className="flex flex-col gap-2.5">
       <div className="grid grid-cols-3 gap-2">
         {KEYS.map((key) => (
           <button
             key={key}
             type="button"
-            aria-label={key === "back" ? "한 글자 지우기" : key === "." ? "소수점" : key}
+            aria-label={key === "back" ? t("Record.backspace") : key === "." ? t("Record.decimalPoint") : key}
             onClick={() => onChange(padInput(value, key))}
             className={KEY_CLASS}
           >
@@ -48,10 +50,10 @@ export function OneHandPad({
         onClick={onToggleFullCombo}
         className="flex h-14 items-center justify-between rounded-2xl border border-line bg-card px-4 text-base font-bold text-fg disabled:opacity-70 aria-pressed:border-chip-on-bg aria-pressed:bg-chip-on-bg/10"
       >
-        <span>풀콤보(0 miss)</span>
-        <span className="font-num text-sm">{fullCombo ? "켜짐" : "꺼짐"}</span>
+        <span>{t("Record.fullCombo")}</span>
+        <span className="font-num text-sm">{fullCombo ? t("Record.on") : t("Record.off")}</span>
       </button>
-      {fullComboLocked ? <p className="text-xs text-fg-dim">달성률 100.00이면 풀콤보로 저장됩니다.</p> : null}
+      {fullComboLocked ? <p className="text-xs text-fg-dim">{t("Record.fullComboNote")}</p> : null}
     </div>
   );
 }

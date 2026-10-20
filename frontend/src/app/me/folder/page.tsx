@@ -6,12 +6,14 @@ import { Suspense, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { FolderBucketView } from "@/components/mypage/FolderBucketView";
 import { folderViewFromParams, folderViewToQuery, type FolderViewState } from "@/lib/rate-folders";
+import { useTranslations } from "next-intl";
 
 /**
  * 마이페이지 통계 → 폴더·구간의 채보 목록(`/me/folder?axis=level&key=9.50&bucket=R95`). 내 기록을 쓰므로 로그인이 필요하다.
  * 폴더·구간·파트·정렬은 모두 주소에 있어서 새로고침·뒤로가기·링크 공유에도 같은 목록이 나온다(주소가 올바르지 않으면 안내만 보인다).
  */
 function FolderContent() {
+  const t = useTranslations();
   const { status, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -27,15 +29,15 @@ function FolderContent() {
   );
 
   if (status === "loading") {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   if (status === "anonymous" || !user) {
     return (
       <section className="flex flex-col items-start gap-3">
-        <h1 className="text-xl font-semibold text-fg">마이페이지</h1>
-        <p className="text-sm text-fg-sub">내 기록을 보려면 로그인해 주세요.</p>
+        <h1 className="text-xl font-semibold text-fg">{t("Nav.myPage")}</h1>
+        <p className="text-sm text-fg-sub">{t("Pages.folderLead")}</p>
         <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-          로그인
+          {t("Nav.login")}
         </Link>
       </section>
     );
@@ -43,9 +45,9 @@ function FolderContent() {
   if (!state) {
     return (
       <section className="flex flex-col items-start gap-3">
-        <p role="alert" className="text-sm text-fg">폴더를 찾을 수 없습니다.</p>
+        <p role="alert" className="text-sm text-fg">{t("Pages.folderNotFound")}</p>
         <Link href="/me?tab=stats" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-          통계로
+          {t("MyPage.backToStats")}
         </Link>
       </section>
     );
@@ -54,8 +56,9 @@ function FolderContent() {
 }
 
 export default function MyFolderPage() {
+  const t = useTranslations();
   return (
-    <Suspense fallback={<p className="text-sm text-fg-sub">불러오는 중입니다.</p>}>
+    <Suspense fallback={<p className="text-sm text-fg-sub">{t("Common.loading")}</p>}>
       <FolderContent />
     </Suspense>
   );

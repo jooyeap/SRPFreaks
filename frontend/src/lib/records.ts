@@ -3,6 +3,7 @@ import type { PageResponse } from "@/lib/api-types";
 import { formatPlayedDate, formatScore, toHundredths } from "@/lib/format";
 import type { RecordFormValues } from "@/lib/record-schema";
 import type { DifficultyType, InstrumentPart, NoteOption, AchievementStage } from "@/lib/types";
+import type { Translator } from "@/i18n/translator";
 
 /** 서버 RecordResponse와 같은 모양. */
 export interface RecordResponse {
@@ -45,28 +46,34 @@ export interface RatingChange {
  *  - 목록 밖: 점수가 올라도 레이팅은 그대로라서 이유를 알려 준다
  * 서버가 변화를 주지 않았으면(계산 실패 등) null이라 알림에 아무것도 붙이지 않는다.
  */
-export function ratingChangeText(change: RatingChange | null | undefined): string | null {
+export function ratingChangeText(change: RatingChange | null | undefined, t: Translator): string | null {
   if (!change) {
     return null;
   }
   if (!change.inList) {
-    return "아직 레이팅 목록에는 들지 못했습니다.";
+    return t("Record.notInListYet");
   }
   if (change.change === 0) {
-    return "레이팅은 그대로입니다.";
+    return t("Record.ratingSame");
   }
   const sign = change.change > 0 ? "+" : "-";
-  const base = `레이팅 ${sign}${formatScore(Math.abs(change.change))} (${formatScore(change.totalBefore)} → ${formatScore(change.totalAfter)})`;
-  return change.entered ? `${base} · NEW 레이팅 목록에 새로 들어갔습니다.` : base;
+  return t(change.entered ? "Record.ratingChangeNew" : "Record.ratingChange", {
+    sign,
+    change: formatScore(Math.abs(change.change)),
+    before: formatScore(change.totalBefore),
+    after: formatScore(change.totalAfter),
+  });
 }
 
 /** 등록 직후 몇 초 차이는 수정으로 보지 않는다 */
 const EDITED_THRESHOLD_MS = 60_000;
 
 /** 목록·기록 창에 보이는 "등록 2026-10-12 · 수정 2026-10-14" 글자. 고친 적이 없으면 등록만 보인다. */
-export function recordOriginText(record: Pick<RecordResponse, "createdAt" | "updatedAt">): string {
-  const created = `등록 ${formatPlayedDate(record.createdAt)}`;
-  return isEdited(record) ? `${created} · 수정 ${formatPlayedDate(record.updatedAt)}` : created;
+export function recordOriginText(record: Pick<RecordResponse, "createdAt" | "updatedAt">, t: Translator): string {
+  const created = formatPlayedDate(record.createdAt);
+  return isEdited(record)
+    ? t("Record.originEdited", { created, edited: formatPlayedDate(record.updatedAt) })
+    : t("Record.originCreated", { date: created });
 }
 
 /** 등록한 뒤 고친 적이 있는가 (updatedAt이 createdAt보다 1분 넘게 뒤). */

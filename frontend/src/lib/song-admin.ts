@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { apiFetch } from "@/lib/api";
 import type { SongChartResponse, SongDetailResponse, TitleKind } from "@/lib/api-types";
-import { saveTableEntry, tableEntrySchema, toTableEntryBody } from "@/lib/table-entry-admin";
+import type { Translator } from "@/i18n/translator";
+import { makeTableEntrySchema, saveTableEntry, toTableEntryBody } from "@/lib/table-entry-admin";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 
 /**
@@ -19,35 +20,42 @@ export const SONG_SOURCE = "admin-manual";
 /** 정수 1자리 + 선택적 소수 1~2자리 → 0.00 ~ 9.99 (서버의 DecimalMin/Max, Digits와 같은 범위). */
 const LEVEL_FORMAT = /^\d(\.\d{1,2})?$/;
 
-const levelField = z
+function makeLevelField(t: Translator) {
+  return z
   .string()
   .trim()
   .superRefine((value, ctx) => {
     if (value === "") {
-      ctx.addIssue({ code: "custom", message: "레벨을 입력해 주세요." });
+      ctx.addIssue({ code: "custom", message: t("Validation.levelRequired") });
     } else if (!LEVEL_FORMAT.test(value)) {
-      ctx.addIssue({ code: "custom", message: "레벨은 0.00 ~ 9.99 사이의 숫자로 입력해 주세요. (소수 둘째 자리까지)" });
+      ctx.addIssue({ code: "custom", message: t("Validation.levelFormat") });
     }
   });
+}
 
 /** 곡 정보 칸(등록·수정이 같은 규칙을 쓴다). */
-const songFields = {
-  title: z.string().trim().min(1, "곡명을 입력해 주세요.").max(255, "곡명은 255자 이하여야 합니다."),
-  artist: z.string().trim().max(255, "아티스트는 255자 이하여야 합니다."),
-  addedVersion: z.string().trim().max(30, "버전은 30자 이하여야 합니다."),
-};
+function makeSongFields(t: Translator) {
+  return {
+    title: z.string().trim().min(1, t("Validation.songTitleRequired")).max(255, t("Validation.songTitleMax", { max: 255 })),
+    artist: z.string().trim().max(255, t("Validation.artistMax", { max: 255 })),
+    addedVersion: z.string().trim().max(30, t("Validation.versionMax", { max: 30 })),
+  };
+}
 
 /** 채보 한 줄. 서열표 값(기준 난이도·추천도·속성)은 서열표 화면에서 열었을 때만 쓰고, 곡 목록에서 열면 비워 둔 채로 무시한다. */
-const chartSchema = tableEntrySchema.extend({
-  part: z.enum(["GUITAR", "BASS"]),
-  difficulty: z.enum(["BASIC", "ADVANCED", "EXTREME", "MASTER"]),
-  level: levelField,
-});
+function makeChartSchema(t: Translator) {
+  return makeTableEntrySchema(t).extend({
+    part: z.enum(["GUITAR", "BASS"]),
+    difficulty: z.enum(["BASIC", "ADVANCED", "EXTREME", "MASTER"]),
+    level: makeLevelField(t),
+  });
+}
 
-export const songCreateSchema = z
+export function makeSongCreateSchema(t: Translator) {
+  return z
   .object({
-    ...songFields,
-    charts: z.array(chartSchema).min(1, "채보를 하나 이상 입력해 주세요.").max(MAX_CHARTS, `채보는 ${MAX_CHARTS}개까지 입력할 수 있습니다.`),
+    ...makeSongFields(t),
+    charts: z.array(makeChartSchema(t)).min(1, t("Validation.chartsMin")).max(MAX_CHARTS, t("Validation.chartsMax", { max: MAX_CHARTS })),
   })
   .superRefine((value, ctx) => {
     // (곡, 파트, 난이도)는 유일하다. 같은 조합을 두 번 쓰면 서버가 거절하므로 먼저 알려 준다.
@@ -55,13 +63,14 @@ export const songCreateSchema = z
     value.charts.forEach((chart, index) => {
       const key = `${chart.part}|${chart.difficulty}`;
       if (seen.has(key)) {
-        ctx.addIssue({ code: "custom", path: ["charts", index, "difficulty"], message: "같은 파트·난이도의 채보가 이미 있습니다." });
+        ctx.addIssue({ code: "custom", path: ["charts", index, "difficulty"], message: t("Validation.chartDuplicate") });
       }
       seen.add(key);
     });
   });
+}
 
-export type SongCreateValues = z.infer<typeof songCreateSchema>;
+export type SongCreateValues = z.infer<ReturnType<typeof makeSongCreateSchema>>;
 export type ChartValues = SongCreateValues["charts"][number];
 
 export function emptyChart(): ChartValues {
@@ -161,11 +170,15 @@ export const SONG_DELETE_AFFECTED_KEYS = [
 
 // ---- 수정 (PUT /songs/{id}, PUT /difficulties/{id}) ------------------------------------------------
 
-export const songEditSchema = z.object(songFields);
-export type SongEditValues = z.infer<typeof songEditSchema>;
+export function makeSongEditSchema(t: Translator) {
+  return z.object(makeSongFields(t));
+}
+export type SongEditValues = z.infer<ReturnType<typeof makeSongEditSchema>>;
 
-export const chartEditSchema = z.object({ level: levelField });
-export type ChartEditValues = z.infer<typeof chartEditSchema>;
+export function makeChartEditSchema(t: Translator) {
+  return z.object({ level: makeLevelField(t) });
+}
+export type ChartEditValues = z.infer<ReturnType<typeof makeChartEditSchema>>;
 
 export function songToEditValues(song: SongDetailResponse): SongEditValues {
   return { title: song.title, artist: song.artist ?? "", addedVersion: song.addedVersion ?? "" };
@@ -194,19 +207,19 @@ function aliasKey(text: string): string {
 export type AliasResult = { ok: true; aliases: string[] } | { ok: false; message: string };
 
 /** 키워드 하나를 목록 끝에 더한다. 검사에 걸리면 목록은 그대로 두고 안내 문구를 돌려준다. 입력 배열은 바꾸지 않는다. */
-export function addAlias(current: readonly string[], text: string, limit: number): AliasResult {
+export function addAlias(current: readonly string[], text: string, limit: number, t: Translator): AliasResult {
   const alias = text.trim();
   if (alias === "") {
-    return { ok: false, message: "키워드를 입력해 주세요." };
+    return { ok: false, message: t("Validation.aliasRequired") };
   }
   if (alias.length > ALIAS_MAX_LENGTH) {
-    return { ok: false, message: `키워드는 ${ALIAS_MAX_LENGTH}자 이하여야 합니다.` };
+    return { ok: false, message: t("Validation.aliasMax", { max: ALIAS_MAX_LENGTH }) };
   }
   if (current.some((existing) => aliasKey(existing) === aliasKey(alias))) {
-    return { ok: false, message: "이미 등록된 키워드입니다." };
+    return { ok: false, message: t("Validation.aliasDuplicate") };
   }
   if (current.length >= limit) {
-    return { ok: false, message: `키워드는 ${limit}개까지 등록할 수 있습니다.` };
+    return { ok: false, message: t("Validation.aliasLimit", { limit }) };
   }
   return { ok: true, aliases: [...current, alias] };
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ContactLine } from "@/components/ContactLine";
 import { TableCredit } from "@/components/TableCredit";
 
@@ -8,20 +9,22 @@ import { TableCredit } from "@/components/TableCredit";
  * 좁은 화면(모바일)에서는 두 묶음이 위아래로 쌓이고 둘 다 왼쪽 정렬이다.
  */
 export function SiteFooter() {
+  const t = useTranslations("Footer");
+  const tc = useTranslations("Common");
   return (
     <footer className="border-t border-line bg-card">
       <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 text-xs text-fg-dim sm:flex-row sm:justify-between sm:gap-8">
         <div className="space-y-1">
-          <p className="font-semibold text-fg-sub">비공식 팬 프로젝트</p>
-          <p>KONAMI와 무관한 팬 사이트입니다.</p>
-          <p>곡·음원·게임 화면·명칭 등 모든 저작권과 상표 등 권리는 KONAMI에 있습니다.</p>
+          <p className="font-semibold text-fg-sub">{tc("unofficial")}</p>
+          <p>{t("notKonami")}</p>
+          <p>{t("rights")}</p>
         </div>
         <div className="space-y-1 sm:text-right">
           <TableCredit />
           <ContactLine />
           <p>
             <Link href="/privacy" className="underline underline-offset-2 hover:text-fg">
-              개인정보 처리방침
+              {t("privacy")}
             </Link>
           </p>
         </div>

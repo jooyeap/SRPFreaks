@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createTranslator } from "use-intl/core";
+import { setClientTranslator } from "@/i18n/client-messages";
+import type { Translator } from "@/i18n/translator";
+import ja from "../../messages/ja.json";
 import { apiFetch, ApiError, refreshSession, refreshSessionOutcome, setAuthLostHandler } from "@/lib/api";
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/auth-token";
 import type { AuthResponse } from "@/lib/api-types";
@@ -323,5 +327,30 @@ describe("느린 망 대비", () => {
   it("화면을 떠나며 취소한 요청(AbortError)은 오류로 바꾸지 않고 그대로 던진다", async () => {
     fetchMock.mockRejectedValueOnce(new DOMException("aborted", "AbortError"));
     await expect(apiFetch("/songs")).rejects.toMatchObject({ name: "AbortError" });
+  });
+});
+
+describe("오류 문구 번역", () => {
+  const jaT = createTranslator({ locale: "ja", messages: ja } as never) as Translator;
+  afterEach(() => setClientTranslator(null));
+
+  it("서버의 고정 문구는 현재 언어로 바꿔 보여 준다", async () => {
+    setClientTranslator(jaT);
+    fetchMock.mockResolvedValueOnce(json({ code: "NOT_FOUND", message: "찾을 수 없습니다.", timestamp: "t" }, 404));
+    await expect(apiFetch("/songs/1")).rejects.toMatchObject({ code: "NOT_FOUND", message: "見つかりません。" });
+  });
+
+  it("서비스가 직접 쓴 문구는 그대로 둔다", async () => {
+    setClientTranslator(jaT);
+    fetchMock.mockResolvedValueOnce(json({ code: "CONFLICT", message: "이미 사용 중인 닉네임입니다.", timestamp: "t" }, 409));
+    await expect(apiFetch("/users/me/nickname")).rejects.toMatchObject({ message: "이미 사용 중인 닉네임입니다." });
+  });
+
+  it("네트워크 오류도 현재 언어로, 번역기가 없으면 한국어 기본 문구", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("fail"));
+    await expect(apiFetch("/songs")).rejects.toMatchObject({ message: "네트워크 연결을 확인해 주세요." });
+    setClientTranslator(jaT);
+    fetchMock.mockRejectedValueOnce(new TypeError("fail"));
+    await expect(apiFetch("/songs")).rejects.toMatchObject({ message: "ネットワーク接続を確認してください。" });
   });
 });

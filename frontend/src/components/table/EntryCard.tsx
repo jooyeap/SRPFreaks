@@ -5,6 +5,8 @@ import { StageBadge } from "@/components/table/StageBadge";
 import { tableDetailHref } from "@/components/song/TableContext";
 import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
+import { patternLabel } from "@/lib/chart-labels";
+import { useTranslations } from "next-intl";
 
 /**
  * 서열표 한 줄 (모바일). 재킷 칸을 숨기면서 4열 카드 격자 대신 한 줄 행으로 바꿨다.
@@ -21,6 +23,7 @@ export function EntryCard({
   tier?: number | null;
   onRecord?: (entry: TableEntryResponse) => void;
 }) {
+  const t = useTranslations();
   const stage = entry.mine?.stage ?? null;
   return (
     <li
@@ -40,7 +43,7 @@ export function EntryCard({
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
           {stage ? <StageBadge stage={stage} /> : null}
-          <span className="text-xs text-fg-dim">속성 {entry.pattern ?? EMPTY_MARK}</span>
+          <span className="text-xs text-fg-dim">{t("Chart.patternValue", { pattern: entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK })}</span>
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
@@ -57,7 +60,7 @@ export function EntryCard({
         <button
           type="button"
           onClick={() => onRecord(entry)}
-          aria-label={`${entry.title} 기록 입력`}
+          aria-label={t("Chart.recordInput", { title: entry.title })}
           // 보이는 크기는 32px 그대로, ::after로 누를 수 있는 영역만 사방 6px 넓힌다(44px). 모바일에서 옆 줄 버튼을 잘못 누르지 않게 한다
           className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-chip-line text-base leading-none text-fg after:absolute after:-inset-1.5 after:content-[''] hover:bg-table-head"
         >

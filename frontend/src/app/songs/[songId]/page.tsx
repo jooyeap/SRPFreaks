@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { SongDetailView } from "@/components/song/SongDetailView";
 import { parseId, parseOrigin } from "@/lib/songs";
+import { useTranslations } from "next-intl";
 
 /**
  * 곡 상세 화면: /songs/{곡 id}?from=table|songs&chart={채보 id}
@@ -14,20 +15,21 @@ import { parseId, parseOrigin } from "@/lib/songs";
  * useSearchParams는 빌드 때 Suspense 경계가 필요해서 안쪽 컴포넌트로 나눴다.
  */
 function SongDetailPage() {
+  const t = useTranslations();
   const params = useParams<{ songId: string }>();
   const search = useSearchParams();
   const { status, user } = useAuth();
 
   if (status === "loading") {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   if (status === "anonymous" || !user) {
     return (
       <section className="flex flex-col items-start gap-3">
-        <h1 className="text-xl font-semibold text-fg">곡 상세</h1>
-        <p className="text-sm text-fg-sub">곡 정보와 내 기록을 보려면 로그인해 주세요.</p>
+        <h1 className="text-xl font-semibold text-fg">{t("Songs.detailTitle")}</h1>
+        <p className="text-sm text-fg-sub">{t("Songs.loginToSeeDetail")}</p>
         <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-          로그인
+          {t("Nav.login")}
         </Link>
       </section>
     );
@@ -35,7 +37,7 @@ function SongDetailPage() {
 
   const songId = parseId(params.songId);
   if (songId === null) {
-    return <p role="alert" className="text-sm text-fg">곡을 찾을 수 없습니다.</p>;
+    return <p role="alert" className="text-sm text-fg">{t("Songs.notFoundSong")}</p>;
   }
   return (
     <SongDetailView
@@ -49,8 +51,9 @@ function SongDetailPage() {
 }
 
 export default function Page() {
+  const t = useTranslations();
   return (
-    <Suspense fallback={<p className="text-sm text-fg-sub">불러오는 중입니다.</p>}>
+    <Suspense fallback={<p className="text-sm text-fg-sub">{t("Common.loading")}</p>}>
       <SongDetailPage />
     </Suspense>
   );

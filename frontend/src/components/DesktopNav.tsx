@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { usePathname } from "next/navigation";
 import { AdminNavLink } from "@/components/AdminNavLink";
-import { DESKTOP_NAV_ITEMS, MY_PAGE_ITEM, SONG_PATHS } from "@/lib/nav";
+import { DESKTOP_NAV_ITEMS, MY_PAGE_ITEM, SONG_PATHS, type NavLabelKey } from "@/lib/nav";
 import { useSongHomeHref } from "@/lib/song-tab";
 
 const BASE = "flex min-h-9 items-center whitespace-nowrap rounded-lg px-3 text-sm";
@@ -25,11 +26,12 @@ export function isActivePath(pathname: string, href: string, match?: readonly st
  * usePathname을 쓰려고 클라이언트 컴포넌트로 뒀다. 헤더 자체는 서버 컴포넌트로 남는다.
  */
 export function DesktopNav() {
+  const t = useTranslations("Nav");
   const pathname = usePathname();
   const songHref = useSongHomeHref();
-  const items: readonly { href: string; label: string; match?: readonly string[] }[] = [...DESKTOP_NAV_ITEMS, MY_PAGE_ITEM];
+  const items: readonly { href: string; label: NavLabelKey; match?: readonly string[] }[] = [...DESKTOP_NAV_ITEMS, MY_PAGE_ITEM];
   return (
-    <nav aria-label="주요 메뉴" className="hidden flex-1 items-center gap-1 lg:flex">
+    <nav aria-label={t("main")} className="hidden flex-1 items-center gap-1 lg:flex">
       {items.map((item) => {
         // 관리 링크는 마이페이지 바로 앞에 끼운다 (ADMIN·ROOT에게만 그려진다)
         const active = isActivePath(pathname, item.href, item.match);
@@ -37,7 +39,7 @@ export function DesktopNav() {
           <span key={item.href} className="contents">
             {item.href === MY_PAGE_ITEM.href ? <AdminNavLink className={IDLE} /> : null}
             <Link href={item.match === SONG_PATHS ? songHref : item.href} className={active ? ACTIVE : IDLE} aria-current={active ? "page" : undefined}>
-              {item.label}
+              {t(item.label)}
             </Link>
           </span>
         );

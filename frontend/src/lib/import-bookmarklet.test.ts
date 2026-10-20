@@ -1,10 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  bookmarkletMessages,
   buildHandoffBookmarkletHref,
   buildHandoffBookmarkletSource,
   READER_SOURCE,
   type ReadResult,
 } from "@/lib/import-bookmarklet";
+import { koT } from "@/i18n/ko-translator";
+
+const MSG = bookmarkletMessages(koT);
 
 /** 공식 최근 플레이 한 건(.sr_list_tb)의 구조를 본뜬 테스트용 HTML. 실제 샘플(Stargazer, Bass MASTER)의 위치와 클래스를 따른다. */
 function block(opts: {
@@ -101,7 +105,7 @@ describe("토큰 없는 북마클릿(D40)", () => {
   const modal = () => document.getElementById("srp-import-modal");
 
   function run(location: { hostname: string; pathname: string }) {
-    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE));
+    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE, MSG));
     fn(document, location, { open: openMock });
   }
 
@@ -114,7 +118,7 @@ describe("토큰 없는 북마클릿(D40)", () => {
   });
 
   it("토큰·서버 주소 없이 사이트 주소만 들어 있고, 서버와 직접 통신하지 않는다", () => {
-    const source = buildHandoffBookmarkletSource(SITE);
+    const source = buildHandoffBookmarkletSource(SITE, MSG);
     expect(source).not.toContain("srpi_");
     expect(source).not.toContain("Authorization");
     // 우리 서버로 보내는 fetch는 없다: fetch는 공식 사이트 안의 같은 출처 주소(location.pathname)로만 쓴다
@@ -122,7 +126,7 @@ describe("토큰 없는 북마클릿(D40)", () => {
     expect(source).toContain("window.fetch(u,{credentials:'same-origin'})");
     expect(source).toContain("var u=location.pathname+'?'");
     expect(source).toContain(SITE);
-    expect(buildHandoffBookmarkletHref(SITE).startsWith("javascript:")).toBe(true);
+    expect(buildHandoffBookmarkletHref(SITE, MSG).startsWith("javascript:")).toBe(true);
   });
 
   it("안내 창은 브라우저 번역 대상에서 뺀다(번역된 페이지에서 안내 글이 바뀌어 보이던 문제)", () => {
@@ -191,7 +195,7 @@ describe("1~4쪽 자동 읽기(D40 개정)", () => {
     return { win: { open: openMock, fetch: fetchMock, DOMParser }, urls };
   }
   async function run(search: string, win: object) {
-    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE));
+    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE, MSG));
     fn(document, { hostname: "p.eagate.573.jp", pathname: PATH, search }, win);
     await vi.advanceTimersByTimeAsync(3000);
   }
@@ -236,7 +240,7 @@ describe("1~4쪽 자동 읽기(D40 개정)", () => {
 
   it("읽는 동안 안내를 띄우고, 보낸 뒤에는 지운다", async () => {
     const { win } = fakeWindow({});
-    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE));
+    const fn = new Function("document", "location", "window", buildHandoffBookmarkletSource(SITE, MSG));
     fn(document, { hostname: "p.eagate.573.jp", pathname: PATH, search: "" }, win);
     expect(document.getElementById("srp-import-modal")?.textContent).toContain("읽는 중");
     await vi.advanceTimersByTimeAsync(3000);

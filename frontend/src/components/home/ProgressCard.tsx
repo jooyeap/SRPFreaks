@@ -6,6 +6,7 @@ import { ProgressDonut } from "@/components/home/ProgressDonut";
 import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
 import { nextGoal, weakestGroup, type ProgressSummary } from "@/lib/progress";
+import { useTranslations } from "next-intl";
 
 /** 탭 하나의 데이터 상태. 두 탭을 각자 불러오므로 한쪽이 실패(또는 서열표 없음)해도 다른 탭은 그대로 쓴다. */
 export type ProgressPanel =
@@ -16,10 +17,20 @@ export type ProgressPanel =
 
 type TabKey = "table" | "songs";
 
-const TABS: readonly { key: TabKey; name: string; href: string; link: string; mapLabel: string; mapTitle: string }[] = [
-  { key: "table", name: "서열표", href: "/table", link: "서열표 보기", mapLabel: "묶음별 진행", mapTitle: "난이도별 진행" },
-  { key: "songs", name: "곡 목록", href: "/songs", link: "곡 목록 보기", mapLabel: "폴더별 진행", mapTitle: "레벨 폴더별 진행" },
-];
+/** 탭 하나의 글자는 messages의 Progress 아래 키다(탭마다 이름·링크·칸 지도 제목·접근성 이름) */
+const TABS = [
+  { key: "table", href: "/table", name: "tableName", link: "tableLink", mapLabel: "tableMapLabel", mapTitle: "tableMapTitle" },
+  { key: "songs", href: "/songs", name: "songsName", link: "songsLink", mapLabel: "songsMapLabel", mapTitle: "songsMapTitle" },
+] as const;
+
+/** 번역을 마친 탭 글자 */
+interface TabText {
+  name: string;
+  href: string;
+  link: string;
+  mapLabel: string;
+  mapTitle: string;
+}
 
 /**
  * 홈 진행도 카드: `서열표 | 곡 목록` 탭 하나로 전환한다.
@@ -28,31 +39,33 @@ const TABS: readonly { key: TabKey; name: string; href: string; link: string; ma
  * 탭은 버튼 둘(aria-pressed)이고 모바일에서 누르기 쉽게 높이를 44px로 둔다.
  */
 export function ProgressCard({ table, songs }: { table: ProgressPanel; songs: ProgressPanel }) {
+  const t = useTranslations("Progress");
   const [active, setActive] = useState<TabKey>("table");
-  const tab = TABS.find((t) => t.key === active) ?? TABS[0];
+  const base = TABS.find((candidate) => candidate.key === active) ?? TABS[0];
+  const tab: TabText = { href: base.href, name: t(base.name), link: t(base.link), mapLabel: t(base.mapLabel), mapTitle: t(base.mapTitle) };
   const panel = active === "table" ? table : songs;
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="group" aria-label="진행도 종류" className="flex gap-1.5 rounded-2xl border border-line bg-card p-1">
-        {TABS.map((t) => (
+      <div role="group" aria-label={t("kindAria")} className="flex gap-1.5 rounded-2xl border border-line bg-card p-1">
+        {TABS.map((item) => (
           <button
-            key={t.key}
+            key={item.key}
             type="button"
-            aria-pressed={t.key === active}
-            onClick={() => setActive(t.key)}
+            aria-pressed={item.key === active}
+            onClick={() => setActive(item.key)}
             className={`min-h-11 flex-1 rounded-[9px] text-sm font-bold ${
-              t.key === active ? "bg-chip-on-bg text-chip-on-fg" : "text-fg-sub hover:bg-table-head"
+              item.key === active ? "bg-chip-on-bg text-chip-on-fg" : "text-fg-sub hover:bg-table-head"
             }`}
           >
-            {t.name}
+            {t(item.name)}
           </button>
         ))}
       </div>
 
-      <section aria-label={`${tab.name} 진행도`} className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-4">
+      <section aria-label={t("sectionAria", { name: tab.name })} className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-4">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-num text-[17px] font-bold text-fg">{tab.name} 진행도</h2>
+          <h2 className="font-num text-[17px] font-bold text-fg">{t("sectionAria", { name: tab.name })}</h2>
           <Link href={tab.href} className="text-xs text-fg-sub hover:text-fg">
             {tab.link}
           </Link>
@@ -63,14 +76,15 @@ export function ProgressCard({ table, songs }: { table: ProgressPanel; songs: Pr
   );
 }
 
-function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: (typeof TABS)[number] }) {
+function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: TabText }) {
+  const t = useTranslations("Progress");
   if (panel.kind === "loading") {
-    return <Skeleton label={`${tab.name} 진행도를 불러오는 중입니다.`} className="h-48" />;
+    return <Skeleton label={t("loading", { name: tab.name })} className="h-48" />;
   }
   if (panel.kind === "error") {
     return (
       <p role="alert" className="text-sm text-fg">
-        {tab.name} 진행도를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+        {t("loadFailed", { name: tab.name })}
       </p>
     );
   }
@@ -87,10 +101,9 @@ function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: (typeof TABS)[nu
 
       {goal ? (
         <div className="flex items-center gap-2.5 rounded-[10px] border border-line bg-table-head px-3 py-2.5">
-          <span className="shrink-0 rounded-md bg-chip-on-bg px-2 py-0.5 text-[11px] font-bold text-chip-on-fg">다음 목표</span>
+          <span className="shrink-0 rounded-md bg-chip-on-bg px-2 py-0.5 text-[11px] font-bold text-chip-on-fg">{t("nextGoal")}</span>
           <p className="text-[13px] leading-snug text-fg">
-            SS 이상 <b className="font-num">{goal.current}</b>곡 → <b className="font-num">{goal.target}</b>곡까지{" "}
-            <b className="font-num">{goal.left}곡</b> 남음
+            {t.rich("goalText", { current: goal.current, target: goal.target, left: goal.left, b: (chunks) => <b className="font-num">{chunks}</b> })}
           </p>
         </div>
       ) : null}
@@ -107,13 +120,13 @@ function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: (typeof TABS)[nu
       {weak ? (
         <div className="flex items-center justify-between gap-3 rounded-[10px] border border-weak bg-weak-tint px-3 py-2.5">
           <p className="text-[13px] leading-snug text-fg">
-            <b className="font-num">{weak.group.label}</b> 구간이 가장 비어 있어요. 기록 없는 채보 <b className="font-num">{weak.empty}</b>곡
+            {t.rich("weakText", { label: weak.group.label, empty: weak.empty, b: (chunks) => <b className="font-num">{chunks}</b> })}
           </p>
           <Link
             href={weak.group.href}
             className="flex min-h-11 shrink-0 items-center rounded-[10px] border border-chip-line px-3 text-[13px] text-fg hover:bg-table-head"
           >
-            구간 보기
+            {t("viewRange")}
           </Link>
         </div>
       ) : null}

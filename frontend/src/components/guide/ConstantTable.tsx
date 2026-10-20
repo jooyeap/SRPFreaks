@@ -1,5 +1,6 @@
 import { chartTierAttrs, chartTierStart, PLAYER_TIER_MINS } from "@/lib/chart-tier";
 import { chartScore, guideRows, GUIDE_RATES } from "@/lib/rating-guide";
+import { useTranslations } from "next-intl";
 
 /**
  * 레이팅 상수표: 기준 난이도(행) × 달성률(열)의 채보 점수. 칸 색은 점수에 따른 그라데이션이다.
@@ -8,11 +9,12 @@ import { chartScore, guideRows, GUIDE_RATES } from "@/lib/rating-guide";
  * 서버 컴포넌트다: 계산은 빌드/요청 시 한 번 하고, 브라우저에는 완성된 표만 간다.
  */
 export function ConstantTable() {
+  const t = useTranslations();
   const rows = guideRows();
   return (
     <div className="space-y-3 rounded-2xl border border-line bg-card px-2 py-3">
       <table className="w-full table-fixed border-separate border-spacing-0.5 text-center">
-        <caption className="sr-only">레이팅 상수표: 슈랜플 난이도와 달성률별 채보 점수</caption>
+        <caption className="sr-only">{t("Guide.tableCaption")}</caption>
         <colgroup>
           <col className="w-11" />
           <col className="w-9" />
@@ -23,14 +25,10 @@ export function ConstantTable() {
         <thead>
           <tr className="text-[11px] font-normal leading-tight text-fg-dim">
             <th scope="col" className="pb-1.5 font-normal">
-              슈랜플
-              <br />
-              난이도
+              {t.rich("Guide.colTier", { br: () => <br /> })}
             </th>
             <th scope="col" className="pb-1.5 font-normal">
-              내부
-              <br />
-              상수
+              {t.rich("Guide.colConst", { br: () => <br /> })}
             </th>
             {GUIDE_RATES.map((rate) => (
               <th key={rate} scope="col" className="pb-1.5 font-normal">
@@ -73,7 +71,7 @@ export function ConstantTable() {
         </tbody>
       </table>
       <div className="space-y-2 px-1">
-        <p className="text-[11px] text-fg-dim">칸 색 기준 · 곡 점수 (플레이어 티어 최소 점수 ÷ 40)</p>
+        <p className="text-[11px] text-fg-dim">{t("Guide.legend")}</p>
         <ul className="grid grid-cols-5 gap-x-1 gap-y-1.5">
           {PLAYER_TIER_MINS.map((tier) => (
             <li key={tier.key} className="flex flex-col items-center gap-0.5">

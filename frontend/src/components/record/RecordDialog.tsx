@@ -11,6 +11,7 @@ import { RecordList } from "@/components/record/RecordList";
 import { formatRate } from "@/lib/format";
 import { useWakeLock } from "@/lib/wake-lock";
 import { fetchRecordsOfChart, recordKeys, recordOriginText, type RecordResponse } from "@/lib/records";
+import { useTranslations } from "next-intl";
 
 /** 달성률이 가장 높은 기록(서열표에 보이는 기록). 같으면 목록 앞(더 최근) */
 function bestOf(records: readonly RecordResponse[] | undefined): RecordResponse | null {
@@ -39,6 +40,7 @@ export function RecordDialog({
    */
   nextChartAfterSave?: (saved: RecordChart) => RecordChart | null;
 }) {
+  const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
   // 입력 중인 값이 있으면 바깥 클릭으로 닫지 않는다(모바일에서 시트 밖을 잘못 눌러 입력이 사라지는 일 방지)
   const dirtyRef = useRef(false);
@@ -76,12 +78,12 @@ export function RecordDialog({
     (next: RecordChart) => {
       // 입력 중인 값이 있으면 옮기지 않는다 (바깥 클릭으로 닫히지 않게 하는 것과 같은 이유)
       if (dirtyRef.current) {
-        toast("입력 중인 값이 있습니다. 저장하거나 지운 뒤에 다른 곡으로 옮겨 주세요.");
+        toast(t("Record.hasInput"));
         return;
       }
       setSwitched(next);
     },
-    [toast],
+    [toast, t],
   );
 
   useEffect(() => {
@@ -155,6 +157,7 @@ function RecordDialogBody({
   onSaved: (saved: RecordResponse, outcome: SaveOutcome) => void;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const t = useTranslations();
   const chartId = chart.songDifficultyId;
   const { user } = useAuth();
   const userId = user?.id ?? 0;
@@ -175,7 +178,7 @@ function RecordDialogBody({
     <>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 id="record-dialog-title" className="text-lg font-extrabold">
-              {choosing ? "기록 등록" : editing ? "기록 수정" : "기록 등록"}
+              {choosing ? t("Record.dialogAdd") : editing ? t("Record.dialogEdit") : t("Record.dialogAdd")}
             </h2>
             {/* 이미 기록이 있으면 수정이 기본이다. 새 플레이를 따로 남기고 싶을 때만 `새 기록 추가`로 바꾼다 */}
             {choosing ? null : editing ? (
@@ -184,7 +187,7 @@ function RecordDialogBody({
                 onClick={() => setPicked("new")}
                 className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
               >
-                새 기록 추가
+                {t("Record.addNew")}
               </button>
             ) : hasRecords ? (
               <button
@@ -192,18 +195,18 @@ function RecordDialogBody({
                 onClick={() => setPicked(best)}
                 className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
               >
-                기존 기록 수정
+                {t("Record.editExisting")}
               </button>
             ) : null}
           </div>
           <p className="mb-3 text-xs leading-relaxed text-fg-sub">
             {choosing
-              ? "이 채보에는 이미 기록이 있습니다. 어떻게 할까요?"
+              ? t("Record.alreadyHas")
               : editing
-              ? `수정 중인 기록: 달성률 ${formatRate(editing.achievementRate)}${editing.fullCombo ? " · FC" : ""} · ${recordOriginText(editing)}`
+              ? t("Record.editingBanner", { rate: formatRate(editing.achievementRate), fc: editing.fullCombo ? " · FC" : "", origin: recordOriginText(editing, t) })
               : hasRecords
-                ? "새 기록을 등록합니다. 기존 기록은 그대로 남습니다."
-                : "이 채보의 첫 기록을 등록합니다."}
+                ? t("Record.newKeepsOld")
+                : t("Record.firstRecord")}
           </p>
           {choosing && best ? (
             <div className="mb-3 flex flex-col gap-2">
@@ -213,10 +216,9 @@ function RecordDialogBody({
                 onClick={() => setPicked(best)}
                 className="flex min-h-14 flex-col items-start justify-center rounded-lg border border-chip-on-bg px-4 py-2 text-left hover:bg-chip-on-bg/10"
               >
-                <span className="text-sm font-semibold text-fg">기존 기록 수정</span>
+                <span className="text-sm font-semibold text-fg">{t("Record.editExisting")}</span>
                 <span className="text-xs text-fg-sub">
-                  가장 높은 기록: 달성률 {formatRate(best.achievementRate)}
-                  {best.fullCombo ? " · FC" : ""} · {recordOriginText(best)}
+                  {t("Record.bestRecord", { rate: formatRate(best.achievementRate), fc: best.fullCombo ? " · FC" : "", origin: recordOriginText(best, t) })}
                 </span>
               </button>
               <button
@@ -224,14 +226,14 @@ function RecordDialogBody({
                 onClick={() => setPicked("new")}
                 className="flex min-h-14 flex-col items-start justify-center rounded-lg border border-chip-line px-4 py-2 text-left hover:bg-chip-on-bg/10"
               >
-                <span className="text-sm font-semibold text-fg">새 기록 등록</span>
-                <span className="text-xs text-fg-sub">새 플레이를 따로 남깁니다. 기존 기록은 그대로 남습니다.</span>
+                <span className="text-sm font-semibold text-fg">{t("Record.registerNew")}</span>
+                <span className="text-xs text-fg-sub">{t("Record.newPlayNote")}</span>
               </button>
             </div>
           ) : null}
           <RecordList songDifficultyId={chartId} editingId={editing?.id ?? null} onEdit={setPicked} />
           {choosing ? null : loadingRecords ? (
-            <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+            <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
           ) : (
             // key: 수정 대상이 바뀌면 폼을 새로 만들어 입력 초기값이 맞게 한다
             <RecordForm

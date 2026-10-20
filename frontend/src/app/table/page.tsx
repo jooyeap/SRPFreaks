@@ -7,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { SongTabs } from "@/components/songs/SongTabs";
 import { DifficultyTableView } from "@/components/table/DifficultyTableView";
 import { viewStateFromParams, viewStateToQuery, type TableViewState } from "@/lib/table-view-state";
+import { useTranslations } from "next-intl";
 
 /**
  * 서열표 화면. 내 기록을 함께 보여 주므로 로그인이 필요하다.
@@ -14,6 +15,7 @@ import { viewStateFromParams, viewStateToQuery, type TableViewState } from "@/li
  * 링크를 공유해도 같은 화면이 나온다(곡 목록과 같은 방식). useSearchParams는 Suspense 안에서 써야 해서(Next.js 정적 빌드 규칙) 본문을 따로 나눴다.
  */
 function TableContent() {
+  const t = useTranslations();
   const { status, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -35,7 +37,7 @@ function TableContent() {
     return (
       <>
         <SongTabs current="table" />
-        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       </>
     );
   }
@@ -44,10 +46,10 @@ function TableContent() {
       <>
         <SongTabs current="table" />
         <section className="flex flex-col items-start gap-3">
-          <h1 className="text-xl font-semibold text-fg">서열표</h1>
-          <p className="text-sm text-fg-sub">내 기록과 함께 보려면 로그인해 주세요.</p>
+          <h1 className="text-xl font-semibold text-fg">{t("Table.pageTitle")}</h1>
+          <p className="text-sm text-fg-sub">{t("Songs.loginToSeeRecords")}</p>
           <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-            로그인
+            {t("Nav.login")}
           </Link>
         </section>
       </>
@@ -62,8 +64,9 @@ function TableContent() {
 }
 
 export default function TablePage() {
+  const t = useTranslations();
   return (
-    <Suspense fallback={<p className="text-sm text-fg-sub">불러오는 중입니다.</p>}>
+    <Suspense fallback={<p className="text-sm text-fg-sub">{t("Common.loading")}</p>}>
       <TableContent />
     </Suspense>
   );

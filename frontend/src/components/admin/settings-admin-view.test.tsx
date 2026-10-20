@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsAdminView } from "@/components/admin/SettingsAdminView";
 import type { PageResponse, SettingResponse } from "@/lib/api-types";
+import { koT } from "@/i18n/ko-translator";
 import { validateSettingValue } from "@/lib/admin";
 
 function json(body: unknown, status = 200): Response {
@@ -97,13 +98,13 @@ describe("설정 화면", () => {
 
 describe("validateSettingValue", () => {
   it("종류별로 검사한다", () => {
-    expect(validateSettingValue("rating.bonus", "3.2")).toBeNull();
-    expect(validateSettingValue("rating.bonus", "abc")).toBe("숫자로 입력해 주세요.");
-    expect(validateSettingValue("rating.list_other", "25")).toBeNull();
-    expect(validateSettingValue("rating.list_other", "-1")).toBe("0 이상의 정수로 입력해 주세요.");
-    expect(validateSettingValue("ui.show_song_images", "maybe")).toBe("켬 또는 끔을 골라 주세요.");
-    expect(validateSettingValue("rating.note_option", "SUPER_RANDOM")).toBe("고를 수 있는 값이 아닙니다.");
-    expect(validateSettingValue("contact.takedown_email", "  ")).toBe("값을 입력해 주세요.");
-    expect(validateSettingValue("unknown.key", "아무 글자")).toBeNull();
+    expect(validateSettingValue("rating.bonus", "3.2", koT)).toBeNull();
+    expect(validateSettingValue("rating.bonus", "abc", koT)).toBe("숫자로 입력해 주세요.");
+    expect(validateSettingValue("rating.list_other", "25", koT)).toBeNull();
+    expect(validateSettingValue("rating.list_other", "-1", koT)).toBe("0 이상의 정수로 입력해 주세요.");
+    expect(validateSettingValue("ui.show_song_images", "maybe", koT)).toBe("켬 또는 끔을 골라 주세요.");
+    expect(validateSettingValue("rating.note_option", "SUPER_RANDOM", koT)).toBe("고를 수 있는 값이 아닙니다.");
+    expect(validateSettingValue("contact.takedown_email", "  ", koT)).toBe("값을 입력해 주세요.");
+    expect(validateSettingValue("unknown.key", "아무 글자", koT)).toBeNull();
   });
 });

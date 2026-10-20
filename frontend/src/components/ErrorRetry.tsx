@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 /**
@@ -19,6 +20,7 @@ export function ErrorRetry({
   retrying?: boolean;
   className?: string;
 }) {
+  const t = useTranslations("Common");
   return (
     <div role="alert" className={`flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-fg ${className}`}>
       <span>{children}</span>
@@ -28,7 +30,7 @@ export function ErrorRetry({
         disabled={retrying}
         className="min-h-10 rounded-lg border border-line px-3 text-sm font-medium text-fg hover:bg-table-head disabled:opacity-60"
       >
-        {retrying ? "불러오는 중…" : "다시 시도"}
+        {retrying ? t("retrying") : t("retry")}
       </button>
     </div>
   );

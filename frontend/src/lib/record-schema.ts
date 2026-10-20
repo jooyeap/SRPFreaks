@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { toHundredths } from "@/lib/format";
+import type { Translator } from "@/i18n/translator";
 
 /**
  * 기록 입력 검사 (Zod). 서버(RecordRequest의 Validation)와 DB(CHECK)에도 같은 규칙이 있다.
@@ -19,35 +20,35 @@ export const MEMO_MAX_LENGTH = 255;
 /** 오늘(Asia/Seoul)의 날짜 문자열 `YYYY-MM-DD`. 날짜 입력칸의 기본값과 "미래 날짜" 검사에 쓴다. */
 export type TodayProvider = () => string;
 
-export function makeRecordSchema(today: TodayProvider) {
+export function makeRecordSchema(t: Translator, today: TodayProvider) {
   return z.object({
     achievementRate: z
       .string()
       .trim()
-      .min(1, "달성률은 필수입니다.")
+      .min(1, t("Validation.rateRequired"))
       .superRefine((value, ctx) => {
         if (value.length === 0) {
           return; // 위의 min이 이미 알린다
         }
         if (TOO_MANY_DECIMALS.test(value)) {
-          ctx.addIssue({ code: "custom", message: "달성률은 소수 둘째 자리까지만 입력할 수 있습니다." });
+          ctx.addIssue({ code: "custom", message: t("Validation.rateDecimals") });
           return;
         }
         if (!RATE_FORMAT.test(value)) {
-          ctx.addIssue({ code: "custom", message: "달성률은 숫자로 입력해 주세요." });
+          ctx.addIssue({ code: "custom", message: t("Validation.rateNumber") });
           return;
         }
         const hundredths = toHundredths(Number(value));
         if (hundredths === null || hundredths < 0 || hundredths > 10000) {
-          ctx.addIssue({ code: "custom", message: "달성률은 0.00 이상 100.00 이하여야 합니다." });
+          ctx.addIssue({ code: "custom", message: t("Validation.rateRange") });
         }
       }),
     fullCombo: z.boolean(),
     playedDate: z
       .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "플레이 날짜를 입력해 주세요.")
-      .refine((value) => value <= today(), "플레이 날짜는 오늘 이후일 수 없습니다."), // YYYY-MM-DD는 문자열 비교가 날짜 비교와 같다
-    memo: z.string().max(MEMO_MAX_LENGTH, `메모는 ${MEMO_MAX_LENGTH}자 이하여야 합니다.`),
+      .regex(/^\d{4}-\d{2}-\d{2}$/, t("Validation.playedDateRequired"))
+      .refine((value) => value <= today(), t("Validation.playedDateFuture")), // YYYY-MM-DD는 문자열 비교가 날짜 비교와 같다
+    memo: z.string().max(MEMO_MAX_LENGTH, t("Validation.memoMax", { max: MEMO_MAX_LENGTH })),
   });
 }
 

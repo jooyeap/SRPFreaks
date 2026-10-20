@@ -7,16 +7,20 @@ import { z } from "zod";
 import { useToast } from "@/components/Toast";
 import { useAuth } from "@/components/AuthProvider";
 import { ApiError } from "@/lib/api";
-import { NICKNAME_MAX_LENGTH, NICKNAME_MIN_LENGTH, nicknameSchema } from "@/lib/nickname";
+import { NICKNAME_MAX_LENGTH, NICKNAME_MIN_LENGTH, makeNicknameSchema } from "@/lib/nickname";
 import { updateMyNickname } from "@/lib/users";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
 // 입력은 문자열 그대로, 결과는 정규화된 값(빈 값이면 null)이다. 그래서 입력/출력 타입이 다르다.
-const formSchema = z.object({ nickname: nicknameSchema });
-type FormInput = z.input<typeof formSchema>;
-type FormOutput = z.output<typeof formSchema>;
+const makeFormSchema = (t: Translator) => z.object({ nickname: makeNicknameSchema(t) });
+type FormSchema = ReturnType<typeof makeFormSchema>;
+type FormInput = z.input<FormSchema>;
+type FormOutput = z.output<FormSchema>;
 
 /** 닉네임 설정 폼. 서버와 같은 규칙으로 먼저 검사하고(lib/nickname.ts), 저장하면 헤더의 이름도 바로 바뀐다. */
 export function NicknameForm({ initialNickname }: { initialNickname: string | null }) {
+  const t = useTranslations();
   const { updateUser } = useAuth();
   const {
     register,
@@ -24,7 +28,7 @@ export function NicknameForm({ initialNickname }: { initialNickname: string | nu
     reset,
     formState: { errors },
   } = useForm<FormInput, unknown, FormOutput>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(makeFormSchema(t)),
     defaultValues: { nickname: initialNickname ?? "" },
     mode: "onTouched",
   });
@@ -34,14 +38,14 @@ export function NicknameForm({ initialNickname }: { initialNickname: string | nu
     mutationFn: (values: FormOutput) => updateMyNickname(values.nickname),
     onSuccess: (user) => {
       updateUser(user);
-      toast("닉네임을 저장했습니다.");
+      toast(t("Settings.nicknameSaved"));
       reset({ nickname: user.nickname ?? "" }); // 서버가 정규화한 값으로 입력칸도 맞춘다
     },
   });
 
   const failure = mutation.error;
   const serverMessage =
-    failure instanceof ApiError ? failure.message : failure ? "저장하지 못했습니다. 잠시 후 다시 시도해 주세요." : null;
+    failure instanceof ApiError ? failure.message : failure ? t("Common.saveFailed") : null;
   const nicknameError = errors.nickname?.message;
 
   return (
@@ -55,7 +59,7 @@ export function NicknameForm({ initialNickname }: { initialNickname: string | nu
     >
       <div className="flex flex-col gap-1.5">
         <label htmlFor="nickname" className="text-sm font-semibold text-fg">
-          닉네임
+          {t("Settings.nicknameLabel")}
         </label>
         <input
           id="nickname"
@@ -67,8 +71,7 @@ export function NicknameForm({ initialNickname }: { initialNickname: string | nu
           {...register("nickname")}
         />
         <p id="nickname-help" className="text-xs text-fg-dim">
-          {NICKNAME_MIN_LENGTH}~{NICKNAME_MAX_LENGTH}자. 영문, 숫자, 일본어(히라가나·가타카나·한자)와 ー ・ _ - 만 사용할 수 있습니다. 비워 두면 이메일이
-          표시됩니다.
+          {t("Settings.nicknameHelp", { min: NICKNAME_MIN_LENGTH, max: NICKNAME_MAX_LENGTH })}
         </p>
         <p id="nickname-error" role="alert" className="min-h-4 text-xs text-danger">
           {nicknameError ?? serverMessage}
@@ -80,11 +83,11 @@ export function NicknameForm({ initialNickname }: { initialNickname: string | nu
           disabled={mutation.isPending}
           className="h-11 rounded-xl bg-chip-on-bg px-6 text-sm font-extrabold text-chip-on-fg disabled:opacity-60"
         >
-          저장
+          {t("Common.save")}
         </button>
         {mutation.isSuccess ? (
           <p role="status" className="text-sm text-fg-sub">
-            저장했습니다.
+            {t("Settings.savedInline")}
           </p>
         ) : null}
       </div>
