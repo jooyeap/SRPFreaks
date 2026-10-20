@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { SuggestionsView } from "@/components/suggestions/SuggestionsView";
-import { parseCategory } from "@/lib/suggestions";
+import { parseCategory, parseChartRequest } from "@/lib/suggestions";
 import { useTranslations } from "next-intl";
 
 /**
@@ -32,9 +32,11 @@ function SuggestionsContent() {
       </section>
     );
   }
+  const chart = parseChartRequest(params.get("part"), params.get("difficulty"));
   return (
     <SuggestionsView
       viewerId={user.id}
+      initialChart={chart}
       initialCategory={parseCategory(params.get("category"))}
       initialTitle={(params.get("title") ?? "").slice(0, 100)}
     />

@@ -10,6 +10,7 @@ import { clearHandoff, MAX_PAGES, pagesReceived, removePlays, useHandoff } from 
 import type { ReadPlay } from "@/lib/import-bookmarklet";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
 import {
+  chartRequestOf,
   commitRecentPlays,
   describePlayChart,
   isExcludedReason,
@@ -22,6 +23,16 @@ import {
 import { AFFECTED_QUERY_KEYS } from "@/lib/records";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
+
+/**
+ * 제외된 곡의 "곡 추가 건의" 링크. 곡명에 더해 플레이한 파트·난이도(gf_mst 등)를 같이 넘겨,
+ * 관리자가 건의에서 바로 해당 채보로 등록 창을 열 수 있게 한다. 모르는 난이도 클래스면 곡명만 넘긴다.
+ */
+function requestSongHref(play: { title: string; difficultyClass: string }): string {
+  const base = `/suggestions?category=SONG_REQUEST&title=${encodeURIComponent(play.title.slice(0, 100))}`;
+  const chart = chartRequestOf(play.difficultyClass);
+  return chart ? `${base}&part=${chart.part}&difficulty=${chart.difficulty}` : base;
+}
 
 function messageOf(error: unknown, t: Translator): string {
   return error instanceof ApiError ? error.message : t("Common.actionFailed");
@@ -72,7 +83,7 @@ function PlayRow({
         {chart && <div className="mt-0.5 text-xs text-fg-sub">{chart}</div>}
         <div className={`mt-0.5 text-xs ${excluded ? "text-weak-text" : result.saved ? "text-fg" : "text-fg-sub"}`}>{note}</div>
         {excluded && (
-          <Link href={`/suggestions?category=SONG_REQUEST&title=${encodeURIComponent(play.title.slice(0, 100))}`} className="mt-0.5 inline-flex min-h-8 items-center text-xs underline">
+          <Link href={requestSongHref(play)} className="mt-0.5 inline-flex min-h-8 items-center text-xs underline">
             {t("Songs.requestSong")}
           </Link>
         )}

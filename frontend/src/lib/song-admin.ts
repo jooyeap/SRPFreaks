@@ -77,8 +77,19 @@ export function emptyChart(): ChartValues {
   return { part: "GUITAR", difficulty: "MASTER", level: "", tier: "", recommend: "", pattern: "", ratingEnabled: false };
 }
 
-export function emptySongCreate(): SongCreateValues {
-  return { title: "", artist: "", addedVersion: "", charts: [emptyChart()] };
+/** 곡 등록 창을 미리 채울 값. 건의(곡 추가 요청)에서 열 때 곡명과 요청한 채보 하나를 넣는다. */
+export interface SongCreateInitial {
+  title: string;
+  chart?: { part: ChartValues["part"]; difficulty: ChartValues["difficulty"] } | null;
+}
+
+export function emptySongCreate(initial?: SongCreateInitial): SongCreateValues {
+  const chart = emptyChart();
+  if (initial?.chart) {
+    chart.part = initial.chart.part;
+    chart.difficulty = initial.chart.difficulty;
+  }
+  return { title: initial?.title ?? "", artist: "", addedVersion: "", charts: [chart] };
 }
 
 function blankToNull(value: string): string | null {
