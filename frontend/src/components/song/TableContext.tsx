@@ -6,6 +6,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
+import { TermHelp } from "@/components/TermHelp";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import { folderHref } from "@/lib/difficulty-table";
 
@@ -31,7 +32,9 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
       <h2 className="sr-only">서열표 정보</h2>
       <dl className="grid grid-cols-3 gap-2.5 text-sm">
         <div>
-          <dt className="text-xs text-fg-dim">레이팅 상수 난이도</dt>
+          <dt className="text-xs text-fg-dim">
+            레이팅 상수 난이도 <TermHelp term="ratingConstant" label="레이팅 상수 난이도" />
+          </dt>
           <dd className="font-num text-[22px] font-bold leading-tight text-fg">
             {formatTier(group.tier)}
           </dd>
