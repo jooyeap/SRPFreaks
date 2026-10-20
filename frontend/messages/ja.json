@@ -705,7 +705,8 @@
     "statusReceived": "受付",
     "statusReviewing": "確認中",
     "statusDone": "対応済み",
-    "statusRejected": "見送り"
+    "statusRejected": "見送り",
+    "requestedChart": "リクエスト譜面"
   },
   "Players": {
     "listTitle": "ユーザー一覧",
@@ -1100,7 +1101,8 @@
     "statusAria": "{title}の状態",
     "replyAria": "{title}への返信",
     "replyLabel": "返信（任意）",
-    "reviewSaveAria": "{title}の対応を保存"
+    "reviewSaveAria": "{title}の対応を保存",
+    "registerFromSuggestionAria": "{title} のご要望から曲を登録"
   },
   "ServerErrors": {
     "AUTH_FAILED": "ログインできません。もう一度ログインしてください。",

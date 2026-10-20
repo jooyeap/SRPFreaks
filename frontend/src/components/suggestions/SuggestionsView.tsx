@@ -8,10 +8,12 @@ import { StatusLabel } from "@/components/suggestions/StatusLabel";
 import { SuggestionForm } from "@/components/suggestions/SuggestionForm";
 import { ApiError } from "@/lib/api";
 import type { SuggestionCategory } from "@/lib/api-types";
+import type { DifficultyType, InstrumentPart } from "@/lib/types";
 import { formatPlayedDate } from "@/lib/format";
 import {
   CATEGORY_LABELS,
   createSuggestion,
+  describeChartRequest,
   fetchMySuggestions,
   suggestionKeys,
   SUGGESTIONS_PAGE_SIZE,
@@ -38,10 +40,12 @@ export function SuggestionsView({
   viewerId,
   initialCategory = null,
   initialTitle = "",
+  initialChart = null,
 }: {
   viewerId: number;
   initialCategory?: SuggestionCategory | null;
   initialTitle?: string;
+  initialChart?: { part: InstrumentPart; difficulty: DifficultyType } | null;
 }) {
   const t = useTranslations();
   const queryClient = useQueryClient();
@@ -72,7 +76,13 @@ export function SuggestionsView({
       </p>
 
       <SuggestionForm
-        initial={{ category: initialCategory ?? "SONG_REQUEST", title: initialTitle, content: "" }}
+        initial={{
+          category: initialCategory ?? "SONG_REQUEST",
+          title: initialTitle,
+          content: "",
+          requestedPart: initialChart?.part ?? null,
+          requestedDifficulty: initialChart?.difficulty ?? null,
+        }}
         pending={create.isPending}
         error={messageOf(create.error, t)}
         onSubmit={(values) => create.mutateAsync(values)}
@@ -101,6 +111,9 @@ export function SuggestionsView({
                 <div className="flex items-center gap-2 text-xs text-fg-sub">
                   <span>{t(CATEGORY_LABELS[item.category])}</span>
                   <StatusLabel status={item.status} />
+                  {item.requestedPart && item.requestedDifficulty ? (
+                    <span>{describeChartRequest(item.requestedPart, item.requestedDifficulty)}</span>
+                  ) : null}
                 </div>
                 <p className="whitespace-pre-wrap break-words text-sm text-fg">{item.content}</p>
                 {item.adminNote ? (

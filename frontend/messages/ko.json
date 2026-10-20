@@ -705,7 +705,8 @@
     "statusReceived": "접수",
     "statusReviewing": "확인 중",
     "statusDone": "처리 완료",
-    "statusRejected": "반려"
+    "statusRejected": "반려",
+    "requestedChart": "요청 채보"
   },
   "Players": {
     "listTitle": "유저 목록",
@@ -1100,7 +1101,8 @@
     "statusAria": "{title} 상태",
     "replyAria": "{title} 답변",
     "replyLabel": "답변 (선택)",
-    "reviewSaveAria": "{title} 처리 저장"
+    "reviewSaveAria": "{title} 처리 저장",
+    "registerFromSuggestionAria": "{title} 건의로 곡 등록"
   },
   "ServerErrors": {
     "AUTH_FAILED": "로그인할 수 없습니다. 다시 로그인해 주세요.",

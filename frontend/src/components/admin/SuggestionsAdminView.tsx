@@ -4,12 +4,15 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { useState } from "react";
 import { Pager } from "@/components/Pager";
 import { useToast } from "@/components/Toast";
+import { SongCreateDialog } from "@/components/songs/SongCreateDialog";
 import { StatusLabel } from "@/components/suggestions/StatusLabel";
 import { ApiError } from "@/lib/api";
 import type { AdminSuggestionResponse, SuggestionCategory, SuggestionStatus } from "@/lib/api-types";
+import { fetchDifficultyTables, pickRatingTable } from "@/lib/difficulty-table";
 import { formatPlayedDate } from "@/lib/format";
 import {
   CATEGORY_LABELS,
+  describeChartRequest,
   fetchAdminSuggestions,
   fetchReceivedCount,
   reviewSuggestion,
@@ -171,8 +174,12 @@ function ReviewItem({
         <span>{t(CATEGORY_LABELS[item.category])}</span>
         <StatusLabel status={item.status} />
         <span>{t("Admin.sentBy", { name: item.authorNickname })}</span>
+        {item.requestedPart && item.requestedDifficulty ? (
+          <span>{describeChartRequest(item.requestedPart, item.requestedDifficulty)}</span>
+        ) : null}
       </div>
       <p className="whitespace-pre-wrap break-words text-sm text-fg">{item.content}</p>
+      {item.category === "SONG_REQUEST" ? <RegisterSongFromSuggestion item={item} /> : null}
       <div className="flex flex-col gap-2 border-t border-line pt-2">
         <label className="flex items-center gap-2 text-sm text-fg-sub">
           {t("Admin.status")}
@@ -218,5 +225,50 @@ function ReviewItem({
         </div>
       </div>
     </li>
+  );
+}
+
+/**
+ * 곡 추가 건의에서 바로 곡 등록 창을 여는 버튼(ROOT·ADMIN 화면이라 권한은 이미 갖춘 사용자만 본다. 서버도 다시 검사한다).
+ * 건의의 제목(곡명)과 요청 채보(파트·난이도)로 창을 미리 채워 열고, 레벨·기준 난이도 같은 값은 관리자가 직접 넣어 확정한다.
+ * 자동 등록이 아니다(D35): 등록해도 건의 상태는 바꾸지 않으므로 처리 상태·답변은 관리자가 따로 저장한다.
+ * 서열표 값도 바로 넣을 수 있게 레이팅 서열표 id를 가져오는데, 창을 처음 열 때만 불러온다.
+ */
+function RegisterSongFromSuggestion({ item }: { item: AdminSuggestionResponse }) {
+  const t = useTranslations();
+  const [open, setOpen] = useState(false);
+  const [asked, setAsked] = useState(false);
+  const tables = useQuery({
+    queryKey: ["difficulty-tables"],
+    queryFn: ({ signal }) => fetchDifficultyTables(signal),
+    enabled: asked,
+  });
+  // 서열표 목록이 오기 전에는 창을 열지 않는다. 늦게 오면 tableId가 바뀌면서 입력 중인 폼이 다시 만들어지기 때문이다.
+  const ready = asked && !tables.isPending;
+  return (
+    <div>
+      <button
+        type="button"
+        aria-label={t("Admin.registerFromSuggestionAria", { title: item.title })}
+        onClick={() => {
+          setAsked(true);
+          setOpen(true);
+        }}
+        className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+      >
+        {t("Songs.create")}
+      </button>
+      <SongCreateDialog
+        open={open && ready}
+        tableId={tables.data ? (pickRatingTable(tables.data)?.id ?? null) : null}
+        initial={{
+          title: item.title,
+          chart: item.requestedPart && item.requestedDifficulty
+            ? { part: item.requestedPart, difficulty: item.requestedDifficulty }
+            : null,
+        }}
+        onClose={() => setOpen(false)}
+      />
+    </div>
   );
 }

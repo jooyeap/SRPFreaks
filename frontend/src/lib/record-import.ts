@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import type { ReadPlay } from "@/lib/import-bookmarklet";
 import { achievementStage } from "@/lib/stage";
-import type { AchievementStage } from "@/lib/types";
+import type { AchievementStage, DifficultyType, InstrumentPart } from "@/lib/types";
 import type { MessageKey } from "@/i18n/translator";
 
 /**
@@ -82,6 +82,14 @@ export function describePlayChart(difficultyClass: string): string | null {
   const m = /^(gf|bass)_(bsc|adv|ext|mst)$/.exec(difficultyClass);
   if (!m) return null;
   return `${m[1] === "gf" ? "Guitar" : "Bass"} | ${DIFFICULTY_LABELS[m[2]]}`;
+}
+
+/** 공식 난이도 클래스 → 건의에 붙일 파트·난이도(`gf_mst` → GUITAR / MASTER). 모르는 클래스는 null. */
+export function chartRequestOf(difficultyClass: string): { part: InstrumentPart; difficulty: DifficultyType } | null {
+  const m = /^(gf|bass)_(bsc|adv|ext|mst)$/.exec(difficultyClass);
+  if (!m) return null;
+  const difficulty: Record<string, DifficultyType> = { bsc: "BASIC", adv: "ADVANCED", ext: "EXTREME", mst: "MASTER" };
+  return { part: m[1] === "gf" ? "GUITAR" : "BASS", difficulty: difficulty[m[2]] };
 }
 
 /** 같은 플레이를 다시 받았는지 가르는 키. 공식 페이지의 플레이 시각 + 곡 + 난이도. */

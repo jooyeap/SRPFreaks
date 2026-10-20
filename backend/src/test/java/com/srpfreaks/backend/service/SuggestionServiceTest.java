@@ -7,6 +7,8 @@ import com.srpfreaks.backend.dto.SuggestionRequest;
 import com.srpfreaks.backend.dto.SuggestionResponse;
 import com.srpfreaks.backend.dto.SuggestionReviewRequest;
 import com.srpfreaks.backend.entity.AuditLog;
+import com.srpfreaks.backend.entity.DifficultyType;
+import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.Suggestion;
 import com.srpfreaks.backend.entity.SuggestionCategory;
 import com.srpfreaks.backend.entity.SuggestionStatus;
@@ -68,6 +70,19 @@ class SuggestionServiceTest {
         assertThat(response.status()).isEqualTo(SuggestionStatus.RECEIVED);
         assertThat(response.category()).isEqualTo(SuggestionCategory.BUG);
         assertThat(response.title()).isEqualTo("제목");
+    }
+
+    @Test
+    void 곡_추가_건의의_파트와_난이도를_저장하고_응답에_담는다() {
+        when(suggestionRepository.countByUserIdAndCreatedAtAfter(eq(1L), any(Instant.class))).thenReturn(0L);
+        when(userRepository.getReferenceById(1L)).thenReturn(user);
+        when(suggestionRepository.save(any(Suggestion.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        SuggestionResponse response = service.create(1L, new SuggestionRequest(
+                SuggestionCategory.SONG_REQUEST, "곡", "내용", InstrumentPart.GUITAR, DifficultyType.EXTREME));
+
+        assertThat(response.requestedPart()).isEqualTo(InstrumentPart.GUITAR);
+        assertThat(response.requestedDifficulty()).isEqualTo(DifficultyType.EXTREME);
     }
 
     @Test

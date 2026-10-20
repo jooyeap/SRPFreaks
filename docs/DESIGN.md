@@ -506,7 +506,7 @@ com.srpfreaks.backend
 | 유저 채보 기록 삭제 (D29) | DELETE `/admin/players/{userId}/charts/{songDifficultyId}/records` (그 유저의 그 채보 기록 전부 삭제, 204. 없으면 404. 감사 로그 `RECORD_ADMIN_DELETE`) | ROOT·ADMIN |
 | 공지사항 목록·상세 (D30) | GET `/notices` (최근 순 페이지), GET `/notices/{noticeId}` (한 건, 없으면 404) | 로그인한 사용자 |
 | 공지사항 쓰기·수정·삭제 (D30) | POST `/admin/notices`, PUT·DELETE `/admin/notices/{noticeId}` (본문 `title`(1~100자), `content`(1~5000자), 감사 로그) | ROOT·ADMIN |
-| 건의 보내기·내 목록 (D35) | POST `/suggestions` (본문 `category`, `title`(1~100자), `content`(1~2000자). 24시간에 5건까지, 넘으면 429), GET `/suggestions/me` (본인 것만, 최근 순 페이지) | 로그인한 사용자 |
+| 건의 보내기·내 목록 (D35) | POST `/suggestions` (본문 `category`, `title`(1~100자), `content`(1~2000자), 선택 `requestedPart`·`requestedDifficulty`(곡 추가 건의에서만, 한 쌍으로만, 위반은 400). 24시간에 5건까지, 넘으면 429), GET `/suggestions/me` (본인 것만, 최근 순 페이지) | 로그인한 사용자 |
 | 건의 관리 (D35) | GET `/admin/suggestions?category=&status=&page=&size=`, GET `/admin/suggestions/received-count`, PATCH `/admin/suggestions/{id}` (본문 `status`, `adminNote`(선택, 500자), 감사 로그) | ROOT·ADMIN |
 | 세트리스트 (D36) | GET `/setlist?page=&size=` (담은 순서, 최대 30줄. 줄마다 `tier`·`mine`·`done`), POST `/setlist` (본문 `songDifficultyId`. 30곡이 차 있으면 409, 이미 담았으면 409, 없는·삭제된 채보는 404), DELETE `/setlist/{id}` (남의 줄은 404), DELETE `/setlist/done` (완료한 줄 비우기, `{removed}`) | 로그인한 사용자 (본인) |
 | 추천 범위 직접 설정 (D37) | PUT `/setlist/recommend-range` (`ssMin`·`ssMax`·`sMin`·`sMax`, 내 설정 저장·수정), DELETE `/setlist/recommend-range` (기본값으로, 204) | 로그인한 사용자 (본인) |
@@ -704,6 +704,7 @@ com.srpfreaks.backend
 | 2026-10-13 | **D34 추가.** D18 번복(일부): 공식 최근 플레이(`stage_result`, 최대 20곡)를 SRN+ 옵션 조건으로 가져온다. 설계는 18.4.0. 구현 전 단계(문서만) |
 | 2026-10-13 | **D33 추가.** 마이페이지(`/me`)와 달성률 구간 통계 API(`/stats/*`), `/songs/charts`에 `rateBucket`·`sort` 추가. 화면은 DESIGN-UI 19장 |
 | 2026-10-16 | **곡 검색 오타 보정.** `GET /songs/suggest` 추가(스키마 변경 없음). 화면은 DESIGN-UI 9장 |
+| 2026-10-20 | **D35 보강.** 곡 추가 건의에 요청 채보(`requested_part`, `requested_difficulty`, V14, NULL 허용·한 쌍)를 붙인다. 최근 플레이 가져오기에서 제외된 곡의 "곡 추가 건의하기" 링크가 파트·난이도를 같이 넘기고, 관리자는 건의 카드의 `곡 등록`으로 등록 창을 곡명·채보가 채워진 채 연다. 레벨·기준 난이도는 관리자가 직접 넣어 확정하므로 자동 등록이 아니며, 건의 상태도 자동으로 바꾸지 않는다 |
 | 2026-10-16 | **D35 추가.** 건의사항(`suggestions`, V7)과 `/suggestions`·`/admin/suggestions` API. 화면은 DESIGN-UI 22장 |
 | 2026-10-16 | **D36 추가.** 세트리스트(`setlist_items`, V8)와 `/setlist` API. 화면은 DESIGN-UI 23장 |
 | 2026-10-17 | D36 변경: 담기는 마이페이지 `세트리스트` 탭의 곡 검색으로만 한다. 곡 목록·서열표·곡 상세의 담기 버튼은 제거. 백엔드 변경 없음 |
