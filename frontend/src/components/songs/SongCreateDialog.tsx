@@ -271,6 +271,12 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
                     </select>
                   </div>
                 ) : null}
+                {tableId !== null ? (
+                  <label className="flex min-h-9 items-center gap-2 text-sm text-fg-sub">
+                    <input type="checkbox" aria-label={t("SongCreate.chartRating", { n })} className="size-4" {...register(`charts.${index}.ratingEnabled`)} />
+                    {t("Song.ratingEnabled")}
+                  </label>
+                ) : null}
                 {chartErrors?.tier ? (
                   <p role="alert" className="text-sm text-fg">
                     {chartErrors.tier.message}
@@ -295,6 +301,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
         </div>
       </fieldset>
 
+      {tableId !== null ? <p className="text-xs text-fg-dim">{t("Song.offNote")}</p> : null}
       <p className="text-xs text-fg-dim">
         {tableId !== null
           ? t("SongCreate.noteTable")
