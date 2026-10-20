@@ -263,7 +263,7 @@ describe("SongDetailView", () => {
     expect(screen.queryByRole("button", { name: "곡 삭제" })).toBeNull();
 
     const dialog = await openManage();
-    for (const name of ["서열표 값 수정", "곡 정보 수정", "채보 수정", "채보 삭제", "곡 삭제"]) {
+    for (const name of ["서열표 값 수정", "곡 정보 수정", "채보 추가", "채보 수정", "채보 삭제", "곡 삭제"]) {
       expect(within(dialog).getByRole("button", { name })).toBeInTheDocument();
     }
   });
@@ -274,6 +274,16 @@ describe("SongDetailView", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "곡 정보 수정" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "곡 관리" })).toBeNull());
     expect(await screen.findByRole("dialog", { name: "곡 정보 수정" })).toBeInTheDocument();
+  });
+
+  it("관리 창의 채보 추가를 누르면 관리 창은 닫히고 이 곡에 없는 조합만 고르는 창이 열린다", async () => {
+    renderView("songs", 10, false, true);
+    const dialog = await openManage();
+    fireEvent.click(within(dialog).getByRole("button", { name: "채보 추가" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "곡 관리" })).toBeNull());
+    const add = await screen.findByRole("dialog", { name: "채보 추가" });
+    // 이 곡에는 Guitar MAS·EXT, Bass MAS가 있어서 8가지 중 5가지가 남는다
+    expect(within(add).getByLabelText("파트·난이도").querySelectorAll("option")).toHaveLength(5);
   });
 
   it("삭제는 관리 창 안에서 확인 문구를 먼저 보여 준다", async () => {

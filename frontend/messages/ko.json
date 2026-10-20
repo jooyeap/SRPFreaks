@@ -276,6 +276,7 @@
     "manageTitle": "곡 관리",
     "manageEditHeading": "수정",
     "manageDeleteHeading": "삭제",
+    "addChart": "채보 추가",
     "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>"
   },
   "Table": {
@@ -363,6 +364,20 @@
     "chartTier": "채보 {n} 레이팅 상수 난이도",
     "chartRecommend": "채보 {n} 추천도",
     "chartPattern": "채보 {n} 속성"
+  },
+  "ChartAdd": {
+    "title": "채보 추가",
+    "lead": "이 곡에 새 채보를 추가합니다. 이미 있는 파트·난이도는 고를 수 없습니다.",
+    "combo": "파트·난이도",
+    "level": "레벨",
+    "tier": "레이팅 상수 난이도",
+    "recommend": "추천도",
+    "pattern": "속성",
+    "submit": "추가",
+    "submitting": "추가 중",
+    "retry": "서열표 값 다시 저장",
+    "added": "채보를 추가했습니다.",
+    "partialFail": "채보는 추가됐지만 서열표 값을 저장하지 못했습니다. 아래 버튼으로 다시 저장해 주세요."
   },
   "Rating": {
     "goalRating": "목표 레이팅",

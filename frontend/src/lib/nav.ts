@@ -3,7 +3,7 @@ export type NavLabelKey = "home" | "songs" | "players" | "notices" | "suggestion
 
 /** 메뉴 아이콘 이름. 그림은 components/NavIcon.tsx가 이름으로 찾아 그린다. */
 export type NavIconName =
-  "home" | "songs" | "table" | "rating" | "players" | "guide" | "notices" | "suggestions" | "admin" | "more" | "import";
+  "home" | "songs" | "table" | "rating" | "players" | "guide" | "notices" | "suggestions" | "admin" | "more" | "import" | "settings";
 
 /** "곡" 메뉴가 담당하는 경로. 이 아래의 어느 화면에서도 곡 메뉴가 강조된다. */
 export const SONG_PATHS: readonly string[] = ["/songs", "/table"];
@@ -49,12 +49,13 @@ export const TAB_ITEMS: readonly {
 export const MORE_ITEMS: readonly {
   href: string;
   label: NavLabelKey;
+  icon: NavIconName;
   badge?: "importBadge";
 }[] = [
-  { href: "/import", label: "import", badge: "importBadge" },
-  { href: "/notices", label: "notices" },
-  { href: "/players", label: "players" },
-  { href: "/suggestions", label: "suggestions" },
-  { href: "/guide", label: "guide" },
-  { href: "/settings", label: "settings" },
+  { href: "/import", label: "import", icon: "import", badge: "importBadge" },
+  { href: "/notices", label: "notices", icon: "notices" },
+  { href: "/players", label: "players", icon: "players" },
+  { href: "/suggestions", label: "suggestions", icon: "suggestions" },
+  { href: "/guide", label: "guide", icon: "guide" },
+  { href: "/settings", label: "settings", icon: "settings" },
 ];

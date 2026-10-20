@@ -276,6 +276,7 @@
     "manageTitle": "曲の管理",
     "manageEditHeading": "編集",
     "manageDeleteHeading": "削除",
+    "addChart": "譜面を追加",
     "titleDuplicate": "⚠ 同じ名前の曲がすでにあります。<l>{title}</l>"
   },
   "Table": {
@@ -363,6 +364,20 @@
     "chartTier": "譜面{n} レーティング定数難易度",
     "chartRecommend": "譜面{n} おすすめ度",
     "chartPattern": "譜面{n} 属性"
+  },
+  "ChartAdd": {
+    "title": "譜面を追加",
+    "lead": "この曲に新しい譜面を追加します。すでにあるパート・難易度は選べません。",
+    "combo": "パート・難易度",
+    "level": "レベル",
+    "tier": "レーティング定数難易度",
+    "recommend": "おすすめ度",
+    "pattern": "属性",
+    "submit": "追加",
+    "submitting": "追加中",
+    "retry": "序列表の値を再保存",
+    "added": "譜面を追加しました。",
+    "partialFail": "譜面は追加されましたが、序列表の値を保存できませんでした。下のボタンでもう一度保存してください。"
   },
   "Rating": {
     "goalRating": "目標レーティング",

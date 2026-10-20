@@ -32,9 +32,10 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
   return (
     <section aria-label={t("Song.tableInfo")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3.5">
       <h2 className="sr-only">{t("Song.tableInfo")}</h2>
-      <dl className="grid grid-cols-3 gap-2.5 text-sm">
+      {/* 360px 폭에서 3등분하면 `레이팅 상수 난이도 ?`가 두 줄로 꺾여 ?가 아래로 내려갔다. 칸을 내용 크기로 두고 양 끝으로 벌리며, 라벨은 한 줄로 고정한다. */}
+      <dl className="flex items-start justify-between gap-x-3 text-sm">
         <div>
-          <dt className="text-xs text-fg-dim">
+          <dt className="flex items-center gap-1 whitespace-nowrap text-xs text-fg-dim">
             {t("Song.ratingConstant")} <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
           </dt>
           <dd className="font-num text-[22px] font-bold leading-tight text-fg">
@@ -42,7 +43,7 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-fg-dim">{t("Nav.importBadge")}</dt>
+          <dt className="whitespace-nowrap text-xs leading-6 text-fg-dim">{t("Nav.importBadge")}</dt>
           <dd>
             {entry.recommend ? (
               <RecommendBadge value={entry.recommend} />
@@ -52,7 +53,7 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-fg-dim">{t("Song.fieldLevel")}</dt>
+          <dt className="whitespace-nowrap text-xs leading-6 text-fg-dim">{t("Song.fieldLevel")}</dt>
           <dd className="font-num text-[22px] font-bold leading-tight text-fg">{formatLevel(entry.level)}</dd>
         </div>
       </dl>

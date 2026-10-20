@@ -43,7 +43,7 @@ function makeSongFields(t: Translator) {
 }
 
 /** 채보 한 줄. 서열표 값(기준 난이도·추천도·속성)은 서열표 화면에서 열었을 때만 쓰고, 곡 목록에서 열면 비워 둔 채로 무시한다. */
-function makeChartSchema(t: Translator) {
+export function makeChartSchema(t: Translator) {
   return makeTableEntrySchema(t).extend({
     part: z.enum(["GUITAR", "BASS"]),
     difficulty: z.enum(["BASIC", "ADVANCED", "EXTREME", "MASTER"]),
@@ -143,6 +143,45 @@ export async function registerSong(values: SongCreateValues, tableId: number | n
     }
   }
   return progress.songId;
+}
+
+/** 이 곡에 아직 없는 (파트, 난이도) 조합. 서버가 같은 조합을 거절(409)하므로 선택지에서 미리 뺀다. 순서는 파트(Guitar→Bass), 난이도(높은 쪽부터). */
+export function availableCombos(existing: readonly Pick<SongChartResponse, "instrumentPart" | "difficultyType">[]): { part: InstrumentPart; difficulty: DifficultyType }[] {
+  const taken = new Set(existing.map((c) => `${c.instrumentPart}|${c.difficultyType}`));
+  const combos: { part: InstrumentPart; difficulty: DifficultyType }[] = [];
+  for (const part of PART_CHOICES) {
+    for (const difficulty of [...DIFFICULTY_CHOICES].reverse()) {
+      if (!taken.has(`${part}|${difficulty}`)) {
+        combos.push({ part, difficulty });
+      }
+    }
+  }
+  return combos;
+}
+
+/**
+ * 채보 추가 진행 상태. 채보 → (서열표 값) 두 번 보내는데 한 번에 묶는 API가 없으므로,
+ * 채보만 만들어지고 서열표 저장이 실패하면 다시 시도할 때 채보를 또 만들지(409) 않고 서열표 값만 이어서 보낸다.
+ */
+export interface ChartAddProgress {
+  chartId: number | null;
+  entrySaved: boolean;
+}
+
+export function newChartAddProgress(): ChartAddProgress {
+  return { chartId: null, entrySaved: false };
+}
+
+/** 기존 곡에 채보 하나를 추가한다. tableId가 있으면 서열표에도 넣는다(기준 난이도를 비우면 미정). 실패하면 던지고 progress에 결과가 남는다. */
+export async function addChart(songId: number, chart: ChartValues, tableId: number | null, progress: ChartAddProgress): Promise<void> {
+  if (progress.chartId === null) {
+    const created = await apiFetch<SongChartResponse>(`/songs/${songId}/difficulties`, { method: "POST", body: toChartBody(chart) });
+    progress.chartId = created.id;
+  }
+  if (tableId !== null && !progress.entrySaved) {
+    await saveTableEntry(tableId, progress.chartId, toTableEntryBody(chart));
+    progress.entrySaved = true;
+  }
 }
 
 /** 등록하면 곡 목록·서열표·곡 상세·검색이 바뀐다. 레이팅은 기록이 없는 새 채보라 바뀌지 않지만 서열표 값이 들어가면 후보가 될 수 있어 함께 새로 받는다. */

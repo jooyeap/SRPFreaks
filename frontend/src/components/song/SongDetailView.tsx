@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
+import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongManageDialog } from "@/components/song/SongManageDialog";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
@@ -14,6 +15,7 @@ import { GroupSongList, OtherCharts, TableInfoCard } from "@/components/song/Tab
 import { ApiError } from "@/lib/api";
 import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { difficultyLabel, formatTier, partLabel } from "@/lib/format";
+import { availableCombos } from "@/lib/song-admin";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
 import { ErrorRetry } from "@/components/ErrorRetry";
@@ -54,6 +56,7 @@ export function SongDetailView({
   const [editTarget, setEditTarget] = useState<TableEntryTarget | null>(null);
   const [songEdit, setSongEdit] = useState<SongEditTarget | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
+  const [chartAddOpen, setChartAddOpen] = useState(false);
 
   const song = useQuery({
     queryKey: songKeys.detail(songId),
@@ -167,16 +170,22 @@ export function SongDetailView({
       <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start">
         <div className="contents md:flex md:flex-col md:gap-4">
           <div className="order-1 flex flex-col gap-4 md:order-none">
-            <SongHeader song={data} chart={chart} pattern={isTable ? (found?.entry.pattern ?? null) : null} />
-            {canEditTable ? (
-              <button
-                type="button"
-                onClick={() => setManageOpen(true)}
-                className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
-              >
-                {t("Song.manage")}
-              </button>
-            ) : null}
+            <SongHeader
+              song={data}
+              chart={chart}
+              pattern={isTable ? (found?.entry.pattern ?? null) : null}
+              action={
+                canEditTable ? (
+                  <button
+                    type="button"
+                    onClick={() => setManageOpen(true)}
+                    className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                  >
+                    {t("Song.manage")}
+                  </button>
+                ) : null
+              }
+            />
           </div>
           <div className="order-3 flex flex-col gap-4 md:order-none">
             {isTable ? (
@@ -230,6 +239,16 @@ export function SongDetailView({
       <TableEntryEditDialog target={editTarget} onClose={() => setEditTarget(null)} />
       <SongEditDialog target={songEdit} onClose={() => setSongEdit(null)} />
       {canEditTable ? (
+        <ChartAddDialog
+          open={chartAddOpen}
+          songId={data.id}
+          existing={data.difficulties}
+          // 서열표를 받은 상태에서만 서열표 값 칸을 보여 준다 (못 받았으면 채보만 추가하고 서열표는 나중에 `서열표에 추가`로)
+          tableId={canShowTableEdit ? tableId : null}
+          onClose={() => setChartAddOpen(false)}
+        />
+      ) : null}
+      {canEditTable ? (
         <SongManageDialog
           open={manageOpen}
           onClose={() => setManageOpen(false)}
@@ -237,6 +256,7 @@ export function SongDetailView({
           onEditTable={openTableEdit}
           onEditSong={() => setSongEdit({ kind: "song", song: data })}
           onEditChart={chart ? () => setSongEdit({ kind: "chart", song: data, chart }) : null}
+          onAddChart={availableCombos(data.difficulties).length > 0 ? () => setChartAddOpen(true) : null}
           songId={data.id}
           songTitle={data.title}
           chartId={chart?.id ?? null}
