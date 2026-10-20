@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Chakra_Petch, Noto_Sans_KR } from "next/font/google";
 import type { ReactNode } from "react";
 import { MobileTabBar } from "@/components/MobileTabBar";
@@ -26,6 +26,18 @@ const chakraPetch = Chakra_Petch({
 export const metadata: Metadata = {
   title: "SRPFreaks",
   description: "GITADORA 플레이 기록을 SRN+ 옵션으로 저장하고 레이팅 목록을 계산하는 비공식 팬 프로젝트",
+  // iOS "홈 화면에 추가" 아이콘과 전체 화면 실행
+  icons: { apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "SRPFreaks", statusBarStyle: "black-translucent" },
+};
+
+// 휴대폰 주소창·상태 표시줄 색을 테마 바탕색에 맞춘다. viewportFit=cover: 노치·홈 바 영역까지 쓰고 safe-area 여백은 화면이 직접 둔다(탭바가 이미 처리한다)
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0f1218" },
+    { media: "(prefers-color-scheme: light)", color: "#f3f5f9" },
+  ],
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
