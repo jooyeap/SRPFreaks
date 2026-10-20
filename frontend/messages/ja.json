@@ -275,7 +275,8 @@
     "manage": "管理",
     "manageTitle": "曲の管理",
     "manageEditHeading": "編集",
-    "manageDeleteHeading": "削除"
+    "manageDeleteHeading": "削除",
+    "titleDuplicate": "⚠ 同じ名前の曲がすでにあります。<l>{title}</l>"
   },
   "Table": {
     "avgWithZero": "平均 0%含む",

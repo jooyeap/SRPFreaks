@@ -275,7 +275,8 @@
     "manage": "관리",
     "manageTitle": "곡 관리",
     "manageEditHeading": "수정",
-    "manageDeleteHeading": "삭제"
+    "manageDeleteHeading": "삭제",
+    "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>"
   },
   "Table": {
     "avgWithZero": "평균 0% 포함",

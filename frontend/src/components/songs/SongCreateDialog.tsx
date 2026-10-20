@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { ApiError } from "@/lib/api";
 import { difficultyLabel, partLabel } from "@/lib/format";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/lib/song-admin";
 import { PATTERN_CHOICES, RECOMMEND_CHOICES } from "@/lib/table-entry-admin";
 import { useTranslations } from "next-intl";
+import { TitleDuplicateNotice } from "@/components/song/TitleDuplicateNotice";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
@@ -93,6 +94,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
     formState: { errors },
   } = useForm<SongCreateValues>({ resolver: zodResolver(schema), defaultValues: emptySongCreate(), mode: "onTouched" });
   const { fields, append, remove } = useFieldArray({ control, name: "charts" });
+  const titleValue = useWatch({ control, name: "title" });
 
   const mutation = useMutation({
     mutationFn: (values: SongCreateValues) => registerSong(values, tableId, progress.current),
@@ -156,6 +158,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
               {errors.title.message}
             </p>
           ) : null}
+          <TitleDuplicateNotice title={titleValue ?? ""} />
         </div>
 
         <div className="flex flex-wrap gap-4">
