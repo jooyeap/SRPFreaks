@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/components/Toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { ApiError } from "@/lib/api";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 import { difficultyLabel, partLabel } from "@/lib/format";
@@ -22,6 +22,7 @@ import {
   type SongEditValues,
 } from "@/lib/song-admin";
 import { useTranslations } from "next-intl";
+import { TitleDuplicateNotice } from "@/components/song/TitleDuplicateNotice";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -121,9 +122,11 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
   const schema = useMemo(() => makeSongEditSchema(t), [t]);
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<SongEditValues>({ resolver: zodResolver(schema), defaultValues: songToEditValues(song), mode: "onTouched" });
+  const titleValue = useWatch({ control, name: "title" });
 
   // 검색 키워드(별칭): 곡명 대신 쓰는 줄임말·별명. 폼 값(RHF)과 따로 목록 상태로 두고, 저장할 때 곡 정보와 함께 보낸다.
   const [aliases, setAliases] = useState<string[]>(() => aliasesOf(song));
@@ -178,6 +181,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
             {errors.title.message}
           </p>
         ) : null}
+        <TitleDuplicateNotice title={titleValue ?? ""} excludeSongId={song.id} />
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="edit-artist" className="text-sm text-fg-sub">

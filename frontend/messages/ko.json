@@ -271,7 +271,12 @@
     "otherCharts": "이 곡의 다른 채보 {count}개",
     "sameTierCount": "같은 난이도의 곡 <small>{count}개</small>",
     "tierHint": "0.0 이상, 소수 첫째 자리까지 · 비우면 미정(레이팅에서 제외)",
-    "entryNote": "레이팅 상수 난이도와 속성이 모두 있어야 레이팅에 들어갑니다. 속성이 없거나 레이팅 제외이면 기록만 남습니다. 저장하면 모든 사용자의 서열표와 레이팅에 반영되고, 변경 내용은 관리 기록에 남습니다."
+    "entryNote": "레이팅 상수 난이도와 속성이 모두 있어야 레이팅에 들어갑니다. 속성이 없거나 레이팅 제외이면 기록만 남습니다. 저장하면 모든 사용자의 서열표와 레이팅에 반영되고, 변경 내용은 관리 기록에 남습니다.",
+    "manage": "관리",
+    "manageTitle": "곡 관리",
+    "manageEditHeading": "수정",
+    "manageDeleteHeading": "삭제",
+    "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>"
   },
   "Table": {
     "avgWithZero": "평균 0% 포함",
@@ -1088,6 +1093,7 @@
     "BAD_REQUEST": "잘못된 요청입니다.",
     "NOT_FOUND": "찾을 수 없습니다.",
     "CONFLICT": "이미 등록되어 있습니다.",
+    "SONG_TITLE_DUPLICATE": "같은 이름의 곡이 이미 등록되어 있습니다. 곡 목록에서 확인해 주세요.",
     "SNAPSHOT_ALREADY_TODAY": "오늘은 이미 기록했습니다. 내일 다시 기록해 주세요.",
     "SNAPSHOT_NO_CHANGE": "마지막 기록과 점수가 같아 기록할 수 없습니다.",
     "SNAPSHOT_NO_RECORDS": "레이팅에 들어간 기록이 없어 기록할 수 없습니다.",
