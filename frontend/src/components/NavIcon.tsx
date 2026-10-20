@@ -11,6 +11,8 @@ const PATHS: Record<NavIconName, string> = {
   guide: "M4 19.5A2.5 2.5 0 016.5 17H20V3H6.5A2.5 2.5 0 004 5.5v14zM20 17v4H6.5A2.5 2.5 0 014 18.5",
   notices: "M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0",
   suggestions: "M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z",
+  more: "M4 6h16M4 12h16M4 18h16",
+  import: "M12 3v12M7 10l5 5 5-5M5 21h14",
   admin: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z",
 };
 

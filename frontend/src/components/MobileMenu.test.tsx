@@ -30,8 +30,9 @@ describe("MobileMenu", () => {
     const dialog = screen.getByRole("dialog", { name: "메뉴" });
     expect(dialog).toHaveAttribute("aria-modal", "true");
     const nav = within(dialog).getByRole("navigation", { name: "주요 메뉴" });
-    expect(within(nav).getByRole("link", { name: "곡 목록" })).toHaveAttribute("href", "/songs");
-    expect(within(nav).getByRole("link", { name: "서열표" })).toHaveAttribute("href", "/table");
+    // 곡 목록과 서열표는 한 메뉴(곡)로 합쳤다
+    expect(within(nav).getByRole("link", { name: "곡" })).toHaveAttribute("href", "/table");
+    expect(within(nav).queryByRole("link", { name: "서열표" })).toBeNull();
     expect(within(nav).getByRole("link", { name: "마이페이지" })).toHaveAttribute("href", "/me");
     expect(within(nav).getByRole("link", { name: "유저" })).toHaveAttribute("href", "/players");
     expect(within(nav).getByRole("link", { name: "설명서" })).toHaveAttribute("href", "/guide");
@@ -104,7 +105,7 @@ describe("MobileMenu", () => {
   it("메뉴 링크를 누르면 이동하면서 닫힌다", () => {
     renderMenu();
     fireEvent.click(opener());
-    fireEvent.click(screen.getByRole("link", { name: "서열표" }));
+    fireEvent.click(screen.getByRole("link", { name: "곡" }));
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
