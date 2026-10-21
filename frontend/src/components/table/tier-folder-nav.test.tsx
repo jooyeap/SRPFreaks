@@ -13,7 +13,7 @@ const groups = [group({ tier: 5.9 }), group({ tier: 5.8, total: 12, recorded: 3 
 describe("TierFolderNav", () => {
   it("지금 난이도와 기록 수를 보이고, 왼쪽은 낮은 난이도 · 오른쪽은 높은 난이도로 가는 링크다", () => {
     render(<TierFolderNav groups={groups} currentTier={5.8} />);
-    const bar = screen.getByRole("navigation", { name: "이웃 난이도" });
+    const bar = screen.getByRole("navigation", { name: "인접 난이도" });
     expect(within(bar).getByText("5.8")).toHaveAttribute("aria-current", "page");
     expect(bar).toHaveTextContent("기록 3/12");
     const prev = within(bar).getByRole("link", { name: "이전 난이도 5.7" });

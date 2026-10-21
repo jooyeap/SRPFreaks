@@ -87,7 +87,7 @@ describe("RatingGoalPlanner", () => {
     expect(screen.getByText(/내 평균 난이도 근처 폴더/)).toHaveTextContent("6.0 평균 85.00% (2곡)");
     expect(screen.getByText(/목표까지/)).toHaveTextContent("+40.00");
     expect(screen.getByText(/목표까지/)).toHaveTextContent("곡 2개를 올리면 달성합니다");
-    expect(screen.queryByText(/근처 폴더만으로는 모자라서/)).toBeNull();
+    expect(screen.queryByText(/데이터가 부족하여 다른 난이도의 곡도 포함했습니다/)).toBeNull();
   });
 
   it("근처 폴더만으로 모자라면 다른 난이도의 곡도 넣고 알린다 (1100: 근처 최대 +85.33 → 비곡 90%→95% 포함, 에이곡 80%→93.44%)", async () => {
@@ -100,7 +100,7 @@ describe("RatingGoalPlanner", () => {
     expect(items[1]).toHaveTextContent("90.00% → 95.00%");
     expect(items[2]).toHaveTextContent("비곡");
     expect(items[2]).toHaveTextContent("90.00% → 95.00%");
-    expect(screen.getByText(/근처 폴더만으로는 모자라서/)).toBeInTheDocument();
+    expect(screen.getByText(/데이터가 부족하여 다른 난이도의 곡도 포함했습니다/)).toBeInTheDocument();
   });
 
   it("목록 안의 곡을 모두 올려도 모자라면 모자란 점수를 알려 준다 (1200: 106.67만 오르고 93.33 모자람)", async () => {
@@ -155,10 +155,10 @@ describe("RatingGoalPlanner", () => {
       expect(items).toHaveLength(1);
       expect(items[0]).toHaveTextContent("70.00% → 78.17%");
       expect(items[0]).toHaveTextContent("목록 진입");
-      const displaced = screen.getByRole("list", { name: "목록에서 밀려나는 곡" });
+      const displaced = screen.getByRole("list", { name: "후보 곡으로 밀려나는 곡" });
       expect(within(displaced).getByText("에스원")).toBeInTheDocument();
       expect(displaced).toHaveTextContent("90.00% · 282.67");
-      expect(screen.getByText(/밀려난 곡을 뺀 값/)).toBeInTheDocument();
+      expect(screen.getByText(/후보 곡으로 밀려난 레이팅과 늘어나는 레이팅을 계산한 값/)).toBeInTheDocument();
     });
 
     it("서열표를 받지 못하면 안내하고 레이팅 목록 안의 곡만으로 계산한다", async () => {
@@ -167,7 +167,7 @@ describe("RatingGoalPlanner", () => {
       expect(await screen.findByText(/서열표를 불러오지 못해 레이팅 목록 안의 곡만 계산했습니다/)).toBeInTheDocument();
       const items = within(await screen.findByRole("list", { name: "목표까지 올릴 곡" })).getAllByRole("listitem");
       expect(items[0]).toHaveTextContent("에스원");
-      expect(screen.queryByRole("list", { name: "목록에서 밀려나는 곡" })).toBeNull();
+      expect(screen.queryByRole("list", { name: "후보 곡으로 밀려나는 곡" })).toBeNull();
     });
   });
 

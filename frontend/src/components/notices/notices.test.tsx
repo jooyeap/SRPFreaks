@@ -63,7 +63,7 @@ describe("NoticesView", () => {
     // 목록에는 본문이 없고 상세 페이지 링크만 있다
     expect(screen.queryByText(/줄1/)).not.toBeInTheDocument();
     expect(within(items[0]).getByRole("link")).toHaveAttribute("href", "/notices/2");
-    expect(screen.queryByRole("button", { name: /고치기|삭제/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /수정|삭제/ })).not.toBeInTheDocument();
   });
 
   it("공지가 없으면 안내 문구를 보여 준다", async () => {
