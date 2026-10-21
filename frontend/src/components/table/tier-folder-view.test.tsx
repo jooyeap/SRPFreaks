@@ -85,10 +85,10 @@ describe("TierFolderView", () => {
     expect(screen.getByRole("link", { name: "서열표로" })).toHaveAttribute("href", "/table");
   });
 
-  it("묶음 화면 상단에 이웃 난이도 막대와 난이도 칩 띠가 있다", async () => {
+  it("묶음 화면 상단에 인접 난이도 막대와 난이도 칩 띠가 있다", async () => {
     renderView("5.8");
     await screen.findByRole("heading", { name: /5\.8\s*2개/ });
-    expect(screen.getByRole("navigation", { name: "이웃 난이도" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "인접 난이도" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "난이도 목록" })).toBeInTheDocument();
   });
 
@@ -114,8 +114,8 @@ describe("TierFolderView", () => {
     expect(await screen.findByRole("heading", { name: /5\.8\s*1개/ })).toBeInTheDocument();
     expect(screen.getAllByText("가곡").length).toBeGreaterThan(0); // Bass인 곡
     expect(screen.queryByText("나곡")).not.toBeInTheDocument();
-    // 이웃 난이도 막대는 묶음 전체 기준이라 필터와 상관없이 그대로 있다
-    expect(screen.getByRole("navigation", { name: "이웃 난이도" })).toBeInTheDocument();
+    // 인접 난이도 막대는 묶음 전체 기준이라 필터와 상관없이 그대로 있다
+    expect(screen.getByRole("navigation", { name: "인접 난이도" })).toBeInTheDocument();
   });
 
   it("추천·속성 칩도 걸리고, 조건에 맞는 채보가 없으면 안내를 보여 준다", async () => {

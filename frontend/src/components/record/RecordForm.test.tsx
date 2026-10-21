@@ -75,12 +75,12 @@ describe("RecordForm", () => {
   it("풀콤보를 체크하면 FC, 달성률 100.00이면 EXC로 보이고 풀콤보가 자동으로 켜진다", () => {
     renderForm();
     fireEvent.change(rateInput(), { target: { value: "97" } });
-    fireEvent.click(screen.getByLabelText("풀콤보(0 miss)"));
+    fireEvent.click(screen.getByLabelText("Full Combo"));
     expect(screen.getByLabelText("달성 단계 FC")).toBeInTheDocument();
 
     fireEvent.change(rateInput(), { target: { value: "100" } });
     expect(screen.getByLabelText("달성 단계 EXC")).toBeInTheDocument();
-    const fc = screen.getByLabelText("풀콤보(0 miss)");
+    const fc = screen.getByLabelText("Full Combo");
     expect(fc).toBeChecked();
     expect(fc).toBeDisabled();
   });
@@ -173,7 +173,7 @@ describe("RecordForm", () => {
       </QueryClientProvider>,
     );
     fireEvent.change(rateInput(), { target: { value: "95" } }); // 304.00점 > 맨 아래 200
-    expect(await screen.findByText("예상 레이팅 +104.00 · NEW 레이팅 목록에 새로 들어갑니다")).toBeInTheDocument();
+    expect(await screen.findByText("예상 레이팅 +104.00 · NEW")).toBeInTheDocument();
     fireEvent.change(rateInput(), { target: { value: "50" } }); // 150점 < 200: 목록에 못 든다
     expect(await screen.findByText(/레이팅 변화 없음 · 아직 레이팅 목록에는 들지 못합니다/)).toBeInTheDocument();
   });

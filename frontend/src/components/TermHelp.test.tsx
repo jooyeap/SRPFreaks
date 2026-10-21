@@ -12,7 +12,7 @@ describe("TermHelp", () => {
     fireEvent.click(button);
     expect(button).toHaveAttribute("aria-expanded", "true");
     const panel = screen.getByRole("dialog", { name: "단일 설명" });
-    expect(panel).toHaveTextContent("단일이 뭔가요?");
+    expect(panel).toHaveTextContent("단일이란?");
     expect(screen.getByRole("link", { name: "설명서에서 자세히 보기" })).toHaveAttribute("href", "/guide");
     expect(button).toHaveAttribute("aria-controls", panel.id);
   });
@@ -59,7 +59,7 @@ describe("TermHelp", () => {
   it("말풍선 안을 눌러도 닫히지 않는다", () => {
     render(<TermHelp term="single" label="단일" />);
     fireEvent.click(screen.getByRole("button", { name: "단일 설명 보기" }));
-    fireEvent.pointerDown(screen.getByText("단일이 뭔가요?"));
+    fireEvent.pointerDown(screen.getByText("단일이란?"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

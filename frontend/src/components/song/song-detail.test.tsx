@@ -188,7 +188,7 @@ describe("SongDetailView", () => {
     expect(within(mine).getByLabelText("달성 단계 EXC")).toBeInTheDocument();
     expect(within(mine).getByText("2026-10-05")).toBeInTheDocument(); // UTC 15:00 = 서울 다음 날 00:00
     expect(within(mine).getByText("SRN+")).toBeInTheDocument();
-    expect(within(mine).getByText("서열표는 SRN+, Premium Free 기준입니다.")).toBeInTheDocument();
+    expect(within(mine).getByText("서열표는 SRN+, Premium Free, S 랭 기준입니다.")).toBeInTheDocument();
 
     const neighbors = screen.getByRole("region", { name: "같은 난이도의 곡" });
     expect(within(neighbors).getByRole("link", { name: /앞곡/ })).toHaveAttribute("href", "/songs/9?from=table&chart=90");

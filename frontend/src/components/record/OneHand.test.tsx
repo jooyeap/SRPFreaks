@@ -59,7 +59,7 @@ describe("한 손 입력 모드", () => {
     expect(screen.queryByRole("group", { name: "한 손 입력" })).toBeNull();
     expect(rate()).not.toHaveAttribute("readonly");
     expect(rate()).toHaveAttribute("inputmode", "decimal");
-    expect(screen.getByLabelText("풀콤보(0 miss)")).toBeInTheDocument(); // 평소 체크박스
+    expect(screen.getByLabelText("Full Combo")).toBeInTheDocument(); // 평소 체크박스
   });
 
   it("켜면 숫자 패드가 나오고 달성률 칸은 화면 키보드 없이 읽기 전용이 된다", () => {
@@ -69,7 +69,7 @@ describe("한 손 입력 모드", () => {
     expect(screen.getByRole("group", { name: "한 손 입력" })).toBeInTheDocument();
     expect(rate()).toHaveAttribute("readonly");
     expect(rate()).toHaveAttribute("inputmode", "none");
-    expect(screen.queryByLabelText("풀콤보(0 miss)")).toBeNull(); // 체크박스 대신 패드의 큰 버튼
+    expect(screen.queryByLabelText("Full Combo")).toBeNull(); // 체크박스 대신 패드의 큰 버튼
     expect(localStorage.getItem("srp.oneHandMode")).toBe("1"); // 이 기기에 기억한다
   });
 
@@ -93,7 +93,7 @@ describe("한 손 입력 모드", () => {
   it("풀콤보 큰 버튼은 켜짐/꺼짐을 글자로 보이고, 달성률 100.00이면 켜진 채 잠긴다", () => {
     setOneHandMode(true);
     renderForm();
-    const fc = screen.getByRole("button", { name: /풀콤보/ });
+    const fc = screen.getByRole("button", { name: /Full Combo/ });
     expect(fc).toHaveAttribute("aria-pressed", "false");
     expect(fc).toHaveTextContent("꺼짐");
     fireEvent.click(fc);
@@ -115,7 +115,7 @@ describe("한 손 입력 모드", () => {
     expect(details).not.toBeNull();
     expect(details).not.toHaveAttribute("open");
     press("9", "7", "소수점", "2", "5");
-    fireEvent.click(screen.getByRole("button", { name: /풀콤보/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Full Combo/ }));
     fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
