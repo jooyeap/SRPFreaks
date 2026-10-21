@@ -1,16 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { LoginBanner } from "@/components/LoginBanner";
 import { SongTabs } from "@/components/songs/SongTabs";
 import { DifficultyTableView } from "@/components/table/DifficultyTableView";
 import { viewStateFromParams, viewStateToQuery, type TableViewState } from "@/lib/table-view-state";
+import { ANONYMOUS_VIEWER_ID } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 
 /**
- * 서열표 화면. 내 기록을 함께 보여 주므로 로그인이 필요하다.
+ * 서열표 화면. 로그인 없이도 볼 수 있고(D43), 로그인하면 내 기록을 함께 보여 준다.
  * 필터·정렬·평균 계산·페이지는 주소 쿼리(`/table?part=B&pat=단일&page=3`)에 둔다: 곡 상세로 갔다가 뒤로 와도, 새로고침해도,
  * 링크를 공유해도 같은 화면이 나온다(곡 목록과 같은 방식). useSearchParams는 Suspense 안에서 써야 해서(Next.js 정적 빌드 규칙) 본문을 따로 나눴다.
  */
@@ -41,24 +42,11 @@ function TableContent() {
       </>
     );
   }
-  if (status === "anonymous" || !user) {
-    return (
-      <>
-        <SongTabs current="table" />
-        <section className="flex flex-col items-start gap-3">
-          <h1 className="text-xl font-semibold text-fg">{t("Table.pageTitle")}</h1>
-          <p className="text-sm text-fg-sub">{t("Songs.loginToSeeRecords")}</p>
-          <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-            {t("Nav.login")}
-          </Link>
-        </section>
-      </>
-    );
-  }
   return (
     <>
       <SongTabs current="table" />
-      <DifficultyTableView userId={user.id} canRegister={user.role !== "USER"} state={state} onStateChange={onStateChange} />
+      {user ? null : <LoginBanner />}
+      <DifficultyTableView userId={user?.id ?? ANONYMOUS_VIEWER_ID} canRegister={user !== null && user.role !== "USER"} state={state} onStateChange={onStateChange} />
     </>
   );
 }

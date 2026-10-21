@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { PlayerDetailView } from "@/components/players/PlayerDetailView";
 import { canSeeAdminMenu } from "@/lib/admin";
 import { parseId } from "@/lib/songs";
+import { ANONYMOUS_VIEWER_ID } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 
 /**
@@ -20,20 +20,9 @@ export default function PlayerDetailPage() {
   if (status === "loading") {
     return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
-  if (status === "anonymous" || !user) {
-    return (
-      <section className="flex flex-col items-start gap-3">
-        <h1 className="text-xl font-semibold text-fg">{t("Pages.playerDetailTitle")}</h1>
-        <p className="text-sm text-fg-sub">{t("Pages.playerDetailLead")}</p>
-        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-          {t("Nav.login")}
-        </Link>
-      </section>
-    );
-  }
   const playerId = parseId(params.userId);
   if (playerId === null) {
     return <p role="alert" className="text-sm text-fg">{t("Players.notFound")}</p>;
   }
-  return <PlayerDetailView viewerId={user.id} playerId={playerId} canDeleteRecords={canSeeAdminMenu(user.role)} />;
+  return <PlayerDetailView viewerId={user?.id ?? ANONYMOUS_VIEWER_ID} playerId={playerId} canDeleteRecords={user !== null && canSeeAdminMenu(user.role)} />;
 }
