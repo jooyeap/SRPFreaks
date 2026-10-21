@@ -87,6 +87,21 @@ class SongChartListServiceTest {
     }
 
     @Test
+    void 비로그인이면_기록을_조회하지_않고_곡_정보만_준다() {
+        guitar("a", "9.00");
+        stubCharts();
+
+        var rows = service.charts(null, null, null, null, null, null, null, 0, 50).content();
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).mine()).isNull();
+        verify(optionRecordRepository, never()).findBestByUser(any(), any());
+        // 폴더 목록도 같다
+        service.folders(null);
+        verify(optionRecordRepository, never()).findBestByUser(any(), any());
+    }
+
+    @Test
     void 폴더_경계는_0점5_단위로_내림한다() {
         assertThat(SongChartListService.folderLow(new BigDecimal("9.49"))).isEqualByComparingTo("9.00");
         assertThat(SongChartListService.folderLow(new BigDecimal("9.50"))).isEqualByComparingTo("9.50");

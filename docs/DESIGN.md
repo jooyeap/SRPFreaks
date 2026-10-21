@@ -50,6 +50,7 @@
 | D40 | 2026-10-19 | **최근 플레이 가져오기를 토큰 없이 사이트 화면에서 확인·저장하는 방식으로 바꾼다.** D34의 원칙(서버는 Konami와 통신하지 않음, 사용자 브라우저가 연 페이지 한 장만 읽음, 사진·계정 정보 없음)은 그대로다. (1) 북마클릿은 공식 페이지에서 값을 읽어 **SRPFreaks의 `/import#srp=<JSON>` 창을 열어 넘기기만** 한다(서버 호출·토큰 없음, 북마크에는 사이트 주소만 있어 재발급이 필요 없다). 값을 URL 조각(`#`)에 담는 이유는 조각이 서버로 전송되지 않아 접속 기록에 남지 않기 때문이다. 사이트는 받은 즉시 주소에서 조각을 지우고, 모양이 맞지 않으면 버린다(`postMessage`는 창 참조·출처 검증이 복잡해 쓰지 않는다). 같은 이름의 창을 재사용하므로 다음 쪽도 같은 탭에 이어서 쌓인다 (2) 사용자가 사이트에서 **미리보기를 확인하고 고른 건만 저장**한다. 미리보기 `POST /record-imports/preview`는 저장하지 않고 건별 결과(저장될 건·건너뜀 사유·제외곡·기존 최고 달성률)만 돌려주고, 저장 `POST /record-imports/commit`은 같은 규칙으로 **다시 검증**해서 저장한다(미리보기 값을 믿지 않는다) (3) 두 API는 **로그인 계정(Access Token)** 으로 부르고 사용자는 인증에서만 정한다. 가져오기 토큰 경로(`/imports/**`, D34)는 그대로 두되 새 방식이 확인되면 제거할지 따로 정한다 (4) 모두에게 열기 전(`app.import-api.enabled=false`)에는 토큰 API와 함께 **ROOT만** 부를 수 있다 (5) 같은 값을 다시 보내도 서버가 걸러서 중복 저장되지 않는다 (6) 사이트에는 전달받은 플레이가 있으면 어느 화면에서든 `이어서 처리` 안내 모달이 뜬다(처리하기 전까지 이 브라우저의 localStorage에만 보관하고 6시간 뒤 버린다. 토큰·계정 정보는 보관하지 않는다) (7) **옛 토큰 방식은 2026-10-19에 제거했다**: 토큰 발급·폐기 API(`/import-token`), 토큰 전용 경로(`/imports/**`)와 그 필터·Rate Limit·CORS, `import_tokens` 테이블(V13에서 삭제), `/settings/import` 화면. 토큰을 발급받은 사람은 운영자 한 명뿐이었다 |
 | D38 | 2026-10-19 | **플레이어 티어 위쪽을 Iridescent · Alien · HSB로 나눈다.** 기존 `하수봉`(9,500 이상) 한 티어를 9,500 `Iridescent` / 10,000 `Alien` / 11,000 `HSB` 3단계로 바꾼다(곡 점수 기준 237.5 / 250 / 275). 키 `HASUBONG`은 `HSB`로 바꾸고 표기도 영문 `HSB`다. 일본 사용자 조언(Alien부터 곡 점수 25점마다 색이 바뀐다)을 따른 것이다. 마이그레이션 `V10`. 화면은 DESIGN-UI 17장 |
 | D41 | 2026-10-20 | **화면 언어를 한국어·일본어로 지원한다(다국어, 프론트만).** (1) 언어는 `ko`(기본)·`ja` 둘이고, 영어는 지원하지 않는다 (2) **주소는 바꾸지 않고 쿠키(`srp.locale`, 1년, SameSite=Lax, httpOnly 아님)로 고른다.** 주소에 언어를 넣으면 기존 링크·PWA·Refresh 쿠키 경로(Path=/api/v1/auth)가 영향을 받는다. 쿠키가 없으면 브라우저 `Accept-Language`로 정한다 (3) 라이브러리는 `next-intl`(App Router, i18n 라우팅 없이 `src/i18n/request.ts`) (4) 번역 문구는 `frontend/messages/ko.json`(원본)·`ja.json`. 두 파일의 키·자리표시자가 같은지 테스트가 확인한다 (5) **곡 제목·아티스트·난이도 표기는 번역하지 않는다** (6) **서버가 주는 오류 메시지는 1단계에서 한국어 그대로**이고, 오류 코드 기준 번역은 따로 한다 (7) 쿠키를 읽으므로 화면은 요청마다 그려진다(dynamic) (8) 일본어 용어는 `docs/I18N-GLOSSARY.md`에서 번역이 애매한 것을 모아 확인한다. 화면은 DESIGN-UI 25장 |
+| D43 | 2026-10-21 | **공지·곡 목록·서열표·유저 목록·설명서는 로그인 없이 읽을 수 있다.** (1) 열리는 것은 **GET 읽기만**이다: `/notices`, `/notices/{id}`, `/songs`, `/songs/{id}`, `/songs/suggest`, `/songs/chart-folders`, `/songs/charts`, `/players`, `/players/{id}`, `/difficulty-tables`, `/difficulty-tables/{id}/entries`. 목록은 `PublicReadPaths` 한 곳에 정규식으로 적고(접두사로 열지 않는다), `SecurityConfig`의 `permitAll`과 요청 제한이 같은 목록을 쓴다. (2) 쓰기와 개인 데이터(내 기록, 레이팅, 세트리스트, 건의, 가져오기, 설정, 관리)는 그대로 로그인이 필요하다(deny all 유지). (3) 비로그인이면 곡 목록·서열표는 **내 기록 없이 곡 정보만** 내려간다(`mine` 무시). (4) 유저 목록은 원래 본인이 공개를 선택한 유저만 나오므로 범위는 그대로이고, **누구에게 보이는지가 "로그인한 사용자"에서 "누구나"로 넓어진다** → 설정 안내·개인정보 처리방침·이용약관 문구를 함께 고친다. (5) 곡 DB를 통째로 긁어 가는 것을 늦추려고 **비로그인 공개 읽기에 IP별 1분 120회** 제한을 둔다(`app.rate-limit.public-read-per-minute`, 로그인 사용자는 제한 없음). (6) 검색 노출(sitemap)은 별도 작업이다. |
 ---
 
 ## 1. 목적과 범위
@@ -438,15 +439,15 @@ com.srpfreaks.backend
 - **쿠키**: `refresh_token`, httpOnly, Secure(`COOKIE_SECURE`, 로컬 http에서만 false), SameSite=Strict, Path=`/api/v1/auth`. 재발급·로그아웃은 추가로 `Origin` 헤더가 허용 목록에 있어야 한다.
 - **인증 실패 응답**: 구글 토큰 오류, 만료·재사용된 refresh, 차단된 계정은 모두 `AUTH_FAILED` 하나로 응답한다.
 - **ROOT 부트스트랩**: `ROOT_EMAIL`과 같은 이메일(대소문자 무시)로 **처음 가입하는 계정만**, 그리고 ROOT가 아직 없을 때만 ROOT가 된다. 기존 계정은 승격하지 않고, 같은 이메일이라도 `google_sub`가 다르면 로그인을 거부한다(계정 탈취 방지).
-- **공개 경로**: `POST /api/v1/auth/google|refresh|logout` 뿐이다. `/api/v1/**`는 인증 필요, 나머지(`/error`, 문서 경로 포함)는 모두 막는다. springdoc을 쓰려면 개발 환경에서만 열도록 따로 설정해야 한다.
-- **Rate Limit**: IP별 1분당 로그인(`/auth/google`) 10회(`app.rate-limit.auth-per-minute`), 재발급(`/auth/refresh`)·로그아웃 60회(`app.rate-limit.refresh-per-minute`). 재발급은 화면을 열 때마다 불리고 오락실 Wi-Fi·이동통신 공용 IP처럼 한 주소를 여러 사람이 쓸 수 있어 로그인보다 넉넉하게 둔다(2026-10-20). 서버 메모리 방식(EC2 1대 기준. 서버를 늘리면 공유 저장소 필요).
+- **공개 경로**: `POST /api/v1/auth/google|refresh|logout`과, 로그인 없이 읽는 **GET 몇 개**(공지·곡·서열표·유저 목록, D43, `PublicReadPaths`)뿐이다. 그 밖의 `/api/v1/**`는 인증 필요, 나머지(`/error`, 문서 경로 포함)는 모두 막는다. springdoc을 쓰려면 개발 환경에서만 열도록 따로 설정해야 한다.
+- **Rate Limit**: 비로그인 공개 읽기(D43)는 IP별 1분 120회(`app.rate-limit.public-read-per-minute`, 로그인 사용자는 제한 없음, JWT 필터 뒤에서 로그인 여부를 보고 센다). IP별 1분당 로그인(`/auth/google`) 10회(`app.rate-limit.auth-per-minute`), 재발급(`/auth/refresh`)·로그아웃 60회(`app.rate-limit.refresh-per-minute`). 재발급은 화면을 열 때마다 불리고 오락실 Wi-Fi·이동통신 공용 IP처럼 한 주소를 여러 사람이 쓸 수 있어 로그인보다 넉넉하게 둔다(2026-10-20). 서버 메모리 방식(EC2 1대 기준. 서버를 늘리면 공유 저장소 필요).
 - **관리 API 방어선**: `/api/v1/admin/**`은 주소 단계에서도 ADMIN 이상만 통과시킨다(컨트롤러의 `@PreAuthorize`와 이중). nginx는 `server_tokens off`로 버전을 숨긴다(2026-10-20).
 - **보안 헤더**: CSP(`default-src 'none'; frame-ancestors 'none'`), Referrer-Policy, Permissions-Policy, X-Frame-Options, Cache-Control(no-store), HSTS(https 요청).
 - **회원 탈퇴 (구현됨, 로컬 검증 전)**: `DELETE /users/me` → 204. `users` 행 하나만 지우고 나머지는 FK가 처리한다(기록·refresh 토큰은 CASCADE, 감사 로그·곡 등록자·설정 수정자는 SET NULL). 응답의 Set-Cookie로 refresh 쿠키도 지운다. ROOT도 막지 않는다(같은 ROOT_EMAIL로 다시 가입하면 ROOT가 된다). 화면은 `/settings/withdraw`(되돌릴 수 없다는 안내 + 확인 체크 후 버튼 활성).
 - **아직 안 한 것**: 만료·폐기된 refresh_tokens 정리 작업(배치).
 
 ### 9.2 접근 제어
-- 기본 정책은 **deny all**, 공개 경로만 `permitAll`.
+- 기본 정책은 **deny all**, 공개 경로만 `permitAll`. 공개 경로는 `PublicReadPaths`(GET 읽기 몇 개, D43)와 로그인·재발급·로그아웃뿐이다.
 - 메서드 보안(`@PreAuthorize`) + 서비스 계층 소유자 검증을 함께 쓴다.
 - 본인 기록이 아니면 **404**로 응답해 존재 여부를 숨긴다.
 
@@ -1115,3 +1116,4 @@ com.srpfreaks.backend
 | 공식 기록 가져오기 | POST `/imports/official` (Phase 2, 가져오기 토큰) | 토큰 |
 | 2026-10-19 | 세트리스트 추천(D37) 규칙 변경: 묶음별 하한~상한 범위(SS 기준 평균 -0.6~-0.1, S 기준 -0.1~+0.4), 단일/그 외 1/3 미만이면 데이터 부족 안내, 기록 없는 신규는 5.2 이하 S 기준만. 설정은 V11로 교체 |
 | 2026-10-19 | 추천 범위 직접 설정(D37): `PUT/DELETE /setlist/recommend-range`, V12 `setlist_recommend_ranges`, 응답 `customRange`. 화면은 DESIGN-UI 23장 `범위 조정` |
+| 2026-10-21 | **D43.** 공지·곡 목록·서열표·유저 목록의 GET을 비로그인에게 연다(`PublicReadPaths`), 비로그인은 내 기록 없이 곡 정보만, 비로그인 IP당 120회/분 제한 (9.1·9.2장) |
