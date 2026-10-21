@@ -32,6 +32,20 @@ describe("번역 문구 파일", () => {
     expect(Object.keys(jaFlat).sort()).toEqual(Object.keys(koFlat).sort());
   });
 
+  it("일본어 속성 이름은 단색·이색·삼색 계열로 쓰고, 예전 표기(単一·二重·三重)는 남기지 않는다", () => {
+    expect(jaFlat["Chart.patternSingle"]).toBe("単色");
+    expect(jaFlat["Chart.patternDouble"]).toBe("二色");
+    expect(jaFlat["Chart.patternTriple"]).toBe("三色");
+    expect(jaFlat["Chart.patternCompound"]).toBe("複合"); // 복합은 그대로
+    for (const [key, text] of Object.entries(jaFlat)) {
+      expect(text, key).not.toMatch(/単一|二重|三重/);
+    }
+    // 설명 문장에도 `コード`를 붙이지 않고 속성 이름만 쓴다(2026-10-21 요청)
+    expect(jaFlat["TermHelp.single.line1"]).not.toContain("コード");
+    expect(jaFlat["TermHelp.other.line1"]).not.toContain("コード");
+    expect(jaFlat["TermHelp.other.line1"]).toContain("二色・三色");
+  });
+
   it("비어 있는 문구가 없다", () => {
     for (const [key, text] of [...Object.entries(koFlat), ...Object.entries(jaFlat)]) {
       expect(text.trim(), key).not.toBe("");
