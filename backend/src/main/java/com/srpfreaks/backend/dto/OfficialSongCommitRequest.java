@@ -1,5 +1,6 @@
 package com.srpfreaks.backend.dto;
 
+import com.srpfreaks.backend.dto.OfficialSongImportRequest.OfficialSong;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -12,7 +13,7 @@ import java.util.List;
  * 고른 id가 지금도 차이 목록에 있을 때만 반영한다(미리보기 결과를 믿지 않는다).
  */
 public record OfficialSongCommitRequest(
-        @NotEmpty @Size(max = 300) List<@Valid OfficialSongImportRequest.OfficialSong> songs,
+        @NotEmpty @Size(max = 300) List<@Valid OfficialSong> songs,
         @NotNull @Size(max = 300) List<Long> artistSongIds,
         @NotNull @Size(max = 1200) List<Long> levelChartIds) {
 }
