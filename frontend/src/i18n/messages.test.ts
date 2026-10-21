@@ -40,6 +40,10 @@ describe("번역 문구 파일", () => {
     for (const [key, text] of Object.entries(jaFlat)) {
       expect(text, key).not.toMatch(/単一|二重|三重/);
     }
+    // 설명 문장에도 `コード`를 붙이지 않고 속성 이름만 쓴다(2026-10-21 요청)
+    expect(jaFlat["TermHelp.single.line1"]).not.toContain("コード");
+    expect(jaFlat["TermHelp.other.line1"]).not.toContain("コード");
+    expect(jaFlat["TermHelp.other.line1"]).toContain("二色・三色");
   });
 
   it("비어 있는 문구가 없다", () => {
