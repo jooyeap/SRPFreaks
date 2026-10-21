@@ -38,6 +38,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "SRPFreaks",
     description: t("description"),
     // iOS "홈 화면에 추가" 아이콘과 전체 화면 실행
+    // 링크를 공유할 때의 미리보기 기본값. 이미지는 쓰지 않는다(재킷·로고 사용 금지)
+    openGraph: { title: "SRPFreaks", description: t("description"), siteName: "SRPFreaks", type: "website" },
     icons: { apple: "/icons/apple-touch-icon.png" },
     appleWebApp: { capable: true, title: "SRPFreaks", statusBarStyle: "black-translucent" },
   };

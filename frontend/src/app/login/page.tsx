@@ -26,6 +26,10 @@ export default function LoginPage() {
       <GoogleLoginButton />
       <p className="text-center text-xs text-fg-dim">
         {t("consentBefore")}
+        <Link href="/terms" className="underline underline-offset-2 hover:text-fg">
+          {t("termsLink")}
+        </Link>
+        {t("consentAnd")}
         <Link href="/privacy" className="underline underline-offset-2 hover:text-fg">
           {t("privacyLink")}
         </Link>
