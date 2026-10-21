@@ -33,6 +33,7 @@ const ACTION_LABELS: Record<string, MessageKey> = {
   NOTICE_DELETE: "Admin.actionNoticeDelete",
   SUGGESTION_REVIEW: "Admin.actionSuggestionReview",
   SETTING_UPDATE: "Admin.actionSettingUpdate",
+  SONG_OFFICIAL_IMPORT: "Admin.actionSongOfficialImport",
 };
 
 export function actionLabel(action: string, t: Translator): string {
@@ -179,6 +180,7 @@ export const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
   { href: "/songs", titleKey: "Admin.menuSongs", descriptionKey: "Admin.menuSongsDesc", minRole: "ADMIN" },
   { href: "/table", titleKey: "Admin.menuTable", descriptionKey: "Admin.menuTableDesc", minRole: "ADMIN" },
   { href: "/admin/suggestions", titleKey: "Admin.menuSuggestions", descriptionKey: "Admin.menuSuggestionsDesc", minRole: "ADMIN" },
+  { href: "/admin/song-import", titleKey: "Admin.menuSongImport", descriptionKey: "Admin.menuSongImportDesc", minRole: "ROOT" },
   { href: "/admin/users", titleKey: "Admin.menuUsers", descriptionKey: "Admin.menuUsersDesc", minRole: "ROOT" },
   { href: "/admin/settings", titleKey: "Admin.menuSettings", descriptionKey: "Admin.menuSettingsDesc", minRole: "ROOT" },
   { href: "/admin/audit-logs", titleKey: "Admin.menuAuditLogs", descriptionKey: "Admin.menuAuditLogsDesc", minRole: "ROOT" },

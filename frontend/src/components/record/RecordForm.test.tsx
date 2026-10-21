@@ -36,11 +36,11 @@ describe("RecordForm", () => {
   it("달성률을 입력하면 달성 표시를 미리 보여 준다", () => {
     renderForm();
     expect(screen.queryByLabelText(/달성 단계/)).toBeNull();
-    fireEvent.change(rateInput(), { target: { value: "96.5" } });
+    fireEvent.change(rateInput(), { target: { value: "9650" } });
     expect(screen.getByLabelText("달성 단계 SS")).toBeInTheDocument();
-    fireEvent.change(rateInput(), { target: { value: "79.99" } });
+    fireEvent.change(rateInput(), { target: { value: "7999" } });
     expect(screen.getByLabelText("달성 단계 A")).toBeInTheDocument();
-    fireEvent.change(rateInput(), { target: { value: "62.99" } });
+    fireEvent.change(rateInput(), { target: { value: "6299" } });
     expect(screen.getByLabelText("달성 단계 C")).toBeInTheDocument();
   });
 
@@ -49,36 +49,36 @@ describe("RecordForm", () => {
     expect(screen.getByText(/예상 점수/)).toHaveTextContent("레이팅 상수 난이도 6.0");
     expect(screen.queryByText("304.00")).toBeNull(); // 아직 입력 전: 점수 대신 –
 
-    fireEvent.change(rateInput(), { target: { value: "95" } });
+    fireEvent.change(rateInput(), { target: { value: "9500" } });
     const top = screen.getByText("304.00"); // 15×0.8 + 3.2 = 15.2, ×20
     expect(top).toHaveAttribute("data-tier", "HSB"); // 304는 275 이상
 
-    fireEvent.change(rateInput(), { target: { value: "80" } });
+    fireEvent.change(rateInput(), { target: { value: "8000" } });
     expect(screen.getByText("240.00")).toHaveAttribute("data-tier", "IRIDESCENT"); // 237.5 이상 250 미만
 
-    fireEvent.change(rateInput(), { target: { value: "50" } }); // 15×0.5×20 = 150 -> Red
+    fireEvent.change(rateInput(), { target: { value: "5000" } }); // 15×0.5×20 = 150 -> Red
     const low = screen.getByText("150.00");
     expect(low).toHaveAttribute("data-tier", "RED");
   });
 
   it("달성률이 범위 밖이면 점수를 계산하지 않고, 레이팅 상수 난이도가 없으면 점수 칸을 그리지 않는다", () => {
     const first = renderForm({ ...chart, tier: 6.0 });
-    fireEvent.change(rateInput(), { target: { value: "100.01" } });
+    fireEvent.change(rateInput(), { target: { value: "10001" } });
     expect(screen.queryByText(/^\d+\.\d\d$/)).toBeNull();
     first.unmount();
 
     renderForm({ ...chart, tier: null });
-    fireEvent.change(rateInput(), { target: { value: "95" } });
+    fireEvent.change(rateInput(), { target: { value: "9500" } });
     expect(screen.queryByText(/예상 점수/)).toBeNull();
   });
 
   it("풀콤보를 체크하면 FC, 달성률 100.00이면 EXC로 보이고 풀콤보가 자동으로 켜진다", () => {
     renderForm();
-    fireEvent.change(rateInput(), { target: { value: "97" } });
+    fireEvent.change(rateInput(), { target: { value: "9700" } });
     fireEvent.click(screen.getByLabelText("풀콤보(0 miss)"));
     expect(screen.getByLabelText("달성 단계 FC")).toBeInTheDocument();
 
-    fireEvent.change(rateInput(), { target: { value: "100" } });
+    fireEvent.change(rateInput(), { target: { value: "10000" } });
     expect(screen.getByLabelText("달성 단계 EXC")).toBeInTheDocument();
     const fc = screen.getByLabelText("풀콤보(0 miss)");
     expect(fc).toBeChecked();
@@ -87,10 +87,23 @@ describe("RecordForm", () => {
 
   it("검사에 실패하면 서버에 보내지 않고 입력칸 아래에 문구를 보여 준다", async () => {
     renderForm();
-    fireEvent.change(rateInput(), { target: { value: "100.01" } });
+    fireEvent.change(rateInput(), { target: { value: "10001" } });
     fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
-    expect(await screen.findByText("달성률은 0.00 이상 100.00 이하여야 합니다.")).toBeInTheDocument();
+    expect(await screen.findByText("달성률은 0 이상 10000 이하여야 합니다.")).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("소수점·글자는 입력칸에 들어가지 못하고, 입력한 정수가 어떤 달성률로 저장되는지 안내한다", () => {
+    renderForm();
+    expect(screen.getByText(/소수점은 자동으로 찍힙니다/)).toBeInTheDocument();
+    expect(rateInput()).toHaveAttribute("inputmode", "numeric");
+    fireEvent.change(rateInput(), { target: { value: "99.7a1" } });
+    expect(rateInput()).toHaveValue("9971");
+    expect(screen.getByText("달성률 99.71(으)로 저장됩니다")).toBeInTheDocument();
+    fireEvent.change(rateInput(), { target: { value: "1234567" } }); // 5자리까지만
+    expect(rateInput()).toHaveValue("12345");
+    fireEvent.change(rateInput(), { target: { value: "10000" } });
+    expect(screen.getByText("달성률 MAX(으)로 저장됩니다")).toBeInTheDocument();
   });
 
   it("비어 있으면 필수 문구를 보여 준다", async () => {
@@ -104,7 +117,7 @@ describe("RecordForm", () => {
     fetchMock.mockResolvedValueOnce(json({ id: 1, stage: "SS" }, 201));
     const invalidate = vi.spyOn(client, "invalidateQueries");
     renderForm();
-    fireEvent.change(rateInput(), { target: { value: "96.5" } });
+    fireEvent.change(rateInput(), { target: { value: "9650" } });
     fireEvent.change(screen.getByLabelText("메모 (선택)"), { target: { value: " 메모 " } });
     fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
 
@@ -137,7 +150,7 @@ describe("RecordForm", () => {
       ),
     );
     renderForm();
-    fireEvent.change(rateInput(), { target: { value: "96.5" } });
+    fireEvent.change(rateInput(), { target: { value: "9650" } });
     fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     expect(await screen.findByText("서버: 달성률을 확인해 주세요.")).toBeInTheDocument();
     expect(onSaved).not.toHaveBeenCalled();
@@ -172,9 +185,9 @@ describe("RecordForm", () => {
         <RecordForm chart={{ ...chart, tier: 6.0, pattern: "단일" }} userId={1} onSaved={onSaved} onCancel={onCancel} />
       </QueryClientProvider>,
     );
-    fireEvent.change(rateInput(), { target: { value: "95" } }); // 304.00점 > 맨 아래 200
+    fireEvent.change(rateInput(), { target: { value: "9500" } }); // 304.00점 > 맨 아래 200
     expect(await screen.findByText("예상 레이팅 +104.00 · NEW 레이팅 목록에 새로 들어갑니다")).toBeInTheDocument();
-    fireEvent.change(rateInput(), { target: { value: "50" } }); // 150점 < 200: 목록에 못 든다
+    fireEvent.change(rateInput(), { target: { value: "5000" } }); // 150점 < 200: 목록에 못 든다
     expect(await screen.findByText(/레이팅 변화 없음 · 아직 레이팅 목록에는 들지 못합니다/)).toBeInTheDocument();
   });
 });
