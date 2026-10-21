@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { koT as t } from "@/i18n/ko-translator";
+import { rateFromInput, rateToInput } from "@/lib/format";
 import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
 import { distinctRecentCharts, isEdited, isMaxRate, ratingChangeText, recordOriginText, seoulDateToInstant, toRecordRequest } from "@/lib/records";
 
@@ -7,7 +8,7 @@ const TODAY = "2026-10-05";
 const schema = makeRecordSchema(t, () => TODAY);
 
 function values(over: Partial<RecordFormValues> = {}): RecordFormValues {
-  return { achievementRate: "96.50", fullCombo: false, playedDate: TODAY, memo: "", ...over };
+  return { achievementRate: "9650", fullCombo: false, playedDate: TODAY, memo: "", ...over };
 }
 
 /** 검사에 실패했을 때 achievementRate의 오류 문구를 돌려준다 (성공이면 null) */
@@ -17,23 +18,18 @@ function rateError(rate: string): string | null {
   return result.error.issues.find((i) => i.path[0] === "achievementRate")?.message ?? null;
 }
 
-describe("달성률 검사 (경계값)", () => {
-  it.each(["0", "0.00", "0.01", "80", "94.99", "95.5", "99.99", "100", "100.00"])("%s 은(는) 통과한다", (rate) => {
+describe("달성률 검사 (경계값, 소수점 없는 정수 0~10000)", () => {
+  it.each(["0", "1", "8000", "9499", "9500", "9999", "10000", "00050"])("%s 은(는) 통과한다", (rate) => {
     expect(rateError(rate)).toBeNull();
   });
 
-  it("-0.01은 숫자 형식이 아니라서 거른다", () => {
-    expect(rateError("-0.01")).toBe("달성률은 숫자로 입력해 주세요.");
+  it("-1은 숫자 형식이 아니라서 거른다", () => {
+    expect(rateError("-1")).toBe("달성률은 소수점 없는 정수로 입력해 주세요.");
   });
 
-  it("100.01과 101은 범위 오류", () => {
-    expect(rateError("100.01")).toBe("달성률은 0.00 이상 100.00 이하여야 합니다.");
-    expect(rateError("101")).toBe("달성률은 0.00 이상 100.00 이하여야 합니다.");
-  });
-
-  it("소수 셋째 자리는 오류", () => {
-    expect(rateError("95.123")).toBe("달성률은 소수 둘째 자리까지만 입력할 수 있습니다.");
-    expect(rateError("0.001")).toBe("달성률은 소수 둘째 자리까지만 입력할 수 있습니다.");
+  it("10001과 99999는 범위 오류", () => {
+    expect(rateError("10001")).toBe("달성률은 0 이상 10000 이하여야 합니다.");
+    expect(rateError("99999")).toBe("달성률은 0 이상 10000 이하여야 합니다.");
   });
 
   it("비어 있으면 필수 오류", () => {
@@ -41,9 +37,9 @@ describe("달성률 검사 (경계값)", () => {
     expect(rateError("   ")).toBe("달성률은 필수입니다.");
   });
 
-  it("숫자가 아닌 입력은 모두 거른다", () => {
-    for (const bad of ["abc", "1e2", "9 5", "95,5", ".5", "95.", "+95", "0x10", "９５"]) {
-      expect(rateError(bad), bad).toBe("달성률은 숫자로 입력해 주세요.");
+  it("소수점이 있거나 숫자가 아닌 입력은 모두 거른다", () => {
+    for (const bad of ["95.5", "99.71", "0.5", "abc", "1e2", "9 5", "95,5", ".5", "95.", "+95", "0x10", "９５", "100000"]) {
+      expect(rateError(bad), bad).toBe("달성률은 소수점 없는 정수로 입력해 주세요.");
     }
   });
 });
@@ -72,7 +68,7 @@ describe("요청 변환", () => {
   });
 
   it("노트 옵션은 항상 SRN+, 메모는 앞뒤 공백을 떼고 비면 null", () => {
-    const body = toRecordRequest(42, values({ achievementRate: " 96.50 ", memo: "  좋음  " }));
+    const body = toRecordRequest(42, values({ achievementRate: " 9650 ", memo: "  좋음  " }));
     expect(body).toEqual({
       songDifficultyId: 42,
       noteOption: "SUPER_RANDOM_PLUS",
@@ -85,15 +81,31 @@ describe("요청 변환", () => {
   });
 
   it("달성률 100.00이면 체크하지 않아도 풀콤보로 보낸다", () => {
-    expect(toRecordRequest(1, values({ achievementRate: "100.00", fullCombo: false })).fullCombo).toBe(true);
-    expect(toRecordRequest(1, values({ achievementRate: "99.99", fullCombo: false })).fullCombo).toBe(false);
-    expect(toRecordRequest(1, values({ achievementRate: "99.99", fullCombo: true })).fullCombo).toBe(true);
+    expect(toRecordRequest(1, values({ achievementRate: "10000", fullCombo: false })).fullCombo).toBe(true);
+    expect(toRecordRequest(1, values({ achievementRate: "9999", fullCombo: false })).fullCombo).toBe(false);
+    expect(toRecordRequest(1, values({ achievementRate: "9999", fullCombo: true })).fullCombo).toBe(true);
   });
 
-  it("isMaxRate는 100.00만 true", () => {
-    expect(isMaxRate("100")).toBe(true);
-    expect(isMaxRate("100.00")).toBe(true);
-    expect(isMaxRate("99.99")).toBe(false);
+  it("정수 입력은 ÷100으로 달성률이 된다 (9971 → 99.71, 1 → 0.01, 0 → 0)", () => {
+    expect(toRecordRequest(1, values({ achievementRate: "9971" })).achievementRate).toBe(99.71);
+    expect(toRecordRequest(1, values({ achievementRate: "1" })).achievementRate).toBe(0.01);
+    expect(toRecordRequest(1, values({ achievementRate: "0" })).achievementRate).toBe(0);
+    expect(toRecordRequest(1, values({ achievementRate: "10000" })).achievementRate).toBe(100);
+  });
+
+  it("수정 창의 초기값은 기존 달성률의 정수 글자다 (91.25 → 9125, 100 → 10000)", () => {
+    expect(rateToInput(91.25)).toBe("9125");
+    expect(rateToInput(100)).toBe("10000");
+    expect(rateToInput(0.07)).toBe("7"); // 0.07*100 = 7.000000000000001 도 반올림으로 바로잡는다
+    expect(rateFromInput("9125")).toBe(91.25);
+    expect(rateFromInput("10001")).toBeNull();
+    expect(rateFromInput("95.5")).toBeNull();
+  });
+
+  it("isMaxRate는 10000(100.00)만 true", () => {
+    expect(isMaxRate("10000")).toBe(true);
+    expect(isMaxRate("100")).toBe(false); // 1.00
+    expect(isMaxRate("9999")).toBe(false);
     expect(isMaxRate("")).toBe(false);
     expect(isMaxRate("abc")).toBe(false);
   });

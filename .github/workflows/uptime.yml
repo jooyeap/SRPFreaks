@@ -45,8 +45,8 @@ jobs:
           failed=0
           # 화면(프론트 + nginx)
           check "$SITE_URL/" 200 || failed=1
-          # API: 로그인 없이 부르면 401이 정상이다(백엔드가 살아 있고 보안 설정이 동작한다는 뜻. 500/502/504면 장애)
-          check "$SITE_URL/api/v1/notices" 401 || failed=1
+          # API: 로그인 없이 `/users/me`를 부르면 401이 정상이다(공지 등은 D43으로 공개돼 200이라 쓰지 않는다. 백엔드가 살아 있고 보안 설정이 동작한다는 뜻. 500/502/504면 장애)
+          check "$SITE_URL/api/v1/users/me" 401 || failed=1
           exit $failed
 
       - name: HTTPS 인증서 만료 확인

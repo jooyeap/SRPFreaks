@@ -49,28 +49,18 @@ export function useOneHandMode(): boolean {
   return useSyncExternalStore(subscribe, read, () => false);
 }
 
-export type PadKey = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "." | "back";
+export type PadKey = "0" | "00" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "back";
 
 /**
- * 숫자 패드 한 번 누름을 달성률 글자에 반영한다. 0.00~100.00, 소수점 둘째 자리까지만 만들 수 있게 막는다
- * (서버·폼 검사와 같은 범위. 최종 검사는 저장할 때 Zod가 다시 한다). 넣을 수 없는 키는 글자를 그대로 돌려준다.
- *  - 첫 글자가 0이면 다음 숫자가 그 자리를 대신한다("0" + "5" → "5"). "0." 처럼 소수점을 찍으면 0을 유지한다.
- *  - 정수 부분은 100을 넘을 수 없고, 100이면 소수는 0만 넣을 수 있다("100.5"는 100.00 초과).
+ * 숫자 패드 한 번 누름을 달성률 입력 글자(소수점 없는 정수 0~10000)에 반영한다. 소수점은 저장할 때 자동으로 찍힌다(9971 → 99.71).
+ * 범위는 폼·서버 검사와 같고(최종 검사는 저장할 때 Zod가 다시 한다), 넣을 수 없는 키는 글자를 그대로 돌려준다.
+ *  - 첫 글자가 0이면 다음 숫자가 그 자리를 대신한다("0" + "5" → "5"). 0이나 빈 칸에서 `00`은 "0"으로 둔다.
+ *  - 10000을 넘는 값은 만들 수 없다("10001"은 막힘, "10000"은 100.00).
  */
 export function padInput(current: string, key: PadKey): string {
   if (key === "back") {
     return current.slice(0, -1);
   }
-  if (key === ".") {
-    if (current.includes(".")) {
-      return current;
-    }
-    return current === "" ? "0." : `${current}.`;
-  }
-  const dot = current.indexOf(".");
-  if (dot !== -1 && current.length - dot - 1 >= 2) {
-    return current; // 소수 둘째 자리까지 찼다
-  }
-  const next = current === "0" ? key : current + key;
-  return Number(next) > 100 ? current : next;
+  const next = current === "" || current === "0" ? (key === "00" ? "0" : key) : current + key;
+  return Number(next) > 10000 ? current : next;
 }

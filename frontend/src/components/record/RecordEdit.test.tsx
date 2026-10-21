@@ -110,7 +110,7 @@ describe("기록 수정 / 삭제", () => {
     renderDialog();
     expect(await screen.findByRole("heading", { name: "이 채보의 내 기록" })).toBeInTheDocument();
     await openEdit();
-    expect(screen.getByLabelText("달성률")).toHaveValue("91.25");
+    expect(screen.getByLabelText("달성률")).toHaveValue("9125");
     expect(screen.getByLabelText("플레이 날짜")).toHaveValue("2026-10-05");
     expect(screen.getByLabelText("메모 (선택)")).toHaveValue("예전 메모");
     expect(screen.getAllByLabelText("달성 단계 S")).toHaveLength(2); // 기록 목록 줄 + 폼의 달성 표시 미리보기
@@ -129,15 +129,15 @@ describe("기록 수정 / 삭제", () => {
     });
     renderDialog();
     await openEdit();
-    expect(screen.getByLabelText("달성률")).toHaveValue("91.25"); // 목록 앞(더 최근)이 80이어도 최고 기록이 열린다
+    expect(screen.getByLabelText("달성률")).toHaveValue("9125"); // 목록 앞(더 최근)이 80이어도 최고 기록이 열린다
     fireEvent.click(screen.getByRole("button", { name: "80.00 기록 수정" }));
-    await waitFor(() => expect(screen.getByLabelText("달성률")).toHaveValue("80.00"));
+    await waitFor(() => expect(screen.getByLabelText("달성률")).toHaveValue("8000"));
   });
 
   it("낮은 값으로도 수정할 수 있다 (PUT)", async () => {
     renderDialog();
     await openEdit();
-    fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "50.5" } });
+    fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "5050" } });
     fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
     await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
     fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
@@ -153,7 +153,7 @@ describe("기록 수정 / 삭제", () => {
     expect(screen.getByLabelText("달성률")).toHaveValue("");
     fireEvent.click(screen.getByRole("button", { name: "기존 기록 수정" }));
     expect(await screen.findByRole("heading", { name: "기록 수정" })).toBeInTheDocument();
-    expect(screen.getByLabelText("달성률")).toHaveValue("91.25");
+    expect(screen.getByLabelText("달성률")).toHaveValue("9125");
   });
 
   it("입력한 값이 있으면 창 바깥을 눌러도 닫히지 않고, 달성률 칸에 커서가 있다", async () => {
@@ -240,7 +240,7 @@ describe("기록 수정 / 삭제", () => {
   it("저장하면 PUT /records/{id}로 보내고 창을 닫는다", async () => {
     renderDialog();
     await openEdit();
-    fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "95" } });
+    fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "9500" } });
     fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
 
     await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다

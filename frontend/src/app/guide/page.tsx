@@ -56,6 +56,11 @@ export default function GuidePage() {
 
       {/* 상세 설명은 처음에 접어 둔다: 대부분은 한눈에 보기만 읽으면 되기 때문이다. 브라우저 기본 <details>라 JS 없이 열고 닫히고,
           열림 상태는 기본으로 보조 기술에 전달된다. 접힌 줄에도 ▸/▾ 글자 표시를 둬서 색이나 위치에만 기대지 않는다. */}
+      <section aria-label={t("Guide.envHeading")} className="space-y-1.5 rounded-2xl border border-line bg-card p-4">
+        <h2 className="text-[15px] font-bold text-fg">{t("Guide.envHeading")}</h2>
+        <p className="text-[13px] leading-relaxed text-fg-sub">{t("Guide.envText")}</p>
+      </section>
+
       <details className="group space-y-3" aria-label={t("Guide.criteriaAria")}>
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-2xl border border-line bg-card px-4 text-lg font-bold text-fg [&::-webkit-details-marker]:hidden">
           <span aria-hidden="true" className="font-num text-sm text-fg-dim group-open:hidden">▸</span>

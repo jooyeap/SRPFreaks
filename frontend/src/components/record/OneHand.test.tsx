@@ -58,7 +58,7 @@ describe("한 손 입력 모드", () => {
     expect(screen.getByRole("button", { name: "한 손 모드" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.queryByRole("group", { name: "한 손 입력" })).toBeNull();
     expect(rate()).not.toHaveAttribute("readonly");
-    expect(rate()).toHaveAttribute("inputmode", "decimal");
+    expect(rate()).toHaveAttribute("inputmode", "numeric");
     expect(screen.getByLabelText("Full Combo")).toBeInTheDocument(); // 평소 체크박스
   });
 
@@ -73,21 +73,23 @@ describe("한 손 입력 모드", () => {
     expect(localStorage.getItem("srp.oneHandMode")).toBe("1"); // 이 기기에 기억한다
   });
 
-  it("패드를 눌러 달성률을 만들고 달성 표시를 바로 보여 준다 (9 6 . 5 → 96.5, SS)", () => {
+  it("패드를 눌러 정수로 달성률을 만들고 달성 표시를 바로 보여 준다 (9 6 5 0 → 9650 = 96.50, SS)", () => {
     setOneHandMode(true);
     renderForm();
-    press("9", "6", "소수점", "5");
-    expect(rate()).toHaveValue("96.5");
+    press("9", "6", "5", "0");
+    expect(rate()).toHaveValue("9650");
     expect(screen.getByLabelText("달성 단계 SS")).toBeInTheDocument();
+    expect(screen.getByText("달성률 96.50(으)로 저장됩니다")).toBeInTheDocument();
     press("한 글자 지우기");
-    expect(rate()).toHaveValue("96.");
+    expect(rate()).toHaveValue("965");
   });
 
-  it("100을 넘는 입력은 패드가 막는다", () => {
+  it("패드에는 소수점 키가 없고, 10000을 넘는 입력은 막는다", () => {
     setOneHandMode(true);
     renderForm();
-    press("1", "0", "1");
-    expect(rate()).toHaveValue("10");
+    expect(screen.queryByRole("button", { name: "소수점" })).toBeNull();
+    press("1", "0", "0", "0", "1");
+    expect(rate()).toHaveValue("1000");
   });
 
   it("풀콤보 큰 버튼은 켜짐/꺼짐을 글자로 보이고, 달성률 100.00이면 켜진 채 잠긴다", () => {
@@ -101,8 +103,8 @@ describe("한 손 입력 모드", () => {
     expect(fc).toHaveTextContent("켜짐");
     fireEvent.click(fc);
     expect(fc).toHaveAttribute("aria-pressed", "false");
-    press("1", "0", "0", "소수점", "0", "0");
-    expect(rate()).toHaveValue("100.00");
+    press("1", "0", "0", "00");
+    expect(rate()).toHaveValue("10000");
     expect(fc).toBeDisabled();
     expect(fc).toHaveAttribute("aria-pressed", "true");
   });
@@ -114,7 +116,7 @@ describe("한 손 입력 모드", () => {
     const details = container.querySelector("details");
     expect(details).not.toBeNull();
     expect(details).not.toHaveAttribute("open");
-    press("9", "7", "소수점", "2", "5");
+    press("9", "7", "2", "5");
     fireEvent.click(screen.getByRole("button", { name: /Full Combo/ }));
     fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
@@ -155,7 +157,7 @@ describe("한 손 입력 모드", () => {
     it("다음 곡을 돌려주면 창을 닫지 않고 그 곡의 기록 입력으로 바뀐다", async () => {
       const nextChartAfterSave = vi.fn(() => next);
       const onClose = renderDialog(nextChartAfterSave);
-      await saveWith("96.5");
+      await saveWith("9650");
       await waitFor(() => expect(nextChartAfterSave).toHaveBeenCalledWith(expect.objectContaining({ songDifficultyId: 42 })));
       const dialog = screen.getByRole("dialog", { hidden: true });
       expect(await within(dialog).findByText("다음곡")).toBeInTheDocument();
@@ -166,7 +168,7 @@ describe("한 손 입력 모드", () => {
 
     it("null을 돌려주면 평소처럼 창을 닫는다", async () => {
       const onClose = renderDialog(() => null);
-      await saveWith("96.5");
+      await saveWith("9650");
       await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
       fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
       expect(onClose).toHaveBeenCalled();
@@ -174,7 +176,7 @@ describe("한 손 입력 모드", () => {
 
     it("함수를 주지 않으면(다른 화면) 평소처럼 창을 닫는다", async () => {
       const onClose = renderDialog(undefined);
-      await saveWith("96.5");
+      await saveWith("9650");
       await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
       fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
       expect(onClose).toHaveBeenCalled();

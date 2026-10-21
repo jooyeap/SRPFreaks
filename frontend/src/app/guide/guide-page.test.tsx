@@ -17,6 +17,12 @@ describe("레이팅 설명서", () => {
     expect(screen.getByText("제외된 채보도 기록은 그대로 남습니다.")).toBeInTheDocument();
   });
 
+  it("사용 환경으로 Chrome 브라우저 사용을 권장한다", () => {
+    render(<GuidePage />);
+    const env = screen.getByRole("region", { name: "사용 환경" });
+    expect(within(env).getByText(/Chrome 브라우저 사용을 권장합니다/)).toBeInTheDocument();
+  });
+
   it("포함 기준은 처음에 접혀 있고(details), 한눈에 보기와 상수표는 접히지 않는다", () => {
     const { container } = render(<GuidePage />);
     const details = container.querySelector("details");

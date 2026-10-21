@@ -98,7 +98,7 @@ jobs:
       # 배포 직후 사이트가 실제로 응답하는지 바깥(러너)에서 확인한다. 컨테이너가 다시 뜨는 동안은 실패할 수 있어 최대 약 2분 재시도한다.
       # 실패하면 이 작업이 빨갛게 되어 GitHub 알림으로 바로 알 수 있다. 로그인이 필요 없는 주소만 부른다(비밀값·계정을 쓰지 않는다).
       #  - 화면: 홈이 200 (프론트 컨테이너 + nginx)
-      #  - API: 인증 없이 부르면 401이 정상 (백엔드 컨테이너 + nginx + 보안 설정이 살아 있다는 뜻. 500/502/504면 문제)
+      #  - API: 로그인 없이 `/users/me`를 부르면 401이 정상 (공지 등은 D43으로 공개돼 200이라 쓰지 않는다. 백엔드 컨테이너 + nginx + 보안 설정이 살아 있다는 뜻. 500/502/504면 문제)
       - name: 배포 후 점검
         env:
           SITE_URL: ${{ vars.SITE_URL || 'https://srpfreaks.com' }}
@@ -114,7 +114,7 @@ jobs:
             return 1
           }
           check "$SITE_URL/" 200
-          check "$SITE_URL/api/v1/notices" 401
+          check "$SITE_URL/api/v1/users/me" 401
           # 헬스체크는 바깥에서 404로 막혀 있어야 한다(노출되면 안 된다)
           check "$SITE_URL/actuator/health" 404
 

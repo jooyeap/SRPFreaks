@@ -76,7 +76,7 @@ public class DifficultyTableViewService {
                 .toList();
 
         Map<Long, RecordBest> bests = new HashMap<>();
-        if (mine) {
+        if (mine && userId != null) { // 비로그인(D43)이면 mine을 무시하고 기록 없이 응답한다
             // userId는 토큰에서 온 값이다. 요청 파라미터로 다른 사용자를 지정할 수 없다.
             optionRecordRepository.findBestByTable(userId, table.getNoteOption(), tableId)
                     .forEach(b -> bests.put(b.songDifficultyId(), b));
