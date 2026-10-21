@@ -69,9 +69,9 @@ describe("서열표 페이지", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("로그인하지 않았으면 로그인 안내만 보여 주고 서열표를 요청하지 않는다", async () => {
-    fetchMock.mockResolvedValue(json({ code: "AUTH_FAILED", message: "x" }, 401)); // 시작 복구 실패
-    const client = new QueryClient();
+  it("로그인하지 않아도 서열표를 요청하고(D43), 로그인 안내 배너를 함께 보여 준다", async () => {
+    fetchMock.mockResolvedValue(json({ code: "AUTH_FAILED", message: "x" }, 401)); // 시작 복구 실패(로그인 안 된 상태)
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
         <AuthProvider>
@@ -80,6 +80,7 @@ describe("서열표 페이지", () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByRole("link", { name: "로그인" })).toHaveAttribute("href", "/login");
-    expect(fetchMock.mock.calls.every((c) => String(c[0]).includes("/auth/refresh"))).toBe(true);
+    // 예전에는 로그인 안내만 보이고 서열표를 요청하지 않았지만, 지금은 공개 조회라 서열표 API를 부른다
+    await waitFor(() => expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/difficulty-tables"))).toBe(true));
   });
 });

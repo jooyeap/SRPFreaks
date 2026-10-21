@@ -28,6 +28,7 @@ import { DEFAULT_VIEW_STATE, type TableViewState } from "@/lib/table-view-state"
 import type { TableSort } from "@/lib/table-sort";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
@@ -207,7 +208,8 @@ export function DifficultyTableView({
                     return copy;
                   })
                 }
-                onRecord={(entry, tier) => setRecordTarget({ entry, tier })}
+                // 비로그인 방문자(D43)는 기록을 입력할 수 없으므로 `기록` 버튼을 그리지 않는다(onRecord가 없으면 줄이 버튼을 만들지 않는다)
+                onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined}
               />
             ))}
           </div>
