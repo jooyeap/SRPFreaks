@@ -18,6 +18,16 @@ permissions:
   contents: read
 
 jobs:
+  # 서버에서 도는 셸 스크립트(오류 요약)의 테스트. 로그에서 개인정보가 새지 않는지 확인한다
+  scripts:
+    name: 배포 스크립트 테스트
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: 오류 요약 스크립트
+        run: bash scripts/deploy/summarize-errors.test.sh
+
   backend:
     name: 백엔드 테스트
     runs-on: ubuntu-latest
