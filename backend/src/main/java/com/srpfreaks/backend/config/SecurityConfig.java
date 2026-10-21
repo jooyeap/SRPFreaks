@@ -5,6 +5,8 @@ import com.srpfreaks.backend.common.error.JsonErrorWriter;
 import com.srpfreaks.backend.repository.UserRepository;
 import com.srpfreaks.backend.security.JwtAuthenticationFilter;
 import com.srpfreaks.backend.security.JwtTokenProvider;
+import com.srpfreaks.backend.security.PublicReadPaths;
+import com.srpfreaks.backend.security.PublicReadRateLimitFilter;
 import com.srpfreaks.backend.security.RateLimitFilter;
 import com.srpfreaks.backend.security.RateLimiter;
 import org.springframework.context.annotation.Bean;
@@ -51,6 +53,8 @@ public class SecurityConfig {
         // 요청 제한은 IP 기준이라, 오락실 Wi-Fi나 이동통신 공용 IP처럼 한 주소를 여러 사람이 쓰면 서로 영향을 준다.
         // 그래서 무차별 대입 대상인 로그인(/google)만 엄격하게(기본 10회/분) 막고, 화면을 열 때마다 불리는
         // 재발급(/refresh)과 로그아웃은 넉넉하게(기본 60회/분) 둔다. 필터마다 제한기를 따로 써서 횟수가 섞이지 않는다.
+        PublicReadRateLimitFilter publicReadRateLimit = new PublicReadRateLimitFilter(
+                new RateLimiter(appProperties.getRateLimit().getPublicReadPerMinute(), clock), clock);
         RateLimitFilter loginRateLimit = new RateLimitFilter(
                 new RateLimiter(appProperties.getRateLimit().getAuthPerMinute(), clock), clock, "/api/v1/auth/google");
         RateLimitFilter refreshRateLimit = new RateLimitFilter(
@@ -84,6 +88,9 @@ public class SecurityConfig {
                 // 공개 API 경로는 이 세 개뿐이다. 로그인 전에 불러야 하기 때문이다.
                 .requestMatchers(HttpMethod.POST,
                         "/api/v1/auth/google", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
+                // 로그인 없이 읽는 공개 경로(D43): 공지, 곡 목록·상세, 서열표, 유저 목록의 GET만. 목록은 PublicReadPaths 한 곳에 있다.
+                // 쓰기와 개인 데이터(내 기록, 레이팅, 세트리스트, 건의)는 아래 /api/v1/** 규칙대로 로그인이 필요하다.
+                .requestMatchers(PublicReadPaths::matches).permitAll()
                 // 헬스체크(서버 생존 여부만 응답한다). 운영에서는 nginx가 바깥 요청을 막고 내부(Docker)만 부른다
                 .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                 // 가져오기 기능을 닫아 둘 때(app.import-api.enabled=false)에는 사이트 화면용 미리보기·저장(/record-imports)을 ROOT만 할 수 있다(문제가 생겼을 때 되돌리는 스위치).
@@ -96,6 +103,8 @@ public class SecurityConfig {
                 // 그 밖의 모든 경로(/error, 문서 경로 포함)는 막는다
                 .anyRequest().denyAll())
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            // 비로그인 공개 읽기 제한은 JWT 필터 뒤에 둔다(로그인 여부를 본 다음에 판단해야 한다)
+            .addFilterAfter(publicReadRateLimit, JwtAuthenticationFilter.class)
             .addFilterBefore(loginRateLimit, JwtAuthenticationFilter.class)
             .addFilterBefore(refreshRateLimit, JwtAuthenticationFilter.class)
             .addFilterBefore(logoutRateLimit, JwtAuthenticationFilter.class);

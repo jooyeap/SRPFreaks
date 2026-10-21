@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import type { PageResponse } from "@/lib/api-types";
-import { formatPlayedDate, formatScore, toHundredths } from "@/lib/format";
+import { formatPlayedDate, formatScore, rateFromInput, rateToInput } from "@/lib/format";
 import type { RecordFormValues } from "@/lib/record-schema";
 import type { DifficultyType, InstrumentPart, NoteOption, AchievementStage } from "@/lib/types";
 import type { Translator } from "@/i18n/translator";
@@ -100,8 +100,7 @@ export function todaySeoul(): string {
 
 /** 달성률 100.00이면 풀콤보는 항상 true (서버도 같은 규칙, D24). 문자열이 숫자가 아니면 false. */
 export function isMaxRate(rate: string): boolean {
-  const value = Number(rate.trim());
-  return rate.trim() !== "" && toHundredths(value) === 10000;
+  return rateFromInput(rate) === 100;
 }
 
 /**
@@ -119,7 +118,7 @@ export function toRecordRequest(songDifficultyId: number, values: RecordFormValu
   return {
     songDifficultyId,
     noteOption: "SUPER_RANDOM_PLUS",
-    achievementRate: Number(values.achievementRate.trim()),
+    achievementRate: rateFromInput(values.achievementRate) ?? 0, // 입력칸은 정수(9971) → 99.71. 스키마가 먼저 거르므로 0은 오지 않는다
     fullCombo: values.fullCombo || isMaxRate(values.achievementRate),
     playedAt: seoulDateToInstant(values.playedDate),
     memo: memo === "" ? null : memo,
@@ -194,10 +193,10 @@ export async function fetchBestRecord(songDifficultyId: number, signal?: AbortSi
 /** 기록을 바꾼 뒤 화면에 영향을 받는 캐시(서열표, 이 채보의 기록 목록, 곡 목록의 내 기록, 세트리스트의 완료 표시)를 무효화할 때 쓰는 키들. */
 export const AFFECTED_QUERY_KEYS = [["difficulty-tables"], ["records"], ["setlist"], ["skill"], ["song-list"], ["stats"]] as const;
 
-/** 기존 기록 -> 폼 초기값. 달성률은 입력칸에 쓰는 문자열(소수 둘째 자리)로 만든다. */
+/** 기존 기록 -> 폼 초기값. 달성률은 입력칸에 쓰는 정수 문자열로 만든다(91.25 → "9125"). */
 export function recordToFormValues(record: RecordResponse): RecordFormValues {
   return {
-    achievementRate: record.achievementRate.toFixed(2),
+    achievementRate: rateToInput(record.achievementRate),
     fullCombo: record.fullCombo,
     playedDate: record.playedAt ? formatPlayedDate(record.playedAt) : todaySeoul(),
     memo: record.memo ?? "",

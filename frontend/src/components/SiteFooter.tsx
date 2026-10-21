@@ -25,7 +25,10 @@ export function SiteFooter() {
         <div className="space-y-1 sm:text-right">
           <TableCredit />
           <ContactLine />
-          <p>
+          <p className="space-x-3">
+            <Link href="/terms" className="underline underline-offset-2 hover:text-fg">
+              {t("terms")}
+            </Link>
             <Link href="/privacy" className="underline underline-offset-2 hover:text-fg">
               {t("privacy")}
             </Link>

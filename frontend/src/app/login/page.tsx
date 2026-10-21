@@ -23,14 +23,24 @@ export default function LoginPage() {
     <section className="mx-auto flex w-full max-w-sm flex-col items-center gap-6 py-12">
       <h1 className="text-xl font-semibold text-fg">{t("title")}</h1>
       <p className="text-center text-sm text-fg-sub">{t("lead")}</p>
-      <GoogleLoginButton />
-      <p className="text-center text-xs text-fg-dim">
-        {t("consentBefore")}
-        <Link href="/privacy" className="underline underline-offset-2 hover:text-fg">
-          {t("privacyLink")}
-        </Link>
-        {t("consentAfter")}
-      </p>
+      {/* 구글이 그리는 버튼은 색·모서리를 바꿀 수 없어 화면에서 떠 보이므로, 우리 카드(테두리·배경·16px 모서리) 안에 넣어 사이트 톤에 붙인다 */}
+      <div
+        data-testid="login-card"
+        className="flex w-full flex-col items-center gap-5 rounded-2xl border border-line bg-card px-4 py-6"
+      >
+        <GoogleLoginButton />
+        <p className="border-t border-line pt-4 text-center text-xs text-fg-dim">
+          {t("consentBefore")}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-fg">
+            {t("termsLink")}
+          </Link>
+          {t("consentAnd")}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-fg">
+            {t("privacyLink")}
+          </Link>
+          {t("consentAfter")}
+        </p>
+      </div>
     </section>
   );
 }

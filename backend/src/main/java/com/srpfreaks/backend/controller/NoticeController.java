@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 공지사항 목록·상세 (D30). 로그인한 사용자만 부를 수 있다(SecurityConfig의 /api/v1/** 규칙). 읽기 전용이다. */
+/** 공지사항 목록·상세 (D30). 로그인 없이도 부를 수 있다(D43, PublicReadPaths). 읽기 전용이다. */
 @RestController
 @RequestMapping("/api/v1/notices")
 @RequiredArgsConstructor
