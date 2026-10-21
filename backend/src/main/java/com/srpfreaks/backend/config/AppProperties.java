@@ -55,6 +55,8 @@ public class AppProperties {
         private int authPerMinute = 10;
         /** 재발급(/auth/refresh)·로그아웃 요청을 IP당 1분에 허용하는 횟수. 화면을 열 때마다 불리고, 오락실 Wi-Fi처럼 한 IP를 여러 사람이 쓸 수 있어 넉넉하게 둔다. */
         private int refreshPerMinute = 60;
+        /** 로그인 없이 읽는 공개 경로(공지·곡·서열표·유저 목록)를 비로그인 IP당 1분에 허용하는 횟수. 한 화면이 여러 번 부르고 공용 Wi-Fi도 있어 넉넉하게 둔다. 로그인한 사용자는 제한하지 않는다. */
+        private int publicReadPerMinute = 120;
     }
 
     /** 최근 플레이 가져오기(D40) 설정. */
