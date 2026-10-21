@@ -1,6 +1,7 @@
 {
   "Meta": {
-    "description": "GITADORAのプレイ記録をSRN+オプションで保存し、レーティングリストを計算する非公式ファンプロジェクト"
+    "description": "GITADORAのプレイ記録をSRN+オプションで保存し、レーティングリストを計算する非公式ファンプロジェクト",
+    "table": "難易度表"
   },
   "Common": {
     "retry": "もう一度試す",

@@ -1,6 +1,7 @@
 {
   "Meta": {
-    "description": "GITADORA 플레이 기록을 SRN+ 옵션으로 저장하고 레이팅 목록을 계산하는 비공식 팬 프로젝트"
+    "description": "GITADORA 플레이 기록을 SRN+ 옵션으로 저장하고 레이팅 목록을 계산하는 비공식 팬 프로젝트",
+    "table": "서열표"
   },
   "Common": {
     "retry": "다시 시도",
