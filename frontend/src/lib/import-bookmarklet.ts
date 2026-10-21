@@ -122,7 +122,7 @@ function srpReadPlays(doc){
  * (style 속성 문자열은 공식 페이지의 CSP에 막힐 수 있어서 쓰지 않는다).
  * 창에는 translate="no"를 단다: 번역된 페이지에 끼워 넣은 글을 브라우저가 다시 번역해 안내 문장이 잘려 나왔다.
  */
-function senderSource(): string {
+export function senderSource(): string {
   return `
 function srpFmt(s,o){for(var k in o){if(Object.prototype.hasOwnProperty.call(o,k)){s=s.split('{'+k+'}').join(String(o[k]));}}return s;}
 function srpStyle(el,css){for(var k in css){if(Object.prototype.hasOwnProperty.call(css,k)){el.style[k]=css[k];}}}
