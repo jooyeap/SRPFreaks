@@ -33,7 +33,7 @@ function FolderContent() {
   }
   if (status === "anonymous" || !user) {
     return (
-      <section className="flex flex-col items-start gap-3">
+      <section className="flex min-h-[40svh] flex-col items-start justify-center gap-3">
         <h1 className="text-xl font-semibold text-fg">{t("Nav.myPage")}</h1>
         <p className="text-sm text-fg-sub">{t("Pages.folderLead")}</p>
         <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
