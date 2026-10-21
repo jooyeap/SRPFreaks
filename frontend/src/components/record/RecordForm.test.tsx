@@ -106,6 +106,17 @@ describe("RecordForm", () => {
     expect(screen.getByText("달성률 MAX(으)로 저장됩니다")).toBeInTheDocument();
   });
 
+  it("세 자리를 치면 끝에 0이 붙은 달성률로 안내한다 (965 → 96.50, 100 → MAX, 0965 → 9.65)", () => {
+    renderForm();
+    fireEvent.change(rateInput(), { target: { value: "965" } });
+    expect(rateInput()).toHaveValue("965"); // 칸의 글자는 그대로 두고 안내만 읽는 값을 보여 준다
+    expect(screen.getByText("달성률 96.50(으)로 저장됩니다")).toBeInTheDocument();
+    fireEvent.change(rateInput(), { target: { value: "100" } });
+    expect(screen.getByText("달성률 MAX(으)로 저장됩니다")).toBeInTheDocument();
+    fireEvent.change(rateInput(), { target: { value: "0965" } });
+    expect(screen.getByText("달성률 9.65(으)로 저장됩니다")).toBeInTheDocument();
+  });
+
   it("비어 있으면 필수 문구를 보여 준다", async () => {
     renderForm();
     fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));

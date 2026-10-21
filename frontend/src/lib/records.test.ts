@@ -102,9 +102,40 @@ describe("요청 변환", () => {
     expect(rateFromInput("95.5")).toBeNull();
   });
 
-  it("isMaxRate는 10000(100.00)만 true", () => {
+  it("세 자리는 끝에 0을 붙여 읽는다 (965 → 96.50), 단 100은 100.00", () => {
+    expect(rateFromInput("965")).toBe(96.5);
+    expect(rateFromInput("999")).toBe(99.9);
+    expect(rateFromInput("101")).toBe(10.1); // 100 바로 위부터는 10.x%로 읽는다
+    expect(rateFromInput("100")).toBe(100); // 10.00%가 아니라 100%
+    expect(toRecordRequest(1, values({ achievementRate: "965" })).achievementRate).toBe(96.5);
+    expect(toRecordRequest(1, values({ achievementRate: "100" })).achievementRate).toBe(100);
+  });
+
+  it("세 자리 규칙은 정확히 세 자리에만 적용된다 (1~2자리, 4~5자리, 앞자리 0은 그대로)", () => {
+    expect(rateFromInput("96")).toBe(0.96); // 두 자리는 그대로 100분의 1
+    expect(rateFromInput("9")).toBe(0.09);
+    expect(rateFromInput("0")).toBe(0);
+    expect(rateFromInput("9650")).toBe(96.5);
+    expect(rateFromInput("0965")).toBe(9.65); // 9.65%를 치고 싶으면 앞에 0을 붙인다
+    expect(rateFromInput("050")).toBe(0.5); // 앞자리 0인 세 자리는 글자 그대로
+    expect(rateFromInput("000")).toBe(0);
+    expect(rateFromInput("1000")).toBe(10); // 네 자리 1000은 10.00%
+  });
+
+  it("수정 창이 돌려주는 글자를 다시 읽어도 값이 바뀌지 않는다 (1.00~9.99%는 네 자리로 채운다)", () => {
+    expect(rateToInput(5)).toBe("0500");
+    expect(rateToInput(1)).toBe("0100"); // "100"이면 100.00으로 읽혀 버린다
+    expect(rateToInput(9.99)).toBe("0999");
+    expect(rateToInput(0.5)).toBe("50");
+    for (const rate of [0, 0.01, 0.5, 1, 5, 9.99, 10, 50, 96.5, 99.71, 100]) {
+      expect(rateFromInput(rateToInput(rate))).toBe(rate);
+    }
+  });
+
+  it("isMaxRate는 100.00으로 읽히는 입력만 true", () => {
     expect(isMaxRate("10000")).toBe(true);
-    expect(isMaxRate("100")).toBe(false); // 1.00
+    expect(isMaxRate("100")).toBe(true); // 세 자리 100은 100%
+    expect(isMaxRate("0100")).toBe(false); // 1.00
     expect(isMaxRate("9999")).toBe(false);
     expect(isMaxRate("")).toBe(false);
     expect(isMaxRate("abc")).toBe(false);
