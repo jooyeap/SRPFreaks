@@ -287,6 +287,7 @@
   "Table": {
     "avgWithZero": "平均 0%含む",
     "avgWithoutZero": "平均 0%含まない",
+    "defaultName": "SRN+ 難易度表",
     "loadFailed": "難易度表を読み込めませんでした。しばらくしてからもう一度お試しください。",
     "patternBasis": "属性はSRN+オプション使用時の基準",
     "collapseAll": "すべて閉じる",

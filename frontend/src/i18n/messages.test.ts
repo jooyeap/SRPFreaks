@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import ja from "../../messages/ja.json";
 import ko from "../../messages/ko.json";
+import { createTranslator } from "use-intl/core";
 import { SERVER_ERRORS } from "@/i18n/server-errors";
+import { DEFAULT_TABLE_NAME, tableNameLabel } from "@/lib/chart-labels";
 
 type Tree = { [key: string]: string | Tree };
 
@@ -68,5 +70,15 @@ describe("번역 문구 파일", () => {
       expect(key, code).toBe(`ServerErrors.${code}`);
       expect(koFlat[key], code).toBe(message);
     }
+  });
+});
+
+describe("서열표 이름 표시", () => {
+  it("기본 서열표 이름만 현재 언어로 바꾸고, 다른 이름은 그대로 둔다", () => {
+    const tJa = createTranslator({ locale: "ja", messages: ja } as never) as never;
+    const tKo = createTranslator({ locale: "ko", messages: ko } as never) as never;
+    expect(tableNameLabel(DEFAULT_TABLE_NAME, tJa)).toBe("SRN+ 難易度表");
+    expect(tableNameLabel(DEFAULT_TABLE_NAME, tKo)).toBe("SRN+ 서열표");
+    expect(tableNameLabel("내가 만든 표", tJa)).toBe("내가 만든 표");
   });
 });

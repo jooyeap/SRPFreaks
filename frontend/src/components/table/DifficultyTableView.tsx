@@ -13,6 +13,7 @@ import { TableSearch } from "@/components/table/TableSearch";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
 import { ApiError } from "@/lib/api";
+import { tableNameLabel } from "@/lib/chart-labels";
 import {
   allGroupsKey,
   decidedGroups,
@@ -135,7 +136,7 @@ export function DifficultyTableView({
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-fg">{table.name}</h1>
+          <h1 className="text-xl font-semibold text-fg">{tableNameLabel(table.name, t)}</h1>
           <p className="mt-1 text-sm text-fg-sub">{t("Table.patternBasis")}</p>
           <TableCredit className="mt-1 text-xs text-fg-dim" />
         </div>
