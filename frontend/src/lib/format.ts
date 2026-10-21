@@ -14,6 +14,27 @@ export function toHundredths(rate: number): number | null {
   return Number.isFinite(rate) ? Math.round(rate * 100) : null;
 }
 
+/** 달성률 입력칸의 최댓값. 입력은 소수점 없는 정수(0~10000)이고 ÷100이 실제 달성률이다(9971 → 99.71). */
+export const RATE_INPUT_MAX = 10000;
+
+/**
+ * 입력칸의 정수 글자(`"9971"`)를 달성률 숫자(99.71)로 바꾼다. 정수 0~10000이 아니면 null.
+ * 100으로 나누기 전에 정수 상태에서 범위를 보므로 부동소수점 오차가 끼지 않는다.
+ */
+export function rateFromInput(text: string): number | null {
+  const trimmed = text.trim();
+  if (!/^\d{1,5}$/.test(trimmed)) {
+    return null;
+  }
+  const integer = Number(trimmed);
+  return integer <= RATE_INPUT_MAX ? integer / 100 : null;
+}
+
+/** 달성률 숫자(99.71)를 입력칸의 정수 글자("9971")로 바꾼다(수정 창의 초기값). */
+export function rateToInput(rate: number): string {
+  return String(Math.round(rate * 100));
+}
+
 /**
  * 달성률 표시: 100.00 이상은 `MAX`, 그 외는 소수점 둘째 자리까지 (86.78, 95.50).
  * 기록이 없거나(null/undefined) 숫자가 아니면 `–`.
