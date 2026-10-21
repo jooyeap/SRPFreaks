@@ -191,14 +191,19 @@ function GoalBody({ userId, skill }: { userId: number; skill: SkillResponse }) {
           {plan.displaced.length > 0 ? (
             <div className="flex flex-col gap-1">
               <p className="text-xs font-semibold text-fg-sub">{t("Rating.pushedOutSongs")}</p>
-              <ul aria-label={t("Rating.pushedOutAria")} className="flex flex-col gap-1">
+              {/* 위쪽 "올릴 곡" 카드와 같은 모양이다: 곡명(곡 상세 링크) · 채보 알약 · 달성률 · 점수 */}
+              <ul aria-label={t("Rating.pushedOutAria")} className="flex flex-col gap-2">
                 {plan.displaced.slice(0, VISIBLE_DISPLACED).map((d) => (
-                  <li key={d.entry.songDifficultyId} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fg-sub">
-                    <span className="text-[13px] text-fg">{d.entry.title}</span>
+                  <li key={d.entry.songDifficultyId} className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-line px-3 py-2 text-xs text-fg-sub">
+                    <Link
+                      href={`/songs/${d.entry.songId}?from=table&chart=${d.entry.songDifficultyId}`}
+                      className="text-[13px] font-semibold text-fg underline-offset-2 hover:underline"
+                    >
+                      {d.entry.title}
+                    </Link>
                     <ChartBadge part={d.entry.part} difficulty={d.entry.difficulty} level={d.entry.level} />
-                    <span className="font-num">
-                      {formatRate(d.rate)}% · {formatScore(d.score)}
-                    </span>
+                    <span className="font-num">{formatRate(d.rate)}%</span>
+                    <span className="font-num text-fg">{formatScore(d.score)}</span>
                   </li>
                 ))}
               </ul>
