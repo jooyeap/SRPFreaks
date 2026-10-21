@@ -33,3 +33,10 @@ export function recommendLabel(value: string, t: Translator): string {
       return value;
   }
 }
+
+/** 서버가 처음 만든 서열표의 이름(DB 값). 이 이름일 때만 현재 언어의 이름으로 바꿔 보여 준다(사용자가 지은 다른 이름은 그대로 둔다). */
+export const DEFAULT_TABLE_NAME = "SRN+ 서열표";
+
+export function tableNameLabel(name: string, t: Translator): string {
+  return name === DEFAULT_TABLE_NAME ? t("Table.defaultName") : name;
+}
