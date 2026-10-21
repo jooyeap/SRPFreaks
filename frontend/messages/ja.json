@@ -758,7 +758,7 @@
   "Import": {
     "chipMain": "メイン画面",
     "chipPlayData": "上部のプレーデータ",
-    "chipHistory": "左スライドバーのプレー履歴",
+    "chipHistory": "左サイドバーのプレー履歴",
     "officialNote": "アドレスにstage_resultが含まれる最近のプレーページです。翻訳はオフにしてください。",
     "bookmarkCopied": "ブックマークのアドレスをコピーしました。",
     "copyFailedBookmark": "コピーできませんでした。リンクをブックマークバーへドラッグ＆ドロップしてください。",
