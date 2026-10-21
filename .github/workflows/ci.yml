@@ -48,7 +48,11 @@ jobs:
       # Testcontainers가 MySQL 컨테이너를 띄운다. GitHub의 ubuntu 러너에는 Docker가 기본 설치돼 있다.
       # 비밀값은 필요 없다 (테스트가 더미 값을 직접 넣는다)
       - name: 테스트
-        run: ./gradlew test --no-daemon
+        shell: bash
+        run: |
+          # 출력은 화면에도 남기고 파일에도 모은다. 컴파일 오류는 테스트 결과 파일이 없어서 아래 요약 단계가 이 파일에서 찾는다
+          set -o pipefail
+          ./gradlew test --no-daemon 2>&1 | tee "$RUNNER_TEMP/gradle.log"
       # 테스트가 실패하면 실패한 테스트의 이름과 메시지를 주석(annotation)으로 남긴다.
       # 로그 원문은 API로 읽기 어려워서, 실패 원인을 체크 결과 화면과 API에서 바로 볼 수 있게 한다.
       - name: 실패한 테스트 요약
@@ -64,6 +68,8 @@ jobs:
                           msg = (node.get("message") or "")[:300].replace("\n", " ").replace("%", "%25")
                           print(f"::error title={case.get('classname')}.{case.get('name')}::{msg}")
           PY
+          # 컴파일 오류(소스 위치가 있는 줄)만 주석으로 남긴다. 코드는 공개 저장소에 있어 파일 경로·줄·메시지가 비밀이 아니다
+          grep -E '\.java:[0-9]+: error:' "$RUNNER_TEMP/gradle.log" 2>/dev/null | head -n 10 | sed -e 's/%/%25/g' -e 's#^.*/backend/##' | while IFS= read -r line; do echo "::error title=컴파일 오류::${line}"; done || true
 
   # 테스트를 둘로 나눠(--shard) 동시에 돌린다. 테스트 파일 수백 개가 파일마다 jsdom을 새로 만들어 느려서, 나누면 시간이 거의 반으로 준다
   frontend-test:
