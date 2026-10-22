@@ -29,6 +29,8 @@ jobs:
         run: bash scripts/deploy/summarize-errors.test.sh
       - name: 빌드 캐시 정리 스크립트
         run: bash scripts/deploy/prune-build-cache.test.sh
+      - name: 백업 점검 스크립트
+        run: bash scripts/deploy/check-backups.test.sh
 
   backend:
     name: 백엔드 테스트
