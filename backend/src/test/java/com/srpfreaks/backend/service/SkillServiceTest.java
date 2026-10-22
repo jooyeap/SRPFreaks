@@ -31,6 +31,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -350,5 +351,47 @@ class SkillServiceTest {
         candidates(cand(1, 10, PatternType.SINGLE, "7.0", "80.00"));
 
         assertThat(service.mySkill(USER).totalScore()).isEqualByComparingTo(service.rated(USER).skill().totalScore());
+    }
+
+    @Test
+    void ratedAll은_설정_서열표_티어표를_한_번만_읽고_유저별_결과를_따로_계산한다() {
+        settings(1, 1);
+        tableExists();
+        tiers(0, 100);
+        // 유저마다 후보가 다르다: 7번은 7.0 / 80.00 한 채보, 8번은 후보 없음
+        when(skillMapper.findRatingCandidates(eq(7L), any(), any(), any()))
+                .thenReturn(List.of(cand(1, 10, PatternType.SINGLE, "7.0", "80.00")));
+        when(skillMapper.findRatingCandidates(eq(8L), any(), any(), any())).thenReturn(List.of());
+
+        java.util.Map<Long, SkillService.RatedSkill> result = service.ratedAll(List.of(7L, 8L));
+
+        assertThat(result.keySet()).containsExactly(7L, 8L);   // 요청한 순서를 지킨다
+        assertThat(result.get(7L).skill().totalScore()).isGreaterThan(BigDecimal.ZERO);
+        assertThat(result.get(8L).skill().totalScore()).isEqualByComparingTo("0.00");
+        // 한 유저씩 rated()를 불렀을 때와 숫자가 같다 (같은 계산 코드를 쓴다)
+        assertThat(result.get(7L).skill().totalScore()).isEqualByComparingTo(service.rated(7L).skill().totalScore());
+    }
+
+    @Test
+    void ratedAll은_유저가_여러_명이어도_공통_조회를_반복하지_않는다() {
+        settings(1, 1);
+        tableExists();
+        tiers(0);
+        candidates();   // 모든 유저의 후보가 비어 있다
+
+        service.ratedAll(List.of(1L, 2L, 3L));
+
+        verify(settingRepository, org.mockito.Mockito.times(1)).findAll();
+        verify(tableRepository, org.mockito.Mockito.times(1))
+                .findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE);
+        verify(tierRepository, org.mockito.Mockito.times(1)).findAllByOrderBySortOrderAsc();
+        verify(skillMapper, org.mockito.Mockito.times(3)).findRatingCandidates(any(), any(), any(), any());
+    }
+
+    @Test
+    void ratedAll은_유저가_없으면_아무것도_조회하지_않는다() {
+        assertThat(service.ratedAll(List.of())).isEmpty();
+
+        org.mockito.Mockito.verifyNoInteractions(settingRepository, tableRepository, tierRepository, skillMapper);
     }
 }

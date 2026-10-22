@@ -11,6 +11,7 @@ import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.User;
 import com.srpfreaks.backend.entity.UserStatus;
 import com.srpfreaks.backend.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,13 +22,19 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.lang.reflect.RecordComponent;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,6 +54,19 @@ class PlayerServiceTest {
 
     @InjectMocks
     PlayerService service;
+
+    /** 유저 id별로 준비해 둔 계산 결과. ratedAll()은 요청한 id에 해당하는 것만 돌려준다. */
+    private final Map<Long, SkillService.RatedSkill> ratedById = new HashMap<>();
+
+    @BeforeEach
+    void stubRatedAll() {
+        lenient().when(skillService.ratedAll(anyCollection())).thenAnswer(inv -> {
+            Collection<Long> ids = inv.getArgument(0);
+            Map<Long, SkillService.RatedSkill> result = new LinkedHashMap<>();
+            ids.forEach(id -> result.put(id, ratedById.get(id)));
+            return result;
+        });
+    }
 
     /** id를 직접 정한 공개 유저. id는 DB가 만들어 주는 값이라 리플렉션으로 넣는다. */
     private User publicUser(long id, String nickname) {
@@ -78,9 +98,9 @@ class PlayerServiceTest {
         User b = publicUser(2, "あお");
         User c = publicUser(3, "みどり");
         givenPublicUsers(c, b, a); // 저장소가 주는 순서와 결과 순서는 무관해야 한다
-        when(skillService.rated(1L)).thenReturn(rated("100.00", T1));
-        when(skillService.rated(2L)).thenReturn(rated("300.00", T2));
-        when(skillService.rated(3L)).thenReturn(rated("100.00", T1)); // 1번과 총점·시각이 모두 같다 -> user_id가 작은 1번이 위
+        ratedById.put(1L, rated("100.00", T1));
+        ratedById.put(2L, rated("300.00", T2));
+        ratedById.put(3L, rated("100.00", T1)); // 1번과 총점·시각이 모두 같다 -> user_id가 작은 1번이 위
 
         PageResponse<PlayerSummaryResponse> result = service.list(0, 20);
 
@@ -96,7 +116,7 @@ class PlayerServiceTest {
         User[] users = new User[5];
         for (int i = 0; i < 5; i++) {
             users[i] = publicUser(i + 1, "ユーザー" + (i + 1));
-            when(skillService.rated((long) (i + 1))).thenReturn(rated(String.valueOf(500 - i * 100) + ".00", T1));
+            ratedById.put((long) (i + 1), rated(String.valueOf(500 - i * 100) + ".00", T1));
         }
         givenPublicUsers(users);
 
@@ -114,7 +134,7 @@ class PlayerServiceTest {
     void 범위를_벗어난_페이지는_빈_목록이고_크기_상한과_하한을_지킨다() {
         User a = publicUser(1, "あか");
         givenPublicUsers(a);
-        when(skillService.rated(1L)).thenReturn(rated("10.00", T1));
+        ratedById.put(1L, rated("10.00", T1));
 
         assertThat(service.list(5, 20).content()).isEmpty();
         assertThat(service.list(-3, 20).content()).hasSize(1);                         // 음수 페이지는 0으로
@@ -138,12 +158,13 @@ class PlayerServiceTest {
         User named = publicUser(1, "あか");
         User nameless = publicUser(2, null);
         givenPublicUsers(named, nameless);
-        when(skillService.rated(1L)).thenReturn(rated("10.00", T1));
+        ratedById.put(1L, rated("10.00", T1));
 
         PageResponse<PlayerSummaryResponse> result = service.list(0, 20);
 
         assertThat(result.content()).extracting(PlayerSummaryResponse::userId).containsExactly(1L);
-        verify(skillService, never()).rated(2L); // 계산도 하지 않는다
+        verify(skillService).ratedAll(List.of(1L)); // 닉네임 없는 유저(2번)는 계산 대상에도 넣지 않는다
+        verify(skillService, never()).rated(2L);
     }
 
     @Test
@@ -192,8 +213,8 @@ class PlayerServiceTest {
         User early = publicUser(5, "はやい");
         User late = publicUser(2, "おそい");   // user_id는 더 작지만 늦게 달성했다
         givenPublicUsers(late, early);
-        when(skillService.rated(5L)).thenReturn(rated("100.00", T1));
-        when(skillService.rated(2L)).thenReturn(rated("100.00", T2));
+        ratedById.put(5L, rated("100.00", T1));
+        ratedById.put(2L, rated("100.00", T2));
 
         PageResponse<PlayerSummaryResponse> result = service.list(0, 20);
 
@@ -205,8 +226,8 @@ class PlayerServiceTest {
         User high = publicUser(1, "たかい");
         User low = publicUser(2, "ひくい");
         givenPublicUsers(low, high);
-        when(skillService.rated(1L)).thenReturn(rated("200.00", T2));   // 늦게 달성했어도 점수가 높다
-        when(skillService.rated(2L)).thenReturn(rated("100.00", T1));
+        ratedById.put(1L, rated("200.00", T2));   // 늦게 달성했어도 점수가 높다
+        ratedById.put(2L, rated("100.00", T1));
 
         assertThat(service.list(0, 20).content()).extracting(PlayerSummaryResponse::userId).containsExactly(1L, 2L);
     }
@@ -216,8 +237,8 @@ class PlayerServiceTest {
         User none = publicUser(1, "なし");      // 목록이 비어 시각이 null (총점 0)
         User some = publicUser(2, "あり");
         givenPublicUsers(none, some);
-        when(skillService.rated(1L)).thenReturn(rated("0.00", null));
-        when(skillService.rated(2L)).thenReturn(rated("0.00", T1));
+        ratedById.put(1L, rated("0.00", null));
+        ratedById.put(2L, rated("0.00", T1));
 
         assertThat(service.list(0, 20).content()).extracting(PlayerSummaryResponse::userId).containsExactly(2L, 1L);
     }

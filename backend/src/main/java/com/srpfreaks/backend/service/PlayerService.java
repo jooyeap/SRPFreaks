@@ -17,11 +17,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 유저 목록과 유저 상세 (D26). 본인이 공개를 켠 ACTIVE 유저만 대상이고 읽기 전용이다.
  *
- * 점수는 새로 만든 수식이 아니라 SkillService.mySkill(userId)를 그대로 쓴다. 그래서 목록·상세의 숫자는
+ * 점수는 새로 만든 수식이 아니라 SkillService(mySkill/ratedAll)를 그대로 쓴다. 그래서 목록·상세의 숫자는
  * 그 유저가 자기 레이팅 화면에서 보는 숫자와 항상 같다(계산 규칙이 한 곳에만 있다).
  *
  * 성능: 공개 유저마다 레이팅을 계산한 뒤 메모리에서 정렬·페이지로 자른다. 공개 유저 수가 수십~수백인 지금은 충분하지만,
@@ -44,10 +45,14 @@ public class PlayerService {
      * 순서가 요청마다 바뀌지 않는다.
      */
     public PageResponse<PlayerSummaryResponse> list(int page, int size) {
-        List<Ranked> ranked = userRepository.findByProfilePublicTrueAndStatus(UserStatus.ACTIVE).stream()
+        List<User> users = userRepository.findByProfilePublicTrueAndStatus(UserStatus.ACTIVE).stream()
                 // 공개는 닉네임이 있을 때만 켤 수 있지만, 데이터가 어긋난 경우에도 이름 없는 줄은 내보내지 않는다
                 .filter(user -> user.getNickname() != null)
-                .map(user -> new Ranked(user, skillService.rated(user.getId())))
+                .toList();
+        // 설정·서열표·티어표는 한 번만 읽고 유저별 후보 조회만 반복한다 (유저마다 rated()를 부르면 쿼리가 유저 수 배로 늘어난다)
+        Map<Long, SkillService.RatedSkill> ratedByUser = skillService.ratedAll(users.stream().map(User::getId).toList());
+        List<Ranked> ranked = users.stream()
+                .map(user -> new Ranked(user, ratedByUser.get(user.getId())))
                 .sorted(Comparator.comparing((Ranked r) -> r.rated().skill().totalScore()).reversed()
                         .thenComparing(Ranked::lastAchievedAt, Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(r -> r.user().getId()))
