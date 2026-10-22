@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/Skeleton";
 import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
+import { RatingCardButton } from "@/components/rating/RatingCardDialog";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
@@ -148,6 +149,7 @@ export function RatingView({ userId }: { userId: number }) {
         skill={data}
         afterSummary={
           <>
+            <RatingCardButton skill={data} />
             <RatingInsights userId={userId} />
             <RatingGoalPlanner userId={userId} skill={data} />
             <RatingTargetPlanner userId={userId} skill={data} />

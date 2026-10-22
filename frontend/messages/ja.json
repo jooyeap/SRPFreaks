@@ -1217,5 +1217,23 @@
     "errorTitle": "問題が発生しました",
     "errorBody": "しばらくしてからもう一度お試しください。続く場合はお問い合わせください。",
     "goHome": "ホームへ"
+  },
+  "RatingCard": {
+    "title": "SRN+ レーティング",
+    "sectionSingle": "単色 {n}曲",
+    "sectionOther": "複合・二色・三色 {n}曲",
+    "footer": "非公式ファンプロジェクト · KONAMIとは無関係",
+    "open": "カード画像を保存",
+    "dialogTitle": "レーティングカード画像",
+    "layoutLabel": "レイアウト",
+    "layoutLandscape": "横",
+    "layoutPortrait": "縦",
+    "showNickname": "ニックネームを表示",
+    "preparing": "画像を作成しています…",
+    "failed": "画像を作成できませんでした。もう一度お試しください。",
+    "previewAlt": "レーティングカードのプレビュー",
+    "download": "PNGを保存",
+    "hint": "保存できない場合は、画像を長押しして保存してください。",
+    "close": "閉じる"
   }
 }

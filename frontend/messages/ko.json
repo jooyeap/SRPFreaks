@@ -1217,5 +1217,23 @@
     "errorTitle": "문제가 생겼습니다",
     "errorBody": "잠시 후 다시 시도해 주세요. 계속되면 문의해 주세요.",
     "goHome": "홈으로"
+  },
+  "RatingCard": {
+    "title": "SRN+ 레이팅",
+    "sectionSingle": "단일 {n}곡",
+    "sectionOther": "복합·이중·삼중 {n}곡",
+    "footer": "비공식 팬 프로젝트 · KONAMI와 무관",
+    "open": "카드 이미지 저장",
+    "dialogTitle": "레이팅 카드 이미지",
+    "layoutLabel": "배치",
+    "layoutLandscape": "가로",
+    "layoutPortrait": "세로",
+    "showNickname": "닉네임 표시",
+    "preparing": "이미지를 만드는 중입니다…",
+    "failed": "이미지를 만들지 못했습니다. 다시 시도해 주세요.",
+    "previewAlt": "레이팅 카드 미리보기",
+    "download": "PNG 저장",
+    "hint": "저장이 되지 않으면 이미지를 길게 눌러 저장해 주세요.",
+    "close": "닫기"
   }
 }
