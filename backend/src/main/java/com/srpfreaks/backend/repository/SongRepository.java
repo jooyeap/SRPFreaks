@@ -18,6 +18,13 @@ public interface SongRepository extends JpaRepository<Song, Long> {
     Page<Song> findByDeletedFalse(Pageable pageable);
 
     /**
+     * 삭제되지 않은 모든 곡의 곡명. 곡 등록 때 "같은 이름이 이미 있는가"를 볼 때만 쓴다.
+     * 정규화(NFKC)는 SQL로 할 수 없어서 자바에서 비교하고, 곡 수가 수천 개 수준이라 한 번에 읽어도 부담이 없다.
+     */
+    @Query("select new com.srpfreaks.backend.repository.ActiveSongTitle(s.id, s.title) from Song s where s.deleted = false")
+    List<ActiveSongTitle> findActiveTitles();
+
+    /**
      * 곡 검색: 곡명, 아티스트, 곡명 표기/별칭(정규화된 값)에 키워드가 들어 있는 곡.
      * 이스케이프 문자는 '!'를 쓴다(백슬래시는 자바/JPQL/MySQL을 거치며 해석이 달라질 수 있어서).
      * 키워드는 반드시 파라미터로만 넘긴다(문자열을 이어 붙이지 않는다). 패턴은 서비스에서 만들고 %, _를 이스케이프한다.

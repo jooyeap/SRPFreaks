@@ -1,6 +1,7 @@
 "use client";
 
 import { oppositeTheme, parseTheme, THEME_STORAGE_KEY, type Theme } from "@/lib/theme";
+import { useTranslations } from "next-intl";
 
 /** 지금 화면에 적용된 테마. data-theme이 없으면 브라우저(시스템) 설정을 따른다. */
 function currentTheme(): Theme {
@@ -21,6 +22,7 @@ function currentTheme(): Theme {
  * 색만으로 의미를 전달하지 않도록 해/달 모양을 같이 둔다.
  */
 export function ThemeToggle() {
+  const t = useTranslations("Common");
   function toggle() {
     const next = oppositeTheme(currentTheme());
     document.documentElement.setAttribute("data-theme", next);
@@ -35,8 +37,8 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      aria-label="다크/라이트 테마 전환"
-      title="다크/라이트 테마 전환"
+      aria-label={t("themeToggle")}
+      title={t("themeToggle")}
       className="theme-switch relative grid h-7 w-14 shrink-0 grid-cols-2 items-center rounded-lg border border-chip-line bg-table-head"
     >
       <span className="theme-thumb absolute left-0.5 top-0.5 h-5 w-6 rounded-full bg-chip-on-bg" aria-hidden="true" />

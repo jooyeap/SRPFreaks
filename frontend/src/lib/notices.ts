@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { apiFetch } from "@/lib/api";
 import type { NoticeResponse, PageResponse } from "@/lib/api-types";
+import type { Translator } from "@/i18n/translator";
 
 /** 공지 쿼리 키. 보는 사람(viewerId)을 넣는 이유는 다른 화면과 같다(계정이 바뀌어도 이전 캐시가 보이지 않게). */
 export const noticeKeys = {
@@ -15,19 +16,21 @@ export const NOTICE_TITLE_MAX = 100;
 export const NOTICE_CONTENT_MAX = 5000;
 
 /** 공지 쓰기·고치기 폼 검증. 서버는 앞뒤 공백을 잘라 저장하므로 공백만 있는 값은 빈 값으로 본다. */
-export const noticeSchema = z.object({
-  title: z
-    .string()
-    .trim()
-    .min(1, "제목을 입력해 주세요.")
-    .max(NOTICE_TITLE_MAX, `제목은 ${NOTICE_TITLE_MAX}자 이하여야 합니다.`),
-  content: z
-    .string()
-    .trim()
-    .min(1, "내용을 입력해 주세요.")
-    .max(NOTICE_CONTENT_MAX, `내용은 ${NOTICE_CONTENT_MAX}자 이하여야 합니다.`),
-});
-export type NoticeValues = z.infer<typeof noticeSchema>;
+export function makeNoticeSchema(t: Translator) {
+  return z.object({
+    title: z
+      .string()
+      .trim()
+      .min(1, t("Validation.titleRequired"))
+      .max(NOTICE_TITLE_MAX, t("Validation.titleMax", { max: NOTICE_TITLE_MAX })),
+    content: z
+      .string()
+      .trim()
+      .min(1, t("Validation.contentRequired"))
+      .max(NOTICE_CONTENT_MAX, t("Validation.contentMax", { max: NOTICE_CONTENT_MAX })),
+  });
+}
+export type NoticeValues = z.infer<ReturnType<typeof makeNoticeSchema>>;
 
 export function fetchNotices(page: number, size: number, signal?: AbortSignal): Promise<PageResponse<NoticeResponse>> {
   return apiFetch<PageResponse<NoticeResponse>>("/notices", { query: { page, size }, signal });

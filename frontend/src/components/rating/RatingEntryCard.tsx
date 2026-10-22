@@ -3,8 +3,10 @@ import Link from "next/link";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { chartTierAttrs } from "@/lib/chart-tier";
+import { patternLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
 import type { SkillEntryResponse } from "@/lib/api-types";
+import { useTranslations } from "next-intl";
 
 /**
  * 레이팅 목록의 곡 카드 (DESIGN-UI 5장, 누르면 곡 상세): 재킷 칸(56px) · 곡명 · 기준 난이도·상수·속성 · `Guitar | MAS 9.80` 알약 + 달성 단계 · 오른쪽에 점수와 달성률.
@@ -19,6 +21,7 @@ export function RatingEntryCard({
   /** 있으면 `삭제` 버튼을 그린다(관리자가 남의 기록을 지울 때만, D29). 카드 전체를 덮는 링크보다 위(z-10)에 둔다. */
   onDelete?: (entry: SkillEntryResponse) => void;
 }) {
+  const t = useTranslations();
   const nameAccent = entry.stage === "FC" || entry.stage === "EXC";
   return (
     <li
@@ -42,8 +45,12 @@ export function RatingEntryCard({
           </Link>
         </p>
         <p className="mt-0.5 text-xs text-fg-dim">
-          기준 <span className="font-num">{formatTier(entry.tier)}</span> · 상수{" "}
-          <span className="font-num">{formatScore(entry.ratingConstant)}</span> · {entry.pattern ?? EMPTY_MARK}
+          {t.rich("Rating.entryBase", {
+            n: (c) => <span className="font-num">{c}</span>,
+            tier: formatTier(entry.tier, t),
+            constant: formatScore(entry.ratingConstant),
+            pattern: entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK,
+          })}
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-1.5">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
@@ -60,10 +67,10 @@ export function RatingEntryCard({
           <button
             type="button"
             onClick={() => onDelete(entry)}
-            aria-label={`${entry.title} 기록 삭제`}
+            aria-label={t("Rating.deleteRecordAria", { title: entry.title })}
             className="relative z-10 mt-1 rounded-lg border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
           >
-            삭제
+            {t("Song.delete")}
           </button>
         ) : null}
       </div>

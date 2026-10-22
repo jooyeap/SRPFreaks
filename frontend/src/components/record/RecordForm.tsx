@@ -28,9 +28,10 @@ import { chartTierAttrs, previewScore } from "@/lib/chart-tier";
 import type { SaveOutcome } from "@/components/record/SaveResultCard";
 import { OneHandPad } from "@/components/record/OneHandPad";
 import { RatingPreviewLine } from "@/components/record/RatingPreviewLine";
-import { formatRate, formatScore, formatTier } from "@/lib/format";
+import { formatRate, formatScore, formatTier, rateFromInput } from "@/lib/format";
 import { achievementStage } from "@/lib/stage";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 /** 기록을 입력할 채보 정보 (서열표 줄에서 넘어온다). */
 export interface RecordChart {
@@ -78,10 +79,11 @@ export function RecordForm({
   /** 입력값이 처음과 달라졌는지 알린다. 창이 바깥 클릭으로 닫혀 입력이 사라지는 일을 막는 데 쓴다 */
   onDirtyChange?: (dirty: boolean) => void;
 }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const toast = useToast();
   // 스키마와 기본값은 한 번만 만든다 ("오늘"은 폼을 연 시점 기준)
-  const schema = useMemo(() => makeRecordSchema(todaySeoul), []);
+  const schema = useMemo(() => makeRecordSchema(t, todaySeoul), [t]);
   const defaultValues = useMemo<RecordFormValues>(
     () =>
       record
@@ -117,11 +119,14 @@ export function RecordForm({
   const oneHand = useOneHandMode();
   const maxRate = isMaxRate(rate);
   const fullCombo = maxRate || fullComboChecked; // 100.00이면 풀콤보를 자동으로 켠다 (DESIGN-UI 10장)
-  const rateNumber = rate.trim() === "" ? null : Number(rate.trim());
-  const stage = rateNumber === null || Number.isNaN(rateNumber) ? null : achievementStage(rateNumber, fullCombo);
+  // 입력칸은 소수점 없는 정수(9971)이고 ÷100이 실제 달성률(99.71)이다. 범위 밖이면 null
+  const rateNumber = rateFromInput(rate);
+  const stage = rateNumber === null ? null : achievementStage(rateNumber, fullCombo);
   // 입력한 달성률로 곡 점수를 바로 계산한다(저장하지 않는 미리보기). 레이팅 상수 난이도가 없거나 달성률이 범위 밖이면 null
   const preview =
     chart.tier === undefined || chart.tier === null || rateNumber === null ? null : previewScore(chart.tier, rateNumber);
+
+  const rateField = register("achievementRate");
 
   const mutation = useMutation({
     mutationFn: (values: RecordFormValues) => {
@@ -134,11 +139,11 @@ export function RecordForm({
       // 창이 바로 닫히므로 저장됐다는 확인을 남긴다. 수정이면 달성률이 어떻게 바뀌었는지도 같이 알려 준다
       const savedText = record
         ? record.achievementRate === saved.achievementRate
-          ? "기록을 수정했습니다."
-          : `기록을 수정했습니다. (${formatRate(record.achievementRate)} → ${formatRate(saved.achievementRate)})`
-        : "새 기록을 등록했습니다.";
+          ? t("Record.edited")
+          : t("Record.editedRateChange", { before: formatRate(record.achievementRate), after: formatRate(saved.achievementRate) })
+        : t("Record.registered");
       // 레이팅이 어떻게 바뀌었는지(새로 들어갔으면 NEW)를 같이 보여 준다. 서버가 못 주면 저장 문구만 보인다
-      const ratingText = ratingChangeText(saved.ratingChange);
+      const ratingText = ratingChangeText(saved.ratingChange, t);
       toast(ratingText ? `${savedText} ${ratingText}` : savedText);
       // 결과 카드용 값: 달성률/FC 전후(수정일 때만 이전 값을 안다)와 레이팅 변화. 단계·점수는 카드가 계산한다
       onSaved(saved, {
@@ -164,7 +169,7 @@ export function RecordForm({
     mutationFn: () => (record ? deleteRecord(record.id) : Promise.resolve()),
     onSuccess: async () => {
       await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
-      toast("기록을 삭제했습니다.");
+      toast(t("Record.deleted"));
       onDeleted?.();
     },
     // 실패하면 확인 창을 닫아서 폼 아래의 오류 문구가 보이게 한다
@@ -176,7 +181,7 @@ export function RecordForm({
     failure instanceof ApiError && !failure.fieldErrors
       ? failure.message
       : failure
-        ? "저장하지 못했습니다. 잠시 후 다시 시도해 주세요."
+        ? t("Song.saveFailed")
         : null;
 
   return (
@@ -196,41 +201,47 @@ export function RecordForm({
           onClick={() => setOneHandMode(!oneHand)}
           className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3 text-xs font-semibold text-fg-sub hover:text-fg aria-pressed:border-chip-on-bg aria-pressed:text-fg"
         >
-          한 손 모드
+          {t("Record.oneHandMode")}
         </button>
       </div>
 
       <div className="flex items-stretch gap-2.5">
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           <label htmlFor="achievementRate" className="text-xs font-bold text-fg-dim">
-            달성률
+            {t("Songs.colRate")}
           </label>
           <div className="flex h-[54px] items-center justify-between rounded-xl border-2 border-chip-on-bg bg-card px-3.5">
             <input
               id="achievementRate"
               type="text"
               // 한 손 모드에서는 화면 키보드를 띄우지 않고(inputMode none) 아래 숫자 패드로만 입력한다
-              inputMode={oneHand ? "none" : "decimal"}
+              inputMode={oneHand ? "none" : "numeric"}
               readOnly={oneHand}
               autoComplete="off"
-              placeholder="0.00 ~ 100.00"
+              placeholder="0 ~ 10000"
               aria-invalid={errors.achievementRate ? true : undefined}
               aria-describedby={errors.achievementRate ? "achievementRate-error" : undefined}
               className="w-full min-w-0 bg-transparent font-num text-[26px] font-bold text-fg outline-none placeholder:text-base placeholder:font-normal placeholder:text-fg-faint"
-              {...register("achievementRate")}
+              {...rateField}
+              // 숫자 이외의 글자(소수점 포함)는 칸에 들어가지 못하게 지우고, 5자리(10000)까지만 받는다.
+              // RHF의 register(options.onChange)는 값을 읽은 뒤에 불리므로, 읽기 전에 고치려고 onChange를 직접 감싼다
+              onChange={(event) => {
+                event.target.value = event.target.value.replace(/\D/g, "").slice(0, 5);
+                return rateField.onChange(event);
+              }}
             />
-            <span className="text-sm text-fg-dim" aria-hidden="true">
-              %
-            </span>
           </div>
-          <p className="text-[11px] text-fg-faint">0.00 ~ 100.00 · 소수점 둘째 자리까지</p>
+          <p className="text-[11px] text-fg-faint">{t("Record.rateHint")}</p>
+          <p aria-live="polite" className="min-h-4 font-num text-xs text-fg-sub">
+            {rateNumber === null ? "" : t("Record.rateInterpreted", { value: formatRate(rateNumber) })}
+          </p>
         </div>
         <div className="flex w-28 shrink-0 flex-col gap-1.5">
-          <span className="text-xs font-bold text-fg-dim">달성 표시</span>
+          <span className="text-xs font-bold text-fg-dim">{t("Record.stageDisplay")}</span>
           <div aria-live="polite" className="flex h-[54px] items-center justify-center rounded-2xl border border-line bg-card">
             {stage ? <StageBadge stage={stage} /> : <span className="text-fg-faint">–</span>}
           </div>
-          <p className="text-[11px] text-fg-faint">자동 계산</p>
+          <p className="text-[11px] text-fg-faint">{t("Record.autoCalc")}</p>
         </div>
       </div>
       {errors.achievementRate ? (
@@ -243,7 +254,7 @@ export function RecordForm({
         <div aria-live="polite" className="flex flex-col gap-1 rounded-2xl border border-line bg-card px-3.5 py-2.5">
           <div className="flex items-baseline justify-between">
           <span className="text-xs font-bold text-fg-dim">
-            예상 점수 <span className="font-normal">· 레이팅 상수 난이도 {formatTier(chart.tier)}</span>
+            {t.rich("Record.expectedScore", { n: (c) => <span className="font-normal">{c}</span>, tier: formatTier(chart.tier, t) })}
           </span>
           {preview !== null ? (
             <span {...chartTierAttrs(preview)} className="tier-score font-num text-2xl font-extrabold">
@@ -261,7 +272,7 @@ export function RecordForm({
       {oneHand ? null : (
       <div className="flex flex-col gap-1">
         <label className="flex h-[46px] items-center justify-between rounded-2xl border border-line bg-card px-3.5 text-sm font-bold text-fg">
-          풀콤보(0 miss)
+          {t("Record.fullComboLabel")}
           <input
             type="checkbox"
             checked={fullCombo}
@@ -270,18 +281,18 @@ export function RecordForm({
             {...register("fullCombo")}
           />
         </label>
-        {maxRate ? <p className="text-xs text-fg-dim">달성률 100.00이면 풀콤보로 저장됩니다.</p> : null}
+        {maxRate ? <p className="text-xs text-fg-dim">{t("Record.fullComboNote")}</p> : null}
       </div>
       )}
 
       {/* 날짜·메모는 평소처럼 보이고, 한 손 모드에서는 접어 둔다(대부분 오늘 날짜 그대로 저장하므로). 접어도 입력값은 그대로 폼에 있다 */}
       {oneHand ? (
         <details className="rounded-2xl border border-line bg-card px-3.5 py-2">
-          <summary className="min-h-9 cursor-pointer text-sm font-semibold text-fg-sub">날짜·메모 (선택)</summary>
+          <summary className="min-h-9 cursor-pointer text-sm font-semibold text-fg-sub">{t("Record.dateMemo")}</summary>
           <div className="flex flex-col gap-4 pb-2 pt-2">
       <div className="flex flex-col gap-1">
         <label htmlFor="playedDate" className="text-sm text-fg-sub">
-          플레이 날짜
+          {t("Record.playedDate")}
         </label>
         <input
           id="playedDate"
@@ -300,7 +311,7 @@ export function RecordForm({
 
       <div className="flex flex-col gap-1">
         <label htmlFor="memo" className="text-sm text-fg-sub">
-          메모 (선택)
+          {t("Record.memoOptional")}
         </label>
         <textarea
           id="memo"
@@ -321,7 +332,7 @@ export function RecordForm({
         <>
       <div className="flex flex-col gap-1">
         <label htmlFor="playedDate" className="text-sm text-fg-sub">
-          플레이 날짜
+          {t("Record.playedDate")}
         </label>
         <input
           id="playedDate"
@@ -340,7 +351,7 @@ export function RecordForm({
 
       <div className="flex flex-col gap-1">
         <label htmlFor="memo" className="text-sm text-fg-sub">
-          메모 (선택)
+          {t("Record.memoOptional")}
         </label>
         <textarea
           id="memo"
@@ -368,7 +379,7 @@ export function RecordForm({
         />
       ) : null}
 
-      <p className="text-xs text-fg-dim">기록은 SRN+ 옵션으로 저장됩니다. 기록은 본인만 등록·수정·삭제할 수 있습니다.</p>
+      <p className="text-xs text-fg-dim">{t("Record.saveNote")}</p>
 
       {serverMessage ? (
         <p role="alert" className="text-sm text-fg">
@@ -379,16 +390,16 @@ export function RecordForm({
       {record ? (
         <div className="border-t border-row-line pt-3">
           <button type="button" onClick={() => setConfirmingDelete(true)} className="min-h-9 text-sm text-danger underline">
-            이 기록 삭제
+            {t("Record.deleteThis")}
           </button>
         </div>
       ) : null}
       {/* 삭제는 되돌릴 수 없어서 별도 확인 창으로 한 번 더 묻는다(같은 줄에 붙은 버튼을 잘못 누르는 일을 줄인다) */}
       <ConfirmDialog
         open={confirmingDelete}
-        title="기록 삭제"
-        message="이 기록을 삭제할까요? 되돌릴 수 없습니다."
-        confirmLabel="삭제"
+        title={t("Record.deleteTitle")}
+        message={t("Record.deleteMessage")}
+        confirmLabel={t("Song.delete")}
         pending={removal.isPending}
         onConfirm={() => removal.mutate()}
         onCancel={() => setConfirmingDelete(false)}
@@ -400,14 +411,14 @@ export function RecordForm({
           onClick={onCancel}
           className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
         >
-          취소
+          {t("Common.cancel")}
         </button>
         <button
           type="submit"
           disabled={mutation.isPending}
           className="h-12 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-60"
         >
-          {mutation.isPending ? "저장 중" : record ? "수정 저장" : "새 기록 등록"}
+          {mutation.isPending ? t("Song.saving") : record ? t("Record.saveEdit") : t("Record.registerNew")}
         </button>
       </div>
     </form>

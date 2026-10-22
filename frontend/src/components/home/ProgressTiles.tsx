@@ -4,6 +4,7 @@ import { StageBar } from "@/components/table/StageBar";
 import { chipsOf } from "@/components/table/TierGroupSection";
 import type { ProgressGroup } from "@/lib/difficulty-table";
 import { percentOf, tileTint } from "@/lib/progress";
+import { useTranslations } from "next-intl";
 
 // 머리글 칩 이름을 chipsOf와 같은 목록에서 얻기 위한 빈 개수
 const EMPTY_COUNTS = { total: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 };
@@ -31,14 +32,15 @@ const MOBILE_COLS = "grid grid-cols-[3.25rem_2.5rem_repeat(5,minmax(0,1fr))] ite
  *   색은 단계 글자(EXC·FC·SS·S)와 함께 쓰여 색만으로 구분하지 않는다.
  */
 export function ProgressTiles({ groups, label }: { groups: readonly ProgressGroup[]; label: string }) {
+  const t = useTranslations("Progress");
   return (
     <div className="flex flex-col gap-1 sm:gap-0">
       <div aria-hidden="true" className={`${MOBILE_COLS} border-b border-line px-1 pb-1.5 text-center text-[10px] font-bold text-fg-dim sm:hidden`}>
-        <span className="text-left">구간</span>
-        <span>달성</span>
+        <span className="text-left">{t("colRange")}</span>
+        <span>{t("colAchieve")}</span>
         {chipsOf(EMPTY_COUNTS).map((chip) => (
           <span key={chip.key} data-stage={chip.stage ?? undefined} className={chip.stage ? "stage-text" : "text-fg-sub"}>
-            {chip.label}
+            {chip.stage ? chip.label : t("belowS")}
           </span>
         ))}
       </div>
@@ -72,7 +74,7 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
                       data-stage={chip.stage ?? undefined}
                       className={`text-center font-num text-[13px] font-bold ${chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"}`}
                     >
-                      <span className="sr-only">{chip.label} </span>
+                      <span className="sr-only">{chip.stage ? chip.label : t("belowS")} </span>
                       {chip.count === 0 ? "-" : chip.count}
                     </span>
                   ))}
@@ -104,7 +106,7 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
                               chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
                             }`}
                           >
-                            {chip.label} <span className="font-num">{chip.count}</span>
+                            {chip.stage ? chip.label : t("belowS")} <span className="font-num">{chip.count}</span>
                           </span>
                         ))}
                       </span>

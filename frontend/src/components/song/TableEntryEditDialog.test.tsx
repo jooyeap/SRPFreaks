@@ -146,7 +146,7 @@ describe("TableEntryEditDialog", () => {
 
     it("켜 두었는데 레이팅 상수 난이도나 속성이 없으면 계산에 안 들어간다고 알려 준다", () => {
       renderDialog({ ...existing, tier: null, entry: { ...entry, ratingEnabled: true, pattern: null } });
-      expect(screen.getByRole("status")).toHaveTextContent("계산에 들어가지 않습니다");
+      expect(screen.getByRole("status")).toHaveTextContent("속성(레이팅 제외 아님)이 필요합니다");
 
       fireEvent.change(screen.getByLabelText("레이팅 상수 난이도"), { target: { value: "6.0" } });
       fireEvent.change(screen.getByLabelText("속성"), { target: { value: "단일" } });
@@ -155,7 +155,7 @@ describe("TableEntryEditDialog", () => {
 
     it("속성이 레이팅 제외이면 켜 두어도 안내를 보여 준다", () => {
       renderDialog({ ...existing, entry: { ...entry, pattern: "레이팅 제외" } });
-      expect(screen.getByRole("status")).toHaveTextContent("계산에 들어가지 않습니다");
+      expect(screen.getByRole("status")).toHaveTextContent("속성(레이팅 제외 아님)이 필요합니다");
     });
 
     it("꺼져 있으면 값이 없어도 안내를 보여 주지 않는다", () => {

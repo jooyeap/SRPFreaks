@@ -105,6 +105,7 @@ class SongControllerAuthorizationTest {
         assertThatThrownBy(() -> songController.create(user, request)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> songController.update(user, 1L, request)).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> songController.delete(user, 1L)).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> songController.titleCheck("곡", null)).isInstanceOf(AccessDeniedException.class);
     }
 
     @Test

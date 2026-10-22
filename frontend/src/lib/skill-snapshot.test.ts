@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { koT as t } from "@/i18n/ko-translator";
 import { blockReasonText, createSnapshot, fetchSnapshots, formatChange, snapshotKeys } from "@/lib/skill-snapshot";
 
 describe("formatChange", () => {
@@ -17,9 +18,9 @@ describe("formatChange", () => {
 
 describe("blockReasonText", () => {
   it("이유 코드마다 문구가 있다", () => {
-    expect(blockReasonText("ALREADY_TODAY")).toContain("오늘은 이미 기록했습니다");
-    expect(blockReasonText("NO_CHANGE")).toContain("점수가 같아");
-    expect(blockReasonText("NO_RECORDS")).toContain("기록이 없어");
+    expect(blockReasonText("ALREADY_TODAY", t)).toContain("오늘은 이미 기록했습니다");
+    expect(blockReasonText("NO_CHANGE", t)).toContain("점수가 같아");
+    expect(blockReasonText("NO_RECORDS", t)).toContain("기록이 없어");
   });
 });
 

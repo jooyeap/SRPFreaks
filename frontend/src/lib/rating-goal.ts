@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Translator } from "@/i18n/translator";
 import type { SkillEntryResponse, SkillResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 import { requiredRate } from "@/lib/rating-target";
@@ -402,13 +403,15 @@ export function goalPlan(skill: SkillResponse, target: number, pool?: readonly T
  * 목표 입력 폼 검사 (React Hook Form + Zod). 입력은 글자로 받아 형식을 먼저 본다: 정수 최대 5자리, 소수는 둘째 자리까지.
  * "지금 레이팅보다 높은가"는 폼이 아니라 결과 화면에서 알려 준다(레이팅은 서버 값이라 폼 검사에 섞지 않는다).
  */
-export const goalFormSchema = z.object({
-  target: z
-    .string()
-    .trim()
-    .min(1, "목표 레이팅을 입력해 주세요.")
-    .regex(/^\d{1,5}(\.\d{1,2})?$/, "숫자로 입력해 주세요. 소수는 둘째 자리까지 입력할 수 있습니다.")
-    .refine((value) => Number(value) > 0, "0보다 큰 값을 입력해 주세요."),
-});
+export function makeGoalFormSchema(t: Translator) {
+  return z.object({
+    target: z
+      .string()
+      .trim()
+      .min(1, t("Validation.goalRequired"))
+      .regex(/^\d{1,5}(\.\d{1,2})?$/, t("Validation.goalFormat"))
+      .refine((value) => Number(value) > 0, t("Validation.goalPositive")),
+  });
+}
 
-export type GoalFormValues = z.infer<typeof goalFormSchema>;
+export type GoalFormValues = z.infer<ReturnType<typeof makeGoalFormSchema>>;

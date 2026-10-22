@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { koT } from "@/i18n/ko-translator";
 import { actionLabel, detailText } from "@/lib/admin";
 
 describe("actionLabel", () => {
   it("아는 작업 종류는 화면 이름으로, 모르는 값은 그대로 보여 준다", () => {
-    expect(actionLabel("SONG_DELETE")).toBe("곡 삭제");
-    expect(actionLabel("SOMETHING_NEW")).toBe("SOMETHING_NEW");
+    expect(actionLabel("SONG_DELETE", koT)).toBe("곡 삭제");
+    expect(actionLabel("SOMETHING_NEW", koT)).toBe("SOMETHING_NEW");
   });
 });
 

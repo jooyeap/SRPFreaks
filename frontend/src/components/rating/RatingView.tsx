@@ -16,6 +16,8 @@ import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 import { formatScore } from "@/lib/format";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
 
 function Group({
   title,
@@ -33,19 +35,20 @@ function Group({
   emptyText: string;
   onDeleteEntry?: (entry: SkillEntryResponse) => void;
 }) {
+  const t = useTranslations();
   return (
     <section aria-label={title} className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-num text-[17px] font-bold text-fg">
           {title}{" "}
-          <TermHelp term={title === "단일" ? "single" : "other"} label={title} />{" "}
+          <TermHelp term={title === t("Chart.patternSingle") ? "single" : "other"} label={title} />{" "}
           <span className="font-num text-sm font-normal text-fg-sub">
             {entries.length}/{limit}
           </span>
         </h2>
         {/* 구역 합산: 위 요약 카드의 단일/복합·이중·삼중 소계와 같은 값이다 */}
         <p className="shrink-0 text-xs text-fg-dim">
-          합산 <span className="font-num text-sm font-semibold text-fg">{formatScore(score)}</span>
+          {t.rich("Rating.sectionSum", { n: (c) => <span className="font-num text-sm font-semibold text-fg">{c}</span>, score: formatScore(score) })}
         </p>
       </div>
       {entries.length === 0 ? (
@@ -82,6 +85,7 @@ export function RatingBody({
   /** 있으면 카드마다 `삭제` 버튼이 생긴다(유저 상세에서 관리자만, D29) */
   onDeleteEntry?: (entry: SkillEntryResponse) => void;
 }) {
+  const t = useTranslations();
   const empty = skill.single.length === 0 && skill.other.length === 0;
   return (
     <>
@@ -89,23 +93,23 @@ export function RatingBody({
       {afterSummary}
       {empty ? <p className="text-sm text-fg-sub">{emptyHint}</p> : null}
       <Group
-        title="단일"
+        title={t("Chart.patternSingle")}
         entries={skill.single}
         limit={skill.singleLimit}
         score={skill.singleScore}
-        emptyText="속성이 단일인 채보의 기록이 아직 없습니다."
+        emptyText={t("Rating.emptySingle")}
         onDeleteEntry={onDeleteEntry}
       />
       <Group
-        title="복합·이중·삼중"
+        title={t("Rating.groupOther")}
         entries={skill.other}
         limit={skill.otherLimit}
         score={skill.otherScore}
-        emptyText="속성이 복합·이중·삼중인 채보의 기록이 아직 없습니다."
+        emptyText={t("Rating.emptyOther")}
         onDeleteEntry={onDeleteEntry}
       />
       <p className="text-xs text-fg-dim">
-        레이팅 상수 난이도와 속성이 없는 채보는 레이팅에서 제외됩니다. 같은 곡의 다른 채보는 각각 계산합니다.
+        {t("Rating.excludeNote")}
       </p>
       {footer}
     </>
@@ -116,7 +120,8 @@ export function RatingBody({
  * 마이페이지의 레이팅 탭 본문(제목과 탭은 MyPageView가 그린다). 로그인한 사용자만 이 컴포넌트를 그린다. 서버는 항상 토큰의 사용자 본인 목록만 돌려준다.
  */
 export function RatingView({ userId }: { userId: number }) {
-  const { data, isPending, isError, error } = useQuery({
+  const t = useTranslations();
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery({
     queryKey: skillKeys.me(userId),
     queryFn: ({ signal }) => fetchMySkill(signal),
   });
@@ -124,16 +129,16 @@ export function RatingView({ userId }: { userId: number }) {
   if (isPending) {
     return (
       <div className="flex flex-col gap-5">
-        <Skeleton label="불러오는 중입니다." className="h-[7.5rem]" />
-        <Skeleton label="레이팅 목록을 불러오는 중입니다." className="h-72" />
+        <Skeleton label={t("Common.loading")} className="h-[7.5rem]" />
+        <Skeleton label={t("Rating.listLoading")} className="h-72" />
       </div>
     );
   }
   if (isError) {
     return (
-      <p role="alert" className="text-sm text-fg">
-        {error instanceof ApiError ? error.message : "레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-      </p>
+      <ErrorRetry onRetry={() => void refetch()} retrying={isFetching}>
+        {error instanceof ApiError ? error.message : t("Home.ratingLoadFailed")}
+      </ErrorRetry>
     );
   }
 
@@ -151,11 +156,11 @@ export function RatingView({ userId }: { userId: number }) {
         footer={<SkillSnapshotPanel userId={userId} />}
         emptyHint={
           <>
-            레이팅에 들어갈 기록이 아직 없습니다.{" "}
+            {t("Rating.noRatedRecords")}{" "}
             <Link href="/table" className="underline">
-              서열표
+              {t("Home.tableTitle")}
             </Link>
-            에서 기록을 입력해 주세요.
+            {t("Rating.enterRecordsAt")}
           </>
         }
       />

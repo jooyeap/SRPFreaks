@@ -371,6 +371,9 @@ export interface SuggestionResponse {
   category: SuggestionCategory;
   title: string;
   content: string;
+  /** 곡 추가 건의에서 요청한 채보. 없으면 둘 다 null (한 쌍이다). */
+  requestedPart: InstrumentPart | null;
+  requestedDifficulty: DifficultyType | null;
   status: SuggestionStatus;
   adminNote: string | null;
   createdAt: string;

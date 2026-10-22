@@ -32,7 +32,7 @@ describe("NoticeDetailView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("제목·날짜(서울 시간)·본문을 보여 주고 목록으로 가는 링크가 있다. 일반 사용자에게는 고치기·삭제가 없다", async () => {
+  it("제목·날짜(서울 시간)·본문을 보여 주고 목록으로 가는 링크가 있다. 일반 사용자에게는 수정·삭제가 없다", async () => {
     fetchMock.mockResolvedValue(json(notice(1, "제목", "줄1\n줄2")));
     renderView(false);
 
@@ -40,7 +40,7 @@ describe("NoticeDetailView", () => {
     expect(screen.getByText(/줄1/)).toBeInTheDocument();
     expect(screen.getByText("2026-10-09")).toBeInTheDocument(); // UTC 15:30은 서울에서 다음 날 00:30
     expect(screen.getByRole("link", { name: "← 목록으로" })).toHaveAttribute("href", "/notices");
-    expect(screen.queryByRole("button", { name: /고치기|삭제/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /수정|삭제/ })).not.toBeInTheDocument();
     expect(String(fetchMock.mock.calls[0][0])).toContain("/notices/1");
   });
 
@@ -64,8 +64,8 @@ describe("NoticeDetailView", () => {
       Promise.resolve(init?.method === "PUT" ? json(notice(1, "고친 제목", "내용")) : json(notice(1, "원래 제목", "내용"))),
     );
     renderView(true);
-    fireEvent.click(await screen.findByRole("button", { name: "원래 제목 고치기" }));
-    const form = screen.getByRole("form", { name: "공지 고치기" });
+    fireEvent.click(await screen.findByRole("button", { name: "원래 제목 수정" }));
+    const form = screen.getByRole("form", { name: "공지 수정" });
     expect(within(form).getByLabelText("제목")).toHaveValue("원래 제목");
     fireEvent.change(within(form).getByLabelText("제목"), { target: { value: "고친 제목" } });
     fireEvent.click(within(form).getByRole("button", { name: "저장" }));
@@ -74,7 +74,7 @@ describe("NoticeDetailView", () => {
     const put = fetchMock.mock.calls.find((c) => c[1]?.method === "PUT");
     expect(String(put?.[0])).toContain("/admin/notices/1");
     expect(JSON.parse(String(put?.[1]?.body))).toEqual({ title: "고친 제목", content: "내용" });
-    await waitFor(() => expect(screen.queryByRole("form", { name: "공지 고치기" })).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole("form", { name: "공지 수정" })).not.toBeInTheDocument());
   });
 
   it("삭제는 확인을 거치고, 취소하면 요청하지 않으며, 삭제하면 목록으로 간다", async () => {

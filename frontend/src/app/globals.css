@@ -171,7 +171,7 @@
   --color-weak-tint: var(--weak-tint);
 
   /* 본문은 Noto Sans KR, 숫자/영문 라벨은 Chakra Petch (DESIGN-UI 1장) */
-  --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
+  --font-sans: var(--font-noto-sans-kr), var(--font-noto-sans-jp), system-ui, sans-serif;
   --font-num: var(--font-chakra-petch), system-ui, sans-serif;
 }
 

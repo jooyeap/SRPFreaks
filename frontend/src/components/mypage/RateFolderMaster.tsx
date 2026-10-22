@@ -7,6 +7,7 @@ import { StageBar } from "@/components/table/StageBar";
 import { chipsOf, groupStage } from "@/components/table/TierGroupSection";
 import type { RateFolderResponse } from "@/lib/api-types";
 import { folderAverage, folderLabel, folderStageCounts, formatFolderAverage, type StatsAxis } from "@/lib/rate-folders";
+import { useTranslations } from "next-intl";
 
 /**
  * 데스크톱 통계: 왼쪽에 폴더 목록(10개씩 페이지), 오른쪽에 고른 폴더의 달성률 구간 상세.
@@ -15,6 +16,7 @@ import { folderAverage, folderLabel, folderStageCounts, formatFolderAverage, typ
  * 모바일은 이 화면을 쓰지 않고 접이식 카드(RateFolderCard)를 쓴다.
  */
 export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAxis; folders: readonly RateFolderResponse[]; includeZero: boolean }) {
+  const t = useTranslations();
   const [selectedKey, setSelectedKey] = useState<number | null>(null);
   const { page, totalPages, pageItems, setPage } = usePaged(folders);
   const selected = folders.find((f) => f.key === selectedKey) ?? null;
@@ -22,7 +24,7 @@ export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAx
   return (
     <div className="grid grid-cols-[18rem_minmax(0,1fr)] items-start gap-4">
       <div className="flex flex-col gap-2">
-        <ul aria-label="폴더 목록" className="flex flex-col gap-1.5">
+        <ul aria-label={t("MyPage.folderListAria")} className="flex flex-col gap-1.5">
           {pageItems.map((folder) => {
             const counts = folderStageCounts(folder);
             const reached = groupStage(counts);
@@ -32,7 +34,7 @@ export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAx
                 <button
                   type="button"
                   aria-pressed={isSelected}
-                  aria-label={`${axis === "level" ? "레벨" : "레이팅 상수 난이도"} ${folderLabel(axis, folder.key)}`}
+                  aria-label={t("MyPage.folderAria", { axis, title: folderLabel(axis, folder.key, t) })}
                   onClick={() => setSelectedKey(folder.key)}
                   data-stage={reached ?? undefined}
                   className={`relative flex w-full flex-col gap-1.5 overflow-hidden rounded-xl border bg-card py-2.5 pl-4 pr-3 text-left ${
@@ -42,16 +44,16 @@ export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAx
                   {reached ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
                   {/* 폭이 18rem이라 한 줄에 다 담으면 큰 숫자(196개, 88.18%)에서 줄이 갈린다. 윗줄: 제목 · 개수 · 평균(오른쪽), 아랫줄: 단계 막대 · 기록 수(오른쪽). 글자는 줄바꿈하지 않는다 */}
                   <span className="flex items-baseline gap-2 whitespace-nowrap">
-                    <span className="font-num text-base font-semibold text-fg">{folderLabel(axis, folder.key)}</span>
-                    <span className="text-xs text-fg-sub">{folder.total}개</span>
+                    <span className="font-num text-base font-semibold text-fg">{folderLabel(axis, folder.key, t)}</span>
+                    <span className="text-xs text-fg-sub">{t("Songs.chartCount", { count: folder.total })}</span>
                     <span className="ml-auto text-xs text-fg-sub">
-                      평균 <span className="font-num font-semibold text-fg">{formatFolderAverage(folderAverage(folder, includeZero))}</span>
+                      {t.rich("MyPage.averageRich", { n: (c) => <span className="font-num font-semibold text-fg">{c}</span>, value: formatFolderAverage(folderAverage(folder, includeZero)) })}
                     </span>
                   </span>
                   <span className="flex items-center gap-2">
                     <StageBar counts={counts} total={folder.total} className="h-1.5 min-w-0 flex-1" />
                     <span className="shrink-0 whitespace-nowrap text-xs text-fg-dim">
-                      기록 {folder.recorded}/{folder.total}
+                      {t("MyPage.recordedCount", { recorded: folder.recorded, total: folder.total })}
                     </span>
                   </span>
                 </button>
@@ -62,38 +64,39 @@ export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAx
         <Pager page={page} totalPages={totalPages} onChange={setPage} />
       </div>
 
-      {selected ? <FolderDetail axis={axis} folder={selected} includeZero={includeZero} /> : <p className="rounded-xl border border-dashed border-line p-6 text-sm text-fg-sub">왼쪽에서 폴더를 선택하면 달성률 구간별 곡 수가 여기에 표시됩니다.</p>}
+      {selected ? <FolderDetail axis={axis} folder={selected} includeZero={includeZero} /> : <p className="rounded-xl border border-dashed border-line p-6 text-sm text-fg-sub">{t("MyPage.pickFolderHint")}</p>}
     </div>
   );
 }
 
 function FolderDetail({ axis, folder, includeZero }: { axis: StatsAxis; folder: RateFolderResponse; includeZero: boolean }) {
-  const title = folderLabel(axis, folder.key);
+  const t = useTranslations();
+  const title = folderLabel(axis, folder.key, t);
   const counts = folderStageCounts(folder);
   const reached = groupStage(counts);
   return (
-    <section aria-label={`${title} 상세`} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
+    <section aria-label={t("MyPage.detailAria", { title })} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h3 className="font-num text-lg font-semibold text-fg">
-          {title} <span className="ml-1 text-sm font-normal text-fg-sub">{folder.total}개</span>
+          {title} <span className="ml-1 text-sm font-normal text-fg-sub">{t("Songs.chartCount", { count: folder.total })}</span>
         </h3>
         {reached ? (
           <span data-stage={reached} className="stage-text font-num text-xs font-bold">
-            전부 {reached} 이상
+            {t("MyPage.allAtLeast", { stage: reached })}
           </span>
         ) : null}
         <span className="ml-auto flex items-baseline gap-3 text-xs text-fg-dim">
           <span>
-            기록 {folder.recorded}/{folder.total}
+            {t("MyPage.recordedCount", { recorded: folder.recorded, total: folder.total })}
           </span>
           <span className="text-sm text-fg-sub">
-            평균 <span className="font-num font-semibold text-fg">{formatFolderAverage(folderAverage(folder, includeZero))}</span>
+            {t.rich("MyPage.averageRich", { n: (c) => <span className="font-num font-semibold text-fg">{c}</span>, value: formatFolderAverage(folderAverage(folder, includeZero)) })}
           </span>
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <StageBar counts={counts} total={folder.total} className="h-2 min-w-24 flex-1" />
-        <ul aria-label="단계 분포" className="ml-auto flex flex-wrap items-center gap-1.5">
+        <ul aria-label={t("MyPage.stageDistAria")} className="ml-auto flex flex-wrap items-center gap-1.5">
           {chipsOf(counts).map((chip) => (
             <li
               key={chip.key}
@@ -102,13 +105,13 @@ function FolderDetail({ axis, folder, includeZero }: { axis: StatsAxis; folder: 
                 chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
               }`}
             >
-              {chip.label} <span className="font-num">{chip.count}</span>
+              {chip.stage ? chip.label : t("Progress.belowS")} <span className="font-num">{chip.count}</span>
             </li>
           ))}
         </ul>
       </div>
       <BucketList axis={axis} folder={folder} className="grid grid-cols-2 gap-2" />
-      <p className="text-xs text-fg-dim">구간을 누르면 그 구간의 곡 목록으로 이동합니다.</p>
+      <p className="text-xs text-fg-dim">{t("MyPage.bucketHint")}</p>
     </section>
   );
 }

@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { NOTICE_CONTENT_MAX, NOTICE_TITLE_MAX, noticeSchema, type NoticeValues } from "@/lib/notices";
+import { NOTICE_CONTENT_MAX, NOTICE_TITLE_MAX, makeNoticeSchema, type NoticeValues } from "@/lib/notices";
+import { useTranslations } from "next-intl";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -30,13 +31,14 @@ export function NoticeForm({
   onSubmit: (values: NoticeValues) => Promise<unknown>;
   onCancel?: () => void;
 }) {
+  const t = useTranslations();
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
   } = useForm<NoticeValues>({
-    resolver: zodResolver(noticeSchema),
+    resolver: zodResolver(makeNoticeSchema(t)),
     defaultValues: initial ?? { title: "", content: "" },
   });
 
@@ -57,7 +59,7 @@ export function NoticeForm({
       className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4"
     >
       <label className="flex flex-col gap-1 text-sm text-fg-sub">
-        제목
+        {t("Common.fieldTitle")}
         <input type="text" maxLength={NOTICE_TITLE_MAX + 50} className={FIELD} {...register("title")} />
       </label>
       {errors.title ? (
@@ -66,7 +68,7 @@ export function NoticeForm({
         </p>
       ) : null}
       <label className="flex flex-col gap-1 text-sm text-fg-sub">
-        내용
+        {t("Common.fieldContent")}
         <textarea rows={6} maxLength={NOTICE_CONTENT_MAX + 500} className={FIELD} {...register("content")} />
       </label>
       {errors.content ? (
@@ -85,7 +87,7 @@ export function NoticeForm({
           disabled={pending}
           className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
         >
-          {pending ? "저장 중" : submitLabel}
+          {pending ? t("Common.saving") : submitLabel}
         </button>
         {onCancel ? (
           <button
@@ -94,7 +96,7 @@ export function NoticeForm({
             onClick={onCancel}
             className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
           >
-            취소
+            {t("Common.cancel")}
           </button>
         ) : null}
       </div>

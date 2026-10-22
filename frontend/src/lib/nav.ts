@@ -1,6 +1,9 @@
+/** 메뉴 글자의 번역 키(messages의 Nav 아래). 글자 자체는 messages/ko.json, ja.json에 있다. */
+export type NavLabelKey = "home" | "songs" | "players" | "notices" | "suggestions" | "guide" | "myPage" | "myShort" | "more" | "import" | "settings";
+
 /** 메뉴 아이콘 이름. 그림은 components/NavIcon.tsx가 이름으로 찾아 그린다. */
 export type NavIconName =
-  "home" | "songs" | "table" | "rating" | "players" | "guide" | "notices" | "suggestions" | "admin" | "more" | "import";
+  "home" | "songs" | "table" | "rating" | "players" | "guide" | "notices" | "suggestions" | "admin" | "more" | "import" | "settings";
 
 /** "곡" 메뉴가 담당하는 경로. 이 아래의 어느 화면에서도 곡 메뉴가 강조된다. */
 export const SONG_PATHS: readonly string[] = ["/songs", "/table"];
@@ -11,20 +14,20 @@ export const SONG_PATHS: readonly string[] = ["/songs", "/table"];
  */
 export const DESKTOP_NAV_ITEMS: readonly {
   href: string;
-  label: string;
+  label: NavLabelKey;
   match?: readonly string[];
 }[] = [
-  { href: "/", label: "홈" },
+  { href: "/", label: "home" },
   // 곡 목록과 서열표는 한 메뉴(곡)로 합쳤다. 두 화면(과 곡 상세·서열표 폴더) 모두에서 이 메뉴가 강조된다
-  { href: "/table", label: "곡", match: SONG_PATHS },
-  { href: "/players", label: "유저" },
-  { href: "/notices", label: "공지" },
-  { href: "/suggestions", label: "건의" },
-  { href: "/guide", label: "설명서" },
+  { href: "/table", label: "songs", match: SONG_PATHS },
+  { href: "/players", label: "players" },
+  { href: "/notices", label: "notices" },
+  { href: "/suggestions", label: "suggestions" },
+  { href: "/guide", label: "guide" },
 ];
 
 /** 가로 메뉴 맨 끝의 마이페이지 */
-export const MY_PAGE_ITEM = { href: "/me", label: "마이페이지" } as const;
+export const MY_PAGE_ITEM = { href: "/me", label: "myPage" } as const;
 
 /**
  * lg 미만 화면 하단 탭바의 링크 항목(홈 · 곡 · 마이). 네 번째 칸 `더보기`는 링크가 아니라 시트를 여는 버튼이라 MobileTabBar가 따로 그린다.
@@ -32,41 +35,27 @@ export const MY_PAGE_ITEM = { href: "/me", label: "마이페이지" } as const;
  */
 export const TAB_ITEMS: readonly {
   href: string;
-  label: string;
-  name: string;
+  label: NavLabelKey;
+  name: NavLabelKey;
   icon: NavIconName;
   match?: readonly string[];
 }[] = [
-  { href: "/", label: "홈", name: "홈", icon: "home" },
-  { href: "/table", label: "곡", name: "곡", icon: "songs", match: SONG_PATHS },
-  { href: "/me", label: "마이", name: "마이페이지", icon: "rating" },
+  { href: "/", label: "home", name: "home", icon: "home" },
+  { href: "/table", label: "songs", name: "songs", icon: "songs", match: SONG_PATHS },
+  { href: "/me", label: "myShort", name: "myPage", icon: "rating" },
 ];
 
 /** 하단 탭바 `더보기` 시트의 항목. 자주 쓰지 않는 화면을 모았다. */
 export const MORE_ITEMS: readonly {
   href: string;
-  label: string;
-  badge?: string;
-}[] = [
-  { href: "/import", label: "최근 플레이 가져오기", badge: "추천" },
-  { href: "/notices", label: "공지" },
-  { href: "/players", label: "유저" },
-  { href: "/suggestions", label: "건의" },
-  { href: "/guide", label: "설명서" },
-  { href: "/settings", label: "설정" },
-];
-
-/** 주 메뉴 항목. lg 미만 화면의 슬라이드 메뉴(MobileMenu)가 이 목록을 쓴다. `관리`는 역할에 따라 보이므로 AdminNavLink가 따로 맡는다. */
-export const NAV_ITEMS: readonly {
-  href: string;
-  label: string;
+  label: NavLabelKey;
   icon: NavIconName;
-  match?: readonly string[];
+  badge?: "importBadge";
 }[] = [
-  { href: "/table", label: "곡", icon: "songs", match: SONG_PATHS },
-  { href: "/me", label: "마이페이지", icon: "rating" },
-  { href: "/players", label: "유저", icon: "players" },
-  { href: "/guide", label: "설명서", icon: "guide" },
-  { href: "/notices", label: "공지", icon: "notices" },
-  { href: "/suggestions", label: "건의", icon: "suggestions" },
+  { href: "/import", label: "import", icon: "import", badge: "importBadge" },
+  { href: "/notices", label: "notices", icon: "notices" },
+  { href: "/players", label: "players", icon: "players" },
+  { href: "/suggestions", label: "suggestions", icon: "suggestions" },
+  { href: "/guide", label: "guide", icon: "guide" },
+  { href: "/settings", label: "settings", icon: "settings" },
 ];

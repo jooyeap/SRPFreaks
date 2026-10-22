@@ -13,6 +13,7 @@ import { TableSearch } from "@/components/table/TableSearch";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
 import { ApiError } from "@/lib/api";
+import { tableNameLabel } from "@/lib/chart-labels";
 import {
   allGroupsKey,
   decidedGroups,
@@ -27,20 +28,25 @@ import type { TableEntryResponse } from "@/lib/api-types";
 import { DEFAULT_VIEW_STATE, type TableViewState } from "@/lib/table-view-state";
 import type { TableSort } from "@/lib/table-sort";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { isLoggedInViewer } from "@/lib/viewer";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
+import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 
 /** 접힌 필터 줄에 보여 줄 요약. 걸린 필터가 없으면 "전체". */
-function filterSummary(filters: TableFilters, includeZero: boolean): string {
+function filterSummary(filters: TableFilters, includeZero: boolean, t: Translator): string {
   const picked = [
     filters.part ? PART_OPTIONS.find((o) => o.value === filters.part)?.label : null,
-    filters.recommend.length > 0 ? `추천 ${filters.recommend.join("·")}` : null,
-    filters.pattern.length > 0 ? `속성 ${filters.pattern.join("·")}` : null,
+    filters.recommend.length > 0 ? t("Table.summaryRecommend", { values: filters.recommend.map((v) => recommendLabel(v, t)).join("·") }) : null,
+    filters.pattern.length > 0 ? t("Table.summaryPattern", { values: filters.pattern.map((v) => patternLabel(v, t)).join("·") }) : null,
   ].filter((v): v is string => Boolean(v));
-  const average = includeZero ? "평균 0% 포함" : "평균 0% 미포함";
-  return `${picked.length > 0 ? picked.join(" · ") : "전체"} · ${average}`;
+  const average = includeZero ? t("Table.avgWithZero") : t("Table.avgWithoutZero");
+  return `${picked.length > 0 ? picked.join(" · ") : t("Songs.all")} · ${average}`;
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : "서열표를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+function errorMessage(error: unknown, t: Translator): string {
+  return error instanceof ApiError ? error.message : t("Table.loadFailed");
 }
 
 /**
@@ -62,6 +68,7 @@ export function DifficultyTableView({
   state?: TableViewState;
   onStateChange?: (next: TableViewState) => void;
 }) {
+  const t = useTranslations();
   const [innerState, setInnerState] = useState<TableViewState>(DEFAULT_VIEW_STATE);
   const view = controlledState ?? innerState;
   const updateView = useCallback(
@@ -109,13 +116,17 @@ export function DifficultyTableView({
   }
 
   if (tables.isPending) {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   if (tables.isError) {
-    return <p role="alert" className="text-sm text-fg">{errorMessage(tables.error)}</p>;
+    return (
+      <ErrorRetry onRetry={() => void tables.refetch()} retrying={tables.isFetching}>
+        {errorMessage(tables.error, t)}
+      </ErrorRetry>
+    );
   }
   if (!table) {
-    return <p className="text-sm text-fg-sub">SRN+ 서열표가 아직 없습니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Home.tableEmpty")}</p>;
   }
 
   const data = entries.data;
@@ -125,8 +136,8 @@ export function DifficultyTableView({
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-fg">{table.name}</h1>
-          <p className="mt-1 text-sm text-fg-sub">속성은 SRN+ 옵션 사용 기준</p>
+          <h1 className="text-xl font-semibold text-fg">{tableNameLabel(table.name, t)}</h1>
+          <p className="mt-1 text-sm text-fg-sub">{t("Table.patternBasis")}</p>
           <TableCredit className="mt-1 text-xs text-fg-dim" />
         </div>
         {/* ROOT·ADMIN만: 곡과 채보를 등록하면서 이 서열표에도 추가한다 */}
@@ -142,7 +153,7 @@ export function DifficultyTableView({
             onClick={() => setOpenGroups(allOpen ? new Set() : new Set(groupKeys))}
             className="rounded-lg border border-chip-line bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
           >
-            {allOpen ? "모두 접기" : "모두 펼치기"}
+            {allOpen ? t("Table.collapseAll") : t("Table.expandAll")}
           </button>
         ) : null}
       </div>
@@ -155,8 +166,8 @@ export function DifficultyTableView({
         onClick={() => setFiltersOpen((open) => !open)}
         className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 py-2.5 text-left text-sm md:hidden"
       >
-        <span className="font-semibold text-fg">필터</span>
-        <span className="min-w-0 flex-1 truncate text-xs text-fg-dim">{filterSummary(filters, includeZero)}</span>
+        <span className="font-semibold text-fg">{t("Songs.filter")}</span>
+        <span className="min-w-0 flex-1 truncate text-xs text-fg-dim">{filterSummary(filters, includeZero, t)}</span>
         <span aria-hidden="true" className="text-fg-dim">
           {filtersOpen ? "▴" : "▾"}
         </span>
@@ -172,11 +183,13 @@ export function DifficultyTableView({
       </div>
 
       {entries.isError ? (
-        <p role="alert" className="text-sm text-fg">{errorMessage(entries.error)}</p>
+        <ErrorRetry onRetry={() => void entries.refetch()} retrying={entries.isFetching}>
+          {errorMessage(entries.error, t)}
+        </ErrorRetry>
       ) : !data ? (
-        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : data.content.length === 0 ? (
-        <p className="text-sm text-fg-sub">조건에 맞는 채보가 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
       ) : (
         <>
           <div className="flex flex-col gap-4">
@@ -196,18 +209,19 @@ export function DifficultyTableView({
                     return copy;
                   })
                 }
-                onRecord={(entry, tier) => setRecordTarget({ entry, tier })}
+                // 비로그인 방문자(D43)는 기록을 입력할 수 없으므로 `기록` 버튼을 그리지 않는다(onRecord가 없으면 줄이 버튼을 만들지 않는다)
+                onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined}
               />
             ))}
           </div>
-          <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">
+          <nav aria-label={t("Common.pageNav")} className="flex items-center justify-center gap-3 text-sm text-fg-sub">
             <button
               type="button"
               disabled={page <= 0}
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
               className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
-              이전
+              {t("Common.prev")}
             </button>
             <span className="font-num">
               {data.page + 1} / {Math.max(data.totalPages, 1)}
@@ -218,7 +232,7 @@ export function DifficultyTableView({
               onClick={() => setPage((p) => p + 1)}
               className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
-              다음
+              {t("Common.next")}
             </button>
           </nav>
         </>

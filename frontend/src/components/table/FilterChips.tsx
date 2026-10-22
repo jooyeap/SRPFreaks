@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 /**
  * 필터 버튼 (2026-10-13 개편, DESIGN-UI 3장).
  *  - 하나만 고르는 필터(파트, 평균 계산) -> 세그먼트(Segmented): 한 줄에 붙은 칸, 켜진 칸은 떠 있는 모양 + 굵은 글씨
@@ -60,17 +62,19 @@ export function FilterChips<T extends string>({
   selected: T | null;
   onChange: (value: T | null) => void;
 }) {
-  return <Segmented label={label} items={[{ value: null, label: "전체" }, ...options]} value={selected} onChange={onChange} />;
+  const t = useTranslations();
+  return <Segmented label={label} items={[{ value: null, label: t("Songs.all") }, ...options]} value={selected} onChange={onChange} />;
 }
 
 /** 평균 계산 `0% 미포함 / 0% 포함` (서열표·묶음·곡 목록 공통). 미포함이 기본이다. */
 export function AverageToggle({ includeZero, onChange }: { includeZero: boolean; onChange: (includeZero: boolean) => void }) {
+  const t = useTranslations();
   return (
     <Segmented
-      label="평균 계산"
+      label={t("Table.avgCalc")}
       items={[
-        { value: "exclude", label: "0% 미포함" },
-        { value: "include", label: "0% 포함" },
+        { value: "exclude", label: t("Table.withoutZero") },
+        { value: "include", label: t("Table.withZero") },
       ]}
       value={includeZero ? "include" : "exclude"}
       onChange={(next) => onChange(next === "include")}
@@ -112,11 +116,12 @@ export function MultiFilterChips<T extends string>({
   onToggle: (value: T) => void;
   onClear: () => void;
 }) {
+  const t = useTranslations();
   return (
     <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1.5">
       <span className="mr-1 text-xs text-fg-dim">{label}</span>
       <CheckChip pressed={selected.length === 0} onClick={onClear}>
-        전체
+        {t("Songs.all")}
       </CheckChip>
       {options.map((option) => (
         <CheckChip key={option.value} pressed={selected.includes(option.value)} onClick={() => onToggle(option.value)}>

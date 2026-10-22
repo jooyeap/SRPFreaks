@@ -30,3 +30,38 @@
 3. 서버에서는 `git pull --ff-only` 후 선택한 서비스만 `up -d --build` 한다. DB 컨테이너·볼륨과 `.env.prod`는 건드리지 않는다.
 - 주의: 서버 보안 그룹의 22번 포트가 "내 IP만"이면 GitHub 러너가 접속하지 못한다. 그때는 포트 허용 범위를 조정하거나 SSM 방식으로 바꾼다.
 - 백엔드를 배포하면 Flyway가 새 마이그레이션을 적용한다. 스키마를 바꾸는 배포는 먼저 서버 DB 백업(`mysqldump`)을 확인한다.
+
+## DB 백업·복구 (2026-10-20)
+
+**백업 설정 (서버에서 한 번)**
+1. `chmod +x ~/gitalog/scripts/deploy/backup-db.sh`
+2. 한 번 손으로 실행해 본다: `~/gitalog/scripts/deploy/backup-db.sh` → `~/backups/srpfreaks-날짜.sql.gz`가 생기고 `백업 완료`가 나오면 성공이다.
+3. cron 등록(`crontab -e`): `17 19 * * * ~/gitalog/scripts/deploy/backup-db.sh >> ~/backups/backup.log 2>&1` (매일 04:17 KST = 19:17 UTC)
+4. 보관: 기본 14일(`BACKUP_KEEP_DAYS`로 변경). 서버 디스크가 작으니 `du -sh ~/backups`를 가끔 확인한다.
+5. (선택) S3에도 올리려면 서버에 aws cli와 쓰기 권한을 준 뒤 cron 줄 앞에 `BACKUP_S3_BUCKET=s3://버킷/경로`를 붙인다. 서버 디스크가 망가져도 남는 사본이 필요하면 이 단계가 중요하다.
+
+스크립트가 하는 일과 안전장치: 비밀번호를 명령줄에 쓰지 않고(db 컨테이너 안 환경변수), 파일은 소유자만 읽게(600) 두며, 압축 손상·덤프 미완료·비정상적으로 작은 파일이면 실패로 끝낸다(성공한 척하지 않음). 서비스를 멈추지 않는다(`--single-transaction`).
+
+**복구 (장애 때만, 신중하게)**
+1. 먼저 지금 상태를 한 번 더 백업해 둔다(복구가 잘못될 때를 대비).
+2. 복구할 파일 확인: `ls -lh ~/backups`
+3. 백엔드를 멈춘다: `docker compose --env-file .env.prod -f docker-compose.prod.yml stop backend`
+4. 복구: `gzip -dc ~/backups/srpfreaks-날짜.sql.gz | docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T db sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" srpfreaks'`
+5. 백엔드를 다시 켠다: `... up -d backend` → Flyway가 스키마 상태를 확인한다. 화면에서 로그인과 레이팅이 보이는지 확인한다.
+- 복구 연습은 따로 만든 빈 DB(예: `srpfreaks_restore`)에 먼저 해 보면 안전하다. 백업은 한 번도 복구해 보지 않으면 있는 것이 아니다.
+
+## 장애 알림과 오류 요약 (2026-10-21)
+- **장애 이슈 자동 생성**: `uptime.yml`이 점검에 실패하면 `장애` 라벨의 GitHub 이슈를 하나 열고(이미 열려 있으면 새로 만들지 않음), 다시 성공하면 댓글을 남기고 닫는다. 이슈는 메일 알림이 오고, Claude가 읽고 원인을 분석할 수 있는 기록이 된다.
+- **최근 오류 보기**: Server Ops의 새 작업. 최근 24시간 로그에서 `backend`(로거·예외 종류별 ERROR/WARN 건수), `frontend`(오류 종류별 건수), `nginx`(5xx 상태 코드별 건수)만 집계한다(`scripts/deploy/summarize-errors.sh`). 결과는 실행 Summary와 검사 결과 주석으로 남는다.
+- **로그 원문과 예외 메시지는 출력하지 않는다.** 이 저장소는 공개라서 Actions의 로그·주석을 누구나 읽을 수 있고, 예외 메시지에는 값·SQL·이메일이 섞일 수 있어 마스킹으로는 완전히 막을 수 없기 때문이다. 코드가 공개라 클래스 이름은 비밀이 아니다. 테스트(`summarize-errors.test.sh`, CI의 '배포 스크립트 테스트')가 이메일·토큰·SQL이 출력에 나오지 않는 것을 확인한다.
+- 처음 쓰기 전에 이 PR이 `main`에 머지돼 있어야 한다(서버는 `origin/main`의 스크립트를 읽는다).
+
+## 사이트 감시 (2026-10-20)
+- `.github/workflows/uptime.yml`: 10분마다 홈(200)과 인증 없는 API(401)를 확인하고, HTTPS 인증서 만료가 14일 아래로 남으면 실패한다. 실패하면 GitHub가 저장소 소유자에게 알림을 보낸다(GitHub 앱의 알림을 켜 두면 모바일로 온다).
+- 배포 직후에는 `deploy.yml`의 `배포 후 점검`이 같은 확인을 한 번 더 한다.
+
+## 배포 반영 확인과 서버 점검 (2026-10-20)
+- **배경**: 프론트를 다시 빌드하지 않은 채(`target`을 `backend`로만 고른 경우 등) 워크플로가 성공으로 끝나, 화면이 옛 버전인 채로 모르고 지나간 적이 있다.
+- **빌드 커밋 표시**: 배포 때 서버가 `git rev-parse --short=7 HEAD`를 `GIT_SHA`로 넘기고(`docker-compose.prod.yml`의 빌드 인자), `frontend/Dockerfile`이 `NEXT_PUBLIC_GIT_SHA`로 코드에 고정한다. 푸터의 `build abc1234`와 `GET /version`(`{"sha":"abc1234"}`, 캐시 안 함)에서 볼 수 있다. 비밀값이 아니다. 값이 없으면 `dev`(로컬·테스트), 직접 compose를 실행하면 `unknown`.
+- **자동 검증**: `deploy.yml`의 `배포 버전 확인`이 방금 배포한 브랜치의 커밋과 `/version`의 값을 비교한다(최대 약 2분 재시도). 다르면 실패하고 GitHub 알림이 온다. 프론트를 배포하는 경우(`frontend`, `frontend + backend`)에만 확인한다. **백엔드 버전은 아직 확인하지 않는다.**
+- **서버 점검 워크플로** `.github/workflows/server-ops.yml`(수동 실행): `상태 확인`(서버 커밋, 컨테이너, 이미지 시각, 실행 중 프론트의 빌드 커밋, 프론트 로그 30줄, 읽기 전용) / `프론트 강제 재생성`(캐시 없이 다시 빌드 + nginx 재시작) / `nginx 재시작`. 결과는 실행 화면의 Summary에도 남는다. DB·`.env.prod`·백엔드 로그는 다루지 않는다.

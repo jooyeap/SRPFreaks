@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 import { buildContentSecurityPolicy } from "./src/lib/csp";
 
 /**
@@ -36,4 +37,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// 다국어(next-intl): src/i18n/request.ts가 요청마다 언어와 번역 문구를 정한다
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);

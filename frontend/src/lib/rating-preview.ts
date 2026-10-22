@@ -1,3 +1,4 @@
+import type { Translator } from "@/i18n/translator";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 
 /** 기록 입력 중에 보여 주는 "이 기록을 저장하면 레이팅이 어떻게 되는가" 예상. */
@@ -58,10 +59,10 @@ export function previewRatingChange(
 }
 
 /** 미리보기 한 줄 문구. 증감은 + 부호 글자로 쓴다(색만으로 전달하지 않는다). */
-export function ratingPreviewText(preview: RatingPreview): string {
+export function ratingPreviewText(preview: RatingPreview, t: Translator): string {
   if (preview.change > 0) {
-    const base = `예상 레이팅 +${preview.change.toFixed(2)}`;
-    return preview.entered ? `${base} · NEW 레이팅 목록에 새로 들어갑니다` : base;
+    const change = preview.change.toFixed(2);
+    return preview.entered ? t("RatingPreview.expectedEntered", { change }) : t("RatingPreview.expected", { change });
   }
-  return preview.inList ? "레이팅 변화 없음" : "레이팅 변화 없음 · 아직 레이팅 목록에는 들지 못합니다";
+  return preview.inList ? t("RatingPreview.noChange") : t("RatingPreview.noChangeOutside");
 }

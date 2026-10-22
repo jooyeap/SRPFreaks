@@ -24,6 +24,9 @@ import {
   SETLIST_PAGE_SIZE,
   setlistKeys,
 } from "@/lib/setlist";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
 /** 세트리스트 줄을 기록 창이 받는 채보 정보로 바꾼다 */
 function toRecordChart(item: SetlistItemResponse): RecordChart {
@@ -37,8 +40,8 @@ function toRecordChart(item: SetlistItemResponse): RecordChart {
   };
 }
 
-function errorText(error: unknown): string {
-  return error instanceof ApiError ? error.message : "처리하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+function errorText(error: unknown, t: Translator): string {
+  return error instanceof ApiError ? error.message : t("Common.actionFailed");
 }
 
 /**
@@ -47,6 +50,7 @@ function errorText(error: unknown): string {
  * `완료한 곡 비우기`로 다음 방문 전에 한 번에 정리한다. 30곡까지 담을 수 있어 10개씩 나눠 보인다.
  */
 export function SetlistTab({ userId }: { userId: number }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [recording, setRecording] = useState<RecordChart | null>(null);
@@ -75,28 +79,28 @@ export function SetlistTab({ userId }: { userId: number }) {
   const remove = useMutation({
     mutationFn: (id: number) => removeFromSetlist(id),
     onSuccess: async () => {
-      toast("세트리스트에서 뺐습니다.");
+      toast(t("Setlist.removed"));
       await refresh();
     },
-    onError: (error) => toast(errorText(error)),
+    onError: (error) => toast(errorText(error, t)),
   });
   const clear = useMutation({
     mutationFn: () => clearDoneSetlist(),
     onSuccess: async (result) => {
-      toast(`완료한 ${result.removed}곡을 비웠습니다.`);
+      toast(t("Setlist.clearedToast", { count: result.removed }));
       await refresh();
     },
-    onError: (error) => toast(errorText(error)),
+    onError: (error) => toast(errorText(error, t)),
   });
 
   if (list.isPending) {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   if (list.isError) {
     return (
-      <p role="alert" className="text-sm text-fg">
-        {list.error instanceof ApiError ? list.error.message : "세트리스트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-      </p>
+      <ErrorRetry onRetry={() => void list.refetch()} retrying={list.isFetching}>
+        {list.error instanceof ApiError ? list.error.message : t("Setlist.loadFailed")}
+      </ErrorRetry>
     );
   }
 
@@ -114,8 +118,8 @@ export function SetlistTab({ userId }: { userId: number }) {
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm text-fg-sub">
-            완료 <span className="font-num text-fg">{done}</span> / 전체 <span className="font-num text-fg">{items.length}</span>
-            <span className="text-fg-dim"> (최대 {SETLIST_LIMIT}곡)</span>
+            {t.rich("Setlist.doneTotal", { n: (c) => <span className="font-num text-fg">{c}</span>, done, total: items.length })}
+            <span className="text-fg-dim">{t("Setlist.maxSongs", { limit: SETLIST_LIMIT })}</span>
           </p>
           <button
             type="button"
@@ -123,17 +127,17 @@ export function SetlistTab({ userId }: { userId: number }) {
             onClick={() => clear.mutate()}
             className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
           >
-            {clear.isPending ? "비우는 중" : "완료한 곡 비우기"}
+            {clear.isPending ? t("Setlist.clearing") : t("Setlist.clearDone")}
           </button>
         </div>
 
         {items.length === 0 ? (
           <p className="text-sm text-fg-sub">
-            담은 곡이 없습니다. 위 검색창에서 오늘 칠 곡을 찾아 담아 보세요.
+            {t("Setlist.emptyList")}
           </p>
         ) : (
           <>
-            <ul aria-label="세트리스트" className="flex flex-col gap-2">
+            <ul aria-label={t("Setlist.title")} className="flex flex-col gap-2">
               {pageItems.map((item) => (
                 <SetlistRow
                   key={item.id}
@@ -165,6 +169,7 @@ function SetlistRow({
   onRecord: () => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations();
   const stage = item.mine?.stage ?? null;
   return (
     <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
@@ -176,7 +181,7 @@ function SetlistRow({
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <ChartBadge part={item.part} difficulty={item.difficulty} level={item.level} />
             <span className="text-xs text-fg-dim">
-              레이팅 상수 난이도 <span className="font-num">{formatTier(item.tier)}</span>
+              {t.rich("Setlist.tierLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
             </span>
           </p>
         </div>
@@ -192,28 +197,28 @@ function SetlistRow({
             <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12l5 5 9-10" />
             </svg>
-            완료
+            {t("Setlist.doneMark")}
           </span>
         ) : (
-          <span className="text-sm text-fg-dim">미완료</span>
+          <span className="text-sm text-fg-dim">{t("Setlist.notDone")}</span>
         )}
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onRecord}
-            aria-label={`${item.title} 기록 입력`}
+            aria-label={t("Setlist.recordAria", { title: item.title })}
             className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg hover:bg-table-head"
           >
-            기록 입력
+            {t("Setlist.enterRecord")}
           </button>
           <button
             type="button"
             disabled={removing}
             onClick={onRemove}
-            aria-label={`${item.title} 세트리스트에서 빼기`}
+            aria-label={t("Setlist.removeAria", { title: item.title })}
             className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg disabled:opacity-60"
           >
-            빼기
+            {t("Setlist.removeBtn")}
           </button>
         </div>
       </div>

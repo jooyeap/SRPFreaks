@@ -82,7 +82,7 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
     expect(screen.getByText("첫 기록")).toBeInTheDocument();
     expect(screen.getByText("건너뜀 · 기존 기록(94.00)보다 낮음")).toBeInTheDocument();
     expect(screen.getByText("제외 · 곡 목록에 없음")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "곡 추가 건의하기" })).toHaveAttribute("href", "/suggestions?category=SONG_REQUEST&title=C");
+    expect(screen.getByRole("link", { name: "곡 추가 건의하기" })).toHaveAttribute("href", "/suggestions?category=SONG_REQUEST&title=C&part=GUITAR&difficulty=MASTER");
     // 저장 안 하는 줄은 체크할 수 없다
     expect(screen.getByRole("checkbox", { name: "D 저장 안 함" })).toBeDisabled();
     expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith("/record-imports/commit"))).toBe(false);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { koT as t } from "@/i18n/ko-translator";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 import { previewRatingChange, ratingPreviewText } from "@/lib/rating-preview";
 
@@ -46,12 +47,12 @@ describe("previewRatingChange", () => {
 
 describe("ratingPreviewText", () => {
   it("오르면 + 부호로, 새로 들어가면 NEW를 덧붙인다", () => {
-    expect(ratingPreviewText({ change: 3.4, inList: true, entered: false })).toBe("예상 레이팅 +3.40");
-    expect(ratingPreviewText({ change: 3.4, inList: true, entered: true })).toBe("예상 레이팅 +3.40 · NEW 레이팅 목록에 새로 들어갑니다");
+    expect(ratingPreviewText({ change: 3.4, inList: true, entered: false }, t)).toBe("예상 레이팅 +3.40");
+    expect(ratingPreviewText({ change: 3.4, inList: true, entered: true }, t)).toBe("예상 레이팅 +3.40 · NEW");
   });
 
   it("변화가 없으면 이유를 알려 준다", () => {
-    expect(ratingPreviewText({ change: 0, inList: true, entered: false })).toBe("레이팅 변화 없음");
-    expect(ratingPreviewText({ change: 0, inList: false, entered: false })).toBe("레이팅 변화 없음 · 아직 레이팅 목록에는 들지 못합니다");
+    expect(ratingPreviewText({ change: 0, inList: true, entered: false }, t)).toBe("레이팅 변화 없음");
+    expect(ratingPreviewText({ change: 0, inList: false, entered: false }, t)).toBe("레이팅 변화 없음 · 아직 레이팅 목록에는 들지 못합니다");
   });
 });
