@@ -6,10 +6,12 @@ import com.srpfreaks.backend.dto.SongRequest;
 import com.srpfreaks.backend.dto.SongSuggestionResponse;
 import com.srpfreaks.backend.dto.SongSummaryResponse;
 import com.srpfreaks.backend.dto.SongTitleCheckResponse;
+import com.srpfreaks.backend.dto.TierHistoryResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.SongAdminService;
 import com.srpfreaks.backend.service.SongQueryService;
 import com.srpfreaks.backend.service.SongSuggestService;
+import com.srpfreaks.backend.service.TierHistoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import java.util.List;
@@ -40,6 +42,7 @@ public class SongController {
     private final SongQueryService songQueryService;
     private final SongAdminService songAdminService;
     private final SongSuggestService songSuggestService;
+    private final TierHistoryService tierHistoryService;
 
     @GetMapping
     public PageResponse<SongSummaryResponse> search(
@@ -66,6 +69,15 @@ public class SongController {
     @GetMapping("/{songId}")
     public SongDetailResponse detail(@PathVariable Long songId) {
         return songQueryService.detail(songId);
+    }
+
+    /** 곡 상세 하단의 서열표 변경 이력(기준 난이도·속성). 로그인 없이 읽는다. 최신순, 페이지네이션. */
+    @GetMapping("/{songId}/tier-history")
+    public PageResponse<TierHistoryResponse> tierHistory(
+            @PathVariable Long songId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + TierHistoryService.DEFAULT_PAGE_SIZE) int size) {
+        return tierHistoryService.history(songId, page, size);
     }
 
     @PostMapping

@@ -12,6 +12,7 @@ import com.srpfreaks.backend.service.DifficultyTableViewService;
 import com.srpfreaks.backend.service.SongAdminService;
 import com.srpfreaks.backend.service.SongQueryService;
 import com.srpfreaks.backend.service.SongSuggestService;
+import com.srpfreaks.backend.service.TierHistoryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,8 +56,11 @@ class SongControllerAuthorizationTest {
 
         @Bean SongSuggestService songSuggestService() { return Mockito.mock(SongSuggestService.class); }
 
-        @Bean SongController songController(SongQueryService q, SongAdminService a, SongSuggestService s) {
-            return new SongController(q, a, s);
+        @Bean TierHistoryService tierHistoryService() { return Mockito.mock(TierHistoryService.class); }
+
+        @Bean SongController songController(SongQueryService q, SongAdminService a, SongSuggestService s,
+                                            TierHistoryService h) {
+            return new SongController(q, a, s, h);
         }
 
         @Bean DifficultyTableService difficultyTableService() { return Mockito.mock(DifficultyTableService.class); }
@@ -133,6 +137,7 @@ class SongControllerAuthorizationTest {
 
         assertThatCode(() -> songController.search(null, 0, 20, null)).doesNotThrowAnyException();
         assertThatCode(() -> songController.detail(1L)).doesNotThrowAnyException();
+        assertThatCode(() -> songController.tierHistory(1L, 0, 10)).doesNotThrowAnyException();
     }
 
     @Test

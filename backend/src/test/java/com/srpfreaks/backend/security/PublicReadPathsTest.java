@@ -12,6 +12,7 @@ class PublicReadPathsTest {
         for (String uri : new String[] {
                 "/api/v1/notices", "/api/v1/notices/12",
                 "/api/v1/songs", "/api/v1/songs/5", "/api/v1/songs/suggest", "/api/v1/songs/chart-folders", "/api/v1/songs/charts",
+                "/api/v1/songs/5/tier-history",
                 "/api/v1/players", "/api/v1/players/3",
                 "/api/v1/difficulty-tables", "/api/v1/difficulty-tables/1/entries"}) {
             assertThat(PublicReadPaths.matches("GET", uri)).as(uri).isTrue();
@@ -30,7 +31,7 @@ class PublicReadPathsTest {
     void 관리자_개인_경로와_비슷한_이름은_열리지_않는다() {
         for (String uri : new String[] {
                 "/api/v1/songs/title-check",          // 관리자 전용
-                "/api/v1/songs/5/difficulties",
+                "/api/v1/songs/5/difficulties", "/api/v1/songs/abc/tier-history", "/api/v1/songs/5/tier-history/1",
                 "/api/v1/admin/notices", "/api/v1/admin/songs",
                 "/api/v1/users/me", "/api/v1/records", "/api/v1/skill", "/api/v1/setlist", "/api/v1/suggestions",
                 "/api/v1/notices/abc", "/api/v1/players/me", "/api/v1/songs/", "/api/v1/songs/5/",

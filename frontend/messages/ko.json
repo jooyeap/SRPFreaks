@@ -1237,5 +1237,18 @@
     "close": "닫기",
     "tier": "서열 {value}",
     "tierShort": "T{value}"
+  },
+  "TierHistory": {
+    "title": "서열표 변경 이력",
+    "empty": "아직 변경 이력이 없습니다.",
+    "note": "서열표의 기준 난이도·속성을 고친 기록입니다. 처음 정해진 값은 표시되지 않습니다.",
+    "added": "서열표에 추가",
+    "tierChange": "기준 난이도 {from} → {to}",
+    "patternChange": "속성 {from} → {to}",
+    "tierValue": "기준 난이도 {value}",
+    "patternValue": "속성 {value}",
+    "loadMore": "더 보기",
+    "loadingMore": "불러오는 중",
+    "loadFailed": "변경 이력을 불러오지 못했습니다."
   }
 }
