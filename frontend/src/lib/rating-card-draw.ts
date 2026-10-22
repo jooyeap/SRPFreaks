@@ -116,10 +116,11 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
   text(ctx, h.brand.replace("SRPFreaks · ", ""), x0 + brandW + 16, y0 + 30, `500 22px ${f.sans}`, TEXT_MUTED);
 
   // 합계 점수(크게)
-  const totalSize = portrait ? 104 : 120;
+  // 가로는 왼쪽 두 줄(SRPFreaks~닉네임)의 높이에 가깝게 72px, 세로는 기존 크기 (2026-10-22 피드백: 가로 합계가 너무 큼)
+  const totalSize = portrait ? 104 : 72;
   ctx.font = `700 ${totalSize}px ${f.num}`;
   const totalW = ctx.measureText(h.totalText).width;
-  const totalBase = y0 + (portrait ? 148 : 96);
+  const totalBase = y0 + (portrait ? 148 : 76); // 가로는 닉네임과 같은 기준선(글자 높이가 왼쪽 두 줄과 같도록 크기를 맞춤)
   withGlow(ctx, h.tier, () => text(ctx, h.totalText, right, totalBase, `700 ${totalSize}px ${f.num}`, tierFill(right - totalW, totalBase, totalW), "right"));
 
   // 닉네임 + 티어 칩
