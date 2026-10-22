@@ -22,6 +22,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -157,5 +159,17 @@ public class SecurityConfig {
         DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
         handler.setRoleHierarchy(roleHierarchy);
         return handler;
+    }
+
+    /**
+     * 아무도 찾지 못하는 UserDetailsService. 이 서비스는 비밀번호 로그인이 없다(Google 로그인 + JWT, D19).
+     * 이 빈이 없으면 Spring Boot가 임시 비밀번호가 담긴 기본 사용자(user)를 자동으로 만들고 시작할 때
+     * "Using generated security password" 경고를 남긴다. 빈을 직접 두면 자동 생성이 물러난다.
+     */
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> {
+            throw new UsernameNotFoundException("비밀번호 로그인은 지원하지 않습니다.");
+        };
     }
 }

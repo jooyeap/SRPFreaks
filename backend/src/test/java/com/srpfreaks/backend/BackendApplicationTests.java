@@ -27,6 +27,16 @@ class BackendApplicationTests {
 	@org.springframework.beans.factory.annotation.Autowired
 	org.springframework.core.env.Environment environment;
 
+	@org.springframework.beans.factory.annotation.Autowired
+	org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
+
+	/** 비밀번호 로그인이 없으므로 어떤 이름으로도 사용자를 찾지 못해야 한다(자동 생성되는 기본 사용자 user가 없어야 한다). */
+	@Test
+	void 기본_사용자가_없다() {
+		org.assertj.core.api.Assertions.assertThatThrownBy(() -> userDetailsService.loadUserByUsername("user"))
+				.isInstanceOf(org.springframework.security.core.userdetails.UsernameNotFoundException.class);
+	}
+
 	@Test
 	void contextLoads() {
 	}
