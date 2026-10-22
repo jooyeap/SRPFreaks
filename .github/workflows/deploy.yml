@@ -90,11 +90,25 @@ jobs:
           git pull --ff-only origin "$REF"
           # 프론트 이미지에 "어느 커밋으로 빌드했는지"를 넣는다(푸터·/version). 배포 후 점검이 이 값을 확인한다.
           export GIT_SHA="$(git rev-parse --short=7 HEAD)"
-          # $SERVICES는 일부러 따옴표 없이 쓴다 (서비스 이름이 여러 개일 수 있다)
-          docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build $SERVICES
+          echo "배포 대상: $SERVICES / 브랜치: $REF / 빌드 커밋(GIT_SHA): $GIT_SHA"
+          # 서비스는 한 개씩 차례로 빌드·재시작한다. 둘을 한 번에 넘겼을 때 프론트가 옛 이미지로 남은 적이 있어서(원인 미확인)
+          # 한 번에 하나씩만 다룬다. $SERVICES는 일부러 따옴표 없이 쓴다 (서비스 이름이 여러 개일 수 있다)
+          for svc in $SERVICES; do
+            echo "== $svc 빌드·재시작"
+            docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build "$svc"
+          done
           # 새 컨테이너가 뜬 뒤, 7일 넘은 도커 빌드 캐시만 지운다(디스크가 다시 차지 않게). 실패해도 배포는 성공으로 둔다.
           bash scripts/deploy/prune-build-cache.sh || true
           docker compose --env-file .env.prod -f docker-compose.prod.yml ps
+          # 어긋났을 때 원인을 보려는 기록: 방금 배포한 서비스의 컨테이너가 쓰는 이미지와 생성 시각(UTC)
+          for svc in $SERVICES; do
+            cid="$(docker compose --env-file .env.prod -f docker-compose.prod.yml ps -q "$svc" || true)"
+            if [ -n "$cid" ]; then
+              docker inspect --format "$svc: 컨테이너 생성 {{.Created}} / 이미지 {{.Image}} / 상태 {{.State.Status}}" "$cid" || true
+            else
+              echo "$svc: 실행 중인 컨테이너를 찾지 못했습니다."
+            fi
+          done
           REMOTE
 
       # 배포 직후 사이트가 실제로 응답하는지 바깥(러너)에서 확인한다. 컨테이너가 다시 뜨는 동안은 실패할 수 있어 최대 약 2분 재시도한다.
