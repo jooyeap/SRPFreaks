@@ -452,3 +452,17 @@ export interface SetlistRecommendationResponse {
   ssTotalPages: number;
   sTotalPages: number;
 }
+
+/** 곡 상세의 서열표 변경 이력 한 줄 (D45). 누가 바꿨는지는 내려오지 않는다. created면 "서열표에 추가"이고 before* 값은 null이다. */
+export interface TierHistoryResponse {
+  changedAt: string; // ISO 8601, UTC
+  created: boolean;
+  songDifficultyId: number;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  beforeTier: number | null;
+  afterTier: number | null;
+  beforePattern: string | null;
+  afterPattern: string | null;
+}

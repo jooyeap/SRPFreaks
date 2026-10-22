@@ -134,6 +134,7 @@ describe("SongDetailView", () => {
         return Promise.resolve(json({ content: groups, page: 0, size: 20, totalElements: 2, totalPages: 1 }));
       }
       if (url.endsWith("/difficulty-tables")) return Promise.resolve(json(tables));
+      if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
       if (url.includes("/songs/")) return Promise.resolve(songResponse());
       if (url.includes("/records?")) {
         return Promise.resolve(
@@ -166,6 +167,7 @@ describe("SongDetailView", () => {
         return Promise.resolve(json({ content: [undecided], page: 0, size: 20, totalElements: 1, totalPages: 1 }));
       }
       if (url.includes("/difficulty-tables")) return Promise.resolve(json(tables));
+      if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
       return Promise.resolve(songResponse());
     });
     renderView("table", 10);
@@ -331,6 +333,7 @@ describe("SongDetailView", () => {
       if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
       if (url.includes("/entries")) return Promise.resolve(json({ code: "INTERNAL_ERROR", message: "x", timestamp: "t" }, 500));
       if (url.endsWith("/difficulty-tables")) return Promise.resolve(json(tables));
+      if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
       if (url.includes("/songs/")) return Promise.resolve(json(song));
       return Promise.resolve(json({}, 404));
     });

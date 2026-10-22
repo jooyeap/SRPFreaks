@@ -45,6 +45,7 @@ describe("곡 상세 (비로그인)", () => {
         return Promise.resolve(json({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }));
       }
       if (url.endsWith("/difficulty-tables")) return Promise.resolve(json([table]));
+      if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
       if (url.includes("/songs/")) return Promise.resolve(json(song));
       return Promise.resolve(json({}, 404));
     });

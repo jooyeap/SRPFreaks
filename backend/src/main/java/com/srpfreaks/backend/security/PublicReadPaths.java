@@ -17,7 +17,7 @@ public final class PublicReadPaths {
 
     private static final List<Pattern> PATTERNS = List.of(
             Pattern.compile("^/api/v1/notices(/\\d+)?$"),
-            Pattern.compile("^/api/v1/songs(/(suggest|chart-folders|charts|\\d+))?$"),
+            Pattern.compile("^/api/v1/songs(/(suggest|chart-folders|charts|\\d+(/tier-history)?))?$"),
             Pattern.compile("^/api/v1/players(/\\d+)?$"),
             Pattern.compile("^/api/v1/difficulty-tables(/\\d+/entries)?$"));
 
