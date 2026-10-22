@@ -3,6 +3,7 @@ import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { EMPTY_MARK, formatTier } from "@/lib/format";
 import type { SongDetailResponse, TierGroupResponse } from "@/lib/api-types";
 import { findChart, sortCharts } from "@/lib/songs";
+import { useTranslations } from "next-intl";
 
 /** 곡 목록에서 들어온 곡 상세 주소. */
 export function songsDetailHref(songId: number, chartId: number): string {
@@ -14,9 +15,10 @@ export function songsDetailHref(songId: number, chartId: number): string {
  * 다시 보이게 할 때는 여기에 항목만 더하면 된다(lib/songs.ts의 formatBpm, formatNoteCount를 그대로 쓸 수 있다).
  */
 export function InfoCards({ song }: { song: SongDetailResponse }) {
-  const items = [{ label: "버전", value: song.addedVersion ?? EMPTY_MARK }];
+  const t = useTranslations();
+  const items = [{ label: t("Songs.version"), value: song.addedVersion ?? EMPTY_MARK }];
   return (
-    <ul className="grid grid-cols-1 gap-2" aria-label="곡 정보 요약">
+    <ul className="grid grid-cols-1 gap-2" aria-label={t("Song.songInfoSummary")}>
       {items.map((item) => (
         <li key={item.label} className="rounded-2xl border border-line bg-card px-3 py-2.5">
           <p className="text-xs text-fg-dim">{item.label}</p>
@@ -41,15 +43,16 @@ export function LevelTable({
   selectedId: number | null;
   groups: readonly TierGroupResponse[] | null;
 }) {
+  const t = useTranslations();
   const charts = sortCharts(song.difficulties);
   return (
-    <section aria-label="레벨 정보" className="overflow-hidden rounded-lg border border-line bg-card">
-      <h2 className="px-4 py-3 text-sm font-semibold text-fg-sub">레벨 정보</h2>
+    <section aria-label={t("Song.levelInfo")} className="overflow-hidden rounded-lg border border-line bg-card">
+      <h2 className="px-4 py-3 text-sm font-semibold text-fg-sub">{t("Song.levelInfo")}</h2>
       <div className="grid grid-cols-[4px_116px_1fr_44px] items-center gap-x-2 bg-table-head px-3 py-2 text-xs text-fg-dim" aria-hidden="true">
         <span />
-        <span>채보</span>
-        <span>레이팅 상수 난이도</span>
-        <span>추천</span>
+        <span>{t("Song.chart")}</span>
+        <span>{t("Song.ratingConstant")}</span>
+        <span>{t("Song.recommend")}</span>
       </div>
       <ul>
         {charts.map((chart) => {
@@ -70,7 +73,7 @@ export function LevelTable({
                   <ChartBadge part={chart.instrumentPart} difficulty={chart.difficultyType} level={chart.level} />
                 </span>
                 <span className="font-num text-fg-sub">
-                  {found ? formatTier(found.group.tier) : EMPTY_MARK}
+                  {found ? formatTier(found.group.tier, t) : EMPTY_MARK}
                 </span>
                 <span>
                   {found?.entry.recommend ? (

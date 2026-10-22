@@ -11,6 +11,8 @@ import { ApiError } from "@/lib/api";
 import type { RecommendationItem } from "@/lib/api-types";
 import { formatRate, formatTier } from "@/lib/format";
 import { addToSetlist, fetchRecommendations, formatOffsetRange, SETLIST_LIMIT, setlistKeys } from "@/lib/setlist";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
 
 /**
  * 내 실력대 추천 (D37): 내 레이팅 목록의 평균 난이도를 기준으로 오늘 도전해 볼 채보를 두 묶음으로 보여 준다.
@@ -21,6 +23,7 @@ import { addToSetlist, fetchRecommendations, formatOffsetRange, SETLIST_LIMIT, s
  * 범위 숫자와 개수는 서버 값이라 화면에 하드코딩하지 않는다. `범위 조정`으로 사용자가 SS·S 범위를 직접 정할 수 있다(저장하면 내 설정, 기본값으로 되돌릴 수 있다).
  */
 export function SetlistRecommend({ userId, addedIds, full }: { userId: number; addedIds: ReadonlySet<number>; full: boolean }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const toast = useToast();
   // SS 기준과 S 기준은 각자 자기 쪽을 넘긴다(한쪽을 넘겨도 다른 쪽 목록은 그대로)
@@ -37,38 +40,42 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
   const add = useMutation({
     mutationFn: (item: RecommendationItem) => addToSetlist(item.songDifficultyId),
     onSuccess: async () => {
-      toast("세트리스트에 담았습니다.");
+      toast(t("Setlist.added"));
       await queryClient.invalidateQueries({ queryKey: setlistKeys.all });
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "처리하지 못했습니다. 잠시 후 다시 시도해 주세요."),
+    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed")),
   });
 
   return (
-    <section aria-label="내 실력대 추천" className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
-      <h2 className="text-sm font-bold text-fg">내 실력대 추천</h2>
+    <section aria-label={t("Setlist.recommendAria")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
+      <h2 className="text-sm font-bold text-fg">{t("Setlist.recommendAria")}</h2>
 
       {result.isPending ? (
-        <p className="text-sm text-fg-sub">추천을 불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Setlist.recLoading")}</p>
       ) : result.isError ? (
-        <p role="alert" className="text-sm text-fg">
-          {result.error instanceof ApiError ? result.error.message : "추천을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-        </p>
+        <ErrorRetry onRetry={() => void result.refetch()} retrying={result.isFetching}>
+          {result.error instanceof ApiError ? result.error.message : t("Setlist.recFailed")}
+        </ErrorRetry>
       ) : result.data.status === "UNAVAILABLE" ? (
-        <p className="text-sm text-fg-sub">아직 추천할 수 없습니다. 서열표가 준비되면 보여 드려요.</p>
+        <p className="text-sm text-fg-sub">{t("Setlist.recNotYet")}</p>
       ) : result.data.status === "INSUFFICIENT" ? (
         <p className="text-sm text-fg-sub">
-          데이터가 적어 추천하기 어렵습니다. 레이팅 목록에 단일 {result.data.ratedSingle}/{result.data.requiredSingle}곡, 그 외 {result.data.ratedOther}/
-          {result.data.requiredOther}곡이 있습니다. 기록을 더 채워 주세요.
+          {t("Setlist.insufficient", {
+            ratedSingle: result.data.ratedSingle,
+            requiredSingle: result.data.requiredSingle,
+            ratedOther: result.data.ratedOther,
+            requiredOther: result.data.requiredOther,
+          })}
         </p>
       ) : (
         <>
           {result.data.status === "STARTER" ? (
             <p className="text-xs text-fg-sub">
-              아직 레이팅에 든 기록이 없어 기준 난이도 <span className="font-num text-fg">{formatTier(result.data.baseTier)}</span> 이하의 곡을 S 기준으로 보여 드려요.
+              {t.rich("Setlist.starterNote", { n: (c) => <span className="font-num text-fg">{c}</span>, tier: formatTier(result.data.baseTier, t) })}
             </p>
           ) : (
             <p className="text-xs text-fg-sub">
-              내 평균 난이도 <span className="font-num text-fg">{formatTier(result.data.baseTier)}</span> 기준입니다.
+              {t.rich("Setlist.basedOn", { n: (c) => <span className="font-num text-fg">{c}</span>, tier: formatTier(result.data.baseTier, t) })}
             </p>
           )}
           {result.data.status === "READY" ? (
@@ -79,17 +86,17 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
                 onClick={() => setAdjusting((open) => !open)}
                 className="flex min-h-9 w-fit items-center gap-1 rounded-lg border border-chip-line px-3 text-sm text-fg hover:bg-table-head"
               >
-                범위 조정 {adjusting ? "\u25B4" : "\u25BE"}
+                {t("Setlist.adjustRange")} {adjusting ? "\u25B4" : "\u25BE"}
               </button>
-              {result.data.customRange && !adjusting ? <p className="text-xs text-fg-sub">직접 정한 범위를 쓰고 있습니다.</p> : null}
+              {result.data.customRange && !adjusting ? <p className="text-xs text-fg-sub">{t("Setlist.customRange")}</p> : null}
               {adjusting ? <RecommendRangeForm current={result.data} onDone={() => setAdjusting(false)} /> : null}
             </div>
           ) : null}
-          {full ? <p className="text-xs text-fg-sub">{SETLIST_LIMIT}곡이 모두 담겨 있습니다. 곡을 빼면 새로 담을 수 있습니다.</p> : null}
+          {full ? <p className="text-xs text-fg-sub">{t("Setlist.limitFull", { limit: SETLIST_LIMIT })}</p> : null}
           {result.data.status === "READY" ? (
             <Group
-              title="SS 기준"
-              range={formatOffsetRange(result.data.ssMin, result.data.ssMax)}
+              title={t("Setlist.ssBasis")}
+              range={formatOffsetRange(result.data.ssMin, result.data.ssMax, t)}
               items={result.data.ssChallenge}
               page={ssPage}
               totalPages={result.data.ssTotalPages}
@@ -101,8 +108,8 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
             />
           ) : null}
           <Group
-            title="S 기준"
-            range={result.data.status === "STARTER" ? `기준 난이도 ${formatTier(result.data.baseTier)} 이하` : formatOffsetRange(result.data.sMin, result.data.sMax)}
+            title={t("Setlist.sBasis")}
+            range={result.data.status === "STARTER" ? t("Setlist.starterRange", { tier: formatTier(result.data.baseTier, t) }) : formatOffsetRange(result.data.sMin, result.data.sMax, t)}
             items={result.data.sFill}
             page={sPage}
             totalPages={result.data.sTotalPages}
@@ -141,15 +148,16 @@ function Group({
   pendingId: number | undefined;
   onAdd: (item: RecommendationItem) => void;
 }) {
+  const t = useTranslations();
   return (
     <div className="flex flex-col gap-1">
       <h3 className="text-xs font-bold text-fg-sub">
         {title} <span className="font-normal text-fg-dim">({range})</span>
       </h3>
       {items.length === 0 ? (
-        <p className="text-sm text-fg-dim">추천할 채보가 없습니다.</p>
+        <p className="text-sm text-fg-dim">{t("Setlist.recEmpty")}</p>
       ) : (
-        <ul aria-label={`${title} 추천`} className="flex flex-col">
+        <ul aria-label={t("Setlist.recGroupAria", { title })} className="flex flex-col">
           {items.map((item) => {
             const added = addedIds.has(item.songDifficultyId);
             const stage = item.mine?.stage ?? null;
@@ -160,23 +168,23 @@ function Group({
                   <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                     <ChartBadge part={item.part} difficulty={item.difficulty} level={item.level} />
                     <span className="text-xs text-fg-dim">
-                      상수 <span className="font-num">{formatTier(item.tier)}</span>
+                      {t.rich("Setlist.constLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
                     </span>
                   </p>
                 </div>
                 {/* 내 랭크(달성 단계)와 달성률은 오른쪽에 모은다. 기록 유무는 색이 아니라 글자로 보인다 */}
                 <div className="shrink-0 text-right">
-                  {stage ? <StageBadge stage={stage} /> : <span className="text-xs text-fg-dim">기록 없음</span>}
+                  {stage ? <StageBadge stage={stage} /> : <span className="text-xs text-fg-dim">{t("Progress.noRecord")}</span>}
                   {stage ? <span className="mt-0.5 block font-num text-xs text-fg-sub">{formatRate(item.mine?.rate)}</span> : null}
                 </div>
                 <button
                   type="button"
                   disabled={added || full || pendingId === item.songDifficultyId}
                   onClick={() => onAdd(item)}
-                  aria-label={added ? `${item.title} 세트리스트에 담김` : `${item.title} 세트리스트에 담기`}
+                  aria-label={added ? t("Setlist.addedAria", { title: item.title }) : t("Setlist.addAria", { title: item.title })}
                   className="flex min-h-9 shrink-0 items-center rounded-lg border border-chip-line px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
                 >
-                  {added ? "담김" : "담기"}
+                  {added ? t("Setlist.addedMark") : t("Setlist.addBtn")}
                 </button>
               </li>
             );

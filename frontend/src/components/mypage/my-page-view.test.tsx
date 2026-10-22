@@ -254,7 +254,7 @@ describe("MyPageView", () => {
     it("왼쪽에 폴더 목록만 있고 폴더를 고르면 오른쪽에 달성률 구간이 나온다", async () => {
       renderView("stats");
       const list = await screen.findByRole("list", { name: "폴더 목록" });
-      expect(screen.getByText(/왼쪽에서 폴더를 선택하면/)).toBeInTheDocument();
+      expect(screen.getByText(/왼쪽 폴더를 선택해주세요/)).toBeInTheDocument();
       expect(screen.queryByRole("list", { name: "9.50 ~ 9.99 달성률 구간" })).toBeNull();
 
       const item = within(list).getByRole("button", { name: /9\.50 ~ 9\.99/ });

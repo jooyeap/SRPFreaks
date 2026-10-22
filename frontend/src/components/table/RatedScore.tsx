@@ -1,6 +1,7 @@
 import { chartTierAttrs, ratedScore } from "@/lib/chart-tier";
 import { EMPTY_MARK, formatScore } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
+import { useTranslations } from "next-intl";
 
 /**
  * 서열표 줄의 레이팅 점수 칸: 기록이 있으면 이 기록이 레이팅에 찍히는 점수를 플레이어 티어 색(상수표 칸과 같은 .chart-cell)으로 보인다.
@@ -16,10 +17,11 @@ export function RatedScore({
   /** 주면 점수 칩이 버튼이 되어 눌렀을 때 이 채보의 기록 창을 바로 연다(점수를 보다가 바로 고치려는 흐름) */
   onRecord?: (entry: TableEntryResponse) => void;
 }) {
+  const t = useTranslations();
   const score = ratedScore(tier, entry.mine?.rate, entry);
   if (score === null) {
     return (
-      <span aria-label="레이팅 점수 없음" className="font-num text-xs text-fg-faint">
+      <span aria-label={t("Table.noRatingScore")} className="font-num text-xs text-fg-faint">
         {EMPTY_MARK}
       </span>
     );
@@ -27,7 +29,7 @@ export function RatedScore({
   const chip = (
     <span
       {...chartTierAttrs(score)}
-      aria-label={`레이팅 점수 ${formatScore(score)}`}
+      aria-label={t("Chart.ratingScore", { score: formatScore(score) })}
       className="chart-cell inline-block rounded px-1.5 py-px font-num text-[11px] font-bold leading-4"
     >
       {formatScore(score)}
@@ -41,7 +43,7 @@ export function RatedScore({
     <button
       type="button"
       onClick={() => onRecord(entry)}
-      aria-label={`${entry.title} 기록 수정`}
+      aria-label={t("Chart.recordEdit", { title: entry.title })}
       className="relative inline-flex rounded after:absolute after:-inset-1.5 after:content-[''] hover:brightness-110"
     >
       {chip}

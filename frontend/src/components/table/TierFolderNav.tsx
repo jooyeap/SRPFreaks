@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { folderHref, tierParam } from "@/lib/difficulty-table";
 import { formatTier } from "@/lib/format";
 import type { TierGroupResponse } from "@/lib/api-types";
+import { useTranslations } from "next-intl";
 
 /**
  * 서열표 묶음 화면 상단의 난이도 이동 막대. 두 가지를 함께 쓴다.
@@ -16,6 +17,7 @@ import type { TierGroupResponse } from "@/lib/api-types";
  * groups는 서버 순서(높은 난이도 먼저)이고, 화면은 왼쪽이 낮은 난이도, 오른쪽이 높은 난이도(숫자가 커지는 방향)다.
  */
 export function TierFolderNav({ groups, currentTier }: { groups: readonly TierGroupResponse[]; currentTier: number | null }) {
+  const t = useTranslations();
   const currentRef = useRef<HTMLAnchorElement>(null);
   const index = groups.findIndex((g) => g.tier === currentTier);
 
@@ -34,20 +36,20 @@ export function TierFolderNav({ groups, currentTier }: { groups: readonly TierGr
 
   return (
     <div className="flex flex-col gap-2">
-      <nav aria-label="이웃 난이도" className="flex items-stretch justify-between gap-2">
+      <nav aria-label={t("Table.neighborTiers")} className="flex items-stretch justify-between gap-2">
         <StepLink group={lower} direction="prev" />
         <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-line bg-card px-3 py-1.5">
           <span aria-current="page" className="font-num text-lg font-semibold text-fg">
-            {formatTier(current.tier)}
+            {formatTier(current.tier, t)}
           </span>
           <span className="font-num text-[11px] text-fg-dim">
-            기록 {current.recorded}/{current.total}
+            {t("Chart.recordedOf", { recorded: current.recorded, total: current.total })}
           </span>
         </div>
         <StepLink group={higher} direction="next" />
       </nav>
 
-      <nav aria-label="난이도 목록">
+      <nav aria-label={t("Table.tierList")}>
         <ul className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
           {[...groups].reverse().map((g) => {
             const here = g.tier === currentTier;
@@ -64,7 +66,7 @@ export function TierFolderNav({ groups, currentTier }: { groups: readonly TierGr
                     here ? "border-transparent bg-chip-on-bg text-chip-on-fg" : "border-chip-line hover:bg-table-head"
                   }`}
                 >
-                  <span className={`font-num text-sm font-bold ${here ? "" : done ? "text-done-text" : "text-fg"}`}>{formatTier(g.tier)}</span>
+                  <span className={`font-num text-sm font-bold ${here ? "" : done ? "text-done-text" : "text-fg"}`}>{formatTier(g.tier, t)}</span>
                   <span className={`font-num text-[10px] ${here ? "" : "text-fg-dim"}`}>
                     {g.recorded}/{g.total}
                   </span>
@@ -80,6 +82,7 @@ export function TierFolderNav({ groups, currentTier }: { groups: readonly TierGr
 
 /** 이전(낮은)/다음(높은) 난이도 버튼. 끝이라 갈 곳이 없으면 눌리지 않는 자리 표시만 둔다(막대 폭이 흔들리지 않게). */
 function StepLink({ group, direction }: { group: TierGroupResponse | null; direction: "prev" | "next" }) {
+  const t = useTranslations();
   const arrow = direction === "prev" ? "‹" : "›";
   const base = "flex w-20 flex-col items-center justify-center rounded-xl border px-2 py-1.5";
   if (!group) {
@@ -89,12 +92,12 @@ function StepLink({ group, direction }: { group: TierGroupResponse | null; direc
       </span>
     );
   }
-  const label = formatTier(group.tier);
+  const label = formatTier(group.tier, t);
   return (
     <Link
       href={folderHref(group.tier)}
       replace
-      aria-label={`${direction === "prev" ? "이전" : "다음"} 난이도 ${label}`}
+      aria-label={t("Chart.nav", { direction: direction === "prev" ? t("Common.prev") : t("Common.next"), label })}
       className={`${base} border-chip-line text-fg hover:bg-table-head`}
     >
       <span aria-hidden="true" className="font-num text-sm font-semibold">

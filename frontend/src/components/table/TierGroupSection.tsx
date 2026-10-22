@@ -8,6 +8,7 @@ import { DEFAULT_SORT, sortEntries, type TableSort } from "@/lib/table-sort";
 import { EMPTY_MARK, formatTier } from "@/lib/format";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import type { AchievementStage } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 /** 칩과 묶음 단계 판정에 필요한 개수. 서열표 묶음과 곡 목록의 레벨 폴더가 같은 모양이라 함께 쓴다. */
 export type StageCounts = Pick<TierGroupResponse, "total" | "exc" | "fc" | "ss" | "s" | "belowS">;
@@ -92,19 +93,20 @@ export function TierGroupSection({
   /** 기록 입력 버튼을 눌렀을 때. 묶음의 레이팅 상수 난이도(미정이면 null)를 함께 넘겨 입력창이 점수를 바로 계산하게 한다 */
   onRecord?: (entry: TableEntryResponse, tier: number | null) => void;
 }) {
+  const t = useTranslations();
   const [innerOpen, setInnerOpen] = useState(false);
   const open = controlledOpen ?? innerOpen;
   const setOpen = (next: boolean) => (onOpenChange ? onOpenChange(next) : setInnerOpen(next));
   const bodyId = useId();
   const expanded = !collapsible || open; // 접을 수 없는 묶음은 항상 펼쳐 있다
   const entries = sortEntries(group.entries, sort);
-  const title = formatTier(group.tier);
+  const title = formatTier(group.tier, t);
   const reached = groupStage(group);
   // 모바일은 접힌 묶음에서 칩과 `기록 n/전체`를 숨기고(제목·n개·평균만 한 줄), 펼치면 보인다. 데스크톱(md 이상)은 접혀 있어도 모두 보인다.
   // 곡 목록의 레벨 폴더(FolderSection)와 같은 규칙이다. 접을 수 없는 묶음 화면은 항상 펼쳐 있으므로 늘 보인다.
   const detailClass = expanded ? "flex" : "hidden md:flex";
   return (
-    <section aria-label={`레이팅 상수 난이도 ${title}`} className="overflow-hidden rounded-2xl border border-line bg-card">
+    <section aria-label={t("Chart.tierAria", { tier: title })} className="overflow-hidden rounded-2xl border border-line bg-card">
       {/* 묶음 전체가 한 단계 이상이면 곡 카드와 같은 왼쪽 막대와 배경을 머리에 준다. 단계 글자는 칩이 이미 보여 준다 */}
       <header
         data-stage={reached ?? undefined}
@@ -125,7 +127,7 @@ export function TierGroupSection({
                 {open ? "▾" : "▸"}
               </span>
               <span>
-                {title} <span className="ml-1 text-sm font-normal text-fg-sub">{group.total}개</span>
+                {title} <span className="ml-1 text-sm font-normal text-fg-sub">{t("Chart.groupTotal", { count: group.total })}</span>
               </span>
             </button>
           ) : (
@@ -134,7 +136,7 @@ export function TierGroupSection({
             </>
           )}
         </h2>
-        <ul className={`${detailClass} flex-wrap items-center gap-1.5`} aria-label="내 달성 현황">
+        <ul className={`${detailClass} flex-wrap items-center gap-1.5`} aria-label={t("Table.myProgress")}>
           {chipsOf(group).map((chip) => (
             <li
               key={chip.key}
@@ -143,16 +145,16 @@ export function TierGroupSection({
                 chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
               }`}
             >
-              {chip.label} <span className="font-num">{chip.count}</span>
+              {chip.stage ? chip.label : t("Progress.belowS")} <span className="font-num">{chip.count}</span>
             </li>
           ))}
         </ul>
         <p className="ml-auto flex items-baseline gap-2 text-sm text-fg-sub">
           <span className={`${detailClass} text-xs text-fg-dim`}>
-            기록 {group.recorded}/{group.total}
+            {t("Chart.recordedOf", { recorded: group.recorded, total: group.total })}
           </span>
           <span>
-            평균 <span className="font-num font-semibold text-fg">{formatAverage(groupAverage(group, includeZero))}</span>
+            {t("Chart.average")} <span className="font-num font-semibold text-fg">{formatAverage(groupAverage(group, includeZero))}</span>
           </span>
         </p>
       </header>

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { TABLE_CREDIT } from "@/lib/credit";
 
 /**
@@ -5,9 +6,10 @@ import { TABLE_CREDIT } from "@/lib/credit";
  * 360px에서도 줄바꿈이 자연스럽게 되도록 한 문장으로 두고 break-words를 쓴다.
  */
 export function TableCredit({ className }: { className?: string }) {
+  const t = useTranslations("Footer");
   return (
     <p className={className}>
-      {TABLE_CREDIT.label}{" "}
+      {t("tableCredit")}{" "}
       <a
         href={TABLE_CREDIT.url}
         target="_blank"

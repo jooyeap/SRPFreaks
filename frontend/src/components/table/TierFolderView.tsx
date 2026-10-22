@@ -27,9 +27,13 @@ import {
 } from "@/lib/difficulty-table";
 import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
 import type { TableEntryResponse } from "@/lib/api-types";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { isLoggedInViewer } from "@/lib/viewer";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
-function errorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : "묶음을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+function errorMessage(error: unknown, t: Translator): string {
+  return error instanceof ApiError ? error.message : t("Table.groupLoadFailed");
 }
 
 /**
@@ -40,6 +44,7 @@ function errorMessage(error: unknown): string {
  * 파트·추천·속성 필터도 같은 이유로 화면에서 건다(filterTierGroup). 서열표 본문과 달리 처음에는 필터가 없고(묶음 전체), 머리의 개수·평균은 걸러진 채보 기준이다.
  */
 export function TierFolderView({ userId, param }: { userId: number; param: string }) {
+  const t = useTranslations();
   const [includeZero, setIncludeZero] = useState(false);
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT);
   const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
@@ -64,8 +69,8 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
   const back = (
     <Link
       href="/table"
-      aria-label="서열표로"
-      title="서열표로"
+      aria-label={t("Table.toTable")}
+      title={t("Table.toTable")}
       className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
     >
       <span aria-hidden="true">←</span>
@@ -73,13 +78,18 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
   );
 
   if (tables.isPending || (tableId !== null && groups.isPending)) {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   if (tables.isError || groups.isError) {
     return (
       <div className="flex flex-col gap-4">
         {back}
-        <p role="alert" className="text-sm text-fg">{errorMessage(tables.error ?? groups.error)}</p>
+        <ErrorRetry
+          onRetry={() => void (tables.isError ? tables.refetch() : groups.refetch())}
+          retrying={tables.isFetching || groups.isFetching}
+        >
+          {errorMessage(tables.error ?? groups.error, t)}
+        </ErrorRetry>
       </div>
     );
   }
@@ -87,7 +97,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
     return (
       <div className="flex flex-col gap-4">
         {back}
-        <p role="alert" className="text-sm text-fg">묶음을 찾을 수 없습니다.</p>
+        <p role="alert" className="text-sm text-fg">{t("Table.groupNotFound")}</p>
       </div>
     );
   }
@@ -102,9 +112,9 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
       <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
       <SortSelect value={sort} onChange={setSort} />
       {hasFilters(filters) && group.entries.length === 0 ? (
-        <p className="text-sm text-fg-sub">조건에 맞는 채보가 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
       ) : null}
-      <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={(entry, tier) => setRecordTarget({ entry, tier })} />
+      <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined} />
       <ScrollTopButton lifted />
       <TableSearch userId={userId} groups={groups.data} />
       <RecordDialog

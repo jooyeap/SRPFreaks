@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseCategory, suggestionSchema } from "@/lib/suggestions";
+import { koT } from "@/i18n/ko-translator";
+import { makeSuggestionSchema, parseCategory } from "@/lib/suggestions";
+
+const suggestionSchema = makeSuggestionSchema(koT);
 
 describe("suggestionSchema", () => {
   it("앞뒤 공백을 자르고 비어 있거나 너무 길면 거부한다", () => {

@@ -19,9 +19,13 @@ import {
   songListKeys,
   type SongListFilters,
 } from "@/lib/song-list";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
-function errorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : "곡 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+/** 서버가 준 문구가 있으면 그대로, 없으면 일반 안내(현재 언어). t는 호출하는 컴포넌트의 번역기다(훅은 컴포넌트 안에서만 부를 수 있다). */
+function errorMessage(error: unknown, t: Translator): string {
+  return error instanceof ApiError ? error.message : t("Songs.loadFailed");
 }
 
 /**
@@ -41,6 +45,7 @@ export function SongListView({
   /** ROOT·ADMIN이면 true. `곡 등록` 버튼을 보여 준다. 서버도 권한을 다시 검사한다. */
   canRegister?: boolean;
 }) {
+  const t = useTranslations();
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
 
@@ -54,7 +59,7 @@ export function SongListView({
 
   const filterCount = activeFilterCount(filters);
   const versions = folders.data?.versions ?? [];
-  const total = folders.data ? `${folders.data.totalSongs}곡 · ${folders.data.totalCharts}개` : null;
+  const total = folders.data ? t("Songs.totalSummary", { songs: folders.data.totalSongs, charts: folders.data.totalCharts }) : null;
 
   return (
     // 모바일은 세로 한 줄(flex-col). 데스크톱(md 이상)은 2열 격자로 바꿔 제목 줄 오른쪽 끝에 `평균 계산` 토글을 둔다(시안). 제목 줄도 md에서는 세로 가운데 정렬이라 `곡 등록` 버튼과 토글의 높이·세로 위치가 같다.
@@ -62,7 +67,7 @@ export function SongListView({
     <div className="flex flex-col gap-4 md:grid md:grid-cols-[1fr_auto] md:items-start md:gap-x-3">
       <div className="flex items-start justify-between gap-3 md:col-start-1 md:row-start-1 md:items-center">
         <div>
-          <h1 className="text-xl font-semibold text-fg">곡 목록</h1>
+          <h1 className="text-xl font-semibold text-fg">{t("Songs.title")}</h1>
           {total ? <p className="mt-1 text-sm text-fg-sub font-num">{total}</p> : null}
         </div>
         {canRegister ? <SongCreateButton /> : null}
@@ -83,7 +88,7 @@ export function SongListView({
             onClick={() => setFiltersOpen((open) => !open)}
             className="shrink-0 rounded-lg border border-chip-line px-3 py-2 text-sm text-fg-sub hover:text-fg md:hidden"
           >
-            {filterCount > 0 ? `필터 ${filterCount}` : "필터"}
+            {filterCount > 0 ? t("Songs.filterCount", { count: filterCount }) : t("Songs.filter")}
           </button>
         </div>
 
@@ -98,12 +103,14 @@ export function SongListView({
       </div>
 
       {folders.isError ? (
-        <p role="alert" className="text-sm text-fg md:col-span-2">{errorMessage(folders.error)}</p>
+        <ErrorRetry className="md:col-span-2" onRetry={() => void folders.refetch()} retrying={folders.isFetching}>
+          {errorMessage(folders.error, t)}
+        </ErrorRetry>
       ) : !folders.data ? (
-        <p className="text-sm text-fg-sub md:col-span-2">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub md:col-span-2">{t("Common.loading")}</p>
       ) : folders.data.folders.length === 0 ? (
         <div className="md:col-span-2">
-          <p className="text-sm text-fg-sub">{filtering ? "조건에 맞는 채보가 없습니다." : "등록된 곡이 아직 없습니다."}</p>
+          <p className="text-sm text-fg-sub">{filtering ? t("Songs.noMatch") : t("Songs.noSongs")}</p>
           {filters.q.trim() !== "" ? (
             <>
               <SongSuggestions query={filters.q} onPick={(title) => onFiltersChange({ ...filters, q: title })} />

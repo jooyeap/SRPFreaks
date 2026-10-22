@@ -9,6 +9,7 @@ import { ChartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
 import type { ChartRowResponse } from "@/lib/api-types";
 import { addToSetlist, SETLIST_LIMIT, SETLIST_SEARCH_PAGE_SIZE, searchCharts, setlistKeys } from "@/lib/setlist";
+import { useTranslations } from "next-intl";
 
 /**
  * 세트리스트에 곡을 담는 검색 (D36). 곡명·아티스트로 채보를 찾고 줄마다 `담기`를 누른다.
@@ -17,6 +18,7 @@ import { addToSetlist, SETLIST_LIMIT, SETLIST_SEARCH_PAGE_SIZE, searchCharts, se
  * addedIds: 지금 세트리스트에 담긴 채보 id들(서버가 중복·한도를 다시 검사한다).
  */
 export function SetlistSearch({ userId, addedIds, full }: { userId: number; addedIds: ReadonlySet<number>; full: boolean }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [q, setQuery] = useState("");
@@ -33,16 +35,16 @@ export function SetlistSearch({ userId, addedIds, full }: { userId: number; adde
   const add = useMutation({
     mutationFn: (chart: ChartRowResponse) => addToSetlist(chart.songDifficultyId),
     onSuccess: async () => {
-      toast("세트리스트에 담았습니다.");
+      toast(t("Setlist.added"));
       await queryClient.invalidateQueries({ queryKey: setlistKeys.all });
     },
     // 30곡이 찼거나 이미 담긴 경우 등 서버가 거절한 문구를 그대로 보여 준다
-    onError: (error) => toast(error instanceof ApiError ? error.message : "처리하지 못했습니다. 잠시 후 다시 시도해 주세요."),
+    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed")),
   });
 
   return (
-    <section aria-label="곡 검색해서 담기" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
-      <h2 className="text-sm font-bold text-fg">곡 검색해서 담기</h2>
+    <section aria-label={t("Setlist.searchTitle")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+      <h2 className="text-sm font-bold text-fg">{t("Setlist.searchTitle")}</h2>
       <div className="flex">
         <SongSearchBox
           value={q}
@@ -52,19 +54,19 @@ export function SetlistSearch({ userId, addedIds, full }: { userId: number; adde
           }}
         />
       </div>
-      {full ? <p className="text-xs text-fg-sub">{SETLIST_LIMIT}곡이 모두 담겨 있습니다. 곡을 빼면 새로 담을 수 있습니다.</p> : null}
+      {full ? <p className="text-xs text-fg-sub">{t("Setlist.limitFull", { limit: SETLIST_LIMIT })}</p> : null}
 
       {term === "" ? null : result.isPending ? (
-        <p className="text-sm text-fg-sub">검색하는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Setlist.searching")}</p>
       ) : result.isError ? (
         <p role="alert" className="text-sm text-fg">
-          {result.error instanceof ApiError ? result.error.message : "검색하지 못했습니다. 잠시 후 다시 시도해 주세요."}
+          {result.error instanceof ApiError ? result.error.message : t("Setlist.searchFailed")}
         </p>
       ) : result.data.content.length === 0 ? (
-        <p className="text-sm text-fg-sub">검색 결과가 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("Setlist.noResults")}</p>
       ) : (
         <>
-          <ul aria-label="검색 결과" className="flex flex-col">
+          <ul aria-label={t("Setlist.resultsAria")} className="flex flex-col">
             {result.data.content.slice(0, SETLIST_SEARCH_PAGE_SIZE).map((chart) => {
               const added = addedIds.has(chart.songDifficultyId);
               return (
@@ -80,7 +82,7 @@ export function SetlistSearch({ userId, addedIds, full }: { userId: number; adde
                     type="button"
                     disabled={added || full || (add.isPending && add.variables?.songDifficultyId === chart.songDifficultyId)}
                     onClick={() => add.mutate(chart)}
-                    aria-label={added ? `${chart.title} 세트리스트에 담김` : `${chart.title} 세트리스트에 담기`}
+                    aria-label={added ? t("Setlist.addedAria", { title: chart.title }) : t("Setlist.addAria", { title: chart.title })}
                     className="flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-chip-line px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
                   >
                     {added ? (
@@ -88,7 +90,7 @@ export function SetlistSearch({ userId, addedIds, full }: { userId: number; adde
                         <path d="M5 12l5 5 9-10" />
                       </svg>
                     ) : null}
-                    {added ? "담김" : "담기"}
+                    {added ? t("Setlist.addedMark") : t("Setlist.addBtn")}
                   </button>
                 </li>
               );

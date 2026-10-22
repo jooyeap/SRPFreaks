@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 /** 한 페이지에 보여 줄 폴더 수. 폴더가 많은 목록(통계, 곡 목록)에서 공통으로 쓴다. */
 export const FOLDERS_PER_PAGE = 10;
@@ -23,16 +24,17 @@ export function usePaged<T>(items: readonly T[], pageSize: number = FOLDERS_PER_
 
 /** `이전 · 1 / 3 · 다음`. 한 페이지뿐이면 그리지 않는다. 서열표의 페이지 이동과 같은 모양이다. */
 export function Pager({ page, totalPages, onChange }: { page: number; totalPages: number; onChange: (page: number) => void }) {
+  const t = useTranslations("Common");
   if (totalPages <= 1) return null;
   return (
-    <nav aria-label="페이지 이동" className="flex items-center justify-center gap-3 text-sm text-fg-sub">
+    <nav aria-label={t("pageNav")} className="flex items-center justify-center gap-3 text-sm text-fg-sub">
       <button
         type="button"
         disabled={page <= 0}
         onClick={() => onChange(page - 1)}
         className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
       >
-        이전
+        {t("prev")}
       </button>
       <span className="font-num">
         {page + 1} / {totalPages}
@@ -43,7 +45,7 @@ export function Pager({ page, totalPages, onChange }: { page: number; totalPages
         onClick={() => onChange(page + 1)}
         className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
       >
-        다음
+        {t("next")}
       </button>
     </nav>
   );

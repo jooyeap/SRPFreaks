@@ -5,6 +5,7 @@ import { useAuth } from "@/components/AuthProvider";
 import type { RecordChart } from "@/components/record/RecordForm";
 import { difficultyLabel, partLabel } from "@/lib/format";
 import { distinctRecentCharts, fetchRecentEntered, recordKeys } from "@/lib/records";
+import { useTranslations } from "next-intl";
 
 /**
  * 기록 창 맨 위의 "최근 입력한 곡" 바로가기 (최대 5곡).
@@ -13,6 +14,7 @@ import { distinctRecentCharts, fetchRecentEntered, recordKeys } from "@/lib/reco
  * 서열표 기준 난이도(tier)는 기록 응답에 없어서, 옮겨 간 뒤에는 입력 중 점수 미리보기가 나오지 않는다.
  */
 export function RecentCharts({ currentChartId, onPick }: { currentChartId: number; onPick: (chart: RecordChart) => void }) {
+  const t = useTranslations();
   const { user } = useAuth();
   const userId = user?.id ?? 0;
   const recent = useQuery({
@@ -25,8 +27,8 @@ export function RecentCharts({ currentChartId, onPick }: { currentChartId: numbe
     return null;
   }
   return (
-    <section aria-label="최근 입력한 곡" className="mb-3">
-      <h3 className="mb-1.5 text-xs font-bold text-fg-sub">최근 입력한 곡</h3>
+    <section aria-label={t("Record.recentAria")} className="mb-3">
+      <h3 className="mb-1.5 text-xs font-bold text-fg-sub">{t("Record.recentAria")}</h3>
       <ul className="flex gap-2 overflow-x-auto pb-1">
         {items.map((r) => (
           <li key={r.songDifficultyId} className="shrink-0">

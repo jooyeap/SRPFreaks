@@ -8,6 +8,7 @@ import { ApiError } from "@/lib/api";
 import type { SettingResponse } from "@/lib/api-types";
 import { adminKeys, fetchSettings, SETTING_AFFECTED_KEYS, settingMeta, updateSetting, validateSettingValue } from "@/lib/admin";
 import { formatPlayedDate } from "@/lib/format";
+import { useTranslations } from "next-intl";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -17,6 +18,7 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
  * 화면은 숫자/정수/켬·끔 같은 뻔한 실수만 먼저 막는다. 레이팅 설정을 바꾸면 모든 사용자의 점수가 달라진다.
  */
 export function SettingsAdminView({ viewerId }: { viewerId: number }) {
+  const t = useTranslations();
   const { data, isPending, isError, error } = useQuery({
     queryKey: adminKeys.settings(viewerId),
     queryFn: ({ signal }) => fetchSettings(signal),
@@ -25,23 +27,23 @@ export function SettingsAdminView({ viewerId }: { viewerId: number }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" aria-label="관리로" title="관리로" className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
           <span aria-hidden="true">←</span>
         </Link>
-        <h1 className="text-xl font-semibold text-fg">설정</h1>
+        <h1 className="text-xl font-semibold text-fg">{t("Admin.settingsTitle")}</h1>
         <p className="text-sm text-fg-sub">
-          레이팅 계산 설정을 바꾸면 모든 사용자의 점수가 바로 달라집니다. 변경 내용은 감사 로그에 남습니다.
+          {t("Admin.settingsLead")}
         </p>
       </div>
 
       {isPending ? (
-        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : isError ? (
         <p role="alert" className="text-sm text-fg">
-          {error instanceof ApiError ? error.message : "설정을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
+          {error instanceof ApiError ? error.message : t("Admin.settingsLoadFailed")}
         </p>
       ) : (
-        <ul aria-label="설정 목록" className="flex flex-col gap-3">
+        <ul aria-label={t("Admin.settingsListAria")} className="flex flex-col gap-3">
           {data.content.map((setting) => (
             <SettingRow key={setting.key} setting={setting} />
           ))}
@@ -52,8 +54,11 @@ export function SettingsAdminView({ viewerId }: { viewerId: number }) {
 }
 
 function SettingRow({ setting }: { setting: SettingResponse }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const meta = settingMeta(setting.key);
+  const label = meta.label ? t(meta.label) : setting.key;
+  const description = meta.description ? t(meta.description) : "";
   const [value, setValue] = useState(setting.value);
   const [invalid, setInvalid] = useState<string | null>(null);
   const inputId = `setting-${setting.key}`;
@@ -63,7 +68,7 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
     mutationFn: (next: string) => updateSetting(setting.key, next),
     onSuccess: async (saved) => {
       setValue(saved.value);
-      toast("설정을 저장했습니다.");
+      toast(t("Admin.settingSaved"));
       await Promise.all(SETTING_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
     },
   });
@@ -73,11 +78,11 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
     mutation.error instanceof ApiError
       ? mutation.error.message
       : mutation.error
-        ? "저장하지 못했습니다. 잠시 후 다시 시도해 주세요."
+        ? t("Common.saveFailed")
         : null;
 
   const submit = () => {
-    const problem = validateSettingValue(setting.key, value);
+    const problem = validateSettingValue(setting.key, value, t);
     setInvalid(problem);
     if (problem === null) {
       mutation.mutate(value.trim());
@@ -88,16 +93,16 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
     <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
       <div className="flex flex-col gap-0.5">
         <label htmlFor={inputId} className="text-sm font-bold text-fg">
-          {meta.label}
+          {label}
         </label>
         <p className="font-num text-xs text-fg-dim">{setting.key}</p>
-        {meta.description ? <p className="text-xs text-fg-sub">{meta.description}</p> : null}
+        {description ? <p className="text-xs text-fg-sub">{description}</p> : null}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {meta.kind === "boolean" ? (
           <select id={inputId} value={value} onChange={(e) => setValue(e.target.value)} className={FIELD}>
-            <option value="true">켬</option>
-            <option value="false">끔</option>
+            <option value="true">{t("Admin.on")}</option>
+            <option value="false">{t("Admin.off")}</option>
           </select>
         ) : meta.kind === "choice" ? (
           <select id={inputId} value={value} onChange={(e) => setValue(e.target.value)} className={FIELD}>
@@ -123,10 +128,10 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
           type="button"
           onClick={submit}
           disabled={!changed || mutation.isPending}
-          aria-label={`${meta.label} 저장`}
+          aria-label={t("Admin.settingSaveAria", { label })}
           className="h-10 rounded-xl bg-chip-on-bg px-5 text-sm font-extrabold text-chip-on-fg disabled:opacity-40"
         >
-          {mutation.isPending ? "저장 중" : "저장"}
+          {mutation.isPending ? t("Common.saving") : t("Common.save")}
         </button>
       </div>
       {invalid ? (
@@ -136,11 +141,15 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
       ) : null}
       {serverMessage ? (
         <p role="alert" className="text-sm text-fg">
-          {serverMessage} 입력한 값으로는 저장할 수 없습니다.
+          {t("Admin.settingRejected", { message: serverMessage })}
         </p>
       ) : null}
       <p className="text-xs text-fg-dim">
-        마지막 변경 {setting.updatedByNickname ?? "(초기값)"} · <span className="font-num">{formatPlayedDate(setting.updatedAt)}</span>
+        {t.rich("Admin.lastChanged", {
+          who: setting.updatedByNickname ?? t("Admin.initialValue"),
+          date: formatPlayedDate(setting.updatedAt),
+          n: (c) => <span className="font-num">{c}</span>,
+        })}
       </p>
     </li>
   );

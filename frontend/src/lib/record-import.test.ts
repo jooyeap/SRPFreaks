@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ReadPlay } from "@/lib/import-bookmarklet";
-import { describePlayChart, isExcludedReason, playFullCombo, playKey, playStage } from "@/lib/record-import";
+import { chartRequestOf, describePlayChart, isExcludedReason, playFullCombo, playKey, playStage } from "@/lib/record-import";
 
 const base: ReadPlay = { playedAtMs: 1, gameType: "gf", title: "T", difficultyClass: "gf_mst", rate: 9650, ok: 1, miss: 2, translated: false, options: [] };
 
@@ -27,6 +27,14 @@ describe("가져오기 표시 규칙", () => {
     expect(describePlayChart("bass_adv")).toBe("Bass | ADV");
     expect(describePlayChart("gf_bsc")).toBe("Guitar | BSC");
     expect(describePlayChart("dm_ext")).toBeNull();
+  });
+
+  it("난이도 클래스를 건의에 붙일 파트·난이도로 바꾼다", () => {
+    expect(chartRequestOf("gf_mst")).toEqual({ part: "GUITAR", difficulty: "MASTER" });
+    expect(chartRequestOf("bass_bsc")).toEqual({ part: "BASS", difficulty: "BASIC" });
+    expect(chartRequestOf("bass_adv")).toEqual({ part: "BASS", difficulty: "ADVANCED" });
+    expect(chartRequestOf("gf_ext")).toEqual({ part: "GUITAR", difficulty: "EXTREME" });
+    expect(chartRequestOf("dm_ext")).toBeNull();
   });
 
   it("곡 목록에 없는 사유만 제외로 본다", () => {

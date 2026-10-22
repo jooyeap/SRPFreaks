@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { hideWelcomeGuide } from "@/lib/welcome-guide";
+import { useTranslations } from "next-intl";
 
 const LINK_PRIMARY = "flex min-h-11 items-center justify-center rounded-xl bg-chip-on-bg text-sm font-bold text-chip-on-fg";
 const LINK_TEXT = "flex min-h-11 items-center text-[13px] text-fg underline";
@@ -13,14 +14,15 @@ const LINK_TEXT = "flex min-h-11 items-center text-[13px] text-fg underline";
  * `시작 안내 숨기기`는 이 기기에 저장한다(lib/welcome-guide.ts).
  */
 export function WelcomeGuide() {
+  const t = useTranslations("Welcome");
   return (
-    <section aria-label="시작하기" className="flex flex-col gap-3 rounded-2xl border border-chip-on-bg bg-card p-4">
+    <section aria-label={t("title")} className="flex flex-col gap-3 rounded-2xl border border-chip-on-bg bg-card p-4">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-base font-bold text-fg">시작하기</h2>
-        <span className="font-num text-xs text-fg-dim">0/3 완료</span>
+        <h2 className="text-base font-bold text-fg">{t("title")}</h2>
+        <span className="font-num text-xs text-fg-dim">{t("progress")}</span>
       </div>
       <p className="text-[13px] leading-relaxed text-fg-sub">
-        SRN+ 옵션으로 플레이한 기록을 넣으면 레이팅이 계산됩니다. 가장 빠른 방법부터 해 보세요.
+        {t("lead")}
       </p>
       <ol className="flex flex-col gap-2.5">
         <li className="flex gap-3 rounded-xl border border-chip-on-bg bg-table-head p-3">
@@ -29,12 +31,12 @@ export function WelcomeGuide() {
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <p className="text-sm font-bold text-fg">
-              최근 플레이 가져오기{" "}
-              <span className="ml-1 rounded bg-chip-on-bg px-1.5 py-0.5 align-[1px] font-num text-[11px] text-chip-on-fg">가장 빠름</span>
+              {t("step1Title")}{" "}
+              <span className="ml-1 rounded bg-chip-on-bg px-1.5 py-0.5 align-[1px] font-num text-[11px] text-chip-on-fg">{t("fastest")}</span>
             </p>
-            <p className="text-xs leading-normal text-fg-sub">공식 사이트의 최근 플레이 20곡을 북마크 한 번으로 읽어 옵니다. 확인한 뒤 고른 곡만 저장돼요.</p>
+            <p className="text-xs leading-normal text-fg-sub">{t("step1Desc")}</p>
             <Link href="/import" className={LINK_PRIMARY}>
-              가져오는 방법 보기
+              {t("step1Link")}
             </Link>
           </div>
         </li>
@@ -43,10 +45,10 @@ export function WelcomeGuide() {
             2
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <p className="text-sm font-bold text-fg">곡 하나를 직접 입력</p>
-            <p className="text-xs leading-normal text-fg-sub">서열표에서 곡을 찾아 달성률을 한 건씩 넣을 수 있어요.</p>
+            <p className="text-sm font-bold text-fg">{t("step2Title")}</p>
+            <p className="text-xs leading-normal text-fg-sub">{t("step2Desc")}</p>
             <Link href="/table" className={LINK_TEXT}>
-              서열표로 이동
+              {t("step2Link")}
             </Link>
           </div>
         </li>
@@ -55,13 +57,13 @@ export function WelcomeGuide() {
             3
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <p className="text-sm font-bold text-fg-dim">내 레이팅 확인</p>
-            <p className="text-xs leading-normal text-fg-dim">기록이 하나라도 있으면 열려요.</p>
+            <p className="text-sm font-bold text-fg-dim">{t("step3Title")}</p>
+            <p className="text-xs leading-normal text-fg-dim">{t("step3Desc")}</p>
           </div>
         </li>
       </ol>
       <button type="button" onClick={hideWelcomeGuide} className="flex min-h-11 items-center self-start text-xs text-fg-dim underline hover:text-fg">
-        시작 안내 숨기기
+        {t("hide")}
       </button>
     </section>
   );

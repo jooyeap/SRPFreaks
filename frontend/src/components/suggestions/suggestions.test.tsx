@@ -16,6 +16,8 @@ function item(id: number, over: Partial<AdminSuggestionResponse> = {}): AdminSug
     category: "SONG_REQUEST",
     title: `건의 ${id}`,
     content: "줄1\n줄2",
+    requestedPart: null,
+    requestedDifficulty: null,
     status: "RECEIVED",
     adminNote: null,
     authorNickname: "tester",
@@ -65,6 +67,65 @@ describe("SuggestionsView", () => {
     expect(await screen.findByText("보낸 건의가 없습니다.")).toBeInTheDocument();
   });
 
+  it("가져오기에서 넘어온 파트·난이도를 보여 주고 곡 추가 건의와 함께 보낸다", async () => {
+    fetchMock.mockImplementation((_input, init) =>
+      Promise.resolve(init?.method === "POST" ? json(item(2), 201) : json(pageOf([]))),
+    );
+    wrap(
+      <SuggestionsView
+        viewerId={1}
+        initialCategory="SONG_REQUEST"
+        initialTitle="새 곡"
+        initialChart={{ part: "BASS", difficulty: "MASTER" }}
+      />,
+    );
+    expect(await screen.findByText("Bass | MAS")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("내용"), { target: { value: "추가해 주세요" } });
+    fireEvent.click(screen.getByRole("button", { name: "건의 보내기" }));
+
+    await waitFor(() => expect(calls("POST")).toHaveLength(1));
+    expect(JSON.parse(String(calls("POST")[0].init?.body))).toEqual({
+      category: "SONG_REQUEST",
+      title: "새 곡",
+      content: "추가해 주세요",
+      requestedPart: "BASS",
+      requestedDifficulty: "MASTER",
+    });
+  });
+
+  it("종류를 곡 추가가 아닌 것으로 바꾸면 파트·난이도는 보내지 않는다", async () => {
+    fetchMock.mockImplementation((_input, init) =>
+      Promise.resolve(init?.method === "POST" ? json(item(2), 201) : json(pageOf([]))),
+    );
+    wrap(
+      <SuggestionsView
+        viewerId={1}
+        initialCategory="SONG_REQUEST"
+        initialTitle="새 곡"
+        initialChart={{ part: "GUITAR", difficulty: "EXTREME" }}
+      />,
+    );
+    await screen.findByText("Guitar | EXT");
+
+    fireEvent.change(screen.getByLabelText("종류"), { target: { value: "BUG" } });
+    expect(screen.queryByText("Guitar | EXT")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("내용"), { target: { value: "내용" } });
+    fireEvent.click(screen.getByRole("button", { name: "건의 보내기" }));
+
+    await waitFor(() => expect(calls("POST")).toHaveLength(1));
+    const body = JSON.parse(String(calls("POST")[0].init?.body));
+    expect(body.requestedPart).toBeNull();
+    expect(body.requestedDifficulty).toBeNull();
+  });
+
+  it("내 목록에 요청한 파트·난이도를 같이 보여 준다", async () => {
+    fetchMock.mockResolvedValue(json(pageOf([item(1, { requestedPart: "GUITAR", requestedDifficulty: "MASTER" })])));
+    wrap(<SuggestionsView viewerId={1} />);
+
+    expect(await screen.findByRole("list", { name: "내 건의 목록" })).toHaveTextContent("Guitar | MAS");
+  });
+
   it("비어 있으면 서버에 보내지 않고 안내 문구를 보여 준다", async () => {
     fetchMock.mockResolvedValue(json(pageOf([])));
     wrap(<SuggestionsView viewerId={1} />);
@@ -90,7 +151,13 @@ describe("SuggestionsView", () => {
     fireEvent.click(screen.getByRole("button", { name: "건의 보내기" }));
 
     await waitFor(() => expect(calls("POST")).toHaveLength(1));
-    expect(JSON.parse(String(calls("POST")[0].init?.body))).toEqual({ category: "BUG", title: "화면이 깨져요", content: "자세한 내용" });
+    expect(JSON.parse(String(calls("POST")[0].init?.body))).toEqual({
+      category: "BUG",
+      title: "화면이 깨져요",
+      content: "자세한 내용",
+      requestedPart: null,
+      requestedDifficulty: null,
+    });
     await waitFor(() => expect(screen.getByLabelText("제목")).toHaveValue(""));
   });
 
@@ -127,6 +194,7 @@ describe("SuggestionsAdminView", () => {
       const url = String(input);
       if (url.includes("/received-count")) return Promise.resolve(json({ received: 3 }));
       if (init?.method === "PATCH") return Promise.resolve(json(patched ?? item(1)));
+      if (url.endsWith("/difficulty-tables")) return Promise.resolve(json([]));
       return Promise.resolve(json(pageOf([item(1), item(2, { category: "BUG", authorNickname: "other" })])));
     });
   }
@@ -140,6 +208,37 @@ describe("SuggestionsAdminView", () => {
     expect(list).toHaveTextContent("보낸 사람 tester");
     expect(list).toHaveTextContent("보낸 사람 other");
     expect(await screen.findByText(/접수 대기/)).toHaveTextContent("3건");
+  });
+
+  it("곡 추가 건의에서 곡 등록 창을 곡명과 요청 채보로 채워 연다", async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/received-count")) return Promise.resolve(json({ received: 1 }));
+      if (url.endsWith("/difficulty-tables")) return Promise.resolve(json([]));
+      return Promise.resolve(
+        json(pageOf([item(1, { title: "새 곡", requestedPart: "BASS", requestedDifficulty: "EXTREME" })])),
+      );
+    });
+    wrap(<SuggestionsAdminView viewerId={9} />);
+    const list = await screen.findByRole("list", { name: "건의 목록" });
+    expect(list).toHaveTextContent("Bass | EXT");
+
+    fireEvent.click(screen.getByRole("button", { name: "새 곡 건의로 곡 등록" }));
+
+    expect(await screen.findByLabelText("곡명")).toHaveValue("새 곡");
+    expect(screen.getByLabelText("채보 1 파트")).toHaveValue("BASS");
+    expect(screen.getByLabelText("채보 1 난이도")).toHaveValue("EXTREME");
+    // 자동 등록이 아니다: 창만 열었을 뿐 곡을 만드는 요청은 없다
+    expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+  });
+
+  it("곡 추가가 아닌 건의에는 곡 등록 버튼이 없다", async () => {
+    routes();
+    wrap(<SuggestionsAdminView viewerId={9} />);
+    await screen.findByRole("list", { name: "건의 목록" });
+
+    expect(screen.getByRole("button", { name: "건의 1 건의로 곡 등록" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "건의 2 건의로 곡 등록" })).not.toBeInTheDocument();
   });
 
   it("종류를 고르면 category 파라미터를 붙여 다시 요청한다", async () => {

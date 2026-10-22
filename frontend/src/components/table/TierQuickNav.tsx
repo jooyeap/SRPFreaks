@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { folderHref } from "@/lib/difficulty-table";
 import { formatTier } from "@/lib/format";
 import type { TierGroupResponse } from "@/lib/api-types";
+import { useTranslations } from "next-intl";
 
 /**
  * 서열표 상단 "난이도 이동": 버튼 하나만 두고, 누르면 기준 난이도 목록이 펼쳐진다. 난이도를 누르면 그 묶음 페이지로 간다.
@@ -14,6 +15,7 @@ import type { TierGroupResponse } from "@/lib/api-types";
  * 목록은 열려 있을 때만 그린다(닫힌 DOM에 링크가 남지 않아 화면 읽기 프로그램에도 한 번만 읽힌다).
  */
 export function TierQuickNav({ groups }: { groups: readonly TierGroupResponse[] }) {
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -55,7 +57,7 @@ export function TierQuickNav({ groups }: { groups: readonly TierGroupResponse[] 
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-lg border border-chip-line bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
       >
-        난이도 이동
+        {t("Table.goToTier")}
         <svg className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M6 9l6 6 6-6" />
         </svg>
@@ -63,7 +65,7 @@ export function TierQuickNav({ groups }: { groups: readonly TierGroupResponse[] 
       {open ? (
         <nav
           id={panelId}
-          aria-label="난이도 바로가기"
+          aria-label={t("Table.tierShortcuts")}
           // 목록이 길어도 화면을 넘지 않게 높이를 제한하고 안에서 스크롤한다. 폭은 작은 화면(360px)에서도 들어가게 잡는다
           className="absolute left-0 top-full z-30 mt-2 max-h-[60vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-2xl border border-line bg-card p-4"
         >
@@ -77,7 +79,7 @@ export function TierQuickNav({ groups }: { groups: readonly TierGroupResponse[] 
                     onClick={() => setOpen(false)}
                     className="flex flex-col items-center rounded-xl border border-chip-line px-1 py-1.5 hover:bg-table-head"
                   >
-                    <span className={`font-num text-base font-bold ${done ? "text-done-text" : "text-fg"}`}>{formatTier(g.tier)}</span>
+                    <span className={`font-num text-base font-bold ${done ? "text-done-text" : "text-fg"}`}>{formatTier(g.tier, t)}</span>
                     <span className="font-num text-[11px] text-fg-dim">
                       {g.recorded}/{g.total}
                     </span>

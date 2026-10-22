@@ -8,6 +8,7 @@ import { canUseImport } from "@/lib/features";
 import { ImportProcessor, type DoneInfo } from "@/components/import/ImportProcessor";
 import { clearHandoff, consumeFragment, isFreshArrival, useHandoff } from "@/lib/import-handoff";
 import { playKey, previewRecentPlays } from "@/lib/record-import";
+import { useTranslations } from "next-intl";
 
 /**
  * 공식 페이지의 북마클릿이 넘긴 플레이가 있으면, 어느 화면에서든 모달로 "이어서 처리"를 안내한다 (D40).
@@ -19,6 +20,7 @@ import { playKey, previewRecentPlays } from "@/lib/record-import";
  * "완료" 상태는 저장 뒤 pending이 비어도 결과 화면을 유지하려고 여기서 들고 있는다.
  */
 export function ImportHandoff() {
+  const t = useTranslations();
   const { status, user } = useAuth();
   const handoff = useHandoff();
   const [dismissedAt, setDismissedAt] = useState(0);
@@ -88,15 +90,15 @@ export function ImportHandoff() {
       ) : (
         <>
           <h2 id="import-handoff-title" className="text-lg font-extrabold">
-            공식 페이지에서 받은 플레이가 있습니다
+            {t("Import.handoffTitle")}
           </h2>
-          <p className="mt-2 text-sm leading-relaxed text-fg-sub">{handoff.pending.length}곡을 받았습니다. 로그인한 뒤 이어서 처리할 수 있습니다. 아직 저장되지 않았습니다.</p>
+          <p className="mt-2 text-sm leading-relaxed text-fg-sub">{t("Import.handoffBody", { count: handoff.pending.length })}</p>
           <div className="mt-5 flex gap-2.5">
             <button type="button" onClick={close} className="h-11 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
-              나중에
+              {t("Import.later")}
             </button>
             <Link href="/login" onClick={close} className="flex h-11 flex-1 items-center justify-center rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg">
-              로그인
+              {t("Import.login")}
             </Link>
           </div>
         </>
