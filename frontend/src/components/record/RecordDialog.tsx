@@ -143,8 +143,8 @@ export function RecordDialog({
 /**
  * 창 안쪽(제목 줄 + 기록 목록 + 폼). chart가 있을 때만 그려져서 AuthProvider·쿼리가 필요한 코드는 여기에만 있다.
  * 어느 기록을 고치는지(picked)는 이 컴포넌트의 상태라서 창이 닫히거나 다른 채보로 열리면(key) 저절로 초기화된다.
- * 기록이 이미 있으면 가장 높은 기록(서열표에 보이는 것)의 수정으로 바로 열린다:
- * "새 기록 추가"로 낮은 값을 넣어도 서열표에는 높은 기록이 남아서 "수정이 안 된다"고 느끼기 때문이다.
+ * 2026-10-22: 기록이 이미 있어도 선택 화면 없이 빈 `기록 등록` 폼으로 바로 열린다(신규 우선).
+ * 고쳐야 할 때만 제목 줄 `기존 기록 수정`(가장 높은 기록)이나 목록의 `수정`으로 넘어간다.
  */
 function RecordDialogBody({
   chart,
@@ -161,7 +161,7 @@ function RecordDialogBody({
   const chartId = chart.songDifficultyId;
   const { user } = useAuth();
   const userId = user?.id ?? 0;
-  const [picked, setPicked] = useState<RecordResponse | "new" | null>(null);
+  const [picked, setPicked] = useState<RecordResponse | "new">("new");
   const records = useQuery({
     queryKey: recordKeys.ofChart(userId, chartId),
     queryFn: ({ signal }) => fetchRecordsOfChart(chartId, signal),
@@ -169,19 +169,17 @@ function RecordDialogBody({
   });
   const loadingRecords = user !== null && records.isPending; // 불러오는 동안 폼을 먼저 그리면 입력이 사라진다
   const best = bestOf(records.data?.content);
-  const editing = picked === "new" ? null : (picked ?? best);
+  const editing = picked === "new" ? null : picked; // null이면 새 기록 등록
   const hasRecords = (records.data?.content.length ?? 0) > 0;
-  // 이미 기록이 있는 채보는 폼 전에 "기존 기록 수정 / 새 기록 등록"을 먼저 고르게 한다(고르기 전에는 폼이 없다)
-  const choosing = picked === null && hasRecords && !loadingRecords;
 
   return (
     <>
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 id="record-dialog-title" className="text-lg font-extrabold">
-              {choosing ? t("Record.dialogAdd") : editing ? t("Record.dialogEdit") : t("Record.dialogAdd")}
+              {editing ? t("Record.dialogEdit") : t("Record.dialogAdd")}
             </h2>
-            {/* 이미 기록이 있으면 수정이 기본이다. 새 플레이를 따로 남기고 싶을 때만 `새 기록 추가`로 바꾼다 */}
-            {choosing ? null : editing ? (
+            {/* 기본은 새 기록 등록이다. 고쳐야 할 때만 `기존 기록 수정`으로 넘어가고, 수정 중에는 `새 기록 추가`로 돌아온다 */}
+            {editing ? (
               <button
                 type="button"
                 onClick={() => setPicked("new")}
@@ -192,7 +190,7 @@ function RecordDialogBody({
             ) : hasRecords ? (
               <button
                 type="button"
-                onClick={() => setPicked(best)}
+                onClick={() => best && setPicked(best)}
                 className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
               >
                 {t("Record.editExisting")}
@@ -200,39 +198,14 @@ function RecordDialogBody({
             ) : null}
           </div>
           <p className="mb-3 text-xs leading-relaxed text-fg-sub">
-            {choosing
-              ? t("Record.alreadyHas")
-              : editing
+            {editing
               ? t("Record.editingBanner", { rate: formatRate(editing.achievementRate), fc: editing.fullCombo ? " · FC" : "", origin: recordOriginText(editing, t) })
               : hasRecords
                 ? t("Record.newKeepsOld")
                 : t("Record.firstRecord")}
           </p>
-          {choosing && best ? (
-            <div className="mb-3 flex flex-col gap-2">
-              <button
-                type="button"
-                autoFocus
-                onClick={() => setPicked(best)}
-                className="flex min-h-14 flex-col items-start justify-center rounded-lg border border-chip-on-bg px-4 py-2 text-left hover:bg-chip-on-bg/10"
-              >
-                <span className="text-sm font-semibold text-fg">{t("Record.editExisting")}</span>
-                <span className="text-xs text-fg-sub">
-                  {t("Record.bestRecord", { rate: formatRate(best.achievementRate), fc: best.fullCombo ? " · FC" : "", origin: recordOriginText(best, t) })}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPicked("new")}
-                className="flex min-h-14 flex-col items-start justify-center rounded-lg border border-chip-line px-4 py-2 text-left hover:bg-chip-on-bg/10"
-              >
-                <span className="text-sm font-semibold text-fg">{t("Record.registerNew")}</span>
-                <span className="text-xs text-fg-sub">{t("Record.newPlayNote")}</span>
-              </button>
-            </div>
-          ) : null}
           <RecordList songDifficultyId={chartId} editingId={editing?.id ?? null} onEdit={setPicked} />
-          {choosing ? null : loadingRecords ? (
+          {loadingRecords ? (
             <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
           ) : (
             // key: 수정 대상이 바뀌면 폼을 새로 만들어 입력 초기값이 맞게 한다
