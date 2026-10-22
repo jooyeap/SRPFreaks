@@ -6,6 +6,7 @@ import com.srpfreaks.backend.dto.AdminUserResponse;
 import com.srpfreaks.backend.entity.AuditLog;
 import com.srpfreaks.backend.entity.Role;
 import com.srpfreaks.backend.entity.User;
+import com.srpfreaks.backend.entity.UserStatus;
 import com.srpfreaks.backend.repository.AuditLogRepository;
 import com.srpfreaks.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,5 +125,57 @@ class UserAdminServiceTest {
 
         assertThat(response.role()).isEqualTo(Role.USER);
         verify(auditLogRepository, never()).save(any(AuditLog.class));
+    }
+
+    @Test
+    void 차단하면_상태를_바꾸고_감사_로그를_남긴다() {
+        AdminUserResponse response = service.changeStatus(1L, 2L, UserStatus.BLOCKED);
+
+        assertThat(response.status()).isEqualTo(UserStatus.BLOCKED);
+        assertThat(member.isActive()).isFalse();
+        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+        AuditLog log = captor.getValue();
+        assertThat(log.getAction()).isEqualTo("USER_BLOCK");
+        assertThat(log.getTargetId()).isEqualTo("2");
+        assertThat(log.getDetail()).containsEntry("before", "ACTIVE").containsEntry("after", "BLOCKED");
+        assertThat(log.getDetail().toString()).doesNotContain("@");
+    }
+
+    @Test
+    void 차단을_풀면_다시_사용할_수_있고_해제_로그를_남긴다() {
+        member.block();
+
+        AdminUserResponse response = service.changeStatus(1L, 2L, UserStatus.ACTIVE);
+
+        assertThat(response.status()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(member.isActive()).isTrue();
+        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(auditLogRepository).save(captor.capture());
+        assertThat(captor.getValue().getAction()).isEqualTo("USER_UNBLOCK");
+    }
+
+    @Test
+    void 이미_같은_상태면_감사_로그를_남기지_않는다() {
+        service.changeStatus(1L, 2L, UserStatus.ACTIVE);
+
+        assertThat(member.isActive()).isTrue();
+        verify(auditLogRepository, never()).save(any(AuditLog.class));
+    }
+
+    @Test
+    void ROOT_계정은_차단할_수_없다() {
+        assertThatThrownBy(() -> service.changeStatus(1L, 1L, UserStatus.BLOCKED))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+        assertThat(root.isActive()).isTrue();
+        verify(auditLogRepository, never()).save(any(AuditLog.class));
+    }
+
+    @Test
+    void 없는_사용자는_404다() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.changeStatus(1L, 99L, UserStatus.BLOCKED))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND));
     }
 }

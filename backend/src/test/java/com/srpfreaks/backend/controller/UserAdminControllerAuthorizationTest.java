@@ -2,7 +2,9 @@ package com.srpfreaks.backend.controller;
 
 import com.srpfreaks.backend.config.SecurityConfig;
 import com.srpfreaks.backend.dto.RoleChangeRequest;
+import com.srpfreaks.backend.dto.UserStatusChangeRequest;
 import com.srpfreaks.backend.entity.Role;
+import com.srpfreaks.backend.entity.UserStatus;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.UserAdminService;
 import org.junit.jupiter.api.AfterEach;
@@ -45,6 +47,7 @@ class UserAdminControllerAuthorizationTest {
     private AnnotationConfigApplicationContext context;
     private UserAdminController controller;
     private final RoleChangeRequest request = new RoleChangeRequest(Role.ADMIN);
+    private final UserStatusChangeRequest block = new UserStatusChangeRequest(UserStatus.BLOCKED);
 
     @BeforeEach
     void setUp() {
@@ -71,6 +74,7 @@ class UserAdminControllerAuthorizationTest {
             AuthenticatedUser user = loginAs(role);
             assertThatThrownBy(() -> controller.list(0, 30)).isInstanceOf(AccessDeniedException.class);
             assertThatThrownBy(() -> controller.changeRole(user, 2L, request)).isInstanceOf(AccessDeniedException.class);
+            assertThatThrownBy(() -> controller.changeStatus(user, 2L, block)).isInstanceOf(AccessDeniedException.class); // 차단도 ROOT만
         }
     }
 
@@ -79,5 +83,6 @@ class UserAdminControllerAuthorizationTest {
         AuthenticatedUser user = loginAs(Role.ROOT);
         assertThatCode(() -> controller.list(0, 30)).doesNotThrowAnyException();
         assertThatCode(() -> controller.changeRole(user, 2L, request)).doesNotThrowAnyException();
+        assertThatCode(() -> controller.changeStatus(user, 2L, block)).doesNotThrowAnyException();
     }
 }

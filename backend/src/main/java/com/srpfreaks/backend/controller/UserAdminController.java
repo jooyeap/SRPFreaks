@@ -3,6 +3,7 @@ package com.srpfreaks.backend.controller;
 import com.srpfreaks.backend.dto.AdminUserResponse;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.RoleChangeRequest;
+import com.srpfreaks.backend.dto.UserStatusChangeRequest;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.UserAdminService;
 import jakarta.validation.Valid;
@@ -17,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 사용자 목록·역할 변경 API. ROOT만 부를 수 있다(ADMIN도 403). */
+/** 사용자 목록·역할 변경·차단 API. ROOT만 부를 수 있다(ADMIN도 403). */
 @RestController
 @RequestMapping("/api/v1/admin/users")
 @RequiredArgsConstructor
@@ -37,5 +38,11 @@ public class UserAdminController {
     public AdminUserResponse changeRole(@AuthenticationPrincipal AuthenticatedUser actor, @PathVariable Long userId,
                                         @Valid @RequestBody RoleChangeRequest request) {
         return userAdminService.changeRole(actor.id(), userId, request.role());
+    }
+
+    @PatchMapping("/{userId}/status")
+    public AdminUserResponse changeStatus(@AuthenticationPrincipal AuthenticatedUser actor, @PathVariable Long userId,
+                                          @Valid @RequestBody UserStatusChangeRequest request) {
+        return userAdminService.changeStatus(actor.id(), userId, request.status());
     }
 }
