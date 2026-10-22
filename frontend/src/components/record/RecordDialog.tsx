@@ -190,7 +190,7 @@ function RecordDialogBody({
             ) : hasRecords ? (
               <button
                 type="button"
-                onClick={() => setPicked(best)}
+                onClick={() => best && setPicked(best)}
                 className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
               >
                 {t("Record.editExisting")}
