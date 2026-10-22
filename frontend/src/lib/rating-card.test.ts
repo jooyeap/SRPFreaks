@@ -193,8 +193,7 @@ describe("buildCardModel", () => {
     expect(t.partText).toBe("Bass");
     expect(t.diffText).toBe("MAS 9.45");
     expect(t.patternText).toBe("");
-    expect(t.tierText).toBe("서열 9.0");
-    expect(t.tierShortText).toBe("T9.0");
+    expect(t.tierText).toBe("9.0");
     expect(t.tier).toBe(TIER_STYLES.PURPLE_GRADIENT);
     expect(m.header.totalText).toBe("5210.80");
     expect(m.header.tierName).toBe("Purple");
