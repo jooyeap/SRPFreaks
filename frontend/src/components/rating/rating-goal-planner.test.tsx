@@ -157,7 +157,12 @@ describe("RatingGoalPlanner", () => {
       expect(items[0]).toHaveTextContent("목록 진입");
       const displaced = screen.getByRole("list", { name: "후보 곡으로 밀려나는 곡" });
       expect(within(displaced).getByText("에스원")).toBeInTheDocument();
-      expect(displaced).toHaveTextContent("90.00% · 282.67");
+      // 위쪽 "올릴 곡"과 같은 카드 모양이다: 테두리 있는 줄, 곡명은 곡 상세 링크
+      const card = within(displaced).getAllByRole("listitem")[0];
+      expect(card).toHaveClass("rounded-xl", "border");
+      expect(within(card).getByRole("link", { name: "에스원" })).toHaveAttribute("href", expect.stringContaining("/songs/"));
+      expect(card).toHaveTextContent("90.00%");
+      expect(card).toHaveTextContent("282.67");
       expect(screen.getByText(/후보 곡으로 밀려난 레이팅과 늘어나는 레이팅을 계산한 값/)).toBeInTheDocument();
     });
 
