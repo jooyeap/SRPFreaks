@@ -92,6 +92,8 @@ jobs:
           export GIT_SHA="$(git rev-parse --short=7 HEAD)"
           # $SERVICES는 일부러 따옴표 없이 쓴다 (서비스 이름이 여러 개일 수 있다)
           docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build $SERVICES
+          # 새 컨테이너가 뜬 뒤, 7일 넘은 도커 빌드 캐시만 지운다(디스크가 다시 차지 않게). 실패해도 배포는 성공으로 둔다.
+          bash scripts/deploy/prune-build-cache.sh || true
           docker compose --env-file .env.prod -f docker-compose.prod.yml ps
           REMOTE
 
