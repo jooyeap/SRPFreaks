@@ -1,4 +1,4 @@
-import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/auth-token";
+import { clearAccessToken, getAccessToken, isAccessTokenExpiring, setAccessToken } from "@/lib/auth-token";
 import { clientMessage } from "@/i18n/client-messages";
 import { SERVER_ERRORS } from "@/i18n/server-errors";
 import type { ApiErrorBody, AuthResponse } from "@/lib/api-types";
@@ -189,6 +189,16 @@ async function toApiError(response: Response): Promise<ApiError> {
  * 응답 JSON은 서버를 믿고 T로 취급한다(as T). 이후 필요한 곳에서 Zod로 검증을 더할 수 있다.
  */
 export async function apiFetch<T = void>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+  // 토큰이 만료됐거나 곧 만료되면 보내기 전에 먼저 재발급한다. 공개 읽기 경로는 만료된 토큰에 401을 주지 않고 비로그인으로 처리해
+  // (D43) "내 기록 없는" 200을 돌려주므로, 401을 기다리면 재발급이 일어나지 않는다. 재발급이 일시적으로 안 되면(unavailable)
+  // 그냥 보내고, 서버가 거부하면(rejected) 로그인이 풀린 것으로 처리한다.
+  if (options.auth !== false && isAccessTokenExpiring()) {
+    const refreshed = await refreshSessionOutcome();
+    if (refreshed.kind === "rejected") {
+      clearAccessToken();
+      authLostHandler?.();
+    }
+  }
   let response = await send(path, options);
 
   if (response.status === 401 && options.auth !== false) {
