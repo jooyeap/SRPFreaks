@@ -26,10 +26,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -66,12 +69,39 @@ public class SkillService {
      * "그 점수 세트를 완성한 시각"이라서, 같은 총점이면 더 일찍 완성한 사람이 먼저다. API 응답에는 내보내지 않는다.
      */
     public RatedSkill rated(Long userId) {
+        return ratedAll(List.of(userId)).get(userId);
+    }
+
+    /**
+     * 여러 유저의 레이팅을 한 번에 계산한다 (유저 목록용).
+     *
+     * 왜 따로 두는가: 설정(app_settings), 레이팅 서열표, 티어 구간표는 유저와 상관없이 같은 값이다.
+     * 유저마다 rated()를 부르면 이 세 가지를 유저 수만큼 다시 읽는다(유저 N명이면 쿼리 약 4N번).
+     * 여기서는 이 세 가지를 요청당 한 번만 읽고, 유저마다 달라지는 후보 채보 조회(MyBatis)만 반복한다.
+     * 계산 규칙은 rated()와 같은 코드(rateOne)를 쓰므로 숫자가 달라질 수 없다.
+     */
+    public Map<Long, RatedSkill> ratedAll(Collection<Long> userIds) {
+        Map<Long, RatedSkill> result = new LinkedHashMap<>();
+        if (userIds.isEmpty()) {
+            return result;
+        }
         RatingConfig config = RatingConfig.from(ratingSettings());
         RatingCalculator calculator = new RatingCalculator(config);
+        Optional<DifficultyTable> table = difficultyTableRepository
+                .findFirstByNoteOptionAndStatusOrderByIdAsc(config.noteOption(), TableStatus.ACTIVE);
+        List<PlayerTier> tiers = playerTierRepository.findAllByOrderBySortOrderAsc().stream()
+                .sorted(Comparator.comparingInt(PlayerTier::getMinScore))
+                .toList();
+        for (Long userId : userIds) {
+            result.put(userId, rateOne(userId, config, calculator, table, tiers));
+        }
+        return result;
+    }
 
-        List<Scored> scored = difficultyTableRepository
-                .findFirstByNoteOptionAndStatusOrderByIdAsc(config.noteOption(), TableStatus.ACTIVE)
-                .map(table -> score(userId, config, calculator, table))
+    private RatedSkill rateOne(Long userId, RatingConfig config, RatingCalculator calculator,
+                               Optional<DifficultyTable> table, List<PlayerTier> tiers) {
+        List<Scored> scored = table
+                .map(t -> score(userId, config, calculator, t))
                 .orElseGet(List::of);   // 레이팅 서열표가 아직 없으면 빈 목록
 
         List<Scored> single = top(scored, true, config.listSingle());
@@ -82,7 +112,7 @@ public class SkillService {
         BigDecimal total = singleScore.add(otherScore);
 
         SkillResponse response = new SkillResponse(config.noteOption(), RatingCalculator.display(total),
-                RatingCalculator.display(singleScore), RatingCalculator.display(otherScore), playerTier(total),
+                RatingCalculator.display(singleScore), RatingCalculator.display(otherScore), playerTier(total, tiers),
                 config.listSingle(), config.listOther(), toResponses(single), toResponses(other));
         return new RatedSkill(response, lastAchievedAt(single, other));
     }
@@ -164,13 +194,10 @@ public class SkillService {
 
     /**
      * 플레이어 티어: 합계(반올림하지 않은 값)의 정수부(소수 버림)가 min_score 이상인 구간 중 가장 높은 것.
-     * 구간표가 비어 있으면 null. 티어는 저장하지 않고 계산한다.
+     * 구간표가 비어 있으면 null. 티어는 저장하지 않고 계산한다. tiers는 min_score 오름차순이다.
      */
-    private PlayerTierResponse playerTier(BigDecimal total) {
+    private static PlayerTierResponse playerTier(BigDecimal total, List<PlayerTier> tiers) {
         int floor = total.setScale(0, RoundingMode.DOWN).intValue();
-        List<PlayerTier> tiers = playerTierRepository.findAllByOrderBySortOrderAsc().stream()
-                .sorted(Comparator.comparingInt(PlayerTier::getMinScore))
-                .toList();
         PlayerTier current = null;
         PlayerTier next = null;
         for (PlayerTier t : tiers) {
