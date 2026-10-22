@@ -255,6 +255,105 @@ describe("401 -> 재발급 -> 재시도", () => {
   });
 });
 
+/** exp(초)만 담은 JWT 모양 문자열 (서명은 검증하지 않는 쪽에서만 읽는다) */
+function tokenExpiringAt(expMs: number): string {
+  const encode = (value: object) => btoa(JSON.stringify(value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `${encode({ alg: "HS256" })}.${encode({ exp: Math.floor(expMs / 1000) })}.sig`;
+}
+
+describe("만료된 토큰은 보내기 전에 재발급", () => {
+  it("만료된 토큰이면 요청 전에 재발급하고 새 토큰으로 보낸다 (공개 경로가 401을 주지 않는 경우)", async () => {
+    setAccessToken(tokenExpiringAt(Date.now() - 60_000));
+    fetchMock
+      .mockResolvedValueOnce(json(authResponse("fresh"))) // 재발급
+      .mockResolvedValueOnce(json({ ok: true })); // 원래 요청
+
+    await expect(apiFetch<{ ok: boolean }>("/songs")).resolves.toEqual({ ok: true });
+
+    expect(call(0).url).toBe("/api/v1/auth/refresh");
+    expect(call(1).url).toBe("/api/v1/songs");
+    expect(call(1).headers.get("Authorization")).toBe("Bearer fresh");
+  });
+
+  it("30초 안에 만료될 토큰도 먼저 재발급한다", async () => {
+    setAccessToken(tokenExpiringAt(Date.now() + 10_000));
+    fetchMock.mockResolvedValueOnce(json(authResponse("fresh"))).mockResolvedValueOnce(json({}));
+
+    await apiFetch("/songs");
+
+    expect(call(0).url).toBe("/api/v1/auth/refresh");
+  });
+
+  it("아직 여유가 있으면 재발급하지 않는다", async () => {
+    const token = tokenExpiringAt(Date.now() + 10 * 60_000);
+    setAccessToken(token);
+    fetchMock.mockResolvedValue(json({}));
+
+    await apiFetch("/songs");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(call(0).headers.get("Authorization")).toBe(`Bearer ${token}`);
+  });
+
+  it("읽을 수 없는 토큰이나 토큰 없음은 재발급하지 않는다 (서버 판단에 맡긴다)", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(json({})));
+    await apiFetch("/songs");
+    setAccessToken("not-a-jwt");
+    await apiFetch("/songs");
+    setAccessToken("a.%%%.c");
+    await apiFetch("/songs");
+    expect(fetchMock.mock.calls.every(([url]) => String(url) === "/api/v1/songs")).toBe(true);
+  });
+
+  it("서버가 재발급을 거부하면 로그인이 풀린 것으로 처리하고 토큰 없이 보낸다", async () => {
+    setAccessToken(tokenExpiringAt(Date.now() - 1000));
+    const lost = vi.fn();
+    setAuthLostHandler(lost);
+    fetchMock
+      .mockResolvedValueOnce(json({ code: "AUTH_FAILED", message: "x" }, 401))
+      .mockResolvedValueOnce(json({}));
+
+    await apiFetch("/songs");
+
+    expect(lost).toHaveBeenCalledTimes(1);
+    expect(getAccessToken()).toBeNull();
+    expect(call(1).headers.has("Authorization")).toBe(false);
+  });
+
+  it("재발급이 일시적으로 안 되면 로그인 상태를 지우지 않고 원래 요청을 보낸다", async () => {
+    const token = tokenExpiringAt(Date.now() - 1000);
+    setAccessToken(token);
+    const lost = vi.fn();
+    setAuthLostHandler(lost);
+    fetchMock.mockResolvedValueOnce(json({ code: "INTERNAL_ERROR", message: "x" }, 500)).mockResolvedValueOnce(json({}));
+
+    await apiFetch("/songs");
+
+    expect(lost).not.toHaveBeenCalled();
+    expect(getAccessToken()).toBe(token);
+  });
+
+  it("동시에 여러 요청이 와도 재발급은 한 번만 한다", async () => {
+    setAccessToken(tokenExpiringAt(Date.now() - 1000));
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).endsWith("/auth/refresh") ? json(authResponse("fresh")) : json({})),
+    );
+
+    await Promise.all([apiFetch("/songs"), apiFetch("/difficulty-tables"), apiFetch("/users/me")]);
+
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/auth/refresh"))).toHaveLength(1);
+  });
+
+  it("auth: false 요청은 만료된 토큰이 있어도 재발급하지 않는다", async () => {
+    setAccessToken(tokenExpiringAt(Date.now() - 1000));
+    fetchMock.mockResolvedValue(json({}));
+
+    await apiFetch("/auth/google", { method: "POST", auth: false, body: {} });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("refreshSession", () => {
   it("성공하면 토큰을 메모리에 저장하고 응답을 돌려준다", async () => {
     fetchMock.mockResolvedValue(json(authResponse("fresh")));
