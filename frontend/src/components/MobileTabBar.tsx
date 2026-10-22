@@ -60,8 +60,9 @@ export function MobileTabBar() {
                   <Link
                     href={item.href}
                     onClick={() => setMoreOpen(false)}
-                    className="flex min-h-[52px] items-center gap-2.5 px-1 text-[15px] text-fg"
+                    className="flex min-h-[52px] items-center gap-3 px-1 text-[15px] text-fg"
                   >
+                    <NavIcon name={item.icon} className="h-5 w-5 shrink-0 text-fg-sub" />
                     <span className="flex-1">{t(item.label)}</span>
                     {item.badge ? (
                       <span className="rounded bg-chip-on-bg px-2 py-0.5 font-num text-[11px] font-bold text-chip-on-fg">{t(item.badge)}</span>
@@ -74,7 +75,8 @@ export function MobileTabBar() {
             <div className="border-t border-line">
               <AdminNavLink
                 onClick={() => setMoreOpen(false)}
-                className="flex min-h-[52px] items-center border-b border-line px-1 text-[15px] text-fg"
+                showIcon
+                className="flex min-h-[52px] items-center gap-3 border-b border-line px-1 text-[15px] text-fg"
               />
               {status === "authenticated" && user ? (
                 <button

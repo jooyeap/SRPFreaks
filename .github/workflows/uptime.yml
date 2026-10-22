@@ -1,6 +1,10 @@
 # 사이트 상태 감시: 10분마다 바깥(GitHub 러너)에서 사이트가 응답하는지, HTTPS 인증서가 곧 만료되지 않는지 확인한다.
 # 실패하면 이 실행이 빨갛게 되고 GitHub가 저장소 소유자에게 실패 알림(메일/모바일 앱)을 보낸다.
 # 로그인이 필요 없는 주소만 부르고 비밀값을 쓰지 않는다. (GitHub의 예약 실행은 몇 분 늦게 시작될 수 있다)
+#
+# 장애 이슈: 점검이 실패하면 `장애` 라벨의 이슈를 하나 열고(이미 열려 있으면 새로 만들지 않는다), 다시 성공하면 댓글을 남기고 닫는다.
+# 이슈는 알림(메일)이 오고, 나중에 Claude가 읽고 원인을 분석할 수 있는 기록이 된다.
+# 저장소가 공개라서 이슈 내용도 누구나 볼 수 있다. 주소·응답 코드·실행 링크처럼 이미 공개된 정보만 적는다.
 name: Uptime
 
 on:
@@ -10,6 +14,7 @@ on:
 
 permissions:
   contents: read
+  issues: write # 장애 이슈를 열고 닫는다. 다른 권한은 없다
 
 # 점검이 겹쳐 쌓이지 않게 한다
 concurrency:
@@ -40,8 +45,8 @@ jobs:
           failed=0
           # 화면(프론트 + nginx)
           check "$SITE_URL/" 200 || failed=1
-          # API: 로그인 없이 부르면 401이 정상이다(백엔드가 살아 있고 보안 설정이 동작한다는 뜻. 500/502/504면 장애)
-          check "$SITE_URL/api/v1/notices" 401 || failed=1
+          # API: 로그인 없이 `/users/me`를 부르면 401이 정상이다(공지 등은 D43으로 공개돼 200이라 쓰지 않는다. 백엔드가 살아 있고 보안 설정이 동작한다는 뜻. 500/502/504면 장애)
+          check "$SITE_URL/api/v1/users/me" 401 || failed=1
           exit $failed
 
       - name: HTTPS 인증서 만료 확인
@@ -56,3 +61,35 @@ jobs:
             echo "::error title=인증서 만료 임박::만료까지 ${days}일 남았습니다. certbot 갱신을 확인해 주세요."
             exit 1
           fi
+
+      - name: 장애 이슈 열기
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="$GITHUB_REPOSITORY"
+          run_url="$GITHUB_SERVER_URL/$repo/actions/runs/$GITHUB_RUN_ID"
+          gh label create 장애 --repo "$repo" --color B60205 --description "사이트 점검 실패(자동 생성)" 2>/dev/null || true
+          open="$(gh issue list --repo "$repo" --label 장애 --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$open" ]; then
+            echo "이미 열린 장애 이슈 #$open 가 있어 새로 만들지 않습니다."
+            exit 0
+          fi
+          gh issue create --repo "$repo" --label 장애 \
+            --title "사이트 점검 실패 ($(date -u +'%Y-%m-%d %H:%M') UTC)" \
+            --body "10분 점검에서 실패했습니다. 자세한 응답 코드는 아래 실행 화면의 주석에서 볼 수 있습니다.
+
+          - 실행: $run_url
+          - 다음 확인: Server Ops 워크플로의 '상태 확인', '최근 오류 보기'
+          - 다시 성공하면 이 이슈는 자동으로 닫힙니다."
+
+      - name: 장애 이슈 닫기
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          repo="$GITHUB_REPOSITORY"
+          for n in $(gh issue list --repo "$repo" --label 장애 --state open --json number --jq '.[].number'); do
+            gh issue comment "$n" --repo "$repo" --body "점검이 다시 성공했습니다. 자동으로 닫습니다. ($GITHUB_SERVER_URL/$repo/actions/runs/$GITHUB_RUN_ID)"
+            gh issue close "$n" --repo "$repo"
+          done

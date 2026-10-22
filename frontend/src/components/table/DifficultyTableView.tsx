@@ -13,6 +13,7 @@ import { TableSearch } from "@/components/table/TableSearch";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
 import { ApiError } from "@/lib/api";
+import { tableNameLabel } from "@/lib/chart-labels";
 import {
   allGroupsKey,
   decidedGroups,
@@ -28,6 +29,7 @@ import { DEFAULT_VIEW_STATE, type TableViewState } from "@/lib/table-view-state"
 import type { TableSort } from "@/lib/table-sort";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
@@ -134,7 +136,7 @@ export function DifficultyTableView({
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-fg">{table.name}</h1>
+          <h1 className="text-xl font-semibold text-fg">{tableNameLabel(table.name, t)}</h1>
           <p className="mt-1 text-sm text-fg-sub">{t("Table.patternBasis")}</p>
           <TableCredit className="mt-1 text-xs text-fg-dim" />
         </div>
@@ -207,7 +209,8 @@ export function DifficultyTableView({
                     return copy;
                   })
                 }
-                onRecord={(entry, tier) => setRecordTarget({ entry, tier })}
+                // 비로그인 방문자(D43)는 기록을 입력할 수 없으므로 `기록` 버튼을 그리지 않는다(onRecord가 없으면 줄이 버튼을 만들지 않는다)
+                onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined}
               />
             ))}
           </div>

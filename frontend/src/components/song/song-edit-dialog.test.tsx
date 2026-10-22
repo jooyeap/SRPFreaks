@@ -23,13 +23,19 @@ function json(body: unknown, status = 200): Response {
 }
 
 describe("SongEditDialog", () => {
-  const fetchMock = vi.fn<typeof fetch>();
+  // 곡명 입력칸 아래의 중복 확인(GET /songs/title-check)은 저장 요청과 따로 답한다. 이 테스트들은 저장 요청만 본다.
+  const saveMock = vi.fn<typeof fetch>();
+  const fetchMock = saveMock;
   const onClose = vi.fn();
 
   beforeEach(() => {
-    fetchMock.mockReset();
+    saveMock.mockReset();
     onClose.mockReset();
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).includes("/songs/title-check")
+        ? Promise.resolve(json({ duplicate: false, songId: null, title: null }))
+        : saveMock(input, init),
+    );
   });
   afterEach(() => vi.unstubAllGlobals());
 

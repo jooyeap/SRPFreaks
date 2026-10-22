@@ -1,11 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
+import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
-import { SongDeleteControl } from "@/components/song/SongDeleteControl";
+import { SongManageDialog } from "@/components/song/SongManageDialog";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { SongHeader } from "@/components/song/SongHeader";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
@@ -14,9 +16,11 @@ import { GroupSongList, OtherCharts, TableInfoCard } from "@/components/song/Tab
 import { ApiError } from "@/lib/api";
 import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { difficultyLabel, formatTier, partLabel } from "@/lib/format";
+import { availableCombos } from "@/lib/song-admin";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
 
@@ -53,6 +57,8 @@ export function SongDetailView({
   const [recordOpen, setRecordOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<TableEntryTarget | null>(null);
   const [songEdit, setSongEdit] = useState<SongEditTarget | null>(null);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [chartAddOpen, setChartAddOpen] = useState(false);
 
   const song = useQuery({
     queryKey: songKeys.detail(songId),
@@ -75,10 +81,11 @@ export function SongDetailView({
   const chart = song.data ? resolveChart(song.data.difficulties, chartId) : null;
   const found = chart && groups ? findChart(groups, chart.id) : null;
 
+  const loggedIn = isLoggedInViewer(userId);
   const best = useQuery({
     queryKey: recordKeys.bestOfChart(userId, chart?.id ?? 0),
     queryFn: ({ signal }) => fetchBestRecord(chart?.id ?? 0, signal),
-    enabled: chart !== null,
+    enabled: chart !== null && loggedIn, // 비로그인(D43)은 내 기록이 없으므로 /records를 부르지 않는다(401 방지)
   });
 
   // 서열표를 받은 뒤에만 수정할 수 있다 (표 id와 현재 값이 필요하다). 표에 없는 채보는 "추가"가 된다.
@@ -144,7 +151,7 @@ export function SongDetailView({
   const data = song.data;
   const isTable = origin === "table";
   // 서열표에서 들어왔는데 이 채보가 서열표에 없다면 곡 목록 구성처럼 보여 주지 않고, 서열표 쪽 칸에 안내만 둔다
-  const myRecord = (
+  const myRecord = loggedIn ? (
     <MyRecordCard
       mine={found?.entry.mine ?? null}
       best={best.data ?? null}
@@ -152,6 +159,15 @@ export function SongDetailView({
       emphasizeSrn={isTable}
       onRecord={() => setRecordOpen(true)}
     />
+  ) : (
+    // 비로그인 방문자(D43): 곡 정보는 보이지만 내 기록은 로그인해야 입력·표시된다
+    <section aria-label={t("Song.myRecord")} className="flex flex-col items-start gap-3 rounded-lg border border-line bg-card p-4">
+      <h2 className="text-sm font-semibold text-fg-sub">{t("Song.myRecord")}</h2>
+      <p className="text-sm text-fg-sub">{t("Songs.loginToRecord")}</p>
+      <Link href="/login" className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg hover:bg-table-head">
+        {t("Nav.login")}
+      </Link>
+    </section>
   );
 
   return (
@@ -166,48 +182,22 @@ export function SongDetailView({
       <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start">
         <div className="contents md:flex md:flex-col md:gap-4">
           <div className="order-1 flex flex-col gap-4 md:order-none">
-            <SongHeader song={data} chart={chart} pattern={isTable ? (found?.entry.pattern ?? null) : null} />
-            {canShowTableEdit ? (
-              <button
-                type="button"
-                onClick={openTableEdit}
-                className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
-              >
-                {found ? t("Song.editTableEntry") : t("Song.addToTable")}
-              </button>
-            ) : null}
-            {canEditTable ? (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSongEdit({ kind: "song", song: data })}
-                  className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
-                >
-                  {t("Song.editSong")}
-                </button>
-                {chart ? (
+            <SongHeader
+              song={data}
+              chart={chart}
+              pattern={isTable ? (found?.entry.pattern ?? null) : null}
+              action={
+                canEditTable ? (
                   <button
                     type="button"
-                    onClick={() => setSongEdit({ kind: "chart", song: data, chart })}
-                    className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                    onClick={() => setManageOpen(true)}
+                    className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
                   >
-                    {t("Song.editChart")}
+                    {t("Song.manage")}
                   </button>
-                ) : null}
-              </div>
-            ) : null}
-            {canEditTable ? (
-              <SongDeleteControl
-                songId={data.id}
-                songTitle={data.title}
-                chartId={chart?.id ?? null}
-                chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
-                onDeleted={(target) => {
-                  // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
-                  router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
-                }}
-              />
-            ) : null}
+                ) : null
+              }
+            />
           </div>
           <div className="order-3 flex flex-col gap-4 md:order-none">
             {isTable ? (
@@ -260,6 +250,35 @@ export function SongDetailView({
       />
       <TableEntryEditDialog target={editTarget} onClose={() => setEditTarget(null)} />
       <SongEditDialog target={songEdit} onClose={() => setSongEdit(null)} />
+      {canEditTable ? (
+        <ChartAddDialog
+          open={chartAddOpen}
+          songId={data.id}
+          existing={data.difficulties}
+          // 서열표를 받은 상태에서만 서열표 값 칸을 보여 준다 (못 받았으면 채보만 추가하고 서열표는 나중에 `서열표에 추가`로)
+          tableId={canShowTableEdit ? tableId : null}
+          onClose={() => setChartAddOpen(false)}
+        />
+      ) : null}
+      {canEditTable ? (
+        <SongManageDialog
+          open={manageOpen}
+          onClose={() => setManageOpen(false)}
+          tableEditLabel={canShowTableEdit ? (found ? t("Song.editTableEntry") : t("Song.addToTable")) : null}
+          onEditTable={openTableEdit}
+          onEditSong={() => setSongEdit({ kind: "song", song: data })}
+          onEditChart={chart ? () => setSongEdit({ kind: "chart", song: data, chart }) : null}
+          onAddChart={availableCombos(data.difficulties).length > 0 ? () => setChartAddOpen(true) : null}
+          songId={data.id}
+          songTitle={data.title}
+          chartId={chart?.id ?? null}
+          chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
+          onDeleted={(target) => {
+            // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
+            router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

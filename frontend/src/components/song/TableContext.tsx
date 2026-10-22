@@ -32,18 +32,18 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
   return (
     <section aria-label={t("Song.tableInfo")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3.5">
       <h2 className="sr-only">{t("Song.tableInfo")}</h2>
-      <dl className="grid grid-cols-3 gap-2.5 text-sm">
-        <div>
-          <dt className="text-xs text-fg-dim">
-            {t("Song.ratingConstant")} <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
-          </dt>
-          <dd className="font-num text-[22px] font-bold leading-tight text-fg">
-            {formatTier(group.tier, t)}
-          </dd>
+      {/* 첫 줄: 도움말 `?` 하나. 둘째 줄: `레이팅 상수 난이도 7.0 · 추천 상 · 레벨 9.15`를 라벨 옆에 값이 오게 한 줄로 둔다.
+          (360px에서 라벨 아래에 큰 값을 두거나 3등분하면 라벨이 꺾이고 ?가 내려가서 이 모양으로 정했다. 폭이 모자라면 줄이 바뀌도록 flex-wrap.) */}
+      <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
+      {/* 모바일(좁은 폭)은 양 끝으로 벌려 한 줄을 채우고, md 이상은 왼쪽부터 일정한 간격(gap-x-12)으로 둬서 카드가 넓어도 항목이 멀리 떨어지지 않게 한다 */}
+      <dl className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-sm md:justify-start md:gap-x-12">
+        <div className="flex items-center gap-1.5">
+          <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Song.ratingConstant")}</dt>
+          <dd className="font-num text-lg font-bold leading-none text-fg">{formatTier(group.tier, t)}</dd>
         </div>
-        <div>
-          <dt className="text-xs text-fg-dim">{t("Nav.importBadge")}</dt>
-          <dd>
+        <div className="flex items-center gap-1.5">
+          <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Nav.importBadge")}</dt>
+          <dd className="flex items-center">
             {entry.recommend ? (
               <RecommendBadge value={entry.recommend} />
             ) : (
@@ -51,11 +51,17 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
             )}
           </dd>
         </div>
-        <div>
-          <dt className="text-xs text-fg-dim">{t("Song.fieldLevel")}</dt>
-          <dd className="font-num text-[22px] font-bold leading-tight text-fg">{formatLevel(entry.level)}</dd>
+        <div className="flex items-center gap-1.5">
+          <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Song.fieldLevel")}</dt>
+          <dd className="font-num text-lg font-bold leading-none text-fg">{formatLevel(entry.level)}</dd>
         </div>
       </dl>
+      {/* 스위치가 꺼진 채보는 기록만 남고 레이팅 목록에는 안 들어간다. 이유를 알 수 있게 모든 사용자에게 보여 준다 */}
+      {!entry.ratingEnabled ? (
+        <p role="note" className="rounded-lg border border-chip-line px-3 py-1.5 text-xs text-fg-sub">
+          {t("Song.ratingOff")}
+        </p>
+      ) : null}
       <p className="border-t border-row-line pt-2.5 text-xs text-fg-dim">
         {t.rich("Song.groupSummary", {
           tier: formatTier(group.tier, t),

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 유저 목록·상세 API (D26). 로그인한 사용자만 부를 수 있고(SecurityConfig의 /api/v1/** 규칙) 읽기 전용이다.
+ * 유저 목록·상세 API (D26). 로그인 없이도 부를 수 있고(D43, PublicReadPaths) 읽기 전용이다.
  * 공개를 켠 유저만 나오고, 응답에는 이메일·역할·Google ID가 없다.
  */
 @RestController

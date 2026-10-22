@@ -51,7 +51,8 @@ public class SuggestionService {
             throw new ApiException(ErrorCode.SUGGESTION_LIMIT);
         }
         Suggestion saved = suggestionRepository.save(Suggestion.create(userRepository.getReferenceById(userId),
-                request.category(), request.title(), request.content()));
+                request.category(), request.title(), request.content(),
+                request.requestedPart(), request.requestedDifficulty()));
         return SuggestionResponse.from(saved);
     }
 

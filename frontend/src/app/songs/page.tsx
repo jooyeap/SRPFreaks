@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useMemo } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { LoginBanner } from "@/components/LoginBanner";
 import { SongTabs } from "@/components/songs/SongTabs";
 import { SongListView } from "@/components/songs/SongListView";
 import { filtersFromParams, filtersToQuery, type SongListFilters } from "@/lib/song-list";
+import { ANONYMOUS_VIEWER_ID } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 
 /**
@@ -40,24 +41,16 @@ function SongsContent() {
       </>
     );
   }
-  if (status === "anonymous" || !user) {
-    return (
-      <>
-        <SongTabs current="songs" />
-        <section className="flex flex-col items-start gap-3">
-          <h1 className="text-xl font-semibold text-fg">{t("Home.songsTitle")}</h1>
-          <p className="text-sm text-fg-sub">{t("Songs.loginToSeeRecords")}</p>
-          <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-            {t("Nav.login")}
-          </Link>
-        </section>
-      </>
-    );
-  }
   return (
     <>
       <SongTabs current="songs" />
-      <SongListView userId={user.id} filters={filters} onFiltersChange={onFiltersChange} canRegister={user.role !== "USER"} />
+      {user ? null : <LoginBanner />}
+      <SongListView
+        userId={user?.id ?? ANONYMOUS_VIEWER_ID}
+        filters={filters}
+        onFiltersChange={onFiltersChange}
+        canRegister={user !== null && user.role !== "USER"}
+      />
     </>
   );
 }

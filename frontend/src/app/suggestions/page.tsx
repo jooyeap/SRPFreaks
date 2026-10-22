@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { SuggestionsView } from "@/components/suggestions/SuggestionsView";
-import { parseCategory } from "@/lib/suggestions";
+import { parseCategory, parseChartRequest } from "@/lib/suggestions";
 import { useTranslations } from "next-intl";
 
 /**
@@ -23,7 +23,7 @@ function SuggestionsContent() {
   }
   if (status === "anonymous" || !user) {
     return (
-      <section className="flex flex-col items-start gap-3">
+      <section className="flex min-h-[40svh] flex-col items-start justify-center gap-3">
         <h1 className="text-xl font-semibold text-fg">{t("Suggestions.heading")}</h1>
         <p className="text-sm text-fg-sub">{t("Pages.suggestionsLead")}</p>
         <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
@@ -32,9 +32,11 @@ function SuggestionsContent() {
       </section>
     );
   }
+  const chart = parseChartRequest(params.get("part"), params.get("difficulty"));
   return (
     <SuggestionsView
       viewerId={user.id}
+      initialChart={chart}
       initialCategory={parseCategory(params.get("category"))}
       initialTitle={(params.get("title") ?? "").slice(0, 100)}
     />

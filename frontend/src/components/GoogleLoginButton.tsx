@@ -49,7 +49,7 @@ export function GoogleLoginButton({ onSuccess }: { onSuccess?: () => void }) {
               });
           },
         });
-        id.renderButton(container, { type: "standard", theme: "outline", size: "large", text: "signin_with", locale });
+        id.renderButton(container, { type: "standard", theme: "outline", size: "large", text: "signin_with", locale, width: 280 });
       })
       .catch(() => {
         if (!cancelled) {

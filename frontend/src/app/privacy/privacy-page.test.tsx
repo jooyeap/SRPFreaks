@@ -41,4 +41,15 @@ describe("개인정보 처리방침", () => {
     expect(screen.getByRole("link", { name: "개인정보 처리방침" })).toHaveAttribute("href", "/privacy");
     expect(screen.getByText(/동의한 것으로 봅니다/)).toBeInTheDocument();
   });
+
+  it("로그인 버튼과 동의 안내는 한 카드 안에 들어 있다", () => {
+    render(
+      <AuthProvider>
+        <LoginPage />
+      </AuthProvider>,
+    );
+    const card = screen.getByTestId("login-card");
+    expect(card).toHaveClass("rounded-2xl", "border-line", "bg-card");
+    expect(card).toContainElement(screen.getByRole("link", { name: "개인정보 처리방침" }));
+  });
 });

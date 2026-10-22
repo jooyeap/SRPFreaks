@@ -4,6 +4,7 @@ import { RatedScore } from "@/components/table/RatedScore";
 import { StageBadge } from "@/components/table/StageBadge";
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { tableDetailHref } from "@/components/song/TableContext";
+import { patternLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
@@ -80,7 +81,7 @@ export function EntryRow({
         <RecommendBadge value={entry.recommend} />
       </span>
       <span className="text-fg-sub">
-        {entry.pattern ?? EMPTY_MARK}
+        {entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK}
       </span>
       <span>
         {onRecord ? (

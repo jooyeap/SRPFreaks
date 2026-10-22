@@ -28,6 +28,7 @@ import {
 import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
 import type { TableEntryResponse } from "@/lib/api-types";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
 
@@ -113,7 +114,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
       {hasFilters(filters) && group.entries.length === 0 ? (
         <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
       ) : null}
-      <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={(entry, tier) => setRecordTarget({ entry, tier })} />
+      <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined} />
       <ScrollTopButton lifted />
       <TableSearch userId={userId} groups={groups.data} />
       <RecordDialog

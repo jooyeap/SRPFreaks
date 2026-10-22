@@ -1,9 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import {
   CATEGORY_LABELS,
+  describeChartRequest,
   SUGGESTION_CATEGORIES,
   SUGGESTION_CONTENT_MAX,
   SUGGESTION_TITLE_MAX,
@@ -32,10 +33,14 @@ export function SuggestionForm({
   const t = useTranslations();
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
   } = useForm<SuggestionValues>({ resolver: zodResolver(makeSuggestionSchema(t)), defaultValues: initial });
+  const category = useWatch({ control, name: "category" });
+  const requestedPart = useWatch({ control, name: "requestedPart" });
+  const requestedDifficulty = useWatch({ control, name: "requestedDifficulty" });
 
   return (
     <form
@@ -44,7 +49,7 @@ export function SuggestionForm({
       onSubmit={handleSubmit(async (values) => {
         try {
           await onSubmit(values);
-          reset({ category: values.category, title: "", content: "" });
+          reset({ category: values.category, title: "", content: "", requestedPart: null, requestedDifficulty: null });
         } catch {
           // 실패 문구는 부모가 error로 넘겨 준다. 입력한 내용은 지우지 않는다.
         }
@@ -61,6 +66,13 @@ export function SuggestionForm({
           ))}
         </select>
       </label>
+      {category === "SONG_REQUEST" && requestedPart && requestedDifficulty ? (
+        // 가져오기 결과에서 넘어온 요청 채보. 고르는 칸이 아니라 알려 주기만 한다(관리자가 이 채보로 등록 창을 연다).
+        <p className="text-sm text-fg-sub">
+          {t("Suggestions.requestedChart")}{" "}
+          <span className="font-bold text-fg">{describeChartRequest(requestedPart, requestedDifficulty)}</span>
+        </p>
+      ) : null}
       <label className="flex flex-col gap-1 text-sm text-fg-sub">
         {t("Common.fieldTitle")}
         <input type="text" maxLength={SUGGESTION_TITLE_MAX + 50} className={FIELD} {...register("title")} />

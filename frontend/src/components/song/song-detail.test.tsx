@@ -188,7 +188,7 @@ describe("SongDetailView", () => {
     expect(within(mine).getByLabelText("달성 단계 EXC")).toBeInTheDocument();
     expect(within(mine).getByText("2026-10-05")).toBeInTheDocument(); // UTC 15:00 = 서울 다음 날 00:00
     expect(within(mine).getByText("SRN+")).toBeInTheDocument();
-    expect(within(mine).getByText("서열표는 SRN+, Premium Free 기준입니다.")).toBeInTheDocument();
+    expect(within(mine).getByText("서열표는 SRN+, Premium Free, S 랭 기준입니다.")).toBeInTheDocument();
 
     const neighbors = screen.getByRole("region", { name: "같은 난이도의 곡" });
     expect(within(neighbors).getByRole("link", { name: /앞곡/ })).toHaveAttribute("href", "/songs/9?from=table&chart=90");
@@ -241,16 +241,78 @@ describe("SongDetailView", () => {
     await waitFor(() => expect(within(table).getAllByRole("link")[1]).toHaveAttribute("aria-current", "true"));
   });
 
-  it("일반 사용자에게는 서열표 값 수정 버튼이 없다", async () => {
+  /** 관리 창을 연다. 수정·삭제 항목은 모두 이 창 안에 있다 */
+  async function openManage() {
+    fireEvent.click(await screen.findByRole("button", { name: "관리" }));
+    return await screen.findByRole("dialog", { name: "곡 관리" });
+  }
+
+  it("레이팅 반영이 꺼진 채보는 서열표 정보에 이유를 알려 주고, 켜진 채보에는 보이지 않는다", async () => {
+    const view = renderView("table", 10);
+    await screen.findByRole("region", { name: "서열표 정보" });
+    expect(screen.queryByText(/레이팅 반영이 꺼져 있어/)).toBeNull();
+    view.unmount();
+
+    mainEntry.ratingEnabled = false;
+    try {
+      renderView("table", 10);
+      expect(await screen.findByText(/레이팅 반영이 꺼져 있어/)).toBeInTheDocument();
+    } finally {
+      mainEntry.ratingEnabled = true;
+    }
+  });
+
+  it("일반 사용자에게는 관리 버튼이 없다", async () => {
     renderView("table", 10);
     await screen.findByRole("region", { name: "서열표 정보" });
+    expect(screen.queryByRole("button", { name: "관리" })).toBeNull();
     expect(screen.queryByRole("button", { name: "서열표 값 수정" })).toBeNull();
     expect(screen.queryByRole("button", { name: "서열표에 추가" })).toBeNull();
   });
 
+  it("ROOT·ADMIN은 관리 버튼 하나만 보이고, 수정·삭제 항목은 관리 창 안에 모여 있다", async () => {
+    renderView("table", 10, false, true);
+    await screen.findByRole("region", { name: "서열표 정보" });
+    // 화면에는 줄줄이 늘어놓지 않는다
+    expect(screen.queryByRole("button", { name: "곡 정보 수정" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "곡 삭제" })).toBeNull();
+
+    const dialog = await openManage();
+    for (const name of ["서열표 값 수정", "곡 정보 수정", "채보 추가", "채보 수정", "채보 삭제", "곡 삭제"]) {
+      expect(within(dialog).getByRole("button", { name })).toBeInTheDocument();
+    }
+  });
+
+  it("관리 창에서 항목을 누르면 관리 창은 닫히고 그 수정 창이 열린다", async () => {
+    renderView("songs", 10, false, true);
+    const dialog = await openManage();
+    fireEvent.click(within(dialog).getByRole("button", { name: "곡 정보 수정" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "곡 관리" })).toBeNull());
+    expect(await screen.findByRole("dialog", { name: "곡 정보 수정" })).toBeInTheDocument();
+  });
+
+  it("관리 창의 채보 추가를 누르면 관리 창은 닫히고 이 곡에 없는 조합만 고르는 창이 열린다", async () => {
+    renderView("songs", 10, false, true);
+    const dialog = await openManage();
+    fireEvent.click(within(dialog).getByRole("button", { name: "채보 추가" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "곡 관리" })).toBeNull());
+    const add = await screen.findByRole("dialog", { name: "채보 추가" });
+    // 이 곡에는 Guitar MAS·EXT, Bass MAS가 있어서 8가지 중 5가지가 남는다
+    expect(within(add).getByLabelText("파트·난이도").querySelectorAll("option")).toHaveLength(5);
+  });
+
+  it("삭제는 관리 창 안에서 확인 문구를 먼저 보여 준다", async () => {
+    renderView("songs", 10, false, true);
+    const dialog = await openManage();
+    fireEvent.click(within(dialog).getByRole("button", { name: "곡 삭제" }));
+    expect(within(dialog).getByRole("group", { name: "삭제 확인" })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url, init]) => init?.method === "DELETE" && String(url).includes("/songs/"))).toBe(false);
+  });
+
   it("ROOT·ADMIN(canEditTable)이면 서열표 값 수정 창이 열리고 지금 값이 채워져 있다", async () => {
     renderView("table", 10, false, true);
-    fireEvent.click(await screen.findByRole("button", { name: "서열표 값 수정" }));
+    const manage = await openManage();
+    fireEvent.click(within(manage).getByRole("button", { name: "서열표 값 수정" }));
 
     expect(screen.getByLabelText("레이팅 상수 난이도")).toHaveValue("5.8");
     expect(screen.getByLabelText("추천도")).toHaveValue("상");
@@ -259,7 +321,8 @@ describe("SongDetailView", () => {
 
   it("ROOT·ADMIN이면 곡 목록에서 들어온 곡 상세에서도 수정 버튼이 보인다", async () => {
     renderView("songs", 10, false, true);
-    expect(await screen.findByRole("button", { name: "서열표 값 수정" })).toBeInTheDocument();
+    const manage = await openManage();
+    expect(await within(manage).findByRole("button", { name: "서열표 값 수정" })).toBeInTheDocument();
   });
 
   it("서열표를 받지 못하면(오류) 수정·추가 버튼을 숨긴다 (이미 있는 줄을 빈 값으로 덮어쓰지 않게)", async () => {
@@ -273,7 +336,9 @@ describe("SongDetailView", () => {
     });
     renderView("table", 10, false, true);
     expect(await screen.findByText("이 채보는 서열표에 없습니다.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /서열표/ })).toBeNull();
+    const manage = await openManage();
+    expect(within(manage).queryByRole("button", { name: /서열표/ })).toBeNull();
+    expect(within(manage).getByRole("button", { name: "곡 정보 수정" })).toBeInTheDocument(); // 곡 정보 수정은 서열표와 무관하게 쓸 수 있다
   });
 
   it("서열표에 없는 채보는 '서열표에 추가' 버튼이 보인다", async () => {
@@ -287,7 +352,8 @@ describe("SongDetailView", () => {
         ],
       });
     renderView("table", 13, false, true);
-    expect(await screen.findByRole("button", { name: "서열표에 추가" })).toBeInTheDocument();
+    const manage = await openManage();
+    expect(await within(manage).findByRole("button", { name: "서열표에 추가" })).toBeInTheDocument();
   });
 
   it("곡이 없으면(404) 안내 문구를 보여 준다", async () => {

@@ -14,6 +14,43 @@ export function toHundredths(rate: number): number | null {
   return Number.isFinite(rate) ? Math.round(rate * 100) : null;
 }
 
+/** 달성률 입력칸의 최댓값. 입력은 소수점 없는 정수(0~10000)이고 ÷100이 실제 달성률이다(9971 → 99.71). */
+export const RATE_INPUT_MAX = 10000;
+
+/**
+ * 입력칸의 정수 글자를 달성률 숫자로 바꾼다. 정수 0~10000이 아니면 null.
+ * - 기본: 100분의 1 단위 정수다. `"9971"` → 99.71, `"9650"` → 96.50, `"10000"` → 100.
+ * - **정확히 세 자리**(앞자리가 0이 아닌)는 `96.5`를 점 없이 `965`로 치는 습관을 받아 주려고 끝에 0을 붙여 읽는다: `"965"` → 96.50.
+ *   단 `"100"`은 100%로 친 것으로 보고 100.00으로 읽는다(10.00%가 아니다).
+ * - 앞자리가 0이면(`"050"`) 붙이지 않고 글자 그대로 읽는다(0.50). 수정 창이 돌려주는 `"0500"`(5.00%)도 같은 이유로 4자리다.
+ * 100으로 나누기 전에 정수 상태에서 범위를 보므로 부동소수점 오차가 끼지 않는다.
+ */
+export function rateFromInput(text: string): number | null {
+  const trimmed = text.trim();
+  if (!/^\d{1,5}$/.test(trimmed)) {
+    return null;
+  }
+  const typed = Number(trimmed);
+  if (typed > RATE_INPUT_MAX) {
+    return null;
+  }
+  let hundredths = typed;
+  if (trimmed.length === 3 && trimmed[0] !== "0") {
+    hundredths = typed === 100 ? RATE_INPUT_MAX : typed * 10;
+  }
+  return hundredths / 100;
+}
+
+/**
+ * 달성률 숫자(99.71)를 입력칸의 정수 글자("9971")로 바꾼다(수정 창의 초기값).
+ * 1.00~9.99%는 100분의 1 단위로 세 자리가 되는데, 세 자리는 입력 규칙상 끝에 0이 붙어 다른 값으로 읽히므로
+ * 앞에 0을 붙여 네 자리로 돌려준다(5.00% → "0500"). 그래야 열었다가 저장해도 값이 바뀌지 않는다.
+ */
+export function rateToInput(rate: number): string {
+  const text = String(Math.round(rate * 100));
+  return text.length === 3 ? `0${text}` : text;
+}
+
 /**
  * 달성률 표시: 100.00 이상은 `MAX`, 그 외는 소수점 둘째 자리까지 (86.78, 95.50).
  * 기록이 없거나(null/undefined) 숫자가 아니면 `–`.

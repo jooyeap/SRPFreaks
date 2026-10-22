@@ -28,7 +28,7 @@ import { chartTierAttrs, previewScore } from "@/lib/chart-tier";
 import type { SaveOutcome } from "@/components/record/SaveResultCard";
 import { OneHandPad } from "@/components/record/OneHandPad";
 import { RatingPreviewLine } from "@/components/record/RatingPreviewLine";
-import { formatRate, formatScore, formatTier } from "@/lib/format";
+import { formatRate, formatScore, formatTier, rateFromInput } from "@/lib/format";
 import { achievementStage } from "@/lib/stage";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 import { useTranslations } from "next-intl";
@@ -119,11 +119,14 @@ export function RecordForm({
   const oneHand = useOneHandMode();
   const maxRate = isMaxRate(rate);
   const fullCombo = maxRate || fullComboChecked; // 100.00이면 풀콤보를 자동으로 켠다 (DESIGN-UI 10장)
-  const rateNumber = rate.trim() === "" ? null : Number(rate.trim());
-  const stage = rateNumber === null || Number.isNaN(rateNumber) ? null : achievementStage(rateNumber, fullCombo);
+  // 입력칸은 소수점 없는 정수(9971)이고 ÷100이 실제 달성률(99.71)이다. 범위 밖이면 null
+  const rateNumber = rateFromInput(rate);
+  const stage = rateNumber === null ? null : achievementStage(rateNumber, fullCombo);
   // 입력한 달성률로 곡 점수를 바로 계산한다(저장하지 않는 미리보기). 레이팅 상수 난이도가 없거나 달성률이 범위 밖이면 null
   const preview =
     chart.tier === undefined || chart.tier === null || rateNumber === null ? null : previewScore(chart.tier, rateNumber);
+
+  const rateField = register("achievementRate");
 
   const mutation = useMutation({
     mutationFn: (values: RecordFormValues) => {
@@ -212,20 +215,26 @@ export function RecordForm({
               id="achievementRate"
               type="text"
               // 한 손 모드에서는 화면 키보드를 띄우지 않고(inputMode none) 아래 숫자 패드로만 입력한다
-              inputMode={oneHand ? "none" : "decimal"}
+              inputMode={oneHand ? "none" : "numeric"}
               readOnly={oneHand}
               autoComplete="off"
-              placeholder="0.00 ~ 100.00"
+              placeholder="0 ~ 10000"
               aria-invalid={errors.achievementRate ? true : undefined}
               aria-describedby={errors.achievementRate ? "achievementRate-error" : undefined}
               className="w-full min-w-0 bg-transparent font-num text-[26px] font-bold text-fg outline-none placeholder:text-base placeholder:font-normal placeholder:text-fg-faint"
-              {...register("achievementRate")}
+              {...rateField}
+              // 숫자 이외의 글자(소수점 포함)는 칸에 들어가지 못하게 지우고, 5자리(10000)까지만 받는다.
+              // RHF의 register(options.onChange)는 값을 읽은 뒤에 불리므로, 읽기 전에 고치려고 onChange를 직접 감싼다
+              onChange={(event) => {
+                event.target.value = event.target.value.replace(/\D/g, "").slice(0, 5);
+                return rateField.onChange(event);
+              }}
             />
-            <span className="text-sm text-fg-dim" aria-hidden="true">
-              %
-            </span>
           </div>
           <p className="text-[11px] text-fg-faint">{t("Record.rateHint")}</p>
+          <p aria-live="polite" className="min-h-4 font-num text-xs text-fg-sub">
+            {rateNumber === null ? "" : t("Record.rateInterpreted", { value: formatRate(rateNumber) })}
+          </p>
         </div>
         <div className="flex w-28 shrink-0 flex-col gap-1.5">
           <span className="text-xs font-bold text-fg-dim">{t("Record.stageDisplay")}</span>

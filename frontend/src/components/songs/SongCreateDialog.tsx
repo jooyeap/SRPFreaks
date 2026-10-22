@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { ApiError } from "@/lib/api";
 import { difficultyLabel, partLabel } from "@/lib/format";
 import {
@@ -17,10 +17,12 @@ import {
   registerSong,
   SONG_CREATE_AFFECTED_KEYS,
   makeSongCreateSchema,
+  type SongCreateInitial,
   type SongCreateValues,
 } from "@/lib/song-admin";
 import { PATTERN_CHOICES, RECOMMEND_CHOICES } from "@/lib/table-entry-admin";
 import { useTranslations } from "next-intl";
+import { TitleDuplicateNotice } from "@/components/song/TitleDuplicateNotice";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
@@ -31,7 +33,18 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
  * tableId가 있으면 서열표 화면에서 연 것이라 채보마다 서열표 값(기준 난이도·추천도·속성)을 같이 받고 서열표에도 추가한다.
  * 닫으면 안의 폼을 지워서(언마운트) 다시 열 때 빈 폼으로 시작한다.
  */
-export function SongCreateDialog({ open, tableId, onClose }: { open: boolean; tableId: number | null; onClose: () => void }) {
+export function SongCreateDialog({
+  open,
+  tableId,
+  initial = null,
+  onClose,
+}: {
+  open: boolean;
+  tableId: number | null;
+  /** 건의에서 열 때 미리 채울 값(곡명과 요청 채보). 레벨·기준 난이도 등은 관리자가 직접 넣는다. */
+  initial?: SongCreateInitial | null;
+  onClose: () => void;
+}) {
   const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -70,14 +83,22 @@ export function SongCreateDialog({ open, tableId, onClose }: { open: boolean; ta
           <h2 id={titleId} className="mb-3 text-lg font-extrabold">
             {t("Songs.create")}
           </h2>
-          <SongCreateForm tableId={tableId} onDone={onClose} />
+          <SongCreateForm tableId={tableId} initial={initial} onDone={onClose} />
         </>
       ) : null}
     </dialog>
   );
 }
 
-function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: () => void }) {
+function SongCreateForm({
+  tableId,
+  initial,
+  onDone,
+}: {
+  tableId: number | null;
+  initial: SongCreateInitial | null;
+  onDone: () => void;
+}) {
   const t = useTranslations();
   const queryClient = useQueryClient();
   // 등록 진행 상태(곡/채보 id). 렌더가 바뀌어도 유지돼야 해서 ref에 둔다. 실패 후 다시 시도할 때 이미 만든 것을 건너뛴다.
@@ -91,8 +112,9 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
     control,
     handleSubmit,
     formState: { errors },
-  } = useForm<SongCreateValues>({ resolver: zodResolver(schema), defaultValues: emptySongCreate(), mode: "onTouched" });
+  } = useForm<SongCreateValues>({ resolver: zodResolver(schema), defaultValues: emptySongCreate(initial ?? undefined), mode: "onTouched" });
   const { fields, append, remove } = useFieldArray({ control, name: "charts" });
+  const titleValue = useWatch({ control, name: "title" });
 
   const mutation = useMutation({
     mutationFn: (values: SongCreateValues) => registerSong(values, tableId, progress.current),
@@ -156,6 +178,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
               {errors.title.message}
             </p>
           ) : null}
+          <TitleDuplicateNotice title={titleValue ?? ""} />
         </div>
 
         <div className="flex flex-wrap gap-4">
@@ -268,6 +291,12 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
                     </select>
                   </div>
                 ) : null}
+                {tableId !== null ? (
+                  <label className="flex min-h-9 items-center gap-2 text-sm text-fg-sub">
+                    <input type="checkbox" aria-label={t("SongCreate.chartRating", { n })} className="size-4" {...register(`charts.${index}.ratingEnabled`)} />
+                    {t("Song.ratingEnabled")}
+                  </label>
+                ) : null}
                 {chartErrors?.tier ? (
                   <p role="alert" className="text-sm text-fg">
                     {chartErrors.tier.message}
@@ -292,6 +321,7 @@ function SongCreateForm({ tableId, onDone }: { tableId: number | null; onDone: (
         </div>
       </fieldset>
 
+      {tableId !== null ? <p className="text-xs text-fg-dim">{t("Song.offNote")}</p> : null}
       <p className="text-xs text-fg-dim">
         {tableId !== null
           ? t("SongCreate.noteTable")

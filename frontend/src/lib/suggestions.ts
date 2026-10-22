@@ -7,6 +7,8 @@ import type {
   SuggestionResponse,
   SuggestionStatus,
 } from "@/lib/api-types";
+import { difficultyLabel, partLabel } from "@/lib/format";
+import type { DifficultyType, InstrumentPart } from "@/lib/types";
 import type { Translator } from "@/i18n/translator";
 import type { MessageKey } from "@/i18n/translator";
 
@@ -48,6 +50,27 @@ export function parseCategory(value: string | null): SuggestionCategory | null {
   return SUGGESTION_CATEGORIES.find((category) => category === value) ?? null;
 }
 
+const PARTS: readonly InstrumentPart[] = ["GUITAR", "BASS"];
+const DIFFICULTIES: readonly DifficultyType[] = ["BASIC", "ADVANCED", "EXTREME", "MASTER"];
+
+/**
+ * 주소 쿼리의 파트·난이도를 안전하게 읽는다. 둘 다 올바른 값일 때만 한 쌍으로 돌려주고, 하나라도 이상하면 null이다
+ * (서버도 한 쌍이 아니면 400이라, 화면에서 먼저 걸러 이상한 주소로 폼이 막히지 않게 한다).
+ */
+export function parseChartRequest(
+  part: string | null,
+  difficulty: string | null,
+): { part: InstrumentPart; difficulty: DifficultyType } | null {
+  const p = PARTS.find((value) => value === part);
+  const d = DIFFICULTIES.find((value) => value === difficulty);
+  return p && d ? { part: p, difficulty: d } : null;
+}
+
+/** 요청 채보 표기: `Guitar | MAS`. 가져오기 결과 화면의 표기와 같다. */
+export function describeChartRequest(part: InstrumentPart, difficulty: DifficultyType): string {
+  return `${partLabel(part)} | ${difficultyLabel(difficulty)}`;
+}
+
 /** 건의 보내기 폼 검증. 서버는 앞뒤 공백을 잘라 저장하므로 공백만 있는 값은 빈 값으로 본다. */
 export function makeSuggestionSchema(t: Translator) {
   return z.object({
@@ -62,12 +85,26 @@ export function makeSuggestionSchema(t: Translator) {
       .trim()
       .min(1, t("Validation.contentRequired"))
       .max(SUGGESTION_CONTENT_MAX, t("Validation.contentMax", { max: SUGGESTION_CONTENT_MAX })),
+    // 곡 추가 건의에 붙는 요청 채보. 폼에서 고르지 않고 가져오기 링크가 채워 주며, 한 쌍으로만 보낸다.
+    requestedPart: z.enum(["GUITAR", "BASS"]).nullish(),
+    requestedDifficulty: z.enum(["BASIC", "ADVANCED", "EXTREME", "MASTER"]).nullish(),
   });
 }
 export type SuggestionValues = z.infer<ReturnType<typeof makeSuggestionSchema>>;
 
 export function createSuggestion(values: SuggestionValues): Promise<SuggestionResponse> {
-  return apiFetch<SuggestionResponse>("/suggestions", { method: "POST", body: values });
+  // 요청 채보는 곡 추가 건의에서만, 그리고 한 쌍일 때만 보낸다. 종류를 바꿨는데 값이 남아 있어도 서버 400을 만들지 않는다.
+  const withChart = values.category === "SONG_REQUEST" && values.requestedPart && values.requestedDifficulty;
+  return apiFetch<SuggestionResponse>("/suggestions", {
+    method: "POST",
+    body: {
+      category: values.category,
+      title: values.title,
+      content: values.content,
+      requestedPart: withChart ? values.requestedPart : null,
+      requestedDifficulty: withChart ? values.requestedDifficulty : null,
+    },
+  });
 }
 
 export function fetchMySuggestions(

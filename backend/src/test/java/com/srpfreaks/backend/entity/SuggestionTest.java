@@ -10,6 +10,33 @@ class SuggestionTest {
     private static final User USER = User.create("sub", "a@example.com", "tester");
 
     @Test
+    void 곡_추가_건의는_요청_채보의_파트와_난이도를_함께_저장한다() {
+        Suggestion s = Suggestion.create(USER, SuggestionCategory.SONG_REQUEST, "곡", "내용",
+                InstrumentPart.BASS, DifficultyType.MASTER);
+
+        assertThat(s.getRequestedPart()).isEqualTo(InstrumentPart.BASS);
+        assertThat(s.getRequestedDifficulty()).isEqualTo(DifficultyType.MASTER);
+    }
+
+    @Test
+    void 일반_건의는_파트와_난이도가_비어_있다() {
+        Suggestion s = Suggestion.create(USER, SuggestionCategory.BUG, "제목", "내용");
+
+        assertThat(s.getRequestedPart()).isNull();
+        assertThat(s.getRequestedDifficulty()).isNull();
+    }
+
+    @Test
+    void 파트와_난이도는_한_쌍이고_곡_추가_건의에서만_받는다() {
+        assertThatThrownBy(() -> Suggestion.create(USER, SuggestionCategory.SONG_REQUEST, "곡", "내용",
+                InstrumentPart.GUITAR, null)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Suggestion.create(USER, SuggestionCategory.SONG_REQUEST, "곡", "내용",
+                null, DifficultyType.MASTER)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Suggestion.create(USER, SuggestionCategory.BUG, "제목", "내용",
+                InstrumentPart.GUITAR, DifficultyType.MASTER)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void 새_건의는_접수_상태로_시작하고_앞뒤_공백을_잘라_저장한다() {
         Suggestion s = Suggestion.create(USER, SuggestionCategory.BUG, "  제목  ", "\n 내용\n둘째 줄 \n");
 

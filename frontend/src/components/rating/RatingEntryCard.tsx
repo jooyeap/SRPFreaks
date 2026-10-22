@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { chartTierAttrs } from "@/lib/chart-tier";
+import { patternLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
 import type { SkillEntryResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
@@ -48,7 +49,7 @@ export function RatingEntryCard({
             n: (c) => <span className="font-num">{c}</span>,
             tier: formatTier(entry.tier, t),
             constant: formatScore(entry.ratingConstant),
-            pattern: entry.pattern ?? EMPTY_MARK,
+            pattern: entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK,
           })}
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-1.5">

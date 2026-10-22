@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { SongDetailView } from "@/components/song/SongDetailView";
 import { parseId, parseOrigin } from "@/lib/songs";
+import { ANONYMOUS_VIEWER_ID } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 
 /**
@@ -23,18 +23,6 @@ function SongDetailPage() {
   if (status === "loading") {
     return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
-  if (status === "anonymous" || !user) {
-    return (
-      <section className="flex flex-col items-start gap-3">
-        <h1 className="text-xl font-semibold text-fg">{t("Songs.detailTitle")}</h1>
-        <p className="text-sm text-fg-sub">{t("Songs.loginToSeeDetail")}</p>
-        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
-          {t("Nav.login")}
-        </Link>
-      </section>
-    );
-  }
-
   const songId = parseId(params.songId);
   if (songId === null) {
     return <p role="alert" className="text-sm text-fg">{t("Songs.notFoundSong")}</p>;
@@ -44,8 +32,8 @@ function SongDetailPage() {
       songId={songId}
       chartId={parseId(search.get("chart"))}
       origin={parseOrigin(search.get("from"))}
-      userId={user.id}
-      canEditTable={user.role !== "USER"}
+      userId={user?.id ?? ANONYMOUS_VIEWER_ID}
+      canEditTable={user !== null && user.role !== "USER"}
     />
   );
 }
