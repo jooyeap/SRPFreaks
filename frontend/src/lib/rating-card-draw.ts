@@ -117,7 +117,7 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
   const totalSize = portrait ? 104 : 120;
   ctx.font = `700 ${totalSize}px ${f.num}`;
   const totalW = ctx.measureText(h.totalText).width;
-  const totalBase = y0 + (portrait ? 148 : 100);
+  const totalBase = y0 + (portrait ? 148 : 96);
   withGlow(ctx, h.tier, () => text(ctx, h.totalText, right, totalBase, `700 ${totalSize}px ${f.num}`, tierFill(right - totalW, totalBase, totalW), "right"));
 
   // 닉네임 + 티어 칩
@@ -147,7 +147,7 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
 
   // 단계별 곡 수 (가로: 합계 아래 오른쪽, 세로: 닉네임 줄 아래 왼쪽)
   let cx = portrait ? x0 : right;
-  const countY = y0 + (portrait ? 176 : 104) + (portrait ? 0 : 0);
+  const countY = y0 + (portrait ? 176 : 100);
   const items = portrait ? h.counts : [...h.counts].reverse();
   for (const c of items) {
     const label = `${c.label} `;
@@ -202,8 +202,21 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts): void {
   const rateW = ctx.measureText(tile.rateText).width;
   text(ctx, tile.rateText, right, y + 28, `600 17px ${f.num}`, tile.stageColor, "right");
 
-  const rightBlock = Math.max(scoreW, rateW) + 20;
-  const textMax = w - 24 - 16 - rightBlock;
+
+  // 속성 칩: 곡명 줄의 오른쪽(`rate · stage` 왼쪽). 아래 줄은 알약과 점수가 이미 차지해서 여기에 둔다.
+  let chipW = 0;
+  if (tile.patternText) {
+    ctx.font = `700 12px ${f.sans}`;
+    chipW = ctx.measureText(tile.patternText).width + 16;
+    const chipX = right - rateW - 12 - chipW;
+    roundRect(ctx, chipX, y + 13, chipW, 20, 10);
+    ctx.strokeStyle = "#3a4258";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    text(ctx, tile.patternText, chipX + chipW / 2, y + 28, `700 12px ${f.sans}`, TEXT_SUB, "center");
+    chipW += 12;
+  }
+  const textMax = w - 24 - 16 - rateW - chipW - 12;
 
   // 곡명
   const title = truncateText(tile.title, textMax, (s) => {
@@ -228,19 +241,6 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts): void {
   ctx.restore();
   text(ctx, tile.partText, left + 7, pillY + 16, `700 13px ${f.num}`, tile.partText === "Bass" ? PART_BASS : PART_GUITAR);
   text(ctx, tile.diffText, left + partW + 7, pillY + 16, `700 13px ${f.num}`, DIFF_TEXT);
-
-  if (tile.patternText) {
-    ctx.font = `700 12px ${f.sans}`;
-    const chipW = ctx.measureText(tile.patternText).width + 16;
-    const chipX = left + partW + diffW + 8;
-    if (chipX + chipW <= x + w - rightBlock) {
-      roundRect(ctx, chipX, pillY + 1, chipW, pillH - 2, (pillH - 2) / 2);
-      ctx.strokeStyle = "#3a4258";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      text(ctx, tile.patternText, chipX + chipW / 2, pillY + 16, `700 12px ${f.sans}`, TEXT_SUB, "center");
-    }
-  }
 }
 
 /** 카드 전체를 그린다. 캔버스 크기는 호출하는 쪽이 model.width × model.height로 맞춰 둔다. */

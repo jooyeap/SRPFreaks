@@ -108,7 +108,7 @@ interface LayoutGeometry {
  * 숫자는 시안(Tile-Grid-4 / Portrait-Tile)에서 눈으로 맞춘 값이다.
  */
 export const LAYOUT_GEOMETRY: Record<CardLayout, LayoutGeometry> = {
-  landscape: { width: 1920, cols: 5, padX: 52, padTop: 36, headerH: 104, tileH: 84, tileGap: 10, sectionGap: 22, titleH: 34, titleGap: 10, footH: 60 },
+  landscape: { width: 1920, cols: 5, padX: 52, padTop: 36, headerH: 140, tileH: 84, tileGap: 10, sectionGap: 22, titleH: 34, titleGap: 10, footH: 60 },
   portrait: { width: 1080, cols: 2, padX: 52, padTop: 40, headerH: 188, tileH: 84, tileGap: 10, sectionGap: 22, titleH: 34, titleGap: 10, footH: 60 },
 };
 
