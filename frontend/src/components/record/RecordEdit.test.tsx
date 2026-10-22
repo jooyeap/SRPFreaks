@@ -74,28 +74,24 @@ describe("기록 수정 / 삭제", () => {
       </QueryClientProvider>,
     );
   }
-  // 기록이 있으면 먼저 분기 화면이 나오고, `기존 기록 수정`을 고르면 가장 높은 기록의 수정 화면이 된다
+  // 기록이 있어도 먼저 빈 등록 폼이 열리고, 제목 줄 `기존 기록 수정`을 누르면 가장 높은 기록의 수정 화면이 된다
   async function openEdit() {
-    // 기록이 있는 채보는 먼저 "기존 기록 수정 / 새 기록 등록"을 고른다
-    fireEvent.click(await screen.findByRole("button", { name: /^기존 기록 수정/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "기존 기록 수정" }));
     await screen.findByRole("heading", { name: "기록 수정" });
     await screen.findByLabelText("달성률");
   }
   const callsOf = (method: string) => fetchMock.mock.calls.filter((c) => c[1]?.method === method);
 
-  it("기록이 있으면 폼 전에 `기존 기록 수정 / 새 기록 등록`을 먼저 고르게 하고, 고르기 전에는 폼이 없다", async () => {
+  it("기록이 있어도 선택 화면 없이 빈 등록 폼으로 바로 열리고, `기존 기록 수정` 버튼이 있다", async () => {
     renderDialog();
-    const edit = await screen.findByRole("button", { name: /^기존 기록 수정/ });
-    expect(edit).toHaveTextContent("가장 높은 기록: 달성률 91.25");
-    expect(screen.getByRole("button", { name: /^새 기록 등록/ })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
-    expect(screen.queryByLabelText("달성률")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /^새 기록 등록/ }));
+    // 기록을 불러온 뒤의 안내가 나올 때까지 기다린다(불러오기 전에는 "첫 기록" 안내가 먼저 보일 수 있다)
+    expect(await screen.findByText("새 기록을 등록합니다. 기존 기록은 그대로 남습니다.")).toBeInTheDocument();
     expect(await screen.findByLabelText("달성률")).toHaveValue(""); // 빈 등록 폼
-    expect(screen.getByText("새 기록을 등록합니다. 기존 기록은 그대로 남습니다.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "기존 기록 수정" })).toBeInTheDocument();
   });
 
-  it("기록이 없는 채보는 분기 없이 바로 등록 폼이 열린다", async () => {
+  it("기록이 없는 채보도 바로 등록 폼이 열리고 `기존 기록 수정` 버튼은 없다", async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.endsWith("/auth/refresh")) return Promise.resolve(json(AUTH));
@@ -103,7 +99,7 @@ describe("기록 수정 / 삭제", () => {
     });
     renderDialog();
     await waitFor(() => expect(screen.getByLabelText("달성률")).toBeInTheDocument());
-    expect(screen.queryByRole("button", { name: /^기존 기록 수정/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "기존 기록 수정" })).toBeNull();
   });
 
   it("기록이 있으면 `기존 기록 수정`을 고르면 가장 높은 기록의 수정 화면이 되고 폼이 기록 값으로 채워진다", async () => {
