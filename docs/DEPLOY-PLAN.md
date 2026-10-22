@@ -38,6 +38,7 @@
 2. 한 번 손으로 실행해 본다: `~/gitalog/scripts/deploy/backup-db.sh` → `~/backups/srpfreaks-날짜.sql.gz`가 생기고 `백업 완료`가 나오면 성공이다.
 3. cron 등록(`crontab -e`): `17 19 * * * ~/gitalog/scripts/deploy/backup-db.sh >> ~/backups/backup.log 2>&1` (매일 04:17 KST = 19:17 UTC)
 4. 보관: 기본 14일(`BACKUP_KEEP_DAYS`로 변경). 서버 디스크가 작으니 `du -sh ~/backups`를 가끔 확인한다.
+5. **자동 점검(2026-10-22)**: `.github/workflows/backup-check.yml`이 매일 06:00 KST에 서버의 가장 최근 백업을 확인한다(`scripts/deploy/check-backups.sh`, 읽기만 함). 최근 백업이 30시간보다 오래됐거나, 없거나, 너무 작거나, 압축이 깨졌으면 실패해서 GitHub 알림이 온다. Actions 화면에서 `Backup Check`를 `Run workflow`로 눌러 언제든 직접 확인할 수도 있다. 실행 로그는 공개라서 개수·나이·크기만 출력하고 파일 이름은 내지 않는다. 정리 스크립트는 `.sql.gz`만 지우므로, 예전에 손으로 만든 `.sql`은 점검 결과에 "참고"로만 나온다(직접 지워야 한다).
    - **빌드 캐시 자동 정리(2026-10-22)**: 서버에서 이미지를 직접 빌드해서 캐시가 쌓인다(10일에 약 10GB). 배포가 끝날 때마다 `scripts/deploy/prune-build-cache.sh`가 **7일 넘은 빌드 캐시만** 지운다(`PRUNE_KEEP_HOURS`로 변경). 컨테이너·이미지·볼륨(DB·인증서)은 건드리지 않고, 실패해도 배포는 성공으로 둔다. 손으로 지울 때는 `docker builder prune -f`(이미지·볼륨은 지우지 않음)만 쓰고 `system prune -a`, `--volumes`는 쓰지 않는다.
 5. (선택) S3에도 올리려면 서버에 aws cli와 쓰기 권한을 준 뒤 cron 줄 앞에 `BACKUP_S3_BUCKET=s3://버킷/경로`를 붙인다. 서버 디스크가 망가져도 남는 사본이 필요하면 이 단계가 중요하다.
 
