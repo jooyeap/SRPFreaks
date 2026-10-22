@@ -1235,5 +1235,18 @@
     "download": "PNGを保存",
     "hint": "保存できない場合は、画像を長押しして保存してください。",
     "close": "閉じる"
+  },
+  "TierHistory": {
+    "title": "序列表の変更履歴",
+    "empty": "変更履歴はまだありません。",
+    "note": "序列表の基準難易度・属性を修正した履歴です。最初に決まった値は表示されません。",
+    "added": "序列表に追加",
+    "tierChange": "基準難易度 {from} → {to}",
+    "patternChange": "属性 {from} → {to}",
+    "tierValue": "基準難易度 {value}",
+    "patternValue": "属性 {value}",
+    "loadMore": "もっと見る",
+    "loadingMore": "読み込み中",
+    "loadFailed": "変更履歴を読み込めませんでした。"
   }
 }

@@ -9,6 +9,7 @@ import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongManageDialog } from "@/components/song/SongManageDialog";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
+import { TierHistorySection } from "@/components/song/TierHistorySection";
 import { SongHeader } from "@/components/song/SongHeader";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
 import { InfoCards, LevelTable } from "@/components/song/SongInfo";
@@ -230,6 +231,8 @@ export function SongDetailView({
           ) : null}
         </div>
       </div>
+
+      <TierHistorySection songId={data.id} />
 
       <RecordDialog
         chart={
