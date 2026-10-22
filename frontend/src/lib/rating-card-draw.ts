@@ -23,6 +23,7 @@ const PART_BG = "#2a1a24";
 const PART_GUITAR = "#f9a8d4";
 const PART_BASS = "#5eead4";
 const DIFF_TEXT = "#12151c";
+const TIER_SEG_BG = "#262d3d";
 
 export interface CardFonts {
   sans: string;
@@ -194,7 +195,7 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean):
   const left = x + 24;
   const right = x + w - 16;
 
-  // 좁은 타일(가로 5열)은 점수를 조금 줄이고 서열 표기도 짧게 써서, 타일마다 있다/없다가 갈리지 않게 한다
+  // 좁은 타일(가로 5열)은 점수를 조금 줄여 알약(세 칸)과 점수가 겹치지 않게 한다
   const scoreSize = compact ? 30 : 32;
 
   // 오른쪽 덩어리: 위에 `rate · stage`, 아래에 점수
@@ -229,31 +230,26 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean):
   });
   text(ctx, fit.text, left, y + 33, `500 ${fit.size}px ${f.sans}`, TEXT);
 
-  // 파트·난이도 알약 + 속성 칩
+  // 파트 | 난이도 | 서열 기준 난이도 (한 덩어리 알약. 세 번째 칸은 숫자만)
   const pillY = y + h - 34;
   const pillH = 22;
   ctx.font = `700 13px ${f.num}`;
   const partW = ctx.measureText(tile.partText).width + 14;
   const diffW = ctx.measureText(tile.diffText).width + 14;
+  const tierW = ctx.measureText(tile.tierText).width + 14;
   ctx.save();
-  roundRect(ctx, left, pillY, partW + diffW, pillH, 5);
+  roundRect(ctx, left, pillY, partW + diffW + tierW, pillH, 5);
   ctx.clip();
   ctx.fillStyle = PART_BG;
   ctx.fillRect(left, pillY, partW, pillH);
   ctx.fillStyle = tile.diffColor;
   ctx.fillRect(left + partW, pillY, diffW, pillH);
+  ctx.fillStyle = TIER_SEG_BG;
+  ctx.fillRect(left + partW + diffW, pillY, tierW, pillH);
   ctx.restore();
   text(ctx, tile.partText, left + 7, pillY + 16, `700 13px ${f.num}`, tile.partText === "Bass" ? PART_BASS : PART_GUITAR);
   text(ctx, tile.diffText, left + partW + 7, pillY + 16, `700 13px ${f.num}`, DIFF_TEXT);
-
-  // 서열표 기준 난이도: 알약 오른쪽에 흐리게. 점수와 겹치지 않는 가장 긴 표기를 고른다(`서열 9.4` → `T 9.4` → 생략).
-  ctx.font = `500 13px ${f.sans}`;
-  const tierX = left + partW + diffW + 8;
-  const tierRoom = right - scoreW - 6 - tierX;
-  const tierLabel = (compact ? [tile.tierShortText] : [tile.tierText, tile.tierShortText]).find((label) => ctx.measureText(label).width <= tierRoom);
-  if (tierLabel) {
-    text(ctx, tierLabel, tierX, pillY + 16, `500 13px ${f.sans}`, TEXT_MUTED);
-  }
+  text(ctx, tile.tierText, left + partW + diffW + 7, pillY + 16, `700 13px ${f.num}`, TEXT);
 }
 
 /** 카드 전체를 그린다. 캔버스 크기는 호출하는 쪽이 model.width × model.height로 맞춰 둔다. */

@@ -123,10 +123,8 @@ export interface CardTileView {
   partText: string;
   /** `MAS 9.45` */
   diffText: string;
-  /** 서열표 기준 난이도(`서열 9.4`). 점수는 이 값으로 계산된다 */
+  /** 서열표 기준 난이도 숫자(`9.4`). 알약의 세 번째 칸에 들어간다. 점수는 이 값으로 계산된다 */
   tierText: string;
-  /** 칸이 좁을 때 쓰는 짧은 표기(`T 9.4`) */
-  tierShortText: string;
   diffColor: string;
   /** `MAX · EXC`, `98.03 · FC` */
   rateText: string;
@@ -258,8 +256,7 @@ function tileView(entry: SkillEntryResponse, box: { x: number; y: number; w: num
     patternText: entry.pattern ? patternLabel(entry.pattern, t) : "",
     partText: partLabel(entry.part),
     diffText: `${difficultyLabel(entry.difficulty)} ${formatLevel(entry.level)}`,
-    tierText: t("RatingCard.tier", { value: formatTier(entry.tier, t) }),
-    tierShortText: t("RatingCard.tierShort", { value: formatTier(entry.tier, t) }),
+    tierText: formatTier(entry.tier, t),
     diffColor: DIFFICULTY_COLORS[entry.difficulty],
     rateText: `${formatRate(entry.achievementRate)} · ${entry.stage}`,
     stageColor: STAGE_COLORS[entry.stage],
