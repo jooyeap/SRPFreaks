@@ -20,7 +20,7 @@ function mix(percent: number): string {
 }
 
 /** 모바일 표형 줄의 열 배치: 구간 · 달성 % · 단계 5칸(EXC FC SS S S 미만). 머리글과 줄이 같은 값을 써서 열이 맞는다. */
-const MOBILE_COLS = "grid grid-cols-[3.25rem_2.5rem_repeat(5,minmax(0,1fr))] items-center";
+const MOBILE_COLS = "grid grid-cols-[4rem_2.5rem_repeat(5,minmax(0,1fr))] items-center";
 
 /**
  * 칸 지도: 묶음(서열표는 기준 난이도, 곡 목록은 레벨 폴더) 하나가 한 칸이다. 칸마다 기록 퍼센트, `기록/전체`,

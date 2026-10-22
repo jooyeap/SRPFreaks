@@ -102,7 +102,7 @@ function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: TabText }) {
       {goal ? (
         <div className="flex items-center gap-2.5 rounded-[10px] border border-line bg-table-head px-3 py-2.5">
           <span className="shrink-0 rounded-md bg-chip-on-bg px-2 py-0.5 text-[11px] font-bold text-chip-on-fg">{t("nextGoal")}</span>
-          <p className="text-[13px] leading-snug text-fg">
+          <p className="break-keep text-[13px] leading-snug text-fg">
             {t.rich("goalText", { current: goal.current, target: goal.target, left: goal.left, b: (chunks) => <b className="font-num">{chunks}</b> })}
           </p>
         </div>
@@ -119,7 +119,7 @@ function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: TabText }) {
 
       {weak ? (
         <div className="flex items-center justify-between gap-3 rounded-[10px] border border-weak bg-weak-tint px-3 py-2.5">
-          <p className="text-[13px] leading-snug text-fg">
+          <p className="break-keep text-[13px] leading-snug text-fg">
             {t.rich("weakText", { label: weak.group.label, empty: weak.empty, b: (chunks) => <b className="font-num">{chunks}</b> })}
           </p>
           <Link
