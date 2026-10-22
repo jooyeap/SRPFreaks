@@ -24,8 +24,18 @@ class BackendApplicationTests {
 	@ServiceConnection
 	static MySQLContainer mysql = new MySQLContainer("mysql:8.4");
 
+	@org.springframework.beans.factory.annotation.Autowired
+	org.springframework.core.env.Environment environment;
+
 	@Test
 	void contextLoads() {
+	}
+
+	/** 요청이 끝날 때까지 DB 연결을 붙잡는 open-in-view는 꺼 둔다. 켜지면 사용자가 늘 때 연결 풀이 먼저 마른다. */
+	@Test
+	void open_in_view는_꺼져_있다() {
+		org.assertj.core.api.Assertions.assertThat(environment.getProperty("spring.jpa.open-in-view", Boolean.class))
+				.isFalse();
 	}
 
 }
