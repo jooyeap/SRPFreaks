@@ -193,7 +193,9 @@ class ApiReadSmokeTest {
 	@Test
 	void 통계() throws Exception {
 		ok("/api/v1/stats/level-rate-folders");
-		ok("/api/v1/stats/tier-rate-folders");
+		ok("/api/v1/stats/tier-rate-folders?tableId=" + tableId);
+		// 서열표 난이도 폴더 안의 채보 목록(서열표 항목 + 곡을 지연 로딩하는 경로)
+		assertThat(ok("/api/v1/stats/tier-rate-folders/charts?tableId=" + tableId + "&tier=6.0")).contains("스모크 곡0");
 	}
 
 	@Test
