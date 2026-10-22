@@ -8,24 +8,26 @@ import { chartTierAttrs } from "@/lib/chart-tier";
 import type { SnapshotCompareChange, SnapshotCompareResponse } from "@/lib/api-types";
 import { difficultyLabel, formatRate, formatScore, partLabel } from "@/lib/format";
 import { compareReasonText, fetchSnapshotCompare, snapshotKeys } from "@/lib/skill-snapshot";
+import { useTranslations } from "next-intl";
 
 /**
  * 레이팅 기록 한 줄을 바로 이전 기록과 비교한 결과 (D32 확장).
  * 펼쳤을 때만 불러온다(enabled). 새로 들어온 곡에는 NEW를 붙이고, 모든 증감은 부호 글자로 쓴다(색만으로 구분하지 않는다).
  */
 export function SnapshotCompare({ userId, snapshotId }: { userId: number; snapshotId: number }) {
+  const t = useTranslations();
   const { data, isPending, isError, error } = useQuery({
     queryKey: snapshotKeys.compare(userId, snapshotId),
     queryFn: ({ signal }) => fetchSnapshotCompare(snapshotId, signal),
   });
 
   if (isPending) {
-    return <p className="text-xs text-fg-sub">비교하는 중입니다.</p>;
+    return <p className="text-xs text-fg-sub">{t("Rating.comparing")}</p>;
   }
   if (isError) {
     return (
       <p role="alert" className="text-xs text-fg">
-        {error instanceof ApiError ? error.message : "비교하지 못했습니다. 잠시 후 다시 시도해 주세요."}
+        {error instanceof ApiError ? error.message : t("Rating.compareFailed")}
       </p>
     );
   }
@@ -34,27 +36,28 @@ export function SnapshotCompare({ userId, snapshotId }: { userId: number; snapsh
 
 /** 비교 결과 본문. 마이페이지 요약(현재와 비교)에서도 같은 화면을 쓴다. */
 export function CompareBody({ result }: { result: SnapshotCompareResponse }) {
+  const t = useTranslations();
   if (!result.available) {
-    return <p className="text-xs leading-relaxed text-fg-sub">{compareReasonText(result.reason)}</p>;
+    return <p className="text-xs leading-relaxed text-fg-sub">{compareReasonText(result.reason, t)}</p>;
   }
   const nothing = !result.entered.length && !result.improved.length && !result.declined.length && !result.left.length;
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-fg-sub">
-        {result.fromDate} → {result.toDate ?? "지금"} 레이팅 목록 비교
+        {t("Rating.compareHeading", { from: result.fromDate ?? "", to: result.toDate ?? t("Rating.now") })}
       </p>
-      {nothing ? <p className="text-xs text-fg-sub">곡 목록에는 달라진 점이 없습니다.</p> : null}
+      {nothing ? <p className="text-xs text-fg-sub">{t("Rating.noChange")}</p> : null}
       {/* 새로 들어온 곡(NEW 표시)과 점수가 오른 곡은 `기록 갱신` 한 묶음이다. 줄 표시는 각자 그대로다 */}
       <Group
-        title="기록 갱신"
+        title={t("Rating.improved")}
         rows={[
           ...result.entered.map((item) => ({ item, kind: "entered" as const })),
           ...result.improved.map((item) => ({ item, kind: "improved" as const })),
         ]}
       />
-      <Group title="점수가 내려간 곡" rows={result.declined.map((item) => ({ item, kind: "declined" as const }))} />
+      <Group title={t("Rating.dropped")} rows={result.declined.map((item) => ({ item, kind: "declined" as const }))} />
       {/* 레이팅 목록 밖으로 나간 곡은 `후보곡`이다(다시 올라올 수 있는 곡) */}
-      <Group title="후보곡" rows={result.left.map((item) => ({ item, kind: "left" as const }))} />
+      <Group title={t("Rating.candidates")} rows={result.left.map((item) => ({ item, kind: "left" as const }))} />
     </div>
   );
 }
@@ -105,6 +108,7 @@ function Score({ value }: { value: number | null }) {
  * 이전·이후 점수는 각각 자기 티어 색이라, 티어가 바뀐 곡은 색 변화로도 보인다. 증감은 부호 글자(+/-)로 쓴다.
  */
 function ScoreText({ item, kind }: { item: SnapshotCompareChange; kind: Kind }) {
+  const t = useTranslations();
   const rateAfter = item.rateAfter === null ? "" : ` · ${formatRate(item.rateAfter)}`;
   let body: React.ReactNode;
   if (kind === "entered") {
@@ -112,7 +116,7 @@ function ScoreText({ item, kind }: { item: SnapshotCompareChange; kind: Kind }) 
   } else if (kind === "left") {
     body = (
       <>
-        <Score value={item.scoreBefore} /> → 목록 밖
+        <Score value={item.scoreBefore} /> → {t("Rating.leftList")}
       </>
     );
   } else {

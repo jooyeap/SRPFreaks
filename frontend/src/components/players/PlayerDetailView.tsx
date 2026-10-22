@@ -9,6 +9,7 @@ import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse } from "@/lib/api-types";
 import { AFFECTED_QUERY_KEYS } from "@/lib/records";
 import { deletePlayerChartRecords, fetchPlayer, playerKeys } from "@/lib/players";
+import { useTranslations } from "next-intl";
 
 /**
  * 유저 상세 (D26): 그 유저의 레이팅 카드와 단일 / 복합·이중·삼중 목록. 기록 입력·수정 버튼은 없다.
@@ -26,6 +27,7 @@ export function PlayerDetailView({
   playerId: number;
   canDeleteRecords?: boolean;
 }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const { data, isPending, isError, error } = useQuery({
     queryKey: playerKeys.detail(viewerId, playerId),
@@ -40,7 +42,7 @@ export function PlayerDetailView({
     mutationFn: (entry: SkillEntryResponse) => deletePlayerChartRecords(playerId, entry.songDifficultyId),
     onSuccess: async () => {
       setTarget(null);
-      toast("기록을 삭제했습니다.");
+      toast(t("Players.recordDeleted"));
       // 유저 상세·유저 목록(총점 순위)이 모두 달라지므로 "players" 전체를 새로 받는다
       await queryClient.invalidateQueries({ queryKey: playerKeys.all });
       // 지운 유저가 나 자신일 수도 있어 내 기록과 관련된 화면(레이팅·서열표·곡 목록)도 오래된 것으로 표시한다
@@ -55,8 +57,8 @@ export function PlayerDetailView({
   const back = (
     <Link
       href="/players"
-      aria-label="유저 목록으로"
-      title="유저 목록으로"
+      aria-label={t("Players.backAria")}
+      title={t("Players.backAria")}
       className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
     >
       <span aria-hidden="true">←</span>
@@ -64,7 +66,7 @@ export function PlayerDetailView({
   );
 
   if (isPending) {
-    return <p className="text-sm text-fg-sub">불러오는 중입니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   if (isError) {
     const notFound = error instanceof ApiError && error.status === 404;
@@ -73,10 +75,10 @@ export function PlayerDetailView({
         {back}
         <p role="alert" className="text-sm text-fg">
           {notFound
-            ? "유저를 찾을 수 없습니다."
+            ? t("Players.notFound")
             : error instanceof ApiError
               ? error.message
-              : "유저 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
+              : t("Players.detailFailed")}
         </p>
       </div>
     );
@@ -86,20 +88,19 @@ export function PlayerDetailView({
     deletion.error instanceof ApiError
       ? deletion.error.message
       : deletion.error
-        ? "삭제하지 못했습니다. 잠시 후 다시 시도해 주세요."
+        ? t("Players.deleteFailed")
         : null;
 
   return (
     <div className="flex flex-col gap-5">
       {back}
       <h1 className="text-xl font-semibold text-fg">
-        <span className="font-num">{data.nickname}</span>님의 레이팅
+        {t.rich("Players.ratingOf", { n: (c) => <span className="font-num">{c}</span>, nickname: data.nickname })}
       </h1>
       {target ? (
-        <div role="alertdialog" aria-label="기록 삭제 확인" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+        <div role="alertdialog" aria-label={t("Players.deleteConfirmAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
           <p className="text-sm text-fg">
-            <span className="font-num">{data.nickname}</span>님의 &lsquo;{target.title}&rsquo; 기록을 모두 삭제할까요? 삭제한 기록은 되돌릴 수 없고, 관리
-            기록에 남습니다.
+            {t.rich("Players.deleteConfirmText", { n: (c) => <span className="font-num">{c}</span>, nickname: data.nickname, title: target.title })}
           </p>
           <div className="flex gap-2">
             <button
@@ -108,7 +109,7 @@ export function PlayerDetailView({
               onClick={() => deletion.mutate(target)}
               className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
             >
-              {deletion.isPending ? "삭제 중" : "삭제"}
+              {deletion.isPending ? t("Common.deleting") : t("Common.delete")}
             </button>
             <button
               type="button"
@@ -119,7 +120,7 @@ export function PlayerDetailView({
               }}
               className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
             >
-              취소
+              {t("Common.cancel")}
             </button>
           </div>
           {deleteError ? (
@@ -131,7 +132,7 @@ export function PlayerDetailView({
       ) : null}
       <RatingBody
         skill={data.skill}
-        emptyHint="레이팅에 들어간 기록이 아직 없습니다."
+        emptyHint={t("Players.emptyRated")}
         onDeleteEntry={canDeleteRecords ? (entry) => { deletion.reset(); setTarget(entry); } : undefined}
       />
     </div>

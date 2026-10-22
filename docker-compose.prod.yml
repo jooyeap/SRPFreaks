@@ -57,6 +57,8 @@ services:
         # 빌드 때 코드에 고정되는 값이라, 바꾸면 이미지를 다시 빌드해야 한다 (--build)
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
         NEXT_PUBLIC_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+        # 배포 명령이 `export GIT_SHA=...`로 넘긴다 (deploy.yml, server-ops.yml). 직접 실행하면 unknown
+        GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
     logging: *default-logging
 

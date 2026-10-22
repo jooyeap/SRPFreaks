@@ -6,6 +6,7 @@ import { CompareBody } from "@/components/rating/SnapshotCompare";
 import { useToast } from "@/components/Toast";
 import { ApiError } from "@/lib/api";
 import { createSnapshot, fetchCompareCurrent, fetchSnapshotStatus, formatChange, snapshotKeys } from "@/lib/skill-snapshot";
+import { useTranslations } from "next-intl";
 
 /**
  * 마이페이지 레이팅 탭의 "지금 상황" 카드 (D32 확장). 요약 카드 바로 아래에 놓인다.
@@ -15,6 +16,7 @@ import { createSnapshot, fetchCompareCurrent, fetchSnapshotStatus, formatChange,
  * 모두 이미 받은 레이팅 목록과 비교 API 결과를 화면에서 맞춰 보는 것이라 새로 저장하는 값이 없다.
  */
 export function RatingInsights({ userId }: { userId: number }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const toast = useToast();
   const detailId = useId();
@@ -31,7 +33,7 @@ export function RatingInsights({ userId }: { userId: number }) {
   const record = useMutation({
     mutationFn: createSnapshot,
     onSuccess: async () => {
-      toast("레이팅을 기록했습니다.");
+      toast(t("Rating.snapshotSaved"));
       await queryClient.invalidateQueries({ queryKey: snapshotKeys.all(userId) });
       await queryClient.invalidateQueries({ queryKey: snapshotKeys.status(userId) });
     },
@@ -44,15 +46,15 @@ export function RatingInsights({ userId }: { userId: number }) {
   return (
     <div className="flex flex-col gap-3">
       {canRecord ? (
-        <section aria-label="레이팅 기록 제안" className="flex flex-col gap-2 rounded-2xl border border-chip-on-bg bg-card p-4">
+        <section aria-label={t("Rating.snapshotSuggestAria")} className="flex flex-col gap-2 rounded-2xl border border-chip-on-bg bg-card p-4">
           <p className="text-sm font-semibold text-fg">
             {result
-              ? `마지막 기록(${result.fromDate}) 이후 레이팅이 ${formatChange(result.totalChange).text} 달라졌습니다.`
+              ? t("Rating.sinceLast", { date: result.fromDate ?? "", change: formatChange(result.totalChange).text })
               : compare.data?.reason === "NO_SNAPSHOT"
-                ? "아직 기록한 레이팅이 없습니다."
-                : "오늘 레이팅을 기록할 수 있습니다."}
+                ? t("Rating.noSnapshots")
+                : t("Rating.canSaveToday")}
           </p>
-          <p className="text-xs text-fg-sub">지금 점수를 기록으로 남겨 두면 나중에 얼마나 올랐는지 비교할 수 있습니다.</p>
+          <p className="text-xs text-fg-sub">{t("Rating.snapshotHint")}</p>
           <div>
             <button
               type="button"
@@ -60,19 +62,19 @@ export function RatingInsights({ userId }: { userId: number }) {
               onClick={() => record.mutate()}
               className="min-h-11 rounded-full bg-chip-on-bg px-5 text-sm font-semibold text-chip-on-fg enabled:hover:opacity-90 disabled:bg-table-head disabled:text-disabled"
             >
-              {record.isPending ? "기록 중입니다." : "지금 레이팅 기록하기"}
+              {record.isPending ? t("Rating.snapshotSaving") : t("Rating.snapshotSave")}
             </button>
           </div>
           {record.isError ? (
             <p role="alert" className="text-xs text-fg">
-              {record.error instanceof ApiError ? record.error.message : "기록하지 못했습니다. 잠시 후 다시 시도해 주세요."}
+              {record.error instanceof ApiError ? record.error.message : t("Rating.snapshotFailed")}
             </p>
           ) : null}
         </section>
       ) : null}
 
       {result ? (
-        <section aria-label="레이팅 현황" className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+        <section aria-label={t("Rating.statusAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
           <div className="flex flex-col gap-2">
             <button
               type="button"
@@ -82,9 +84,12 @@ export function RatingInsights({ userId }: { userId: number }) {
               className="flex w-full items-center justify-between gap-3 text-left"
             >
               <span className="text-sm text-fg">
-                마지막 기록({result.fromDate}) 대비{" "}
-                <span className="font-num font-semibold">{formatChange(result.totalChange).text}</span>
-                {" · "}새로 들어온 곡 <span className="font-num font-semibold">{result.entered.length}</span>개
+                {t.rich("Rating.vsLast", {
+                  b: (c) => <span className="font-num font-semibold">{c}</span>,
+                  date: result.fromDate ?? "",
+                  change: formatChange(result.totalChange).text,
+                  count: result.entered.length,
+                })}
               </span>
               <span aria-hidden="true" className="shrink-0 text-fg-dim">
                 {detailOpen ? "▴" : "▾"}

@@ -229,6 +229,9 @@ public class SongChartListService {
 
     private Map<Long, RecordBest> bestsOf(Long userId) {
         Map<Long, RecordBest> bests = new HashMap<>();
+        if (userId == null) {
+            return bests; // 비로그인(D43): 내 기록 없이 곡 정보만
+        }
         optionRecordRepository.findBestByUser(userId, RECORD_OPTION).forEach(b -> bests.put(b.songDifficultyId(), b));
         return bests;
     }

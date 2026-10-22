@@ -4,8 +4,10 @@ import { RatedScore } from "@/components/table/RatedScore";
 import { StageBadge } from "@/components/table/StageBadge";
 // import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
 import { tableDetailHref } from "@/components/song/TableContext";
+import { patternLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
+import { useTranslations } from "next-intl";
 
 /**
  * 표형 열 너비. 머리 행(TableHeadRow)과 같은 값을 써서 열이 맞는다. 랭크 70 · 채보 190 · 달성률 90px(폭 1200px 시안, 곡 목록과 같은 값). 채보 열은 파트·난이도·레벨 알약 하나다.
@@ -16,16 +18,17 @@ export const ROW_GRID =
 
 /** 데스크톱 표의 머리 행 (모바일에서는 보이지 않는다). */
 export function TableHeadRow() {
+  const t = useTranslations();
   return (
     <div className={`hidden bg-table-head px-3 py-2 text-xs text-fg-dim ${ROW_GRID}`} aria-hidden="true">
       <span />
-      <span>곡명</span>
-      <span>점수</span>
-      <span>랭크</span>
-      <span>채보</span>
-      <span>달성률</span>
-      <span>추천</span>
-      <span>속성</span>
+      <span>{t("Songs.colTitle")}</span>
+      <span>{t("Table.colScore")}</span>
+      <span>{t("Songs.colRank")}</span>
+      <span>{t("Songs.colChart")}</span>
+      <span>{t("Songs.colRate")}</span>
+      <span>{t("Table.colRecommend")}</span>
+      <span>{t("Table.colPattern")}</span>
       <span />
     </div>
   );
@@ -46,6 +49,7 @@ export function EntryRow({
   tier?: number | null;
   onRecord?: (entry: TableEntryResponse) => void;
 }) {
+  const t = useTranslations();
   const stage = entry.mine?.stage ?? null;
   return (
     <li
@@ -77,17 +81,17 @@ export function EntryRow({
         <RecommendBadge value={entry.recommend} />
       </span>
       <span className="text-fg-sub">
-        {entry.pattern ?? EMPTY_MARK}
+        {entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK}
       </span>
       <span>
         {onRecord ? (
           <button
             type="button"
             onClick={() => onRecord(entry)}
-            aria-label={`${entry.title} 기록 입력`}
+            aria-label={t("Chart.recordInput", { title: entry.title })}
             className="rounded-lg border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
           >
-            기록
+            {t("Table.record")}
           </button>
         ) : null}
       </span>

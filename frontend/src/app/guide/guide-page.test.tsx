@@ -8,13 +8,19 @@ describe("레이팅 설명서", () => {
     expect(screen.getByRole("heading", { level: 1, name: "레이팅 설명서" })).toBeInTheDocument();
     const summary = screen.getByRole("region", { name: "한눈에 보기" });
     expect(within(summary).getByText("SRN+")).toBeInTheDocument();
-    expect(within(summary).getByText("40채보")).toBeInTheDocument();
+    expect(within(summary).getByText("40보면")).toBeInTheDocument();
     expect(within(summary).getByText("티어")).toBeInTheDocument();
 
     expect(screen.getByRole("heading", { name: "포함되는 채보" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "포함되지 않는 채보" })).toBeInTheDocument();
     expect(screen.getByText("속성이 단일, 복합, 이중, 삼중 중 하나인 채보")).toBeInTheDocument();
     expect(screen.getByText("제외된 채보도 기록은 그대로 남습니다.")).toBeInTheDocument();
+  });
+
+  it("사용 환경으로 Chrome 브라우저 사용을 권장한다", () => {
+    render(<GuidePage />);
+    const env = screen.getByRole("region", { name: "사용 환경" });
+    expect(within(env).getByText(/Chrome 브라우저 사용을 권장합니다/)).toBeInTheDocument();
   });
 
   it("포함 기준은 처음에 접혀 있고(details), 한눈에 보기와 상수표는 접히지 않는다", () => {
@@ -25,7 +31,7 @@ describe("레이팅 설명서", () => {
     expect(within(details as HTMLElement).getByRole("heading", { level: 2, name: "포함 기준" })).toBeInTheDocument();
     // 접기 안에는 포함 기준 카드만 있고, 요약 카드와 상수표는 밖에 있다
     expect(details).not.toContainElement(screen.getByRole("region", { name: "한눈에 보기" }));
-    expect(details).not.toContainElement(screen.getByRole("table", { name: /레이팅 상수표/ }));
+    expect(details).not.toContainElement(screen.getByRole("table", { name: /레이팅 점수표/ }));
     expect(container.querySelectorAll("details")).toHaveLength(1);
   });
 
@@ -37,7 +43,7 @@ describe("레이팅 설명서", () => {
 
   it("상수표는 7.0~4.9의 22행이고 값이 글자로 들어 있다", () => {
     render(<GuidePage />);
-    const table = screen.getByRole("table", { name: /레이팅 상수표/ });
+    const table = screen.getByRole("table", { name: /레이팅 점수표/ });
     const bodyRows = within(table).getAllByRole("row").slice(1); // 첫 행은 머리글
     expect(bodyRows).toHaveLength(22);
     expect(within(bodyRows[0]).getByRole("rowheader")).toHaveTextContent("7.0");
@@ -53,7 +59,7 @@ describe("레이팅 설명서", () => {
 
   it("칸마다 점수에 맞는 플레이어 티어 색(data-tier)이 붙고, 최상위 세 티어(Iridescent / Alien / HSB)도 나뉜다", () => {
     render(<GuidePage />);
-    const table = screen.getByRole("table", { name: /레이팅 상수표/ });
+    const table = screen.getByRole("table", { name: /레이팅 점수표/ });
     const rows = within(table).getAllByRole("row");
     const cellsOf = (row: HTMLElement) => within(row).getAllByRole("cell").slice(1); // 첫 칸은 내부 상수
     const bodyRows = rows.slice(1); // 첫 행은 머리글

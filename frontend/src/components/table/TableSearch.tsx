@@ -17,6 +17,7 @@ import {
   SEARCH_PAGE_SIZE,
   tableSearchHref,
 } from "@/lib/table-search";
+import { useTranslations } from "next-intl";
 
 const DEBOUNCE_MS = 300;
 
@@ -30,6 +31,7 @@ const DEBOUNCE_MS = 300;
  * 창은 브라우저 기본 <dialog>(showModal)로 만든다: 포커스 가두기, Esc로 닫기, 바깥 클릭 막기를 브라우저가 처리해 준다(RecordDialog와 같은 방식).
  */
 export function TableSearch({ userId, groups }: { userId: number; groups: readonly TierGroupResponse[] | undefined }) {
+  const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -83,8 +85,8 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="곡 검색"
-        title="곡 검색"
+        aria-label={t("Songs.searchAria")}
+        title={t("Songs.searchAria")}
         className="fixed bottom-[calc(var(--tabbar-h)+1rem)] right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-chip-on-bg text-chip-on-fg shadow-lg"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -109,10 +111,10 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 id="table-search-title" className="text-lg font-extrabold">
-            서열표 곡 검색
+            {t("Table.searchTitle")}
           </h2>
           <button type="button" onClick={close} className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
-            닫기
+            {t("Table.close")}
           </button>
         </div>
 
@@ -121,26 +123,26 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
           value={text}
           maxLength={100}
           onChange={(event) => setText(event.target.value)}
-          placeholder="곡명, 아티스트 검색 (한글·일본어·로마자)"
-          aria-label="곡 검색어"
+          placeholder={t("Songs.searchPlaceholder")}
+          aria-label={t("Table.searchQueryAria")}
           className="mb-3 w-full rounded-lg border border-chip-line bg-page px-4 py-2 text-sm text-fg placeholder:text-fg-dim"
         />
 
         <div aria-live="polite">
           {query === "" ? (
-            <p className="text-sm text-fg-sub">곡명이나 아티스트를 입력하면 서열표에서 찾아 줍니다.</p>
+            <p className="text-sm text-fg-sub">{t("Table.searchHint")}</p>
           ) : search.isPending ? (
-            <p className="text-sm text-fg-sub">검색 중입니다.</p>
+            <p className="text-sm text-fg-sub">{t("Table.searching")}</p>
           ) : search.isError ? (
             <p role="alert" className="text-sm text-fg">
-              {search.error instanceof ApiError ? search.error.message : "검색하지 못했습니다. 잠시 후 다시 시도해 주세요."}
+              {search.error instanceof ApiError ? search.error.message : t("Table.searchFailed")}
             </p>
           ) : results.length === 0 ? (
             <div>
               <p className="text-sm text-fg-sub">
-                서열표에서 찾지 못했습니다.{" "}
+                {t("Table.searchNone")}{" "}
                 <Link href={`/songs?q=${encodeURIComponent(query)}`} className="underline">
-                  곡 목록에서 검색
+                  {t("Table.searchInSongs")}
                 </Link>
               </p>
               <SongSuggestions query={query} onPick={(title) => setText(title)} />
@@ -148,7 +150,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
             </div>
           ) : (
             <>
-              <ul aria-label="검색 결과" className="flex flex-col gap-2">
+              <ul aria-label={t("Table.searchResults")} className="flex flex-col gap-2">
                 {results.map(({ entry, tier }) => (
                   <li key={entry.songDifficultyId}>
                     <Link
@@ -161,7 +163,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
                         <span className="mt-1 flex flex-wrap items-center gap-1.5">
                           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
                           <span className="text-xs text-fg-dim">
-                            레이팅 상수 난이도 <span className="font-num">{formatTier(tier)}</span>
+                            {t("Song.ratingConstant")} <span className="font-num">{formatTier(tier, t)}</span>
                           </span>
                         </span>
                       </span>
@@ -180,7 +182,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
                 ))}
               </ul>
               {truncated ? (
-                <p className="mt-3 text-xs text-fg-dim">결과가 많아 일부만 보입니다. 검색어를 더 자세히 입력해 주세요.</p>
+                <p className="mt-3 text-xs text-fg-dim">{t("Table.searchTooMany")}</p>
               ) : null}
             </>
           )}

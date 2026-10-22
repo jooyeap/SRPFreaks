@@ -8,22 +8,27 @@ import { StatusLabel } from "@/components/suggestions/StatusLabel";
 import { SuggestionForm } from "@/components/suggestions/SuggestionForm";
 import { ApiError } from "@/lib/api";
 import type { SuggestionCategory } from "@/lib/api-types";
+import type { DifficultyType, InstrumentPart } from "@/lib/types";
 import { formatPlayedDate } from "@/lib/format";
 import {
   CATEGORY_LABELS,
   createSuggestion,
+  describeChartRequest,
   fetchMySuggestions,
   suggestionKeys,
   SUGGESTIONS_PAGE_SIZE,
   type SuggestionValues,
 } from "@/lib/suggestions";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 
-function messageOf(error: unknown): string | null {
+function messageOf(error: unknown, t: Translator): string | null {
   if (!error) {
     return null;
   }
-  return error instanceof ApiError ? error.message : "보내지 못했습니다. 잠시 후 다시 시도해 주세요.";
+  return error instanceof ApiError ? error.message : t("Suggestions.sendFailed");
 }
 
 /**
@@ -35,11 +40,14 @@ export function SuggestionsView({
   viewerId,
   initialCategory = null,
   initialTitle = "",
+  initialChart = null,
 }: {
   viewerId: number;
   initialCategory?: SuggestionCategory | null;
   initialTitle?: string;
+  initialChart?: { part: InstrumentPart; difficulty: DifficultyType } | null;
 }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [page, setPage] = useState(0);
@@ -54,7 +62,7 @@ export function SuggestionsView({
   const create = useMutation({
     mutationFn: (values: SuggestionValues) => createSuggestion(values),
     onSuccess: async () => {
-      toast("건의를 보냈습니다.");
+      toast(t("Suggestions.sent"));
       setPage(0);
       await queryClient.invalidateQueries({ queryKey: suggestionKeys.all });
     },
@@ -62,30 +70,36 @@ export function SuggestionsView({
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-fg">건의하기</h1>
+      <h1 className="text-xl font-semibold text-fg">{t("Suggestions.heading")}</h1>
       <p className="text-sm text-fg-sub">
-        없는 곡 추가, 개선했으면 하는 점, 버그를 알려 주세요. 하루에 5건까지 보낼 수 있습니다.
+        {t("Suggestions.lead")}
       </p>
 
       <SuggestionForm
-        initial={{ category: initialCategory ?? "SONG_REQUEST", title: initialTitle, content: "" }}
+        initial={{
+          category: initialCategory ?? "SONG_REQUEST",
+          title: initialTitle,
+          content: "",
+          requestedPart: initialChart?.part ?? null,
+          requestedDifficulty: initialChart?.difficulty ?? null,
+        }}
         pending={create.isPending}
-        error={messageOf(create.error)}
+        error={messageOf(create.error, t)}
         onSubmit={(values) => create.mutateAsync(values)}
       />
 
-      <h2 className="text-lg font-semibold text-fg">내 건의</h2>
+      <h2 className="text-lg font-semibold text-fg">{t("Suggestions.mine")}</h2>
       {mine.isPending ? (
-        <p className="text-sm text-fg-sub">불러오는 중입니다.</p>
+        <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : mine.isError ? (
-        <p role="alert" className="text-sm text-fg">
-          {mine.error instanceof ApiError ? mine.error.message : "건의 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."}
-        </p>
+        <ErrorRetry onRetry={() => void mine.refetch()} retrying={mine.isFetching}>
+          {mine.error instanceof ApiError ? mine.error.message : t("Suggestions.listFailed")}
+        </ErrorRetry>
       ) : mine.data.content.length === 0 ? (
-        <p className="text-sm text-fg-sub">보낸 건의가 없습니다.</p>
+        <p className="text-sm text-fg-sub">{t("Suggestions.empty")}</p>
       ) : (
         <>
-          <ul aria-label="내 건의 목록" className="flex flex-col gap-3">
+          <ul aria-label={t("Suggestions.listAria")} className="flex flex-col gap-3">
             {mine.data.content.map((item) => (
               <li key={item.id} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
                 <div className="flex items-baseline justify-between gap-3">
@@ -95,13 +109,16 @@ export function SuggestionsView({
                   </time>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-fg-sub">
-                  <span>{CATEGORY_LABELS[item.category]}</span>
+                  <span>{t(CATEGORY_LABELS[item.category])}</span>
                   <StatusLabel status={item.status} />
+                  {item.requestedPart && item.requestedDifficulty ? (
+                    <span>{describeChartRequest(item.requestedPart, item.requestedDifficulty)}</span>
+                  ) : null}
                 </div>
                 <p className="whitespace-pre-wrap break-words text-sm text-fg">{item.content}</p>
                 {item.adminNote ? (
                   <p className="whitespace-pre-wrap break-words rounded-lg bg-table-head px-3 py-2 text-sm text-fg">
-                    <span className="mr-1 font-bold">관리자 답변</span>
+                    <span className="mr-1 font-bold">{t("Suggestions.adminReply")}</span>
                     {item.adminNote}
                   </p>
                 ) : null}

@@ -23,12 +23,14 @@ import { folderProgress } from "@/lib/progress";
 import { fetchMySkill, skillKeys } from "@/lib/rating";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 import { useWelcomeHidden } from "@/lib/welcome-guide";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
 
 // 아이콘은 헤더 메뉴·하단 탭바와 같은 것을 쓴다(lib/nav.ts): 곡 목록 = songs, 서열표 = table, 마이페이지 = rating
 const SHORTCUTS = [
-  { href: "/songs", title: "곡 목록", icon: "songs", description: "레벨 폴더별로 전체 곡을 보고 검색합니다." },
-  { href: "/table", title: "서열표", icon: "table", description: "레이팅 상수 난이도별로 채보를 보고 기록을 입력합니다." },
-  { href: "/me", title: "마이페이지", icon: "rating", description: "내 레이팅(단일 15·복합·이중·삼중 25 목록)과 달성 현황을 확인합니다." },
+  { href: "/songs", title: "songsTitle", icon: "songs", description: "songsDesc" },
+  { href: "/table", title: "tableTitle", icon: "table", description: "tableDesc" },
+  { href: "/me", title: "myTitle", icon: "rating", description: "myDesc" },
 ] as const;
 
 /**
@@ -37,6 +39,9 @@ const SHORTCUTS = [
  * 서열표 쿼리 키는 곡 상세·묶음 페이지와 같고(allGroupsKey), 곡 목록은 곡 목록 화면의 "필터 없음" 폴더 키와 같아서 캐시를 함께 쓴다.
  */
 export function HomeDashboard({ userId, name }: { userId: number; name: string }) {
+  const t = useTranslations("Home");
+  // 서열표 진행도 같은 공용 계산 함수는 전체 경로(`Ns.key`) 번역기를 받는다
+  const tRoot = useTranslations();
   const skill = useQuery({
     queryKey: skillKeys.me(userId),
     queryFn: ({ signal }) => fetchMySkill(signal),
@@ -64,11 +69,11 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
 
   const tablePanel: ProgressPanel = groups.data
     // 기준 난이도가 없는 `미정` 묶음은 서열표 화면과 같이 홈 서열표 진행도에서도 뺀다(합계·칸 지도 모두)
-    ? { kind: "ready", progress: tableProgress(decidedGroups(groups.data)) }
+    ? { kind: "ready", progress: tableProgress(decidedGroups(groups.data), tRoot) }
     : groups.isError || tables.isError
       ? { kind: "error" }
       : tables.isSuccess && tableId === null
-        ? { kind: "empty", message: "SRN+ 서열표가 아직 없습니다." }
+        ? { kind: "empty", message: t("tableEmpty") }
         : { kind: "loading" };
   const songsPanel: ProgressPanel = folders.data
     ? { kind: "ready", progress: folderProgress(folders.data.folders) }
@@ -79,7 +84,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold text-fg">
-        <span className="font-num">{name}</span>님의 홈
+        {t.rich("greeting", { name, num: (chunks) => <span className="font-num">{chunks}</span> })}
       </h1>
 
       {showWelcome ? <WelcomeGuide /> : null}
@@ -87,13 +92,15 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       <HomeNotices viewerId={userId} />
 
       {skill.data ? (
-        <Link href="/me" className="block rounded-2xl hover:opacity-95" aria-label="마이페이지로">
+        <Link href="/me" className="block rounded-2xl hover:opacity-95" aria-label={t("toMyPage")}>
           <RatingSummary skill={skill.data} />
         </Link>
       ) : skill.isError ? (
-        <p role="alert" className="text-sm text-fg">레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <ErrorRetry onRetry={() => void skill.refetch()} retrying={skill.isFetching}>
+          {t("ratingLoadFailed")}
+        </ErrorRetry>
       ) : (
-        <Skeleton label="레이팅을 불러오는 중입니다." className="h-[7.5rem]" />
+        <Skeleton label={t("ratingLoading")} className="h-[7.5rem]" />
       )}
 
       <ProgressCard table={tablePanel} songs={songsPanel} />
@@ -109,9 +116,9 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
             <Link href={item.href} className="flex h-full flex-col gap-1 rounded-lg border border-line bg-card p-4 hover:bg-table-head">
               <span className="flex items-center gap-2 text-base font-semibold text-fg">
                 <NavIcon name={item.icon} />
-                {item.title}
+                {t(item.title)}
               </span>
-              <span className="text-sm text-fg-sub">{item.description}</span>
+              <span className="text-sm text-fg-sub">{t(item.description)}</span>
             </Link>
           </li>
         ))}

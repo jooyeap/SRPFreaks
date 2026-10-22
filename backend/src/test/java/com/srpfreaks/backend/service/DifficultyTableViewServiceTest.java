@@ -106,6 +106,17 @@ class DifficultyTableViewServiceTest {
     }
 
     @Test
+    void 비로그인이면_mine이_true여도_기록을_조회하지_않고_기록_없이_응답한다() {
+        when(entryRepository.findAllForView(1L)).thenReturn(List.of(simple("a", "9.00", "6.0")));
+
+        TierGroupResponse group = service.entries(null, 1L, null, null, null, true, true, 0, 10).content().get(0);
+
+        assertThat(group.entries().get(0).mine()).isNull();
+        assertThat(group.recorded()).isZero();
+        org.mockito.Mockito.verifyNoInteractions(recordRepository);
+    }
+
+    @Test
     void 묶음_안은_레벨_높은_순이다() {
         when(entryRepository.findAllForView(1L)).thenReturn(List.of(
                 simple("낮음", "9.00", "6.0"), simple("높음", "9.80", "6.0"), simple("중간", "9.50", "6.0")));

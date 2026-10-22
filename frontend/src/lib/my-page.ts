@@ -1,14 +1,15 @@
 import type { ChartFolderListResponse } from "@/lib/api-types";
 import type { StageCounts } from "@/components/table/StageBar";
 import type { StatsAxis } from "@/lib/rate-folders";
+import type { MessageKey } from "@/i18n/translator";
 
 /** 마이페이지 탭. 주소 쿼리(`/me?tab=stats`)에 두어 새로고침·뒤로가기·링크 공유에도 같은 탭이 열린다. */
 export type MyPageTab = "rating" | "stats" | "setlist";
 
-export const MY_PAGE_TABS: readonly { value: MyPageTab; label: string }[] = [
-  { value: "rating", label: "레이팅" },
-  { value: "stats", label: "통계" },
-  { value: "setlist", label: "세트리스트" },
+export const MY_PAGE_TABS: readonly { value: MyPageTab; labelKey: MessageKey }[] = [
+  { value: "rating", labelKey: "MyPage.tabRating" },
+  { value: "stats", labelKey: "MyPage.tabStats" },
+  { value: "setlist", labelKey: "MyPage.tabSetlist" },
 ];
 
 /** 알 수 없는 값(주소는 사용자가 고칠 수 있다)은 기본 탭(레이팅)으로 본다. */

@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { StageBadge } from "@/components/table/StageBadge";
 import { percentOf, type ProgressSummary } from "@/lib/progress";
+import { useTranslations } from "next-intl";
 
 const RADIUS = 40;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -20,6 +21,7 @@ interface Arc {
  * 호 하나는 stroke-dasharray로 "내 길이만 그리고 나머지는 비움", stroke-dashoffset으로 "앞 호들이 차지한 길이만큼 뒤로 밀기"를 해서 이어 붙인다.
  */
 export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
+  const t = useTranslations("Progress");
   const uid = useId().replace(/:/g, ""); // url(#id)에 콜론이 들어가면 곤란해서 뺀다
   const arcs: Arc[] = [
     { stage: "EXC", count: progress.exc },
@@ -85,13 +87,13 @@ export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
             <span className="text-[13px] font-medium">%</span>
           </span>
           <span className="mt-1 font-num text-xs text-fg-dim">
-            <span className="sr-only">기록 </span>
+            <span className="sr-only">{t("record")}</span>
             {progress.recorded}/{progress.total}
           </span>
         </div>
       </div>
 
-      <ul className="flex min-w-0 flex-1 flex-col gap-1.5" aria-label="전체 달성 현황">
+      <ul className="flex min-w-0 flex-1 flex-col gap-1.5" aria-label={t("overallAria")}>
         {legend.map((l) => (
           <li key={l.stage} className={`flex items-center justify-between gap-2 ${l.count === 0 ? "opacity-60" : ""}`}>
             {/* 단계 배지는 글자가 같이 있으므로 색만으로 구분하지 않는다 */}
@@ -100,11 +102,11 @@ export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
           </li>
         ))}
         <li className="flex items-center justify-between gap-2 text-xs text-fg-dim">
-          <span>S 미만</span>
+          <span>{t("belowS")}</span>
           <span className="font-num text-sm text-fg-sub">{progress.belowS}</span>
         </li>
         <li className="flex items-center justify-between gap-2 text-xs text-fg-dim">
-          <span>기록 없음</span>
+          <span>{t("noRecord")}</span>
           <span className="font-num text-sm text-fg-sub">{progress.total - progress.recorded}</span>
         </li>
       </ul>

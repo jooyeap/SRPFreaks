@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useAuth } from "@/components/AuthProvider";
 import { NavIcon } from "@/components/NavIcon";
 import { canSeeAdminMenu } from "@/lib/admin";
@@ -23,6 +24,7 @@ export function AdminNavLink({
   showIcon?: boolean;
   onClick?: () => void;
 }) {
+  const t = useTranslations("Nav");
   const { status, user } = useAuth();
   if (status !== "authenticated" || !canSeeAdminMenu(user?.role)) {
     return null;
@@ -30,7 +32,7 @@ export function AdminNavLink({
   return (
     <Link href="/admin" className={className} {...rest}>
       {showIcon ? <NavIcon name="admin" /> : null}
-      관리
+      {t("admin")}
     </Link>
   );
 }

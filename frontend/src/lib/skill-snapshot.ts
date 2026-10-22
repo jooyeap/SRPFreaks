@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import type { Translator } from "@/i18n/translator";
 import type {
   PageResponse,
   SkillSnapshotResponse,
@@ -44,16 +45,16 @@ export function fetchCompareCurrent(signal?: AbortSignal): Promise<SnapshotCompa
 }
 
 /** 비교할 수 없는 이유 문구 */
-export function compareReasonText(reason: SnapshotCompareReason | null): string {
+export function compareReasonText(reason: SnapshotCompareReason | null, t: Translator): string {
   switch (reason) {
     case "NO_PREVIOUS":
-      return "비교할 이전 기록이 없습니다.";
+      return t("Snapshot.noPrevious");
     case "NO_DETAIL":
-      return "곡별 상세를 남기기 전의 기록이라 곡 단위로는 비교할 수 없습니다. 다음 기록부터 비교할 수 있습니다.";
+      return t("Snapshot.noDetail");
     case "NO_SNAPSHOT":
-      return "아직 기록한 레이팅이 없습니다.";
+      return t("Snapshot.noSnapshot");
     default:
-      return "비교할 수 없습니다.";
+      return t("Snapshot.cannotCompare");
   }
 }
 
@@ -62,14 +63,14 @@ export function createSnapshot(): Promise<SkillSnapshotResponse> {
 }
 
 /** 기록하기를 막는 이유 문구 (서버 오류 문구와 같은 뜻) */
-export function blockReasonText(reason: SnapshotBlockReason): string {
+export function blockReasonText(reason: SnapshotBlockReason, t: Translator): string {
   switch (reason) {
     case "ALREADY_TODAY":
-      return "오늘은 이미 기록했습니다. 내일 다시 기록할 수 있습니다.";
+      return t("Snapshot.alreadyToday");
     case "NO_CHANGE":
-      return "마지막 기록과 점수가 같아 기록할 수 없습니다.";
+      return t("Snapshot.noChange");
     case "NO_RECORDS":
-      return "레이팅에 들어간 기록이 없어 기록할 수 없습니다.";
+      return t("Snapshot.noRecords");
   }
 }
 

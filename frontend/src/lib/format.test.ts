@@ -10,6 +10,7 @@ import {
   partLabel,
   toHundredths,
 } from "@/lib/format";
+import { koT } from "@/i18n/ko-translator";
 
 describe("formatRate (달성률 표시)", () => {
   it("100.00은 MAX로 표시한다", () => {
@@ -64,14 +65,14 @@ describe("partLabel / difficultyLabel", () => {
 
 describe("formatTier (레이팅 상수 난이도)", () => {
   it("0.1 단위로 표시한다", () => {
-    expect(formatTier(6)).toBe("6.0");
-    expect(formatTier(5.9)).toBe("5.9");
-    expect(formatTier(6.8)).toBe("6.8");
+    expect(formatTier(6, koT)).toBe("6.0");
+    expect(formatTier(5.9, koT)).toBe("5.9");
+    expect(formatTier(6.8, koT)).toBe("6.8");
   });
 
   it("값이 없으면 미정", () => {
-    expect(formatTier(null)).toBe("미정");
-    expect(formatTier(undefined)).toBe("미정");
+    expect(formatTier(null, koT)).toBe("미정");
+    expect(formatTier(undefined, koT)).toBe("미정");
   });
 });
 

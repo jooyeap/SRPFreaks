@@ -1,7 +1,10 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
+import { useEffect, useState, type ReactNode } from "react";
+import { setClientTranslator } from "@/i18n/client-messages";
+import { ApiError } from "@/lib/api";
 import { AuthProvider } from "@/components/AuthProvider";
 import { QueryCacheCleaner } from "@/components/QueryCacheCleaner";
 import { ToastProvider } from "@/components/Toast";
@@ -12,6 +15,12 @@ import { ToastProvider } from "@/components/Toast";
  * 모듈 최상단에 하나만 만들면 서버에서 여러 사용자의 캐시가 섞일 수 있다. 컴포넌트마다 한 번만 만들어 둔다.
  */
 export function Providers({ children }: { children: ReactNode }) {
+  // 컴포넌트 밖(api.ts, google.ts)에서 만드는 오류 문구도 현재 언어로 나오게 번역기를 등록한다
+  const t = useTranslations();
+  useEffect(() => {
+    setClientTranslator(t);
+    return () => setClientTranslator(null);
+  }, [t]);
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -19,6 +28,8 @@ export function Providers({ children }: { children: ReactNode }) {
           queries: {
             staleTime: 30_000, // 30초 안에 같은 화면을 다시 열면 다시 요청하지 않는다
             refetchOnWindowFocus: false,
+            // 4xx(없는 곡, 권한 없음 등)는 다시 보내도 같은 답이라 바로 실패로 보여 준다. 네트워크·시간 초과·5xx만 자동으로 두 번 더 시도한다.
+            retry: (failureCount, error) => !(error instanceof ApiError && error.status >= 400 && error.status < 500) && failureCount < 2,
           },
         },
       }),

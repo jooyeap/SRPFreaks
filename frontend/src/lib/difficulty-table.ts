@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/api";
 import type { DifficultyTableResponse, PageResponse, TierGroupResponse } from "@/lib/api-types";
 import { formatTier } from "@/lib/format";
 import type { InstrumentPart } from "@/lib/types";
+import type { Translator } from "@/i18n/translator";
 
 /**
  * 레이팅/서열표 화면이 쓰는 서열표를 고른다: 상태가 ACTIVE이고 노트 옵션이 SRN+인 표 중 id가 가장 작은 것.
@@ -72,7 +73,7 @@ export interface ProgressGroup {
 /** 이 값 이상의 기준 난이도 묶음은 진행도 카드에서 한 줄(`6.5 이상`)로 합친다. 높은 난이도는 곡 수가 적어 줄이 길어지기만 해서다. */
 export const MERGE_FROM_TIER = 6.5;
 
-export function tableProgress(groups: readonly TierGroupResponse[]): TableProgress {
+export function tableProgress(groups: readonly TierGroupResponse[], t: Translator): TableProgress {
   const sum = (pick: (g: TierGroupResponse) => number) => groups.reduce((acc, g) => acc + pick(g), 0);
   return {
     total: sum((g) => g.total),
@@ -82,7 +83,7 @@ export function tableProgress(groups: readonly TierGroupResponse[]): TableProgre
     ss: sum((g) => g.ss),
     s: sum((g) => g.s),
     belowS: sum((g) => g.belowS),
-    groups: progressGroups(groups),
+    groups: progressGroups(groups, t),
   };
 }
 
@@ -91,7 +92,7 @@ export function tableProgress(groups: readonly TierGroupResponse[]): TableProgre
  * 나머지는 서열표 순서 그대로 둔다. 합친 줄이 하나뿐이어도 `6.5 이상`으로 보여 준다(기준이 일정해야 헷갈리지 않는다).
  * 부동소수 비교를 피하려고 0.1 단위 정수로 바꿔서 비교한다.
  */
-function progressGroups(groups: readonly TierGroupResponse[]): ProgressGroup[] {
+function progressGroups(groups: readonly TierGroupResponse[], t: Translator): ProgressGroup[] {
   const mergeFrom = Math.round(MERGE_FROM_TIER * 10);
   const high = groups.filter((g) => g.tier !== null && Math.round(g.tier * 10) >= mergeFrom);
   const result: ProgressGroup[] = [];
@@ -99,7 +100,7 @@ function progressGroups(groups: readonly TierGroupResponse[]): ProgressGroup[] {
     const sum = (pick: (g: TierGroupResponse) => number) => high.reduce((acc, g) => acc + pick(g), 0);
     result.push({
       key: "merged-high",
-      label: `${formatTier(MERGE_FROM_TIER)} 이상`,
+      label: t("Progress.mergedHigh", { tier: formatTier(MERGE_FROM_TIER, t) }),
       href: "/table",
       total: sum((g) => g.total),
       recorded: sum((g) => g.recorded),
@@ -116,7 +117,7 @@ function progressGroups(groups: readonly TierGroupResponse[]): ProgressGroup[] {
     }
     result.push({
       key: g.tier === null ? "undecided" : tierParam(g.tier),
-      label: formatTier(g.tier),
+      label: formatTier(g.tier, t),
       href: folderHref(g.tier),
       total: g.total,
       recorded: g.recorded,

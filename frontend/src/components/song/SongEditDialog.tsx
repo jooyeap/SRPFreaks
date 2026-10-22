@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/components/Toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useId, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { ApiError } from "@/lib/api";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 import { difficultyLabel, partLabel } from "@/lib/format";
@@ -12,15 +12,17 @@ import {
   addAlias,
   aliasesOf,
   aliasLimit,
-  chartEditSchema,
+  makeChartEditSchema,
   SONG_EDIT_AFFECTED_KEYS,
-  songEditSchema,
+  makeSongEditSchema,
   songToEditValues,
   updateChart,
   updateSong,
   type ChartEditValues,
   type SongEditValues,
 } from "@/lib/song-admin";
+import { useTranslations } from "next-intl";
+import { TitleDuplicateNotice } from "@/components/song/TitleDuplicateNotice";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -33,6 +35,7 @@ export type SongEditTarget = { kind: "song"; song: SongDetailResponse } | { kind
  * 채보의 파트·난이도는 서버가 바꾸지 못하게 해서(채보의 정체성) 레벨만 고친다.
  */
 export function SongEditDialog({ target, onClose }: { target: SongEditTarget | null; onClose: () => void }) {
+  const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const open = target !== null;
@@ -68,7 +71,7 @@ export function SongEditDialog({ target, onClose }: { target: SongEditTarget | n
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
           <h2 id={titleId} className="mb-3 text-lg font-extrabold">
-            {target.kind === "song" ? "곡 정보 수정" : "채보 수정"}
+            {target.kind === "song" ? t("Song.editSong") : t("Song.editChart")}
           </h2>
           {target.kind === "song" ? <SongForm song={target.song} onDone={onClose} /> : <ChartForm song={target.song} chart={target.chart} onDone={onClose} />}
         </>
@@ -78,16 +81,18 @@ export function SongEditDialog({ target, onClose }: { target: SongEditTarget | n
 }
 
 function useErrorText(error: unknown): { message: string | null; lines: string[] } {
+  const t = useTranslations();
   if (!error) {
     return { message: null, lines: [] };
   }
   if (error instanceof ApiError) {
     return { message: error.message, lines: error.fieldErrors ? Object.values(error.fieldErrors) : [] };
   }
-  return { message: "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.", lines: [] };
+  return { message: t("Song.saveFailed"), lines: [] };
 }
 
 function Footer({ pending, error, onDone }: { pending: boolean; error: unknown; onDone: () => void }) {
+  const t = useTranslations();
   const { message, lines } = useErrorText(error);
   return (
     <>
@@ -101,10 +106,10 @@ function Footer({ pending, error, onDone }: { pending: boolean; error: unknown; 
       ) : null}
       <div className="flex gap-2.5">
         <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg">
-          취소
+          {t("Common.cancel")}
         </button>
         <button type="submit" disabled={pending} className="h-12 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-60">
-          {pending ? "저장 중" : "저장"}
+          {pending ? t("Song.saving") : t("Song.save")}
         </button>
       </div>
     </>
@@ -112,12 +117,16 @@ function Footer({ pending, error, onDone }: { pending: boolean; error: unknown; 
 }
 
 function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => void }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
+  const schema = useMemo(() => makeSongEditSchema(t), [t]);
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
-  } = useForm<SongEditValues>({ resolver: zodResolver(songEditSchema), defaultValues: songToEditValues(song), mode: "onTouched" });
+  } = useForm<SongEditValues>({ resolver: zodResolver(schema), defaultValues: songToEditValues(song), mode: "onTouched" });
+  const titleValue = useWatch({ control, name: "title" });
 
   // 검색 키워드(별칭): 곡명 대신 쓰는 줄임말·별명. 폼 값(RHF)과 따로 목록 상태로 두고, 저장할 때 곡 정보와 함께 보낸다.
   const [aliases, setAliases] = useState<string[]>(() => aliasesOf(song));
@@ -129,7 +138,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
     if (draft.trim() === "") {
       return aliases;
     }
-    const result = addAlias(aliases, draft, limit);
+    const result = addAlias(aliases, draft, limit, t);
     if (!result.ok) {
       setAliasError(result.message);
       return null;
@@ -144,7 +153,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
   const mutation = useMutation({
     mutationFn: ({ values, list }: { values: SongEditValues; list: string[] }) => updateSong(song, values, list),
     onSuccess: async () => {
-      toast("곡 정보를 수정했습니다.");
+      toast(t("Song.songEdited"));
       await Promise.all(SONG_EDIT_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onDone();
     },
@@ -164,7 +173,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
     >
       <div className="flex flex-col gap-1">
         <label htmlFor="edit-title" className="text-sm text-fg-sub">
-          곡명
+          {t("Song.fieldTitle")}
         </label>
         <input id="edit-title" type="text" autoComplete="off" aria-invalid={errors.title ? true : undefined} className={FIELD} {...register("title")} />
         {errors.title ? (
@@ -172,10 +181,11 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
             {errors.title.message}
           </p>
         ) : null}
+        <TitleDuplicateNotice title={titleValue ?? ""} excludeSongId={song.id} />
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="edit-artist" className="text-sm text-fg-sub">
-          아티스트
+          {t("Song.fieldArtist")}
         </label>
         <input id="edit-artist" type="text" autoComplete="off" className={FIELD} {...register("artist")} />
         {errors.artist ? (
@@ -186,7 +196,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="edit-version" className="text-sm text-fg-sub">
-          버전
+          {t("Song.fieldVersion")}
         </label>
         <input id="edit-version" type="text" autoComplete="off" className={`${FIELD} w-40`} {...register("addedVersion")} />
         {errors.addedVersion ? (
@@ -197,17 +207,17 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="edit-alias" className="text-sm text-fg-sub">
-          검색 키워드
+          {t("Song.searchKeywords")}
         </label>
         {aliases.length > 0 ? (
-          <ul aria-label="등록된 검색 키워드" className="flex flex-wrap gap-1.5">
+          <ul aria-label={t("Song.registeredKeywords")} className="flex flex-wrap gap-1.5">
             {aliases.map((alias) => (
               <li key={alias} className="flex items-center gap-1 rounded-lg border border-chip-line py-0.5 pl-3 pr-1 text-sm text-fg">
                 {alias}
                 <button
                   type="button"
                   onClick={() => setAliases((current) => current.filter((a) => a !== alias))}
-                  aria-label={`${alias} 키워드 삭제`}
+                  aria-label={t("Song.removeKeyword", { alias })}
                   className="flex h-6 w-6 items-center justify-center rounded-full text-fg-sub hover:text-fg"
                 >
                   <span aria-hidden="true">×</span>
@@ -216,7 +226,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-fg-dim">등록된 키워드가 없습니다.</p>
+          <p className="text-xs text-fg-dim">{t("Song.noKeywords")}</p>
         )}
         <div className="flex gap-2">
           <input
@@ -237,7 +247,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
             className={`${FIELD} min-w-0 flex-1`}
           />
           <button type="button" onClick={commitDraft} className="rounded-[10px] border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
-            추가
+            {t("Song.add")}
           </button>
         </div>
         {aliasError ? (
@@ -246,23 +256,25 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
           </p>
         ) : null}
         <p id="edit-alias-help" className="text-xs text-fg-dim">
-          곡명 대신 쓰는 줄임말이나 별명을 등록하면 곡 검색(서열표 검색 포함)에서 찾을 수 있습니다. 저장하면 반영됩니다. ({aliases.length}/{limit})
+          {t("Song.aliasHelp", { count: aliases.length, limit })}
         </p>
       </div>
-      <p className="text-xs text-fg-dim">변경 내용은 관리 기록에 남습니다.</p>
+      <p className="text-xs text-fg-dim">{t("Song.auditNote")}</p>
       <Footer pending={mutation.isPending} error={mutation.error} onDone={onDone} />
     </form>
   );
 }
 
 function ChartForm({ song, chart, onDone }: { song: SongDetailResponse; chart: SongChartResponse; onDone: () => void }) {
+  const t = useTranslations();
   const queryClient = useQueryClient();
+  const chartSchema = useMemo(() => makeChartEditSchema(t), [t]);
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ChartEditValues>({
-    resolver: zodResolver(chartEditSchema),
+    resolver: zodResolver(chartSchema),
     defaultValues: { level: chart.level.toFixed(2) },
     mode: "onTouched",
   });
@@ -271,7 +283,7 @@ function ChartForm({ song, chart, onDone }: { song: SongDetailResponse; chart: S
   const mutation = useMutation({
     mutationFn: (values: ChartEditValues) => updateChart(chart, values),
     onSuccess: async () => {
-      toast("채보를 수정했습니다.");
+      toast(t("Song.chartEdited"));
       await Promise.all(SONG_EDIT_AFFECTED_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       onDone();
     },
@@ -284,7 +296,7 @@ function ChartForm({ song, chart, onDone }: { song: SongDetailResponse; chart: S
       </p>
       <div className="flex flex-col gap-1">
         <label htmlFor="edit-level" className="text-sm text-fg-sub">
-          레벨
+          {t("Song.fieldLevel")}
         </label>
         <input
           id="edit-level"
@@ -301,7 +313,7 @@ function ChartForm({ song, chart, onDone }: { song: SongDetailResponse; chart: S
           </p>
         ) : null}
       </div>
-      <p className="text-xs text-fg-dim">파트와 난이도는 바꿀 수 없습니다. 바꾸려면 채보를 삭제하고 다시 등록해 주세요. 변경 내용은 관리 기록에 남습니다.</p>
+      <p className="text-xs text-fg-dim">{t("Song.partLockedNote")}</p>
       <Footer pending={mutation.isPending} error={mutation.error} onDone={onDone} />
     </form>
   );

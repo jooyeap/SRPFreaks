@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Translator } from "@/i18n/translator";
 
 /**
  * 닉네임 검사 (Zod). 서버(User.normalizeNickname)와 같은 규칙이고, docs/DESIGN.md "닉네임 규칙"에 기록돼 있다.
@@ -29,26 +30,28 @@ export function countNicknameChars(value: string): number {
  * 닉네임 입력 스키마. 결과는 정규화된 값이다. 빈 값은 "닉네임 없음"을 뜻하므로 오류가 아니라 null로 돌려준다
  * (서버도 빈 값은 NULL로 저장한다).
  */
-export const nicknameSchema = z
-  .string()
-  .transform((value) => normalizeNickname(value))
-  .superRefine((value, ctx) => {
-    if (value.length === 0) {
-      return;
-    }
-    const length = countNicknameChars(value);
-    if (length < NICKNAME_MIN_LENGTH || length > NICKNAME_MAX_LENGTH) {
-      ctx.addIssue({
-        code: "custom",
-        message: `닉네임은 ${NICKNAME_MIN_LENGTH}자 이상 ${NICKNAME_MAX_LENGTH}자 이하여야 합니다.`,
-      });
-      return;
-    }
-    if (!NICKNAME_PATTERN.test(value)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "닉네임은 영문, 숫자, 일본어(히라가나·가타카나·한자)와 ー ・ _ - 만 사용할 수 있습니다.",
-      });
-    }
-  })
-  .transform((value) => (value.length === 0 ? null : value));
+export function makeNicknameSchema(t: Translator) {
+  return z
+    .string()
+    .transform((value) => normalizeNickname(value))
+    .superRefine((value, ctx) => {
+      if (value.length === 0) {
+        return;
+      }
+      const length = countNicknameChars(value);
+      if (length < NICKNAME_MIN_LENGTH || length > NICKNAME_MAX_LENGTH) {
+        ctx.addIssue({
+          code: "custom",
+          message: t("Validation.nicknameLength", { min: NICKNAME_MIN_LENGTH, max: NICKNAME_MAX_LENGTH }),
+        });
+        return;
+      }
+      if (!NICKNAME_PATTERN.test(value)) {
+        ctx.addIssue({
+          code: "custom",
+          message: t("Validation.nicknameChars"),
+        });
+      }
+    })
+    .transform((value) => (value.length === 0 ? null : value));
+}

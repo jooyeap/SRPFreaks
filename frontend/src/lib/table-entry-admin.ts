@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { apiFetch } from "@/lib/api";
 import type { TableEntryResponse } from "@/lib/api-types";
+import type { Translator } from "@/i18n/translator";
 
 /**
  * 서열표 값 수정(ROOT·ADMIN) 폼의 검사와 API 호출.
@@ -16,30 +17,33 @@ export const PATTERN_CHOICES = ["단일", "복합", "이중", "삼중", "레이�
 const TIER_FORMAT = /^\d{1,2}(\.\d)?$/;
 const TIER_TOO_MANY_DECIMALS = /^\d{1,2}\.\d{2,}$/;
 
-export const tableEntrySchema = z.object({
-  /** 비우면 미정. 입력한 문자열 그대로 검사한다(부동소수점 오차를 피하려는 것). */
-  tier: z
-    .string()
-    .trim()
-    .superRefine((value, ctx) => {
-      if (value === "") {
-        return; // 미정
-      }
-      if (TIER_TOO_MANY_DECIMALS.test(value)) {
-        ctx.addIssue({ code: "custom", message: "레이팅 상수 난이도는 소수 첫째 자리까지만 입력할 수 있습니다." });
-        return;
-      }
-      if (!TIER_FORMAT.test(value)) {
-        ctx.addIssue({ code: "custom", message: "레이팅 상수 난이도는 0.0 이상의 숫자로 입력해 주세요." });
-      }
-    }),
-  recommend: z.enum(["", ...RECOMMEND_CHOICES]),
-  pattern: z.enum(["", ...PATTERN_CHOICES]),
-  /** 레이팅 반영 스위치(D28). 꺼져 있으면 기준 난이도·속성이 있어도 레이팅에서 뺀다. */
-  ratingEnabled: z.boolean(),
-});
+/** 번역기를 받는 이유: 오류 문구가 언어마다 다르기 때문이다. 폼이 열릴 때 한 번 만든다(`useMemo`). */
+export function makeTableEntrySchema(t: Translator) {
+  return z.object({
+    /** 비우면 미정. 입력한 문자열 그대로 검사한다(부동소수점 오차를 피하려는 것). */
+    tier: z
+      .string()
+      .trim()
+      .superRefine((value, ctx) => {
+        if (value === "") {
+          return; // 미정
+        }
+        if (TIER_TOO_MANY_DECIMALS.test(value)) {
+          ctx.addIssue({ code: "custom", message: t("Validation.tierDecimals") });
+          return;
+        }
+        if (!TIER_FORMAT.test(value)) {
+          ctx.addIssue({ code: "custom", message: t("Validation.tierNumber") });
+        }
+      }),
+    recommend: z.enum(["", ...RECOMMEND_CHOICES]),
+    pattern: z.enum(["", ...PATTERN_CHOICES]),
+    /** 레이팅 반영 스위치(D28). 꺼져 있으면 기준 난이도·속성이 있어도 레이팅에서 뺀다. */
+    ratingEnabled: z.boolean(),
+  });
+}
 
-export type TableEntryFormValues = z.infer<typeof tableEntrySchema>;
+export type TableEntryFormValues = z.infer<ReturnType<typeof makeTableEntrySchema>>;
 
 /** 서버로 보내는 본문. 값이 없으면 null (PUT은 보낸 값으로 통째로 교체한다). */
 export interface TableEntryUpdateBody {

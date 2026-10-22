@@ -15,14 +15,18 @@ import { fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficu
 import { overallStages } from "@/lib/my-page";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 import { fetchLevelRateFolders, fetchTierRateFolders, statsKeys, type StatsAxis } from "@/lib/rate-folders";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
+import type { MessageKey } from "@/i18n/translator";
 
-const AXES: readonly { value: StatsAxis; label: string }[] = [
-  { value: "level", label: "레벨 폴더" },
-  { value: "tier", label: "서열표 난이도" },
+const AXES: readonly { value: StatsAxis; labelKey: MessageKey }[] = [
+  { value: "level", labelKey: "MyPage.axisLevel" },
+  { value: "tier", labelKey: "MyPage.axisTier" },
 ];
 
-function errorMessage(error: unknown): string {
-  return error instanceof ApiError ? error.message : "통계를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+function errorMessage(error: unknown, t: Translator): string {
+  return error instanceof ApiError ? error.message : t("MyPage.statsFailed");
 }
 
 /**
@@ -32,6 +36,7 @@ function errorMessage(error: unknown): string {
  * 맨 위에 전체 달성 현황을 둔다. 곡 목록의 폴더 API(/songs/chart-folders)를 합산하고 곡 목록 화면과 같은 쿼리 키라 캐시를 함께 쓴다.
  */
 export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis: StatsAxis; onAxisChange: (axis: StatsAxis) => void }) {
+  const t = useTranslations();
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const overall = useQuery({
     queryKey: songListKeys.folders(userId),
@@ -43,11 +48,13 @@ export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis:
       {overall.data ? (
         <OverallStageCard stages={overall.data} />
       ) : overall.isError ? (
-        <p role="alert" className="text-sm text-fg">달성 현황을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <ErrorRetry onRetry={() => void overall.refetch()} retrying={overall.isFetching}>
+          {t("MyPage.overallFailed")}
+        </ErrorRetry>
       ) : (
-        <Skeleton label="달성 현황을 불러오는 중입니다." className="h-[8.5rem]" />
+        <Skeleton label={t("MyPage.overallLoading")} className="h-[8.5rem]" />
       )}
-      <div role="tablist" aria-label="통계 기준" className="flex gap-1 border-b border-line">
+      <div role="tablist" aria-label={t("MyPage.axesAria")} className="flex gap-1 border-b border-line">
         {AXES.map((a) => {
           const selected = a.value === axis;
           return (
@@ -62,7 +69,7 @@ export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis:
                 selected ? "border-fg font-bold text-fg" : "border-transparent text-fg-sub hover:text-fg"
               }`}
             >
-              {a.label}
+              {t(a.labelKey)}
             </button>
           );
         })}
@@ -74,14 +81,16 @@ export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis:
 }
 
 function LevelFolders({ userId, includeZero }: { userId: number; includeZero: boolean }) {
+  const t = useTranslations();
   const q = useQuery({
     queryKey: statsKeys.levelFolders(userId),
     queryFn: ({ signal }) => fetchLevelRateFolders(signal),
   });
-  return <FolderList axis="level" query={q} includeZero={includeZero} emptyText="아직 등록된 곡이 없습니다." />;
+  return <FolderList axis="level" query={q} includeZero={includeZero} emptyText={t("MyPage.noSongsYet")} />;
 }
 
 function TierFolders({ userId, includeZero }: { userId: number; includeZero: boolean }) {
+  const t = useTranslations();
   const tables = useQuery({
     queryKey: tableKeys.list,
     queryFn: ({ signal }) => fetchDifficultyTables(signal),
@@ -94,12 +103,16 @@ function TierFolders({ userId, includeZero }: { userId: number; includeZero: boo
     enabled: tableId !== null,
   });
   if (tables.isSuccess && tableId === null) {
-    return <p className="text-sm text-fg-sub">사용할 수 있는 서열표가 아직 없습니다.</p>;
+    return <p className="text-sm text-fg-sub">{t("MyPage.noTables")}</p>;
   }
   if (tables.isError) {
-    return <p role="alert" className="text-sm text-fg">{errorMessage(tables.error)}</p>;
+    return (
+      <ErrorRetry onRetry={() => void tables.refetch()} retrying={tables.isFetching}>
+        {errorMessage(tables.error, t)}
+      </ErrorRetry>
+    );
   }
-  return <FolderList axis="tier" query={q} includeZero={includeZero} emptyText="서열표에 레이팅 상수 난이도가 정해진 채보가 아직 없습니다." />;
+  return <FolderList axis="tier" query={q} includeZero={includeZero} emptyText={t("MyPage.noRatedCharts")} />;
 }
 
 function FolderList({
@@ -110,9 +123,10 @@ function FolderList({
 }: {
   axis: StatsAxis;
   includeZero: boolean;
-  query: { data?: RateFolderListResponse; isError: boolean; error: unknown };
+  query: { data?: RateFolderListResponse; isError: boolean; error: unknown; refetch: () => unknown; isFetching: boolean };
   emptyText: string;
 }) {
+  const t = useTranslations();
   if (query.data) {
     return query.data.folders.length === 0 ? (
       <p className="text-sm text-fg-sub">{emptyText}</p>
@@ -121,9 +135,13 @@ function FolderList({
     );
   }
   if (query.isError) {
-    return <p role="alert" className="text-sm text-fg">{errorMessage(query.error)}</p>;
+    return (
+      <ErrorRetry onRetry={() => void query.refetch()} retrying={query.isFetching}>
+        {errorMessage(query.error, t)}
+      </ErrorRetry>
+    );
   }
-  return <Skeleton label="통계를 불러오는 중입니다." className="h-72" />;
+  return <Skeleton label={t("MyPage.statsLoading")} className="h-72" />;
 }
 
 /** 폴더가 많아서(특히 서열표 난이도) 10개씩 나눠 보여 준다. */

@@ -7,11 +7,13 @@ import com.srpfreaks.backend.dto.DifficultyResponse;
 import com.srpfreaks.backend.dto.DifficultyUpdateRequest;
 import com.srpfreaks.backend.dto.SongDetailResponse;
 import com.srpfreaks.backend.dto.SongRequest;
+import com.srpfreaks.backend.dto.SongTitleCheckResponse;
 import com.srpfreaks.backend.dto.SongTitleRequest;
 import com.srpfreaks.backend.entity.AuditLog;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
+import com.srpfreaks.backend.repository.ActiveSongTitle;
 import com.srpfreaks.backend.repository.AuditLogRepository;
 import com.srpfreaks.backend.repository.SongDifficultyRepository;
 import com.srpfreaks.backend.repository.SongRepository;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 곡/채보 관리(등록·수정·삭제). ROOT·ADMIN만 호출할 수 있고(컨트롤러의 @PreAuthorize),
@@ -45,6 +48,9 @@ public class SongAdminService {
     // ---------------------------------------------------------------- 곡
 
     public SongDetailResponse createSong(Long actorId, SongRequest request) {
+        // 같은 이름의 곡을 또 만들면 가져오기가 "같은 이름의 곡이 여러 개"로 제외하고, 곡 목록에도 같은 곡이 두 번 나온다.
+        // 다른 파트·난이도 채보가 필요하면 새 곡이 아니라 기존 곡에 채보를 추가해야 한다.
+        rejectDuplicateTitle(request.title(), null);
         Song song = Song.create(request.title().strip(), blankToNull(request.artist()),
                 blankToNull(request.source()), userRepository.getReferenceById(actorId));
         song.changeMeta(blankToNull(request.addedVersion()), blankToNull(request.titleFolder()),
@@ -59,6 +65,7 @@ public class SongAdminService {
     /** 수정(PUT): 보낸 값으로 교체한다. 출처(source)는 등록 때의 기록이라 바꾸지 않는다. */
     public SongDetailResponse updateSong(Long actorId, Long songId, SongRequest request) {
         Song song = findSong(songId);
+        rejectDuplicateTitle(request.title(), songId); // 이름을 바꿔서 다른 곡과 같아지는 경우도 막는다(자기 자신은 제외)
         song.changeTitle(request.title().strip());
         song.changeArtist(blankToNull(request.artist()));
         song.changeMeta(blankToNull(request.addedVersion()), blankToNull(request.titleFolder()),
@@ -71,6 +78,14 @@ public class SongAdminService {
 
         audit(actorId, "SONG_UPDATE", "SONG", song.getId(), Map.of("title", song.getTitle()));
         return songQueryService.detailOf(song);
+    }
+
+    /** 화면의 실시간 확인용: 이 이름이 이미 있는지(수정이면 자기 곡은 제외). 등록·수정과 같은 규칙이다. */
+    @Transactional(readOnly = true)
+    public SongTitleCheckResponse checkTitle(String title, Long excludeSongId) {
+        return findDuplicateTitle(title, excludeSongId)
+                .map(d -> new SongTitleCheckResponse(true, d.id(), d.title()))
+                .orElseGet(SongTitleCheckResponse::none);
     }
 
     public void deleteSong(Long actorId, Long songId) {
@@ -128,6 +143,20 @@ public class SongAdminService {
     }
 
     // ---------------------------------------------------------------- 내부
+
+    /** 정규화(NFKC·공백 제거·소문자)한 곡명이 같은 곡. 가져오기가 곡을 찾는 규칙과 같다. */
+    private Optional<ActiveSongTitle> findDuplicateTitle(String title, Long excludeSongId) {
+        String normalized = SongTitle.normalize(title.strip());
+        return songRepository.findActiveTitles().stream()
+                .filter(t -> !t.id().equals(excludeSongId) && SongTitle.normalize(t.title()).equals(normalized))
+                .findFirst();
+    }
+
+    private void rejectDuplicateTitle(String title, Long excludeSongId) {
+        if (findDuplicateTitle(title, excludeSongId).isPresent()) {
+            throw new ApiException(ErrorCode.SONG_TITLE_DUPLICATE);
+        }
+    }
 
     private Song findSong(Long songId) {
         return songRepository.findByIdAndDeletedFalse(songId).orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));

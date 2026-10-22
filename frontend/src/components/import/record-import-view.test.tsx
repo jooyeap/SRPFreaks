@@ -41,6 +41,18 @@ describe("최근 플레이 가져오기 안내 화면", () => {
       </QueryClientProvider>,
     );
 
+  it("로그인하지 않았으면 로그인 안내를 보여 주고, 빈 공간이 한쪽으로 몰리지 않게 세로 가운데에 놓는다", async () => {
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue(json({ code: "AUTH_FAILED", message: "x" }, 401)); // 시작 복구 실패(로그인 안 된 상태)
+    renderIt();
+    const login = await screen.findByRole("link", { name: "로그인" });
+    expect(login).toHaveAttribute("href", "/login");
+    // 푸터는 맨 아래에 붙어 있어서, 짧은 안내 화면의 내용을 가운데에 두어야 로그인 버튼 아래만 비어 보이지 않는다
+    const section = login.closest("section");
+    expect(section).toHaveClass("justify-center");
+    expect(section?.className).toContain("min-h-[40svh]");
+  });
+
   it("북마크 만들기 안내가 보인다(토큰은 필요 없음)", async () => {
     clearHandoff();
     renderIt();

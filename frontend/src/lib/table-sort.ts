@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/i18n/translator";
 import type { TableEntryResponse } from "@/lib/api-types";
 
 /**
@@ -6,12 +7,12 @@ import type { TableEntryResponse } from "@/lib/api-types";
  */
 export type TableSort = "level" | "rateDesc" | "rateAsc" | "title" | "recommend";
 
-export const SORT_OPTIONS: readonly { value: TableSort; label: string }[] = [
-  { value: "level", label: "레벨 높은 순" },
-  { value: "rateDesc", label: "내 달성률 높은 순" },
-  { value: "rateAsc", label: "내 달성률 낮은 순" },
-  { value: "title", label: "곡명 순" },
-  { value: "recommend", label: "추천도 순" },
+export const SORT_OPTIONS: readonly { value: TableSort; labelKey: MessageKey }[] = [
+  { value: "level", labelKey: "TableSort.level" },
+  { value: "rateDesc", labelKey: "TableSort.rateDesc" },
+  { value: "rateAsc", labelKey: "TableSort.rateAsc" },
+  { value: "title", labelKey: "TableSort.title" },
+  { value: "recommend", labelKey: "TableSort.recommend" },
 ];
 
 export const DEFAULT_SORT: TableSort = "level";

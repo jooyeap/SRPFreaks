@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { RatingView } from "@/components/rating/RatingView";
@@ -212,5 +212,15 @@ describe("RatingView", () => {
     fetchMock.mockResolvedValueOnce(json({ code: "INTERNAL", message: "서버에 문제가 생겼습니다.", timestamp: "t" }, 500));
     renderView();
     expect(await screen.findByRole("alert")).toHaveTextContent("서버에 문제가 생겼습니다.");
+  });
+
+  it("불러오기에 실패하면 '다시 시도' 버튼으로 새로고침 없이 다시 불러온다", async () => {
+    fetchMock.mockResolvedValueOnce(json({ code: "INTERNAL", message: "서버에 문제가 생겼습니다.", timestamp: "t" }, 500));
+    fetchMock.mockResolvedValueOnce(json(skill()));
+    renderView();
+    expect(await screen.findByRole("alert")).toHaveTextContent("서버에 문제가 생겼습니다.");
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    expect(await screen.findByRole("region", { name: "단일" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

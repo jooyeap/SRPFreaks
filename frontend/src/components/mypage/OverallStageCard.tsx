@@ -1,6 +1,7 @@
 import { StageBadge } from "@/components/table/StageBadge";
 import { StageBar } from "@/components/table/StageBar";
 import type { OverallStages } from "@/lib/my-page";
+import { useTranslations } from "next-intl";
 
 function percent(part: number, whole: number): number {
   return whole > 0 ? Math.round((part / whole) * 100) : 0;
@@ -11,6 +12,7 @@ function percent(part: number, whole: number): number {
  * 홈의 서열표 진행도와 같은 막대·색을 쓴다(색 값은 globals.css). 막대는 장식이고 같은 숫자가 글자로 있다.
  */
 export function OverallStageCard({ stages }: { stages: OverallStages }) {
+  const t = useTranslations();
   const counts = [
     { stage: "EXC", count: stages.exc },
     { stage: "FC", count: stages.fc },
@@ -18,10 +20,10 @@ export function OverallStageCard({ stages }: { stages: OverallStages }) {
     { stage: "S", count: stages.s },
   ] as const;
   return (
-    <section aria-label="전체 달성 현황" className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
-      <h2 className="font-num text-[17px] font-bold text-fg">전체 달성 현황</h2>
+    <section aria-label={t("MyPage.overallTitle")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4">
+      <h2 className="font-num text-[17px] font-bold text-fg">{t("MyPage.overallTitle")}</h2>
       <p className="text-sm text-fg-sub">
-        기록 <span className="font-num font-semibold text-fg">{stages.recorded}</span>/{stages.total}
+        {t.rich("MyPage.recordedOverall", { n: (c) => <span className="font-num font-semibold text-fg">{c}</span>, recorded: stages.recorded, total: stages.total })}
         <span className="ml-2 font-num text-xs text-fg-dim">{percent(stages.recorded, stages.total)}%</span>
       </p>
       <StageBar counts={stages} total={stages.total} className="h-2.5" />
@@ -33,7 +35,7 @@ export function OverallStageCard({ stages }: { stages: OverallStages }) {
           </li>
         ))}
         <li className="text-fg-dim">
-          S 미만 <span className="font-num text-fg-sub">{stages.belowS}</span>
+          {t.rich("MyPage.belowS", { n: (c) => <span className="font-num text-fg-sub">{c}</span>, count: stages.belowS })}
         </li>
       </ul>
     </section>

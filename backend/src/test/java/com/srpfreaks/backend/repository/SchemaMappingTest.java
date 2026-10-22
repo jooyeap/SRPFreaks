@@ -114,7 +114,8 @@ class SchemaMappingTest {
         em.persist(AuditLog.record(user, "SONG_IMPORT", "SONG", String.valueOf(song.getId()), Map.of("count", 1)));
         Notice notice = Notice.create(user, "업데이트 안내", "줄1\n줄2");
         em.persist(notice);
-        Suggestion suggestion = Suggestion.create(user, SuggestionCategory.SONG_REQUEST, "곡 추가 요청", "곡명: 예시\n아티스트: 예시");
+        Suggestion suggestion = Suggestion.create(user, SuggestionCategory.SONG_REQUEST, "곡 추가 요청", "곡명: 예시\n아티스트: 예시",
+                InstrumentPart.BASS, DifficultyType.ADVANCED);
         suggestion.review(SuggestionStatus.REVIEWING, "확인 중입니다.");
         em.persist(suggestion);
         SetlistItem setlistItem = SetlistItem.create(user, difficulty);
@@ -152,6 +153,8 @@ class SchemaMappingTest {
         assertThat(loadedSuggestion.getStatus()).isEqualTo(SuggestionStatus.REVIEWING);
         assertThat(loadedSuggestion.getAdminNote()).isEqualTo("확인 중입니다.");
         assertThat(loadedSuggestion.getContent()).isEqualTo("곡명: 예시\n아티스트: 예시");
+        assertThat(loadedSuggestion.getRequestedPart()).isEqualTo(InstrumentPart.BASS);
+        assertThat(loadedSuggestion.getRequestedDifficulty()).isEqualTo(DifficultyType.ADVANCED);
         assertThat(loadedSuggestion.getCreatedAt()).isNotNull();
 
         SetlistItem loadedSetlistItem = em.find(SetlistItem.class, setlistItem.getId());
