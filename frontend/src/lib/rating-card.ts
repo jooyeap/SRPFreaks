@@ -2,7 +2,7 @@ import type { Translator } from "@/i18n/translator";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 import { patternLabel } from "@/lib/chart-labels";
 import { chartTier } from "@/lib/chart-tier";
-import { difficultyLabel, formatLevel, formatRate, formatScore, partLabel } from "@/lib/format";
+import { difficultyLabel, formatLevel, formatTier, formatRate, formatScore, partLabel } from "@/lib/format";
 import { siteUrl } from "@/lib/site";
 import type { AchievementStage, DifficultyType } from "@/lib/types";
 
@@ -123,6 +123,10 @@ export interface CardTileView {
   partText: string;
   /** `MAS 9.45` */
   diffText: string;
+  /** 서열표 기준 난이도(`서열 9.4`). 점수는 이 값으로 계산된다 */
+  tierText: string;
+  /** 칸이 좁을 때 쓰는 짧은 표기(`T 9.4`) */
+  tierShortText: string;
   diffColor: string;
   /** `MAX · EXC`, `98.03 · FC` */
   rateText: string;
@@ -217,6 +221,27 @@ export function truncateText(text: string, maxWidth: number, measure: (text: str
   return low === 0 ? "" : `${chars.slice(0, low).join("").trimEnd()}…`;
 }
 
+/** 곡명 글자 크기 범위(px). 크게 시작해 칸에 안 들어가면 줄이고, 최소 크기에서도 넘으면 `…`로 줄인다. */
+export const TITLE_FONT_MAX = 24;
+export const TITLE_FONT_MIN = 18;
+
+/**
+ * 곡명이 maxWidth 안에 들어가는 가장 큰 글자 크기(1px 단위)를 고른다. measure(size, text)는 그 크기로 잰 폭이다.
+ * 최소 크기에서도 넘으면 최소 크기로 `…` 줄임을 한다.
+ */
+export function fitTitle(
+  title: string,
+  maxWidth: number,
+  measure: (size: number, text: string) => number,
+): { size: number; text: string } {
+  for (let size = TITLE_FONT_MAX; size >= TITLE_FONT_MIN; size -= 1) {
+    if (measure(size, title) <= maxWidth) {
+      return { size, text: title };
+    }
+  }
+  return { size: TITLE_FONT_MIN, text: truncateText(title, maxWidth, (value) => measure(TITLE_FONT_MIN, value)) };
+}
+
 /** 구역 합계 글자색: 티어 색 중 가장 밝은 것(어두운 배경에서 읽히게). */
 export function accentColor(tier: CardTierStyle): string {
   const luminance = (hex: string) => {
@@ -233,6 +258,8 @@ function tileView(entry: SkillEntryResponse, box: { x: number; y: number; w: num
     patternText: entry.pattern ? patternLabel(entry.pattern, t) : "",
     partText: partLabel(entry.part),
     diffText: `${difficultyLabel(entry.difficulty)} ${formatLevel(entry.level)}`,
+    tierText: t("RatingCard.tier", { value: formatTier(entry.tier, t) }),
+    tierShortText: t("RatingCard.tierShort", { value: formatTier(entry.tier, t) }),
     diffColor: DIFFICULTY_COLORS[entry.difficulty],
     rateText: `${formatRate(entry.achievementRate)} · ${entry.stage}`,
     stageColor: STAGE_COLORS[entry.stage],

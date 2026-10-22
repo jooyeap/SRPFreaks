@@ -1234,6 +1234,8 @@
     "previewAlt": "レーティングカードのプレビュー",
     "download": "PNGを保存",
     "hint": "保存できない場合は、画像を長押しして保存してください。",
-    "close": "閉じる"
+    "close": "閉じる",
+    "tier": "序列 {value}",
+    "tierShort": "T{value}"
   }
 }
