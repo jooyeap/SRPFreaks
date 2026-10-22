@@ -120,7 +120,7 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
   const totalSize = portrait ? 104 : 46;
   ctx.font = `700 ${totalSize}px ${f.num}`;
   const totalW = ctx.measureText(h.totalText).width;
-  const totalBase = y0 + (portrait ? 148 : 76); // 가로는 닉네임과 같은 기준선
+  const totalBase = y0 + (portrait ? 148 : 59); // 가로는 왼쪽 두 줄(SRPFreaks·닉네임)의 세로 가운데
   withGlow(ctx, h.tier, () => text(ctx, h.totalText, right, totalBase, `700 ${totalSize}px ${f.num}`, tierFill(right - totalW, totalBase, totalW), "right"));
 
   // 닉네임 + 티어 칩
