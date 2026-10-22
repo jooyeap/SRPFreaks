@@ -4,6 +4,7 @@ import {
   type CardModel,
   type CardTierStyle,
   type CardTileView,
+  fitTitle,
   truncateText,
 } from "@/lib/rating-card";
 
@@ -174,7 +175,7 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
   ctx.fillRect(x0, y0 + m.geometry.headerH - 4, w, 1);
 }
 
-function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts): void {
+function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean): void {
   const { x, y, w, h } = tile;
   roundRect(ctx, x, y, w, h, 10);
   ctx.fillStyle = PANEL;
@@ -193,11 +194,14 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts): void {
   const left = x + 24;
   const right = x + w - 16;
 
+  // 좁은 타일(가로 5열)은 점수를 조금 줄이고 서열 표기도 짧게 써서, 타일마다 있다/없다가 갈리지 않게 한다
+  const scoreSize = compact ? 30 : 32;
+
   // 오른쪽 덩어리: 위에 `rate · stage`, 아래에 점수
-  ctx.font = `700 34px ${f.num}`;
+  ctx.font = `700 ${scoreSize}px ${f.num}`;
   const scoreW = ctx.measureText(tile.scoreText).width;
   const scoreBase = y + h - 14;
-  text(ctx, tile.scoreText, right, scoreBase, `700 34px ${f.num}`, gradient(ctx, tile.tier, right - scoreW, scoreBase, right, scoreBase), "right");
+  text(ctx, tile.scoreText, right, scoreBase, `700 ${scoreSize}px ${f.num}`, gradient(ctx, tile.tier, right - scoreW, scoreBase, right, scoreBase), "right");
   ctx.font = `600 17px ${f.num}`;
   const rateW = ctx.measureText(tile.rateText).width;
   text(ctx, tile.rateText, right, y + 28, `600 17px ${f.num}`, tile.stageColor, "right");
@@ -218,12 +222,12 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts): void {
   }
   const textMax = w - 24 - 16 - rateW - chipW - 12;
 
-  // 곡명
-  const title = truncateText(tile.title, textMax, (s) => {
-    ctx.font = `500 21px ${f.sans}`;
-    return ctx.measureText(s).width;
+  // 곡명: 24px로 시작해 칸에 안 들어가면 18px까지 줄이고, 그래도 넘으면 `…`로 줄인다(짧은 곡명은 크게, 긴 곡명은 덜 잘리게)
+  const fit = fitTitle(tile.title, textMax, (size, value) => {
+    ctx.font = `500 ${size}px ${f.sans}`;
+    return ctx.measureText(value).width;
   });
-  text(ctx, title, left, y + 33, `500 21px ${f.sans}`, TEXT);
+  text(ctx, fit.text, left, y + 33, `500 ${fit.size}px ${f.sans}`, TEXT);
 
   // 파트·난이도 알약 + 속성 칩
   const pillY = y + h - 34;
@@ -241,6 +245,15 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts): void {
   ctx.restore();
   text(ctx, tile.partText, left + 7, pillY + 16, `700 13px ${f.num}`, tile.partText === "Bass" ? PART_BASS : PART_GUITAR);
   text(ctx, tile.diffText, left + partW + 7, pillY + 16, `700 13px ${f.num}`, DIFF_TEXT);
+
+  // 서열표 기준 난이도: 알약 오른쪽에 흐리게. 점수와 겹치지 않는 가장 긴 표기를 고른다(`서열 9.4` → `T 9.4` → 생략).
+  ctx.font = `500 13px ${f.sans}`;
+  const tierX = left + partW + diffW + 8;
+  const tierRoom = right - scoreW - 6 - tierX;
+  const tierLabel = (compact ? [tile.tierShortText] : [tile.tierText, tile.tierShortText]).find((label) => ctx.measureText(label).width <= tierRoom);
+  if (tierLabel) {
+    text(ctx, tierLabel, tierX, pillY + 16, `500 13px ${f.sans}`, TEXT_MUTED);
+  }
 }
 
 /** 카드 전체를 그린다. 캔버스 크기는 호출하는 쪽이 model.width × model.height로 맞춰 둔다. */
@@ -263,7 +276,7 @@ export function drawRatingCard(ctx: Ctx, m: CardModel, fonts: CardFonts): void {
     const tw = ctx.measureText(section.title).width;
     text(ctx, section.sumText, m.contentX + tw + 14, titleBase, `700 22px ${fonts.num}`, accentColor(m.header.tier));
     for (const tile of section.tiles) {
-      drawTile(ctx, tile, fonts);
+      drawTile(ctx, tile, fonts, m.layout === "landscape");
     }
   }
 

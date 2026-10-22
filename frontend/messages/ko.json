@@ -1234,7 +1234,9 @@
     "previewAlt": "레이팅 카드 미리보기",
     "download": "PNG 저장",
     "hint": "저장이 되지 않으면 이미지를 길게 눌러 저장해 주세요.",
-    "close": "닫기"
+    "close": "닫기",
+    "tier": "서열 {value}",
+    "tierShort": "T{value}"
   },
   "TierHistory": {
     "title": "서열표 변경 이력",

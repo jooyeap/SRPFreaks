@@ -11,6 +11,9 @@ import {
   CARD_FRAME,
   cardDateLabel,
   cardFileName,
+  fitTitle,
+  TITLE_FONT_MAX,
+  TITLE_FONT_MIN,
   LAYOUT_GEOMETRY,
   songScoreStyle,
   stageCounts,
@@ -103,6 +106,25 @@ describe("truncateText", () => {
   });
 });
 
+describe("fitTitle", () => {
+  // 글자 하나가 size px 폭인 가짜 측정
+  const measure = (size: number, text: string) => Array.from(text).length * size;
+
+  it("들어가면 가장 큰 크기를 쓴다", () => {
+    expect(fitTitle("abc", 100, measure)).toEqual({ size: TITLE_FONT_MAX, text: "abc" });
+  });
+  it("안 들어가면 들어가는 가장 큰 크기까지 줄인다", () => {
+    // 5글자: 24px=120, 20px=100 -> 폭 100이면 20px
+    expect(fitTitle("abcde", 100, measure)).toEqual({ size: 20, text: "abcde" });
+  });
+  it("최소 크기에서도 넘으면 최소 크기로 …를 붙여 줄인다", () => {
+    const out = fitTitle("abcdefghij", 90, measure);
+    expect(out.size).toBe(TITLE_FONT_MIN);
+    expect(out.text.endsWith("…")).toBe(true);
+    expect(measure(TITLE_FONT_MIN, out.text)).toBeLessThanOrEqual(90);
+  });
+});
+
 describe("날짜·파일 이름", () => {
   it("Asia/Seoul 기준이다", () => {
     expect(cardDateLabel(NOW)).toBe("2026.10.23");
@@ -171,6 +193,8 @@ describe("buildCardModel", () => {
     expect(t.partText).toBe("Bass");
     expect(t.diffText).toBe("MAS 9.45");
     expect(t.patternText).toBe("");
+    expect(t.tierText).toBe("서열 9.0");
+    expect(t.tierShortText).toBe("T9.0");
     expect(t.tier).toBe(TIER_STYLES.PURPLE_GRADIENT);
     expect(m.header.totalText).toBe("5210.80");
     expect(m.header.tierName).toBe("Purple");
