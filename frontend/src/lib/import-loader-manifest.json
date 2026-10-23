@@ -1,0 +1,9 @@
+{
+  "latest": "v1",
+  "versions": {
+    "v1": {
+      "ko": "sha384-AanxfqweV4BYAMacM1/tPGsiQ8hOWDUMpQ0E8tTsSESFn6Z/8WCjf4eIWm8nI5jp",
+      "ja": "sha384-MvHM0HaARojt0xSqJQTRtkkBx5oFARypdl4siWtlwNT1yYmXjfR6PFKyVrGd6Msd"
+    }
+  }
+}

@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/Toast";
+import type { Locale } from "@/i18n/config";
 import { canUseImport } from "@/lib/features";
-import { bookmarkletMessages, buildHandoffBookmarkletHref, buildHandoffBookmarkletSource, encodeBookmarklet } from "@/lib/import-bookmarklet";
-import { useTranslations } from "next-intl";
+import { encodeBookmarklet } from "@/lib/import-bookmarklet";
+import { buildLoaderStub, loaderFailedMessage } from "@/lib/import-loader";
+import { useLocale, useTranslations } from "next-intl";
 
 type GuideTab = "pc" | "mobile";
 
@@ -61,8 +63,10 @@ function BookmarkGuide() {
   const t = useTranslations();
   const toast = useToast();
   const linkRef = useRef<HTMLAnchorElement>(null);
-  const messages = bookmarkletMessages(t);
-  const href = buildHandoffBookmarkletHref(window.location.origin, messages);
+  const locale = useLocale() as Locale;
+  // 북마크·붙여넣기 모두 짧은 한 줄(스텁)이다. 본체는 해시로 고정한 버전 파일에서 불러온다(D47, lib/import-loader.ts)
+  const stub = encodeBookmarklet(buildLoaderStub(window.location.origin, locale, loaderFailedMessage(t)));
+  const href = `javascript:${stub}`;
   const [tab, setTab] = useState<GuideTab>(() =>
     typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches ? "mobile" : "pc",
   );
@@ -89,7 +93,7 @@ function BookmarkGuide() {
    */
   async function copyBody() {
     try {
-      await navigator.clipboard.writeText(`avascript:${encodeBookmarklet(buildHandoffBookmarkletSource(window.location.origin, messages))}`);
+      await navigator.clipboard.writeText(`avascript:${stub}`);
       toast(t("Import.scriptCopied"));
     } catch {
       toast(t("Import.copyFailedScript"));
