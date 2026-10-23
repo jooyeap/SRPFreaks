@@ -78,4 +78,54 @@ describe("사용자 관리 화면", () => {
     fireEvent.click(screen.getByRole("button", { name: "ユーザー2 역할 저장" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("권한이 없습니다.");
   });
+
+  it("차단 버튼을 누르면 확인 창이 먼저 뜨고, 확인해야 PATCH /admin/users/{id}/status로 보낸다", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(page(rows)))
+      .mockResolvedValueOnce(json(user(2, { status: "BLOCKED" })))
+      .mockResolvedValue(json(page(rows)));
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: "ユーザー2 차단" }));
+
+    expect(screen.getByText(/계정을 차단할까요\?/)).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1); // 확인 전에는 요청을 보내지 않는다
+    fireEvent.click(screen.getByRole("button", { name: "차단" }));
+
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2));
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/admin/users/2/status");
+    expect(fetchMock.mock.calls[1]?.[1]?.method).toBe("PATCH");
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({ status: "BLOCKED" });
+  });
+
+  it("확인 창에서 취소하면 요청을 보내지 않는다", async () => {
+    fetchMock.mockResolvedValueOnce(json(page(rows)));
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: "ユーザー2 차단" }));
+    fireEvent.click(screen.getByRole("button", { name: "취소" }));
+
+    expect(screen.queryByText(/계정을 차단할까요\?/)).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("차단된 사용자 줄에는 `차단 해제`가 보이고 ACTIVE로 보낸다", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(page(rows)))
+      .mockResolvedValueOnce(json(user(3, { role: "ADMIN" })))
+      .mockResolvedValue(json(page(rows)));
+    renderView();
+    expect(screen.queryByRole("button", { name: "ユーザー3 차단" })).toBeNull();
+    fireEvent.click(await screen.findByRole("button", { name: "ユーザー3 차단 해제" }));
+    fireEvent.click(screen.getByRole("button", { name: "차단 해제" }));
+
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2));
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain("/admin/users/3/status");
+    expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({ status: "ACTIVE" });
+  });
+
+  it("ROOT 줄에는 차단 버튼이 없다", async () => {
+    fetchMock.mockResolvedValueOnce(json(page(rows)));
+    renderView();
+    await screen.findByText("u2@example.com");
+    expect(screen.queryByRole("button", { name: "ルート 차단" })).toBeNull();
+  });
 });

@@ -1,12 +1,13 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
 import Link from "next/link";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import type { AdminUserResponse, Role } from "@/lib/api-types";
-import { adminKeys, ADMIN_USERS_PAGE_SIZE, ASSIGNABLE_ROLES, changeUserRole, fetchAdminUsers, roleLabel } from "@/lib/admin";
+import { adminKeys, ADMIN_USERS_PAGE_SIZE, ASSIGNABLE_ROLES, changeUserRole, changeUserStatus, fetchAdminUsers, roleLabel } from "@/lib/admin";
 import { formatPlayedDate } from "@/lib/format";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { useTranslations } from "next-intl";
@@ -14,7 +15,8 @@ import { useTranslations } from "next-intl";
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
 /**
- * 사용자 목록과 역할 변경 (ROOT 전용). ADMIN을 지정하거나 해제하는 곳이다.
+ * 사용자 목록, 역할 변경, 차단/차단 해제 (ROOT 전용). ADMIN을 지정하거나 해제하는 곳이다.
+ * 차단은 로그인과 기록 입력을 막고 유저 목록에서 뺀다(기록은 지우지 않는다). 되돌릴 수 있지만 영향이 커서 확인 창을 한 번 거친다.
  * ROOT 계정에는 변경 칸이 없고, ROOT로 바꾸는 선택지도 없다(ROOT는 환경변수로만 만든다). 서버도 같은 규칙을 다시 검사한다.
  * 이메일은 ROOT가 누구인지 알아보는 데 필요해서 보여 주고, 감사 로그에는 사용자 id만 남는다.
  */
@@ -96,13 +98,22 @@ function UserRow({ viewerId, page, user }: { viewerId: number; page: number; use
     },
   });
 
+  const [confirmingStatus, setConfirmingStatus] = useState(false);
+  const blocked = user.status === "BLOCKED";
+  const statusMutation = useMutation({
+    mutationFn: () => changeUserStatus(user.id, blocked ? "ACTIVE" : "BLOCKED"),
+    onSuccess: async (saved) => {
+      setConfirmingStatus(false);
+      toast(t(saved.status === "BLOCKED" ? "Admin.blockDone" : "Admin.unblockDone"));
+      await queryClient.invalidateQueries({ queryKey: adminKeys.users(viewerId, page) });
+      await queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });
+    },
+    onError: () => setConfirmingStatus(false), // 오류는 줄 아래에 보인다
+  });
+
   const isRoot = user.role === "ROOT";
-  const error =
-    mutation.error instanceof ApiError
-      ? mutation.error.message
-      : mutation.error
-        ? t("Admin.saveFailed")
-        : null;
+  const failure = mutation.error ?? statusMutation.error;
+  const error = failure instanceof ApiError ? failure.message : failure ? t("Admin.saveFailed") : null;
 
   return (
     <li className="flex flex-col gap-2 border-b border-line px-4 py-3 last:border-b-0">
@@ -138,8 +149,28 @@ function UserRow({ viewerId, page, user }: { viewerId: number; page: number; use
           >
             {mutation.isPending ? t("Common.saving") : t("Common.save")}
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              statusMutation.reset();
+              setConfirmingStatus(true);
+            }}
+            aria-label={t(blocked ? "Admin.unblockAria" : "Admin.blockAria", { name })}
+            className="h-10 rounded-xl border border-chip-line px-4 text-sm text-fg-sub hover:text-fg"
+          >
+            {t(blocked ? "Admin.unblock" : "Admin.block")}
+          </button>
         </div>
       )}
+      <ConfirmDialog
+        open={confirmingStatus}
+        title={t(blocked ? "Admin.unblockTitle" : "Admin.blockTitle")}
+        message={t(blocked ? "Admin.unblockMessage" : "Admin.blockMessage", { name })}
+        confirmLabel={t(blocked ? "Admin.unblock" : "Admin.block")}
+        pending={statusMutation.isPending}
+        onConfirm={() => statusMutation.mutate()}
+        onCancel={() => setConfirmingStatus(false)}
+      />
       {error ? (
         <p role="alert" className="text-sm text-fg">
           {error}

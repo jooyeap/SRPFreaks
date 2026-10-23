@@ -27,6 +27,8 @@ const ACTION_LABELS: Record<string, MessageKey> = {
   TABLE_ENTRY_CREATE: "Admin.actionTableEntryCreate",
   TABLE_ENTRY_UPDATE: "Admin.actionTableEntryUpdate",
   USER_ROLE_CHANGE: "Admin.actionUserRoleChange",
+  USER_BLOCK: "Admin.actionUserBlock",
+  USER_UNBLOCK: "Admin.actionUserUnblock",
   RECORD_ADMIN_DELETE: "Admin.actionRecordAdminDelete",
   NOTICE_CREATE: "Admin.actionNoticeCreate",
   NOTICE_UPDATE: "Admin.actionNoticeUpdate",
@@ -151,6 +153,11 @@ export function fetchAdminUsers(page: number, size: number, signal?: AbortSignal
 
 export function changeUserRole(userId: number, role: Role): Promise<AdminUserResponse> {
   return apiFetch<AdminUserResponse>(`/admin/users/${userId}/role`, { method: "PATCH", body: { role } });
+}
+
+/** 계정을 차단(BLOCKED)하거나 차단을 푼다(ACTIVE). ROOT만 부를 수 있고 ROOT 계정은 차단할 수 없다. */
+export function changeUserStatus(userId: number, status: "ACTIVE" | "BLOCKED"): Promise<AdminUserResponse> {
+  return apiFetch<AdminUserResponse>(`/admin/users/${userId}/status`, { method: "PATCH", body: { status } });
 }
 
 // ---- 관리 메뉴 / 역할 조건 ------------------------------------------------------------------------------
