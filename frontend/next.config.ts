@@ -20,8 +20,6 @@ const nextConfig: NextConfig = {
   // 모든 화면 응답에 CSP를 붙인다 (정책 내용과 이유는 src/lib/csp.ts)
   async headers() {
     return [
-      // 임시 실험(로더 가능성 테스트) 파일용 CORS. 진짜 로더 확인이 끝나면 public/loader-test와 함께 삭제한다.
-      { source: "/loader-test/:path*", headers: [{ key: "Access-Control-Allow-Origin", value: "*" }] },
       // 가져오기 로더(D47): 공식 사이트가 이 폴더의 버전 파일을 SRI(crossorigin)로 불러오므로 CORS를 허용한다.
       // 버전 파일은 내용이 바뀌지 않는다(바뀌면 새 버전 이름) → 오래 캐시해도 안전하다. 공개 정적 파일이라 비밀값은 없다.
       {
