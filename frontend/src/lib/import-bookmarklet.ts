@@ -210,8 +210,23 @@ export function encodeBookmarklet(source: string): string {
  */
 export function buildHandoffBookmarkletSource(siteBase: string, messages: BookmarkletMessages): string {
   const base = siteBase.replace(/\/+$/, "");
+  return buildHandoffFlow(JSON.stringify(base), "", messages);
+}
+
+/**
+ * 로더가 불러오는 스크립트 파일의 소스(import-loader.ts, public/import-loader/<버전>.<언어>.js).
+ * 본문은 위와 같고, 사이트 주소만 다르다: 파일 안에 주소를 굳히지 않고 **이 파일을 불러온 주소의 origin**을 쓴다
+ * (`document.currentScript.src`). 그래서 같은 파일을 어느 사이트(운영·로컬)에서 내려받든 그 사이트로 보낸다.
+ */
+export function buildLoaderFileSource(messages: BookmarkletMessages): string {
+  return buildHandoffFlow("BASE", "var cs=document.currentScript;var BASE=cs&&cs.src?new URL(cs.src).origin:'';", messages);
+}
+
+/** 가져오기 본문. baseExpr는 사이트 주소를 가리키는 JS 식(글자열 또는 변수), preface는 MSG 바로 뒤에 둘 준비 코드. */
+function buildHandoffFlow(baseExpr: string, preface: string, messages: BookmarkletMessages): string {
   return compactBookmarkletSource(`(function(){
 var MSG=${JSON.stringify(messages)};
+${preface}
 ${READER_SOURCE}
 ${senderSource()}
 var TITLE=MSG.title;
@@ -233,7 +248,7 @@ function srpSend(){
   for(var n=1;n<=MAXP;n++){if(pages[n]){plays=plays.concat(pages[n].plays);unreadable+=pages[n].unreadable;}}
   var prev=document.getElementById('srp-import-modal');
   if(prev&&prev.parentNode){prev.parentNode.removeChild(prev);}
-  var url=${JSON.stringify(base)}+'/import#srp='+encodeURIComponent(JSON.stringify({plays:plays,unreadable:unreadable}));
+  var url=${baseExpr}+'/import#srp='+encodeURIComponent(JSON.stringify({plays:plays,unreadable:unreadable}));
   var w=null;
   try{w=window.open(url,'srpfreaks-import');}catch(e){w=null;}
   if(!w){srpModal(TITLE,srpFmt(MSG.openManually,{count:plays.length}),url);return;}

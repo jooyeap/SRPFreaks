@@ -6,6 +6,7 @@ import { RecordImportGate } from "@/components/import/RecordImportView";
 import { ToastProvider } from "@/components/Toast";
 import { clearAccessToken } from "@/lib/auth-token";
 import { clearHandoff, resetHandoffCache } from "@/lib/import-handoff";
+import { loaderPath, LOADER_MANIFEST } from "@/lib/import-loader";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), back: vi.fn() }), usePathname: () => "/import" }));
 
@@ -72,8 +73,11 @@ describe("최근 플레이 가져오기 안내 화면", () => {
     const copied = String(writeText.mock.calls[0][0]);
     expect(copied.startsWith("avascript:")).toBe(true);
     expect(`j${copied}`.startsWith("javascript:")).toBe(true);
+    // 복사되는 글은 짧은 한 줄(스텁)이다: 버전 파일 주소와 해시로 고정해 불러온다(D47). 예전에는 본체 전체(약 1만 자)였다
     const body = decodeURIComponent(copied.slice("avascript:".length));
-    expect(body).toContain("srpfreaks-import");
+    expect(copied.length).toBeLessThan(700);
+    expect(body).toContain(loaderPath(LOADER_MANIFEST.latest, "ko"));
+    expect(body).toContain(LOADER_MANIFEST.versions[LOADER_MANIFEST.latest]?.ko ?? "missing");
     expect(body).not.toContain("srpi_");
     expect(screen.getByText(/맨 앞 j만 직접 입력합니다/)).toBeInTheDocument();
   });
