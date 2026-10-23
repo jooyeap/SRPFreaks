@@ -20,6 +20,8 @@ const nextConfig: NextConfig = {
   // 모든 화면 응답에 CSP를 붙인다 (정책 내용과 이유는 src/lib/csp.ts)
   async headers() {
     return [
+      // 임시 실험(로더 가능성 테스트): 공식 사이트에서 이 폴더의 파일을 SRI(crossorigin)로 불러올 수 있게 CORS를 허용한다. 확인 후 삭제한다.
+      { source: "/loader-test/:path*", headers: [{ key: "Access-Control-Allow-Origin", value: "*" }] },
       {
         source: "/:path*",
         headers: [
