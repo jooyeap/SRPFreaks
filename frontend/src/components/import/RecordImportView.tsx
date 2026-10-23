@@ -208,6 +208,10 @@ function BookmarkGuide() {
         {tab === "mobile" && (
           <>
             <GuideImage src="/import-guide/address-bar.png" alt={t("Import.addrAlt")} caption={t("Import.addrCaption")} />
+            <p className="text-sm leading-relaxed text-fg-sub">
+              {t.rich("Import.enterTip", { b: (c) => <b className="text-fg">{c}</b> })}
+            </p>
+            <GuideImage src="/import-guide/address-suggest.png" alt={t("Import.globeAlt")} caption={t("Import.globeCaption")} width={832} height={388} />
             <ol start={4} className="flex flex-col gap-3">
               <GuideStep n={4}>
                 {t.rich("Import.stepPreview", { b: (c) => <b className="text-fg">{c}</b> })}
