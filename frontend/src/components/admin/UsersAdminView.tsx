@@ -23,12 +23,20 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 export function UsersAdminView({ viewerId }: { viewerId: number }) {
   const t = useTranslations();
   const [page, setPage] = useState(0);
+  // draft = 입력 칸의 글자, query = 실제로 검색한 글자. 검색 버튼(또는 Enter)을 눌러야 query가 바뀌어 서버에 묻는다(글자마다 요청하지 않는다)
+  const [draft, setDraft] = useState("");
+  const [query, setQuery] = useState("");
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const { data, isPending, isError, error } = useQuery({
-    queryKey: adminKeys.users(viewerId, page),
-    queryFn: ({ signal }) => fetchAdminUsers(page, ADMIN_USERS_PAGE_SIZE, signal),
+    queryKey: adminKeys.users(viewerId, query, page),
+    queryFn: ({ signal }) => fetchAdminUsers(page, ADMIN_USERS_PAGE_SIZE, query, signal),
     placeholderData: keepPreviousData,
   });
+
+  function search(next: string) {
+    setQuery(next.trim());
+    setPage(0); // 검색어가 바뀌면 첫 쪽부터 본다
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -40,6 +48,40 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
         <p className="text-sm text-fg-sub">{t("Admin.usersLead")}</p>
       </div>
 
+      <form
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          search(draft);
+        }}
+        className="flex flex-wrap items-center gap-2"
+      >
+        <input
+          type="search"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          maxLength={50}
+          aria-label={t("Admin.usersSearchAria")}
+          placeholder={t("Admin.usersSearchPlaceholder")}
+          className={`${FIELD} min-w-0 flex-1`}
+        />
+        <button type="submit" className="h-10 rounded-xl bg-chip-on-bg px-5 text-sm font-extrabold text-chip-on-fg">
+          {t("Admin.usersSearch")}
+        </button>
+        {query ? (
+          <button
+            type="button"
+            onClick={() => {
+              setDraft("");
+              search("");
+            }}
+            className="h-10 rounded-xl border border-chip-line px-4 text-sm text-fg-sub hover:text-fg"
+          >
+            {t("Admin.usersSearchReset")}
+          </button>
+        ) : null}
+      </form>
+
       {isPending ? (
         <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : isError ? (
@@ -48,11 +90,15 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
         </p>
       ) : (
         <>
-          <ul aria-label={t("Admin.usersListAria")} className="overflow-hidden rounded-2xl border border-line bg-card">
-            {data.content.map((user) => (
-              <UserRow key={user.id} viewerId={viewerId} page={page} user={user} />
-            ))}
-          </ul>
+          {data.content.length === 0 ? (
+            <p className="text-sm text-fg-sub">{t(query ? "Admin.usersSearchEmpty" : "Admin.usersEmpty")}</p>
+          ) : (
+            <ul aria-label={t("Admin.usersListAria")} className="overflow-hidden rounded-2xl border border-line bg-card">
+              {data.content.map((user) => (
+                <UserRow key={user.id} user={user} />
+              ))}
+            </ul>
+          )}
           <nav aria-label={t("Common.pageNav")} className="flex items-center justify-center gap-3 text-sm text-fg-sub">
             <button
               type="button"
@@ -80,7 +126,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
   );
 }
 
-function UserRow({ viewerId, page, user }: { viewerId: number; page: number; user: AdminUserResponse }) {
+function UserRow({ user }: { user: AdminUserResponse }) {
   const t = useTranslations();
   const queryClient = useQueryClient();
   const [role, setRole] = useState<Role>(user.role);
@@ -92,7 +138,7 @@ function UserRow({ viewerId, page, user }: { viewerId: number; page: number; use
     onSuccess: async (saved) => {
       setRole(saved.role);
       toast(t("Admin.roleChanged"));
-      await queryClient.invalidateQueries({ queryKey: adminKeys.users(viewerId, page) });
+      await queryClient.invalidateQueries({ queryKey: adminKeys.usersAll });
       // 역할 변경은 감사 로그에 남으므로 목록도 오래된 것으로 표시한다
       await queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });
     },
@@ -105,7 +151,7 @@ function UserRow({ viewerId, page, user }: { viewerId: number; page: number; use
     onSuccess: async (saved) => {
       setConfirmingStatus(false);
       toast(t(saved.status === "BLOCKED" ? "Admin.blockDone" : "Admin.unblockDone"));
-      await queryClient.invalidateQueries({ queryKey: adminKeys.users(viewerId, page) });
+      await queryClient.invalidateQueries({ queryKey: adminKeys.usersAll });
       await queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] });
     },
     onError: () => setConfirmingStatus(false), // 오류는 줄 아래에 보인다

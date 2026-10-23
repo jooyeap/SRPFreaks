@@ -72,7 +72,7 @@ class UserAdminControllerAuthorizationTest {
     void USER와_ADMIN은_사용자_목록을_보거나_역할을_바꿀_수_없다() {
         for (Role role : new Role[]{Role.USER, Role.ADMIN}) {
             AuthenticatedUser user = loginAs(role);
-            assertThatThrownBy(() -> controller.list(0, 30)).isInstanceOf(AccessDeniedException.class);
+            assertThatThrownBy(() -> controller.list(0, 30, null)).isInstanceOf(AccessDeniedException.class);
             assertThatThrownBy(() -> controller.changeRole(user, 2L, request)).isInstanceOf(AccessDeniedException.class);
             assertThatThrownBy(() -> controller.changeStatus(user, 2L, block)).isInstanceOf(AccessDeniedException.class); // 차단도 ROOT만
         }
@@ -81,7 +81,7 @@ class UserAdminControllerAuthorizationTest {
     @Test
     void ROOT는_사용자_목록을_보고_역할을_바꿀_수_있다() {
         AuthenticatedUser user = loginAs(Role.ROOT);
-        assertThatCode(() -> controller.list(0, 30)).doesNotThrowAnyException();
+        assertThatCode(() -> controller.list(0, 30, null)).doesNotThrowAnyException();
         assertThatCode(() -> controller.changeRole(user, 2L, request)).doesNotThrowAnyException();
         assertThatCode(() -> controller.changeStatus(user, 2L, block)).doesNotThrowAnyException();
     }

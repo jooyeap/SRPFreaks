@@ -519,7 +519,7 @@ com.srpfreaks.backend
 | 세트리스트 추천 (D37) | GET `/setlist/recommendations?ssPage=&sPage=&size=`(2026-10-19: 두 묶음이 각자 쪽을 넘긴다. 응답 `ssPage`·`sPage`·`ssTotalPages`·`sTotalPages`) (`baseTier`·`ssMin`~`sMax`·`customRange`와 `ssChallenge`·`sFill` 두 묶음, 줄마다 `tier`·`mine`. 평균을 구할 수 없으면 `baseTier` null + 빈 목록) | 로그인한 사용자 (본인) |
 | 서열표 만들기 | POST `/admin/difficulty-tables` (이름, 파트(선택), 기준 옵션) | ROOT·ADMIN |
 | 설정 | GET/PATCH `/admin/settings` | ROOT |
-| 사용자·역할 | GET `/admin/users?page=&size=`(가입 순, 이메일·역할·상태 포함, Google ID 제외), PATCH `/admin/users/{id}/role` body `{"role": "ADMIN"\|"USER"}` (ROOT로 바꾸는 요청은 400, ROOT 계정의 역할 변경은 403, 이미 그 역할이면 변경 없음, 변경은 `audit_logs`의 `USER_ROLE_CHANGE`에 사용자 id와 전/후 역할만 남김), PATCH `/admin/users/{id}/status` body `{"status": "BLOCKED"\|"ACTIVE"}` (**차단/차단 해제, D46**. ROOT 계정은 403, 이미 그 상태면 변경 없음, `audit_logs`의 `USER_BLOCK`/`USER_UNBLOCK`에 사용자 id와 전/후 상태만 남김) | ROOT |
+| 사용자·역할 | GET `/admin/users?page=&size=&q=`(가입 순, 이메일·역할·상태 포함, Google ID 제외. 기본 10명. `q`가 있으면 닉네임·이메일 부분 일치, 대소문자 무시, `%`·`_`는 글자로 취급, 앞뒤 공백 제거, 50자까지, 비면 전체), PATCH `/admin/users/{id}/role` body `{"role": "ADMIN"\|"USER"}` (ROOT로 바꾸는 요청은 400, ROOT 계정의 역할 변경은 403, 이미 그 역할이면 변경 없음, 변경은 `audit_logs`의 `USER_ROLE_CHANGE`에 사용자 id와 전/후 역할만 남김), PATCH `/admin/users/{id}/status` body `{"status": "BLOCKED"\|"ACTIVE"}` (**차단/차단 해제, D46**. ROOT 계정은 403, 이미 그 상태면 변경 없음, `audit_logs`의 `USER_BLOCK`/`USER_UNBLOCK`에 사용자 id와 전/후 상태만 남김) | ROOT |
 | 감사 로그 | GET `/admin/audit-logs` | ROOT |
 
 - Swagger(springdoc)로 문서 자동 생성. 운영 환경에서는 노출 제한.
@@ -1153,5 +1153,6 @@ com.srpfreaks.backend
 | 2026-10-19 | 세트리스트 추천(D37) 규칙 변경: 묶음별 하한~상한 범위(SS 기준 평균 -0.6~-0.1, S 기준 -0.1~+0.4), 단일/그 외 1/3 미만이면 데이터 부족 안내, 기록 없는 신규는 5.2 이하 S 기준만. 설정은 V11로 교체 |
 | 2026-10-19 | 추천 범위 직접 설정(D37): `PUT/DELETE /setlist/recommend-range`, V12 `setlist_recommend_ranges`, 응답 `customRange`. 화면은 DESIGN-UI 23장 `범위 조정` |
 | 2026-10-21 | **D43.** 공지·곡 목록·서열표·유저 목록의 GET을 비로그인에게 연다(`PublicReadPaths`), 비로그인은 내 기록 없이 곡 정보만, 비로그인 IP당 120회/분 제한 (9.1·9.2장) |
+| 2026-10-23 | 관리자 사용자 목록: 페이지 크기 30→10, `q` 검색(닉네임·이메일) 추가 |
 | 2026-10-23 | **D46.** 사용자 차단/차단 해제 API(`PATCH /admin/users/{id}/status`, ROOT 전용)와 화면 버튼 추가. 저장 횟수 제한은 두지 않기로 함 |
 | 2026-10-23 | **D47.** 가져오기 스크립트를 짧은 로더 + SRI 해시 고정 버전 파일로 배포(`public/import-loader/`, `import-loader-manifest.json`). 주소창에 붙이는 글 약 11,800자 → 약 300자 |

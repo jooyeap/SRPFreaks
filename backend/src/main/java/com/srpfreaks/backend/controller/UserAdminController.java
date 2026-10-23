@@ -30,8 +30,9 @@ public class UserAdminController {
     @GetMapping
     public PageResponse<AdminUserResponse> list(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "" + UserAdminService.DEFAULT_PAGE_SIZE) int size) {
-        return userAdminService.list(page, size);
+            @RequestParam(defaultValue = "" + UserAdminService.DEFAULT_PAGE_SIZE) int size,
+            @RequestParam(required = false) String q) {
+        return userAdminService.list(page, size, q);
     }
 
     @PatchMapping("/{userId}/role")

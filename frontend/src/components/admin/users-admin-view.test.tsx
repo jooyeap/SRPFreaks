@@ -128,4 +128,49 @@ describe("사용자 관리 화면", () => {
     await screen.findByText("u2@example.com");
     expect(screen.queryByRole("button", { name: "ルート 차단" })).toBeNull();
   });
+
+  it("처음에는 10명 크기로 검색어 없이 불러온다", async () => {
+    fetchMock.mockResolvedValueOnce(json(page(rows)));
+    renderView();
+    await screen.findByText("u2@example.com");
+    const url = String(fetchMock.mock.calls[0]?.[0]);
+    expect(url).toContain("size=10");
+    expect(url).not.toContain("q=");
+  });
+
+  it("검색어를 넣고 검색하면 q로 보내고 첫 쪽부터 다시 본다", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json({ ...page(rows), totalPages: 3 }))
+      .mockResolvedValue(json(page([user(2)])));
+    renderView();
+    await screen.findByText("u2@example.com");
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    await waitFor(() => expect(String(fetchMock.mock.calls[1]?.[0])).toContain("page=1"));
+
+    fireEvent.change(screen.getByLabelText("닉네임 또는 이메일 검색"), { target: { value: "  ユーザー2 " } });
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+
+    await waitFor(() => {
+      const url = String(fetchMock.mock.calls.at(-1)?.[0]);
+      expect(url).toContain("q=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC2");
+      expect(url).toContain("page=0");
+    });
+  });
+
+  it("검색 결과가 없으면 안내를 보이고, 초기화하면 전체 목록으로 돌아간다", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(page(rows)))
+      .mockResolvedValueOnce(json(page([])))
+      .mockResolvedValue(json(page(rows)));
+    renderView();
+    await screen.findByText("u2@example.com");
+    fireEvent.change(screen.getByLabelText("닉네임 또는 이메일 검색"), { target: { value: "없는사람" } });
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+    expect(await screen.findByText("검색 결과가 없습니다.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "초기화" }));
+    expect(await screen.findByText("u2@example.com")).toBeInTheDocument();
+    expect(screen.getByLabelText("닉네임 또는 이메일 검색")).toHaveValue("");
+    expect(String(fetchMock.mock.calls.at(-1)?.[0])).not.toContain("q=");
+  });
 });
