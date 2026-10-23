@@ -1050,6 +1050,7 @@
     "actionUserRoleChange": "ロール変更",
     "actionUserBlock": "アカウントブロック",
     "actionUserUnblock": "ブロック解除",
+    "actionNicknameChange": "ニックネーム変更",
     "actionRecordAdminDelete": "ユーザー記録の削除",
     "actionNoticeCreate": "お知らせの登録",
     "actionNoticeUpdate": "お知らせの編集",

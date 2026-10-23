@@ -1050,6 +1050,7 @@
     "actionUserRoleChange": "역할 변경",
     "actionUserBlock": "계정 차단",
     "actionUserUnblock": "차단 해제",
+    "actionNicknameChange": "닉네임 변경",
     "actionRecordAdminDelete": "유저 기록 삭제",
     "actionNoticeCreate": "공지 등록",
     "actionNoticeUpdate": "공지 수정",
