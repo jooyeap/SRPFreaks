@@ -105,6 +105,18 @@ describe("SongListView", () => {
     expect(rowTitle.closest("li")).not.toHaveTextContent("V5");
   });
 
+  it("펼친 폴더는 곡 상세에 갔다 와서 화면을 다시 만들어도 그대로 펼쳐 있다 (이 탭에 기억)", async () => {
+    const first = renderView();
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    expect(await screen.findByText("첫번째곡")).toBeInTheDocument();
+    first.unmount(); // 곡 상세로 이동하면 곡 목록 화면이 사라진다
+
+    renderView(); // 뒤로 가기: 새로 만들어진다
+    expect(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /9\.00 ~ 9\.49/ })).toHaveAttribute("aria-expanded", "false");
+    expect(await screen.findByText("첫번째곡")).toBeInTheDocument(); // 펼친 폴더의 채보도 바로 이어서 보인다
+  });
+
   it("곡 등록 버튼은 canRegister(ROOT·ADMIN)일 때만 보인다", async () => {
     const { unmount } = renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });

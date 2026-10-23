@@ -1,12 +1,12 @@
 "use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import { ChartList } from "@/components/songs/ChartList";
 import { chipsOf, groupStage } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
 import type { ChartFolderResponse } from "@/lib/api-types";
 import { EMPTY_MARK } from "@/lib/format";
+import { useOpenKeys } from "@/lib/open-keys";
 import {
   EMPTY_SONG_FILTERS,
   type FolderStep,
@@ -42,10 +42,13 @@ export function FolderSection({
   level?: "top" | "sub";
 }) {
   const t = useTranslations();
-  const [open, setOpen] = useState(false);
   const isSub = level === "sub";
   const subFolders = folder.subFolders ?? [];
   const step: FolderStep = isSub ? "0.05" : "0.50";
+  // 곡 상세에 갔다 뒤로 와도 펼친 폴더가 남도록 이 탭에 기억한다 (lib/open-keys.ts). 이름표는 단위와 시작 레벨이다.
+  const openKey = `${step}:${folder.lo.toFixed(2)}`;
+  const { keys: openKeys, setOpen: setFolderOpen } = useOpenKeys("songs");
+  const open = openKeys.has(openKey);
   // 채보를 직접 보여 주는 폴더: 하위 폴더 또는, 하위 폴더가 없는 큰 폴더
   const showsCharts = isSub || subFolders.length === 0;
   const pages = useInfiniteQuery({
@@ -76,7 +79,7 @@ export function FolderSection({
           type="button"
           aria-expanded={open}
           aria-controls={bodyId}
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setFolderOpen(openKey, !open)}
           data-stage={reached ?? undefined}
           className={`relative flex w-full flex-wrap items-center gap-x-3 gap-y-2 py-3 pl-4 pr-3 text-left ${reached ? "stage-tint" : ""}`}
         >

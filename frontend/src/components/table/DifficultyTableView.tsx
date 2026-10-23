@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
+import { useOpenKeys } from "@/lib/open-keys";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableCredit } from "@/components/TableCredit";
 import { RecordDialog } from "@/components/record/RecordDialog";
@@ -86,7 +87,8 @@ export function DifficultyTableView({
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
   // 펼친 묶음의 난이도(미정은 "undecided"). 처음에는 모두 닫혀 있다. 페이지·필터를 바꿔도 같은 난이도는 그대로 펼쳐 있다
-  const [openGroups, setOpenGroups] = useState<ReadonlySet<string>>(new Set());
+  // 곡 상세에 갔다 뒤로 와도 펼친 묶음이 남도록 이 탭에 기억한다 (lib/open-keys.ts)
+  const { keys: openGroups, setOpen: setGroupOpen, replaceAll: replaceOpenGroups } = useOpenKeys("table");
   const [recordTarget, setRecordTarget] = useState<{ entry: TableEntryResponse; tier: number | null } | null>(null); // 기록 입력창을 연 채보
 
   const tables = useQuery({
@@ -150,7 +152,7 @@ export function DifficultyTableView({
         {data && data.content.length > 0 ? (
           <button
             type="button"
-            onClick={() => setOpenGroups(allOpen ? new Set() : new Set(groupKeys))}
+            onClick={() => replaceOpenGroups(allOpen ? [] : groupKeys)}
             className="rounded-lg border border-chip-line bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
           >
             {allOpen ? t("Table.collapseAll") : t("Table.expandAll")}
@@ -201,14 +203,7 @@ export function DifficultyTableView({
                 sort={sort}
                 collapsible
                 open={openGroups.has(String(group.tier ?? "undecided"))}
-                onOpenChange={(next) =>
-                  setOpenGroups((current) => {
-                    const copy = new Set(current);
-                    if (next) copy.add(String(group.tier ?? "undecided"));
-                    else copy.delete(String(group.tier ?? "undecided"));
-                    return copy;
-                  })
-                }
+                onOpenChange={(next) => setGroupOpen(String(group.tier ?? "undecided"), next)}
                 // 비로그인 방문자(D43)는 기록을 입력할 수 없으므로 `기록` 버튼을 그리지 않는다(onRecord가 없으면 줄이 버튼을 만들지 않는다)
                 onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined}
               />
