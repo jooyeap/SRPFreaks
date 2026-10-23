@@ -342,6 +342,20 @@ describe("DifficultyTableView", () => {
     expect(screen.getByRole("button", { name: "모두 펼치기" })).toBeInTheDocument();
   });
 
+  it("펼친 묶음은 곡 상세에 갔다 와서 화면을 다시 만들어도 그대로 펼쳐 있다 (이 탭에 기억)", async () => {
+    fetchMock.mockImplementation((input) =>
+      Promise.resolve(String(input).includes("/entries") ? json(page([group({ tier: 5.8 }), group({ tier: 5.6 })])) : json([table])),
+    );
+    const first = renderView();
+    fireEvent.click(await screen.findByRole("button", { name: /5\.8/ }));
+    expect(screen.getByRole("button", { name: /5\.8/ })).toHaveAttribute("aria-expanded", "true");
+    first.unmount(); // 곡 상세로 이동하면 서열표 화면이 사라진다
+
+    renderView(); // 뒤로 가기: 새로 만들어진다
+    expect(await screen.findByRole("button", { name: /5\.8/ })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /5\.6/ })).toHaveAttribute("aria-expanded", "false"); // 열지 않은 묶음은 닫혀 있다
+  });
+
   it("보기 상태(state)를 받으면 그 값으로 조회하고, 페이지·필터를 바꾸면 onStateChange로 알린다 (주소에 저장하려고)", async () => {
     fetchMock.mockImplementation((input) =>
       Promise.resolve(String(input).includes("/entries") ? json(page([group()], { page: 1, totalPages: 3 })) : json([table])),
