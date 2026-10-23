@@ -16,4 +16,10 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      */
     @EntityGraph(attributePaths = "actor")
     Page<AuditLog> findAllByOrderByCreatedAtDescIdDesc(Pageable pageable);
+
+    /**
+     * 탈퇴(D20)할 때 그 사용자의 닉네임 변경 로그를 지운다. 닉네임은 사용자가 정한 이름이라 "완전 삭제"에 포함된다.
+     * audit_logs.actor_id는 ON DELETE SET NULL이라 행이 남고 닉네임 글자(detail)도 남기 때문에 FK에 맡기지 않고 직접 지운다.
+     */
+    void deleteByActionAndTargetTypeAndTargetId(String action, String targetType, String targetId);
 }

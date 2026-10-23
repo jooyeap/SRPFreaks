@@ -31,6 +31,7 @@ const ACTION_LABELS: Record<string, MessageKey> = {
   USER_ROLE_CHANGE: "Admin.actionUserRoleChange",
   USER_BLOCK: "Admin.actionUserBlock",
   USER_UNBLOCK: "Admin.actionUserUnblock",
+  NICKNAME_CHANGE: "Admin.actionNicknameChange",
   RECORD_ADMIN_DELETE: "Admin.actionRecordAdminDelete",
   NOTICE_CREATE: "Admin.actionNoticeCreate",
   NOTICE_UPDATE: "Admin.actionNoticeUpdate",
