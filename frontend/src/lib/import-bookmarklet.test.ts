@@ -3,6 +3,8 @@ import {
   bookmarkletMessages,
   buildHandoffBookmarkletHref,
   buildHandoffBookmarkletSource,
+  compactBookmarkletSource,
+  encodeBookmarklet,
   READER_SOURCE,
   type ReadResult,
 } from "@/lib/import-bookmarklet";
@@ -245,5 +247,44 @@ describe("1~4쪽 자동 읽기(D40 개정)", () => {
     expect(document.getElementById("srp-import-modal")?.textContent).toContain("읽는 중");
     await vi.advanceTimersByTimeAsync(3000);
     expect(document.getElementById("srp-import-modal")).toBeNull();
+  });
+});
+
+describe("북마클릿 길이 줄이기 (붙여넣기가 오래 걸리지 않게)", () => {
+  const SITE = "https://srpfreaks.com";
+
+  it("compact: 줄바꿈과 들여쓰기를 없애고, 앞 줄이 `;{}(,`로 끝나지 않으면 공백 하나로 잇는다", () => {
+    expect(compactBookmarkletSource("var a=1;\n  var b=2;\n")).toBe("var a=1;var b=2;");
+    expect(compactBookmarkletSource("if(x){\n  y();\n}else\n  if(z){w();}")).toBe("if(x){y();}else if(z){w();}");
+    expect(compactBookmarkletSource("var s=' a  b ';\n")).toBe("var s=' a  b ';"); // 글자열 안의 공백은 그대로
+  });
+
+  it("실제 본문에는 줄바꿈이 없고, 주소로 만든 글자는 구형(encodeURIComponent)보다 훨씬 짧다", () => {
+    const source = buildHandoffBookmarkletSource(SITE, MSG);
+    expect(source).not.toMatch(/[\r\n]/);
+    const href = buildHandoffBookmarkletHref(SITE, MSG);
+    expect(href.length).toBeLessThan(8500); // 줄이기 전에는 약 11,800자
+    expect(href.length).toBeLessThan(("javascript:" + encodeURIComponent(source)).length * 0.7);
+  });
+
+  it("encode: 꼭 필요한 글자만 바꾸고(% # 줄바꿈 탭 \" < > ` \\), 한글과 나머지 기호는 그대로 둔다", () => {
+    expect(encodeBookmarklet("a%b#c\nd\te\"f<g>h`i\\j")).toBe("a%25b%23c%0Ad%09e%22f%3Cg%3Eh%60i%5Cj");
+    expect(encodeBookmarklet("한글 {a:1,b;2}=(x)")).toBe("한글 {a:1,b;2}=(x)");
+  });
+
+  it("encode: decodeURIComponent로 되돌리면 원래 코드와 같고, 주소의 `%`는 모두 `%XX` 꼴이다", () => {
+    const source = buildHandoffBookmarkletSource(SITE, MSG);
+    const encoded = encodeBookmarklet(source);
+    expect(decodeURIComponent(encoded)).toBe(source);
+    expect(encoded).not.toMatch(/%(?![0-9A-F]{2})/); // 뒤가 16진수 두 글자가 아닌 `%`가 없다
+    expect(encoded).not.toMatch(/[#\r\n\t"<>`\\]/);
+  });
+
+  it("줄인 본문도 그대로 실행된다 (공식 페이지가 아니면 안내 창을 띄운다)", () => {
+    document.body.innerHTML = "";
+    const run = new Function(buildHandoffBookmarkletSource(SITE, MSG));
+    run();
+    expect(document.getElementById("srp-import-modal")).not.toBeNull();
+    document.body.innerHTML = "";
   });
 });

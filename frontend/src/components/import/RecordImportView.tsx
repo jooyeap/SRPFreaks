@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/Toast";
 import { canUseImport } from "@/lib/features";
-import { bookmarkletMessages, buildHandoffBookmarkletHref, buildHandoffBookmarkletSource } from "@/lib/import-bookmarklet";
+import { bookmarkletMessages, buildHandoffBookmarkletHref, buildHandoffBookmarkletSource, encodeBookmarklet } from "@/lib/import-bookmarklet";
 import { useTranslations } from "next-intl";
 
 type GuideTab = "pc" | "mobile";
@@ -89,7 +89,7 @@ function BookmarkGuide() {
    */
   async function copyBody() {
     try {
-      await navigator.clipboard.writeText(`avascript:${encodeURIComponent(buildHandoffBookmarkletSource(window.location.origin, messages))}`);
+      await navigator.clipboard.writeText(`avascript:${encodeBookmarklet(buildHandoffBookmarkletSource(window.location.origin, messages))}`);
       toast(t("Import.scriptCopied"));
     } catch {
       toast(t("Import.copyFailedScript"));

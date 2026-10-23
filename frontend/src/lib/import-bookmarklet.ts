@@ -171,6 +171,37 @@ function srpModal(title,body,link){
 }
 
 /**
+ * 북마클릿 소스에서 줄바꿈과 들여쓰기를 없애 짧게 만든다(동작은 같다).
+ *
+ * 왜 하는가: 사용자는 모바일에서 이 글자를 통째로 복사해 공식 사이트 주소창에 붙여넣는다. 길수록 붙여넣기가 오래 걸린다.
+ * 어떻게: 줄 앞의 공백과 줄바꿈만 지운다. 글자열 안의 공백은 건드리지 않는다(소스에 여러 줄짜리 글자열이 없다).
+ * 앞 줄이 `; { } ( , [ ...`로 끝나면 바로 붙이고, 그렇지 않으면(예: `else` 다음 줄 `if`) 공백 하나를 둬서 낱말이 붙지 않게 한다.
+ * 줄바꿈에 기대는 자동 세미콜론 삽입(ASI)이 없다는 가정이다: 테스트가 이 짧아진 글자를 그대로 실행해서 확인한다.
+ */
+export function compactBookmarkletSource(source: string): string {
+  const lines = source.split("\n").map((line) => line.replace(/^[ \t]+/, "").replace(/[ \t]+$/, "")).filter((line) => line !== "");
+  let out = "";
+  for (const line of lines) {
+    if (out !== "" && !/[;{}(,\[:=+\-*/&|?!]$/.test(out)) {
+      out += " ";
+    }
+    out += line;
+  }
+  return out;
+}
+
+/**
+ * 북마크 주소와 붙여넣기용 본문에 쓰는 인코딩.
+ * encodeURIComponent는 한글(3바이트)을 `%XX%XX%XX`(9글자)로 바꾸고 `{ } ; = : ,` 같은 기호도 바꿔서 글자가 6할 가까이 늘었다.
+ * 여기서는 주소로 쓰기에 꼭 필요한 글자만 바꾼다: `%`(바꾸지 않으면 뒤 글자가 해석된다), `#`(주소의 조각 시작),
+ * 줄바꿈·탭(주소에서 지워진다), `" < > \``와 `\`. 한글·일본어와 나머지 기호는 그대로 둔다.
+ * 브라우저는 `javascript:` 주소를 실행하기 전에 `%XX`를 되돌리므로 실행되는 코드는 같다(decodeURIComponent로 되돌려도 같다).
+ */
+export function encodeBookmarklet(source: string): string {
+  return source.replace(/[%#\r\n\t"<>`\\]/g, (ch) => "%" + ch.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"));
+}
+
+/**
  * 토큰 없는 북마클릿 본문 (D40). 공식 페이지에서 값을 읽어 사이트의 `/import#srp=<JSON>`으로 넘기기만 한다.
  * 서버와 직접 통신하지 않으므로 토큰이 필요 없고, 북마크에는 사이트 주소만 들어 있다(비밀값 없음).
  * 같은 이름(srpfreaks-import)의 창을 재사용해서 다음 쪽을 보낼 때도 같은 탭에 이어서 쌓인다.
@@ -179,7 +210,7 @@ function srpModal(title,body,link){
  */
 export function buildHandoffBookmarkletSource(siteBase: string, messages: BookmarkletMessages): string {
   const base = siteBase.replace(/\/+$/, "");
-  return `(function(){
+  return compactBookmarkletSource(`(function(){
 var MSG=${JSON.stringify(messages)};
 ${READER_SOURCE}
 ${senderSource()}
@@ -222,10 +253,10 @@ if(typeof window.fetch==='function'&&typeof window.DOMParser==='function'){
 }else{
   pages[cur]=read;srpSend();
 }
-})();`;
+})();`);
 }
 
 /** 토큰 없는 북마크 주소(`javascript:…`). */
 export function buildHandoffBookmarkletHref(siteBase: string, messages: BookmarkletMessages): string {
-  return "javascript:" + encodeURIComponent(buildHandoffBookmarkletSource(siteBase, messages));
+  return "javascript:" + encodeBookmarklet(buildHandoffBookmarkletSource(siteBase, messages));
 }
