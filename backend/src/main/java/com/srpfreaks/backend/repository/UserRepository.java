@@ -28,4 +28,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** 관리 화면(ROOT) 사용자 목록: 가입 순(id 오름차순). */
     Page<User> findAllByOrderByIdAsc(Pageable pageable);
+
+    /**
+     * 관리 화면 검색: 닉네임 또는 이메일에 검색어가 들어 있는 사용자(대소문자 무시), 가입 순.
+     * 파생 쿼리의 Containing은 검색어 속 %, _ 를 일반 글자로 이스케이프해서 LIKE 와일드카드로 쓰이지 않는다.
+     */
+    Page<User> findByNicknameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrderByIdAsc(
+            String nickname, String email, Pageable pageable);
 }

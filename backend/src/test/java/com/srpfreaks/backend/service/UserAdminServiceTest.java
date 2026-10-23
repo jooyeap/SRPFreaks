@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -68,12 +69,45 @@ class UserAdminServiceTest {
         when(userRepository.findAllByOrderByIdAsc(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(root, member), PageRequest.of(0, 30), 2));
 
-        var page = service.list(0, 30);
+        var page = service.list(0, 30, null);
 
         assertThat(page.content()).extracting(AdminUserResponse::email).containsExactly("u1@example.com", "u2@example.com");
         assertThat(page.content().get(1).role()).isEqualTo(Role.USER);
         assertThat(AdminUserResponse.class.getRecordComponents())
                 .extracting(c -> c.getName()).doesNotContain("googleSub");
+    }
+
+    @Test
+    void 검색어가_있으면_닉네임_이메일_검색_쿼리를_쓰고_앞뒤_공백은_뗀다() {
+        when(userRepository.findByNicknameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrderByIdAsc(
+                eq("メンバー"), eq("メンバー"), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(member), PageRequest.of(0, 10), 1));
+
+        var page = service.list(0, 10, "  メンバー  ");
+
+        assertThat(page.content()).extracting(AdminUserResponse::nickname).containsExactly("メンバー");
+        verify(userRepository, never()).findAllByOrderByIdAsc(any(Pageable.class));
+    }
+
+    @Test
+    void 검색어가_비었거나_공백뿐이면_전체_목록을_준다() {
+        when(userRepository.findAllByOrderByIdAsc(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(root, member), PageRequest.of(0, 10), 2));
+
+        assertThat(service.list(0, 10, "   ").content()).hasSize(2);
+        assertThat(service.list(0, 10, "").content()).hasSize(2);
+        assertThat(service.list(0, 10, null).content()).hasSize(2);
+    }
+
+    @Test
+    void 너무_긴_검색어는_최대_길이로_자른다() {
+        String longKeyword = "a".repeat(UserAdminService.MAX_KEYWORD_LENGTH + 30);
+        String cut = "a".repeat(UserAdminService.MAX_KEYWORD_LENGTH);
+        when(userRepository.findByNicknameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrderByIdAsc(
+                eq(cut), eq(cut), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+        assertThat(service.list(0, 10, longKeyword).content()).isEmpty();
     }
 
     @Test

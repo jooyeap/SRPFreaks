@@ -7,7 +7,9 @@ export const adminKeys = {
   all: ["admin"] as const,
   auditLogs: (viewerId: number, page: number) => ["admin", "audit-logs", viewerId, page] as const,
   settings: (viewerId: number) => ["admin", "settings", viewerId] as const,
-  users: (viewerId: number, page: number) => ["admin", "users", viewerId, page] as const,
+  users: (viewerId: number, query: string, page: number) => ["admin", "users", viewerId, query, page] as const,
+  /** 사용자 목록 전체(검색어·페이지 무관). 역할·차단을 바꾼 뒤 모두 오래된 것으로 표시할 때 쓴다 */
+  usersAll: ["admin", "users"] as const,
 };
 
 export const AUDIT_LOG_PAGE_SIZE = 30;
@@ -136,7 +138,7 @@ export const SETTING_AFFECTED_KEYS = [["admin"], ["skill"], ["players"]] as cons
 
 // ---- 사용자 / 역할 ------------------------------------------------------------------------------------
 
-export const ADMIN_USERS_PAGE_SIZE = 30;
+export const ADMIN_USERS_PAGE_SIZE = 10;
 
 /** 화면에서 고를 수 있는 역할. ROOT로 바꾸는 기능은 없다(ROOT는 환경변수로만 만든다). */
 export const ASSIGNABLE_ROLES = ["USER", "ADMIN"] as const;
@@ -147,8 +149,10 @@ export function roleLabel(role: Role, t: Translator): string {
   return t(ROLE_LABELS[role]);
 }
 
-export function fetchAdminUsers(page: number, size: number, signal?: AbortSignal): Promise<PageResponse<AdminUserResponse>> {
-  return apiFetch<PageResponse<AdminUserResponse>>("/admin/users", { query: { page, size }, signal });
+/** query가 비어 있으면 전체, 있으면 닉네임·이메일에 들어 있는 사용자만(서버가 대소문자를 무시하고 찾는다). */
+export function fetchAdminUsers(page: number, size: number, query: string, signal?: AbortSignal): Promise<PageResponse<AdminUserResponse>> {
+  const q = query.trim();
+  return apiFetch<PageResponse<AdminUserResponse>>("/admin/users", { query: q ? { page, size, q } : { page, size }, signal });
 }
 
 export function changeUserRole(userId: number, role: Role): Promise<AdminUserResponse> {

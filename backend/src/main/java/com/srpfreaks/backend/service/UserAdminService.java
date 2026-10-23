@@ -38,18 +38,34 @@ import java.util.Map;
 @Transactional
 public class UserAdminService {
 
-    public static final int DEFAULT_PAGE_SIZE = 30;
+    public static final int DEFAULT_PAGE_SIZE = 10;
+    /** 검색어 최대 길이. 닉네임(30)·이메일 앞부분을 찾기에 충분하고, 터무니없이 긴 값은 잘라서 쓴다. */
+    public static final int MAX_KEYWORD_LENGTH = 50;
     public static final int MAX_PAGE_SIZE = 100;
 
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
 
+    /** 사용자 목록. keyword가 비어 있으면 전체, 있으면 닉네임·이메일에 들어 있는 사람만(가입 순). */
     @Transactional(readOnly = true)
-    public PageResponse<AdminUserResponse> list(int page, int size) {
+    public PageResponse<AdminUserResponse> list(int page, int size, String keyword) {
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-        int pageIndex = Math.max(page, 0);
-        return PageResponse.of(userRepository.findAllByOrderByIdAsc(PageRequest.of(pageIndex, pageSize)),
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), pageSize);
+        String q = normalizeKeyword(keyword);
+        if (q.isEmpty()) {
+            return PageResponse.of(userRepository.findAllByOrderByIdAsc(pageable), AdminUserResponse::from);
+        }
+        return PageResponse.of(
+                userRepository.findByNicknameContainingIgnoreCaseOrEmailContainingIgnoreCaseOrderByIdAsc(q, q, pageable),
                 AdminUserResponse::from);
+    }
+
+    private static String normalizeKeyword(String keyword) {
+        if (keyword == null) {
+            return "";
+        }
+        String trimmed = keyword.strip();
+        return trimmed.length() > MAX_KEYWORD_LENGTH ? trimmed.substring(0, MAX_KEYWORD_LENGTH) : trimmed;
     }
 
     public AdminUserResponse changeRole(Long actorId, Long userId, Role newRole) {
