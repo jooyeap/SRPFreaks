@@ -104,7 +104,8 @@ class SetlistRecommendServiceTest {
 
     @Test
     void 후보의_속성_글자를_추천_줄에_그대로_내려준다() {
-        givenCandidates();
+        // 평균 6.20 기준 SS 기준 범위(5.60 ~ 6.10) 안, 기록 없는 채보 하나
+        givenCandidates(cand(1, "5.80", null, false));
 
         SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
 
