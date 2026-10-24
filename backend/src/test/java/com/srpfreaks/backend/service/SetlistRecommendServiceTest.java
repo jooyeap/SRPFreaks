@@ -82,7 +82,7 @@ class SetlistRecommendServiceTest {
     /** rate가 null이면 기록 없는 채보. */
     private static RecommendCandidate cand(long id, String tier, String rate, boolean fc) {
         return new RecommendCandidate(id, 100L + id, "곡" + id, "GUITAR", "MASTER", new BigDecimal("9.50"),
-                new BigDecimal(tier), rate == null ? null : new BigDecimal(rate), rate == null ? null : fc);
+                new BigDecimal(tier), "단일", rate == null ? null : new BigDecimal(rate), rate == null ? null : fc);
     }
 
     private static List<Long> ids(List<SetlistRecommendationResponse.Item> items) {
@@ -100,6 +100,16 @@ class SetlistRecommendServiceTest {
         verify(mapper).findCandidates(eq(1L), anyString(), eq(3L), anyString(), lo.capture(), hi.capture());
         assertThat(lo.getValue()).isEqualByComparingTo("5.60");   // 6.20 + min(-0.6, -0.1)
         assertThat(hi.getValue()).isEqualByComparingTo("6.60");   // 6.20 + max(-0.1, 0.4)
+    }
+
+    @Test
+    void 후보의_속성_글자를_추천_줄에_그대로_내려준다() {
+        // 평균 6.20 기준 SS 기준 범위(5.60 ~ 6.10) 안, 기록 없는 채보 하나
+        givenCandidates(cand(1, "5.80", null, false));
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
+
+        assertThat(r.ssChallenge()).extracting(SetlistRecommendationResponse.Item::pattern).containsOnly("단일");
     }
 
     @Test

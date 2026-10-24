@@ -16,7 +16,7 @@ function json(body: unknown, status = 200): Response {
 function item(id: number, over: Partial<SetlistItemResponse> = {}): SetlistItemResponse {
   return {
     id, songDifficultyId: 100 + id, songId: 200 + id, title: `곡${String(id).padStart(2, "0")}`, part: "GUITAR", difficulty: "MASTER",
-    level: 9.5, tier: 6.2, mine: null, done: false, createdAt: "2026-10-16T05:00:00Z", ...over,
+    level: 9.5, tier: 6.2, pattern: "복합", mine: null, done: false, createdAt: "2026-10-16T05:00:00Z", ...over,
   };
 }
 function pageOf(content: SetlistItemResponse[]) {
@@ -24,7 +24,7 @@ function pageOf(content: SetlistItemResponse[]) {
 }
 
 function rec(id: number, over: Partial<RecommendationItem> = {}): RecommendationItem {
-  return { songDifficultyId: id, songId: 300 + id, title: `추천곡${id}`, part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 6.2, mine: null, ...over };
+  return { songDifficultyId: id, songId: 300 + id, title: `추천곡${id}`, part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 6.2, pattern: "단일", mine: null, ...over };
 }
 const NO_BASE: SetlistRecommendationResponse = {
   status: "UNAVAILABLE", baseTier: null, ssMin: -0.6, ssMax: -0.1, sMin: -0.1, sMax: 0.4, customRange: false,
@@ -99,6 +99,17 @@ describe("세트리스트", () => {
       expect(rows[0]).toHaveTextContent("완료");
       expect(rows[0]).toHaveTextContent("96.50");
       expect(rows[1]).toHaveTextContent("미완료");
+    });
+
+    it("줄마다 서열표의 속성 글자를 보여 주고, 서열표에 없는 채보는 속성을 비운다", async () => {
+      listed = [item(1, { pattern: "복합" }), item(2, { pattern: null, tier: null })];
+      renderWith(<SetlistTab userId={1} />);
+
+      const list = await screen.findByRole("list", { name: "세트리스트" });
+      const rows = within(list).getAllByRole("listitem");
+      expect(rows[0]).toHaveTextContent("복합");
+      expect(rows[1]).not.toHaveTextContent("복합");
+      expect(rows[1]).not.toHaveTextContent("단일");
     });
 
     it("데스크톱(lg 이상)은 두 열: 왼쪽 검색·추천, 오른쪽 내 세트리스트. 모바일은 한 줄로 쌓는다", async () => {
@@ -245,6 +256,14 @@ describe("세트리스트", () => {
       expect(ss[1]).toHaveTextContent("S");
       const s = within(within(section).getByRole("list", { name: "S 기준 추천" })).getAllByRole("listitem");
       expect(s[0]).toHaveTextContent("추천곡3");
+    });
+
+    it("추천 줄에도 속성 글자를 보여 준다", async () => {
+      recommended = based({ ssChallenge: [rec(1, { pattern: "이중" })], sFill: [rec(2, { pattern: null })] });
+      renderWith(<SetlistTab userId={1} />);
+
+      const ss = await screen.findByRole("list", { name: /SS 기준/ });
+      expect(within(ss).getAllByRole("listitem")[0]).toHaveTextContent("이중");
     });
 
     it("추천할 채보가 없는 묶음은 안내한다", async () => {

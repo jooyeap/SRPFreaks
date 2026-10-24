@@ -108,13 +108,17 @@ public class SetlistService {
         Map<Long, RecordBest> bests = new HashMap<>();
         // 최고 기록은 사용자의 전체 채보 대상이지만 쿼리 1번이고 곡 목록 화면과 같은 방식이라 재사용한다
         optionRecordRepository.findBestByUser(userId, RECORD_OPTION).forEach(b -> bests.put(b.songDifficultyId(), b));
-        Map<Long, BigDecimal> tiers = tiersOf(chartIds);
+        Map<Long, DifficultyTableEntry> entries = entriesOf(chartIds);
         return items.stream().map(i -> {
             Long chartId = i.getSongDifficulty().getId();
             RecordBest best = bests.get(chartId);
             MyRecord mine = best == null ? null
                     : new MyRecord(best.bestRate(), best.fullCombo(), AchievementStage.of(best.bestRate(), best.fullCombo()));
-            return SetlistItemResponse.of(i, tiers.get(chartId), mine, i.isDoneBy(latest.get(chartId)));
+            DifficultyTableEntry entry = entries.get(chartId);
+            BigDecimal tier = entry == null ? null : entry.getTierLabel();
+            // 속성은 서열표에 적힌 글자 그대로(단일/복합/이중/삼중/레이팅 제외) 내려 준다. 화면이 현재 언어로 바꿔 보인다.
+            String pattern = entry == null || entry.getPatternType() == null ? null : entry.getPatternType().getLabel();
+            return SetlistItemResponse.of(i, tier, pattern, mine, i.isDoneBy(latest.get(chartId)));
         }).toList();
     }
 
@@ -130,20 +134,18 @@ public class SetlistService {
         return latest;
     }
 
-    /** SRN+ 활성 서열표에서 채보별 기준 난이도(T). 표가 없거나 서열표에 없는 채보, 미정은 맵에 없다. */
-    private Map<Long, BigDecimal> tiersOf(List<Long> chartIds) {
-        Map<Long, BigDecimal> tiers = new HashMap<>();
+    /** SRN+ 활성 서열표에서 채보별 서열표 항목(기준 난이도 T와 속성을 함께 쓴다). 표가 없거나 서열표에 없는 채보는 맵에 없다. */
+    private Map<Long, DifficultyTableEntry> entriesOf(List<Long> chartIds) {
+        Map<Long, DifficultyTableEntry> entries = new HashMap<>();
         Optional<DifficultyTable> table = difficultyTableRepository
                 .findFirstByNoteOptionAndStatusOrderByIdAsc(RECORD_OPTION, TableStatus.ACTIVE);
         if (table.isEmpty()) {
-            return tiers;
+            return entries;
         }
         for (DifficultyTableEntry e : difficultyTableEntryRepository
                 .findByDifficultyTableIdAndSongDifficultyIdIn(table.get().getId(), chartIds)) {
-            if (e.getTierLabel() != null) {
-                tiers.put(e.getSongDifficulty().getId(), e.getTierLabel());
-            }
+            entries.put(e.getSongDifficulty().getId(), e);
         }
-        return tiers;
+        return entries;
     }
 }

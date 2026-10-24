@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Pager } from "@/components/Pager";
 import { RecommendRangeForm } from "@/components/setlist/RecommendRangeForm";
 import { useToast } from "@/components/Toast";
+import { PatternMark } from "@/components/setlist/PatternMark";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { ApiError } from "@/lib/api";
@@ -170,6 +171,7 @@ function Group({
                     <span className="text-xs text-fg-dim">
                       {t.rich("Setlist.constLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
                     </span>
+                    {item.pattern ? <PatternMark pattern={item.pattern} /> : null}
                   </p>
                 </div>
                 {/* 내 랭크(달성 단계)와 달성률은 오른쪽에 모은다. 기록 유무는 색이 아니라 글자로 보인다 */}

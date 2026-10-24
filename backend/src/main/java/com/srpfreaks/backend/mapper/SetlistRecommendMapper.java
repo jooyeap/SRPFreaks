@@ -33,6 +33,7 @@ public interface SetlistRecommendMapper {
                    d.difficulty_type    AS difficulty,
                    d.level              AS level,
                    e.tier_label         AS tier,
+                   e.pattern_type       AS pattern,
                    b.best_rate          AS bestRate,
                    b.full_combo         AS fullCombo
             FROM difficulty_table_entries e

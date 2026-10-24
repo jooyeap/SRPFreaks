@@ -108,6 +108,7 @@ class SetlistRecommendMapperTest {
         RecommendCandidate c = rows.get(0);
         assertThat(c.songDifficultyId()).isEqualTo(d.getId());
         assertThat(c.tier()).isEqualByComparingTo("6.2");
+        assertThat(c.pattern()).isEqualTo(PatternType.SINGLE.getLabel());
         assertThat(c.bestRate()).isNull();
         assertThat(c.fullCombo()).isNull();
         assertThat(c.part()).isEqualTo("GUITAR");

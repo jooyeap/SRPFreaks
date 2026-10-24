@@ -400,6 +400,8 @@ export interface SetlistItemResponse {
   difficulty: DifficultyType;
   level: number;
   tier: number | null;
+  /** 서열표의 속성 글자(단일 / 복합 / 이중 / 삼중 / 레이팅 제외). 서열표에 없으면 null. */
+  pattern: string | null;
   mine: MyRecord | null;
   done: boolean;
   createdAt: string;
@@ -416,6 +418,8 @@ export interface RecommendationItem {
   difficulty: DifficultyType;
   level: number;
   tier: number;
+  /** 서열표의 속성 글자(없으면 null). */
+  pattern: string | null;
   mine: MyRecord | null;
 }
 
