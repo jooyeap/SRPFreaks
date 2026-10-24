@@ -5,7 +5,7 @@ import { doneCount, formatOffsetRange, formatTierOffset } from "@/lib/setlist";
 
 function item(id: number, done: boolean): SetlistItemResponse {
   return {
-    id, songDifficultyId: id, songId: id, title: `곡${id}`, part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 6,
+    id, songDifficultyId: id, songId: id, title: `곡${id}`, part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 6, pattern: "단일",
     mine: null, done, createdAt: "2026-10-16T05:00:00Z",
   };
 }

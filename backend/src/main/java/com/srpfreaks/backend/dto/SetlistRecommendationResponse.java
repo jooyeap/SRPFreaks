@@ -26,8 +26,8 @@ public record SetlistRecommendationResponse(Status status, BigDecimal baseTier,
 
     public enum Status { READY, STARTER, INSUFFICIENT, UNAVAILABLE }
 
-    /** 추천 한 줄. mine은 내 SRN+ 최고 기록(없으면 null). */
+    /** 추천 한 줄. pattern은 서열표의 속성 글자(없으면 null). mine은 내 SRN+ 최고 기록(없으면 null). */
     public record Item(Long songDifficultyId, Long songId, String title, InstrumentPart part,
-                       DifficultyType difficulty, BigDecimal level, BigDecimal tier, MyRecord mine) {
+                       DifficultyType difficulty, BigDecimal level, BigDecimal tier, String pattern, MyRecord mine) {
     }
 }

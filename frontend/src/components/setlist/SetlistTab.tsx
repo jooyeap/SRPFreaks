@@ -9,6 +9,7 @@ import { SetlistRecommend } from "@/components/setlist/SetlistRecommend";
 import { SetlistSearch } from "@/components/setlist/SetlistSearch";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import type { RecordChart } from "@/components/record/RecordForm";
+import { PatternMark } from "@/components/setlist/PatternMark";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { ApiError } from "@/lib/api";
@@ -183,6 +184,7 @@ function SetlistRow({
             <span className="text-xs text-fg-dim">
               {t.rich("Setlist.tierLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
             </span>
+            {item.pattern ? <PatternMark pattern={item.pattern} /> : null}
           </p>
         </div>
         <div className="shrink-0 text-right">

@@ -9,6 +9,7 @@ import com.srpfreaks.backend.entity.DifficultyTableEntry;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.SetlistItem;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
@@ -183,6 +184,7 @@ class SetlistServiceTest {
                 .thenReturn(Optional.of(table));
         DifficultyTableEntry entry = DifficultyTableEntry.create(table, chart(10L));
         entry.changeTier(new BigDecimal("6.2"), false, null);
+        entry.changePattern(PatternType.COMPOUND, false);
         when(difficultyTableEntryRepository.findByDifficultyTableIdAndSongDifficultyIdIn(eq(3L), anyCollection())).thenReturn(List.of(entry));
 
         PageResponse<SetlistItemResponse> page = service.list(1L, -1, 1000);
@@ -190,6 +192,9 @@ class SetlistServiceTest {
         assertThat(page.content()).extracting(SetlistItemResponse::done).containsExactly(true, false, false);
         assertThat(page.content().get(0).mine().rate()).isEqualByComparingTo("96.50");
         assertThat(page.content().get(0).tier()).isEqualByComparingTo("6.2");
+        // 속성은 서열표에 적힌 글자 그대로, 서열표에 없는 채보는 null
+        assertThat(page.content().get(0).pattern()).isEqualTo("복합");
+        assertThat(page.content().get(1).pattern()).isNull();
         assertThat(page.content().get(2).mine()).isNull();
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
         verify(setlistItemRepository).findActiveByUserId(eq(1L), captor.capture());

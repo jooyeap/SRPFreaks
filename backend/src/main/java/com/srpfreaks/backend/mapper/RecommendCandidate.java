@@ -8,5 +8,6 @@ import java.math.BigDecimal;
  * 기록이 없는 채보도 후보라서 LEFT JOIN 결과를 받는다 -> 원시 boolean이 아니라 Boolean.
  */
 public record RecommendCandidate(Long songDifficultyId, Long songId, String title, String part, String difficulty,
-                                 BigDecimal level, BigDecimal tier, BigDecimal bestRate, Boolean fullCombo) {
+                                 BigDecimal level, BigDecimal tier, String pattern,
+                                 BigDecimal bestRate, Boolean fullCombo) {
 }
