@@ -175,6 +175,6 @@ public class SetlistRecommendService {
         AchievementStage stage = stageOf(c);
         MyRecord mine = stage == null ? null : new MyRecord(c.bestRate(), Boolean.TRUE.equals(c.fullCombo()), stage);
         return new Item(c.songDifficultyId(), c.songId(), c.title(), InstrumentPart.valueOf(c.part()),
-                DifficultyType.valueOf(c.difficulty()), c.level(), c.tier(), mine);
+                DifficultyType.valueOf(c.difficulty()), c.level(), c.tier(), c.pattern(), mine);
     }
 }
