@@ -80,7 +80,7 @@ export function AuditLogView({ viewerId }: { viewerId: number }) {
           onChange={(e) => setDraft(e.target.value)}
           aria-label={t("Admin.auditSearchAria")}
           placeholder={t("Admin.auditSearchPlaceholder")}
-          className={`${FIELD} min-w-0 flex-1`}
+          className={`${FIELD} min-w-40 flex-1`}
         />
         <button type="submit" className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
           {t("Admin.usersSearch")}
