@@ -265,6 +265,48 @@ describe("SongListView", () => {
     expect(chartCalls().at(-1)).toContain("folder=9.50");
   });
 
+  it("검색어가 있으면 검색창 아래에 바로가기 후보가 나오고, 누르면 곡 상세로 가는 링크다 (8개까지만 요청)", async () => {
+    renderView({ ...EMPTY_SONG_FILTERS, q: "검색" });
+
+    const list = await screen.findByRole("list", { name: "검색 결과" });
+    const link = within(list).getByRole("link", { name: /검색곡/ });
+    expect(link).toHaveAttribute("href", "/songs/109?from=songs&chart=9");
+    expect(within(list).getByLabelText("달성 단계 SS")).toBeInTheDocument();
+    const candidateCall = chartCalls().find((u) => !u.includes("folder="));
+    const params = new URL(candidateCall ?? "", "http://x").searchParams;
+    expect(params.get("q")).toBe("검색");
+    expect(params.get("size")).toBe("8");
+  });
+
+  it("검색어가 없으면 후보를 요청하지도 보이지도 않는다", async () => {
+    renderView();
+    await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+    expect(screen.queryByRole("list", { name: "검색 결과" })).toBeNull();
+    expect(chartCalls()).toHaveLength(0);
+  });
+
+  it("맞는 채보가 없으면 후보 목록은 그리지 않는다 (없을 때 안내는 폴더 목록 쪽이 한다)", async () => {
+    renderView({ ...EMPTY_SONG_FILTERS, q: "nomatch" });
+    expect(await screen.findByText("조건에 맞는 채보가 없습니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "검색 결과" })).toBeNull();
+  });
+
+  it("우측 하단 고정 검색 버튼을 누르면 위쪽 검색창으로 포커스가 옮겨 간다", async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    renderView();
+    const button = await screen.findByRole("button", { name: "곡 검색" });
+    expect(button).toHaveClass("fixed", "right-4");
+    const input = screen.getByRole("searchbox");
+    expect(input).not.toHaveFocus();
+
+    fireEvent.click(button);
+
+    expect(input).toHaveFocus();
+    expect(scrollIntoView).toHaveBeenCalled();
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
   it("파트와 난이도(여러 개) 필터는 폴더 목록 요청의 서버 조건으로 전달된다", async () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });

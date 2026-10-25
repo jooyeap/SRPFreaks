@@ -120,3 +120,11 @@ export function songListDetailHref(row: Pick<ChartRowResponse, "songId" | "songD
 export function folderAverage(folder: ChartFolderResponse, includeZero: boolean): number | null {
   return includeZero ? folder.averageWithZero : folder.averageRecorded;
 }
+
+/** 검색창 아래 후보 목록에 보이는 채보 수. 더 보고 싶으면 아래 폴더 목록(같은 검색어로 걸러진다)을 본다. */
+export const CANDIDATES_SIZE = 8;
+
+/** 곡 목록 검색창의 바로가기 후보. 폴더 없이 검색어만 줘서 곡 목록과 같은 검색 규칙(한글·일본어·로마자·별칭)을 쓴다. */
+export function fetchChartCandidates(q: string, signal?: AbortSignal): Promise<PageResponse<ChartRowResponse>> {
+  return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", { query: { q, page: 0, size: CANDIDATES_SIZE }, signal });
+}
