@@ -521,7 +521,7 @@ com.srpfreaks.backend
 | 서열표 만들기 | POST `/admin/difficulty-tables` (이름, 파트(선택), 기준 옵션) | ROOT·ADMIN |
 | 설정 | GET/PATCH `/admin/settings` | ROOT |
 | 사용자·역할 | GET `/admin/users?page=&size=&q=`(가입 순, 이메일·역할·상태 포함, Google ID 제외. 기본 10명. `q`가 있으면 닉네임·이메일 부분 일치, 대소문자 무시, `%`·`_`는 글자로 취급, 앞뒤 공백 제거, 50자까지, 비면 전체), PATCH `/admin/users/{id}/role` body `{"role": "ADMIN"\|"USER"}` (ROOT로 바꾸는 요청은 400, ROOT 계정의 역할 변경은 403, 이미 그 역할이면 변경 없음, 변경은 `audit_logs`의 `USER_ROLE_CHANGE`에 사용자 id와 전/후 역할만 남김), PATCH `/admin/users/{id}/status` body `{"status": "BLOCKED"\|"ACTIVE"}` (**차단/차단 해제, D46**. ROOT 계정은 403, 이미 그 상태면 변경 없음, `audit_logs`의 `USER_BLOCK`/`USER_UNBLOCK`에 사용자 id와 전/후 상태만 남김) | ROOT |
-| 감사 로그 | GET `/admin/audit-logs` | ROOT |
+| 감사 로그 | GET `/admin/audit-logs?action=&q=` | ROOT |
 
 - Swagger(springdoc)로 문서 자동 생성. 운영 환경에서는 노출 제한.
 - 프론트 타입은 OpenAPI 스펙에서 생성하는 방식을 검토한다. (TypeScript 학습 부담 완화)
@@ -722,6 +722,7 @@ com.srpfreaks.backend
 | 2026-10-08 | **사용자 목록·역할 변경 구현.** `GET /admin/users`, `PATCH /admin/users/{id}/role`(ROOT 전용). ADMIN 지정/해제만 가능하고 ROOT는 만들지도 바꾸지도 못한다(5장 규칙 유지). 역할은 요청마다 DB에서 읽으므로 바로 반영된다 |
 | 2026-10-08 | **설정 조회·변경 구현.** `GET /admin/settings`(ROOT, 키 순, 한 번에 최대 100개), `PATCH /admin/settings/{key}` body `{"value": "..."}`. 새 키는 만들 수 없고(404) 키별로 값을 검사한다: `rating.*`는 바꾼 값을 끼워 넣은 전체 설정으로 `RatingConfig`를 실제로 만들어 보고(계산에 쓸 수 없으면 400, 잘못된 값이 저장돼 레이팅 화면이 500이 되는 것을 막는다), `ui.show_song_images`는 true/false, 나머지는 비어 있지 않은 글자. 변경은 `audit_logs`(`SETTING_UPDATE`, 변경 전/후)에 남긴다 |
 | 2026-10-08 | **감사 로그 조회 구현.** `GET /admin/audit-logs?page=&size=`(ROOT 전용, 최근 순, 기본 30건·최대 100건). 응답에는 작업한 사람의 id와 닉네임만 있고 이메일·Google ID는 없다. 화면은 DESIGN-UI 16장 |
+| 2026-10-25 | **감사 로그 필터.** `action`(대문자·밑줄 50자 이하, 아니면 400)과 `q`(50자 이하, 넘으면 400)를 선택으로 받는다. `q`는 작업한 사람 닉네임·대상 유저 닉네임·대상 번호·detail(JSON 글자)에서 부분 일치(LIKE, `!` 이스케이프, `#{}`만 사용)한다. 조건이 없으면 기존 JPA 경로, 있으면 MyBatis로 id·건수를 구하고 JPA로 엔티티를 읽는다(읽기 전용). 응답 형식은 그대로 |
 | 2026-10-08 | **D27 추가.** 곡 상세에서 ROOT·ADMIN이 서열표 값(기준 난이도·추천도·속성)을 수정하거나 표에 없는 채보를 추가하는 API와 화면. `PUT /admin/difficulty-tables/{id}/entries/{songDifficultyId}`, 감사 로그, `?` 해제 |
 | 2026-10-08 | **D26 추가.** 유저 목록(닉네임·티어·총점, 본인이 공개를 선택)과 유저 상세(읽기 전용 레이팅 목록)를 구현 대상으로 하고 D15의 랭킹·유저 간 비교 보류를 일부 해제. `users.profile_public`, `/players` API, 설정의 공개 여부, 화면 항목, 개인정보 안내 추가. 곡별 랭킹·유저 비교는 계속 보류 |
 | 2026-10-08 | **곡 목록 하위 폴더.** 0.5 폴더 안에 0.05 단위 하위 폴더(`subFolders`, 같은 통계)를 추가하고 `GET /songs/charts`에 `folderStep`(0.50 기본 / 0.05)을 더했다. 9.50이 큰 폴더인지 하위 폴더인지 구분하려는 것이다. 9장 |
