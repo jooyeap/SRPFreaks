@@ -7,7 +7,7 @@ import { useToast } from "@/components/Toast";
 import type { Locale } from "@/i18n/config";
 import { canUseImport } from "@/lib/features";
 import { encodeBookmarklet } from "@/lib/import-bookmarklet";
-import { buildLoaderStub, loaderFailedMessage } from "@/lib/import-loader";
+import { buildLoaderStub } from "@/lib/import-loader";
 import { useLocale, useTranslations } from "next-intl";
 
 type GuideTab = "pc" | "mobile";
@@ -65,7 +65,7 @@ function BookmarkGuide() {
   const linkRef = useRef<HTMLAnchorElement>(null);
   const locale = useLocale() as Locale;
   // 북마크·붙여넣기 모두 짧은 한 줄(스텁)이다. 본체는 해시로 고정한 버전 파일에서 불러온다(D47, lib/import-loader.ts)
-  const stub = encodeBookmarklet(buildLoaderStub(window.location.origin, locale, loaderFailedMessage(t)));
+  const stub = encodeBookmarklet(buildLoaderStub(window.location.origin, locale));
   const href = `javascript:${stub}`;
   const [tab, setTab] = useState<GuideTab>(() =>
     typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches ? "mobile" : "pc",
@@ -259,6 +259,10 @@ function BookmarkGuide() {
         <details className={faq}>
           <summary className="flex min-h-8 cursor-pointer items-center justify-between gap-2 text-sm font-bold text-fg">{t("Import.faq4q")}</summary>
           <p className="mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq4a")}</p>
+        </details>
+        <details className={faq}>
+          <summary className="flex min-h-8 cursor-pointer items-center justify-between gap-2 text-sm font-bold text-fg">{t("Import.faq5q")}</summary>
+          <p className="mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq5a")}</p>
         </details>
       </section>
     </div>
