@@ -6,15 +6,17 @@ import type { AdminUserResponse, AuditLogResponse, PageResponse, Role, SettingRe
 export const adminKeys = {
   all: ["admin"] as const,
   // 작업 종류·검색어도 키에 넣는다: 조건이 바뀌면 이전 조건의 결과가 섞이지 않고 새로 받는다
-  auditLogs: (viewerId: number, page: number, filters: AuditLogFilters = EMPTY_AUDIT_FILTERS) =>
-    ["admin", "audit-logs", viewerId, page, filters.action, filters.q] as const,
+  auditLogs: (viewerId: number, page: number, size: number, filters: AuditLogFilters = EMPTY_AUDIT_FILTERS) =>
+    ["admin", "audit-logs", viewerId, page, size, filters.action, filters.q] as const,
   settings: (viewerId: number) => ["admin", "settings", viewerId] as const,
-  users: (viewerId: number, query: string, page: number) => ["admin", "users", viewerId, query, page] as const,
+  users: (viewerId: number, query: string, page: number, size: number) => ["admin", "users", viewerId, query, page, size] as const,
   /** 사용자 목록 전체(검색어·페이지 무관). 역할·차단을 바꾼 뒤 모두 오래된 것으로 표시할 때 쓴다 */
   usersAll: ["admin", "users"] as const,
 };
 
 export const AUDIT_LOG_PAGE_SIZE = 30;
+/** 감사 로그는 기본이 30개라서 선택지에 30을 넣는다(서버 최대 100). */
+export const AUDIT_LOG_SIZE_OPTIONS = [10, 30, 50, 100] as const;
 
 /** 감사 로그 조건. action = 작업 종류(비면 전체), q = 로그 내용·대상 번호·닉네임 검색어(비면 전체). */
 export interface AuditLogFilters {

@@ -10,6 +10,7 @@ import { useOpenKeys } from "@/lib/open-keys";
 import {
   EMPTY_SONG_FILTERS,
   type FolderStep,
+  CHARTS_PAGE_SIZE,
   fetchFolderCharts,
   folderAverage,
   folderTitle,
@@ -17,6 +18,7 @@ import {
   songListKeys,
 } from "@/lib/song-list";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { usePageSize } from "@/lib/page-size";
 import { useTranslations } from "next-intl";
 
 /**
@@ -51,9 +53,11 @@ export function FolderSection({
   const open = openKeys.has(openKey);
   // 채보를 직접 보여 주는 폴더: 하위 폴더 또는, 하위 폴더가 없는 큰 폴더
   const showsCharts = isSub || subFolders.length === 0;
+  // `더 보기` 한 번에 이어 받는 개수. 곡 목록 맨 위의 선택(PageSizeSelect)과 같은 값을 읽는다
+  const [size] = usePageSize("songs", CHARTS_PAGE_SIZE);
   const pages = useInfiniteQuery({
-    queryKey: songListKeys.folder(userId, folder.lo, step, filters),
-    queryFn: ({ pageParam, signal }) => fetchFolderCharts(folder.lo, step, pageParam, signal, filters),
+    queryKey: songListKeys.folder(userId, folder.lo, step, filters, size),
+    queryFn: ({ pageParam, signal }) => fetchFolderCharts(folder.lo, step, pageParam, signal, filters, size),
     initialPageParam: 0,
     getNextPageParam: (last) => (last.page + 1 < last.totalPages ? last.page + 1 : undefined),
     enabled: open && showsCharts,

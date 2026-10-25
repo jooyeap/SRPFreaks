@@ -121,7 +121,9 @@ export function TierGroupSection({
               aria-expanded={open}
               aria-controls={bodyId}
               onClick={() => setOpen(!open)}
-              className="flex items-center gap-1 text-left"
+              // 버튼의 ::after를 머리(relative) 전체로 늘려 칩·기록 수·평균을 눌러도 접고 펼친다(곡 목록 폴더와 같은 클릭 범위).
+              // 칩 목록(ul)과 평균(p)은 그대로 둬서 화면 읽기 프로그램의 목록 구조를 지킨다.
+              className="flex items-center gap-1 text-left after:absolute after:inset-0 after:content-[''] focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:-outline-offset-2"
             >
               <span aria-hidden="true" className="w-4 text-sm text-fg-dim">
                 {open ? "▾" : "▸"}

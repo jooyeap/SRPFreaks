@@ -8,8 +8,9 @@ export const songListKeys = {
   // 필터가 걸리면 폴더 구성이 달라지므로 조건도 키에 넣는다. 필터 없음(EMPTY_SONG_FILTERS)이 전체 현황용 키다
   folders: (userId: number, filters: SongListFilters = EMPTY_SONG_FILTERS) => ["song-list", "folders", userId, filters] as const,
   // 같은 시작값(9.50)이 큰 폴더와 하위 폴더 둘 다 있으므로 단위(step)도 키에 넣는다
-  folder: (userId: number, lo: number, step: FolderStep, filters: SongListFilters = EMPTY_SONG_FILTERS) =>
-    ["song-list", "folder", userId, step, lo, filters] as const,
+  // 한 번에 이어 받는 개수(size)도 키에 넣는다: 개수를 바꾸면 이전 개수로 받은 쪽이 섞이지 않고 새로 받는다
+  folder: (userId: number, lo: number, step: FolderStep, filters: SongListFilters = EMPTY_SONG_FILTERS, size: number = CHARTS_PAGE_SIZE) =>
+    ["song-list", "folder", userId, step, lo, filters, size] as const,
 };
 
 /** 폴더 단위: 큰 폴더는 0.5, 그 안의 하위 폴더는 0.05. 서버의 `folderStep` 파라미터 값이다. */
@@ -97,9 +98,10 @@ export function fetchFolderCharts(
   page: number,
   signal?: AbortSignal,
   filters: SongListFilters = EMPTY_SONG_FILTERS,
+  size: number = CHARTS_PAGE_SIZE,
 ): Promise<PageResponse<ChartRowResponse>> {
   return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", {
-    query: { ...filterQuery(filters), folder: lo.toFixed(2), folderStep: step, page, size: CHARTS_PAGE_SIZE },
+    query: { ...filterQuery(filters), folder: lo.toFixed(2), folderStep: step, page, size },
     signal,
   });
 }
@@ -117,4 +119,12 @@ export function songListDetailHref(row: Pick<ChartRowResponse, "songId" | "songD
 /** 폴더 평균. "0% 포함"이면 기록 없는 채보를 0%로 넣은 값, 아니면 기록 있는 채보만의 값(없으면 null). */
 export function folderAverage(folder: ChartFolderResponse, includeZero: boolean): number | null {
   return includeZero ? folder.averageWithZero : folder.averageRecorded;
+}
+
+/** 검색창 아래 후보 목록에 보이는 채보 수. 더 보고 싶으면 아래 폴더 목록(같은 검색어로 걸러진다)을 본다. */
+export const CANDIDATES_SIZE = 8;
+
+/** 곡 목록 검색창의 바로가기 후보. 폴더 없이 검색어만 줘서 곡 목록과 같은 검색 규칙(한글·일본어·로마자·별칭)을 쓴다. */
+export function fetchChartCandidates(q: string, signal?: AbortSignal): Promise<PageResponse<ChartRowResponse>> {
+  return apiFetch<PageResponse<ChartRowResponse>>("/songs/charts", { query: { q, page: 0, size: CANDIDATES_SIZE }, signal });
 }

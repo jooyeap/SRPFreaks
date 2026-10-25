@@ -9,12 +9,15 @@ import {
   adminKeys,
   AUDIT_ACTIONS,
   AUDIT_LOG_PAGE_SIZE,
+  AUDIT_LOG_SIZE_OPTIONS,
   detailText,
   EMPTY_AUDIT_FILTERS,
   fetchAuditLogs,
   type AuditLogFilters,
 } from "@/lib/admin";
 import { formatPlayedDate } from "@/lib/format";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
+import { usePageSize } from "@/lib/page-size";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { useTranslations } from "next-intl";
 
@@ -27,14 +30,15 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 export function AuditLogView({ viewerId }: { viewerId: number }) {
   const t = useTranslations();
   const [page, setPage] = useState(0);
+  const [size, setSize] = usePageSize("auditLogs", AUDIT_LOG_PAGE_SIZE, AUDIT_LOG_SIZE_OPTIONS);
   // 검색어는 입력 중(draft)과 실제 적용(filters.q)을 나눈다: 검색 버튼·엔터를 눌러야 요청한다. 작업 종류는 고르면 바로 적용한다.
   const [draft, setDraft] = useState("");
   const [filters, setFilters] = useState<AuditLogFilters>(EMPTY_AUDIT_FILTERS);
   const filtered = filters.action !== "" || filters.q !== "";
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const { data, isPending, isError, error } = useQuery({
-    queryKey: adminKeys.auditLogs(viewerId, page, filters),
-    queryFn: ({ signal }) => fetchAuditLogs(page, AUDIT_LOG_PAGE_SIZE, filters, signal),
+    queryKey: adminKeys.auditLogs(viewerId, page, size, filters),
+    queryFn: ({ signal }) => fetchAuditLogs(page, size, filters, signal),
     placeholderData: keepPreviousData,
   });
 
@@ -44,7 +48,17 @@ export function AuditLogView({ viewerId }: { viewerId: number }) {
         <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
           <span aria-hidden="true">←</span>
         </Link>
-        <h1 className="text-xl font-semibold text-fg">{t("Admin.auditTitle")}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold text-fg">{t("Admin.auditTitle")}</h1>
+          <PageSizeSelect
+            value={size}
+            options={AUDIT_LOG_SIZE_OPTIONS}
+            onChange={(next) => {
+              setSize(next);
+              setPage(0);
+            }}
+          />
+        </div>
         <p className="text-sm text-fg-sub">{t("Admin.auditLead")}</p>
       </div>
 

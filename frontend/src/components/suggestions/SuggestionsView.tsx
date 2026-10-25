@@ -19,6 +19,8 @@ import {
   SUGGESTIONS_PAGE_SIZE,
   type SuggestionValues,
 } from "@/lib/suggestions";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
+import { usePageSize } from "@/lib/page-size";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { useTranslations } from "next-intl";
@@ -51,11 +53,12 @@ export function SuggestionsView({
   const queryClient = useQueryClient();
   const toast = useToast();
   const [page, setPage] = useState(0);
+  const [size, setSize] = usePageSize("suggestions", SUGGESTIONS_PAGE_SIZE);
   useScrollTopOnChange(page);
 
   const mine = useQuery({
-    queryKey: suggestionKeys.mine(viewerId, page),
-    queryFn: ({ signal }) => fetchMySuggestions(page, SUGGESTIONS_PAGE_SIZE, signal),
+    queryKey: suggestionKeys.mine(viewerId, page, size),
+    queryFn: ({ signal }) => fetchMySuggestions(page, size, signal),
     placeholderData: keepPreviousData,
   });
 
@@ -88,7 +91,16 @@ export function SuggestionsView({
         onSubmit={(values) => create.mutateAsync(values)}
       />
 
-      <h2 className="text-lg font-semibold text-fg">{t("Suggestions.mine")}</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-fg">{t("Suggestions.mine")}</h2>
+        <PageSizeSelect
+          value={size}
+          onChange={(next) => {
+            setSize(next);
+            setPage(0);
+          }}
+        />
+      </div>
       {mine.isPending ? (
         <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : mine.isError ? (

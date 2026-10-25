@@ -67,6 +67,26 @@ describe("PlayerListView", () => {
     expect(await screen.findByText("아직 공개한 유저가 없습니다.")).toBeInTheDocument();
   });
 
+  it("개수를 바꾸면 그 크기로 첫 쪽부터 다시 요청한다", async () => {
+    fetchMock.mockImplementation((input) => {
+      const params = new URL(String(input), "http://x").searchParams;
+      const page = Number(params.get("page"));
+      return Promise.resolve(json(pageOf([player(page + 1, 1, "user", 1)], { page, totalPages: 3 })));
+    });
+    renderWith(<PlayerListView viewerId={1} />);
+    await screen.findByRole("list", { name: "유저 목록" });
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    await waitFor(() => expect(String(fetchMock.mock.calls.at(-1)?.[0])).toContain("page=1"));
+
+    fireEvent.change(screen.getByRole("combobox", { name: "한 번에 보이는 개수" }), { target: { value: "50" } });
+
+    await waitFor(() => {
+      const last = new URL(String(fetchMock.mock.calls.at(-1)?.[0]), "http://x").searchParams;
+      expect(last.get("size")).toBe("50");
+      expect(last.get("page")).toBe("0"); // 개수가 바뀌면 보던 쪽 번호가 맞지 않아 첫 쪽으로
+    });
+  });
+
   it("페이지를 넘기면 다음 페이지를 요청한다", async () => {
     fetchMock.mockImplementation((input) => {
       const page = Number(new URL(String(input), "http://x").searchParams.get("page"));

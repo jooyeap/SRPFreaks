@@ -3,9 +3,13 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pager, usePaged } from "@/components/Pager";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
+import { usePageSize } from "@/lib/page-size";
 import { FolderSection } from "@/components/songs/FolderSection";
 import { SongListFilterPanel } from "@/components/songs/SongListFilterPanel";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
+import { SearchFocusButton } from "@/components/SearchFocusButton";
+import { SongJumpCandidates } from "@/components/songs/SongJumpCandidates";
 import { SongSearchBox } from "@/components/songs/SongSearchBox";
 import { SongRequestLink } from "@/components/songs/SongRequestLink";
 import { SongSuggestions } from "@/components/songs/SongSuggestions";
@@ -14,6 +18,7 @@ import { ApiError } from "@/lib/api";
 import type { ChartFolderResponse } from "@/lib/api-types";
 import {
   activeFilterCount,
+  CHARTS_PAGE_SIZE,
   fetchChartFolders,
   isFiltering,
   songListKeys,
@@ -27,6 +32,9 @@ import type { Translator } from "@/i18n/translator";
 function errorMessage(error: unknown, t: Translator): string {
   return error instanceof ApiError ? error.message : t("Songs.loadFailed");
 }
+
+/** 곡 목록 검색 입력칸의 id. 우측 하단 고정 버튼(SearchFocusButton)이 이 칸으로 포커스를 옮긴다. */
+export const SONG_SEARCH_INPUT_ID = "song-search-input";
 
 /**
  * 전체 곡 목록 (DESIGN-UI 9장). 레벨 폴더(0.5 단위) 목록이고, 검색하거나 필터를 쓰면 조건에 맞는 채보만으로 폴더가 다시 만들어진다(폴더는 유지).
@@ -46,6 +54,7 @@ export function SongListView({
   canRegister?: boolean;
 }) {
   const t = useTranslations();
+  const [chartSize, setChartSize] = usePageSize("songs", CHARTS_PAGE_SIZE);
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
 
@@ -65,6 +74,7 @@ export function SongListView({
     // 모바일은 세로 한 줄(flex-col). 데스크톱(md 이상)은 2열 격자로 바꿔 제목 줄 오른쪽 끝에 `평균 계산` 토글을 둔다(시안). 제목 줄도 md에서는 세로 가운데 정렬이라 `곡 등록` 버튼과 토글의 높이·세로 위치가 같다.
     // 토글은 DOM에서는 폴더 목록 바로 위(모바일 위치)에 그대로 두고, 격자 자리만 CSS로 제목 줄 오른쪽(md:col-start-2 md:row-start-1)으로 옮긴다.
     <div className="flex flex-col gap-4 md:grid md:grid-cols-[1fr_auto] md:items-start md:gap-x-3">
+      <SearchFocusButton targetId={SONG_SEARCH_INPUT_ID} />
       <div className="flex items-start justify-between gap-3 md:col-start-1 md:row-start-1 md:items-center">
         <div>
           <h1 className="text-xl font-semibold text-fg">{t("Songs.title")}</h1>
@@ -80,7 +90,7 @@ export function SongListView({
       */}
       <div className="flex flex-col gap-4 md:col-span-2 md:flex-row md:flex-wrap md:items-center md:gap-3 md:rounded-2xl md:border md:border-line md:bg-card md:px-4 md:py-3">
         <div className="flex items-center gap-2 md:contents">
-          <SongSearchBox value={filters.q} onCommit={(q) => onFiltersChange({ ...filters, q })} />
+          <SongSearchBox id={SONG_SEARCH_INPUT_ID} value={filters.q} onCommit={(q) => onFiltersChange({ ...filters, q })} />
           <button
             type="button"
             aria-expanded={filtersOpen}
@@ -102,6 +112,9 @@ export function SongListView({
         />
       </div>
 
+      {/* 검색어에 맞는 채보의 바로가기 후보(누르면 곡 상세). 아래 폴더 목록은 같은 검색어로 걸러진다 */}
+      <SongJumpCandidates userId={userId} query={filters.q} className="md:col-span-2" />
+
       {folders.isError ? (
         <ErrorRetry className="md:col-span-2" onRetry={() => void folders.refetch()} retrying={folders.isFetching}>
           {errorMessage(folders.error, t)}
@@ -120,8 +133,10 @@ export function SongListView({
         </div>
       ) : (
         <>
-          <div className="md:col-start-2 md:row-start-1 md:self-center">
+          <div className="flex flex-wrap items-center gap-2 md:col-start-2 md:row-start-1 md:self-center">
             <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
+            {/* 폴더를 펼쳤을 때 `더 보기` 한 번에 보이는 채보 수. 바꾸면 펼친 폴더가 새 개수로 다시 받는다 */}
+            <PageSizeSelect value={chartSize} onChange={setChartSize} />
           </div>
           <PagedFolders userId={userId} folders={folders.data.folders} includeZero={includeZero} filters={filters} />
         </>
