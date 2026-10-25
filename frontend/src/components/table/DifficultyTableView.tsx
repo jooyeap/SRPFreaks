@@ -146,6 +146,9 @@ export function DifficultyTableView({
         {canRegister ? <SongCreateButton tableId={table.id} /> : null}
       </div>
 
+      {/* 곡 검색: 화면 위쪽 검색창 + 결과(누르면 곡 상세로). 우측 하단 고정 버튼은 이 검색창으로 포커스를 옮긴다 */}
+      <TableSearch userId={userId} groups={allGroups.data && decidedGroups(allGroups.data)} />
+
       <div className="flex flex-wrap items-center gap-2">
         {allGroups.data ? <TierQuickNav groups={decidedGroups(allGroups.data)} /> : null}
         {/* 지금 페이지의 묶음을 한꺼번에 펼치거나 접는다(묶음이 처음에 모두 닫혀 있어서 하나씩 열기 번거롭다) */}
@@ -233,7 +236,6 @@ export function DifficultyTableView({
         </>
       )}
       <ScrollTopButton lifted />
-      <TableSearch userId={userId} groups={allGroups.data && decidedGroups(allGroups.data)} />
       <RecordDialog
         chart={
           recordTarget && {
