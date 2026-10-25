@@ -12,6 +12,8 @@
     "prev": "이전",
     "next": "다음",
     "pageNav": "페이지 이동",
+    "pageSizeAria": "한 번에 보이는 개수",
+    "pageSizeOption": "{count}개씩",
     "pendingLabel": "{label} 중",
     "themeToggle": "다크/라이트 테마 전환",
     "scrollTop": "맨 위로",
