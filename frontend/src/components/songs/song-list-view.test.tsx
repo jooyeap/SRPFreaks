@@ -343,7 +343,7 @@ describe("SongListView", () => {
     expect(header).toHaveClass("hidden", "md:grid");
     expect(header.textContent).toBe("곡명랭크채보달성률");
     // 머리글과 행이 같은 열 너비를 쓴다
-    expect(header.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px]");
-    expect(list.querySelector("li")?.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px]");
+    expect(header.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px_64px]");
+    expect(list.querySelector("li")?.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px_64px]");
   });
 });

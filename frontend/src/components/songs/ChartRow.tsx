@@ -1,12 +1,13 @@
 import Link from "next/link";
+import { SetlistAddButton } from "@/components/setlist/SetlistAddButton";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { formatRate } from "@/lib/format";
 import type { ChartRowResponse } from "@/lib/api-types";
 import { songListDetailHref } from "@/lib/song-list";
 
-/** 데스크톱 열: 곡명 · 랭크(달성 단계) · 채보 알약(파트·난이도·레벨) · 달성률. 모든 행이 같은 열 너비를 써서 줄마다 위치가 맞는다. 열 머리글(ChartList)도 같은 값을 쓴다. */
-export const ROW_COLUMNS = "md:grid-cols-[minmax(0,1fr)_70px_190px_90px]";
+/** 데스크톱 열: 곡명 · 랭크(달성 단계) · 채보 알약(파트·난이도·레벨) · 달성률 · 세트리스트 담기(D49, 로그인했을 때만 보이는 64px 칸). 모든 행이 같은 열 너비를 써서 줄마다 위치가 맞는다. 열 머리글(ChartList)도 같은 값을 쓴다. */
+export const ROW_COLUMNS = "md:grid-cols-[minmax(0,1fr)_70px_190px_90px_64px]";
 const ROW_GRID = `md:grid ${ROW_COLUMNS} md:items-center md:gap-x-3`;
 
 /**
@@ -47,6 +48,10 @@ export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }
       </div>
       <span className={`shrink-0 text-right font-num text-sm font-semibold md:order-4 md:text-base ${stage ? "stage-text" : "text-fg-faint"}`}>
         {formatRate(row.mine?.rate)}
+      </span>
+      {/* 세트리스트 담기(로그인했을 때만 그려진다). 데스크톱은 맨 오른쪽 64px 칸, 기록 입력과 헷갈리지 않게 글자 버튼이다 */}
+      <span className="shrink-0 md:order-5 md:text-right">
+        <SetlistAddButton songDifficultyId={row.songDifficultyId} title={row.title} />
       </span>
     </li>
   );
