@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -62,8 +63,13 @@ public class RefreshTokenService {
 
         Instant now = clock.instant();
         if (current.isRevoked()) {
-            // 이미 쓴(폐기된) 토큰이 또 왔다 = 재사용 탐지
-            refreshTokenRepository.revokeFamily(current.getFamilyId(), now);
+            // 이미 쓴(폐기된) 토큰이 또 왔다 = 재사용 탐지.
+            // 단, 폐기된 지 아주 얼마 안 됐으면(유예, D50) 탭 두 개가 같은 쿠키로 동시에 요청한 경쟁일 수 있다. 이때 family를 폐기하면
+            // 정상 사용자의 로그인이 풀리므로 그 요청만 거절한다(새 토큰은 주지 않는다). 먼저 처리된 쪽이 이미 새 쿠키를 받았으니
+            // 클라이언트가 잠시 뒤 다시 시도하면 성공한다. 유예가 지난 뒤의 재사용은 예전처럼 family 전체를 폐기한다.
+            if (!isWithinReuseGrace(current, now)) {
+                refreshTokenRepository.revokeFamily(current.getFamilyId(), now);
+            }
             throw new ApiException(ErrorCode.AUTH_FAILED);
         }
         if (current.isExpired(now)) {
@@ -77,6 +83,16 @@ public class RefreshTokenService {
 
         current.revoke(now);
         return new Rotation(user, issue(user, current.getFamilyId()));
+    }
+
+    /** 폐기 시각이 지금보다 앞이고 유예(refreshReuseGrace) 안이면 true. 유예가 0 이하이면 항상 false. */
+    private boolean isWithinReuseGrace(RefreshToken token, Instant now) {
+        long graceMillis = jwtProperties.getRefreshReuseGrace();
+        Instant revokedAt = token.getRevokedAt();
+        if (graceMillis <= 0 || revokedAt == null || revokedAt.isAfter(now)) {
+            return false;
+        }
+        return Duration.between(revokedAt, now).toMillis() < graceMillis;
     }
 
     /** 로그아웃: 이 토큰이 속한 로그인(family)의 토큰을 모두 폐기한다. 토큰이 없거나 이미 무효여도 조용히 끝낸다. */

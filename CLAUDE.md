@@ -89,7 +89,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 ## 보안 원칙 (타협하지 않는다)
 - **로그인은 Google 로그인만 쓴다(D19). 비밀번호를 저장하지 않는다.** 로그에 비밀번호/토큰/개인정보/요청 본문 원문을 남기지 않는다.
 - **Access 토큰과 Refresh 토큰은 종류(`typ`)로 구분**한다. API 인증에는 Access 토큰만 받는다.
-- Refresh Token은 httpOnly + Secure + SameSite=Strict 쿠키. DB에는 **해시만** 저장하고 **Rotation + 재사용 탐지**를 적용한다.
+- Refresh Token은 httpOnly + Secure + SameSite=Strict 쿠키. DB에는 **해시만** 저장하고 **Rotation + 재사용 탐지**를 적용한다. 방금 폐기한 토큰이 유예(`jwt.refresh-reuse-grace`, 기본 10초, D50) 안에 다시 오면 그 요청만 거절하고 로그인 전체는 폐기하지 않는다.
 - 기본 정책은 deny all. 공개 경로만 명시적으로 허용한다. **공개 경로는 로그인·재발급·로그아웃과, 로그인 없이 읽는 GET 몇 개(공지·곡·서열표·유저 목록, D43)뿐이다.** 목록은 `PublicReadPaths` 한 곳에 정규식으로 적고(접두사로 열지 않는다), 비로그인 요청은 IP별 제한(`public-read-per-minute`)을 받는다. 쓰기와 개인 데이터는 계속 로그인이 필요하다.
 - CORS는 허용 Origin 화이트리스트(환경변수). `*` 금지.
 - 로그인/재발급/사진 인식에는 Rate Limit을 둔다. Google 토큰 검증 실패 메시지는 통일한다. 탈퇴는 사용자와 기록을 완전히 삭제한다(D20).
