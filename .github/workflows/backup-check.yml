@@ -24,7 +24,7 @@ permissions:
 jobs:
   check:
     name: 백업 점검
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: SSH 준비
