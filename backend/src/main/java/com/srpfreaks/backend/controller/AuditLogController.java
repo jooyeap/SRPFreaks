@@ -22,7 +22,11 @@ public class AuditLogController {
     @GetMapping
     public PageResponse<AuditLogResponse> list(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "" + AuditLogQueryService.DEFAULT_PAGE_SIZE) int size) {
-        return auditLogQueryService.list(page, size);
+            @RequestParam(defaultValue = "" + AuditLogQueryService.DEFAULT_PAGE_SIZE) int size,
+            // 작업 종류(예: NICKNAME_CHANGE). 비우면 전체
+            @RequestParam(required = false) String action,
+            // 검색어: 로그 내용(닉네임 변경의 이전·새 닉네임 포함), 대상 번호, 작업한 사람·대상 사용자의 닉네임. 비우면 전체
+            @RequestParam(required = false) String q) {
+        return auditLogQueryService.list(page, size, action, q);
     }
 }

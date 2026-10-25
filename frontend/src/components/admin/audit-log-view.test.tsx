@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AdminGate } from "@/components/admin/AdminGate";
 import { AuditLogView } from "@/components/admin/AuditLogView";
@@ -41,6 +41,9 @@ describe("감사 로그 화면", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  // 작업 종류 선택지에도 "곡 등록" 같은 글자가 있어서, 로그 목록 안에서만 찾는다
+  const inList = async () => within(await screen.findByRole("list", { name: "감사 로그" }));
+
   const renderView = () =>
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -51,7 +54,7 @@ describe("감사 로그 화면", () => {
   it("작업 이름, 사람, 대상, 세부 내용을 보여 준다", async () => {
     fetchMock.mockResolvedValueOnce(json(page([log(2), log(1, { actorId: null, actorNickname: null, action: "SOMETHING_NEW", detail: null })])));
     renderView();
-    expect(await screen.findByText("곡 등록")).toBeInTheDocument();
+    expect((await inList()).getByText("곡 등록")).toBeInTheDocument();
     expect(screen.getByText(/ルート/)).toBeInTheDocument();
     expect(screen.getByText('{"title":"새 곡"}')).toBeInTheDocument();
     expect(screen.getByText("SOMETHING_NEW")).toBeInTheDocument(); // 모르는 종류는 그대로
@@ -73,10 +76,63 @@ describe("감사 로그 화면", () => {
   it("다음 버튼으로 다음 페이지를 요청한다", async () => {
     fetchMock.mockResolvedValueOnce(json(page([log(2)], 0, 2))).mockResolvedValueOnce(json(page([log(1)], 1, 2)));
     renderView();
-    await screen.findByText("곡 등록");
+    await inList();
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     expect(await screen.findByText("2 / 2")).toBeInTheDocument();
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain("page=1");
+  });
+
+  const urlParams = (i: number) => new URL(String(fetchMock.mock.calls[i]?.[0]), "http://x").searchParams;
+
+  it("처음에는 조건 없이 요청한다", async () => {
+    fetchMock.mockResolvedValueOnce(json(page([log(1)])));
+    renderView();
+    await inList();
+    expect(urlParams(0).has("action")).toBe(false);
+    expect(urlParams(0).has("q")).toBe(false);
+    expect(screen.queryByRole("button", { name: "초기화" })).toBeNull();
+  });
+
+  it("작업 종류를 고르면 바로 그 종류로 다시 요청하고 첫 페이지부터 본다", async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(page([log(2)], 0, 2)))
+      .mockResolvedValueOnce(json(page([log(1)], 1, 2)))
+      .mockResolvedValueOnce(json(page([log(9, { action: "NICKNAME_CHANGE" })])));
+    renderView();
+    await inList();
+    fireEvent.click(screen.getByRole("button", { name: "다음" }));
+    await screen.findByText("2 / 2");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "작업 종류" }), { target: { value: "NICKNAME_CHANGE" } });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(urlParams(2).get("action")).toBe("NICKNAME_CHANGE");
+    expect(urlParams(2).get("page")).toBe("0");
+  });
+
+  it("검색어는 검색을 눌러야 적용되고, 앞뒤 공백은 뺀다", async () => {
+    fetchMock.mockResolvedValue(json(page([log(1)])));
+    renderView();
+    await inList();
+    fireEvent.change(screen.getByRole("searchbox", { name: "닉네임 또는 로그 내용 검색" }), { target: { value: "  ルート " } });
+    expect(fetchMock).toHaveBeenCalledTimes(1); // 입력만으로는 요청하지 않는다
+
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(urlParams(1).get("q")).toBe("ルート");
+  });
+
+  it("조건에 맞는 로그가 없으면 검색 결과 없음 문구, 초기화하면 조건이 풀린다", async () => {
+    fetchMock.mockResolvedValueOnce(json(page([log(1)]))).mockResolvedValueOnce(json(page([]))).mockResolvedValueOnce(json(page([log(1)])));
+    renderView();
+    await inList();
+    fireEvent.change(screen.getByRole("searchbox", { name: "닉네임 또는 로그 내용 검색" }), { target: { value: "없는말" } });
+    fireEvent.click(screen.getByRole("button", { name: "검색" }));
+    expect(await screen.findByText("검색 결과가 없습니다.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "초기화" }));
+    expect((await inList()).getByText("곡 등록")).toBeInTheDocument();
+    expect(urlParams(2).has("q")).toBe(false);
+    expect(screen.getByRole("searchbox", { name: "닉네임 또는 로그 내용 검색" })).toHaveValue("");
   });
 });
 

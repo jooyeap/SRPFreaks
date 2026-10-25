@@ -6,6 +6,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import java.util.List;
+
 /** 감사 로그 조회/저장. */
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
@@ -16,6 +19,13 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      */
     @EntityGraph(attributePaths = "actor")
     Page<AuditLog> findAllByOrderByCreatedAtDescIdDesc(Pageable pageable);
+
+    /**
+     * 검색 결과(AuditLogSearchMapper가 고른 id)의 로그를 작업한 사람과 함께 읽는다. 순서는 보장하지 않으므로 호출한 쪽이 id 순서대로 맞춘다.
+     * @EntityGraph는 위 목록과 같은 이유다(N+1 방지, 작업한 사람이 없는 줄도 나오도록 LEFT JOIN).
+     */
+    @EntityGraph(attributePaths = "actor")
+    List<AuditLog> findByIdIn(Collection<Long> ids);
 
     /**
      * 탈퇴(D20)할 때 그 사용자의 닉네임 변경 로그를 지운다. 닉네임은 사용자가 정한 이름이라 "완전 삭제"에 포함된다.
