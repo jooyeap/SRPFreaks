@@ -14,9 +14,9 @@ import type { MessageKey } from "@/i18n/translator";
 
 export const suggestionKeys = {
   all: ["suggestions"] as const,
-  mine: (viewerId: number, page: number) => ["suggestions", "mine", viewerId, page] as const,
-  admin: (viewerId: number, category: SuggestionCategory | "", status: SuggestionStatus | "", page: number) =>
-    ["suggestions", "admin", viewerId, category, status, page] as const,
+  mine: (viewerId: number, page: number, size: number) => ["suggestions", "mine", viewerId, page, size] as const,
+  admin: (viewerId: number, category: SuggestionCategory | "", status: SuggestionStatus | "", page: number, size: number) =>
+    ["suggestions", "admin", viewerId, category, status, page, size] as const,
   receivedCount: (viewerId: number) => ["suggestions", "received-count", viewerId] as const,
 };
 

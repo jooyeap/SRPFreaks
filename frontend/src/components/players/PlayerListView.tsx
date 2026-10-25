@@ -3,6 +3,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
+import { usePageSize } from "@/lib/page-size";
 import { PlayerRow } from "@/components/players/PlayerRow";
 import { ApiError } from "@/lib/api";
 import { fetchPlayers, PLAYERS_PAGE_SIZE, playerKeys } from "@/lib/players";
@@ -17,17 +19,27 @@ import { useTranslations } from "next-intl";
 export function PlayerListView({ viewerId }: { viewerId: number }) {
   const t = useTranslations();
   const [page, setPage] = useState(0);
+  const [size, setSize] = usePageSize("players", PLAYERS_PAGE_SIZE);
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const { data, isPending, isError, error, refetch, isFetching } = useQuery({
-    queryKey: playerKeys.list(viewerId, page, PLAYERS_PAGE_SIZE),
-    queryFn: ({ signal }) => fetchPlayers(page, PLAYERS_PAGE_SIZE, signal),
+    queryKey: playerKeys.list(viewerId, page, size),
+    queryFn: ({ signal }) => fetchPlayers(page, size, signal),
     placeholderData: keepPreviousData, // 페이지를 넘기는 동안 이전 화면을 유지한다 (깜빡임 방지)
   });
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-fg">{t("Players.listTitle")}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold text-fg">{t("Players.listTitle")}</h1>
+          <PageSizeSelect
+            value={size}
+            onChange={(next) => {
+              setSize(next);
+              setPage(0); // 개수가 바뀌면 보던 쪽 번호가 맞지 않으므로 첫 쪽부터 본다
+            }}
+          />
+        </div>
         <p className="mt-1 text-sm text-fg-sub">
           {t.rich("Players.listLead", {
             l: (c) => (
