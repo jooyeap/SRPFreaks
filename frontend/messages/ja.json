@@ -12,6 +12,8 @@
     "prev": "前へ",
     "next": "次へ",
     "pageNav": "ページ移動",
+    "pageSizeAria": "1回に表示する件数",
+    "pageSizeOption": "{count}件ずつ",
     "pendingLabel": "{label}中",
     "themeToggle": "ダーク/ライトテーマの切り替え",
     "scrollTop": "ページ上部へ",

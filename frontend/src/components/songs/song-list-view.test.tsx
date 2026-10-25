@@ -4,6 +4,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SongListView } from "@/components/songs/SongListView";
 import type { ChartFolderListResponse, ChartFolderResponse, ChartRowResponse, PageResponse } from "@/lib/api-types";
+import { resetPageSizeForTest } from "@/lib/page-size";
 import { EMPTY_SONG_FILTERS, type SongListFilters } from "@/lib/song-list";
 
 function folder(lo: number, over: Partial<ChartFolderResponse> = {}): ChartFolderResponse {
@@ -79,6 +80,8 @@ describe("SongListView", () => {
   }
 
   beforeEach(() => {
+    sessionStorage.clear();
+    resetPageSizeForTest(); // 이전 테스트에서 고른 개수가 남지 않게
     fetchMock.mockReset();
     fetchMock.mockImplementation((input) => {
       const url = String(input);
@@ -176,6 +179,18 @@ describe("SongListView", () => {
     expect(chartCalls()[0]).toContain("folder=9.50");
     expect(chartCalls()[0]).toContain("folderStep=0.50");
     expect(screen.getByText("두번째곡")).toBeInTheDocument();
+  });
+
+  it("맨 위에서 개수를 바꾸면 펼친 폴더가 그 개수로 다시 채보를 받는다 (기본은 20개씩)", async () => {
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    await screen.findByRole("link", { name: "첫번째곡" });
+    expect(chartCalls().at(-1)).toContain("size=20");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "한 번에 보이는 개수" }), { target: { value: "50" } });
+
+    await waitFor(() => expect(chartCalls().at(-1)).toContain("size=50"));
+    expect(chartCalls().at(-1)).toContain("page=0"); // 이어 붙이던 쪽은 버리고 첫 쪽부터
   });
 
   it("하위 폴더가 있으면 큰 폴더를 펼칠 때 하위 폴더만 보이고, 하위 폴더를 펼쳐야 채보를 요청한다", async () => {
@@ -321,7 +336,9 @@ describe("SongListView", () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "V4" } });
+    // 선택 상자가 둘이 되었으니(버전 + 한 번에 보이는 개수) 개수 선택을 뺀 나머지를 버전으로 본다
+    const versionSelect = screen.getAllByRole("combobox").find((el) => el.getAttribute("aria-label") !== "한 번에 보이는 개수");
+    fireEvent.change(versionSelect as HTMLElement, { target: { value: "V4" } });
     await waitFor(() => expect(folderCalls().at(-1)).toContain("version=V4"));
 
     fireEvent.click(screen.getByRole("button", { name: "초기화" }));
@@ -385,7 +402,7 @@ describe("SongListView", () => {
     expect(header).toHaveClass("hidden", "md:grid");
     expect(header.textContent).toBe("곡명랭크채보달성률");
     // 머리글과 행이 같은 열 너비를 쓴다
-    expect(header.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px]");
-    expect(list.querySelector("li")?.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px]");
+    expect(header.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px_64px]");
+    expect(list.querySelector("li")?.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px_64px]");
   });
 });

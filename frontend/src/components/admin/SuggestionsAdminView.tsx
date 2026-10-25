@@ -23,6 +23,8 @@ import {
   suggestionKeys,
   SUGGESTIONS_PAGE_SIZE,
 } from "@/lib/suggestions";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
+import { usePageSize } from "@/lib/page-size";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
@@ -47,11 +49,12 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
   const [category, setCategory] = useState<SuggestionCategory | "">("");
   const [status, setStatus] = useState<SuggestionStatus | "">("");
   const [page, setPage] = useState(0);
+  const [size, setSize] = usePageSize("adminSuggestions", SUGGESTIONS_PAGE_SIZE);
   useScrollTopOnChange(page);
 
   const list = useQuery({
-    queryKey: suggestionKeys.admin(viewerId, category, status, page),
-    queryFn: ({ signal }) => fetchAdminSuggestions({ category, status }, page, SUGGESTIONS_PAGE_SIZE, signal),
+    queryKey: suggestionKeys.admin(viewerId, category, status, page, size),
+    queryFn: ({ signal }) => fetchAdminSuggestions({ category, status }, page, size, signal),
     placeholderData: keepPreviousData,
   });
   const count = useQuery({
@@ -72,7 +75,16 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-xl font-semibold text-fg">{t("Admin.suggestionsTitle")}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold text-fg">{t("Admin.suggestionsTitle")}</h1>
+          <PageSizeSelect
+            value={size}
+            onChange={(next) => {
+              setSize(next);
+              setPage(0);
+            }}
+          />
+        </div>
         {count.data ? (
           <p className="mt-1 text-sm text-fg-sub">
             {t.rich("Admin.receivedCount", { count: count.data.received, n: (c) => <span className="font-num">{c}</span> })}

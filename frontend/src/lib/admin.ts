@@ -5,14 +5,16 @@ import type { AdminUserResponse, AuditLogResponse, PageResponse, Role, SettingRe
 /** 관리(ROOT) 쿼리 키. 보는 사람(viewerId)을 넣는 이유는 다른 화면과 같다(계정이 바뀌어도 이전 캐시가 보이지 않게). */
 export const adminKeys = {
   all: ["admin"] as const,
-  auditLogs: (viewerId: number, page: number) => ["admin", "audit-logs", viewerId, page] as const,
+  auditLogs: (viewerId: number, page: number, size: number) => ["admin", "audit-logs", viewerId, page, size] as const,
   settings: (viewerId: number) => ["admin", "settings", viewerId] as const,
-  users: (viewerId: number, query: string, page: number) => ["admin", "users", viewerId, query, page] as const,
+  users: (viewerId: number, query: string, page: number, size: number) => ["admin", "users", viewerId, query, page, size] as const,
   /** 사용자 목록 전체(검색어·페이지 무관). 역할·차단을 바꾼 뒤 모두 오래된 것으로 표시할 때 쓴다 */
   usersAll: ["admin", "users"] as const,
 };
 
 export const AUDIT_LOG_PAGE_SIZE = 30;
+/** 감사 로그는 기본이 30개라서 선택지에 30을 넣는다(서버 최대 100). */
+export const AUDIT_LOG_SIZE_OPTIONS = [10, 30, 50, 100] as const;
 
 export function fetchAuditLogs(page: number, size: number, signal?: AbortSignal): Promise<PageResponse<AuditLogResponse>> {
   return apiFetch<PageResponse<AuditLogResponse>>("/admin/audit-logs", { query: { page, size }, signal });

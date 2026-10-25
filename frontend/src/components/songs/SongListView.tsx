@@ -3,6 +3,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Pager, usePaged } from "@/components/Pager";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
+import { usePageSize } from "@/lib/page-size";
 import { FolderSection } from "@/components/songs/FolderSection";
 import { SongListFilterPanel } from "@/components/songs/SongListFilterPanel";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
@@ -16,6 +18,7 @@ import { ApiError } from "@/lib/api";
 import type { ChartFolderResponse } from "@/lib/api-types";
 import {
   activeFilterCount,
+  CHARTS_PAGE_SIZE,
   fetchChartFolders,
   isFiltering,
   songListKeys,
@@ -51,6 +54,7 @@ export function SongListView({
   canRegister?: boolean;
 }) {
   const t = useTranslations();
+  const [chartSize, setChartSize] = usePageSize("songs", CHARTS_PAGE_SIZE);
   const [includeZero, setIncludeZero] = useState(false); // 0% 미포함이 기본 (DESIGN-UI 3장)
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다 (데스크톱은 항상 펼침)
 
@@ -129,8 +133,10 @@ export function SongListView({
         </div>
       ) : (
         <>
-          <div className="md:col-start-2 md:row-start-1 md:self-center">
+          <div className="flex flex-wrap items-center gap-2 md:col-start-2 md:row-start-1 md:self-center">
             <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
+            {/* 폴더를 펼쳤을 때 `더 보기` 한 번에 보이는 채보 수. 바꾸면 펼친 폴더가 새 개수로 다시 받는다 */}
+            <PageSizeSelect value={chartSize} onChange={setChartSize} />
           </div>
           <PagedFolders userId={userId} folders={folders.data.folders} includeZero={includeZero} filters={filters} />
         </>

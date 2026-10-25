@@ -197,6 +197,14 @@ describe("TierGroupSection 접기", () => {
     expect(screen.queryByText("Banana")).not.toBeInTheDocument();
   });
 
+  it("접기 버튼이 머리 전체로 늘어나 칩·평균 자리를 눌러도 반응한다(::after 덮개)", () => {
+    const { container } = render(<TierGroupSection group={group({ entries })} includeZero={false} collapsible />);
+    const toggle = screen.getByRole("button", { name: /5\.8/ });
+    // jsdom은 CSS 위치를 계산하지 않아 클래스로 확인한다: 덮개가 가장 가까운 relative 조상(header) 전체를 덮는다
+    expect(toggle).toHaveClass("after:absolute", "after:inset-0");
+    expect(container.querySelector("header")).toHaveClass("relative");
+  });
+
   it("모바일은 접힌 묶음에서 칩과 기록 수를 숨기고(md 이상은 보임), 펼치면 보인다", () => {
     render(<TierGroupSection group={group({ entries })} includeZero={false} collapsible />);
     const chips = screen.getByRole("list", { name: "내 달성 현황" });
