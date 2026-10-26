@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { SetlistAddButton } from "@/components/setlist/SetlistAddButton";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { RatedScore } from "@/components/table/RatedScore";
 import { StageBadge } from "@/components/table/StageBadge";
@@ -45,7 +44,6 @@ export function EntryCard({
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
           {stage ? <StageBadge stage={stage} /> : null}
           <span className="text-xs text-fg-dim">{t("Chart.patternValue", { pattern: entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK })}</span>
-          <SetlistAddButton songDifficultyId={entry.songDifficultyId} title={entry.title} />
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">

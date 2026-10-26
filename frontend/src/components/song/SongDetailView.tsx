@@ -159,6 +159,7 @@ export function SongDetailView({
       chart={chart ? { part: chart.instrumentPart, difficulty: chart.difficultyType, level: chart.level } : null}
       emphasizeSrn={isTable}
       onRecord={() => setRecordOpen(true)}
+      setlistTarget={chart && song.data ? { songDifficultyId: chart.id, title: song.data.title } : undefined}
     />
   ) : (
     // 비로그인 방문자(D43): 곡 정보는 보이지만 내 기록은 로그인해야 입력·표시된다
