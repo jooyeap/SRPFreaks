@@ -146,7 +146,7 @@ export function DifficultyTableView({
         {canRegister ? <SongCreateButton tableId={table.id} /> : null}
       </div>
 
-      {/* 곡 검색: 화면 위쪽 검색창 + 결과(누르면 곡 상세로). 우측 하단 고정 버튼은 이 검색창으로 포커스를 옮긴다 */}
+      {/* 곡 검색: 화면 위쪽 검색창 + 결과(누르면 곡 상세로). 좌측 하단 고정 버튼은 이 검색창으로 포커스를 옮긴다 */}
       <TableSearch userId={userId} groups={allGroups.data && decidedGroups(allGroups.data)} />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -235,7 +235,7 @@ export function DifficultyTableView({
           </nav>
         </>
       )}
-      <ScrollTopButton lifted />
+      <ScrollTopButton />
       <RecordDialog
         chart={
           recordTarget && {

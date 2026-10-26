@@ -33,7 +33,7 @@ function errorMessage(error: unknown, t: Translator): string {
   return error instanceof ApiError ? error.message : t("Songs.loadFailed");
 }
 
-/** 곡 목록 검색 입력칸의 id. 우측 하단 고정 버튼(SearchFocusButton)이 이 칸으로 포커스를 옮긴다. */
+/** 곡 목록 검색 입력칸의 id. 좌측 하단 고정 버튼(SearchFocusButton)이 이 칸으로 포커스를 옮긴다. */
 export const SONG_SEARCH_INPUT_ID = "song-search-input";
 
 /**

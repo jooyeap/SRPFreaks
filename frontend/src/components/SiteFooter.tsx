@@ -14,7 +14,7 @@ export function SiteFooter() {
   const tc = useTranslations("Common");
   return (
     <footer className="border-t border-line bg-card">
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 py-4 text-xs text-fg-dim sm:flex-row sm:justify-between sm:gap-8">
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-4 px-4 pb-16 pt-4 text-xs text-fg-dim sm:flex-row sm:pb-4 sm:justify-between sm:gap-8">
         <div className="space-y-1">
           <p className="font-semibold text-fg-sub">{tc("unofficial")}</p>
           <p>{t("notKonami")}</p>
