@@ -7,7 +7,7 @@ import { jaT } from "@/i18n/ja-translator";
 import { koT } from "@/i18n/ko-translator";
 import type { Translator } from "@/i18n/translator";
 import { bookmarkletMessages, buildLoaderFileSource } from "@/lib/import-bookmarklet";
-import { buildLoaderStub, loaderFailedMessage, loaderPath, LOADER_MANIFEST, type LoaderManifest } from "@/lib/import-loader";
+import { buildLoaderStub, LOADER_FAILED_ALERT, loaderPath, LOADER_MANIFEST, type LoaderManifest } from "@/lib/import-loader";
 
 /**
  * 가져오기 로더(D47) 검사.
@@ -80,7 +80,6 @@ describe("가져오기 로더 파일과 해시(SRI)", () => {
 
 describe("스텁(주소창에 붙이는 한 줄)", () => {
   const SITE = "https://srpfreaks.com";
-  const failed = koT("Import.bmLoadFailed");
 
   beforeEach(() => {
     document.body.innerHTML = "";
@@ -92,13 +91,13 @@ describe("스텁(주소창에 붙이는 한 줄)", () => {
 
   it("짧다(예전 스크립트는 약 1만 자였다)", () => {
     for (const locale of LOCALES) {
-      const stub = buildLoaderStub(SITE, locale, loaderFailedMessage(TRANSLATORS[locale]));
+      const stub = buildLoaderStub(SITE, locale);
       expect(stub.length).toBeLessThan(700);
     }
   });
 
   it("버전 파일 주소·해시·crossorigin을 단 script를 붙인다", () => {
-    const stub = buildLoaderStub(SITE, "ko", failed);
+    const stub = buildLoaderStub(SITE, "ko");
     new Function("document", stub)(document);
     // 스텁은 프로퍼티(s.integrity, s.crossOrigin)로 설정한다. 실제 브라우저는 이를 속성으로 반영한다(공식 사이트에서 확인했다).
     // jsdom은 integrity를 속성으로 반영하지 않아서 프로퍼티 값으로 확인한다.
@@ -109,16 +108,23 @@ describe("스텁(주소창에 붙이는 한 줄)", () => {
   });
 
   it("끝의 슬래시는 정리하고, 일본어는 일본어 파일을 가리킨다", () => {
-    const stub = buildLoaderStub(`${SITE}/`, "ja", loaderFailedMessage(jaT));
+    const stub = buildLoaderStub(`${SITE}/`, "ja");
     expect(stub).toContain(`'${SITE}${loaderPath(LOADER_MANIFEST.latest, "ja")}'`);
   });
 
-  it("불러오기에 실패하면 안내 글을 띄운다(작은따옴표가 들어 있어도 깨지지 않는다)", () => {
+  it("불러오기에 실패하면 영문 알림을 띄운다", () => {
     const alertMock = vi.spyOn(window, "alert").mockImplementation(() => undefined);
-    new Function("document", "alert", buildLoaderStub(SITE, "ko", "it's failed"))(document, alertMock);
+    new Function("document", "alert", buildLoaderStub(SITE, "ko"))(document, alertMock);
     const script = document.querySelector("script");
     (script as unknown as { onerror: () => void }).onerror();
-    expect(alertMock).toHaveBeenCalledWith("it's failed");
+    expect(alertMock).toHaveBeenCalledWith(LOADER_FAILED_ALERT);
+  });
+
+  it("스텁에는 한글·일본어 글자가 없다(복사한 값을 오류 메시지로 오해하지 않게)", () => {
+    for (const locale of LOCALES) {
+      // 한글(가-힣, 자모), 히라가나·가타카나, 한자
+      expect(buildLoaderStub(SITE, locale)).not.toMatch(/[\u1100-\u11FF\u3040-\u30FF\u3130-\u318F\uAC00-\uD7AF\u4E00-\u9FFF]/);
+    }
   });
 });
 

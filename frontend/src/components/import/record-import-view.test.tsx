@@ -94,6 +94,9 @@ describe("최근 플레이 가져오기 안내 화면", () => {
     expect(screen.getByText(/필요시 건의하기로 이어집니다/)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "실행 오류" })).toBeInTheDocument();
     expect(screen.getByText("번역을 켜 둔 상태예요")).toBeInTheDocument();
+    // 스텁의 불러오기 실패 알림(영문)이 무슨 뜻인지, 복사한 값에 들어 있어도 정상이라는 설명
+    expect(screen.getByText(/"SRPFreaks: load failed" 알림이 떠요/)).toBeInTheDocument();
+    expect(screen.getByText(/이 영어 문구가 들어 있는 것은 정상입니다/)).toBeInTheDocument();
     // PC 탭에는 주소창용 안내가 없다
     expect(screen.queryByRole("button", { name: "실행용 스크립트 복사" })).toBeNull();
   });

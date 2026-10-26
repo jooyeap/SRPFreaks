@@ -15,7 +15,6 @@
  */
 
 import type { Locale } from "@/i18n/config";
-import type { Translator } from "@/i18n/translator";
 import manifest from "@/lib/import-loader-manifest.json";
 
 export interface LoaderManifest {
@@ -38,11 +37,18 @@ function singleQuoted(text: string): string {
 }
 
 /**
- * 주소창에 붙이는 한 줄(`javascript:` 접두사 제외 본문). 불러오기에 실패하면(네트워크·해시 불일치) 안내 글을 띄운다.
- * @param siteBase 사이트 주소(예: https://srpfreaks.com). 화면을 연 사이트의 origin
- * @param failedMessage 불러오기 실패 안내 문구(화면 언어)
+ * 불러오기에 실패했을 때 띄우는 알림 글. **영문 고정, 한글·일본어 없음.**
+ * 왜: 이 글은 사용자가 복사하는 스텁 안에 그대로 들어간다. 한글 문장이 있으면 복사한 값을 보고 "코드가 아니라
+ * 오류 메시지를 복사했다"고 오해하는 사용자가 있었다. 언어별 설명은 가져오기 화면의 `실행 오류`(Import.faq5q)에 둔다.
+ * 따옴표·역슬래시가 없는 글만 써야 한다(스텁 안의 작은따옴표 글자열로 들어간다).
  */
-export function buildLoaderStub(siteBase: string, locale: Locale, failedMessage: string): string {
+export const LOADER_FAILED_ALERT = "SRPFreaks: load failed";
+
+/**
+ * 주소창에 붙이는 한 줄(`javascript:` 접두사 제외 본문). 불러오기에 실패하면(네트워크·해시 불일치) LOADER_FAILED_ALERT를 띄운다.
+ * @param siteBase 사이트 주소(예: https://srpfreaks.com). 화면을 연 사이트의 origin
+ */
+export function buildLoaderStub(siteBase: string, locale: Locale): string {
   const base = siteBase.replace(/\/+$/, "");
   const version = LOADER_MANIFEST.latest;
   const integrity = LOADER_MANIFEST.versions[version]?.[locale];
@@ -54,12 +60,7 @@ export function buildLoaderStub(siteBase: string, locale: Locale, failedMessage:
     `s.src=${singleQuoted(base + loaderPath(version, locale))};` +
     `s.integrity=${singleQuoted(integrity)};` +
     "s.crossOrigin='anonymous';" +
-    `s.onerror=function(){alert(${singleQuoted(failedMessage)})};` +
+    `s.onerror=function(){alert(${singleQuoted(LOADER_FAILED_ALERT)})};` +
     "document.body.appendChild(s)})()"
   );
-}
-
-/** 스텁이 불러오기에 실패했을 때 띄우는 안내 문구(화면 언어). */
-export function loaderFailedMessage(t: Translator): string {
-  return t("Import.bmLoadFailed");
 }
