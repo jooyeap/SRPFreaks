@@ -1,7 +1,9 @@
 package com.srpfreaks.backend.controller;
 
+import com.srpfreaks.backend.dto.PlayLevelResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
+import com.srpfreaks.backend.service.PlayLevelEstimator;
 import com.srpfreaks.backend.service.SkillService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,9 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class SkillController {
 
     private final SkillService skillService;
+    private final PlayLevelEstimator playLevelEstimator;
 
     @GetMapping("/me")
     public SkillResponse me(@AuthenticationPrincipal AuthenticatedUser user) {
         return skillService.mySkill(user.id());
+    }
+
+    /** 내 평소 난이도(레이팅 목록 평균). 본인 값만 돌려주고 사용자 id를 요청에서 받지 않는다. */
+    @GetMapping("/me/play-level")
+    public PlayLevelResponse myPlayLevel(@AuthenticationPrincipal AuthenticatedUser user) {
+        return PlayLevelResponse.from(playLevelEstimator.estimate(user.id()));
     }
 }

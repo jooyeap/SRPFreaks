@@ -80,6 +80,35 @@ export function weakestGroup(groups: readonly ProgressGroup[]): { group: Progres
   return best !== null && best.empty > 0 ? { group: best.group, empty: best.empty } : null;
 }
 
+/** 내 평균 난이도 근처로 보는 폭(±). 홈 진행도 카드의 `가장 비어 있는 구간`이 이 안의 구간만 고른다. */
+export const NEAR_RANGE = 0.2;
+
+/** 합쳐진 `6.5 이상` 줄의 키 (difficulty-table.ts의 progressGroups와 같은 값) */
+const MERGED_HIGH_KEY = "merged-high";
+const MERGED_HIGH_FROM = 6.5;
+
+/**
+ * 내 평균 난이도 ± NEAR_RANGE 안의 구간만 후보로 두고 가장 비어 있는 구간을 고른다 (서열표 탭 전용).
+ * 소수 비교는 100배 한 정수로 한다(0.1 + 0.2 같은 부동소수 오차로 경계가 어긋나지 않게).
+ * 후보: 기준 난이도 하나짜리 줄은 키(`6.0`)가 범위 안일 때, 합쳐진 `6.5 이상` 줄은 범위가 6.5 이상에 닿을 때.
+ * 키를 읽을 수 없는 줄(미정 등)은 후보가 아니다. 후보 중 비어 있는 채보가 하나도 없으면 null.
+ */
+export function weakestGroupNear(
+  groups: readonly ProgressGroup[],
+  average: number,
+): { group: ProgressGroup; empty: number } | null {
+  const center = Math.round(average * 100);
+  const reach = Math.round(NEAR_RANGE * 100);
+  const near = groups.filter((g) => {
+    if (g.key === MERGED_HIGH_KEY) {
+      return center + reach >= Math.round(MERGED_HIGH_FROM * 100);
+    }
+    const tier = Number(g.key);
+    return Number.isFinite(tier) && Math.abs(Math.round(tier * 100) - center) <= reach;
+  });
+  return weakestGroup(near);
+}
+
 /**
  * 칸 지도의 색 진하기(퍼센트). 많이 채울수록 배경(4→24%)과 테두리(18→63%)가 진해진다.
  * 색 값은 컴포넌트가 CSS 변수에 이 퍼센트만 섞어서 만든다.

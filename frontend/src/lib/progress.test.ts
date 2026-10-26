@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ChartFolderResponse } from "@/lib/api-types";
 import type { ProgressGroup } from "@/lib/difficulty-table";
-import { folderProgress, nextGoal, percentOf, tileTint, weakestGroup } from "@/lib/progress";
+import { folderProgress, nextGoal, percentOf, tileTint, weakestGroup, weakestGroupNear } from "@/lib/progress";
 
 function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
   return { lo: 9.5, hi: 9.99, total: 10, recorded: 6, exc: 1, fc: 1, ss: 1, s: 2, belowS: 1, averageRecorded: 90, averageWithZero: 54, subFolders: [], ...over };
@@ -67,6 +67,41 @@ describe("weakestGroup", () => {
   it("모두 채웠거나 후보가 없으면 null", () => {
     expect(weakestGroup([pg({ total: 3, recorded: 3 })])).toBeNull();
     expect(weakestGroup([])).toBeNull();
+  });
+});
+
+describe("weakestGroupNear (내 평균 ±0.2 안에서만 고른다)", () => {
+  const rows = [
+    pg({ key: "5.8", total: 10, recorded: 0 }),
+    pg({ key: "5.9", total: 10, recorded: 5 }),
+    pg({ key: "6.0", total: 10, recorded: 8 }),
+    pg({ key: "6.1", total: 10, recorded: 9 }),
+    pg({ key: "6.2", total: 10, recorded: 9 }),
+    pg({ key: "6.3", total: 10, recorded: 9 }),
+    pg({ key: "6.4", total: 10, recorded: 0 }),
+    pg({ key: "merged-high", total: 40, recorded: 0 }),
+  ];
+  it("평균 6.1이면 5.9~6.3만 후보다 (범위 밖 5.8·6.4가 더 비어 있어도 뽑지 않는다)", () => {
+    expect(weakestGroupNear(rows, 6.1)?.group.key).toBe("5.9");
+  });
+  it("경계는 포함한다: 평균 6.10 → 5.9와 6.3 모두 후보, 평균 6.11 → 5.9는 0.21 차이라 빠진다", () => {
+    expect(weakestGroupNear([pg({ key: "5.9", total: 10, recorded: 0 })], 6.1)?.group.key).toBe("5.9");
+    expect(weakestGroupNear([pg({ key: "6.3", total: 10, recorded: 0 })], 6.1)?.group.key).toBe("6.3");
+    expect(weakestGroupNear([pg({ key: "5.9", total: 10, recorded: 0 })], 6.11)).toBeNull();
+  });
+  it("소수 둘째 자리 평균도 정수(100배)로 비교한다 (6.13 → 5.93 이상이 후보, 5.9는 제외)", () => {
+    expect(weakestGroupNear([pg({ key: "5.9", total: 10, recorded: 0 })], 6.13)).toBeNull();
+    expect(weakestGroupNear([pg({ key: "6.0", total: 10, recorded: 0 })], 6.13)?.group.key).toBe("6.0");
+  });
+  it("합친 `6.5 이상` 줄은 범위가 6.5에 닿을 때만 후보다 (평균 6.3이면 6.5까지 닿는다, 6.29면 닿지 않는다)", () => {
+    const merged = [pg({ key: "merged-high", total: 40, recorded: 0 })];
+    expect(weakestGroupNear(merged, 6.3)?.group.key).toBe("merged-high");
+    expect(weakestGroupNear(merged, 6.29)).toBeNull();
+  });
+  it("범위 안 구간이 모두 채워졌거나 후보가 없으면 null (미정 등 숫자가 아닌 키도 후보가 아니다)", () => {
+    expect(weakestGroupNear([pg({ key: "6.0", total: 3, recorded: 3 })], 6.0)).toBeNull();
+    expect(weakestGroupNear([pg({ key: "undecided", total: 5, recorded: 0 })], 6.0)).toBeNull();
+    expect(weakestGroupNear([], 6.0)).toBeNull();
   });
 });
 
