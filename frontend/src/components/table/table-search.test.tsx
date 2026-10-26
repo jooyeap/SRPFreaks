@@ -62,12 +62,12 @@ describe("TableSearch", () => {
   }
   const type = (value: string) => fireEvent.change(screen.getByLabelText("곡 검색어"), { target: { value } });
 
-  it("검색창이 화면에 이미 있고, 우측 하단 고정 버튼이 있으며, 입력하기 전에는 검색 요청을 하지 않는다", () => {
+  it("검색창이 화면에 이미 있고, 좌측 하단 고정 버튼이 있으며, 입력하기 전에는 검색 요청을 하지 않는다", () => {
     renderSearch();
     expect(screen.getByLabelText("곡 검색어")).toBeInTheDocument(); // 누르지 않아도 바로 입력할 수 있다
     const button = screen.getByRole("button", { name: "곡 검색" });
     expect(button).toHaveClass("fixed");
-    expect(button).toHaveClass("right-4");
+    expect(button).toHaveClass("left-4");
     expect(screen.getByText(/곡명이나 아티스트를 입력하면/)).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
   });

@@ -106,7 +106,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
     <div className="flex flex-col gap-4">
       {back}
       {groups.data ? <TierFolderNav groups={groups.data} currentTier={rawGroup.tier} /> : null}
-      {/* 곡 검색: 화면 위쪽 검색창 + 결과(누르면 곡 상세로). 우측 하단 고정 버튼은 이 검색창으로 포커스를 옮긴다 */}
+      {/* 곡 검색: 화면 위쪽 검색창 + 결과(누르면 곡 상세로). 좌측 하단 고정 버튼은 이 검색창으로 포커스를 옮긴다 */}
       <TableSearch userId={userId} groups={groups.data} />
       <div className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
         <TableFilterPanel filters={filters} onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} />
@@ -117,7 +117,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
         <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
       ) : null}
       <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined} />
-      <ScrollTopButton lifted />
+      <ScrollTopButton />
       <RecordDialog
         chart={
           recordTarget && {
