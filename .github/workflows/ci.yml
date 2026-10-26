@@ -31,6 +31,8 @@ jobs:
         run: bash scripts/deploy/prune-build-cache.test.sh
       - name: 백업 점검 스크립트
         run: bash scripts/deploy/check-backups.test.sh
+      - name: 배포 버전 확인 스크립트
+        run: bash scripts/deploy/check-version.test.sh
 
   backend:
     name: 백엔드 테스트
