@@ -194,14 +194,14 @@ describe("HomeDashboard", () => {
     });
   }
 
-  it("내 평균이 5.7이면 서열표 탭의 가장 빈 구간은 평균 ±0.2 안(5.8)에서 고르고 평균을 함께 알린다", async () => {
+  it("내 평균이 5.7이면 서열표 탭의 가장 빈 구간은 평균 ±0.1 안(5.8)에서 고르고 평균을 함께 알린다", async () => {
     mockWithPlayLevel({ status: "READY", tier: 5.7 });
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
     await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처에서 5.8 구간이 가장 비어 있어요. 기록 없는 채보 6곡"));
   });
 
-  it("범위(±0.2) 안에 비어 있는 구간이 없으면 안내를 그리지 않는다 (평균 5.0 → 5.0 구간은 모두 채움)", async () => {
+  it("범위(±0.1) 안에 비어 있는 구간이 없으면 안내를 그리지 않는다 (평균 5.0 → 5.0 구간은 모두 채움)", async () => {
     mockWithPlayLevel({ status: "READY", tier: 5.0 });
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });

@@ -45,7 +45,7 @@ export function ProgressCard({
 }: {
   table: ProgressPanel;
   songs: ProgressPanel;
-  /** 내 평균 난이도(서열표 기준). 있으면 서열표 탭의 `가장 비어 있는 구간`을 이 값 ±0.2 안으로 좁힌다. 곡 목록 탭은 단위(레벨 폴더)가 달라 그대로다 */
+  /** 내 평균 난이도(서열표 기준). 있으면 서열표 탭의 `가장 비어 있는 구간`을 이 값 ±0.1 안으로 좁힌다. 곡 목록 탭은 단위(레벨 폴더)가 달라 그대로다 */
   average?: number | null;
 }) {
   const t = useTranslations("Progress");

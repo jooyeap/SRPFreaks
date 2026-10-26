@@ -46,7 +46,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
     queryKey: skillKeys.me(userId),
     queryFn: ({ signal }) => fetchMySkill(signal),
   });
-  // 내 평균 난이도: 진행도 카드의 `가장 비어 있는 구간`을 평균 ±0.2로 좁힌다. 못 받거나 READY가 아니면 예전처럼 전체에서 고른다
+  // 내 평균 난이도: 진행도 카드의 `가장 비어 있는 구간`을 평균 ±0.1로 좁힌다. 못 받거나 READY가 아니면 예전처럼 전체에서 고른다
   const playLevel = useQuery({
     queryKey: skillKeys.playLevel(userId),
     queryFn: ({ signal }) => fetchMyPlayLevel(signal),

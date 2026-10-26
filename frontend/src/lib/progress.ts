@@ -81,14 +81,14 @@ export function weakestGroup(groups: readonly ProgressGroup[]): { group: Progres
 }
 
 /** 내 평균 난이도 근처로 보는 폭(±). 홈 진행도 카드의 `가장 비어 있는 구간`이 이 안의 구간만 고른다. */
-export const NEAR_RANGE = 0.2;
+export const NEAR_RANGE = 0.1;
 
 /** 합쳐진 `6.5 이상` 줄의 키 (difficulty-table.ts의 progressGroups와 같은 값) */
 const MERGED_HIGH_KEY = "merged-high";
 const MERGED_HIGH_FROM = 6.5;
 
 /**
- * 내 평균 난이도 ± NEAR_RANGE 안의 구간만 후보로 두고 가장 비어 있는 구간을 고른다 (서열표 탭 전용).
+ * 내 평균 난이도 ± NEAR_RANGE(0.1) 안의 구간만 후보로 두고 가장 비어 있는 구간을 고른다 (서열표 탭 전용).
  * 소수 비교는 100배 한 정수로 한다(0.1 + 0.2 같은 부동소수 오차로 경계가 어긋나지 않게).
  * 후보: 기준 난이도 하나짜리 줄은 키(`6.0`)가 범위 안일 때, 합쳐진 `6.5 이상` 줄은 범위가 6.5 이상에 닿을 때.
  * 키를 읽을 수 없는 줄(미정 등)은 후보가 아니다. 후보 중 비어 있는 채보가 하나도 없으면 null.
