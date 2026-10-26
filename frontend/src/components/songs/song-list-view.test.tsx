@@ -291,12 +291,12 @@ describe("SongListView", () => {
     expect(screen.queryByRole("list", { name: "검색 결과" })).toBeNull();
   });
 
-  it("우측 하단 고정 검색 버튼을 누르면 위쪽 검색창으로 포커스가 옮겨 간다", async () => {
+  it("좌측 하단 고정 검색 버튼을 누르면 위쪽 검색창으로 포커스가 옮겨 간다", async () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;
     renderView();
     const button = await screen.findByRole("button", { name: "곡 검색" });
-    expect(button).toHaveClass("fixed", "right-4");
+    expect(button).toHaveClass("fixed", "left-4");
     const input = screen.getByRole("searchbox");
     expect(input).not.toHaveFocus();
 
