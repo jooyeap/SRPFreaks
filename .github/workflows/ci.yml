@@ -46,7 +46,7 @@ jobs:
           distribution: temurin
           java-version: "17"
       # Gradle 의존성·래퍼를 캐시한다
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: gradlew 실행 권한
         run: chmod +x gradlew
       # Testcontainers가 MySQL 컨테이너를 띄운다. GitHub의 ubuntu 러너에는 Docker가 기본 설치돼 있다.
