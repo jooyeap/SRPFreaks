@@ -162,6 +162,7 @@
     "nextGoal": "다음 목표",
     "goalText": "SS 이상 <b>{current}</b>곡 → <b>{target}</b>곡까지 <b>{left}곡</b> 남음",
     "weakText": "<b>{label}</b> 구간이 가장 비어 있어요. 기록 없는 채보 <b>{empty}</b>곡",
+    "weakNearText": "내 평균 <b>{average}</b> 근처에서 <b>{label}</b> 구간이 가장 비어 있어요. 기록 없는 채보 <b>{empty}</b>곡",
     "viewRange": "구간 보기",
     "record": "기록 ",
     "overallAria": "전체 달성 현황",

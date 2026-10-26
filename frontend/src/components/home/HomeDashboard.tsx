@@ -20,7 +20,7 @@ import {
   tableProgress,
 } from "@/lib/difficulty-table";
 import { folderProgress } from "@/lib/progress";
-import { fetchMySkill, skillKeys } from "@/lib/rating";
+import { fetchMyPlayLevel, fetchMySkill, skillKeys } from "@/lib/rating";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 import { useWelcomeHidden } from "@/lib/welcome-guide";
 import { ErrorRetry } from "@/components/ErrorRetry";
@@ -45,6 +45,11 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
   const skill = useQuery({
     queryKey: skillKeys.me(userId),
     queryFn: ({ signal }) => fetchMySkill(signal),
+  });
+  // 내 평균 난이도: 진행도 카드의 `가장 비어 있는 구간`을 평균 ±0.1로 좁힌다. 못 받거나 READY가 아니면 예전처럼 전체에서 고른다
+  const playLevel = useQuery({
+    queryKey: skillKeys.playLevel(userId),
+    queryFn: ({ signal }) => fetchMyPlayLevel(signal),
   });
   const tables = useQuery({
     queryKey: tableKeys.list,
@@ -103,7 +108,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
         <Skeleton label={t("ratingLoading")} className="h-[7.5rem]" />
       )}
 
-      <ProgressCard table={tablePanel} songs={songsPanel} />
+      <ProgressCard table={tablePanel} songs={songsPanel} average={playLevel.data?.status === "READY" ? playLevel.data.tier : null} />
 
       {/* 시작 안내에 가져오기 카드가 이미 있으면 중복이라 뺀다 */}
       {showWelcome ? null : <ImportEntryLink />}
