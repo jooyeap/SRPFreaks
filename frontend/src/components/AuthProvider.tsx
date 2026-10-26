@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { apiFetch, refreshSession, setAuthLostHandler } from "@/lib/api";
+import { apiFetch, refreshSessionWithRetry, setAuthLostHandler } from "@/lib/api";
 import type { AuthResponse, UserResponse } from "@/lib/api-types";
 import { clearAccessToken, setAccessToken } from "@/lib/auth-token";
 import { loadGoogleIdentity } from "@/lib/google";
@@ -35,11 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     // Access 토큰은 메모리에만 있어 새로고침하면 사라진다. httpOnly Refresh 쿠키로 조용히 복구한다.
-    // refreshSession은 동시에 불려도 요청 1개만 보내므로(single-flight) 개발 모드의 effect 이중 실행도 안전하다.
-    void refreshSession().then((auth) => {
+    // 재발급은 동시에 불려도 요청 1개만 보내므로(single-flight) 개발 모드의 effect 이중 실행도 안전하다.
+    // 일시 오류(unavailable)면 몇 초 간격으로 다시 시도한다. 그동안은 loading을 유지해서 "로그아웃된 화면"이 깜빡이지 않는다.
+    // 서버가 401로 거절(rejected)했을 때만 로그아웃 상태가 된다.
+    void refreshSessionWithRetry(() => cancelled).then((outcome) => {
       if (cancelled) {
         return;
       }
+      const auth = outcome.kind === "ok" ? outcome.auth : null;
       setUser(auth ? auth.user : null);
       setStatus(auth ? "authenticated" : "anonymous");
     });

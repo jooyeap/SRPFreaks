@@ -31,7 +31,6 @@ export function ChartList({
         <span>{t("Songs.colRank")}</span>
         <span>{t("Songs.colChart")}</span>
         <span className="text-right">{t("Songs.colRate")}</span>
-        <span />
       </div>
       <ul aria-label={label}>
         {rows.map((row) => (
