@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { AuthControls } from "@/components/AuthControls";
@@ -62,6 +62,43 @@ describe("AuthProvider", () => {
     render(<AuthProvider><Probe /></AuthProvider>);
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("anonymous"));
     expect(getAccessToken()).toBeNull();
+  });
+
+  // 가짜 타이머 아래에서는 Response 본문 읽기(스트림)가 진행되지 않아서, 본문을 바로 돌려주는 단순한 응답 객체를 쓴다
+  const plain = (status: number, body: unknown) => ({ ok: status < 400, status, json: async () => body }) as unknown as Response;
+
+  it("복구가 일시 오류(503)면 로그아웃 처리하지 않고 loading을 유지하다가 다시 시도해서 성공한다", async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockResolvedValueOnce(plain(503, { code: "X", message: "x" })).mockResolvedValueOnce(plain(200, AUTH));
+      render(<AuthProvider><Probe /></AuthProvider>);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(screen.getByTestId("status")).toHaveTextContent("loading"); // 아직 로그아웃으로 보이지 않는다
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(screen.getByTestId("status")).toHaveTextContent("authenticated");
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("일시 오류가 계속되면 재시도를 마친 뒤에야 로그아웃 상태가 된다", async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockResolvedValue(plain(503, { code: "X", message: "x" }));
+      render(<AuthProvider><Probe /></AuthProvider>);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000 + 3000);
+      });
+      expect(screen.getByTestId("status")).toHaveTextContent("anonymous");
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("구글 ID 토큰으로 로그인하면 토큰 없이(auth:false) 서버에 보내고 상태를 바꾼다", async () => {

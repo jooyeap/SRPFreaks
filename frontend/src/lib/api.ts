@@ -76,6 +76,33 @@ export async function refreshSession(): Promise<AuthResponse | null> {
   return outcome.kind === "ok" ? outcome.auth : null;
 }
 
+/** 화면을 처음 열 때 "확인할 수 없음"이면 다시 시도하기까지 기다리는 시간(ms). 서버가 잠깐 다시 뜨는 정도를 넘기려는 값이다. */
+export const REFRESH_RETRY_DELAYS_MS: readonly number[] = [1000, 3000];
+
+/**
+ * 재발급을 하되, 결과가 `unavailable`(일시적 문제: 네트워크 끊김, 5xx, 429)이면 정해진 간격으로 몇 번 더 시도한다.
+ * 왜: 예전에는 일시 오류도 곧바로 "로그아웃"으로 처리돼, 쿠키가 멀쩡한데 화면이 로그아웃 상태로 보였다(`곡 등록` 같은 권한 버튼이 사라짐).
+ * `rejected`(서버가 401로 거절)는 진짜로 로그인이 풀린 것이라 바로 돌려준다.
+ * @param isCancelled 화면이 사라졌으면 true를 돌려주는 함수(기다리는 중이나 다음 시도 전에 확인한다)
+ */
+export async function refreshSessionWithRetry(
+  isCancelled: () => boolean = () => false,
+  delaysMs: readonly number[] = REFRESH_RETRY_DELAYS_MS,
+): Promise<RefreshOutcome> {
+  let outcome = await refreshSessionOutcome();
+  for (const delay of delaysMs) {
+    if (outcome.kind !== "unavailable" || isCancelled()) {
+      return outcome;
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, delay));
+    if (isCancelled()) {
+      return outcome;
+    }
+    outcome = await refreshSessionOutcome();
+  }
+  return outcome;
+}
+
 export function refreshSessionOutcome(): Promise<RefreshOutcome> {
   if (!refreshInFlight) {
     refreshInFlight = doRefresh().finally(() => {
@@ -85,10 +112,28 @@ export function refreshSessionOutcome(): Promise<RefreshOutcome> {
   return refreshInFlight;
 }
 
+/** 탭 사이에 재발급을 한 줄로 세우는 잠금 이름(Web Locks API). */
+const REFRESH_LOCK_NAME = "srpfreaks-refresh";
+
+/**
+ * 탭 하나 안에서는 single-flight로 요청이 하나로 합쳐지지만, **탭 여러 개**는 서로 모른다. 서버는 Refresh 토큰을 쓰면 폐기하고
+ * 폐기된 토큰이 다시 오면 재사용(도난)으로 보기 때문에, 탭 두 개가 같은 쿠키로 동시에 재발급하면 로그인이 풀릴 수 있었다.
+ * 그래서 브라우저가 지원하면(Web Locks) 모든 탭이 이 잠금을 차례로 잡고 재발급한다: 두 번째 탭은 첫 탭이 받아 둔
+ * **새 쿠키**로 요청하므로 재사용이 되지 않는다. 지원하지 않으면 예전처럼 바로 요청한다.
+ */
 async function doRefresh(): Promise<RefreshOutcome> {
+  const locks = typeof navigator !== "undefined" ? navigator.locks : undefined;
+  if (locks && typeof locks.request === "function") {
+    return locks.request(REFRESH_LOCK_NAME, () => requestRefresh());
+  }
+  return requestRefresh();
+}
+
+async function requestRefresh(): Promise<RefreshOutcome> {
   try {
     // Refresh 쿠키는 이 경로에만 실린다(Path=/api/v1/auth). 일반 apiFetch를 쓰면 401 -> 재발급이 무한 반복되므로 직접 호출한다.
-    const response = await fetch(`${API_BASE}/auth/refresh`, { method: "POST", credentials: "include" });
+    // 시간 제한: 잠금을 잡은 채로 요청이 멈추면 다른 탭의 재발급이 모두 막히므로, 오래 걸리면 끊고 "확인할 수 없음"으로 처리한다.
+    const response = await fetch(`${API_BASE}/auth/refresh`, { method: "POST", credentials: "include", signal: withTimeout(undefined) });
     if (response.status === 401) {
       return { kind: "rejected" };
     }
