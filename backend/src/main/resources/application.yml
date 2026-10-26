@@ -41,6 +41,7 @@ jwt:
   issuer: srpfreaks
   access-token-validity: 900000       # 15분
   refresh-token-validity: 1209600000  # 14일
+  refresh-reuse-grace: 10000          # 10초. 방금 폐기한 refresh 토큰이 이 안에 다시 오면 그 요청만 거절(로그인 전체 폐기 안 함, D50)
 
 app:
   google:
