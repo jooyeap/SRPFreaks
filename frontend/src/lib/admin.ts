@@ -5,17 +5,38 @@ import type { AdminUserResponse, AuditLogResponse, PageResponse, Role, SettingRe
 /** 관리(ROOT) 쿼리 키. 보는 사람(viewerId)을 넣는 이유는 다른 화면과 같다(계정이 바뀌어도 이전 캐시가 보이지 않게). */
 export const adminKeys = {
   all: ["admin"] as const,
-  auditLogs: (viewerId: number, page: number) => ["admin", "audit-logs", viewerId, page] as const,
+  // 작업 종류·검색어도 키에 넣는다: 조건이 바뀌면 이전 조건의 결과가 섞이지 않고 새로 받는다
+  auditLogs: (viewerId: number, page: number, size: number, filters: AuditLogFilters = EMPTY_AUDIT_FILTERS) =>
+    ["admin", "audit-logs", viewerId, page, size, filters.action, filters.q] as const,
   settings: (viewerId: number) => ["admin", "settings", viewerId] as const,
-  users: (viewerId: number, query: string, page: number) => ["admin", "users", viewerId, query, page] as const,
+  users: (viewerId: number, query: string, page: number, size: number) => ["admin", "users", viewerId, query, page, size] as const,
   /** 사용자 목록 전체(검색어·페이지 무관). 역할·차단을 바꾼 뒤 모두 오래된 것으로 표시할 때 쓴다 */
   usersAll: ["admin", "users"] as const,
 };
 
 export const AUDIT_LOG_PAGE_SIZE = 30;
+/** 감사 로그는 기본이 30개라서 선택지에 30을 넣는다(서버 최대 100). */
+export const AUDIT_LOG_SIZE_OPTIONS = [10, 30, 50, 100] as const;
 
-export function fetchAuditLogs(page: number, size: number, signal?: AbortSignal): Promise<PageResponse<AuditLogResponse>> {
-  return apiFetch<PageResponse<AuditLogResponse>>("/admin/audit-logs", { query: { page, size }, signal });
+/** 감사 로그 조건. action = 작업 종류(비면 전체), q = 로그 내용·대상 번호·닉네임 검색어(비면 전체). */
+export interface AuditLogFilters {
+  action: string;
+  q: string;
+}
+
+export const EMPTY_AUDIT_FILTERS: AuditLogFilters = { action: "", q: "" };
+
+export function fetchAuditLogs(
+  page: number,
+  size: number,
+  filters: AuditLogFilters = EMPTY_AUDIT_FILTERS,
+  signal?: AbortSignal,
+): Promise<PageResponse<AuditLogResponse>> {
+  // 빈 조건은 보내지 않는다(서버는 없는 값과 빈 값을 같게 보지만 주소를 짧게 둔다)
+  const query: Record<string, string | number> = { page, size };
+  if (filters.action) query.action = filters.action;
+  if (filters.q) query.q = filters.q;
+  return apiFetch<PageResponse<AuditLogResponse>>("/admin/audit-logs", { query, signal });
 }
 
 /** 서버가 남기는 작업 종류(action)의 화면 이름. 목록에 없는 값은 코드 그대로 보여 준다(서버에 새 종류가 생겨도 화면이 깨지지 않는다). */
@@ -40,6 +61,9 @@ const ACTION_LABELS: Record<string, MessageKey> = {
   SETTING_UPDATE: "Admin.actionSettingUpdate",
   SONG_OFFICIAL_IMPORT: "Admin.actionSongOfficialImport",
 };
+
+/** 작업 종류 선택 상자에 보이는 값들(화면 이름이 있는 종류). 목록에 없는 새 종류는 서버가 남겨도 선택지에는 아직 없다. */
+export const AUDIT_ACTIONS: readonly string[] = Object.keys(ACTION_LABELS);
 
 export function actionLabel(action: string, t: Translator): string {
   const key = ACTION_LABELS[action];

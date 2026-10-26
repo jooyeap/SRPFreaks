@@ -3,7 +3,7 @@ import { createTranslator } from "use-intl/core";
 import { setClientTranslator } from "@/i18n/client-messages";
 import type { Translator } from "@/i18n/translator";
 import ja from "../../messages/ja.json";
-import { apiFetch, ApiError, refreshSession, refreshSessionOutcome, setAuthLostHandler } from "@/lib/api";
+import { apiFetch, ApiError, refreshSession, refreshSessionOutcome, refreshSessionWithRetry, setAuthLostHandler } from "@/lib/api";
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/auth-token";
 import type { AuthResponse } from "@/lib/api-types";
 
@@ -391,6 +391,61 @@ describe("refreshSessionOutcome", () => {
     fetchMock.mockResolvedValue(json(authResponse("fresh")));
     const outcome = await refreshSessionOutcome();
     expect(outcome.kind).toBe("ok");
+  });
+});
+
+describe("refreshSessionWithRetry", () => {
+  const unavailable = () => json({ code: "X", message: "x" }, 503);
+
+  it("일시 오류(unavailable)면 간격을 두고 다시 시도해서 성공하면 ok를 돌려준다", async () => {
+    fetchMock.mockResolvedValueOnce(unavailable()).mockResolvedValueOnce(unavailable()).mockResolvedValueOnce(json(authResponse("fresh")));
+    const outcome = await refreshSessionWithRetry(() => false, [0, 0]);
+    expect(outcome.kind).toBe("ok");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("계속 일시 오류면 정해진 횟수만 시도하고 unavailable을 돌려준다", async () => {
+    fetchMock.mockResolvedValue(unavailable());
+    expect(await refreshSessionWithRetry(() => false, [0, 0])).toEqual({ kind: "unavailable" });
+    expect(fetchMock).toHaveBeenCalledTimes(3); // 처음 1번 + 재시도 2번
+  });
+
+  it("서버가 401로 거절(rejected)하면 다시 시도하지 않는다 (진짜로 로그인이 풀린 것)", async () => {
+    fetchMock.mockResolvedValue(json({ code: "AUTH_FAILED", message: "x" }, 401));
+    expect(await refreshSessionWithRetry(() => false, [0, 0])).toEqual({ kind: "rejected" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("화면이 사라졌으면(취소) 기다린 뒤 더 시도하지 않는다", async () => {
+    fetchMock.mockResolvedValue(unavailable());
+    let cancelled = false;
+    const promise = refreshSessionWithRetry(() => cancelled, [0, 0]);
+    cancelled = true;
+    expect(await promise).toEqual({ kind: "unavailable" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("탭 사이 재발급 잠금 (Web Locks)", () => {
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, "locks");
+  });
+
+  it("브라우저가 지원하면 재발급을 잠금 안에서 한다 (탭 두 개가 같은 쿠키로 동시에 요청하지 않게)", async () => {
+    const request = vi.fn(async (_name: string, callback: () => Promise<unknown>) => callback());
+    Object.defineProperty(navigator, "locks", { value: { request }, configurable: true });
+    fetchMock.mockResolvedValue(json(authResponse("fresh")));
+
+    const outcome = await refreshSessionOutcome();
+
+    expect(outcome.kind).toBe("ok");
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0][0]).toBe("srpfreaks-refresh");
+  });
+
+  it("지원하지 않는 브라우저에서는 잠금 없이 바로 요청한다", async () => {
+    fetchMock.mockResolvedValue(json(authResponse("fresh")));
+    expect((await refreshSessionOutcome()).kind).toBe("ok");
   });
 });
 

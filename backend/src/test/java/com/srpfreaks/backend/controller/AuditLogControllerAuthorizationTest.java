@@ -65,13 +65,13 @@ class AuditLogControllerAuthorizationTest {
     void USER와_ADMIN은_감사_로그를_볼_수_없다() {
         for (Role role : new Role[]{Role.USER, Role.ADMIN}) {
             loginAs(role);
-            assertThatThrownBy(() -> controller.list(0, 30)).isInstanceOf(AccessDeniedException.class);
+            assertThatThrownBy(() -> controller.list(0, 30, null, null)).isInstanceOf(AccessDeniedException.class);
         }
     }
 
     @Test
     void ROOT는_감사_로그를_볼_수_있다() {
         loginAs(Role.ROOT);
-        assertThatCode(() -> controller.list(0, 30)).doesNotThrowAnyException();
+        assertThatCode(() -> controller.list(0, 30, null, null)).doesNotThrowAnyException();
     }
 }

@@ -42,7 +42,7 @@ permissions:
 jobs:
   deploy:
     name: EC2 배포
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: 입력값 확인
@@ -134,11 +134,23 @@ jobs:
           # 헬스체크는 바깥에서 404로 막혀 있어야 한다(노출되면 안 된다)
           check "$SITE_URL/actuator/health" 404
 
-      # 프론트를 다시 빌드했다면, 사이트가 알려 주는 빌드 커밋(/version)이 방금 배포한 브랜치의 커밋과 같은지 확인한다.
-      # "워크플로는 성공인데 옛 화면"(프론트가 안 바뀐 경우)을 초록불로 지나치지 않고 실패로 드러내려는 것이다.
-      # 백엔드만 배포했으면 프론트는 그대로라 건너뛴다.
-      - name: 배포 버전 확인
+      # 확인 스크립트는 저장소에 있다(scripts/deploy/check-version.sh, 테스트 포함). 이 작업은 저장소를 받지 않으므로 그 폴더만 받아 온다.
+      - name: 확인 스크립트 받기
         if: contains(inputs.target, 'frontend')
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/deploy
+          persist-credentials: false
+
+      # 프론트를 다시 빌드했다면, 사이트가 알려 주는 빌드 커밋(/version)이 방금 배포한 브랜치의 커밋과 같은지 확인한다.
+      # "워크플로는 성공인데 옛 화면"(프론트가 안 바뀐 경우)을 초록불로 지나치지 않고 드러내려는 것이다.
+      # 백엔드만 배포했으면 프론트는 그대로라 건너뛴다.
+      # 이 단계는 실패해도 바로 끝내지 않고(continue-on-error), 결과 코드를 남겨 아래 자동 복구가 이어받게 한다.
+      #   코드 1 = 끝까지 커밋이 달랐다(자동 복구 대상), 그 밖의 실패(인자·조회 오류)는 복구하지 않고 마지막 단계에서 실패로 끝낸다.
+      - name: 배포 버전 확인
+        id: version
+        if: contains(inputs.target, 'frontend')
+        continue-on-error: true
         env:
           SITE_URL: ${{ vars.SITE_URL || 'https://srpfreaks.com' }}
           REF: ${{ inputs.ref }}
@@ -147,12 +159,49 @@ jobs:
         run: |
           want=$(gh api "repos/$REPO/commits/$REF" --jq '.sha[0:7]')
           echo "기대 커밋: $want ($REF)"
-          for i in $(seq 1 12); do
-            got=$(curl -s --max-time 10 "$SITE_URL/version" | jq -r '.sha // empty' 2>/dev/null || true)
-            if [ "$got" = "$want" ]; then echo "OK   $SITE_URL/version -> $got"; exit 0; fi
-            echo "WAIT $SITE_URL/version -> '${got:-없음}' (기대 $want, 시도 $i/12)"; sleep 10
-          done
-          echo "::error title=배포 버전 불일치::사이트의 프론트 커밋이 '${got:-없음}'입니다. 기대값은 $want 입니다. Server Ops의 '상태 확인'으로 서버를 확인하세요."
+          echo "WANT_SHA=$want" >> "$GITHUB_ENV"
+          set +e
+          bash scripts/deploy/check-version.sh "$SITE_URL" "$want" 12 10
+          code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+      # 자동 복구(딱 1회): 서버 점검(Server Ops)의 "프론트 강제 재생성"과 같은 순서를 사람 손 없이 한 번만 돌린다.
+      #   캐시 없이 프론트를 다시 빌드 → 컨테이너 강제 재생성 → nginx 재시작 → 버전을 다시 확인.
+      # 그래도 다르면 더 시도하지 않고 이 작업을 실패로 끝내 알림으로 알린다(롤백·DB·서버 중지는 하지 않는다).
+      # DB 컨테이너·볼륨과 서버의 .env.prod는 건드리지 않는다(이 파일 맨 위 원칙 그대로).
+      - name: 프론트 자동 복구 (1회)
+        if: steps.version.outputs.code == '1'
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          REF: ${{ inputs.ref }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://srpfreaks.com' }}
+        run: |
+          echo "::warning title=프론트 자동 복구::배포 버전이 맞지 않아 프론트를 강제로 다시 만듭니다(1회만)."
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes \
+            "$EC2_USER@$EC2_HOST" bash -s -- "$REF" <<'REMOTE'
+          set -euo pipefail
+          REF="$1"
+          cd ~/gitalog
+          DC="docker compose --env-file .env.prod -f docker-compose.prod.yml"
+          git fetch origin
+          git checkout "$REF"
+          git pull --ff-only origin "$REF"
+          export GIT_SHA="$(git rev-parse --short=7 HEAD)"
+          $DC build --no-cache frontend
+          $DC up -d --force-recreate frontend
+          # nginx는 시작할 때 프론트 주소를 기억하므로 같이 다시 띄운다
+          $DC restart nginx
+          $DC ps
+          REMOTE
+          bash scripts/deploy/check-version.sh "$SITE_URL" "$WANT_SHA" 12 10
+
+      # 위 버전 확인이 "커밋 불일치"가 아닌 이유로 실패했으면(자동 복구 대상이 아님) continue-on-error 때문에 초록으로 지나가지 않게 여기서 실패시킨다.
+      - name: 버전 확인 결과 반영
+        if: steps.version.outcome == 'failure' && steps.version.outputs.code != '1'
+        run: |
+          echo "::error title=배포 버전 확인 실패::커밋 불일치가 아닌 이유로 확인하지 못했습니다. 실행 로그를 확인하세요."
           exit 1
 
       - name: SSH 키 지우기

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { ProgressDonut } from "@/components/home/ProgressDonut";
 import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
-import { nextGoal, weakestGroup, type ProgressSummary } from "@/lib/progress";
+import { nextGoal, weakestGroup, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
 import { useTranslations } from "next-intl";
 
 /** 탭 하나의 데이터 상태. 두 탭을 각자 불러오므로 한쪽이 실패(또는 서열표 없음)해도 다른 탭은 그대로 쓴다. */
@@ -38,7 +38,16 @@ interface TabText {
  * 가장 빈 구간 안내와 `구간 보기` 링크다. 숫자는 모두 서버가 준 개수를 합치거나 비교한 값이다(채보를 화면에서 다시 세지 않는다).
  * 탭은 버튼 둘(aria-pressed)이고 모바일에서 누르기 쉽게 높이를 44px로 둔다.
  */
-export function ProgressCard({ table, songs }: { table: ProgressPanel; songs: ProgressPanel }) {
+export function ProgressCard({
+  table,
+  songs,
+  average = null,
+}: {
+  table: ProgressPanel;
+  songs: ProgressPanel;
+  /** 내 평균 난이도(서열표 기준). 있으면 서열표 탭의 `가장 비어 있는 구간`을 이 값 ±0.1 안으로 좁힌다. 곡 목록 탭은 단위(레벨 폴더)가 달라 그대로다 */
+  average?: number | null;
+}) {
   const t = useTranslations("Progress");
   const [active, setActive] = useState<TabKey>("table");
   const base = TABS.find((candidate) => candidate.key === active) ?? TABS[0];
@@ -70,13 +79,13 @@ export function ProgressCard({ table, songs }: { table: ProgressPanel; songs: Pr
             {tab.link}
           </Link>
         </div>
-        <PanelBody panel={panel} tab={tab} />
+        <PanelBody panel={panel} tab={tab} average={active === "table" ? average : null} />
       </section>
     </div>
   );
 }
 
-function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: TabText }) {
+function PanelBody({ panel, tab, average }: { panel: ProgressPanel; tab: TabText; average: number | null }) {
   const t = useTranslations("Progress");
   if (panel.kind === "loading") {
     return <Skeleton label={t("loading", { name: tab.name })} className="h-48" />;
@@ -94,7 +103,7 @@ function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: TabText }) {
 
   const { progress } = panel;
   const goal = nextGoal(progress);
-  const weak = weakestGroup(progress.groups);
+  const weak = average !== null ? weakestGroupNear(progress.groups, average) : weakestGroup(progress.groups);
   return (
     <>
       <ProgressDonut progress={progress} />
@@ -120,7 +129,9 @@ function PanelBody({ panel, tab }: { panel: ProgressPanel; tab: TabText }) {
       {weak ? (
         <div className="flex items-center justify-between gap-3 rounded-[10px] border border-weak bg-weak-tint px-3 py-2.5">
           <p className="break-keep text-[13px] leading-snug text-fg">
-            {t.rich("weakText", { label: weak.group.label, empty: weak.empty, b: (chunks) => <b className="font-num">{chunks}</b> })}
+            {average !== null
+              ? t.rich("weakNearText", { average: average.toFixed(1), label: weak.group.label, empty: weak.empty, b: (chunks) => <b className="font-num">{chunks}</b> })
+              : t.rich("weakText", { label: weak.group.label, empty: weak.empty, b: (chunks) => <b className="font-num">{chunks}</b> })}
           </p>
           <Link
             href={weak.group.href}

@@ -110,6 +110,59 @@ class RefreshTokenServiceTest {
         verify(repository, never()).save(any());
     }
 
+    /** 유예(D50): 폐기된 지 얼마 안 된 토큰이 다시 오면(탭 동시 요청) 그 요청만 거절하고 family는 폐기하지 않는다. */
+    private RefreshToken revokedAgo(String raw, Duration ago) {
+        RefreshToken used = stored(raw, NOW.plusSeconds(600));
+        used.revoke(NOW.minus(ago));
+        when(repository.findForUpdateByTokenHash(RefreshTokenCodec.hash(raw))).thenReturn(Optional.of(used));
+        return used;
+    }
+
+    @Test
+    void 방금_폐기된_토큰이_유예_안에_다시_오면_거부만_하고_family는_폐기하지_않는다() {
+        String raw = RefreshTokenCodec.generate();
+        revokedAgo(raw, Duration.ofMillis(9_999)); // 기본 유예 10초 안
+
+        assertThatThrownBy(() -> service.rotate(raw)).satisfies(RefreshTokenServiceTest::assertAuthFailed);
+
+        verify(repository, never()).revokeFamily(anyString(), any());
+        verify(repository, never()).save(any()); // 새 토큰도 주지 않는다
+    }
+
+    @Test
+    void 유예_시간이_정확히_지난_뒤의_재사용은_family를_폐기한다() {
+        String raw = RefreshTokenCodec.generate();
+        revokedAgo(raw, Duration.ofMillis(10_000)); // 경계: 10초는 유예에 포함되지 않는다
+
+        assertThatThrownBy(() -> service.rotate(raw)).satisfies(RefreshTokenServiceTest::assertAuthFailed);
+
+        verify(repository).revokeFamily(FAMILY, NOW);
+    }
+
+    @Test
+    void 유예를_0으로_두면_예전처럼_곧바로_family를_폐기한다() {
+        JwtProperties props = new JwtProperties();
+        props.setRefreshTokenValidity(Duration.ofDays(14).toMillis());
+        props.setRefreshReuseGrace(0);
+        service = new RefreshTokenService(repository, props, Clock.fixed(NOW, ZoneOffset.UTC));
+        String raw = RefreshTokenCodec.generate();
+        revokedAgo(raw, Duration.ofMillis(1));
+
+        assertThatThrownBy(() -> service.rotate(raw)).satisfies(RefreshTokenServiceTest::assertAuthFailed);
+
+        verify(repository).revokeFamily(FAMILY, NOW);
+    }
+
+    @Test
+    void 폐기_시각이_미래이면_유예로_보지_않고_family를_폐기한다() {
+        String raw = RefreshTokenCodec.generate();
+        revokedAgo(raw, Duration.ofSeconds(-5)); // 시계가 어긋난 이상한 값은 안전한 쪽(폐기)으로
+
+        assertThatThrownBy(() -> service.rotate(raw)).satisfies(RefreshTokenServiceTest::assertAuthFailed);
+
+        verify(repository).revokeFamily(FAMILY, NOW);
+    }
+
     @Test
     void 만료된_토큰은_거부한다() {
         String raw = RefreshTokenCodec.generate();

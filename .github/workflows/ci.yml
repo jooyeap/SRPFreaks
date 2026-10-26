@@ -21,7 +21,7 @@ jobs:
   # 서버에서 도는 셸 스크립트(오류 요약)의 테스트. 로그에서 개인정보가 새지 않는지 확인한다
   scripts:
     name: 배포 스크립트 테스트
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -31,10 +31,12 @@ jobs:
         run: bash scripts/deploy/prune-build-cache.test.sh
       - name: 백업 점검 스크립트
         run: bash scripts/deploy/check-backups.test.sh
+      - name: 배포 버전 확인 스크립트
+        run: bash scripts/deploy/check-version.test.sh
 
   backend:
     name: 백엔드 테스트
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -78,7 +80,7 @@ jobs:
   # 테스트를 둘로 나눠(--shard) 동시에 돌린다. 테스트 파일 수백 개가 파일마다 jsdom을 새로 만들어 느려서, 나누면 시간이 거의 반으로 준다
   frontend-test:
     name: 프론트 테스트 (${{ matrix.shard }}/2)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -100,7 +102,7 @@ jobs:
 
   frontend:
     name: 프론트 검사·빌드
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:

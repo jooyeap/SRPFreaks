@@ -7,10 +7,22 @@ import type { PlayerTierResponse, SkillEntryResponse, SkillResponse } from "@/li
  */
 export const skillKeys = {
   me: (userId: number) => ["skill", userId] as const,
+  // 앞부분이 "skill"이라 기록을 바꾸면 같이 무효화된다(평균이 달라질 수 있다)
+  playLevel: (userId: number) => ["skill", userId, "play-level"] as const,
 };
 
 export function fetchMySkill(signal?: AbortSignal): Promise<SkillResponse> {
   return apiFetch<SkillResponse>("/skills/me", { signal });
+}
+
+/** 내 평소 난이도(레이팅 목록의 서열표 기준 난이도 평균, GET /skills/me/play-level). READY일 때만 tier가 있다. */
+export interface PlayLevelResponse {
+  status: "READY" | "NEW_PLAYER" | "INSUFFICIENT";
+  tier: number | null;
+}
+
+export function fetchMyPlayLevel(signal?: AbortSignal): Promise<PlayLevelResponse> {
+  return apiFetch<PlayLevelResponse>("/skills/me/play-level", { signal });
 }
 
 export interface TierProgress {

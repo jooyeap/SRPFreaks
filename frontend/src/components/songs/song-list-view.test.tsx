@@ -4,6 +4,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SongListView } from "@/components/songs/SongListView";
 import type { ChartFolderListResponse, ChartFolderResponse, ChartRowResponse, PageResponse } from "@/lib/api-types";
+import { resetPageSizeForTest } from "@/lib/page-size";
 import { EMPTY_SONG_FILTERS, type SongListFilters } from "@/lib/song-list";
 
 function folder(lo: number, over: Partial<ChartFolderResponse> = {}): ChartFolderResponse {
@@ -79,6 +80,8 @@ describe("SongListView", () => {
   }
 
   beforeEach(() => {
+    sessionStorage.clear();
+    resetPageSizeForTest(); // 이전 테스트에서 고른 개수가 남지 않게
     fetchMock.mockReset();
     fetchMock.mockImplementation((input) => {
       const url = String(input);
@@ -178,6 +181,18 @@ describe("SongListView", () => {
     expect(screen.getByText("두번째곡")).toBeInTheDocument();
   });
 
+  it("맨 위에서 개수를 바꾸면 펼친 폴더가 그 개수로 다시 채보를 받는다 (기본은 20개씩)", async () => {
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    await screen.findByRole("link", { name: "첫번째곡" });
+    expect(chartCalls().at(-1)).toContain("size=20");
+
+    fireEvent.change(screen.getByRole("combobox", { name: "한 번에 보이는 개수" }), { target: { value: "50" } });
+
+    await waitFor(() => expect(chartCalls().at(-1)).toContain("size=50"));
+    expect(chartCalls().at(-1)).toContain("page=0"); // 이어 붙이던 쪽은 버리고 첫 쪽부터
+  });
+
   it("하위 폴더가 있으면 큰 폴더를 펼칠 때 하위 폴더만 보이고, 하위 폴더를 펼쳐야 채보를 요청한다", async () => {
     const withSubs: ChartFolderListResponse = {
       ...folders,
@@ -250,6 +265,48 @@ describe("SongListView", () => {
     expect(chartCalls().at(-1)).toContain("folder=9.50");
   });
 
+  it("검색어가 있으면 검색창 아래에 바로가기 후보가 나오고, 누르면 곡 상세로 가는 링크다 (8개까지만 요청)", async () => {
+    renderView({ ...EMPTY_SONG_FILTERS, q: "검색" });
+
+    const list = await screen.findByRole("list", { name: "검색 결과" });
+    const link = within(list).getByRole("link", { name: /검색곡/ });
+    expect(link).toHaveAttribute("href", "/songs/109?from=songs&chart=9");
+    expect(within(list).getByLabelText("달성 단계 SS")).toBeInTheDocument();
+    const candidateCall = chartCalls().find((u) => !u.includes("folder="));
+    const params = new URL(candidateCall ?? "", "http://x").searchParams;
+    expect(params.get("q")).toBe("검색");
+    expect(params.get("size")).toBe("8");
+  });
+
+  it("검색어가 없으면 후보를 요청하지도 보이지도 않는다", async () => {
+    renderView();
+    await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+    expect(screen.queryByRole("list", { name: "검색 결과" })).toBeNull();
+    expect(chartCalls()).toHaveLength(0);
+  });
+
+  it("맞는 채보가 없으면 후보 목록은 그리지 않는다 (없을 때 안내는 폴더 목록 쪽이 한다)", async () => {
+    renderView({ ...EMPTY_SONG_FILTERS, q: "nomatch" });
+    expect(await screen.findByText("조건에 맞는 채보가 없습니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "검색 결과" })).toBeNull();
+  });
+
+  it("우측 하단 고정 검색 버튼을 누르면 위쪽 검색창으로 포커스가 옮겨 간다", async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    renderView();
+    const button = await screen.findByRole("button", { name: "곡 검색" });
+    expect(button).toHaveClass("fixed", "right-4");
+    const input = screen.getByRole("searchbox");
+    expect(input).not.toHaveFocus();
+
+    fireEvent.click(button);
+
+    expect(input).toHaveFocus();
+    expect(scrollIntoView).toHaveBeenCalled();
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+  });
+
   it("파트와 난이도(여러 개) 필터는 폴더 목록 요청의 서버 조건으로 전달된다", async () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
@@ -279,7 +336,9 @@ describe("SongListView", () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "V4" } });
+    // 선택 상자가 둘이 되었으니(버전 + 한 번에 보이는 개수) 개수 선택을 뺀 나머지를 버전으로 본다
+    const versionSelect = screen.getAllByRole("combobox").find((el) => el.getAttribute("aria-label") !== "한 번에 보이는 개수");
+    fireEvent.change(versionSelect as HTMLElement, { target: { value: "V4" } });
     await waitFor(() => expect(folderCalls().at(-1)).toContain("version=V4"));
 
     fireEvent.click(screen.getByRole("button", { name: "초기화" }));

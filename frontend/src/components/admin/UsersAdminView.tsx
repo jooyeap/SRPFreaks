@@ -9,6 +9,8 @@ import { ApiError } from "@/lib/api";
 import type { AdminUserResponse, Role } from "@/lib/api-types";
 import { adminKeys, ADMIN_USERS_PAGE_SIZE, ASSIGNABLE_ROLES, changeUserRole, changeUserStatus, fetchAdminUsers, roleLabel } from "@/lib/admin";
 import { formatPlayedDate } from "@/lib/format";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
+import { usePageSize } from "@/lib/page-size";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { useTranslations } from "next-intl";
 
@@ -23,13 +25,14 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 export function UsersAdminView({ viewerId }: { viewerId: number }) {
   const t = useTranslations();
   const [page, setPage] = useState(0);
+  const [size, setSize] = usePageSize("adminUsers", ADMIN_USERS_PAGE_SIZE);
   // draft = 입력 칸의 글자, query = 실제로 검색한 글자. 검색 버튼(또는 Enter)을 눌러야 query가 바뀌어 서버에 묻는다(글자마다 요청하지 않는다)
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
   const { data, isPending, isError, error } = useQuery({
-    queryKey: adminKeys.users(viewerId, query, page),
-    queryFn: ({ signal }) => fetchAdminUsers(page, ADMIN_USERS_PAGE_SIZE, query, signal),
+    queryKey: adminKeys.users(viewerId, query, page, size),
+    queryFn: ({ signal }) => fetchAdminUsers(page, size, query, signal),
     placeholderData: keepPreviousData,
   });
 
@@ -44,7 +47,16 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
         <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
           <span aria-hidden="true">←</span>
         </Link>
-        <h1 className="text-xl font-semibold text-fg">{t("Admin.usersTitle")}</h1>
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-xl font-semibold text-fg">{t("Admin.usersTitle")}</h1>
+          <PageSizeSelect
+            value={size}
+            onChange={(next) => {
+              setSize(next);
+              setPage(0);
+            }}
+          />
+        </div>
         <p className="text-sm text-fg-sub">{t("Admin.usersLead")}</p>
       </div>
 

@@ -8,6 +8,8 @@ import { NoticeForm } from "@/components/notices/NoticeForm";
 import { ApiError } from "@/lib/api";
 import { formatPlayedDate } from "@/lib/format";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
+import { PageSizeSelect } from "@/components/PageSizeSelect";
+import { usePageSize } from "@/lib/page-size";
 import { createNotice, fetchNotices, noticeKeys, NOTICES_PAGE_SIZE, type NoticeValues } from "@/lib/notices";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
@@ -27,11 +29,12 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
   const t = useTranslations();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
+  const [size, setSize] = usePageSize("notices", NOTICES_PAGE_SIZE);
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
 
   const { data, isPending, isError, error } = useQuery({
-    queryKey: noticeKeys.list(viewerId, page, NOTICES_PAGE_SIZE),
-    queryFn: ({ signal }) => fetchNotices(page, NOTICES_PAGE_SIZE, signal),
+    queryKey: noticeKeys.list(viewerId, page, size),
+    queryFn: ({ signal }) => fetchNotices(page, size, signal),
     placeholderData: keepPreviousData,
   });
 
@@ -48,7 +51,16 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-xl font-semibold text-fg">{t("Notices.title")}</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-fg">{t("Notices.title")}</h1>
+        <PageSizeSelect
+          value={size}
+          onChange={(next) => {
+            setSize(next);
+            setPage(0);
+          }}
+        />
+      </div>
 
       {canWrite ? (
         <NoticeForm
