@@ -1,3 +1,4 @@
+import { SetlistAddButton } from "@/components/setlist/SetlistAddButton";
 import { StageBadge } from "@/components/table/StageBadge";
 import { EMPTY_MARK, formatPlayedDate, formatRate, partLabel, difficultyLabel, formatLevel } from "@/lib/format";
 import type { MyRecord } from "@/lib/api-types";
@@ -16,6 +17,7 @@ export function MyRecordCard({
   chart,
   emphasizeSrn,
   onRecord,
+  setlistTarget,
 }: {
   mine: MyRecord | null;
   best: RecordResponse | null;
@@ -23,6 +25,8 @@ export function MyRecordCard({
   /** 서열표에서 들어온 화면: SRN+ 줄을 강조하고 "서열표는 SRN+, Premium Free 기준"이라고 적는다 */
   emphasizeSrn: boolean;
   onRecord: () => void;
+  /** 세트리스트에 담을 채보. 목록 줄에는 담기가 없고(2026-10-26) 곡 상세에서만 담는다. 비로그인이면 버튼이 그려지지 않는다 */
+  setlistTarget?: { songDifficultyId: number; title: string };
 }) {
   const t = useTranslations();
   const stage = mine?.stage ?? null;
@@ -61,14 +65,17 @@ export function MyRecordCard({
 
       {emphasizeSrn ? <p className="text-xs text-fg-dim">{t("Song.tableBasis")}</p> : null}
 
-      <button
-        type="button"
-        onClick={onRecord}
-        disabled={!chart}
-        className="h-11 w-full rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-50"
-      >
-        {t("Song.addRecord")}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onRecord}
+          disabled={!chart}
+          className="h-11 min-w-0 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-50"
+        >
+          {t("Song.addRecord")}
+        </button>
+        {setlistTarget ? <SetlistAddButton songDifficultyId={setlistTarget.songDifficultyId} title={setlistTarget.title} /> : null}
+      </div>
     </section>
   );
 }
