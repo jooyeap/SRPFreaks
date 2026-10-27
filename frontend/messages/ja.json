@@ -182,6 +182,8 @@
     "belowS": "S未満",
     "noRecord": "記録なし",
     "tileEmpty": "まだ記録がありません",
+    "foldClosed": "{from}〜{to}・記録のない区間 {count}個",
+    "foldOpen": "記録のない高い区間をたたむ",
     "colRange": "区間",
     "colAchieve": "達成",
     "mergedHigh": "{tier}以上"

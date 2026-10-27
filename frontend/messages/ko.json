@@ -182,6 +182,8 @@
     "belowS": "S 미만",
     "noRecord": "기록 없음",
     "tileEmpty": "아직 기록이 없습니다",
+    "foldClosed": "{from} ~ {to} · 기록 없는 구간 {count}개",
+    "foldOpen": "기록 없는 높은 구간 접기",
     "colRange": "구간",
     "colAchieve": "달성",
     "mergedHigh": "{tier} 이상"
