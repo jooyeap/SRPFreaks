@@ -208,6 +208,8 @@ describe("SuggestionsAdminView", () => {
     expect(list).toHaveTextContent("보낸 사람 tester");
     expect(list).toHaveTextContent("보낸 사람 other");
     expect(await screen.findByText(/접수 대기/)).toHaveTextContent("3건");
+    // 다른 관리 화면과 같은 뒤로 버튼
+    expect(screen.getByRole("link", { name: "관리로" })).toHaveAttribute("href", "/admin");
   });
 
   it("곡 추가 건의에서 곡 등록 창을 곡명과 요청 채보로 채워 연다", async () => {
