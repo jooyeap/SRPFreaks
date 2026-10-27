@@ -41,7 +41,7 @@ describe("SkillSnapshotPanel", () => {
   const button = () => screen.getByRole("button", { name: /지금 레이팅 기록하기|기록 중입니다/ });
 
   beforeEach(() => {
-    status = { available: true, reason: null };
+    status = { available: true, reason: null, replacesToday: false };
     rows = [row(2, "2026-10-09", 130, 10), row(1, "2026-10-01", 120, null)];
     totalPages = 1;
     postResponse = () => json(row(3, "2026-10-10", 140, 10), 201);
@@ -97,22 +97,30 @@ describe("SkillSnapshotPanel", () => {
   });
 
   it.each([
-    ["ALREADY_TODAY", "오늘은 이미 기록했습니다. 내일 다시 기록할 수 있습니다."],
     ["NO_CHANGE", "마지막 기록과 점수가 같아 기록할 수 없습니다."],
     ["NO_RECORDS", "레이팅에 들어간 기록이 없어 기록할 수 없습니다."],
   ] as const)("%s이면 버튼이 꺼지고 이유를 글자로 적는다", async (reason, text) => {
-    status = { available: false, reason };
+    status = { available: false, reason, replacesToday: false };
     renderPanel();
     expect(await screen.findByText(text)).toBeInTheDocument();
     expect(button()).toBeDisabled();
   });
 
   it("서버가 거절하면(409) 서버 문구를 알려 준다", async () => {
-    postResponse = () => json({ code: "CONFLICT", message: "오늘은 이미 기록했습니다. 내일 다시 기록해 주세요.", timestamp: "t" }, 409);
+    postResponse = () => json({ code: "CONFLICT", message: "방금 기록했습니다. 잠시 후 다시 시도해 주세요.", timestamp: "t" }, 409);
     renderPanel();
     await waitFor(() => expect(button()).toBeEnabled());
     fireEvent.click(button());
-    expect(await screen.findByRole("alert")).toHaveTextContent("오늘은 이미 기록했습니다. 내일 다시 기록해 주세요.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("방금 기록했습니다. 잠시 후 다시 시도해 주세요.");
+  });
+
+  it("오늘 기록이 이미 있으면 버튼이 `오늘 기록 갱신`이고, 누르면 같은 요청으로 오늘 기록을 덮어쓴다", async () => {
+    status = { available: true, reason: null, replacesToday: true };
+    renderPanel();
+    const update = await screen.findByRole("button", { name: "오늘 기록 갱신" });
+    await waitFor(() => expect(update).toBeEnabled());
+    fireEvent.click(update);
+    await waitFor(() => expect(fetchMock.mock.calls.some((c) => c[1]?.method === "POST")).toBe(true));
   });
 
   it("기록이 하나도 없으면 안내만 보인다", async () => {

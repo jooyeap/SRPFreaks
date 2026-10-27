@@ -62,11 +62,19 @@ export function createSnapshot(): Promise<SkillSnapshotResponse> {
   return apiFetch<SkillSnapshotResponse>("/skills/me/snapshots", { method: "POST" });
 }
 
+/**
+ * 기록 버튼의 글자와 저장 후 알림. 오늘 기록이 이미 있으면 같은 날 다시 눌러 덮어쓰는 것이라 `오늘 기록 갱신`이다(D32 변경, 2026-10-27).
+ * 상태를 아직 못 받았으면 처음 기록하는 쪽 글자를 쓴다.
+ */
+export function snapshotButtonText(replacesToday: boolean | undefined, t: Translator): { label: string; saved: string } {
+  return replacesToday
+    ? { label: t("Rating.snapshotUpdate"), saved: t("Rating.snapshotUpdated") }
+    : { label: t("Rating.snapshotSave"), saved: t("Rating.snapshotSaved") };
+}
+
 /** 기록하기를 막는 이유 문구 (서버 오류 문구와 같은 뜻) */
 export function blockReasonText(reason: SnapshotBlockReason, t: Translator): string {
   switch (reason) {
-    case "ALREADY_TODAY":
-      return t("Snapshot.alreadyToday");
     case "NO_CHANGE":
       return t("Snapshot.noChange");
     case "NO_RECORDS":
