@@ -6,7 +6,7 @@ import { ProgressDonut } from "@/components/home/ProgressDonut";
 import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
 import type { SkillResponse } from "@/lib/api-types";
-import { nextGoal, weakestGroup, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
+import { nextGoal, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
 import { ratingEntryThreshold } from "@/lib/rating-threshold";
 import { useTranslations } from "next-intl";
 
@@ -109,7 +109,8 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
   const { progress } = panel;
   const goal = nextGoal(progress);
   // 가장 비어 있는 구간 안내는 서열표 탭에서만 보여 준다(곡 목록 탭은 레벨 폴더 기준이라 뺐다).
-  const weak = !showWeak ? null : average !== null ? weakestGroupNear(progress.groups, average) : weakestGroup(progress.groups);
+  // 평균을 모르는 신규(기록 부족)에게는 안내를 두지 않는다: 기록이 적어 "어디가 비었는지"가 의미 없다(2026-10-27)
+  const weak = !showWeak || average === null ? null : weakestGroupNear(progress.groups, average);
   const threshold = weak && average !== null && skill ? ratingEntryThreshold(skill, weak.group.key) : null;
   return (
     <>
@@ -133,17 +134,11 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
         </>
       ) : null}
 
-      {weak ? (
+      {weak && average !== null ? (
         <div className="flex items-center justify-between gap-3 rounded-[10px] border border-weak bg-weak-tint px-3 py-2.5">
           <p className="break-keep text-[13px] leading-snug text-fg">
-            {average !== null ? (
-              <>
-                {t.rich("nearText", { average: average.toFixed(1), label: weak.group.label, b: (chunks) => <b className="font-num">{chunks}</b> })}
-                {threshold !== null ? <> {t.rich("nearThreshold", { rate: threshold, b: (chunks) => <b className="font-num">{chunks}</b> })}</> : null}
-              </>
-            ) : (
-              t.rich("weakText", { label: weak.group.label, empty: weak.empty, b: (chunks) => <b className="font-num">{chunks}</b> })
-            )}
+            {t.rich("nearText", { average: average.toFixed(1), label: weak.group.label, b: (chunks) => <b className="font-num">{chunks}</b> })}
+            {threshold !== null ? <> {t.rich("nearThreshold", { rate: threshold, b: (chunks) => <b className="font-num">{chunks}</b> })}</> : null}
           </p>
           <Link
             href={weak.group.href}

@@ -219,12 +219,14 @@ describe("HomeDashboard", () => {
     expect(progress).not.toHaveTextContent("채워 보세요");
   });
 
-  it("평균을 알 수 없으면(신규·기록 부족) 예전처럼 전체에서 고른다", async () => {
+  it("평균을 알 수 없으면(신규·기록 부족) 안내를 두지 않는다", async () => {
     mockWithPlayLevel({ status: "INSUFFICIENT", tier: null });
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    await waitFor(() => expect(progress).toHaveTextContent("5.8 구간이 가장 비어 있어요. 기록 없는 채보 6곡"));
-    expect(progress).not.toHaveTextContent("근처에서");
+    await waitFor(() => expect(progress).toHaveTextContent("기록 24/30"));
+    expect(progress).not.toHaveTextContent("채워 보세요");
+    expect(progress).not.toHaveTextContent("가장 비어 있어요");
+    expect(within(progress).queryByRole("link", { name: "구간 보기" })).toBeNull();
   });
 
   it("내 레이팅 요약, 서열표 진행도(전체·묶음별), 바로가기를 보여 준다", async () => {
@@ -278,11 +280,12 @@ describe("HomeDashboard", () => {
     // 넓은 화면에서 보이는 단계 칩(EXC/FC/SS/S/S 미만 개수)이 칸마다 있고, 숫자가 글자로 있다
     expect(rows[1]).toHaveTextContent("EXC 20");
     expect(rows[0].querySelector("[data-stage-bar].ring-done")).toBeNull();
-    // 다음 목표: SS 이상(EXC 21 + SS 1 = 22곡)을 다음 10곡 단위(30곡)까지. 가장 빈 구간은 5.8(4/10)
+    // 다음 목표: SS 이상(EXC 21 + SS 1 = 22곡)을 다음 10곡 단위(30곡)까지. 평균을 모르면 구간 안내는 없다
     expect(progress).toHaveTextContent("SS 이상 22곡 → 30곡까지 8곡 남음");
     expect(progress).not.toHaveTextContent("약함"); // 칸에는 약함 뱃지를 달지 않는다(구분이 어렵다). 안내 문장과 링크만 있다
-    expect(progress).toHaveTextContent("5.8 구간이 가장 비어 있어요. 기록 없는 채보 6곡");
-    expect(within(progress).getByRole("link", { name: "구간 보기" })).toHaveAttribute("href", "/table/folder/5.8");
+    // 평균(play-level)을 모르는 상태라 평균 근처 구간 안내는 없다
+    expect(progress).not.toHaveTextContent("채워 보세요");
+    expect(within(progress).queryByRole("link", { name: "구간 보기" })).toBeNull();
 
     expect(screen.getByRole("link", { name: /^서열표.*레이팅 상수 난이도별로/ })).toHaveAttribute("href", "/table");
     expect(screen.getByRole("link", { name: /^마이페이지.*달성 현황/ })).toHaveAttribute("href", "/me");
