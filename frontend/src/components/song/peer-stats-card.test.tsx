@@ -122,18 +122,11 @@ describe("PeerStatsCard", () => {
     expect(screen.getByRole("button", { name: "다시 시도" })).toBeInTheDocument();
   });
 
-  it("`?`를 누르면 설명이 열린다", async () => {
+  it("도움말(`?`) 버튼은 없다 (따로 설명할 내용이 없어서)", async () => {
     givenResponse({ tierName: "SS 3", bandUsers: 8, charts: [stat()] });
     renderCard();
 
     await loadedCard();
-    expect(screen.queryByText("달성률은 그 유저들이 이 곡에 남긴 달성률의 중앙값입니다.")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "같은 티어 유저 기록 설명 보기" }));
-
-    expect(screen.getByText("나와 같은 티어의 공개 유저가 `기록하기`로 저장한 레이팅을 모은 값입니다.")).toBeInTheDocument();
-    expect(screen.getByText("달성률은 그 유저들이 이 곡에 남긴 달성률의 중앙값입니다.")).toBeInTheDocument();
-    expect(screen.getByText("내 예상 레이팅은 이 달성률로 쳤을 때 오르는 내 레이팅 점수입니다.")).toBeInTheDocument();
-    expect(screen.getByText("유저 수가 적으면 이 기록은 보이지 않습니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /설명 보기/ })).not.toBeInTheDocument();
   });
 });

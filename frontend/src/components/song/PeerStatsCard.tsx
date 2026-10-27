@@ -3,7 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { ErrorRetry } from "@/components/ErrorRetry";
-import { TermHelp } from "@/components/TermHelp";
 import { formatRate, formatScore } from "@/lib/format";
 import { fetchPeerStats, findPeerStat, hasExpectedGain, peerStatsKeys } from "@/lib/peer-stats";
 
@@ -38,10 +37,7 @@ export function PeerStatsCard({ chartId, userId }: { chartId: number; userId: nu
 
   return (
     <section aria-label={t("title")} className="flex flex-col gap-2.5 rounded-2xl border border-line bg-card px-4 py-3.5">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[13px] font-bold text-fg">{t("title")}</h2>
-        {stat ? <TermHelp term="peerStats" label={t("title")} /> : null}
-      </div>
+      <h2 className="text-[13px] font-bold text-fg">{t("title")}</h2>
       {query.isError ? (
         <ErrorRetry onRetry={() => void query.refetch()} retrying={query.isFetching}>
           {t("loadFailed")}
