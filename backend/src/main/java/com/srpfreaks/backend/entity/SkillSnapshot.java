@@ -56,19 +56,32 @@ public class SkillSnapshot extends BaseTimeEntity {
     @Column(name = "other_score", nullable = false, precision = 10, scale = 2)
     private BigDecimal otherScore;
 
+    /**
+     * 스냅샷을 만든 시점의 레이팅 목록 평균 난이도(서열표 기준 난이도 T의 평균, 소수 둘째 자리 반올림).
+     * 서열표는 나중에 바뀔 수 있어서 그때의 값을 같이 남긴다. 이 기능 이전에 만든 스냅샷과 기준 난이도가 없는 목록은 null이다.
+     */
+    @Column(name = "average_level", precision = 5, scale = 2)
+    private BigDecimal averageLevel;
+
     private SkillSnapshot(User user, NoteOption noteOption, LocalDate snapshotDate,
-                          BigDecimal totalScore, BigDecimal singleScore, BigDecimal otherScore) {
+                          BigDecimal totalScore, BigDecimal singleScore, BigDecimal otherScore, BigDecimal averageLevel) {
         this.user = user;
         this.noteOption = noteOption;
         this.snapshotDate = snapshotDate;
         this.totalScore = totalScore;
         this.singleScore = singleScore;
         this.otherScore = otherScore;
+        this.averageLevel = averageLevel;
     }
 
     public static SkillSnapshot create(User user, NoteOption noteOption, LocalDate snapshotDate,
                                        BigDecimal totalScore, BigDecimal singleScore, BigDecimal otherScore) {
-        return new SkillSnapshot(user, noteOption, snapshotDate, totalScore, singleScore, otherScore);
+        return new SkillSnapshot(user, noteOption, snapshotDate, totalScore, singleScore, otherScore, null);
+    }
+
+    public static SkillSnapshot create(User user, NoteOption noteOption, LocalDate snapshotDate,
+                                       BigDecimal totalScore, BigDecimal singleScore, BigDecimal otherScore, BigDecimal averageLevel) {
+        return new SkillSnapshot(user, noteOption, snapshotDate, totalScore, singleScore, otherScore, averageLevel);
     }
 
     /** 합계·단일 소계·그 외 소계가 모두 같으면 "변경 없음"이다. 스케일(2자리)이 달라도 값이 같으면 같다(compareTo). */

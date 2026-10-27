@@ -59,8 +59,12 @@ public class SkillSnapshotEntry extends BaseTimeEntity {
     @Column(name = "score", nullable = false, precision = 10, scale = 2)
     private BigDecimal score;
 
+    /** 그 채보의 스냅샷 시점 서열표 기준 난이도(T). 서열표가 나중에 바뀌어도 그때의 값이 남는다. 이전 스냅샷·미정이면 null. */
+    @Column(name = "reference_level", precision = 3, scale = 1)
+    private BigDecimal referenceLevel;
+
     private SkillSnapshotEntry(SkillSnapshot snapshot, SongDifficulty songDifficulty, SnapshotGroup listGroup, int listRank,
-                               BigDecimal achievementRate, boolean fullCombo, BigDecimal score) {
+                               BigDecimal achievementRate, boolean fullCombo, BigDecimal score, BigDecimal referenceLevel) {
         this.snapshot = snapshot;
         this.songDifficulty = songDifficulty;
         this.listGroup = listGroup;
@@ -68,10 +72,17 @@ public class SkillSnapshotEntry extends BaseTimeEntity {
         this.achievementRate = achievementRate;
         this.fullCombo = fullCombo;
         this.score = score;
+        this.referenceLevel = referenceLevel;
     }
 
     public static SkillSnapshotEntry create(SkillSnapshot snapshot, SongDifficulty songDifficulty, SnapshotGroup listGroup,
                                             int listRank, BigDecimal achievementRate, boolean fullCombo, BigDecimal score) {
-        return new SkillSnapshotEntry(snapshot, songDifficulty, listGroup, listRank, achievementRate, fullCombo, score);
+        return new SkillSnapshotEntry(snapshot, songDifficulty, listGroup, listRank, achievementRate, fullCombo, score, null);
+    }
+
+    public static SkillSnapshotEntry create(SkillSnapshot snapshot, SongDifficulty songDifficulty, SnapshotGroup listGroup,
+                                            int listRank, BigDecimal achievementRate, boolean fullCombo, BigDecimal score,
+                                            BigDecimal referenceLevel) {
+        return new SkillSnapshotEntry(snapshot, songDifficulty, listGroup, listRank, achievementRate, fullCombo, score, referenceLevel);
     }
 }
