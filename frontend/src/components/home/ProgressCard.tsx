@@ -6,7 +6,7 @@ import { ProgressDonut } from "@/components/home/ProgressDonut";
 import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
 import type { SkillResponse } from "@/lib/api-types";
-import { nextGoal, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
+import { emptyHighCount, nextGoal, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
 import { ratingEntryThreshold } from "@/lib/rating-threshold";
 import { useTranslations } from "next-intl";
 
@@ -111,6 +111,8 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
   // 가장 비어 있는 구간 안내는 서열표 탭에서만 보여 준다(곡 목록 탭은 레벨 폴더 기준이라 뺐다).
   // 평균을 모르는 신규(기록 부족)에게는 안내를 두지 않는다: 기록이 적어 "어디가 비었는지"가 의미 없다(2026-10-27)
   const weak = !showWeak || average === null ? null : weakestGroupNear(progress.groups, average);
+  // 서열표 탭에서 평균을 알면, 맨 위의 기록 없는 먼 높은 구간을 접어 둔다(2026-10-27). 곡 목록 탭은 단위가 레벨 폴더라 접지 않는다
+  const foldCount = showWeak && average !== null ? emptyHighCount(progress.groups, average) : 0;
   const threshold = weak && average !== null && skill ? ratingEntryThreshold(skill, weak.group.key) : null;
   return (
     <>
@@ -130,7 +132,7 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
           <div className="border-t border-row-line pt-3">
             <h3 className="text-[13px] font-bold text-fg-sub">{tab.mapTitle}</h3>
           </div>
-          <ProgressTiles groups={progress.groups} label={tab.mapLabel} />
+          <ProgressTiles groups={progress.groups} label={tab.mapLabel} foldCount={foldCount} />
         </>
       ) : null}
 
