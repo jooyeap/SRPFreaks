@@ -108,7 +108,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
         <Skeleton label={t("ratingLoading")} className="h-[7.5rem]" />
       )}
 
-      <ProgressCard table={tablePanel} songs={songsPanel} average={playLevel.data?.status === "READY" ? playLevel.data.tier : null} />
+      <ProgressCard table={tablePanel} songs={songsPanel} average={playLevel.data?.status === "READY" ? playLevel.data.tier : null} skill={skill.data ?? null} />
 
       {/* 시작 안내에 가져오기 카드가 이미 있으면 중복이라 뺀다 */}
       {showWelcome ? null : <ImportEntryLink />}

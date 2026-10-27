@@ -178,12 +178,12 @@ describe("HomeDashboard", () => {
     expect(screen.queryByRole("region", { name: "시작하기" })).toBeNull();
   });
 
-  function mockWithPlayLevel(playLevel: unknown) {
+  function mockWithPlayLevel(playLevel: unknown, skillBody: SkillResponse = skill) {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
       if (url.includes("/skills/me/play-level")) return Promise.resolve(json(playLevel));
-      if (url.includes("/skills/me")) return Promise.resolve(json(skill));
+      if (url.includes("/skills/me")) return Promise.resolve(json(skillBody));
       if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
       if (url.includes("/players")) return Promise.resolve(json(playersPage));
       if (url.includes("/entries")) {
@@ -198,7 +198,16 @@ describe("HomeDashboard", () => {
     mockWithPlayLevel({ status: "READY", tier: 5.7 });
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처에서 5.8 구간이 가장 비어 있어요. 기록 없는 채보 6곡"));
+    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간을 채워 보세요."));
+  });
+
+  it("레이팅 목록이 가득 찼으면 평균 근처 안내 뒤에 몇 % 이상이면 반영되는지 붙인다 (5.8 구간: 맨 아래 226점 → 84.22% → 85%)", async () => {
+    // 5.8 → R = 10×5.8−45 = 13. 226점 → V=11.3, 가산 0.9 → 80+0.9/3.2×15 = 84.22 → 안내 단계 85
+    const single = Array.from({ length: 15 }, (_, i) => ({ rank: i + 1, score: i === 14 ? 226 : 300 }));
+    mockWithPlayLevel({ status: "READY", tier: 5.7 }, { ...skill, single } as unknown as SkillResponse);
+    renderView();
+    const progress = await screen.findByRole("region", { name: "서열표 진행도" });
+    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간을 채워 보세요. 85% 이상이면 레이팅에 반영돼요."));
   });
 
   it("범위(±0.1) 안에 비어 있는 구간이 없으면 안내를 그리지 않는다 (평균 5.0 → 5.0 구간은 모두 채움)", async () => {
@@ -207,6 +216,7 @@ describe("HomeDashboard", () => {
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
     await waitFor(() => expect(progress).toHaveTextContent("기록 24/30"));
     await waitFor(() => expect(progress).not.toHaveTextContent("가장 비어 있어요"));
+    expect(progress).not.toHaveTextContent("채워 보세요");
   });
 
   it("평균을 알 수 없으면(신규·기록 부족) 예전처럼 전체에서 고른다", async () => {
