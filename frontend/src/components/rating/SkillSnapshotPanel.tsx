@@ -13,6 +13,7 @@ import {
   fetchSnapshotStatus,
   fetchSnapshots,
   formatChange,
+  snapshotButtonText,
   snapshotKeys,
 } from "@/lib/skill-snapshot";
 import { ErrorRetry } from "@/components/ErrorRetry";
@@ -41,10 +42,11 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
   });
 
   const toast = useToast();
+  const buttonText = snapshotButtonText(status.data?.replacesToday, t);
   const record = useMutation({
     mutationFn: createSnapshot,
     onSuccess: async () => {
-      toast(t("Rating.snapshotSaved"));
+      toast(buttonText.saved);
       setPage(0); // 방금 만든 줄이 맨 위에 보이게 첫 페이지로 돌아간다
       await queryClient.invalidateQueries({ queryKey: snapshotKeys.all(userId) });
       await queryClient.invalidateQueries({ queryKey: snapshotKeys.status(userId) });
@@ -69,7 +71,7 @@ export function SkillSnapshotPanel({ userId }: { userId: number }) {
           onClick={() => record.mutate()}
           className="rounded-full bg-chip-on-bg px-4 py-1.5 text-sm font-semibold text-chip-on-fg enabled:hover:opacity-90 disabled:bg-table-head disabled:text-disabled"
         >
-          {record.isPending ? t("Rating.snapshotSaving") : t("Rating.snapshotSave")}
+          {record.isPending ? t("Rating.snapshotSaving") : buttonText.label}
         </button>
         {blocked ? <p className="text-xs text-fg-sub">{blockReasonText(blocked, t)}</p> : null}
         {status.isError ? <p className="text-xs text-fg-sub">{t("Rating.statusFailed")}</p> : null}

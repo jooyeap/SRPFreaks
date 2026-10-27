@@ -19,7 +19,7 @@ public enum ErrorCode {
     CONFLICT(HttpStatus.CONFLICT, "이미 등록되어 있습니다."),
     /** 곡 등록 때 같은 이름의 곡이 이미 있을 때. 이름이 같은 곡이 둘이면 가져오기가 어느 곡인지 몰라 제외하므로 등록 단계에서 막는다. */
     SONG_TITLE_DUPLICATE(HttpStatus.CONFLICT, "같은 이름의 곡이 이미 등록되어 있습니다. 곡 목록에서 확인해 주세요."),
-    SNAPSHOT_ALREADY_TODAY(HttpStatus.CONFLICT, "오늘은 이미 기록했습니다. 내일 다시 기록해 주세요."),
+    SNAPSHOT_ALREADY_TODAY(HttpStatus.CONFLICT, "방금 기록했습니다. 잠시 후 다시 시도해 주세요."),
     SNAPSHOT_NO_CHANGE(HttpStatus.CONFLICT, "마지막 기록과 점수가 같아 기록할 수 없습니다."),
     SNAPSHOT_NO_RECORDS(HttpStatus.CONFLICT, "레이팅에 들어간 기록이 없어 기록할 수 없습니다."),
     SUGGESTION_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "오늘은 건의를 더 보낼 수 없습니다. 내일 다시 보내 주세요."),
