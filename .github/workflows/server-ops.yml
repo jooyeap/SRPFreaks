@@ -105,13 +105,16 @@ jobs:
             echo "## 서버 점검 결과 (${MODE})"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          # ssh는 인자를 공백으로 이어 붙인 한 줄로 서버 셸에 넘긴다. 그래서 빈 값(migrations)은 사라지고, 공백이 든 값은 여러 개로 쪼개진다.
+          # printf %q로 값마다 따옴표를 붙여 보내면 서버 셸이 원래 값 그대로 다시 나눠 받는다(값은 위 "입력값 확인"에서 글자를 검사했다).
+          REMOTE_ARGS="$(printf '%q ' "$MODE" "$REF" "$MIGRATIONS")"
           set +e
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes \
-            "$EC2_USER@$EC2_HOST" bash -s -- "$MODE" "$REF" "$MIGRATIONS" <<'REMOTE' 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" "$RUNNER_TEMP/ops-output.txt"
+            "$EC2_USER@$EC2_HOST" "bash -s -- $REMOTE_ARGS" <<'REMOTE' 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" "$RUNNER_TEMP/ops-output.txt"
           set -uo pipefail
           MODE="$1"
           REF="$2"
-          MIGRATIONS="$3"
+          MIGRATIONS="${3:-}"
           cd ~/gitalog
           DC="docker compose --env-file .env.prod -f docker-compose.prod.yml"
 
