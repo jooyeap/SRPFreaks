@@ -289,6 +289,7 @@
   },
   "Table": {
     "thresholdBoth": "この区間は単色<b>{single}%</b>・それ以外<b>{other}%</b>以上でレーティングに反映されます。",
+    "thresholdSame": "この区間は<b>{rate}%</b>以上でレーティングに反映されます。",
     "thresholdSingle": "この区間は単色<b>{rate}%</b>以上でレーティングに反映されます。",
     "thresholdOther": "この区間はそれ以外<b>{rate}%</b>以上でレーティングに反映されます。",
     "avgWithZero": "平均 0%含む",
