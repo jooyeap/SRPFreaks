@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useState, type ReactNode } from "react";
 import { setClientTranslator } from "@/i18n/client-messages";
-import { ApiError } from "@/lib/api";
+import { queryRetryDelay, shouldRetryQuery } from "@/lib/query-retry";
 import { AuthProvider } from "@/components/AuthProvider";
 import { QueryCacheCleaner } from "@/components/QueryCacheCleaner";
 import { ToastProvider } from "@/components/Toast";
@@ -28,8 +28,10 @@ export function Providers({ children }: { children: ReactNode }) {
           queries: {
             staleTime: 30_000, // 30초 안에 같은 화면을 다시 열면 다시 요청하지 않는다
             refetchOnWindowFocus: false,
-            // 4xx(없는 곡, 권한 없음 등)는 다시 보내도 같은 답이라 바로 실패로 보여 준다. 네트워크·시간 초과·5xx만 자동으로 두 번 더 시도한다.
-            retry: (failureCount, error) => !(error instanceof ApiError && error.status >= 400 && error.status < 500) && failureCount < 2,
+            // 4xx는 바로 실패, 배포 중 끊김(502·503·504)은 약 30초 동안 다시 시도, 그 밖은 두 번 더(lib/query-retry.ts).
+            // 쓰기(mutation)는 다시 보내지 않는다(두 번 저장될 수 있다).
+            retry: shouldRetryQuery,
+            retryDelay: queryRetryDelay,
           },
         },
       }),
