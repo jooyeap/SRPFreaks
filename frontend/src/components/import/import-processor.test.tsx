@@ -36,6 +36,8 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
   const fetchMock = vi.fn<typeof fetch>();
   let skillCalls = 0;
   let commitBody: { plays: { title: string }[] } | null = null;
+  let snapshotStatus: { available: boolean; reason: string | null } = { available: false, reason: "ALREADY_TODAY" };
+  let snapshotPosts = 0;
 
   beforeEach(() => {
     clearAccessToken();
@@ -44,6 +46,8 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
     clearHandoff();
     skillCalls = 0;
     commitBody = null;
+    snapshotStatus = { available: false, reason: "ALREADY_TODAY" };
+    snapshotPosts = 0;
     fetchMock.mockReset();
     fetchMock.mockImplementation((input, init) => {
       const url = String(input);
@@ -52,6 +56,12 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
       if (url.endsWith("/record-imports/commit")) {
         commitBody = JSON.parse(String(init?.body));
         return Promise.resolve(json({ ...PREVIEW, skipped: 0, skippedByReason: {}, excludedSongs: [], results: [] }));
+      }
+      if (url.endsWith("/skills/me/snapshots/status")) return Promise.resolve(json(snapshotStatus));
+      if (url.endsWith("/skills/me/snapshots") && init?.method === "POST") {
+        snapshotPosts += 1;
+        snapshotStatus = { available: false, reason: "ALREADY_TODAY" };
+        return Promise.resolve(json({ id: 1, date: "2026-10-27", totalScore: 10650.53, singleScore: 1, otherScore: 1, change: 12.4 }));
       }
       if (url.endsWith("/skills/me")) {
         skillCalls += 1;
@@ -116,6 +126,47 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(getHandoff().pending).toHaveLength(0);
     expect(screen.getByRole("link", { name: "내 레이팅 보기" })).toHaveAttribute("href", "/me?tab=rating");
+  });
+
+  async function saveOne() {
+    renderIt();
+    fireEvent.click(await screen.findByRole("checkbox", { name: "B 저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "1곡 저장" }));
+    await screen.findByText(/곡을 저장했습니다/);
+  }
+
+  it("저장이 끝나고 기록할 수 있으면 `지금 레이팅 기록하기`를 보여 주고, 누르면 한 번만 기록한다", async () => {
+    snapshotStatus = { available: true, reason: null };
+    await saveOne();
+    fireEvent.click(await screen.findByRole("button", { name: "지금 레이팅 기록하기" }));
+    await waitFor(() => expect(snapshotPosts).toBe(1));
+    // 기록하고 나면 오늘은 더 할 수 없으니 버튼이 사라진다
+    await waitFor(() => expect(screen.queryByRole("button", { name: "지금 레이팅 기록하기" })).toBeNull());
+  });
+
+  it("오늘 이미 기록했거나 점수가 같아 기록할 수 없으면 버튼을 보이지 않는다", async () => {
+    snapshotStatus = { available: false, reason: "NO_CHANGE" };
+    await saveOne();
+    expect(screen.queryByRole("button", { name: "지금 레이팅 기록하기" })).toBeNull();
+    expect(snapshotPosts).toBe(0);
+  });
+
+  it("저장한 곡이 없으면(전부 건너뜀) 기록 버튼을 보이지 않는다", async () => {
+    snapshotStatus = { available: true, reason: null };
+    fetchMock.mockImplementation((input, init) => {
+      const url = String(input);
+      if (url.endsWith("/auth/refresh")) return Promise.resolve(login("ROOT"));
+      if (url.endsWith("/record-imports/preview")) return Promise.resolve(json(PREVIEW));
+      if (url.endsWith("/record-imports/commit")) return Promise.resolve(json({ ...PREVIEW, saved: 0, results: [] }));
+      if (url.endsWith("/skills/me/snapshots/status")) return Promise.resolve(json(snapshotStatus));
+      if (url.endsWith("/skills/me")) return Promise.resolve(json({ totalScore: 10638.13, single: [], other: [] }));
+      void init;
+      return Promise.resolve(json({}));
+    });
+    renderIt();
+    fireEvent.click(await screen.findByRole("button", { name: "2곡 저장" }));
+    expect(await screen.findByText("저장된 기록이 없습니다")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "지금 레이팅 기록하기" })).toBeNull();
   });
 
   it("취소하면 받은 플레이를 비운다", async () => {
