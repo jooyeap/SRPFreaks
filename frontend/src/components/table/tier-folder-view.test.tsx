@@ -71,7 +71,10 @@ describe("TierFolderView", () => {
     fetchMock.mockReset();
     fetchMock.mockImplementation((input) => {
       const page: PageResponse<TierGroupResponse> = { content: groups, page: 0, size: 20, totalElements: 3, totalPages: 1 };
-      return Promise.resolve(String(input).includes("/entries") ? json(page) : json([table]));
+      const url = String(input);
+      // 레이팅 반영 기준 줄(FolderThresholdNote)이 내 레이팅 목록을 읽는다. 비어 있으면 그 줄은 그리지 않는다
+      if (url.includes("/skills/me")) return Promise.resolve(json({ single: [], other: [], singleLimit: 15, otherLimit: 25 }));
+      return Promise.resolve(url.includes("/entries") ? json(page) : json([table]));
     });
     vi.stubGlobal("fetch", fetchMock);
   });
