@@ -86,11 +86,12 @@ describe("TierGroupSection", () => {
     expect(container.querySelector("header .stage-bar")).toBeNull();
   });
 
-  it("제목, 칩 5개, 기록 n/전체, 미포함 평균을 보여 준다", () => {
+  it("제목, 0이 아닌 단계 칩(순서 그대로), 기록 n/전체, 미포함 평균을 보여 준다", () => {
     render(<TierGroupSection group={group()} includeZero={false} />);
     expect(screen.getByRole("heading", { name: /5\.8\s*4개/ })).toBeInTheDocument();
     const chips = within(screen.getByRole("list", { name: "내 달성 현황" })).getAllByRole("listitem");
-    expect(chips.map((c) => c.textContent)).toEqual(["EXC 1", "FC 0", "SS 1", "S 0", "S 미만 1"]);
+    // 0인 칩(FC 0, S 0)은 숨긴다(2026-10-27)
+    expect(chips.map((c) => c.textContent)).toEqual(["EXC 1", "SS 1", "S 미만 1"]);
     expect(screen.getByText("기록 3/4")).toBeInTheDocument();
     expect(screen.getByText("90.00%")).toBeInTheDocument();
   });
@@ -108,6 +109,8 @@ describe("TierGroupSection", () => {
       />,
     );
     expect(screen.getByText("기록 0/4")).toBeInTheDocument();
+    // 기록이 없으면 단계 칩이 하나도 없다(0 칩 숨김)
+    expect(within(screen.getByRole("list", { name: "내 달성 현황" })).queryAllByRole("listitem")).toHaveLength(0);
     // `–`는 줄마다 달성률 자리에도 나오므로 평균 문구 안에서만 확인한다
     expect(screen.getByText(/^평균/)).toHaveTextContent("평균 –");
   });

@@ -181,6 +181,7 @@
     "overallAria": "전체 달성 현황",
     "belowS": "S 미만",
     "noRecord": "기록 없음",
+    "tileEmpty": "아직 기록이 없습니다",
     "colRange": "구간",
     "colAchieve": "달성",
     "mergedHigh": "{tier} 이상"

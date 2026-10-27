@@ -49,12 +49,15 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
           const done = isDone(g.recorded, g.total);
           const tint = tileTint(g.recorded, g.total);
           const chips = chipsOf(g);
+          // 넓은 화면 카드의 칩은 0이 아닌 단계만 보인다(0 칩이 다섯 개씩 붙어 화면이 복잡했다, 2026-10-27). 줄 나눔(EXC·FC / 나머지)과 순서는 그대로다.
+          // 모바일 표형 줄은 열이 고정이라 지금처럼 0을 "-"로 둔다.
+          const chipRows = [chips.slice(0, 2), chips.slice(2)].map((row) => row.filter((chip) => chip.count > 0)).filter((row) => row.length > 0);
           return (
             <li key={g.key} data-done={done ? "true" : undefined} className="border-t border-line first:border-t-0 sm:border-0">
               <Link
                 href={g.href}
                 // 카드 색은 sm 이상에서만 입힌다(모바일 표형 줄은 배경 없이 구분선만)
-                className="relative flex h-full flex-col gap-1.5 rounded-lg hover:bg-table-head sm:rounded-[10px] sm:border sm:p-2 sm:[background:var(--tile-bg)] sm:[border-color:var(--tile-line)] sm:hover:opacity-90 lg:p-3"
+                className={`relative flex h-full flex-col gap-1.5 rounded-lg hover:bg-table-head sm:rounded-[10px] sm:border ${g.recorded === 0 ? "sm:border-dashed" : ""} sm:p-2 sm:[background:var(--tile-bg)] sm:[border-color:var(--tile-line)] sm:hover:opacity-90 lg:p-3`}
                 style={{ "--tile-bg": mix(tint.fill), "--tile-line": mix(tint.line) } as CSSProperties}
               >
                 {/* 모바일 표형 줄: 구간(이름·기록/전체) · 달성 % · 단계별 개수. 줄 아래에 얇은 단계 비율 막대 */}
@@ -87,16 +90,21 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
                 <span className="hidden items-center justify-between gap-2 sm:flex">
                   <span className="flex min-w-0 flex-col gap-1.5">
                     <span className={`truncate font-num text-xs font-semibold ${done ? "text-done-text" : "text-fg-sub"}`}>{g.label}</span>
-                    <span className="font-num text-xl font-bold leading-none text-fg">
-                      {percentOf(g.recorded, g.total)}
-                      <span className="text-[10px] font-medium text-fg-dim">%</span>
-                    </span>
+                    {/* 기록이 하나도 없는 칸은 0% 대신 한 줄 안내(칩은 없고 테두리는 점선) */}
+                    {g.recorded === 0 ? (
+                      <span className="text-[13px] leading-5 text-fg-dim">{t("tileEmpty")}</span>
+                    ) : (
+                      <span className="font-num text-xl font-bold leading-none text-fg">
+                        {percentOf(g.recorded, g.total)}
+                        <span className="text-[10px] font-medium text-fg-dim">%</span>
+                      </span>
+                    )}
                     <span className="font-num text-[11px] text-fg-dim">
                       {g.recorded}/{g.total}
                     </span>
                   </span>
-                  <span className="flex shrink-0 flex-col items-end gap-1">
-                    {[chips.slice(0, 2), chips.slice(2)].map((row, i) => (
+                  <span className={`flex shrink-0 flex-col items-end gap-1 ${g.recorded === 0 ? "hidden" : ""}`}>
+                    {chipRows.map((row, i) => (
                       <span key={i} className="flex gap-1">
                         {row.map((chip) => (
                           <span
