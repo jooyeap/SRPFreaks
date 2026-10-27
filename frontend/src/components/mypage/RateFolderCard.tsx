@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { StageBar } from "@/components/table/StageBar";
-import { chipsOf, groupStage } from "@/components/table/TierGroupSection";
+import { groupStage, visibleChipsOf } from "@/components/table/TierGroupSection";
 import type { RateBucketKey, RateFolderResponse } from "@/lib/api-types";
 import {
   bucketBadges,
@@ -84,7 +84,7 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
           <span className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5">
             <StageBar counts={counts} total={folder.total} className="h-2 min-w-24 flex-1" />
             <span className="ml-auto flex flex-wrap items-center gap-1.5">
-              {chipsOf(counts).map((chip) => (
+              {visibleChipsOf(counts).map((chip) => (
                 <span
                   key={chip.key}
                   data-stage={chip.stage ?? undefined}
