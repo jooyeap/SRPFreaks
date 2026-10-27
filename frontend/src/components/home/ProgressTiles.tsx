@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import type { CSSProperties } from "react";
 import { StageBar } from "@/components/table/StageBar";
 import { chipsOf } from "@/components/table/TierGroupSection";
@@ -31,8 +34,20 @@ const MOBILE_COLS = "grid grid-cols-[4rem_2.5rem_repeat(5,minmax(0,1fr))] items-
  *   (같은 목록을 두 번 그리면 링크와 접근성 이름이 겹친다). 숫자 앞에는 화면에 보이지 않는 단계 이름(sr-only)이 있고,
  *   색은 단계 글자(EXC·FC·SS·S)와 함께 쓰여 색만으로 구분하지 않는다.
  */
-export function ProgressTiles({ groups, label }: { groups: readonly ProgressGroup[]; label: string }) {
+export function ProgressTiles({
+  groups,
+  label,
+  foldCount = 0,
+}: {
+  groups: readonly ProgressGroup[];
+  label: string;
+  /** 맨 위에서 접어 둘 구간 수(기록 없는 먼 높은 구간, emptyHighCount). 0이면 접지 않는다 */
+  foldCount?: number;
+}) {
   const t = useTranslations("Progress");
+  const [unfolded, setUnfolded] = useState(false);
+  const folded = foldCount > 0 && !unfolded;
+  const shown = folded ? groups.slice(foldCount) : groups;
   return (
     <div className="flex flex-col gap-1 sm:gap-0">
       <div aria-hidden="true" className={`${MOBILE_COLS} border-b border-line px-1 pb-1.5 text-center text-[10px] font-bold text-fg-dim sm:hidden`}>
@@ -44,8 +59,19 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
           </span>
         ))}
       </div>
+      {foldCount > 0 ? (
+        <button
+          type="button"
+          aria-expanded={!folded}
+          onClick={() => setUnfolded((v) => !v)}
+          className="mb-1 min-h-11 w-full rounded-lg border border-dashed border-chip-line px-3 text-left text-[13px] text-fg-sub hover:bg-table-head sm:mb-2"
+        >
+          <span aria-hidden="true">{folded ? "▸ " : "▴ "}</span>
+          {folded ? t("foldClosed", { from: groups[0].label, to: groups[foldCount - 1].label, count: foldCount }) : t("foldOpen")}
+        </button>
+      ) : null}
       <ul aria-label={label} className="grid grid-cols-1 sm:grid-cols-3 sm:gap-2">
-        {groups.map((g) => {
+        {shown.map((g) => {
           const done = isDone(g.recorded, g.total);
           const tint = tileTint(g.recorded, g.total);
           const chips = chipsOf(g);
