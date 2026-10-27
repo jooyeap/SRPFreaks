@@ -64,7 +64,7 @@ class PeerStatsMapperTest {
 
     @BeforeEach
     void setUp() {
-        me = persist(User.create("sub-me", "me@example.com", "내계정"));
+        me = persist(User.create("sub-me", "me@example.com", "meuser"));
         table = persist(DifficultyTable.create("SRN+ 서열표", null, NoteOption.SUPER_RANDOM_PLUS));
         chartA = chart("7.0", PatternType.SINGLE, true);
         chartB = chart("6.5", PatternType.COMPOUND, true);
@@ -77,7 +77,7 @@ class PeerStatsMapperTest {
 
     private User peer(boolean publicProfile, boolean blocked) {
         int n = ++seq;
-        User u = User.create("sub-p" + n, "p" + n + "@example.com", "유저" + n);
+        User u = User.create("sub-p" + n, "p" + n + "@example.com", "peer" + n);
         if (publicProfile) {
             u.changeProfilePublic(true);
         }
