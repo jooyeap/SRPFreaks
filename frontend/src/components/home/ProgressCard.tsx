@@ -79,13 +79,13 @@ export function ProgressCard({
             {tab.link}
           </Link>
         </div>
-        <PanelBody panel={panel} tab={tab} average={active === "table" ? average : null} />
+        <PanelBody panel={panel} tab={tab} average={active === "table" ? average : null} showWeak={active === "table"} />
       </section>
     </div>
   );
 }
 
-function PanelBody({ panel, tab, average }: { panel: ProgressPanel; tab: TabText; average: number | null }) {
+function PanelBody({ panel, tab, average, showWeak }: { panel: ProgressPanel; tab: TabText; average: number | null; showWeak: boolean }) {
   const t = useTranslations("Progress");
   if (panel.kind === "loading") {
     return <Skeleton label={t("loading", { name: tab.name })} className="h-48" />;
@@ -103,7 +103,8 @@ function PanelBody({ panel, tab, average }: { panel: ProgressPanel; tab: TabText
 
   const { progress } = panel;
   const goal = nextGoal(progress);
-  const weak = average !== null ? weakestGroupNear(progress.groups, average) : weakestGroup(progress.groups);
+  // 가장 비어 있는 구간 안내는 서열표 탭에서만 보여 준다(곡 목록 탭은 레벨 폴더 기준이라 뺐다).
+  const weak = !showWeak ? null : average !== null ? weakestGroupNear(progress.groups, average) : weakestGroup(progress.groups);
   return (
     <>
       <ProgressDonut progress={progress} />

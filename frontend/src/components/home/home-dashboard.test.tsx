@@ -461,8 +461,8 @@ describe("ProgressCard 탭", () => {
     const tiles = within(within(card).getByRole("list", { name: "폴더별 진행" })).getAllByRole("link");
     expect(tiles.map((t) => t.textContent)).toEqual(expect.arrayContaining([expect.stringContaining("9.50 ~ 9.99"), expect.stringContaining("9.00 ~ 9.49")]));
     expect(tiles.every((t) => t.getAttribute("href") === "/songs")).toBe(true);
-    // 9.00 ~ 9.49(4/20)가 가장 비어 있다
-    expect(card).toHaveTextContent("9.00 ~ 9.49 구간이 가장 비어 있어요. 기록 없는 채보 16곡");
+    // 곡 목록 탭에는 "가장 비어 있는 구간" 안내를 보여 주지 않는다
+    expect(card).not.toHaveTextContent("가장 비어 있어요");
 
     fireEvent.click(screen.getByRole("button", { name: "서열표" }));
     expect(screen.getByRole("region", { name: "서열표 진행도" })).toBeInTheDocument();
