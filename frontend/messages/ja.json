@@ -113,6 +113,8 @@
     "consentAfter": "に従い、メールアドレス・ニックネーム・記録が保存されることに同意したものとみなします。"
   },
   "Home": {
+    "snapshotSince": "前回の記録（{date}）以降 <b>{change}</b>",
+    "snapshotSinceToday": "今日の記録以降 <b>{change}</b>",
     "greeting": "<num>{name}</num>さんのホーム",
     "defaultName": "プレイヤー",
     "ratingLoadFailed": "レーティングを読み込めませんでした。しばらくしてからもう一度お試しください。",

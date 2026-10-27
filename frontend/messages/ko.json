@@ -113,6 +113,8 @@
     "consentAfter": "에 따라 이메일과 닉네임, 기록이 저장되는 것에 동의한 것으로 봅니다."
   },
   "Home": {
+    "snapshotSince": "마지막 기록({date}) 이후 <b>{change}</b>",
+    "snapshotSinceToday": "오늘 기록 이후 <b>{change}</b>",
     "greeting": "<num>{name}</num>님의 홈",
     "defaultName": "플레이어",
     "ratingLoadFailed": "레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
