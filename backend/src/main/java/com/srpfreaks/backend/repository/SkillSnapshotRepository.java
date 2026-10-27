@@ -17,6 +17,9 @@ public interface SkillSnapshotRepository extends JpaRepository<SkillSnapshot, Lo
 
     boolean existsByUser_IdAndNoteOptionAndSnapshotDate(Long userId, NoteOption noteOption, LocalDate snapshotDate);
 
+    /** 그 날짜의 스냅샷(오늘 기록 갱신용). (사용자, 옵션, 날짜)가 유일해서 많아야 하나다. */
+    Optional<SkillSnapshot> findByUser_IdAndNoteOptionAndSnapshotDate(Long userId, NoteOption noteOption, LocalDate snapshotDate);
+
     /** 최근 순 목록 */
     Page<SkillSnapshot> findByUser_IdAndNoteOptionOrderBySnapshotDateDesc(Long userId, NoteOption noteOption, Pageable pageable);
 

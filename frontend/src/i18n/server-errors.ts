@@ -16,7 +16,7 @@ export const SERVER_ERRORS: Record<string, { message: string; key: MessageKey }>
   NOT_FOUND: { message: "찾을 수 없습니다.", key: "ServerErrors.NOT_FOUND" },
   CONFLICT: { message: "이미 등록되어 있습니다.", key: "ServerErrors.CONFLICT" },
   SONG_TITLE_DUPLICATE: { message: "같은 이름의 곡이 이미 등록되어 있습니다. 곡 목록에서 확인해 주세요.", key: "ServerErrors.SONG_TITLE_DUPLICATE" },
-  SNAPSHOT_ALREADY_TODAY: { message: "오늘은 이미 기록했습니다. 내일 다시 기록해 주세요.", key: "ServerErrors.SNAPSHOT_ALREADY_TODAY" },
+  SNAPSHOT_ALREADY_TODAY: { message: "방금 기록했습니다. 잠시 후 다시 시도해 주세요.", key: "ServerErrors.SNAPSHOT_ALREADY_TODAY" },
   SNAPSHOT_NO_CHANGE: { message: "마지막 기록과 점수가 같아 기록할 수 없습니다.", key: "ServerErrors.SNAPSHOT_NO_CHANGE" },
   SNAPSHOT_NO_RECORDS: { message: "레이팅에 들어간 기록이 없어 기록할 수 없습니다.", key: "ServerErrors.SNAPSHOT_NO_RECORDS" },
   SUGGESTION_LIMIT: { message: "오늘은 건의를 더 보낼 수 없습니다. 내일 다시 보내 주세요.", key: "ServerErrors.SUGGESTION_LIMIT" },
