@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
+import { SetlistAddButton } from "@/components/setlist/SetlistAddButton";
 import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongManageDialog } from "@/components/song/SongManageDialog";
@@ -159,7 +160,6 @@ export function SongDetailView({
       chart={chart ? { part: chart.instrumentPart, difficulty: chart.difficultyType, level: chart.level } : null}
       emphasizeSrn={isTable}
       onRecord={() => setRecordOpen(true)}
-      setlistTarget={chart && song.data ? { songDifficultyId: chart.id, title: song.data.title } : undefined}
     />
   ) : (
     // 비로그인 방문자(D43): 곡 정보는 보이지만 내 기록은 로그인해야 입력·표시된다
@@ -189,15 +189,19 @@ export function SongDetailView({
               chart={chart}
               pattern={isTable ? (found?.entry.pattern ?? null) : null}
               action={
-                canEditTable ? (
-                  <button
-                    type="button"
-                    onClick={() => setManageOpen(true)}
-                    className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
-                  >
-                    {t("Song.manage")}
-                  </button>
-                ) : null
+                // 세트리스트 담기(로그인했을 때만 그려진다)와 ROOT·ADMIN의 `관리`가 곡명 오른쪽에 나란히 놓인다
+                <div className="flex items-center gap-2">
+                  {chart ? <SetlistAddButton songDifficultyId={chart.id} title={data.title} /> : null}
+                  {canEditTable ? (
+                    <button
+                      type="button"
+                      onClick={() => setManageOpen(true)}
+                      className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                    >
+                      {t("Song.manage")}
+                    </button>
+                  ) : null}
+                </div>
               }
             />
           </div>
