@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
+import { HEADER_SEARCH_SLOT_ID } from "@/lib/header-slots";
 
 /**
  * 좌측 하단에 떠 있는 곡 검색 버튼 (서열표·곡 목록 공통, 2026-10-25).
@@ -9,22 +12,49 @@ import { useTranslations } from "next-intl";
  * 모바일에서는 포커스를 받으면 키보드가 바로 올라온다.
  * 위치는 하단 탭바 위(--tabbar-h)의 왼쪽이다(2026-10-27). 예전에는 오른쪽이었는데 줄 오른쪽 끝의 `+` 버튼·점수를 가려서 옮겼다.
  * 맨 위로 버튼(ScrollTopButton)은 오른쪽 아래에 그대로 있어 두 버튼이 겹치지 않는다.
+ * 2026-10-27(모바일): lg 미만에서는 떠 있는 버튼이 왼쪽 정렬된 줄 이름·곡명을 가려서, 떠 있는 버튼은 lg 이상에서만 보이고
+ * lg 미만에서는 헤더의 빈 자리(HEADER_SEARCH_SLOT_ID)에 같은 동작의 작은 아이콘을 포털로 넣는다. 헤더 자리는 lg 이상에서 숨겨져 있다.
  */
 export function SearchFocusButton({ targetId }: { targetId: string }) {
   const t = useTranslations();
+  // 헤더 자리는 화면이 그려진 뒤에야 찾을 수 있어서(서버 렌더 중에는 document가 없다) 마운트 후에 찾는다
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setSlot(document.getElementById(HEADER_SEARCH_SLOT_ID));
+  }, []);
+  const icon = (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
   return (
-    <button
-      type="button"
-      onClick={() => focusSearch(targetId)}
-      aria-label={t("Songs.searchAria")}
-      title={t("Songs.searchAria")}
-      className="fixed bottom-[calc(var(--tabbar-h)+1rem)] left-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-chip-on-bg text-chip-on-fg shadow-lg"
-    >
-      <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.5-3.5" />
-      </svg>
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => focusSearch(targetId)}
+        aria-label={t("Songs.searchAria")}
+        title={t("Songs.searchAria")}
+        className="fixed bottom-[calc(var(--tabbar-h)+1rem)] left-4 z-30 hidden h-12 w-12 items-center justify-center rounded-full bg-chip-on-bg text-chip-on-fg shadow-lg lg:flex"
+      >
+        {icon}
+      </button>
+      {slot
+        ? createPortal(
+            <button
+              type="button"
+              onClick={() => focusSearch(targetId)}
+              aria-label={t("Songs.searchAria")}
+              title={t("Songs.searchAria")}
+              data-header-search=""
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-chip-line text-fg hover:bg-table-head"
+            >
+              {icon}
+            </button>,
+            slot,
+          )
+        : null}
+    </>
   );
 }
 
