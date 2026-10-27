@@ -12,6 +12,30 @@ function cutoffScore(entries: readonly SkillEntryResponse[], limit: number): num
   return entries.find((e) => e.rank === limit)?.score ?? null;
 }
 
+/** 안내 단계로 올린 값. 목록이 덜 찼거나 어떤 달성률로도 못 넘으면 null */
+function stepFor(entries: readonly SkillEntryResponse[], limit: number, tenths: number): number | null {
+  const score = cutoffScore(entries, limit);
+  if (score === null) {
+    return null;
+  }
+  const need = requiredRate(tenths, score);
+  if (need === null) {
+    return null;
+  }
+  return THRESHOLD_STEPS.find((step) => step >= need) ?? null;
+}
+
+/**
+ * 기준 난이도 tenths(0.1 단위 정수, 6.0 → 60) 곡을 단일 목록·그 외 목록 각각에 넣으려면 몇 % 이상이어야 하는지(안내 단계 80/85/90/95).
+ * 서열표 묶음 화면처럼 두 목록을 나눠 보여 줄 때 쓴다. 각 값의 규칙은 ratingEntryThreshold와 같다.
+ */
+export function ratingEntryThresholds(skill: SkillResponse, tenths: number): { single: number | null; other: number | null } {
+  return {
+    single: stepFor(skill.single, skill.singleLimit, tenths),
+    other: stepFor(skill.other, skill.otherLimit, tenths),
+  };
+}
+
 /**
  * 서열표 구간(`6.0` 같은 기준 난이도 하나) 곡을 몇 % 이상으로 치면 내 레이팅 목록에 새로 들어가는지, 안내용 단계(80/85/90/95)로 돌려준다.
  * - 단일 목록과 그 외 목록 둘 다 보고, **더 쉬운 쪽**(필요한 달성률이 낮은 쪽)의 값을 쓴다. 곡 하나가 어느 목록에 속하는지는 속성에 달려 있어서다.
@@ -24,24 +48,8 @@ export function ratingEntryThreshold(skill: SkillResponse, groupKey: string): nu
   if (!Number.isFinite(tier)) {
     return null;
   }
-  const tenths = Math.round(tier * 10);
-  const needs: number[] = [];
-  for (const [entries, limit] of [
-    [skill.single, skill.singleLimit],
-    [skill.other, skill.otherLimit],
-  ] as const) {
-    const score = cutoffScore(entries, limit);
-    if (score === null) {
-      continue;
-    }
-    const need = requiredRate(tenths, score);
-    if (need !== null) {
-      needs.push(need);
-    }
-  }
-  if (needs.length === 0) {
-    return null;
-  }
-  const easiest = Math.min(...needs);
-  return THRESHOLD_STEPS.find((step) => step >= easiest) ?? null;
+  const { single, other } = ratingEntryThresholds(skill, Math.round(tier * 10));
+  const steps = [single, other].filter((step): step is number => step !== null);
+  // 단계로 올린 뒤 비교해도 "더 쉬운 쪽"은 같다(단계 올림은 순서를 바꾸지 않는다)
+  return steps.length === 0 ? null : Math.min(...steps);
 }

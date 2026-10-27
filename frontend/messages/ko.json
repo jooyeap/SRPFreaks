@@ -288,6 +288,9 @@
     "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>"
   },
   "Table": {
+    "thresholdBoth": "이 구간은 단일 <b>{single}%</b> · 그 외 <b>{other}%</b> 이상이면 레이팅에 반영돼요.",
+    "thresholdSingle": "이 구간은 단일 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
+    "thresholdOther": "이 구간은 그 외 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
     "avgWithZero": "평균 0% 포함",
     "avgWithoutZero": "평균 0% 미포함",
     "defaultName": "SRN+ 서열표",
