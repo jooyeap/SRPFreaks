@@ -35,6 +35,8 @@ jobs:
         run: bash scripts/deploy/check-version.test.sh
       - name: 디스크 사용량 스크립트
         run: bash scripts/deploy/disk-usage.test.sh
+      - name: 백업 복구 연습 스크립트
+        run: bash scripts/deploy/restore-drill.test.sh
 
   backend:
     name: 백엔드 테스트

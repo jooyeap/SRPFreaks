@@ -51,6 +51,7 @@
 4. 복구: `gzip -dc ~/backups/srpfreaks-날짜.sql.gz | docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T db sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" srpfreaks'`
 5. 백엔드를 다시 켠다: `... up -d backend` → Flyway가 스키마 상태를 확인한다. 화면에서 로그인과 레이팅이 보이는지 확인한다.
 - 복구 연습은 따로 만든 빈 DB(예: `srpfreaks_restore`)에 먼저 해 보면 안전하다. 백업은 한 번도 복구해 보지 않으면 있는 것이 아니다.
+- **복구 연습 자동화(2026-10-27)**: Server Ops의 `백업 복구 연습`이 위 연습을 대신한다(`scripts/deploy/restore-drill.sh`). ① 가장 최근 정상 백업(압축 검사 통과)을 임시 DB `srpfreaks_drill`에 복구하고 표 개수·주요 표 행 수·마이그레이션 최신 버전을 숫자로 보여 준다 ② 입력 `migrations`에 파일 이름(`V15__add_snapshot_levels.sql V16__add_setlist_events.sql`처럼 공백으로 구분, 적은 순서대로 적용)을 주면 **그 사본에만** 적용해 보고 성공 여부와 MySQL 오류 번호를 낸다 ③ 끝나면 성공·실패·중단 모두 임시 DB를 지운다. 안전장치: 운영 DB 이름을 쓰지 않는다 / 마이그레이션 파일에 `USE`·`CREATE/DROP DATABASE`·`srpfreaks.`가 있으면 실행 전에 거절 / 파일은 origin/main에서만 읽고 이름은 `V숫자__영문.sql`만 허용 / 디스크 여유(압축 백업의 8배 또는 2GB 중 큰 쪽)가 모자라면 시작하지 않음 / 로그는 공개이므로 숫자만 출력하고 MySQL 오류 문장(값이 섞일 수 있음)은 버림. 같은 MySQL을 쓰므로 복구하는 동안 잠깐 부하가 있다. 사용자가 적은 시간에 실행한다. 새 마이그레이션을 운영에 넣기 전에 실제 데이터로 한 번 돌려 보는 용도로 쓴다. 테스트: `restore-drill.test.sh`(CI "백업 복구 연습 스크립트")
 
 ## 장애 알림과 오류 요약 (2026-10-21)
 - **장애 이슈 자동 생성**: `uptime.yml`이 점검에 실패하면 `장애` 라벨의 GitHub 이슈를 하나 열고(이미 열려 있으면 새로 만들지 않음), 다시 성공하면 댓글을 남기고 닫는다. 이슈는 메일 알림이 오고, Claude가 읽고 원인을 분석할 수 있는 기록이 된다.
