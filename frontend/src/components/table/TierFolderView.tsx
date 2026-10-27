@@ -11,6 +11,7 @@ import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableSearch } from "@/components/table/TableSearch";
 import { TierFolderNav } from "@/components/table/TierFolderNav";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
+import { FolderThresholdNote } from "@/components/table/FolderThresholdNote";
 import { ApiError } from "@/lib/api";
 import {
   allGroupsKey,
@@ -106,6 +107,8 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
     <div className="flex flex-col gap-4">
       {back}
       {groups.data ? <TierFolderNav groups={groups.data} currentTier={rawGroup.tier} /> : null}
+      {/* 이 구간을 몇 % 이상 치면 내 레이팅에 반영되는지(로그인했을 때만, 홈 진행도 카드 안내와 같은 계산) */}
+      {isLoggedInViewer(userId) && rawGroup.tier !== null ? <FolderThresholdNote userId={userId} tier={rawGroup.tier} entries={rawGroup.entries} /> : null}
       {/* 곡 검색: 화면 위쪽 검색창 + 결과(누르면 곡 상세로). 좌측 하단 고정 버튼은 이 검색창으로 포커스를 옮긴다 */}
       <TableSearch userId={userId} groups={groups.data} />
       <div className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">

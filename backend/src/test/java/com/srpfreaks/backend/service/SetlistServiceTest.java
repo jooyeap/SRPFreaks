@@ -10,6 +10,7 @@ import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.PatternType;
+import com.srpfreaks.backend.entity.SetlistEventType;
 import com.srpfreaks.backend.entity.SetlistItem;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
@@ -58,6 +59,7 @@ class SetlistServiceTest {
     @Mock DifficultyTableRepository difficultyTableRepository;
     @Mock DifficultyTableEntryRepository difficultyTableEntryRepository;
     @Mock UserRepository userRepository;
+    @Mock SetlistEventRecorder eventRecorder;
 
     SetlistService service;
     final User user = User.create("sub", "a@example.com", "tester");
@@ -66,7 +68,7 @@ class SetlistServiceTest {
     @BeforeEach
     void setUp() {
         service = new SetlistService(setlistItemRepository, songDifficultyRepository, optionRecordRepository,
-                difficultyTableRepository, difficultyTableEntryRepository, userRepository);
+                difficultyTableRepository, difficultyTableEntryRepository, userRepository, eventRecorder);
     }
 
     private SongDifficulty chart(long id) {
@@ -107,6 +109,7 @@ class SetlistServiceTest {
         assertThat(response.done()).isFalse();
         assertThat(response.mine()).isNull();
         assertThat(response.tier()).isNull();
+        verify(eventRecorder).record(1L, 10L, SetlistEventType.ADD);
     }
 
     @Test
@@ -117,6 +120,7 @@ class SetlistServiceTest {
         assertThatThrownBy(() -> service.add(1L, 10L)).isInstanceOfSatisfying(ApiException.class,
                 e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.CONFLICT));
         verify(setlistItemRepository, never()).save(any());
+        verify(eventRecorder, never()).record(any(), any(), any()); // 거부된 담기는 이력에 남기지 않는다
     }
 
     @Test
@@ -166,6 +170,15 @@ class SetlistServiceTest {
         service.remove(1L, 7L);
 
         verify(setlistItemRepository).delete(mine);
+        verify(eventRecorder).record(1L, 10L, SetlistEventType.REMOVE);
+    }
+
+    @Test
+    void 남의_줄을_빼려_해서_404가_나면_이력도_남기지_않는다() {
+        when(setlistItemRepository.findByIdAndUserId(7L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.remove(1L, 7L)).isInstanceOf(ApiException.class);
+        verify(eventRecorder, never()).record(any(), any(), any());
     }
 
     @Test
@@ -214,5 +227,6 @@ class SetlistServiceTest {
 
         assertThat(removed).isEqualTo(1);
         verify(setlistItemRepository).deleteAll(List.of(done));
+        verify(eventRecorder, never()).record(any(), any(), any()); // 비우기는 거절이 아니라 정리라서 REMOVE로 남기지 않는다
     }
 }
