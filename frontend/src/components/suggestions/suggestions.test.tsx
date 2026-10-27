@@ -210,6 +210,29 @@ describe("SuggestionsAdminView", () => {
     expect(await screen.findByText(/접수 대기/)).toHaveTextContent("3건");
   });
 
+  it("처음에는 접수 대기가 있으면 `접수 대기`만, 없으면 `전체`를 보여 주고, 직접 고르면 그 값을 쓴다", async () => {
+    routes();
+    const { unmount } = wrap(<SuggestionsAdminView viewerId={9} />);
+    await screen.findByRole("list", { name: "건의 목록" });
+    const listCalls = () => fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("/admin/suggestions?"));
+    expect(listCalls()).toHaveLength(1); // 건수를 받은 뒤 한 번만 요청한다
+    expect(listCalls()[0]).toContain("status=RECEIVED");
+    expect(screen.getAllByLabelText("상태", { exact: true })[0]).toHaveValue("RECEIVED");
+    fireEvent.change(screen.getAllByLabelText("상태", { exact: true })[0], { target: { value: "" } });
+    await waitFor(() => expect(listCalls().some((u) => !u.includes("status="))).toBe(true));
+    unmount();
+
+    fetchMock.mockReset();
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/received-count")) return Promise.resolve(json({ received: 0 }));
+      return Promise.resolve(json(pageOf([item(1)])));
+    });
+    wrap(<SuggestionsAdminView viewerId={9} />);
+    await screen.findByRole("list", { name: "건의 목록" });
+    expect(listCalls()[0]).not.toContain("status=");
+  });
+
   it("곡 추가 건의에서 곡 등록 창을 곡명과 요청 채보로 채워 연다", async () => {
     fetchMock.mockImplementation((input) => {
       const url = String(input);
