@@ -459,6 +459,8 @@
     "moreDisplaced": "ほか<n>{count}</n>曲",
     "sinceLast": "前回の記録（{date}）以降、レーティングが{change}変わりました。",
     "vsLast": "前回の記録（{date}）比 <b>{change}</b> · 新しく入った曲 <b>{count}</b>個",
+    "vsLastNoNew": "前回の記録（{date}）比 <b>{change}</b>",
+    "noChangeSince": "前回の記録（{date}）以降、レーティングに変化はありません。",
     "tierAria": "プレイヤーティア {name}",
     "labelSingle": "単色 <n>{score}</n>",
     "labelOther": "複合・二色・三色 <n>{score}</n>",
