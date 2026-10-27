@@ -729,7 +729,9 @@
     "emptyRated": "レーティングに入った記録がまだありません。",
     "ratingOf": "<n>{nickname}</n>さんのレーティング",
     "deleteConfirmText": "<n>{nickname}</n>さんの「{title}」の記録をすべて削除しますか？削除した記録は元に戻せず、管理ログに残ります。",
-    "listLead": "公開を選んだユーザーのみ表示されます。自分のレーティングは<l>設定</l>から公開できます。"
+    "listLead": "公開を選んだユーザーのみ表示されます。自分のレーティングは<l>設定</l>から公開できます。",
+    "deleteModeOn": "記録削除モード",
+    "deleteModeOff": "削除モードを終了"
   },
   "Settings": {
     "nicknameSaved": "ニックネームを保存しました。",
