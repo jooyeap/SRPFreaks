@@ -9,6 +9,7 @@ import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.DifficultyTable;
 import com.srpfreaks.backend.entity.DifficultyTableEntry;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.SetlistEventType;
 import com.srpfreaks.backend.entity.SetlistItem;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.TableStatus;
@@ -57,6 +58,8 @@ public class SetlistService {
     private final DifficultyTableRepository difficultyTableRepository;
     private final DifficultyTableEntryRepository difficultyTableEntryRepository;
     private final UserRepository userRepository;
+    /** 담기/빼기 이력(D52). 실패해도 담기/빼기는 성공한다. */
+    private final SetlistEventRecorder eventRecorder;
 
     /** 담은 순서대로. 잘못된 page/size는 400이 아니라 허용 범위로 맞춘다(목록 API 공통 방식). 최대 30줄이라 한 페이지에 다 담긴다. */
     @Transactional(readOnly = true)
@@ -79,6 +82,7 @@ public class SetlistService {
             throw new ApiException(ErrorCode.SETLIST_FULL);
         }
         SetlistItem saved = setlistItemRepository.save(SetlistItem.create(userRepository.getReferenceById(userId), chart));
+        eventRecorder.record(userId, songDifficultyId, SetlistEventType.ADD);
         return toResponses(userId, List.of(saved)).get(0);
     }
 
@@ -86,6 +90,8 @@ public class SetlistService {
         SetlistItem item = setlistItemRepository.findByIdAndUserId(setlistItemId, userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         setlistItemRepository.delete(item);
+        // 직접 뺀 것만 기록한다. clearDone(완료한 곡 비우기)은 포기가 아니라 정리라서 남기지 않는다.
+        eventRecorder.record(userId, item.getSongDifficulty().getId(), SetlistEventType.REMOVE);
     }
 
     /** 완료한 줄을 한꺼번에 비운다(다음 방문 준비). 지운 줄 수를 돌려준다. 삭제된 채보에 남은 줄도 함께 정리한다. */
