@@ -33,6 +33,8 @@ jobs:
         run: bash scripts/deploy/check-backups.test.sh
       - name: 배포 버전 확인 스크립트
         run: bash scripts/deploy/check-version.test.sh
+      - name: 디스크 사용량 스크립트
+        run: bash scripts/deploy/disk-usage.test.sh
 
   backend:
     name: 백엔드 테스트
