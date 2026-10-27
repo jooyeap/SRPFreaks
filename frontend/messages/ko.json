@@ -92,6 +92,17 @@
       "line2": "난이도 미설정인 곡은 레이팅에서 제외되고 기록만 남습니다."
     }
   },
+  "PeerStats": {
+    "title": "같은 티어 유저 기록",
+    "users": "레이팅에 포함된 유저 수",
+    "usersValue": "{users}명 / {band}명",
+    "rate": "달성률",
+    "mine": "내 기록",
+    "mineValue": "{rate} · 이미 레이팅에 포함",
+    "gain": "내 예상 레이팅",
+    "gainValue": "+{value}점",
+    "loadFailed": "같은 티어 유저 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+  },
   "Login": {
     "title": "로그인",
     "lead": "Google 계정으로 로그인합니다. 비밀번호는 저장하지 않습니다.",
