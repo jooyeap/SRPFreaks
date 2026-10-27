@@ -54,7 +54,8 @@ class SettingAdminServiceTest {
                 setting("setlist.recommend_ss_min", "-0.6"), setting("setlist.recommend_ss_max", "-0.1"),
                 setting("setlist.recommend_s_min", "-0.1"), setting("setlist.recommend_s_max", "0.4"),
                 setting("setlist.recommend_min_single", "5"), setting("setlist.recommend_min_other", "9"),
-                setting("setlist.recommend_starter_tier", "5.2")));
+                setting("setlist.recommend_starter_tier", "5.2"),
+                setting("peer.min_band_users", "5"), setting("peer.min_chart_users", "5")));
         lenient().when(appSettingRepository.findAll()).thenReturn(settings);
         lenient().when(appSettingRepository.findAllWithUpdatedBy()).thenReturn(settings);
         lenient().when(appSettingRepository.findById(any(String.class))).thenAnswer(invocation ->
@@ -80,9 +81,9 @@ class SettingAdminServiceTest {
         assertThat(first.content()).hasSize(5);
         assertThat(first.content()).extracting(SettingResponse::key).isSorted();
         assertThat(first.content().get(0).key()).isEqualTo("contact.takedown_email");
-        assertThat(first.totalElements()).isEqualTo(21);
+        assertThat(first.totalElements()).isEqualTo(23);
         assertThat(first.totalPages()).isEqualTo(5);
-        assertThat(last.content()).hasSize(1); // 21개 중 21번째
+        assertThat(last.content()).hasSize(3); // 23개 중 21~23번째
         assertThat(service.list(9, 5).content()).isEmpty();
         assertThat(service.list(-1, 0).content()).hasSize(1); // 범위 밖 값은 허용 범위로 맞춘다
     }
@@ -157,5 +158,19 @@ class SettingAdminServiceTest {
         assertRejected("setlist.recommend_min_single", "0");
         assertRejected("setlist.recommend_min_other", "열");
         assertRejected("setlist.recommend_starter_tier", "0");
+    }
+
+    @Test
+    void 같은_티어_유저_기록_기준은_1_이상의_정수를_받는다() {
+        assertThat(service.update(1L, "peer.min_band_users", "20").value()).isEqualTo("20");
+        assertThat(service.update(1L, "peer.min_chart_users", "1").value()).isEqualTo("1");
+    }
+
+    @Test
+    void 같은_티어_유저_기록_기준이_규칙에_어긋나면_거절한다() {
+        assertRejected("peer.min_band_users", "0");
+        assertRejected("peer.min_chart_users", "-3");
+        assertRejected("peer.min_chart_users", "다섯");
+        assertRejected("peer.min_band_users", "2.5");
     }
 }
