@@ -21,12 +21,14 @@ describe("진행도 칸 지도의 단계 칩 (넓은 화면 카드)", () => {
     expect(link.className).not.toContain("sm:border-dashed");
   });
 
-  it("기록이 하나도 없는 칸은 칩 대신 한 줄 안내를 보이고 테두리가 점선이다", () => {
+  it("기록이 하나도 없는 칸은 0% 대신 한 줄 안내를 보이고, 칩은 없고 테두리가 점선이다", () => {
     render(<ProgressTiles label="칸" groups={[group({ key: "6.5", label: "6.5", href: "/b", total: 12 })]} />);
     const link = screen.getByRole("link", { name: /6\.5/ });
     expect(cardChips(link)).toEqual([]);
     expect(link).toHaveTextContent("아직 기록이 없습니다");
     expect(link.className).toContain("sm:border-dashed");
+    // 넓은 화면 카드에는 큰 퍼센트 숫자(text-xl)가 없다. 모바일 표형 줄의 0%는 그대로다
+    expect(link.querySelector(".text-xl")).toBeNull();
   });
 
   it("EXC·FC 줄이 모두 0이면 그 줄은 비우고 아래 줄만 남긴다", () => {

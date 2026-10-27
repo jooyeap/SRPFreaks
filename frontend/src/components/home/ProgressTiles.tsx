@@ -90,16 +90,19 @@ export function ProgressTiles({ groups, label }: { groups: readonly ProgressGrou
                 <span className="hidden items-center justify-between gap-2 sm:flex">
                   <span className="flex min-w-0 flex-col gap-1.5">
                     <span className={`truncate font-num text-xs font-semibold ${done ? "text-done-text" : "text-fg-sub"}`}>{g.label}</span>
-                    <span className="font-num text-xl font-bold leading-none text-fg">
-                      {percentOf(g.recorded, g.total)}
-                      <span className="text-[10px] font-medium text-fg-dim">%</span>
-                    </span>
+                    {/* 기록이 하나도 없는 칸은 0% 대신 한 줄 안내(칩은 없고 테두리는 점선) */}
+                    {g.recorded === 0 ? (
+                      <span className="text-[13px] leading-5 text-fg-dim">{t("tileEmpty")}</span>
+                    ) : (
+                      <span className="font-num text-xl font-bold leading-none text-fg">
+                        {percentOf(g.recorded, g.total)}
+                        <span className="text-[10px] font-medium text-fg-dim">%</span>
+                      </span>
+                    )}
                     <span className="font-num text-[11px] text-fg-dim">
                       {g.recorded}/{g.total}
                     </span>
                   </span>
-                  {/* 기록이 하나도 없는 칸은 칩 대신 한 줄 안내(테두리도 점선) */}
-                  {g.recorded === 0 ? <span className="shrink-0 self-start text-[11px] text-fg-dim">{t("tileEmpty")}</span> : null}
                   <span className={`flex shrink-0 flex-col items-end gap-1 ${g.recorded === 0 ? "hidden" : ""}`}>
                     {chipRows.map((row, i) => (
                       <span key={i} className="flex gap-1">
