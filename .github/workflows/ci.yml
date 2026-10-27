@@ -116,7 +116,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       # Next.js 빌드 캐시: 소스가 크게 바뀌지 않으면 컴파일을 건너뛰어 빌드가 빨라진다
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: frontend/.next/cache
           key: nextjs-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}-${{ hashFiles('frontend/src/**') }}
