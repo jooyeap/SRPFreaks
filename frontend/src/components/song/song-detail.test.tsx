@@ -175,6 +175,16 @@ describe("SongDetailView", () => {
     expect(within(neighbors).queryByRole("link", { name: "묶음 전체 보기" })).not.toBeInTheDocument();
   });
 
+  it("세트리스트 담기는 곡명 오른쪽(관리 버튼 자리)에 있고 내 기록 카드 안에는 없다", async () => {
+    renderView("table", 10, true); // 담기는 로그인 상태(AuthProvider)에서만 그려진다
+    const title = await screen.findByRole("heading", { name: "테스트곡" });
+    const header = title.closest("section");
+    const button = await within(header as HTMLElement).findByRole("button", { name: "테스트곡 세트리스트에 담기" });
+    expect(button).toHaveTextContent("담기");
+    const mine = await screen.findByRole("region", { name: "내 기록" });
+    expect(within(mine).queryByRole("button", { name: /세트리스트/ })).not.toBeInTheDocument();
+  });
+
   it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 난이도의 곡 목록, 다른 채보를 보여 준다", async () => {
     renderView("table", 10);
     expect(await screen.findByRole("heading", { name: "테스트곡" })).toBeInTheDocument();
