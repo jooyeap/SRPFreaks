@@ -168,6 +168,7 @@
     "overallAria": "全体の達成状況",
     "belowS": "S未満",
     "noRecord": "記録なし",
+    "tileEmpty": "まだ記録がありません",
     "colRange": "区間",
     "colAchieve": "達成",
     "mergedHigh": "{tier}以上"
