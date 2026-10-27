@@ -36,7 +36,7 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
   const fetchMock = vi.fn<typeof fetch>();
   let skillCalls = 0;
   let commitBody: { plays: { title: string }[] } | null = null;
-  let snapshotStatus: { available: boolean; reason: string | null } = { available: false, reason: "ALREADY_TODAY" };
+  let snapshotStatus: { available: boolean; reason: string | null; replacesToday: boolean } = { available: false, reason: "NO_CHANGE", replacesToday: false };
   let snapshotPosts = 0;
 
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
     clearHandoff();
     skillCalls = 0;
     commitBody = null;
-    snapshotStatus = { available: false, reason: "ALREADY_TODAY" };
+    snapshotStatus = { available: false, reason: "NO_CHANGE", replacesToday: true };
     snapshotPosts = 0;
     fetchMock.mockReset();
     fetchMock.mockImplementation((input, init) => {
@@ -60,7 +60,7 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
       if (url.endsWith("/skills/me/snapshots/status")) return Promise.resolve(json(snapshotStatus));
       if (url.endsWith("/skills/me/snapshots") && init?.method === "POST") {
         snapshotPosts += 1;
-        snapshotStatus = { available: false, reason: "ALREADY_TODAY" };
+        snapshotStatus = { available: false, reason: "NO_CHANGE", replacesToday: true };
         return Promise.resolve(json({ id: 1, date: "2026-10-27", totalScore: 10650.53, singleScore: 1, otherScore: 1, change: 12.4 }));
       }
       if (url.endsWith("/skills/me")) {
@@ -136,7 +136,7 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
   }
 
   it("저장이 끝나고 기록할 수 있으면 `지금 레이팅 기록하기`를 보여 주고, 누르면 한 번만 기록한다", async () => {
-    snapshotStatus = { available: true, reason: null };
+    snapshotStatus = { available: true, reason: null, replacesToday: false };
     await saveOne();
     fireEvent.click(await screen.findByRole("button", { name: "지금 레이팅 기록하기" }));
     await waitFor(() => expect(snapshotPosts).toBe(1));
@@ -144,15 +144,22 @@ describe("가져오기 처리 모달(미리보기·저장·결과)", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "지금 레이팅 기록하기" })).toBeNull());
   });
 
-  it("오늘 이미 기록했거나 점수가 같아 기록할 수 없으면 버튼을 보이지 않는다", async () => {
-    snapshotStatus = { available: false, reason: "NO_CHANGE" };
+  it("오늘 이미 기록했으면 `오늘 기록 갱신`으로 보이고 누르면 오늘 기록을 덮어쓴다", async () => {
+    snapshotStatus = { available: true, reason: null, replacesToday: true };
+    await saveOne();
+    fireEvent.click(await screen.findByRole("button", { name: "오늘 기록 갱신" }));
+    await waitFor(() => expect(snapshotPosts).toBe(1));
+  });
+
+  it("점수가 같아 기록할 수 없으면 버튼을 보이지 않는다", async () => {
+    snapshotStatus = { available: false, reason: "NO_CHANGE", replacesToday: false };
     await saveOne();
     expect(screen.queryByRole("button", { name: "지금 레이팅 기록하기" })).toBeNull();
     expect(snapshotPosts).toBe(0);
   });
 
   it("저장한 곡이 없으면(전부 건너뜀) 기록 버튼을 보이지 않는다", async () => {
-    snapshotStatus = { available: true, reason: null };
+    snapshotStatus = { available: true, reason: null, replacesToday: false };
     fetchMock.mockImplementation((input, init) => {
       const url = String(input);
       if (url.endsWith("/auth/refresh")) return Promise.resolve(login("ROOT"));
