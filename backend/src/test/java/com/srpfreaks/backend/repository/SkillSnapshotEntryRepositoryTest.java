@@ -63,7 +63,7 @@ class SkillSnapshotEntryRepositoryTest {
         em.flush();
 
         // 서비스와 같은 순서: 점수 바꾸기 → 상세 지우기 → 같은 채보 다시 넣기
-        today.replaceScores(new BigDecimal("120.00"), new BigDecimal("120.00"), new BigDecimal("0.00"));
+        today.replaceScores(new BigDecimal("120.00"), new BigDecimal("120.00"), new BigDecimal("0.00"), null);
         entryRepository.deleteAllBySnapshotId(today.getId());
         entryRepository.saveAll(List.of(entry(today, chart, "95.00")));
         em.flush();
