@@ -72,7 +72,9 @@ jobs:
             exit 1
           fi
           # 마이그레이션 이름은 글자·숫자·밑줄·점·공백만 허용한다(셸에 끼어드는 값 방지). 형식(V숫자__영문.sql)은 서버 스크립트가 한 번 더 검사한다.
-          if ! printf '%s' "$MIGRATIONS" | grep -Eq '^[A-Za-z0-9_. ]*$'; then
+          # 값 전체를 bash 정규식으로 한 번에 본다. 비어 있으면(복구만 확인·다른 작업) 통과한다.
+          # (예전 grep 검사는 빈 값을 읽을 줄이 없다고 실패로 처리해서, 입력을 비운 모든 작업이 여기서 멈췄다)
+          if ! [[ "$MIGRATIONS" =~ ^[A-Za-z0-9_.\ ]*$ ]]; then
             echo "마이그레이션 파일 이름에 쓸 수 없는 글자가 있습니다." >&2
             exit 1
           fi
@@ -110,13 +112,16 @@ jobs:
             echo "## 서버 점검 결과 (${MODE})"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          # ssh는 인자를 공백으로 이어 붙인 한 줄로 서버 셸에 넘긴다. 그래서 빈 값(migrations)은 사라지고, 공백이 든 값은 여러 개로 쪼개진다.
+          # printf %q로 값마다 따옴표를 붙여 보내면 서버 셸이 원래 값 그대로 다시 나눠 받는다(값은 위 "입력값 확인"에서 글자를 검사했다).
+          REMOTE_ARGS="$(printf '%q ' "$MODE" "$REF" "$MIGRATIONS")"
           set +e
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes \
-            "$EC2_USER@$EC2_HOST" bash -s -- "$MODE" "$REF" "$MIGRATIONS" <<'REMOTE' 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" "$RUNNER_TEMP/ops-output.txt"
+            "$EC2_USER@$EC2_HOST" "bash -s -- $REMOTE_ARGS" <<'REMOTE' 2>&1 | tee -a "$GITHUB_STEP_SUMMARY" "$RUNNER_TEMP/ops-output.txt"
           set -uo pipefail
           MODE="$1"
           REF="$2"
-          MIGRATIONS="$3"
+          MIGRATIONS="${3:-}"
           cd ~/gitalog
           DC="docker compose --env-file .env.prod -f docker-compose.prod.yml"
 
@@ -204,14 +209,20 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           exit "$status"
 
-      # 집계 결과를 "검사 결과 주석"으로도 남긴다. 실행 로그 본문은 읽기 어려워서, 주석은 GitHub API로 바로 읽을 수 있다.
-      - name: 오류 요약 주석 남기기
-        if: always() && env.MODE == 'recent-errors'
+      # 숫자만 내는 작업의 결과를 "검사 결과 주석"으로도 남긴다. 실행 로그 본문은 읽기 어려워서, 주석은 GitHub API로 바로 읽을 수 있다.
+      # (최근 오류 보기·집계 확인·마이그레이션 상태 보기. 셋 다 출력이 숫자·고정 문구뿐이라 주석으로 옮겨도 된다)
+      - name: 결과 요약 주석 남기기
+        if: always() && (env.MODE == 'recent-errors' || env.MODE == 'counts' || env.MODE == 'migrations')
         run: |
+          case "$MODE" in
+            recent-errors) title="최근 24시간 오류 요약" ;;
+            counts) title="집계 확인 결과" ;;
+            *) title="마이그레이션 상태" ;;
+          esac
           if [ -s "$RUNNER_TEMP/ops-output.txt" ]; then
             msg="$(head -c 6000 "$RUNNER_TEMP/ops-output.txt")"
             msg="${msg//'%'/'%25'}"; msg="${msg//$'\r'/'%0D'}"; msg="${msg//$'\n'/'%0A'}"
-            echo "::notice title=최근 24시간 오류 요약::${msg}"
+            echo "::notice title=${title}::${msg}"
           fi
 
       - name: SSH 키 지우기
