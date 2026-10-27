@@ -191,6 +191,7 @@
     "version": "버전",
     "reset": "초기화",
     "searchPlaceholder": "곡명, 아티스트 검색 (한글·일본어·로마자)",
+    "searchPlaceholderShort": "곡명·아티스트 검색",
     "searchAria": "곡 검색",
     "didYouMean": "혹시 이 곡인가요?",
     "suggestionsAria": "검색어 추천",

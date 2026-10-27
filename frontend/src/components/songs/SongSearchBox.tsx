@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchPlaceholder } from "@/lib/search-placeholder";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
@@ -11,6 +12,7 @@ const DEBOUNCE_MS = 300;
  */
 export function SongSearchBox({ value, onCommit, id }: { value: string; onCommit: (q: string) => void; id?: string }) {
   const t = useTranslations();
+  const placeholder = useSearchPlaceholder();
   const [text, setText] = useState(value);
   // 밖의 값이 바뀌었을 때만 입력칸을 맞춘다. effect 대신 렌더 중에 이전 값과 비교하는 방식(React 권장)을 쓴다.
   const [seen, setSeen] = useState(value);
@@ -34,7 +36,7 @@ export function SongSearchBox({ value, onCommit, id }: { value: string; onCommit
       value={text}
       maxLength={100}
       onChange={(e) => setText(e.target.value)}
-      placeholder={t("Songs.searchPlaceholder")}
+      placeholder={placeholder}
       aria-label={t("Songs.searchAria")}
       className="min-h-12 min-w-0 flex-1 rounded-[10px] border border-chip-line bg-card px-4 py-2 text-[15px] text-fg placeholder:text-fg-dim md:basis-[280px]"
     />
