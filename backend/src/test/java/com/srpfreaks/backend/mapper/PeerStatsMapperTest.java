@@ -64,7 +64,7 @@ class PeerStatsMapperTest {
 
     @BeforeEach
     void setUp() {
-        me = persist(User.create("sub-me", "me@example.com", "나"));
+        me = persist(User.create("sub-me", "me@example.com", "내계정"));
         table = persist(DifficultyTable.create("SRN+ 서열표", null, NoteOption.SUPER_RANDOM_PLUS));
         chartA = chart("7.0", PatternType.SINGLE, true);
         chartB = chart("6.5", PatternType.COMPOUND, true);
