@@ -78,9 +78,12 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
           REF: ${{ inputs.ref }}
         run: |
-          # 서버에서 실행할 명령은 표준 입력(<<'REMOTE')으로 보낸다. 값은 인자로만 넘겨 따옴표 문제를 피한다.
+          # 서버에서 실행할 명령은 표준 입력(<<'REMOTE')으로 보낸다. 값은 인자로만 넘긴다.
+          # ssh는 인자를 공백으로 이어 붙인 한 줄로 서버 셸에 넘기므로, "backend frontend"처럼 공백이 든 값은 둘로 쪼개져
+          # 서버의 $2에 backend만 들어갔다(frontend + backend를 골라도 프론트는 다시 빌드되지 않음). printf %q로 값마다 따옴표를 붙여 보낸다.
+          REMOTE_ARGS="$(printf '%q ' "$REF" "$SERVICES")"
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes \
-            "$EC2_USER@$EC2_HOST" bash -s -- "$REF" "$SERVICES" <<'REMOTE'
+            "$EC2_USER@$EC2_HOST" "bash -s -- $REMOTE_ARGS" <<'REMOTE'
           set -euo pipefail
           REF="$1"
           SERVICES="$2"

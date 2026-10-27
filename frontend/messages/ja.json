@@ -92,6 +92,17 @@
       "line2": "難易度未設定の曲はレーティングから除外され、記録だけが残ります。"
     }
   },
+  "PeerStats": {
+    "title": "同じティアのユーザー記録",
+    "users": "レーティングに含まれたユーザー数",
+    "usersValue": "{users}人 / {band}人",
+    "rate": "達成率",
+    "mine": "自分の記録",
+    "mineValue": "{rate} · すでにレーティングに含まれています",
+    "gain": "予想レーティング",
+    "gainValue": "+{value}点",
+    "loadFailed": "同じティアのユーザー記録を読み込めませんでした。しばらくしてからもう一度お試しください。"
+  },
   "Login": {
     "title": "ログイン",
     "lead": "Googleアカウントでログインします。パスワードは保存しません。",
@@ -161,8 +172,8 @@
     "loadFailed": "{name}の進捗を読み込めませんでした。しばらくしてからもう一度お試しください。",
     "nextGoal": "次の目標",
     "goalText": "SS以上 <b>{current}</b>曲 → <b>{target}</b>曲まで あと<b>{left}曲</b>",
-    "weakText": "<b>{label}</b>の区間がいちばん空いています。記録のない譜面 <b>{empty}</b>曲",
-    "weakNearText": "平均<b>{average}</b>付近では<b>{label}</b>の区間がいちばん空いています。記録のない譜面 <b>{empty}</b>曲",
+    "nearText": "平均<b>{average}</b>付近の<b>{label}</b>の区間を埋めてみましょう。",
+    "nearThreshold": "<b>{rate}%</b>以上でレーティングに反映されます。",
     "viewRange": "区間を見る",
     "record": "記録 ",
     "overallAria": "全体の達成状況",
@@ -288,6 +299,9 @@
     "titleDuplicate": "⚠ 同じ名前の曲がすでにあります。<l>{title}</l>"
   },
   "Table": {
+    "thresholdBoth": "この区間は単色<b>{single}%</b>・それ以外<b>{other}%</b>以上でレーティングに反映されます。",
+    "thresholdSingle": "この区間は単色<b>{rate}%</b>以上でレーティングに反映されます。",
+    "thresholdOther": "この区間はそれ以外<b>{rate}%</b>以上でレーティングに反映されます。",
     "avgWithZero": "平均 0%含む",
     "avgWithoutZero": "平均 0%含まない",
     "defaultName": "SRN+ 難易度表",

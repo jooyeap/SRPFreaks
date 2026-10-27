@@ -92,6 +92,17 @@
       "line2": "난이도 미설정인 곡은 레이팅에서 제외되고 기록만 남습니다."
     }
   },
+  "PeerStats": {
+    "title": "같은 티어 유저 기록",
+    "users": "레이팅에 포함된 유저 수",
+    "usersValue": "{users}명 / {band}명",
+    "rate": "달성률",
+    "mine": "내 기록",
+    "mineValue": "{rate} · 이미 레이팅에 포함",
+    "gain": "내 예상 레이팅",
+    "gainValue": "+{value}점",
+    "loadFailed": "같은 티어 유저 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+  },
   "Login": {
     "title": "로그인",
     "lead": "Google 계정으로 로그인합니다. 비밀번호는 저장하지 않습니다.",
@@ -161,8 +172,8 @@
     "loadFailed": "{name} 진행도를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "nextGoal": "다음 목표",
     "goalText": "SS 이상 <b>{current}</b>곡 → <b>{target}</b>곡까지 <b>{left}곡</b> 남음",
-    "weakText": "<b>{label}</b> 구간이 가장 비어 있어요. 기록 없는 채보 <b>{empty}</b>곡",
-    "weakNearText": "내 평균 <b>{average}</b> 근처에서 <b>{label}</b> 구간이 가장 비어 있어요. 기록 없는 채보 <b>{empty}</b>곡",
+    "nearText": "내 평균 <b>{average}</b> 근처인 <b>{label}</b> 구간을 채워 보세요.",
+    "nearThreshold": "<b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
     "viewRange": "구간 보기",
     "record": "기록 ",
     "overallAria": "전체 달성 현황",
@@ -288,6 +299,9 @@
     "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>"
   },
   "Table": {
+    "thresholdBoth": "이 구간은 단일 <b>{single}%</b> · 그 외 <b>{other}%</b> 이상이면 레이팅에 반영돼요.",
+    "thresholdSingle": "이 구간은 단일 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
+    "thresholdOther": "이 구간은 그 외 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
     "avgWithZero": "평균 0% 포함",
     "avgWithoutZero": "평균 0% 미포함",
     "defaultName": "SRN+ 서열표",

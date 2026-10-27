@@ -25,6 +25,7 @@ import org.testcontainers.mysql.MySQLContainer;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +44,7 @@ class SetlistRepositoryTest {
 
     @Autowired EntityManager em;
     @Autowired SetlistItemRepository setlistItemRepository;
+    @Autowired SetlistEventRepository setlistEventRepository;
     @Autowired OptionRecordRepository optionRecordRepository;
 
     User me;
@@ -128,5 +130,60 @@ class SetlistRepositoryTest {
 
         assertThat(latest).extracting(RecordLatestUpdate::songDifficultyId).containsExactly(alive.getId()); // 남의 기록과 기록 없는 채보는 없다
         assertThat(latest.get(0).latestUpdate()).isNotNull();
+    }
+    // ---- 세트리스트 이력 (D52) ----
+
+    private long eventCount() {
+        em.flush();
+        em.clear();
+        return em.createQuery("select count(e) from SetlistEvent e", Long.class).getSingleResult();
+    }
+
+    @Test
+    void 이력은_같은_사용자_채보_종류_날짜를_한_줄로_합친다() {
+        LocalDate day = LocalDate.of(2026, 10, 11);
+
+        setlistEventRepository.insertIfAbsent(me.getId(), alive.getId(), "ADD", day, new BigDecimal("6.25"));
+        setlistEventRepository.insertIfAbsent(me.getId(), alive.getId(), "ADD", day, new BigDecimal("6.30")); // 같은 날 또 담음 → 예외 없이 무시
+
+        assertThat(eventCount()).isEqualTo(1);
+        // 먼저 들어간 값이 남는다(하루 첫 이벤트 기준)
+        assertThat(em.createQuery("select e.averageLevel from SetlistEvent e", BigDecimal.class).getSingleResult())
+                .isEqualByComparingTo("6.25");
+    }
+
+    @Test
+    void 종류_날짜_사용자_채보가_다르면_각각_남는다() {
+        LocalDate day = LocalDate.of(2026, 10, 11);
+
+        setlistEventRepository.insertIfAbsent(me.getId(), alive.getId(), "ADD", day, null);
+        setlistEventRepository.insertIfAbsent(me.getId(), alive.getId(), "REMOVE", day, null); // 같은 날 담았다 뺌: 종류가 달라 둘 다
+        setlistEventRepository.insertIfAbsent(me.getId(), alive.getId(), "ADD", day.plusDays(1), null); // 다음 날
+        setlistEventRepository.insertIfAbsent(me.getId(), alsoAlive.getId(), "ADD", day, null); // 다른 채보
+        setlistEventRepository.insertIfAbsent(other.getId(), alive.getId(), "ADD", day, null); // 다른 사용자
+
+        assertThat(eventCount()).isEqualTo(5);
+    }
+
+    @Test
+    void 평균_난이도가_없어도_이력은_저장된다() {
+        setlistEventRepository.insertIfAbsent(me.getId(), alive.getId(), "ADD", LocalDate.of(2026, 10, 11), null);
+
+        assertThat(eventCount()).isEqualTo(1);
+        assertThat(em.createQuery("select e.averageLevel from SetlistEvent e", BigDecimal.class).getSingleResult()).isNull();
+    }
+
+    @Test
+    void 세트리스트_줄을_지워도_이력은_남고_탈퇴하면_함께_삭제된다() {
+        em.persist(SetlistItem.create(me, alive));
+        em.flush();
+        setlistEventRepository.insertIfAbsent(me.getId(), alive.getId(), "ADD", LocalDate.of(2026, 10, 11), null);
+
+        setlistItemRepository.deleteAll(setlistItemRepository.findAllByUserId(me.getId())); // 비우기·빼기와 같은 삭제
+        assertThat(eventCount()).isEqualTo(1);
+
+        // 탈퇴(사용자 삭제)는 DB의 ON DELETE CASCADE로 이력도 지운다(D20)
+        em.createNativeQuery("delete from users where user_id = :id").setParameter("id", me.getId()).executeUpdate();
+        assertThat(eventCount()).isZero();
     }
 }

@@ -22,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -89,7 +90,7 @@ public class SkillSnapshotService {
         SkillSnapshot previous = snapshotRepository
                 .findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(userId, skill.noteOption()).orElse(null);
         SkillSnapshot snapshot = SkillSnapshot.create(userRepository.getReferenceById(userId), skill.noteOption(),
-                today(), skill.totalScore(), skill.singleScore(), skill.otherScore());
+                today(), skill.totalScore(), skill.singleScore(), skill.otherScore(), averageLevelOf(skill));
         try {
             // 유일 키 위반을 여기서 바로 잡으려고 flush까지 한다 (commit 시점이면 이 try 밖에서 터진다)
             snapshotRepository.saveAndFlush(snapshot);
@@ -112,8 +113,23 @@ public class SkillSnapshotService {
                             List<SkillEntryResponse> source) {
         for (SkillEntryResponse e : source) {
             entries.add(SkillSnapshotEntry.create(snapshot, songDifficultyRepository.getReferenceById(e.songDifficultyId()),
-                    group, e.rank(), e.achievementRate(), e.fullCombo(), e.score()));
+                    group, e.rank(), e.achievementRate(), e.fullCombo(), e.score(), e.tier()));
         }
+    }
+
+    /**
+     * 레이팅 목록(단일 + 그 외)의 서열표 기준 난이도 평균(소수 둘째 자리 HALF_UP). 홈·세트리스트 추천의 "내 평균"과 같은 식이다.
+     * 다만 PlayLevelEstimator처럼 "채보가 충분한가"는 따지지 않고 있는 값으로만 평균을 낸다. 충분한지는 나중에 집계할 때
+     * 엔트리 수로 판단할 수 있고, 여기서 버리면 되돌릴 수 없기 때문이다. 기준 난이도가 하나도 없으면 null.
+     */
+    static BigDecimal averageLevelOf(SkillResponse skill) {
+        List<BigDecimal> tiers = java.util.stream.Stream.concat(skill.single().stream(), skill.other().stream())
+                .map(SkillEntryResponse::tier).filter(java.util.Objects::nonNull).toList();
+        if (tiers.isEmpty()) {
+            return null;
+        }
+        BigDecimal sum = tiers.stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        return sum.divide(BigDecimal.valueOf(tiers.size()), 2, java.math.RoundingMode.HALF_UP);
     }
 
     private LocalDate today() {
