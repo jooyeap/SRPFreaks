@@ -123,6 +123,55 @@ class SkillSnapshotServiceTest {
         assertThat(saved.get(1).getListRank()).isEqualTo(1);
     }
 
+    private SkillEntryResponse entryWithTier(long chartId, String tier, String pattern) {
+        return new SkillEntryResponse(1, chartId, chartId, "곡", null, null, null, tier == null ? null : new BigDecimal(tier),
+                pattern, new BigDecimal("90.00"), false, null, null, null, new BigDecimal("30.00"));
+    }
+
+    @Test
+    void 기록하면_그_시점의_평균_난이도와_채보별_기준_난이도를_함께_저장한다() {
+        // 단일 6.0, 6.5 / 그 외 7.0 → 평균 (6.0 + 6.5 + 7.0) / 3 = 6.5 (둘째 자리 6.50)
+        SkillResponse skill = new SkillResponse(OPTION, new BigDecimal("90.00"), new BigDecimal("60.00"), new BigDecimal("30.00"),
+                null, 15, 25, List.of(entryWithTier(1L, "6.0", "단일"), entryWithTier(2L, "6.5", "단일")),
+                List.of(entryWithTier(3L, "7.0", "복합")));
+        when(skillService.mySkill(USER)).thenReturn(skill);
+        when(snapshotRepository.findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(USER, OPTION)).thenReturn(Optional.empty());
+
+        service.create(USER);
+
+        ArgumentCaptor<SkillSnapshot> snapshotCaptor = ArgumentCaptor.forClass(SkillSnapshot.class);
+        verify(snapshotRepository).saveAndFlush(snapshotCaptor.capture());
+        assertThat(snapshotCaptor.getValue().getAverageLevel()).isEqualByComparingTo("6.50");
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<SkillSnapshotEntry>> entryCaptor = ArgumentCaptor.forClass(List.class);
+        verify(entryRepository).saveAll(entryCaptor.capture());
+        assertThat(entryCaptor.getValue()).extracting(e -> e.getReferenceLevel().toPlainString())
+                .containsExactly("6.0", "6.5", "7.0");
+    }
+
+    @Test
+    void 평균_난이도는_둘째_자리에서_반올림하고_기준_난이도가_없는_채보는_평균에서_뺀다() {
+        // 6.0 + 6.0 + 6.1 = 18.1 / 3 = 6.0333... → 6.03, 미정(null)은 개수에도 세지 않는다
+        SkillResponse skill = new SkillResponse(OPTION, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, null, 15, 25,
+                List.of(entryWithTier(1L, "6.0", "단일"), entryWithTier(2L, "6.0", "단일"),
+                        entryWithTier(3L, "6.1", "단일"), entryWithTier(4L, null, "단일")), List.of());
+
+        assertThat(SkillSnapshotService.averageLevelOf(skill)).isEqualByComparingTo("6.03");
+    }
+
+    @Test
+    void 기준_난이도가_하나도_없으면_평균_난이도는_비워_두고_스냅샷은_그대로_만든다() {
+        when(skillService.mySkill(USER)).thenReturn(skill("120.00", "70.00", "50.00", true)); // anEntry의 tier는 null
+        when(snapshotRepository.findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(USER, OPTION)).thenReturn(Optional.empty());
+
+        service.create(USER);
+
+        ArgumentCaptor<SkillSnapshot> captor = ArgumentCaptor.forClass(SkillSnapshot.class);
+        verify(snapshotRepository).saveAndFlush(captor.capture());
+        assertThat(captor.getValue().getAverageLevel()).isNull();
+        verify(entryRepository).saveAll(any());
+    }
+
     @Test
     void 막힌_경우에는_상세도_저장하지_않는다() {
         when(skillService.mySkill(USER)).thenReturn(skill("120.00", "70.00", "50.00", true));
