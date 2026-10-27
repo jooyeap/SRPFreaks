@@ -39,6 +39,8 @@ jobs:
         run: bash scripts/deploy/restore-drill.test.sh
       - name: 집계 확인 스크립트
         run: bash scripts/deploy/count-stats.test.sh
+      - name: 마이그레이션 상태 스크립트
+        run: bash scripts/deploy/migration-status.test.sh
 
   backend:
     name: 백엔드 테스트
