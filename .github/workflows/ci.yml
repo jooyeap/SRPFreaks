@@ -37,6 +37,8 @@ jobs:
         run: bash scripts/deploy/disk-usage.test.sh
       - name: 백업 복구 연습 스크립트
         run: bash scripts/deploy/restore-drill.test.sh
+      - name: 집계 확인 스크립트
+        run: bash scripts/deploy/count-stats.test.sh
 
   backend:
     name: 백엔드 테스트
