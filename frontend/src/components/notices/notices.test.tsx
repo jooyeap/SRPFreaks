@@ -66,6 +66,17 @@ describe("NoticesView", () => {
     expect(screen.queryByRole("button", { name: /수정|삭제/ })).not.toBeInTheDocument();
   });
 
+  it("관리자에게는 쓰기 폼이 처음에 접혀 있고 `공지 쓰기`를 누르면 펼쳐지며 취소로 닫힌다", async () => {
+    fetchMock.mockResolvedValue(json(pageOf([])));
+    renderView(true);
+    const open = await screen.findByRole("button", { name: "공지 쓰기" });
+    expect(screen.queryByRole("form", { name: "공지 쓰기" })).not.toBeInTheDocument();
+    fireEvent.click(open);
+    const form = await screen.findByRole("form", { name: "공지 쓰기" });
+    fireEvent.click(within(form).getByRole("button", { name: "취소" }));
+    expect(screen.queryByRole("form", { name: "공지 쓰기" })).not.toBeInTheDocument();
+  });
+
   it("공지가 없으면 안내 문구를 보여 준다", async () => {
     fetchMock.mockResolvedValue(json(pageOf([], { totalElements: 0, totalPages: 0 })));
     renderView(false);
@@ -83,6 +94,7 @@ describe("NoticesView", () => {
       Promise.resolve(init?.method === "POST" ? json(notice(5, "새 공지", "새 내용"), 201) : json(pageOf([]))),
     );
     renderView(true);
+    fireEvent.click(await screen.findByRole("button", { name: "공지 쓰기" }));
     const form = await screen.findByRole("form", { name: "공지 쓰기" });
     fireEvent.change(within(form).getByLabelText("제목"), { target: { value: " 새 공지 " } });
     fireEvent.change(within(form).getByLabelText("내용"), { target: { value: "새 내용" } });
@@ -92,7 +104,9 @@ describe("NoticesView", () => {
     const post = fetchMock.mock.calls.find((c) => c[1]?.method === "POST");
     expect(String(post?.[0])).toContain("/admin/notices");
     expect(JSON.parse(String(post?.[1]?.body))).toEqual({ title: "새 공지", content: "새 내용" });
-    await waitFor(() => expect(within(form).getByLabelText("제목")).toHaveValue("")); // 등록하면 폼을 비운다
+    // 등록하면 폼을 닫고 다시 `공지 쓰기` 버튼만 보인다
+    await waitFor(() => expect(screen.queryByRole("form", { name: "공지 쓰기" })).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "공지 쓰기" })).toBeInTheDocument();
     const gets = fetchMock.mock.calls.filter((c) => (c[1]?.method ?? "GET") === "GET");
     expect(gets.length).toBeGreaterThanOrEqual(2);
   });
@@ -100,6 +114,7 @@ describe("NoticesView", () => {
   it("제목이 비어 있으면 요청을 보내지 않고 안내한다", async () => {
     fetchMock.mockResolvedValue(json(pageOf([])));
     renderView(true);
+    fireEvent.click(await screen.findByRole("button", { name: "공지 쓰기" }));
     const form = await screen.findByRole("form", { name: "공지 쓰기" });
     fireEvent.change(within(form).getByLabelText("내용"), { target: { value: "내용" } });
     fireEvent.click(within(form).getByRole("button", { name: "공지 등록" }));
@@ -117,6 +132,7 @@ describe("NoticesView", () => {
       ),
     );
     renderView(true);
+    fireEvent.click(await screen.findByRole("button", { name: "공지 쓰기" }));
     const form = await screen.findByRole("form", { name: "공지 쓰기" });
     fireEvent.change(within(form).getByLabelText("제목"), { target: { value: "제목" } });
     fireEvent.change(within(form).getByLabelText("내용"), { target: { value: "내용" } });

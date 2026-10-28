@@ -10,12 +10,13 @@ import {
   AUDIT_ACTIONS,
   AUDIT_LOG_PAGE_SIZE,
   AUDIT_LOG_SIZE_OPTIONS,
+  detailReadable,
   detailText,
   EMPTY_AUDIT_FILTERS,
   fetchAuditLogs,
   type AuditLogFilters,
 } from "@/lib/admin";
-import { formatPlayedDate } from "@/lib/format";
+import { formatSeoulDateTime } from "@/lib/format";
 import { PageSizeSelect } from "@/components/PageSizeSelect";
 import { usePageSize } from "@/lib/page-size";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
@@ -129,13 +130,18 @@ export function AuditLogView({ viewerId }: { viewerId: number }) {
               <li key={log.id} className="flex flex-col gap-1 border-b border-line px-4 py-3 last:border-b-0">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="text-sm font-bold text-fg">{actionLabel(log.action, t)}</span>
-                  <span className="font-num text-xs text-fg-dim">{formatPlayedDate(log.createdAt)}</span>
+                  <span className="font-num text-xs text-fg-dim">{formatSeoulDateTime(log.createdAt)}</span>
                 </div>
                 <p className="text-xs text-fg-sub">
                   {log.actorNickname ?? (log.actorId === null ? t("Admin.withdrawnUser") : t("Admin.actorUser", { id: log.actorId }))}
                   {log.targetType ? <span className="font-num"> · {log.targetType}{log.targetId ? ` #${log.targetId}` : ""}</span> : null}
                 </p>
-                {detailText(log.detail) ? <p className="break-all font-num text-xs text-fg-dim">{detailText(log.detail)}</p> : null}
+                {/* 개발용 JSON 대신 `KJY → HJY`, `제목: …`처럼 읽기 쉽게(2026-10-27). 마우스를 올리면 원문 JSON이 보인다(title) */}
+                {detailReadable(log.detail, t) ? (
+                  <p className="break-words text-xs text-fg-sub" title={detailText(log.detail)}>
+                    {detailReadable(log.detail, t)}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>

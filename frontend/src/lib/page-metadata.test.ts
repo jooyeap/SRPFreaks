@@ -12,5 +12,7 @@ describe("pageMetadata", () => {
   it("화면 이름 뒤에 사이트 이름을 붙인다", async () => {
     expect(await pageMetadata("Nav.songs")).toEqual({ title: "곡 | SRPFreaks" });
     expect(await pageMetadata("Meta.table")).toEqual({ title: "서열표 | SRPFreaks" });
+    expect(await pageMetadata("Nav.import")).toEqual({ title: "최근 플레이 가져오기 | SRPFreaks" });
+    expect(await pageMetadata("Nav.admin")).toEqual({ title: "관리 | SRPFreaks" });
   });
 });

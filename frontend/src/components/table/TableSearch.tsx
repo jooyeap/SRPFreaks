@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchPlaceholder } from "@/lib/search-placeholder";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -35,6 +36,7 @@ export const TABLE_SEARCH_INPUT_ID = "table-search-input";
  */
 export function TableSearch({ userId, groups }: { userId: number; groups: readonly TierGroupResponse[] | undefined }) {
   const t = useTranslations();
+  const placeholder = useSearchPlaceholder();
   const [text, setText] = useState("");
   const [query, setQuery] = useState(""); // 입력이 300ms 멈춘 뒤의 값. 이 값이 바뀔 때만 서버를 부른다
 
@@ -69,7 +71,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
           value={text}
           maxLength={100}
           onChange={(event) => setText(event.target.value)}
-          placeholder={t("Songs.searchPlaceholder")}
+          placeholder={placeholder}
           aria-label={t("Table.searchQueryAria")}
           className="min-h-12 w-full rounded-[10px] border border-chip-line bg-page px-4 py-2 text-[15px] text-fg placeholder:text-fg-dim"
         />
