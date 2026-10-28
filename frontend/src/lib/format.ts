@@ -126,3 +126,20 @@ export function formatPlayedDate(iso: string | null | undefined): string {
   const parts = Object.fromEntries(seoulDateParts.formatToParts(date).map((p) => [p.type, p.value]));
   return `${parts.year}-${parts.month}-${parts.day}`;
 }
+
+const seoulTimeParts = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Seoul",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** UTC 시간을 Asia/Seoul의 `2026-10-27 22:40`(24시간제)으로 보여 준다. 감사 로그처럼 같은 날 여러 건을 구분할 때 쓴다. 올바르지 않으면 `–`. */
+export function formatSeoulDateTime(iso: string | null | undefined): string {
+  const day = formatPlayedDate(iso);
+  if (day === EMPTY_MARK || !iso) {
+    return EMPTY_MARK;
+  }
+  const parts = Object.fromEntries(seoulTimeParts.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
+  return `${day} ${parts.hour}:${parts.minute}`;
+}
