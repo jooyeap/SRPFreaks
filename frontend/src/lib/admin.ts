@@ -82,6 +82,101 @@ export function detailText(detail: Record<string, unknown> | null, maxLength = 3
   return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
 }
 
+/** 감사 로그 detail에 들어가는 키의 화면 이름. 모르는 키는 키 그대로 보여 준다(새 작업이 생겨도 화면이 깨지지 않게). */
+const DETAIL_KEY_LABELS: Record<string, MessageKey> = {
+  title: "Admin.detailKey.title",
+  name: "Admin.detailKey.name",
+  status: "Admin.detailKey.status",
+  part: "Admin.detailKey.part",
+  type: "Admin.detailKey.type",
+  level: "Admin.detailKey.level",
+  songId: "Admin.detailKey.songId",
+  songDifficultyId: "Admin.detailKey.songDifficultyId",
+  difficultyTableId: "Admin.detailKey.difficultyTableId",
+  targetUserId: "Admin.detailKey.targetUserId",
+  deletedCount: "Admin.detailKey.deletedCount",
+  bestRate: "Admin.detailKey.bestRate",
+  artistFilled: "Admin.detailKey.artistFilled",
+  levelChanged: "Admin.detailKey.levelChanged",
+  songIds: "Admin.detailKey.songIds",
+  chartIds: "Admin.detailKey.chartIds",
+  tier: "Admin.detailKey.tier",
+  recommend: "Admin.detailKey.recommend",
+  pattern: "Admin.detailKey.pattern",
+  ratingEnabled: "Admin.detailKey.ratingEnabled",
+};
+
+const MAX_LIST_ITEMS = 5;
+
+function keyLabel(key: string, t: Translator): string {
+  const label = DETAIL_KEY_LABELS[key];
+  return label ? t(label) : key;
+}
+
+function valueText(value: unknown, t: Translator): string {
+  if (value === null || value === undefined || value === "") {
+    return "–";
+  }
+  if (typeof value === "boolean") {
+    return t(value ? "Admin.detailOn" : "Admin.detailOff");
+  }
+  if (Array.isArray(value)) {
+    const shown = value.slice(0, MAX_LIST_ITEMS).map((v) => valueText(v, t)).join(", ");
+    return value.length > MAX_LIST_ITEMS ? t("Admin.detailMore", { items: shown, count: value.length - MAX_LIST_ITEMS }) : shown;
+  }
+  if (typeof value === "object") {
+    return fieldsText(value as Record<string, unknown>, t);
+  }
+  return String(value);
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function fieldsText(fields: Record<string, unknown>, t: Translator): string {
+  return Object.entries(fields)
+    .map(([key, value]) => `${keyLabel(key, t)}: ${valueText(value, t)}`)
+    .join(" · ");
+}
+
+/**
+ * 감사 로그 detail(JSON)을 사람이 읽는 줄로 바꾼다(2026-10-27). 예: `{"before":"KJY","after":"HJY"}` → `KJY → HJY`,
+ * `{"title":"공지"}` → `제목: 공지`, 서열표 수정의 before/after 묶음은 바뀐 칸만 `추천: 중 → 상`처럼 보인다.
+ * 원래 값은 바꾸지 않고 보여 주는 방식만 바꾼다. 길면 자른다.
+ */
+export function detailReadable(detail: Record<string, unknown> | null, t: Translator, maxLength = 300): string {
+  if (!detail || Object.keys(detail).length === 0) {
+    return "";
+  }
+  const { before, after, ...rest } = detail;
+  const parts: string[] = [];
+  const hasBefore = "before" in detail;
+  const hasAfter = "after" in detail;
+  if (hasBefore && hasAfter && isPlainObject(before) && isPlainObject(after)) {
+    // 묶음끼리 비교: 바뀐 칸만 보여 준다(모두 같으면 전체를 그대로)
+    const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+    const changed = keys.filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
+    parts.push(
+      changed.length === 0
+        ? fieldsText(after, t)
+        : changed.map((key) => `${keyLabel(key, t)}: ${valueText(before[key], t)} → ${valueText(after[key], t)}`).join(" · "),
+    );
+  } else if (hasBefore && hasAfter) {
+    parts.push(`${valueText(before, t)} → ${valueText(after, t)}`);
+  } else if (hasAfter) {
+    // 새로 만든 것(이전 값 없음): 만든 값만
+    parts.push(isPlainObject(after) ? fieldsText(after, t) : valueText(after, t));
+  } else if (hasBefore) {
+    parts.push(isPlainObject(before) ? fieldsText(before, t) : valueText(before, t));
+  }
+  if (Object.keys(rest).length > 0) {
+    parts.push(fieldsText(rest, t));
+  }
+  const text = parts.filter(Boolean).join(" · ");
+  return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
+}
+
 // ---- 운영 설정 --------------------------------------------------------------------------------------
 
 /** 설정은 십여 개뿐이라 한 번에 받는다(서버 최대 100). */

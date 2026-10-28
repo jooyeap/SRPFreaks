@@ -129,7 +129,9 @@
     "playersAria": "ユーザーリストのプレビュー",
     "playersTitle": "ユーザー",
     "playersLoadFailed": "ユーザーリストを読み込めませんでした。",
-    "playersEmpty": "まだ公開しているユーザーがいません。自分のレーティングは<link>設定</link>から公開できます。"
+    "playersEmpty": "まだ公開しているユーザーがいません。自分のレーティングは<link>設定</link>から公開できます。",
+    "snapshotSince": "前回の記録（{date}）以降 <b>{change}</b>",
+    "snapshotSinceToday": "今日の記録以降 <b>{change}</b>"
   },
   "Welcome": {
     "title": "はじめに",
@@ -170,7 +172,10 @@
     "noRecord": "記録なし",
     "colRange": "区間",
     "colAchieve": "達成",
-    "mergedHigh": "{tier}以上"
+    "mergedHigh": "{tier}以上",
+    "tileEmpty": "まだ記録がありません",
+    "foldClosed": "{from}〜{to}・記録のない区間 {count}個",
+    "foldOpen": "記録のない高い区間をたたむ"
   },
   "Songs": {
     "loadFailed": "曲リストを読み込めませんでした。しばらくしてからもう一度お試しください。",
@@ -209,7 +214,8 @@
     "totalSummary": "{songs}曲 · {charts}譜面",
     "tabsAria": "曲表示の切り替え",
     "tabTable": "難易度表",
-    "tabSongs": "曲リスト"
+    "tabSongs": "曲リスト",
+    "searchPlaceholderShort": "曲名・アーティストを検索"
   },
   "Song": {
     "myRecord": "自分の記録",
@@ -289,6 +295,7 @@
   },
   "Table": {
     "thresholdBoth": "この区間は単色<b>{single}%</b>・それ以外<b>{other}%</b>以上でレーティングに反映されます。",
+    "thresholdSame": "この区間は<b>{rate}%</b>以上でレーティングに反映されます。",
     "thresholdSingle": "この区間は単色<b>{rate}%</b>以上でレーティングに反映されます。",
     "thresholdOther": "この区間はそれ以外<b>{rate}%</b>以上でレーティングに反映されます。",
     "avgWithZero": "平均 0%含む",
@@ -475,7 +482,11 @@
     "sectionSum": "合計 <n>{score}</n>",
     "compareWithPrevAria": "{date} の記録を前回の記録と比較",
     "compareHeading": "{from} → {to} レーティングリスト比較",
-    "leftList": "リスト外"
+    "leftList": "リスト外",
+    "snapshotUpdate": "今日の記録を更新",
+    "snapshotUpdated": "今日のレーティング記録を更新しました。",
+    "vsLastNoNew": "前回の記録（{date}）比 <b>{change}</b>",
+    "noChangeSince": "前回の記録（{date}）以降、レーティングに変化はありません。"
   },
   "Record": {
     "oneHandAria": "片手入力",
@@ -729,7 +740,10 @@
     "emptyRated": "レーティングに入った記録がまだありません。",
     "ratingOf": "<n>{nickname}</n>さんのレーティング",
     "deleteConfirmText": "<n>{nickname}</n>さんの「{title}」の記録をすべて削除しますか？削除した記録は元に戻せず、管理ログに残ります。",
-    "listLead": "公開を選んだユーザーのみ表示されます。自分のレーティングは<l>設定</l>から公開できます。"
+    "listLead": "公開を選んだユーザーのみ表示されます。自分のレーティングは<l>設定</l>から公開できます。",
+    "deleteModeOn": "記録削除モード",
+    "deleteModeOff": "削除モードを終了",
+    "me": "自分"
   },
   "Settings": {
     "nicknameSaved": "ニックネームを保存しました。",
@@ -750,7 +764,7 @@
     "withdrawBtn": "退会する",
     "checkHint": "確認にチェックすると「退会する」が有効になります。",
     "nicknameHelp": "{min}~{max}文字。英数字、日本語（ひらがな・カタカナ・漢字）と ー ・ _ - のみ使用できます。空欄にするとメールアドレスが表示されます。",
-    "visibilityHelp": "公開すると、他のユーザー（ログインしていない訪問者を含む）にニックネーム・プレイヤーティア・合計スコアがユーザー一覧に表示され、タップするとレーティングリスト（曲名と達成率）を見られます。メールアドレスは表示されません。いつでもオフにでき、オフにするとすぐに非表示になります。",
+    "visibilityHelp": "公開すると、他のユーザー（ログインしていない訪問者を含む）にニックネーム・プレイヤーティア・合計スコアがユーザー一覧に表示され、タップするとレーティングリスト（曲名と達成率）を見られます。メールアドレスは表示されません。いつでもオフにでき、オフにするとすぐに非表示になります。公開すると同じティアのユーザー統計にも含まれます。",
     "delAccountTitle": "アカウント",
     "delAccountBody": "Googleアカウントの連携とニックネームが削除されます。",
     "delRecordsTitle": "記録",
@@ -922,12 +936,19 @@
     "tableCaption": "レーティングスコア表: スラプラ難易度と達成率ごとの譜面スコア",
     "colTier": "スラプラ<br></br>難易度",
     "colConst": "内部<br></br>定数",
-    "legend": "マスの色の基準 · 曲スコア（プレイヤーティアの最低スコア ÷ 40）"
+    "legend": "マスの色の基準 · 曲スコア（プレイヤーティアの最低スコア ÷ 40）",
+    "screenHeading": "画面の見かた",
+    "progressHeading": "ホームの進捗カード",
+    "progressText": "難易度表の基準難易度ごとに、記録をどれだけ埋めたかを表示します。レーティング一覧がある程度たまると、自分の平均難易度の近くでまだ空いている区間を一つ選んでお知らせします。",
+    "thresholdHeading": "「85%以上でレーティングに反映されます」とは？",
+    "thresholdText": "レーティング一覧が埋まっているとき、その区間の曲を何%以上で叩けば一覧のいちばん下の曲より点数が高くなり一覧に入るかを、80・85・90・95%単位でお知らせします。単色とそれ以外の一覧は別々に計算します。一覧がまだ埋まっていなければ、記録するだけで反映されるためこの案内は表示されません。",
+    "snapshotHeading": "レーティング記録",
+    "snapshotText": "<b>今のレーティングを記録する</b>を押すと、その時点のレーティングを残します。1日1件だけ残り、同じ日にもう一度押すと今日の記録が最新の値に置き換わります。残した記録でレーティングがどれだけ上がったかを比べられます。自動では保存されません。"
   },
   "Privacy": {
     "metaTitle": "プライバシーポリシー | SRPFreaks",
     "title": "プライバシーポリシー",
-    "effectiveDate": "2026年10月8日",
+    "effectiveDate": "2026年10月28日",
     "lead": "SRPFreaksはKONAMIとは無関係の非公式ファンプロジェクトであり、サービスに必要な情報のみを扱います。施行日: {date}",
     "s1Title": "1. 収集する情報",
     "s1b1": "Googleアカウントでログインする際にGoogleから通知されるメールアドレスとGoogleアカウント固有の識別子を保存します。パスワードは受け取らず、保存もしません。",
@@ -957,7 +978,8 @@
     "s8Title": "8. 安全に守るための措置",
     "s8b1": "すべての通信はHTTPSで暗号化します。ログイン維持用のトークンはハッシュのみを保存します。",
     "s8b2": "管理者権限は最小限の人数にのみ付与し、管理作業は記録として残します。",
-    "contactHeading": "9. お問い合わせ先"
+    "contactHeading": "9. お問い合わせ先",
+    "s3b3": "公開をオンにしたユーザーのレーティング記録は、同じティアのユーザー統計（人数・中央値）にも使われます。統計は5人以上集まった場合にのみ表示され、誰の記録かは分かりません。"
   },
   "SettingsPage": {
     "lead": "設定を変更するにはログインしてください。",
@@ -986,7 +1008,6 @@
     "noDetail": "曲ごとの詳細を残す前の記録のため、曲単位では比較できません。次の記録から比較できます。",
     "noSnapshot": "記録したレーティングがまだありません。",
     "cannotCompare": "比較できません。",
-    "alreadyToday": "今日はすでに記録しました。明日もう一度記録できます。",
     "noChange": "前回の記録とスコアが同じため記録できません。",
     "noRecords": "レーティングに入る記録がないため記録できません。"
   },
@@ -1139,7 +1160,32 @@
     "registerFromSuggestionAria": "{title} のご要望から曲を登録",
     "menuSongImport": "公式曲リストで更新",
     "menuSongImportDesc": "公式の曲リストからアーティスト・レベルを取り込みます。",
-    "actionSongOfficialImport": "公式曲リストの更新"
+    "actionSongOfficialImport": "公式曲リストの更新",
+    "detailKey": {
+      "title": "タイトル",
+      "name": "名前",
+      "status": "状態",
+      "part": "パート",
+      "type": "難易度",
+      "level": "レベル",
+      "songId": "曲ID",
+      "songDifficultyId": "譜面ID",
+      "difficultyTableId": "難易度表ID",
+      "targetUserId": "対象ユーザーID",
+      "deletedCount": "削除した記録",
+      "bestRate": "最高達成率",
+      "artistFilled": "アーティスト補完",
+      "levelChanged": "レベル変更",
+      "songIds": "曲ID",
+      "chartIds": "譜面ID",
+      "tier": "レーティング定数難易度",
+      "recommend": "おすすめ",
+      "pattern": "属性",
+      "ratingEnabled": "レーティング反映"
+    },
+    "detailOn": "オン",
+    "detailOff": "オフ",
+    "detailMore": "{items} ほか{count}件"
   },
   "ServerErrors": {
     "AUTH_FAILED": "ログインできません。もう一度ログインしてください。",
@@ -1151,7 +1197,7 @@
     "NOT_FOUND": "見つかりません。",
     "CONFLICT": "すでに登録されています。",
     "SONG_TITLE_DUPLICATE": "同じ名前の曲がすでに登録されています。曲一覧で確認してください。",
-    "SNAPSHOT_ALREADY_TODAY": "今日はすでに記録しました。明日もう一度記録してください。",
+    "SNAPSHOT_ALREADY_TODAY": "記録したばかりです。しばらくしてからもう一度お試しください。",
     "SNAPSHOT_NO_CHANGE": "前回の記録とスコアが同じため記録できません。",
     "SNAPSHOT_NO_RECORDS": "レーティングに入る記録がないため記録できません。",
     "SUGGESTION_LIMIT": "今日はこれ以上ご意見を送れません。明日もう一度送ってください。",
@@ -1268,10 +1314,10 @@
     "close": "閉じる"
   },
   "TierHistory": {
-    "title": "序列表の変更履歴",
+    "title": "難易度表の変更履歴",
     "empty": "変更履歴はまだありません。",
-    "note": "序列表の基準難易度・属性を修正した履歴です。最初に決まった値は表示されません。",
-    "added": "序列表に追加",
+    "note": "難易度表の基準難易度・属性を修正した履歴です。最初に決まった値は表示されません。",
+    "added": "難易度表に追加",
     "tierChange": "基準難易度 {from} → {to}",
     "patternChange": "属性 {from} → {to}",
     "tierValue": "基準難易度 {value}",
@@ -1279,5 +1325,16 @@
     "loadMore": "もっと見る",
     "loadingMore": "読み込み中",
     "loadFailed": "変更履歴を読み込めませんでした。"
+  },
+  "PeerStats": {
+    "title": "同じティアのユーザー記録",
+    "users": "レーティングに含まれたユーザー数",
+    "usersValue": "{users}人 / {band}人",
+    "rate": "達成率",
+    "mine": "自分の記録",
+    "mineValue": "{rate} · すでにレーティングに含まれています",
+    "gain": "予想レーティング",
+    "gainValue": "+{value}点",
+    "loadFailed": "同じティアのユーザー記録を読み込めませんでした。しばらくしてからもう一度お試しください。"
   }
 }

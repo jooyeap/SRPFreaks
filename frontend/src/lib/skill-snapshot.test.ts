@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { koT as t } from "@/i18n/ko-translator";
-import { blockReasonText, createSnapshot, fetchSnapshots, formatChange, snapshotKeys } from "@/lib/skill-snapshot";
+import { blockReasonText, createSnapshot, fetchSnapshots, formatChange, snapshotButtonText, snapshotKeys } from "@/lib/skill-snapshot";
 
 describe("formatChange", () => {
   it("오르면 ▲ +, 내리면 ▼ -, 같으면 ±0.00이고 첫 기록은 –", () => {
@@ -18,9 +18,16 @@ describe("formatChange", () => {
 
 describe("blockReasonText", () => {
   it("이유 코드마다 문구가 있다", () => {
-    expect(blockReasonText("ALREADY_TODAY", t)).toContain("오늘은 이미 기록했습니다");
     expect(blockReasonText("NO_CHANGE", t)).toContain("점수가 같아");
     expect(blockReasonText("NO_RECORDS", t)).toContain("기록이 없어");
+  });
+});
+
+describe("snapshotButtonText", () => {
+  it("오늘 기록이 있으면 갱신 글자, 없거나 아직 모르면 기록 글자다", () => {
+    expect(snapshotButtonText(true, t)).toEqual({ label: "오늘 기록 갱신", saved: "오늘 레이팅 기록을 갱신했습니다." });
+    expect(snapshotButtonText(false, t)).toEqual({ label: "지금 레이팅 기록하기", saved: "레이팅을 기록했습니다." });
+    expect(snapshotButtonText(undefined, t).label).toBe("지금 레이팅 기록하기");
   });
 });
 
