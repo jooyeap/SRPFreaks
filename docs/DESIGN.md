@@ -507,6 +507,7 @@ com.srpfreaks.backend
 | 공개 설정 (D26) | `PATCH /users/me/visibility` body `{"profilePublic": true|false}` (닉네임이 없으면 켤 수 없고 400. `PATCH /users/me`와 따로 둔 이유: 그 요청은 닉네임이 비면 "닉네임 삭제"라 공개 값만 보내면 닉네임이 지워질 수 있다.) 응답은 `UserResponse`(`profilePublic` 포함). 닉네임을 지우면 공개도 함께 꺼진다 | USER+ (본인) |
 | 스킬 목록 | GET `/skills/me` (SRN+ 40곡 + 합계 + 플레이어 티어. 이후 scope 파라미터 확장 가능) | USER+ |
 | 사진 인식 | POST `/records/recognize` (multipart, 인식 결과만 반환하고 저장하지 않는다. 일일 한도) | USER+ |
+| 사진 입력 상태 | GET `/records/recognize/status` (D55: `available`, `reason` = DISABLED/ROLE/WEEKLY_LIMIT/DAILY_LIMIT, `remaining`, `weeklyLimit`, `nextRefillAt`. 누가 쓸지는 설정 `recognize.min_role`이 정하고 판단은 `RecognizeAccessPolicy` 한 곳) | USER+ |
 | 레이팅 스냅샷 (D32) | GET `/skills/me/snapshots`(목록), GET `/skills/me/snapshots/status`(기록 가능 여부), POST `/skills/me/snapshots`(기록, 하루 한 줄·같은 날이면 오늘 줄 덮어쓰기·변경 없으면 409, status는 `replacesToday`도 준다), GET `/skills/me/snapshots/{id}/compare`(이전 스냅샷과 비교), GET `/skills/me/snapshots/compare-current`(최근 스냅샷과 지금 비교) | USER+ |
 | 마이페이지 통계 (D33) | GET `/stats/level-rate-folders`, GET `/stats/tier-rate-folders?tableId=`(폴더마다 `averageRecorded`·`averageWithZero` 포함, 2026-10-17), GET `/stats/tier-rate-folders/charts?tableId=&tier=&rateBucket=&part=&sort=&page=&size=` (레벨 폴더 안 목록은 `GET /songs/charts`의 `rateBucket`·`sort`) | USER+ (본인) |
 | 난이도표 | GET `/difficulty-tables` / POST·PATCH | USER+ / ADMIN+ |
@@ -636,6 +637,7 @@ com.srpfreaks.backend
 - 5항: 사진 인식은 Anthropic(미국)의 AI 서비스(Claude API)에 맡깁니다. 사진 입력을 쓸 때만, 인식할 사진이 Anthropic으로 전송되며 Anthropic의 정책에 따라 처리됩니다. 사진 입력을 쓰지 않으면 아무것도 전송되지 않습니다.
 - 일본어는 같은 뜻으로 맞춘다. 시험 기간(ROOT·ADMIN만)에는 운영자 본인만 쓰므로 처리방침 변경은 공개 전환 배포에 맞춰 시행일과 함께 넣는다.
 
+**진행**: ① 완료(V18 `recognize_usages` + 설정 4개, `RecognizeConfig`·`RecognizeAccessPolicy`, 상태 API, 관리 설정 화면). 
 **구현 순서(2026-10-28 승인)**: ① 사용량 테이블·한도·설정·권한 판단·상태 API ② 인식 API + 모델 호출(모의 응답으로 테스트) ③ 화면(탭·여러 장·확인 목록) ④ 공개 전환 때 처리방침. 기본 꺼짐(`recognize.enabled=false`, `recognize.min_role=ADMIN`)으로 배포한 뒤 ROOT가 켜서 시험한다.
 
 ### 배포 개요 (구현 시 구체화)
@@ -1226,3 +1228,4 @@ com.srpfreaks.backend
 | 2026-10-27 | 서버 점검(Server Ops)에 `백엔드 재시작`·`마이그레이션 상태 보기`(읽기 전용, 숫자만) 추가. SSH 없이 백엔드 멈춤·마이그레이션 실패 여부를 확인하기 위함. repair 기능은 두지 않는다. 화면·API 변경 없음 |
 | 2026-10-27 | **D53 추가.** 같은 티어 유저 기록 집계 API(`GET /api/v1/peer-stats`)와 표시 기준 설정(`peer.min_band_users`, `peer.min_chart_users`, V17). D32(5)를 집계값 한정으로 완화. 화면은 다음 PR |
 | 2026-10-28 | **D55 설계 초안** 추가(12.1-2): 사진 입력을 가져오기로 놓친 곡 보충용으로, 사용자당 7일 30장·여러 장 확인 목록·전체 하루 상한·끄는 스위치·처리방침 고지 |
+| 2026-10-28 | D55 1단계: V18 `recognize_usages`(user_id, used_at, 8일 보관) + 설정 `recognize.enabled`(false)·`min_role`(ADMIN)·`weekly_limit`(30)·`daily_total_limit`(300), 상태 API `GET /records/recognize/status`, 관리 설정 검사 |

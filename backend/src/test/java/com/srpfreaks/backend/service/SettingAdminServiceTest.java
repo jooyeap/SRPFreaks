@@ -55,7 +55,9 @@ class SettingAdminServiceTest {
                 setting("setlist.recommend_s_min", "-0.1"), setting("setlist.recommend_s_max", "0.4"),
                 setting("setlist.recommend_min_single", "5"), setting("setlist.recommend_min_other", "9"),
                 setting("setlist.recommend_starter_tier", "5.2"),
-                setting("peer.min_band_users", "5"), setting("peer.min_chart_users", "5")));
+                setting("peer.min_band_users", "5"), setting("peer.min_chart_users", "5"),
+                setting("recognize.enabled", "false"), setting("recognize.min_role", "ADMIN"),
+                setting("recognize.weekly_limit", "30"), setting("recognize.daily_total_limit", "300")));
         lenient().when(appSettingRepository.findAll()).thenReturn(settings);
         lenient().when(appSettingRepository.findAllWithUpdatedBy()).thenReturn(settings);
         lenient().when(appSettingRepository.findById(any(String.class))).thenAnswer(invocation ->
@@ -172,5 +174,22 @@ class SettingAdminServiceTest {
         assertRejected("peer.min_chart_users", "-3");
         assertRejected("peer.min_chart_users", "다섯");
         assertRejected("peer.min_band_users", "2.5");
+    }
+
+    @Test
+    void 사진_입력_설정은_켜고_끄기와_공개_전환_한도_변경을_받는다() {
+        assertThat(service.update(1L, "recognize.enabled", "true").value()).isEqualTo("true");
+        assertThat(service.update(1L, "recognize.min_role", "USER").value()).isEqualTo("USER");   // 시험 끝: 모두에게 열기
+        assertThat(service.update(1L, "recognize.min_role", "ADMIN").value()).isEqualTo("ADMIN"); // 되돌리기
+        assertThat(service.update(1L, "recognize.weekly_limit", "50").value()).isEqualTo("50");
+    }
+
+    @Test
+    void 사진_입력_설정이_규칙에_어긋나면_거절한다() {
+        assertRejected("recognize.enabled", "on");
+        assertRejected("recognize.min_role", "ROOT");
+        assertRejected("recognize.min_role", "guest");
+        assertRejected("recognize.weekly_limit", "0");
+        assertRejected("recognize.daily_total_limit", "많이");
     }
 }

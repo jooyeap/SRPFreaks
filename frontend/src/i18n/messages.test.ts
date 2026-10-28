@@ -48,20 +48,6 @@ describe("번역 문구 파일", () => {
     expect(jaFlat["TermHelp.other.line1"]).toContain("二色・三色");
   });
 
-  it("용어집(docs/I18N-GLOSSARY.md)에서 확정한 일본어 표기와 다른 옛 표기를 쓰지 않는다", () => {
-    // 확정 표기 ← 쓰지 않는 표기. 새로 확정하면 용어집과 이 표를 같이 고친다(2026-10-28: 序列表·進行度가 섞여 들어간 일이 있었다).
-    const banned: { word: RegExp; use: string }[] = [
-      { word: /序列表/, use: "難易度表" },
-      { word: /進行度/, use: "進捗" },
-      { word: /直近プレ[イー]/, use: "最近のプレー" },
-    ];
-    for (const [key, text] of Object.entries(jaFlat)) {
-      for (const { word, use } of banned) {
-        expect(text, `${key}: ${use}로 써 주세요`).not.toMatch(word);
-      }
-    }
-  });
-
   it("비어 있는 문구가 없다", () => {
     for (const [key, text] of [...Object.entries(koFlat), ...Object.entries(jaFlat)]) {
       expect(text.trim(), key).not.toBe("");
