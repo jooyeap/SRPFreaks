@@ -21,8 +21,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * 레이팅 스냅샷 (D32): 사용자가 누른 시점의 합계·소계 사본. 만든 뒤에는 바꾸지 않는다(setter 없음, 수정 메서드 없음).
+ * 레이팅 스냅샷 (D32): 사용자가 누른 시점의 합계·소계 사본. setter는 없다.
  * snapshotDate는 Asia/Seoul 기준 날짜이고, (사용자, 옵션, 날짜)가 유일하다.
+ * 2026-10-27(D32 변경): 같은 날 다시 누르면 새 줄을 만들지 않고 오늘 줄의 점수를 덮어쓴다(replaceScores). 지난 날짜의 줄은 바꾸지 않는다.
  */
 @Getter
 @Entity
@@ -82,6 +83,14 @@ public class SkillSnapshot extends BaseTimeEntity {
     public static SkillSnapshot create(User user, NoteOption noteOption, LocalDate snapshotDate,
                                        BigDecimal totalScore, BigDecimal singleScore, BigDecimal otherScore, BigDecimal averageLevel) {
         return new SkillSnapshot(user, noteOption, snapshotDate, totalScore, singleScore, otherScore, averageLevel);
+    }
+
+    /** 오늘 기록 갱신(D32 변경): 같은 날 다시 기록하면 점수와 그 시점의 평균 난이도를 지금 값으로 바꾼다. 날짜·사용자·옵션은 그대로다. */
+    public void replaceScores(BigDecimal totalScore, BigDecimal singleScore, BigDecimal otherScore, BigDecimal averageLevel) {
+        this.totalScore = totalScore;
+        this.singleScore = singleScore;
+        this.otherScore = otherScore;
+        this.averageLevel = averageLevel;
     }
 
     /** 합계·단일 소계·그 외 소계가 모두 같으면 "변경 없음"이다. 스케일(2자리)이 달라도 값이 같으면 같다(compareTo). */

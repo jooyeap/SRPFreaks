@@ -59,6 +59,10 @@ describe("PlayerListView", () => {
     const list = await screen.findByRole("list", { name: "유저 목록" });
     const hrefs = within(list).getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual(["/players/7", "/me"]);
+    // 내 줄에만 `나` 표시(글자로도 알 수 있게)
+    const links = within(list).getAllByRole("link");
+    expect(within(links[1]).getByText("나")).toBeInTheDocument();
+    expect(within(links[0]).queryByText("나")).toBeNull();
   });
 
   it("공개한 유저가 없으면 안내 문구를 보여 준다", async () => {

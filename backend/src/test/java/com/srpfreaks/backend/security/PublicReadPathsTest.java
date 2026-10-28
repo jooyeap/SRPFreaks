@@ -36,7 +36,7 @@ class PublicReadPathsTest {
                 "/api/v1/users/me", "/api/v1/records", "/api/v1/skill", "/api/v1/setlist", "/api/v1/suggestions",
                 "/api/v1/notices/abc", "/api/v1/players/me", "/api/v1/songs/", "/api/v1/songs/5/",
                 "/api/v1/difficulty-tables/1", "/api/v1/difficulty-tables/1/entries/9",
-                "/api/v1/noticesX", "/actuator/health", "/error"}) {
+                "/api/v1/noticesX", "/api/v1/peer-stats", "/actuator/health", "/error"}) {
             assertThat(PublicReadPaths.matches("GET", uri)).as(uri).isFalse();
         }
     }

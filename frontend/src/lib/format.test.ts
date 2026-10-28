@@ -8,8 +8,7 @@ import {
   formatScore,
   formatTier,
   partLabel,
-  toHundredths,
-} from "@/lib/format";
+  toHundredths, formatSeoulDateTime } from "@/lib/format";
 import { koT } from "@/i18n/ko-translator";
 
 describe("formatRate (달성률 표시)", () => {
@@ -99,5 +98,14 @@ describe("formatPlayedDate (UTC -> Asia/Seoul)", () => {
     expect(formatPlayedDate(null)).toBe(EMPTY_MARK);
     expect(formatPlayedDate("")).toBe(EMPTY_MARK);
     expect(formatPlayedDate("날짜아님")).toBe(EMPTY_MARK);
+  });
+});
+
+describe("formatSeoulDateTime", () => {
+  it("UTC를 서울 날짜와 24시간제 시각으로 바꾼다", () => {
+    expect(formatSeoulDateTime("2026-10-27T13:40:00Z")).toBe("2026-10-27 22:40");
+    expect(formatSeoulDateTime("2026-10-27T15:05:00Z")).toBe("2026-10-28 00:05"); // 서울 자정 넘김
+    expect(formatSeoulDateTime(null)).toBe("–");
+    expect(formatSeoulDateTime("x")).toBe("–");
   });
 });

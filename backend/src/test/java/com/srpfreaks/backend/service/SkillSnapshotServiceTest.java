@@ -84,9 +84,10 @@ class SkillSnapshotServiceTest {
     @Test
     void 기록하면_서울_날짜로_합계와_소계를_저장하고_이전_대비_증감을_돌려준다() {
         when(skillService.mySkill(USER)).thenReturn(skill("120.00", "70.00", "50.00", true));
-        when(snapshotRepository.existsByUser_IdAndNoteOptionAndSnapshotDate(USER, OPTION, TODAY)).thenReturn(false);
-        when(snapshotRepository.findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(USER, OPTION))
-                .thenReturn(Optional.of(snap(LocalDate.of(2026, 10, 1), "100.50", "60.00", "40.50")));
+        SkillSnapshot last = snap(LocalDate.of(2026, 10, 1), "100.50", "60.00", "40.50");
+        when(snapshotRepository.findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(USER, OPTION)).thenReturn(Optional.of(last));
+        when(snapshotRepository.findFirstByUser_IdAndNoteOptionAndSnapshotDateBeforeOrderBySnapshotDateDesc(USER, OPTION, TODAY))
+                .thenReturn(Optional.of(last));
 
         SkillSnapshotResponse response = service.create(USER);
 
@@ -174,8 +175,7 @@ class SkillSnapshotServiceTest {
 
     @Test
     void 막힌_경우에는_상세도_저장하지_않는다() {
-        when(skillService.mySkill(USER)).thenReturn(skill("120.00", "70.00", "50.00", true));
-        when(snapshotRepository.existsByUser_IdAndNoteOptionAndSnapshotDate(USER, OPTION, TODAY)).thenReturn(true);
+        when(skillService.mySkill(USER)).thenReturn(skill("0.00", "0.00", "0.00", false));
 
         assertThatThrownBy(() -> service.create(USER)).isInstanceOf(ApiException.class);
         verify(entryRepository, never()).saveAll(any());
@@ -190,13 +190,41 @@ class SkillSnapshotServiceTest {
     }
 
     @Test
-    void 오늘_이미_기록했으면_거부한다() {
+    void 오늘_이미_기록했으면_새_줄을_만들지_않고_오늘_줄의_점수와_상세를_덮어쓴다() {
+        SkillEntryResponse entry = new SkillEntryResponse(1, 11L, 1L, "곡A", null, null, null, null, "단일",
+                new BigDecimal("90.00"), false, null, null, null, new BigDecimal("40.00"));
+        when(skillService.mySkill(USER)).thenReturn(new SkillResponse(OPTION, new BigDecimal("130.00"),
+                new BigDecimal("80.00"), new BigDecimal("50.00"), null, 15, 25, List.of(entry), List.of()));
+        SkillSnapshot todays = snap(TODAY, "120.00", "70.00", "50.00");
+        SkillSnapshot yesterday = snap(LocalDate.of(2026, 10, 10), "100.00", "60.00", "40.00");
+        when(snapshotRepository.findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(USER, OPTION)).thenReturn(Optional.of(todays));
+        when(snapshotRepository.findByUser_IdAndNoteOptionAndSnapshotDate(USER, OPTION, TODAY)).thenReturn(Optional.of(todays));
+        when(snapshotRepository.findFirstByUser_IdAndNoteOptionAndSnapshotDateBeforeOrderBySnapshotDateDesc(USER, OPTION, TODAY))
+                .thenReturn(Optional.of(yesterday));
+
+        SkillSnapshotResponse response = service.create(USER);
+
+        verify(snapshotRepository, never()).saveAndFlush(any());
+        assertThat(todays.getTotalScore()).isEqualByComparingTo("130.00");
+        assertThat(todays.getSingleScore()).isEqualByComparingTo("80.00");
+        // 상세는 지운 뒤(같은 채보가 다시 들어가도 유일 키에 걸리지 않게) 지금 목록으로 다시 넣는다
+        verify(entryRepository).deleteAllBySnapshotId(todays.getId());
+        verify(entryRepository).saveAll(any());
+        // 증감은 오늘 줄이 아니라 어제까지의 마지막 기록 대비다 (130 - 100)
+        assertThat(response.change()).isEqualByComparingTo("30.00");
+        assertThat(response.date()).isEqualTo(TODAY);
+    }
+
+    @Test
+    void 오늘_기록과_점수가_같으면_덮어쓰지_않는다() {
         when(skillService.mySkill(USER)).thenReturn(skill("120.00", "70.00", "50.00", true));
-        when(snapshotRepository.existsByUser_IdAndNoteOptionAndSnapshotDate(USER, OPTION, TODAY)).thenReturn(true);
+        when(snapshotRepository.findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(USER, OPTION))
+                .thenReturn(Optional.of(snap(TODAY, "120.00", "70.00", "50.00")));
 
         assertThatThrownBy(() -> service.create(USER))
-                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SNAPSHOT_ALREADY_TODAY));
-        verify(snapshotRepository, never()).saveAndFlush(any());
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.SNAPSHOT_NO_CHANGE));
+        verify(entryRepository, never()).deleteAllBySnapshotId(any());
+        verify(entryRepository, never()).saveAll(any());
     }
 
     @Test
@@ -229,7 +257,7 @@ class SkillSnapshotServiceTest {
     }
 
     @Test
-    void 동시에_눌려_유일_키를_어기면_오늘_이미_기록함으로_답한다() {
+    void 그날_첫_기록이_동시에_눌려_유일_키를_어기면_충돌로_답한다() {
         when(skillService.mySkill(USER)).thenReturn(skill("120.00", "70.00", "50.00", true));
         when(snapshotRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("uk_skill_snapshots_day"));
 
@@ -240,12 +268,13 @@ class SkillSnapshotServiceTest {
     // ---- status ----
 
     @Test
-    void 상태는_저장하지_않고_막는_이유를_코드로_알려_준다() {
+    void 상태는_저장하지_않고_오늘_기록이_있으면_덮어쓴다고_알려_준다() {
         when(skillService.mySkill(USER)).thenReturn(skill("120.00", "70.00", "50.00", true));
-        assertThat(service.status(USER)).isEqualTo(SkillSnapshotStatusResponse.ok());
+        assertThat(service.status(USER)).isEqualTo(SkillSnapshotStatusResponse.ok(false));
 
+        // 오늘 이미 기록했어도 점수가 다르면 누를 수 있다(오늘 기록 갱신)
         when(snapshotRepository.existsByUser_IdAndNoteOptionAndSnapshotDate(USER, OPTION, TODAY)).thenReturn(true);
-        assertThat(service.status(USER)).isEqualTo(SkillSnapshotStatusResponse.blocked("ALREADY_TODAY"));
+        assertThat(service.status(USER)).isEqualTo(SkillSnapshotStatusResponse.ok(true));
         verify(snapshotRepository, never()).saveAndFlush(any());
     }
 

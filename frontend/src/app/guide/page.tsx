@@ -13,6 +13,12 @@ const INCLUDED = ["Guide.inc1", "Guide.inc2", "Guide.inc3"] as const;
 
 const SELECTION = ["Guide.sel1", "Guide.sel2", "Guide.sel3"] as const;
 
+const SCREEN = [
+  { head: "Guide.progressHeading", text: "Guide.progressText" },
+  { head: "Guide.thresholdHeading", text: "Guide.thresholdText" },
+  { head: "Guide.snapshotHeading", text: "Guide.snapshotText" },
+] as const;
+
 function CheckIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mt-0.5 shrink-0 text-done-text">
@@ -115,6 +121,17 @@ export default function GuidePage() {
         </div>
         </div>
       </details>
+
+      {/* 화면 안내(2026-10-27): 홈·서열표에 새로 생긴 안내가 무슨 뜻인지 짧게 설명한다. 접지 않는다 */}
+      <section aria-label={t("Guide.screenHeading")} className="space-y-3">
+        <h2 className="text-lg font-bold text-fg">{t("Guide.screenHeading")}</h2>
+        {SCREEN.map((item) => (
+          <div key={item.head} className="space-y-1.5 rounded-2xl border border-line bg-card p-4">
+            <h3 className="text-[15px] font-bold text-fg">{t(item.head)}</h3>
+            <p className="text-[13px] leading-relaxed text-fg-sub">{t.rich(item.text, b)}</p>
+          </div>
+        ))}
+      </section>
 
       <section aria-label={t("Guide.constAria")} className="space-y-3">
         <h2 className="text-lg font-bold text-fg">{t("Guide.constHeading")}</h2>
