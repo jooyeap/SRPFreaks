@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 import { Pager } from "@/components/Pager";
 import { RecommendRangeForm } from "@/components/setlist/RecommendRangeForm";
@@ -165,7 +166,13 @@ function Group({
             return (
               <li key={item.songDifficultyId} className="flex items-center justify-between gap-3 border-t border-row-line py-2 first:border-t-0">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-fg">{item.title}</p>
+                  {/* 곡명을 누르면 곡 상세(그 채보)로 간다. 담기 전에 곡 정보를 볼 수 있게(2026-10-27). 옅은 밑줄과 ›로 누를 수 있다는 걸 보인다 */}
+                  <Link
+                    href={`/songs/${item.songId}?from=table&chart=${item.songDifficultyId}`}
+                    className="block truncate text-sm text-fg underline decoration-chip-line underline-offset-4 hover:decoration-fg"
+                  >
+                    {item.title} <span aria-hidden="true">›</span>
+                  </Link>
                   <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
                     <ChartBadge part={item.part} difficulty={item.difficulty} level={item.level} />
                     <span className="text-xs text-fg-dim">

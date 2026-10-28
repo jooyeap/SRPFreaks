@@ -10,6 +10,7 @@ import { HomeNotices } from "@/components/home/HomeNotices";
 import { PlayersPreview } from "@/components/home/PlayersPreview";
 import { ProgressCard, type ProgressPanel } from "@/components/home/ProgressCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
+import { HomeSnapshotLine } from "@/components/home/HomeSnapshotLine";
 import {
   allGroupsKey,
   fetchAllTierGroups,
@@ -107,6 +108,8 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       ) : (
         <Skeleton label={t("ratingLoading")} className="h-[7.5rem]" />
       )}
+      {/* 레이팅 기록 한 줄(점수가 바뀌었을 때만 보인다). 레이팅을 불러온 뒤에만 그린다 */}
+      {skill.data ? <HomeSnapshotLine userId={userId} /> : null}
 
       <ProgressCard table={tablePanel} songs={songsPanel} average={playLevel.data?.status === "READY" ? playLevel.data.tier : null} skill={skill.data ?? null} />
 

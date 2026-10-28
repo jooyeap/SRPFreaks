@@ -112,4 +112,14 @@ describe("레이팅 설명서", () => {
     expect(screen.getByText("4.27점")).toBeInTheDocument();
     expect(screen.getByText(/상수 20인 곡은 1%마다 정확히 4점/)).toBeInTheDocument();
   });
+
+  it("화면 안내에 진행도 카드·레이팅 반영 기준·레이팅 기록 설명이 있다(접히지 않는다)", () => {
+    const { container } = render(<GuidePage />);
+    const screenGuide = screen.getByRole("region", { name: "화면 안내" });
+    expect(container.querySelector("details")).not.toContainElement(screenGuide);
+    expect(within(screenGuide).getByRole("heading", { name: "홈 진행도 카드" })).toBeInTheDocument();
+    expect(within(screenGuide).getByRole("heading", { name: /85% 이상이면 레이팅에 반영돼요/ })).toBeInTheDocument();
+    expect(within(screenGuide).getByText(/같은 날 다시 누르면 오늘 기록이 최신 값으로 바뀝니다/)).toBeInTheDocument();
+    expect(within(screenGuide).getByText("지금 레이팅 기록하기").tagName).toBe("B");
+  });
 });

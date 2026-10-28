@@ -9,7 +9,7 @@ import { RecordDialog } from "@/components/record/RecordDialog";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { AverageToggle } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
-import { PART_OPTIONS, TableFilterPanel } from "@/components/table/TableFilterPanel";
+import { filterSummary, TableFilterPanel } from "@/components/table/TableFilterPanel";
 import { TableSearch } from "@/components/table/TableSearch";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
@@ -33,18 +33,7 @@ import { ErrorRetry } from "@/components/ErrorRetry";
 import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
-import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 
-/** 접힌 필터 줄에 보여 줄 요약. 걸린 필터가 없으면 "전체". */
-function filterSummary(filters: TableFilters, includeZero: boolean, t: Translator): string {
-  const picked = [
-    filters.part ? PART_OPTIONS.find((o) => o.value === filters.part)?.label : null,
-    filters.recommend.length > 0 ? t("Table.summaryRecommend", { values: filters.recommend.map((v) => recommendLabel(v, t)).join("·") }) : null,
-    filters.pattern.length > 0 ? t("Table.summaryPattern", { values: filters.pattern.map((v) => patternLabel(v, t)).join("·") }) : null,
-  ].filter((v): v is string => Boolean(v));
-  const average = includeZero ? t("Table.avgWithZero") : t("Table.avgWithoutZero");
-  return `${picked.length > 0 ? picked.join(" · ") : t("Songs.all")} · ${average}`;
-}
 
 function errorMessage(error: unknown, t: Translator): string {
   return error instanceof ApiError ? error.message : t("Table.loadFailed");
