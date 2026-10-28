@@ -55,7 +55,9 @@ class SettingAdminServiceTest {
                 setting("setlist.recommend_s_min", "-0.1"), setting("setlist.recommend_s_max", "0.4"),
                 setting("setlist.recommend_min_single", "5"), setting("setlist.recommend_min_other", "9"),
                 setting("setlist.recommend_starter_tier", "5.2"),
-                setting("peer.min_band_users", "5"), setting("peer.min_chart_users", "5")));
+                setting("peer.min_band_users", "5"), setting("peer.min_chart_users", "5"),
+                setting("recognize.enabled", "false"), setting("recognize.min_role", "ADMIN"),
+                setting("recognize.weekly_limit", "30"), setting("recognize.daily_total_limit", "300")));
         lenient().when(appSettingRepository.findAll()).thenReturn(settings);
         lenient().when(appSettingRepository.findAllWithUpdatedBy()).thenReturn(settings);
         lenient().when(appSettingRepository.findById(any(String.class))).thenAnswer(invocation ->
@@ -76,14 +78,14 @@ class SettingAdminServiceTest {
     @Test
     void 목록은_키_순으로_정렬하고_페이지로_자른다() {
         PageResponse<SettingResponse> first = service.list(0, 5);
-        PageResponse<SettingResponse> last = service.list(4, 5);
+        PageResponse<SettingResponse> last = service.list(5, 5);
 
         assertThat(first.content()).hasSize(5);
         assertThat(first.content()).extracting(SettingResponse::key).isSorted();
         assertThat(first.content().get(0).key()).isEqualTo("contact.takedown_email");
-        assertThat(first.totalElements()).isEqualTo(23);
-        assertThat(first.totalPages()).isEqualTo(5);
-        assertThat(last.content()).hasSize(3); // 23개 중 21~23번째
+        assertThat(first.totalElements()).isEqualTo(27);
+        assertThat(first.totalPages()).isEqualTo(6);
+        assertThat(last.content()).hasSize(2); // 27개 중 26~27번째 (사진 입력 설정 4개 추가, 2026-10-28)
         assertThat(service.list(9, 5).content()).isEmpty();
         assertThat(service.list(-1, 0).content()).hasSize(1); // 범위 밖 값은 허용 범위로 맞춘다
     }
@@ -172,5 +174,22 @@ class SettingAdminServiceTest {
         assertRejected("peer.min_chart_users", "-3");
         assertRejected("peer.min_chart_users", "다섯");
         assertRejected("peer.min_band_users", "2.5");
+    }
+
+    @Test
+    void 사진_입력_설정은_켜고_끄기와_공개_전환_한도_변경을_받는다() {
+        assertThat(service.update(1L, "recognize.enabled", "true").value()).isEqualTo("true");
+        assertThat(service.update(1L, "recognize.min_role", "USER").value()).isEqualTo("USER");   // 시험 끝: 모두에게 열기
+        assertThat(service.update(1L, "recognize.min_role", "ADMIN").value()).isEqualTo("ADMIN"); // 되돌리기
+        assertThat(service.update(1L, "recognize.weekly_limit", "50").value()).isEqualTo("50");
+    }
+
+    @Test
+    void 사진_입력_설정이_규칙에_어긋나면_거절한다() {
+        assertRejected("recognize.enabled", "on");
+        assertRejected("recognize.min_role", "ROOT");
+        assertRejected("recognize.min_role", "guest");
+        assertRejected("recognize.weekly_limit", "0");
+        assertRejected("recognize.daily_total_limit", "많이");
     }
 }
