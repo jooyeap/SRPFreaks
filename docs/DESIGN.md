@@ -638,7 +638,7 @@ com.srpfreaks.backend
 - 일본어는 같은 뜻으로 맞춘다. 시험 기간(ROOT·ADMIN만)에는 운영자 본인만 쓰므로 처리방침 변경은 공개 전환 배포에 맞춰 시행일과 함께 넣는다.
 
 **진행**: ① 완료(V18 `recognize_usages` + 설정 4개, `RecognizeConfig`·`RecognizeAccessPolicy`, 상태 API, 관리 설정 화면). ② 완료(`POST /records/recognize` multipart `image` 1장 1MB 이하 — nginx 요청 제한 1m과 같게 2MB에서 줄임, `RecognizeService`, `AnthropicVisionClient`(JDK HttpClient, 도구 강제 호출로 JSON 받기, 키 없으면 사용량을 세지 않고 503), IP당 1분 20회 제한, 오류 코드 `RECOGNIZE_LIMIT`(429)·`RECOGNIZE_UNAVAILABLE`(503)·`RECOGNIZE_BAD_IMAGE`(400)). 
-**구현 순서(2026-10-28 승인)**: ① 사용량 테이블·한도·설정·권한 판단·상태 API ② 인식 API + 모델 호출(모의 응답으로 테스트) ③ 화면(탭·여러 장·확인 목록) ④ 공개 전환 때 처리방침. 기본 꺼짐(`recognize.enabled=false`, `recognize.min_role=ADMIN`)으로 배포한 뒤 ROOT가 켜서 시험한다.
+③ 완료(화면 `/records/photo`, DESIGN-UI 32장. 기록 등록 창의 탭 대신 별도 화면으로 만들었다: 여러 장을 한 번에 고르면 곡이 제각각이라 곡 하나에 묶인 등록 창에 맞지 않는다). **구현 순서(2026-10-28 승인)**: ① 사용량 테이블·한도·설정·권한 판단·상태 API ② 인식 API + 모델 호출(모의 응답으로 테스트) ③ 화면(탭·여러 장·확인 목록) ④ 공개 전환 때 처리방침. 기본 꺼짐(`recognize.enabled=false`, `recognize.min_role=ADMIN`)으로 배포한 뒤 ROOT가 켜서 시험한다.
 
 ### 배포 개요 (구현 시 구체화)
 - EC2에 Docker로 백엔드 + MySQL, 프론트도 **같은 서버, 같은 도메인**에 둔다(리버스 프록시로 `/api`는 백엔드로, D20).

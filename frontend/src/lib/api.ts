@@ -35,7 +35,7 @@ type QueryValue = string | number | boolean | null | undefined;
 
 export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-  /** JSON으로 보낼 값 */
+  /** JSON으로 보낼 값. FormData면 그대로 multipart로 보낸다(사진 인식, D55) */
   body?: unknown;
   /** 쿼리 문자열. null/undefined인 값은 보내지 않는다 */
   query?: Record<string, QueryValue>;
@@ -182,8 +182,10 @@ async function send(path: string, options: ApiRequestOptions): Promise<Response>
       headers.set("Authorization", `Bearer ${token}`);
     }
   }
-  let body: string | undefined;
-  if (options.body !== undefined) {
+  let body: string | FormData | undefined;
+  if (typeof FormData !== "undefined" && options.body instanceof FormData) {
+    body = options.body; // Content-Type은 브라우저가 경계(boundary)와 함께 붙인다
+  } else if (options.body !== undefined) {
     headers.set("Content-Type", "application/json");
     body = JSON.stringify(options.body);
   }

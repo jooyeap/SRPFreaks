@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { PhotoEntryLink } from "@/components/recognize/PhotoEntryLink";
 import { useToast } from "@/components/Toast";
 import type { Locale } from "@/i18n/config";
 import { canUseImport } from "@/lib/features";
@@ -275,6 +276,8 @@ export function RecordImportView() {
   return (
     <section className="mx-auto flex w-full max-w-md flex-col gap-3 pb-4">
       <h1 className="text-xl font-bold text-fg">{t("Import.title")}</h1>
+      {/* 사진 입력(D55): 쓸 수 있는 사람에게만 보인다 */}
+      <PhotoEntryLink />
       <BookmarkGuide />
     </section>
   );
