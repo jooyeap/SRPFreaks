@@ -1,6 +1,7 @@
 package com.srpfreaks.backend.service.recognize;
 
 import com.srpfreaks.backend.config.AppProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -44,6 +45,8 @@ public class AnthropicVisionClient implements VisionClient {
     private final HttpClient http;
     private final JsonMapper json = JsonMapper.builder().build();
 
+    /** 생성자가 둘이라(아래는 테스트용) 스프링이 쓸 생성자를 지정한다. */
+    @Autowired
     public AnthropicVisionClient(AppProperties properties) {
         this(properties.getLlm(), HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
     }
