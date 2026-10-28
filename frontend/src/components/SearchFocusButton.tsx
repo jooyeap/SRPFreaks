@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { HEADER_SEARCH_SLOT_ID } from "@/lib/header-slots";
@@ -17,11 +17,9 @@ import { HEADER_SEARCH_SLOT_ID } from "@/lib/header-slots";
  */
 export function SearchFocusButton({ targetId }: { targetId: string }) {
   const t = useTranslations();
-  // 헤더 자리는 화면이 그려진 뒤에야 찾을 수 있어서(서버 렌더 중에는 document가 없다) 마운트 후에 찾는다
-  const [slot, setSlot] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    setSlot(document.getElementById(HEADER_SEARCH_SLOT_ID));
-  }, []);
+  // 헤더 자리는 브라우저에서만 찾을 수 있다(서버 렌더 중에는 document가 없어 null). effect 안에서 setState를 하지 않으려고
+  // useSyncExternalStore로 읽는다: 서버·첫 하이드레이션은 null, 그 뒤 브라우저 값(헤더는 항상 먼저 그려져 있다).
+  const slot = useSyncExternalStore(subscribeNothing, findHeaderSlot, () => null);
   const icon = (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       <circle cx="11" cy="11" r="7" />
@@ -56,6 +54,15 @@ export function SearchFocusButton({ targetId }: { targetId: string }) {
         : null}
     </>
   );
+}
+
+/** 헤더 자리는 바뀌지 않으므로 구독할 것이 없다 */
+function subscribeNothing(): () => void {
+  return () => {};
+}
+
+function findHeaderSlot(): HTMLElement | null {
+  return document.getElementById(HEADER_SEARCH_SLOT_ID);
 }
 
 /**
