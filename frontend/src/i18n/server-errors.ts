@@ -22,5 +22,8 @@ export const SERVER_ERRORS: Record<string, { message: string; key: MessageKey }>
   SUGGESTION_LIMIT: { message: "오늘은 건의를 더 보낼 수 없습니다. 내일 다시 보내 주세요.", key: "ServerErrors.SUGGESTION_LIMIT" },
   SETLIST_FULL: { message: "세트리스트에는 30곡까지 담을 수 있습니다.", key: "ServerErrors.SETLIST_FULL" },
   RATE_LIMITED: { message: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.", key: "ServerErrors.RATE_LIMITED" },
+  RECOGNIZE_LIMIT: { message: "사진 인식 한도를 모두 사용했습니다. 나중에 다시 시도해 주세요.", key: "ServerErrors.RECOGNIZE_LIMIT" },
+  RECOGNIZE_UNAVAILABLE: { message: "지금은 사진을 인식할 수 없습니다. 직접 입력해 주세요.", key: "ServerErrors.RECOGNIZE_UNAVAILABLE" },
+  RECOGNIZE_BAD_IMAGE: { message: "사진 파일(JPEG·PNG·WebP, 1MB 이하)을 올려 주세요.", key: "ServerErrors.RECOGNIZE_BAD_IMAGE" },
   INTERNAL_ERROR: { message: "서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.", key: "ServerErrors.INTERNAL_ERROR" },
 };
