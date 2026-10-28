@@ -2,12 +2,24 @@ import { FilterChips, MultiFilterChips, type ChipOption } from "@/components/tab
 import { PATTERN_OPTIONS, RECOMMEND_OPTIONS, toggleValue, type TableFilters } from "@/lib/difficulty-table";
 import type { InstrumentPart } from "@/lib/types";
 import { useTranslations } from "next-intl";
+import type { Translator } from "@/i18n/translator";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 
 export const PART_OPTIONS: readonly ChipOption<InstrumentPart>[] = [
   { value: "GUITAR", label: "Guitar" },
   { value: "BASS", label: "Bass" },
 ];
+
+/** 접힌 필터 줄에 보여 줄 요약. 걸린 필터가 없으면 "전체". 서열표 본문과 묶음 화면이 같이 쓴다. */
+export function filterSummary(filters: TableFilters, includeZero: boolean, t: Translator): string {
+  const picked = [
+    filters.part ? PART_OPTIONS.find((o) => o.value === filters.part)?.label : null,
+    filters.recommend.length > 0 ? t("Table.summaryRecommend", { values: filters.recommend.map((v) => recommendLabel(v, t)).join("·") }) : null,
+    filters.pattern.length > 0 ? t("Table.summaryPattern", { values: filters.pattern.map((v) => patternLabel(v, t)).join("·") }) : null,
+  ].filter((v): v is string => Boolean(v));
+  const average = includeZero ? t("Table.avgWithZero") : t("Table.avgWithoutZero");
+  return `${picked.length > 0 ? picked.join(" · ") : t("Songs.all")} · ${average}`;
+}
 
 /**
  * 서열표 필터 칩 세 줄(파트 하나 / 추천 여러 개 / 속성 여러 개). 서열표 본문과 묶음 화면이 함께 쓴다.

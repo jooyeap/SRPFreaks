@@ -10,6 +10,7 @@ import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongManageDialog } from "@/components/song/SongManageDialog";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
+import { PeerStatsCard } from "@/components/song/PeerStatsCard";
 import { TierHistorySection } from "@/components/song/TierHistorySection";
 import { SongHeader } from "@/components/song/SongHeader";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
@@ -209,7 +210,11 @@ export function SongDetailView({
             {isTable ? (
               <>
                 {found ? (
-                  <TableInfoCard group={found.group} entry={found.entry} />
+                  <>
+                    <TableInfoCard group={found.group} entry={found.entry} />
+                    {/* 같은 티어 유저 기록(D53): 로그인했을 때만. 기준 인원에 못 미치면 카드가 스스로 사라진다 */}
+                    {chart && loggedIn ? <PeerStatsCard chartId={chart.id} userId={userId} /> : null}
+                  </>
                 ) : (
                   <p className="rounded-lg border border-line bg-card p-4 text-sm text-fg-sub">
                     {groupsQuery.isPending && tableId !== null
@@ -223,6 +228,7 @@ export function SongDetailView({
               <>
                 <InfoCards song={data} />
                 <LevelTable song={data} selectedId={chart?.id ?? null} groups={groups} />
+                {chart && loggedIn ? <PeerStatsCard chartId={chart.id} userId={userId} /> : null}
               </>
             )}
           </div>

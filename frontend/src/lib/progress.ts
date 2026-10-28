@@ -109,6 +109,28 @@ export function weakestGroupNear(
   return weakestGroup(near);
 }
 
+/** 내 평균보다 이만큼 넘게 높은 구간부터 "멀리 있는 높은 구간"으로 본다(접기 기준). */
+const FOLD_ABOVE = 0.2;
+
+/**
+ * 칸 지도 맨 위(높은 난이도부터)에서, 기록이 하나도 없고 내 평균 + 0.2보다 높은 구간이 몇 개 이어지는지 센다(2026-10-27).
+ * 이 구간들은 한 줄로 접어 둔다(눌러서 펼침). 처음으로 조건이 깨지는 구간에서 멈추므로 중간의 구간은 접지 않는다.
+ * 합쳐진 `6.5 이상` 줄은 6.5를 그 줄의 기준으로 본다. 2개 미만이면 접어도 이득이 없어 0을 돌려준다.
+ * 소수 비교는 100배 한 정수로 한다(weakestGroupNear와 같은 이유).
+ */
+export function emptyHighCount(groups: readonly ProgressGroup[], average: number): number {
+  const limit = Math.round((average + FOLD_ABOVE) * 100);
+  let count = 0;
+  for (const g of groups) {
+    const tier = g.key === MERGED_HIGH_KEY ? MERGED_HIGH_FROM : Number(g.key);
+    if (!Number.isFinite(tier) || g.recorded > 0 || Math.round(tier * 100) <= limit) {
+      break;
+    }
+    count += 1;
+  }
+  return count >= 2 ? count : 0;
+}
+
 /**
  * 칸 지도의 색 진하기(퍼센트). 많이 채울수록 배경(4→24%)과 테두리(18→63%)가 진해진다.
  * 색 값은 컴포넌트가 CSS 변수에 이 퍼센트만 섞어서 만든다.

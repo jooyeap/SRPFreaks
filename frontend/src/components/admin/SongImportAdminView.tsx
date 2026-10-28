@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/components/Toast";
@@ -93,6 +94,10 @@ export function SongImportAdminView() {
   return (
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-1">
+        {/* 다른 관리 화면과 같은 뒤로 버튼(2026-10-27) */}
+        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+          <span aria-hidden="true">←</span>
+        </Link>
         <h1 className="text-xl font-semibold text-fg">{t("SongImport.title")}</h1>
         <p className="text-sm text-fg-sub">{t("SongImport.lead")}</p>
       </header>
