@@ -19,6 +19,8 @@ WORKDIR /app
 
 # root가 아닌 일반 사용자로 실행한다 (컨테이너가 뚫려도 권한을 최소로)
 RUN addgroup -S app && adduser -S app -G app
+# 재킷 파일(D54) 폴더. 도커 볼륨을 처음 붙일 때 이 폴더의 주인(app)이 그대로 옮겨져서 app 사용자가 쓸 수 있다
+RUN mkdir -p /data/jackets && chown app:app /data/jackets
 COPY --from=build /workspace/build/app.jar app.jar
 USER app
 

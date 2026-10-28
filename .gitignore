@@ -39,3 +39,6 @@ application-local.yml
 
 # 1회성 시드 SQL (데이터라 커밋하지 않는다, D23)
 scripts/seed/out/
+
+# 재킷(D54) 로컬 저장 폴더 (JACKETS_DIR 기본값)
+/backend/data/
