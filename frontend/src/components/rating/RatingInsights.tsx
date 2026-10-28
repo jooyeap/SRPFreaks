@@ -44,6 +44,11 @@ export function RatingInsights({ userId }: { userId: number }) {
   const canRecord = status.data?.available === true && !status.data.replacesToday;
   // 서버가 비교할 수 없다고 답하면(처음이거나 상세가 없는 예전 기록) 요약 한 줄은 그리지 않는다
   const result = compare.data?.available === true ? compare.data : null;
+  // 변화 없음: 합계 증감이 0이고 들어오거나 오르거나 내려가거나 빠진 곡이 하나도 없을 때
+  const unchanged =
+    result !== null &&
+    formatChange(result.totalChange).direction === "flat" &&
+    result.entered.length + result.improved.length + result.declined.length + result.left.length === 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -75,7 +80,12 @@ export function RatingInsights({ userId }: { userId: number }) {
         </section>
       ) : null}
 
-      {result ? (
+      {result && unchanged ? (
+        // 점수도 목록 구성도 그대로면 펼칠 내용이 없으니 접는 줄 대신 한 줄 안내만 둔다(2026-10-27: `±0.00 · 새로 들어온 곡 0개`가 의미 없이 보였다)
+        <section aria-label={t("Rating.statusAria")} className="rounded-2xl border border-line bg-card p-4">
+          <p className="text-sm text-fg-sub">{t("Rating.noChangeSince", { date: result.fromDate ?? "" })}</p>
+        </section>
+      ) : result ? (
         <section aria-label={t("Rating.statusAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
           <div className="flex flex-col gap-2">
             <button
@@ -86,12 +96,19 @@ export function RatingInsights({ userId }: { userId: number }) {
               className="flex w-full items-center justify-between gap-3 text-left"
             >
               <span className="text-sm text-fg">
-                {t.rich("Rating.vsLast", {
-                  b: (c) => <span className="font-num font-semibold">{c}</span>,
-                  date: result.fromDate ?? "",
-                  change: formatChange(result.totalChange).text,
-                  count: result.entered.length,
-                })}
+                {/* 새로 들어온 곡이 없으면 `· 새로 들어온 곡 0개`는 빼고 증감만 적는다 */}
+                {result.entered.length > 0
+                  ? t.rich("Rating.vsLast", {
+                      b: (c) => <span className="font-num font-semibold">{c}</span>,
+                      date: result.fromDate ?? "",
+                      change: formatChange(result.totalChange).text,
+                      count: result.entered.length,
+                    })
+                  : t.rich("Rating.vsLastNoNew", {
+                      b: (c) => <span className="font-num font-semibold">{c}</span>,
+                      date: result.fromDate ?? "",
+                      change: formatChange(result.totalChange).text,
+                    })}
               </span>
               <span aria-hidden="true" className="shrink-0 text-fg-dim">
                 {detailOpen ? "▴" : "▾"}

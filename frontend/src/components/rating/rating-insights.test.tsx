@@ -80,4 +80,19 @@ describe("RatingInsights", () => {
     fireEvent.click(summary);
     expect(await screen.findByRole("region", { name: "기록 갱신" })).toHaveTextContent("신곡");
   });
+
+  it("점수도 목록도 그대로면 접는 줄 대신 `변화가 없습니다` 한 줄만 보인다", async () => {
+    compare = { ...compareOk, toTotal: 1366.08, totalChange: 0, entered: [] };
+    renderInsights();
+    expect(await screen.findByText("마지막 기록(2026-10-10) 이후 레이팅 변화가 없습니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /대비/ })).toBeNull();
+  });
+
+  it("새로 들어온 곡이 없으면 `새로 들어온 곡 0개`는 빼고 증감만 적는다", async () => {
+    compare = { ...compareOk, entered: [], improved: [{ ...compareOk.entered[0], rateBefore: 90, scoreBefore: 250 }] };
+    renderInsights();
+    const summary = await screen.findByRole("button", { name: /마지막 기록\(2026-10-10\) 대비/ });
+    expect(summary).toHaveTextContent("▲ +33.92");
+    expect(summary).not.toHaveTextContent("새로 들어온 곡");
+  });
 });

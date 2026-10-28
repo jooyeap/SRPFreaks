@@ -478,6 +478,8 @@
     "moreDisplaced": "외 <n>{count}</n>곡",
     "sinceLast": "마지막 기록({date}) 이후 레이팅이 {change} 달라졌습니다.",
     "vsLast": "마지막 기록({date}) 대비 <b>{change}</b> · 새로 들어온 곡 <b>{count}</b>개",
+    "vsLastNoNew": "마지막 기록({date}) 대비 <b>{change}</b>",
+    "noChangeSince": "마지막 기록({date}) 이후 레이팅 변화가 없습니다.",
     "tierAria": "플레이어 티어 {name}",
     "labelSingle": "단일 <n>{score}</n>",
     "labelOther": "복합·이중·삼중 <n>{score}</n>",
