@@ -59,6 +59,10 @@ run env FAKE_DF_USED_K="$(used_for 80)"; printf '%s' "$OUT" | grep -Fq "(주의)
 run env FAKE_DF_USED_K="$(used_for 89)"; printf '%s' "$OUT" | grep -Fq "(주의)"; check "89%는 주의" "$?"
 run env FAKE_DF_USED_K="$(used_for 90)"; printf '%s' "$OUT" | grep -Fq "(위험)"; check "90%는 위험" "$?"
 check "위험이어도 종료 코드 0" "$CODE"
+run env DISK_FAIL_AT_WARN=1 FAKE_DF_USED_K="$(used_for 79)"; [ "$CODE" -eq 0 ]; check "알림 모드: 79%는 0" "$?"
+run env DISK_FAIL_AT_WARN=1 FAKE_DF_USED_K="$(used_for 80)"; [ "$CODE" -eq 1 ]; check "알림 모드: 80%(주의)는 1" "$?"
+printf '%s' "$OUT" | grep -Fq "디스크 사용률이 80% 이상입니다"; check "알림 모드: 안내 문구" "$?"
+run env DISK_FAIL_AT_WARN=1 FAKE_DF_USED_K="$(used_for 90)"; [ "$CODE" -eq 1 ]; check "알림 모드: 90%(위험)는 1" "$?"
 
 # 4) 점검만 한다: 백업 파일이 그대로 남아 있다
 [ -f "$TMP/backups/srpfreaks-SECRETNAME1.sql.gz" ] && [ -f "$TMP/backups/manual-SECRETNAME3.sql" ]; check "아무것도 지우지 않는다" "$?"
