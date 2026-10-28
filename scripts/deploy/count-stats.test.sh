@@ -22,6 +22,9 @@ case "${FAKE_MODE:-}" in
   weird) echo "secret@example.com"; exit 0 ;;
 esac
 case "$sql" in
+  *"image_url IS NOT NULL"*) echo 3 ;;
+  *"FROM songs"*) echo 600 ;;
+  *"FROM song_difficulties"*) echo 1500 ;;
   *"t.display_name"*) printf 'Gold\t6\nPlatinum\t2\nBad<script>\t1\n' ;;
   *"status = 'BLOCKED'"*) echo 1 ;;
   *"FROM users u WHERE"*) echo 8 ;;
@@ -48,6 +51,7 @@ run() {
 run env
 check "정상 종료" "$([ "$CODE" -eq 0 ]; echo $?)"
 check "유저 수" "$(printf '%s' "$OUT" | grep -q '전체 42명 · 공개 8명 · 차단 1명'; echo $?)"
+check "곡·채보·이미지 수" "$(printf '%s' "$OUT" | grep -q '곡 600개 · 채보 1500개 · 이미지 주소가 있는 곡 3개'; echo $?)"
 check "기록 수" "$(printf '%s' "$OUT" | grep -q '기록 1234건'; echo $?)"
 check "티어별 인원" "$(printf '%s' "$OUT" | grep -q '^Gold: 6명$' && printf '%s' "$OUT" | grep -q '^Platinum: 2명$'; echo $?)"
 check "이상한 티어 이름은 내지 않음" "$(printf '%s' "$OUT" | grep -q 'script'; [ $? -ne 0 ]; echo $?)"
