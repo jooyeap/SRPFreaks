@@ -95,6 +95,19 @@ describe("TierFolderView", () => {
     expect(screen.getByRole("navigation", { name: "난이도 목록" })).toBeInTheDocument();
   });
 
+  it("모바일에서는 필터를 `필터` 한 줄(지금 조건 요약)로 접어 두고, 누르면 펼친다 (서열표 본문과 같은 모양)", async () => {
+    renderView("5.8");
+    await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+    const toggle = screen.getByRole("button", { name: /필터.*전체.*0% 미포함/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const panel = document.getElementById("folder-filters");
+    expect(panel?.className).toContain("hidden");
+    expect(panel?.className).toContain("md:flex");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(document.getElementById("folder-filters")?.className).not.toMatch(/(^| )hidden( |$)/);
+  });
+
   it("undecided(미정) 주소는 서열표 화면에서 뺐으므로 찾을 수 없다", async () => {
     renderView("undecided");
     expect(await screen.findByRole("alert")).toHaveTextContent("묶음을 찾을 수 없습니다.");

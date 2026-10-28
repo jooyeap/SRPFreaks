@@ -92,6 +92,17 @@
       "line2": "난이도 미설정인 곡은 레이팅에서 제외되고 기록만 남습니다."
     }
   },
+  "PeerStats": {
+    "title": "같은 티어 유저 기록",
+    "users": "레이팅에 포함된 유저 수",
+    "usersValue": "{users}명 / {band}명",
+    "rate": "달성률",
+    "mine": "내 기록",
+    "mineValue": "{rate} · 이미 레이팅에 포함",
+    "gain": "내 예상 레이팅",
+    "gainValue": "+{value}점",
+    "loadFailed": "같은 티어 유저 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+  },
   "Login": {
     "title": "로그인",
     "lead": "Google 계정으로 로그인합니다. 비밀번호는 저장하지 않습니다.",
@@ -102,6 +113,8 @@
     "consentAfter": "에 따라 이메일과 닉네임, 기록이 저장되는 것에 동의한 것으로 봅니다."
   },
   "Home": {
+    "snapshotSince": "마지막 기록({date}) 이후 <b>{change}</b>",
+    "snapshotSinceToday": "오늘 기록 이후 <b>{change}</b>",
     "greeting": "<num>{name}</num>님의 홈",
     "defaultName": "플레이어",
     "ratingLoadFailed": "레이팅을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
@@ -168,6 +181,9 @@
     "overallAria": "전체 달성 현황",
     "belowS": "S 미만",
     "noRecord": "기록 없음",
+    "tileEmpty": "아직 기록이 없습니다",
+    "foldClosed": "{from} ~ {to} · 기록 없는 구간 {count}개",
+    "foldOpen": "기록 없는 높은 구간 접기",
     "colRange": "구간",
     "colAchieve": "달성",
     "mergedHigh": "{tier} 이상"
@@ -191,6 +207,7 @@
     "version": "버전",
     "reset": "초기화",
     "searchPlaceholder": "곡명, 아티스트 검색 (한글·일본어·로마자)",
+    "searchPlaceholderShort": "곡명·아티스트 검색",
     "searchAria": "곡 검색",
     "didYouMean": "혹시 이 곡인가요?",
     "suggestionsAria": "검색어 추천",
@@ -416,6 +433,8 @@
     "snapshotHint": "지금 점수를 기록으로 남겨 두면 나중에 얼마나 올랐는지 비교할 수 있습니다.",
     "snapshotSaving": "기록 중입니다.",
     "snapshotSave": "지금 레이팅 기록하기",
+    "snapshotUpdate": "오늘 기록 갱신",
+    "snapshotUpdated": "오늘 레이팅 기록을 갱신했습니다.",
     "snapshotFailed": "기록하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "statusAria": "레이팅 현황",
     "mine": "내 레이팅",
@@ -459,6 +478,8 @@
     "moreDisplaced": "외 <n>{count}</n>곡",
     "sinceLast": "마지막 기록({date}) 이후 레이팅이 {change} 달라졌습니다.",
     "vsLast": "마지막 기록({date}) 대비 <b>{change}</b> · 새로 들어온 곡 <b>{count}</b>개",
+    "vsLastNoNew": "마지막 기록({date}) 대비 <b>{change}</b>",
+    "noChangeSince": "마지막 기록({date}) 이후 레이팅 변화가 없습니다.",
     "tierAria": "플레이어 티어 {name}",
     "labelSingle": "단일 <n>{score}</n>",
     "labelOther": "복합·이중·삼중 <n>{score}</n>",
@@ -750,7 +771,7 @@
     "withdrawBtn": "탈퇴하기",
     "checkHint": "확인에 체크해야 탈퇴하기가 켜집니다.",
     "nicknameHelp": "{min}~{max}자. 영문, 숫자, 일본어(히라가나·가타카나·한자)와 ー ・ _ - 만 사용할 수 있습니다. 비워 두면 이메일이 표시됩니다.",
-    "visibilityHelp": "공개하면 다른 사용자(로그인하지 않은 방문자 포함)에게 닉네임, 플레이어 티어, 총점이 유저 목록에 보이고, 누르면 레이팅 목록(곡명과 달성률)을 볼 수 있습니다. 이메일은 보이지 않습니다. 언제든 끌 수 있고, 끄면 바로 사라집니다.",
+    "visibilityHelp": "공개하면 다른 사용자(로그인하지 않은 방문자 포함)에게 닉네임, 플레이어 티어, 총점이 유저 목록에 보이고, 누르면 레이팅 목록(곡명과 달성률)을 볼 수 있습니다. 이메일은 보이지 않습니다. 언제든 끌 수 있고, 끄면 바로 사라집니다. 공개하면 같은 티어 유저 통계에도 포함됩니다.",
     "delAccountTitle": "계정",
     "delAccountBody": "Google 계정 연결과 닉네임이 삭제됩니다.",
     "delRecordsTitle": "기록",
@@ -880,6 +901,13 @@
     "withdrawLead": "탈퇴하려면 로그인해 주세요."
   },
   "Guide": {
+    "screenHeading": "화면 안내",
+    "progressHeading": "홈 진행도 카드",
+    "progressText": "서열표의 기준 난이도별로 기록을 얼마나 채웠는지 보여 줍니다. 레이팅 목록이 어느 정도 쌓이면 내 평균 난이도 근처에서 아직 비어 있는 구간을 하나 골라 알려 줍니다.",
+    "thresholdHeading": "\"85% 이상이면 레이팅에 반영돼요\"란?",
+    "thresholdText": "레이팅 목록이 가득 찼을 때, 그 구간의 곡을 몇 % 이상 치면 지금 목록의 맨 아래 곡보다 점수가 높아져 목록에 들어가는지를 80 · 85 · 90 · 95% 단위로 알려 줍니다. 단일과 그 외 목록은 따로 계산합니다. 목록이 아직 덜 찼다면 기록만 남겨도 반영되므로 이 안내는 나오지 않습니다.",
+    "snapshotHeading": "레이팅 기록",
+    "snapshotText": "<b>지금 레이팅 기록하기</b>를 누르면 그 시점의 레이팅을 남깁니다. 하루에 한 줄만 남고, 같은 날 다시 누르면 오늘 기록이 최신 값으로 바뀝니다. 남긴 기록으로 레이팅이 얼마나 올랐는지 비교할 수 있습니다. 자동으로 저장되지는 않습니다.",
     "metaTitle": "레이팅 설명서 | SRPFreaks",
     "sumSrnText": "SuperRandom+ 옵션으로 플레이한 기록만 계산합니다.",
     "sum40Head": "40보면",
@@ -927,7 +955,7 @@
   "Privacy": {
     "metaTitle": "개인정보 처리방침 | SRPFreaks",
     "title": "개인정보 처리방침",
-    "effectiveDate": "2026년 10월 8일",
+    "effectiveDate": "2026년 10월 28일",
     "lead": "SRPFreaks는 KONAMI와 무관한 비공식 팬 프로젝트이며, 서비스에 꼭 필요한 정보만 다룹니다. 시행일: {date}",
     "s1Title": "1. 수집하는 정보",
     "s1b1": "Google 계정으로 로그인할 때 Google이 알려 주는 이메일 주소와 Google 계정 고유 식별자를 저장합니다. 비밀번호는 받지도 저장하지도 않습니다.",
@@ -941,6 +969,7 @@
     "s3Title": "3. 다른 사람에게 보이는 정보",
     "s3b1": "기본값은 비공개입니다. 회원님이 설정에서 직접 공개를 켠 경우에만 닉네임, 티어, 총점, 레이팅 목록이 유저 목록과 상세 화면에 보이며, 로그인하지 않은 방문자도 볼 수 있습니다. 언제든 다시 끌 수 있습니다.",
     "s3b2": "이메일 주소와 Google 식별자는 어떤 경우에도 다른 이용자에게 보이지 않습니다.",
+    "s3b3": "공개를 켠 회원님의 레이팅 기록은 같은 티어 유저 통계(인원 수·중앙값)에도 쓰입니다. 통계는 5명 이상이 모였을 때만 보이며, 누구의 기록인지는 드러나지 않습니다.",
     "s4Title": "4. 보관 기간과 삭제",
     "s4b1": "회원님의 정보는 탈퇴할 때까지 보관합니다. 설정 화면에서 탈퇴하면 계정과 모든 기록이 바로 삭제되며 되돌릴 수 없습니다.",
     "s4b2": "운영자의 관리 작업 기록에 남아 있던 이 계정의 식별 정보도 함께 지워집니다.",
@@ -986,7 +1015,6 @@
     "noDetail": "곡별 상세를 남기기 전의 기록이라 곡 단위로는 비교할 수 없습니다. 다음 기록부터 비교할 수 있습니다.",
     "noSnapshot": "아직 기록한 레이팅이 없습니다.",
     "cannotCompare": "비교할 수 없습니다.",
-    "alreadyToday": "오늘은 이미 기록했습니다. 내일 다시 기록할 수 있습니다.",
     "noChange": "마지막 기록과 점수가 같아 기록할 수 없습니다.",
     "noRecords": "레이팅에 들어간 기록이 없어 기록할 수 없습니다."
   },
@@ -1139,7 +1167,32 @@
     "registerFromSuggestionAria": "{title} 건의로 곡 등록",
     "menuSongImport": "공식 곡 목록 갱신",
     "menuSongImportDesc": "공식 곡 목록에서 아티스트·레벨을 가져옵니다.",
-    "actionSongOfficialImport": "공식 곡 목록 갱신"
+    "actionSongOfficialImport": "공식 곡 목록 갱신",
+    "detailKey": {
+      "title": "제목",
+      "name": "이름",
+      "status": "상태",
+      "part": "파트",
+      "type": "난이도",
+      "level": "레벨",
+      "songId": "곡 ID",
+      "songDifficultyId": "채보 ID",
+      "difficultyTableId": "서열표 ID",
+      "targetUserId": "대상 사용자 ID",
+      "deletedCount": "지운 기록",
+      "bestRate": "최고 달성률",
+      "artistFilled": "아티스트 채움",
+      "levelChanged": "레벨 변경",
+      "songIds": "곡 ID",
+      "chartIds": "채보 ID",
+      "tier": "레이팅 상수 난이도",
+      "recommend": "추천",
+      "pattern": "속성",
+      "ratingEnabled": "레이팅 반영"
+    },
+    "detailOn": "켜짐",
+    "detailOff": "꺼짐",
+    "detailMore": "{items} 외 {count}개"
   },
   "ServerErrors": {
     "AUTH_FAILED": "로그인할 수 없습니다. 다시 로그인해 주세요.",
@@ -1151,7 +1204,7 @@
     "NOT_FOUND": "찾을 수 없습니다.",
     "CONFLICT": "이미 등록되어 있습니다.",
     "SONG_TITLE_DUPLICATE": "같은 이름의 곡이 이미 등록되어 있습니다. 곡 목록에서 확인해 주세요.",
-    "SNAPSHOT_ALREADY_TODAY": "오늘은 이미 기록했습니다. 내일 다시 기록해 주세요.",
+    "SNAPSHOT_ALREADY_TODAY": "방금 기록했습니다. 잠시 후 다시 시도해 주세요.",
     "SNAPSHOT_NO_CHANGE": "마지막 기록과 점수가 같아 기록할 수 없습니다.",
     "SNAPSHOT_NO_RECORDS": "레이팅에 들어간 기록이 없어 기록할 수 없습니다.",
     "SUGGESTION_LIMIT": "오늘은 건의를 더 보낼 수 없습니다. 내일 다시 보내 주세요.",

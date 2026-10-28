@@ -119,6 +119,8 @@ describe("SongDetailView", () => {
   const fetchMock = vi.fn<typeof fetch>();
   let tables: DifficultyTableResponse[];
   let songResponse: () => Response;
+  // 같은 티어 유저 기록(D53): 기본은 기준 인원에 못 미쳐 채보가 비어 있다(카드가 안 나옴)
+  let peerStats: { tierName: string | null; bandUsers: number; charts: unknown[] };
 
   beforeEach(() => {
     clearAccessToken();
@@ -126,6 +128,7 @@ describe("SongDetailView", () => {
     fetchMock.mockReset();
     tables = [table];
     songResponse = () => json(song);
+    peerStats = { tierName: "SS 3", bandUsers: 4, charts: [] };
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockImplementation((input) => {
       const url = String(input);
@@ -135,6 +138,7 @@ describe("SongDetailView", () => {
       }
       if (url.endsWith("/difficulty-tables")) return Promise.resolve(json(tables));
       if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
+      if (url.includes("/peer-stats")) return Promise.resolve(json(peerStats));
       if (url.includes("/songs/")) return Promise.resolve(songResponse());
       if (url.includes("/records?")) {
         return Promise.resolve(
@@ -435,5 +439,27 @@ describe("SongDetailView", () => {
     expect(mine).toHaveClass("order-2", "md:order-none");
     const rest = screen.getByRole("region", { name: "레벨 정보" }).parentElement;
     expect(rest).toHaveClass("order-3", "md:order-none");
+  });
+
+  it("로그인했고 같은 티어 유저 기록이 있으면 서열표 정보 아래에 카드를 보여 준다", async () => {
+    peerStats = {
+      tierName: "SS 3",
+      bandUsers: 8,
+      charts: [{ songDifficultyId: 10, users: 6, medianRate: 88, expectedGain: 12.4, inMyList: false, myRate: null }],
+    };
+    renderView("table", 10);
+
+    await screen.findByText("레이팅에 포함된 유저 수");
+    const card = screen.getByRole("region", { name: "같은 티어 유저 기록" });
+    expect(card).toHaveTextContent("6명 / 8명");
+    expect(card).toHaveTextContent("+12.40점");
+  });
+
+  it("기준 인원에 못 미치면 같은 티어 유저 기록 카드가 없다", async () => {
+    renderView("table", 10);
+
+    await screen.findByRole("region", { name: "같은 난이도의 곡" });
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/peer-stats"))).toBe(true));
+    expect(screen.queryByRole("region", { name: "같은 티어 유저 기록" })).not.toBeInTheDocument();
   });
 });

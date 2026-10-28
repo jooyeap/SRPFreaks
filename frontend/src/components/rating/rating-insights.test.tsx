@@ -29,7 +29,7 @@ describe("RatingInsights", () => {
   }
 
   beforeEach(() => {
-    status = { available: true, reason: null };
+    status = { available: true, reason: null, replacesToday: false };
     compare = compareOk;
     fetchMock.mockReset();
     fetchMock.mockImplementation((input, init) => {
@@ -51,8 +51,15 @@ describe("RatingInsights", () => {
     await waitFor(() => expect(fetchMock.mock.calls.some((c) => c[1]?.method === "POST")).toBe(true));
   });
 
-  it("기록할 수 없는 날(이미 기록 / 변경 없음)에는 제안을 보이지 않는다", async () => {
-    status = { available: false, reason: "ALREADY_TODAY" };
+  it("점수가 같아 기록할 수 없으면 제안을 보이지 않는다", async () => {
+    status = { available: false, reason: "NO_CHANGE", replacesToday: false };
+    renderInsights();
+    await screen.findByText(/새로 들어온 곡/); // 요약은 보인다
+    expect(screen.queryByRole("region", { name: "레이팅 기록 제안" })).toBeNull();
+  });
+
+  it("오늘 이미 기록했으면 갱신할 수 있어도 제안을 다시 띄우지 않는다(저장할 때마다 뜨지 않게)", async () => {
+    status = { available: true, reason: null, replacesToday: true };
     renderInsights();
     await screen.findByText(/새로 들어온 곡/); // 요약은 보인다
     expect(screen.queryByRole("region", { name: "레이팅 기록 제안" })).toBeNull();
@@ -72,5 +79,20 @@ describe("RatingInsights", () => {
     expect(summary).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(summary);
     expect(await screen.findByRole("region", { name: "기록 갱신" })).toHaveTextContent("신곡");
+  });
+
+  it("점수도 목록도 그대로면 접는 줄 대신 `변화가 없습니다` 한 줄만 보인다", async () => {
+    compare = { ...compareOk, toTotal: 1366.08, totalChange: 0, entered: [] };
+    renderInsights();
+    expect(await screen.findByText("마지막 기록(2026-10-10) 이후 레이팅 변화가 없습니다.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /대비/ })).toBeNull();
+  });
+
+  it("새로 들어온 곡이 없으면 `새로 들어온 곡 0개`는 빼고 증감만 적는다", async () => {
+    compare = { ...compareOk, entered: [], improved: [{ ...compareOk.entered[0], rateBefore: 90, scoreBefore: 250 }] };
+    renderInsights();
+    const summary = await screen.findByRole("button", { name: /마지막 기록\(2026-10-10\) 대비/ });
+    expect(summary).toHaveTextContent("▲ +33.92");
+    expect(summary).not.toHaveTextContent("새로 들어온 곡");
   });
 });

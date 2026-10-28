@@ -56,7 +56,9 @@ describe("감사 로그 화면", () => {
     renderView();
     expect((await inList()).getByText("곡 등록")).toBeInTheDocument();
     expect(screen.getByText(/ルート/)).toBeInTheDocument();
-    expect(screen.getByText('{"title":"새 곡"}')).toBeInTheDocument();
+    // 세부 내용은 JSON 대신 읽기 쉬운 글자로, 시각은 서울 시각까지(UTC 00:00 = 09:00)
+    expect(screen.getByText("제목: 새 곡")).toHaveAttribute("title", '{"title":"새 곡"}');
+    expect(screen.getAllByText("2026-10-08 09:00").length).toBeGreaterThan(0);
     expect(screen.getByText("SOMETHING_NEW")).toBeInTheDocument(); // 모르는 종류는 그대로
     expect(screen.getByText(/탈퇴한 사용자/)).toBeInTheDocument();
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("/admin/audit-logs");
