@@ -42,6 +42,10 @@ echo "전체 $(count "SELECT COUNT(*) FROM users")명 · 공개 $(count "SELECT 
 echo "기록이 있는 유저 $(count "SELECT COUNT(DISTINCT user_id) FROM option_records")명 · 최근 7일 기록한 유저 $(count "SELECT COUNT(DISTINCT user_id) FROM option_records WHERE updated_at >= UTC_TIMESTAMP() - INTERVAL 7 DAY")명"
 echo "기록 $(count "SELECT COUNT(*) FROM option_records")건"
 
+echo "== 곡 =="
+# 재킷 가져오기(D54 후보) 용량을 어림하려고 곡·채보 수와 이미 이미지 주소가 있는 곡 수를 센다(삭제된 것 제외).
+echo "곡 $(count "SELECT COUNT(*) FROM songs WHERE is_deleted = FALSE")개 · 채보 $(count "SELECT COUNT(*) FROM song_difficulties WHERE is_deleted = FALSE")개 · 이미지 주소가 있는 곡 $(count "SELECT COUNT(*) FROM songs WHERE is_deleted = FALSE AND image_url IS NOT NULL")개"
+
 echo "== 레이팅 기록(스냅샷) =="
 echo "전체 $(count "SELECT COUNT(*) FROM skill_snapshots")줄 · 남긴 유저 $(count "SELECT COUNT(DISTINCT user_id) FROM skill_snapshots")명 · 최근 7일 $(count "SELECT COUNT(*) FROM skill_snapshots WHERE snapshot_date >= CURDATE() - INTERVAL 7 DAY")줄"
 echo "공개 유저 중 곡별 상세가 있는 스냅샷을 남긴 유저 $(count "SELECT COUNT(DISTINCT s.user_id) FROM skill_snapshots s JOIN users u ON u.user_id = s.user_id WHERE $ACTIVE_PUBLIC AND $HAS_ENTRIES")명"
