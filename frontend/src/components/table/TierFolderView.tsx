@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { AverageToggle } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
-import { TableFilterPanel } from "@/components/table/TableFilterPanel";
+import { filterSummary, TableFilterPanel } from "@/components/table/TableFilterPanel";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableSearch } from "@/components/table/TableSearch";
 import { TierFolderNav } from "@/components/table/TierFolderNav";
@@ -49,6 +49,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
   const [includeZero, setIncludeZero] = useState(false);
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT);
   const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다(서열표 본문과 같다, 2026-10-27). 데스크톱은 항상 펼침
   const [recordTarget, setRecordTarget] = useState<{ entry: TableEntryResponse; tier: number | null } | null>(null);
 
   const tables = useQuery({
@@ -111,11 +112,29 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
       {isLoggedInViewer(userId) && rawGroup.tier !== null ? <FolderThresholdNote userId={userId} tier={rawGroup.tier} entries={rawGroup.entries} /> : null}
       {/* 곡 검색: 화면 위쪽 검색창 + 결과(누르면 곡 상세로). 좌측 하단 고정 버튼은 이 검색창으로 포커스를 옮긴다 */}
       <TableSearch userId={userId} groups={groups.data} />
-      <div className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+      {/* 필터는 서열표 본문과 같은 모양이다(2026-10-27): 모바일은 `필터` 한 줄(지금 걸린 조건 요약)로 접어 두고 누르면 펼친다.
+          데스크톱(md 이상)은 버튼 없이 파트·추천·속성·정렬·평균 계산을 한 카드에 가로로 둔다(넘치면 줄바꿈). 예전에는 세로로 쌓여 곡 목록이 한참 아래에서 시작했다 */}
+      <button
+        type="button"
+        aria-expanded={filtersOpen}
+        aria-controls="folder-filters"
+        onClick={() => setFiltersOpen((open) => !open)}
+        className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 py-2.5 text-left text-sm md:hidden"
+      >
+        <span className="font-semibold text-fg">{t("Songs.filter")}</span>
+        <span className="min-w-0 flex-1 truncate text-xs text-fg-dim">{filterSummary(filters, includeZero, t)}</span>
+        <span aria-hidden="true" className="text-fg-dim">
+          {filtersOpen ? "▴" : "▾"}
+        </span>
+      </button>
+      <div
+        id="folder-filters"
+        className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:flex md:flex-row md:flex-wrap md:items-center md:gap-x-5 md:gap-y-2 md:px-4 md:py-3`}
+      >
         <TableFilterPanel filters={filters} onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} />
+        <SortSelect value={sort} onChange={setSort} />
+        <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
       </div>
-      <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
-      <SortSelect value={sort} onChange={setSort} />
       {hasFilters(filters) && group.entries.length === 0 ? (
         <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
       ) : null}

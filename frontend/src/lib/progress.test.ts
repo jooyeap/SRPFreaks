@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ChartFolderResponse } from "@/lib/api-types";
 import type { ProgressGroup } from "@/lib/difficulty-table";
-import { folderProgress, nextGoal, percentOf, tileTint, weakestGroup, weakestGroupNear } from "@/lib/progress";
+import { emptyHighCount, folderProgress, nextGoal, percentOf, tileTint, weakestGroup, weakestGroupNear } from "@/lib/progress";
 
 function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
   return { lo: 9.5, hi: 9.99, total: 10, recorded: 6, exc: 1, fc: 1, ss: 1, s: 2, belowS: 1, averageRecorded: 90, averageWithZero: 54, subFolders: [], ...over };
@@ -112,5 +112,33 @@ describe("tileTint", () => {
   });
   it("전체가 0이면 가장 연한 값", () => {
     expect(tileTint(0, 0)).toEqual({ fill: 4, line: 18 });
+  });
+});
+
+describe("emptyHighCount (맨 위의 기록 없는 먼 높은 구간 접기)", () => {
+  const groups = [
+    pg({ key: "merged-high", label: "6.5 이상", total: 9, recorded: 0 }),
+    pg({ key: "6.4", label: "6.4", total: 4, recorded: 0 }),
+    pg({ key: "6.3", label: "6.3", total: 9, recorded: 0 }),
+    pg({ key: "6.2", label: "6.2", total: 11, recorded: 0 }),
+    pg({ key: "6.1", label: "6.1", total: 16, recorded: 2 }),
+    pg({ key: "6.0", label: "6.0", total: 22, recorded: 0 }),
+  ];
+
+  it("평균 + 0.2보다 높고 기록이 0인 구간을 맨 위부터 센다 (평균 5.9 → 6.1 초과: 6.5 이상·6.4·6.3·6.2)", () => {
+    expect(emptyHighCount(groups, 5.9)).toBe(4);
+  });
+
+  it("평균 + 0.2와 같은 구간은 접지 않는다 (평균 6.0 → 6.2는 경계라 남김)", () => {
+    expect(emptyHighCount(groups, 6.0)).toBe(3);
+  });
+
+  it("기록이 있는 구간을 만나면 거기서 멈춘다 (아래의 기록 없는 6.0은 세지 않는다)", () => {
+    expect(emptyHighCount(groups, 4.0)).toBe(4);
+  });
+
+  it("2개 미만이면 접지 않는다", () => {
+    expect(emptyHighCount(groups, 6.25)).toBe(0); // 6.5 이상·6.4·6.3 중 6.45 초과는 6.5 이상 하나뿐
+    expect(emptyHighCount([], 5.0)).toBe(0);
   });
 });

@@ -33,6 +33,14 @@ export function chipsOf(group: StageCounts): ChipSpec[] {
 }
 
 /**
+ * 머리 줄·폴더·통계에 보여 줄 칩: 0이 아닌 단계만, 순서는 그대로(2026-10-27). 0 칩이 다섯 개씩 붙어 화면이 복잡했다.
+ * 기록이 하나도 없으면 빈 목록이라 칩 자리가 비고, 옆의 `기록 0/n`이 그 사실을 알려 준다.
+ */
+export function visibleChipsOf(group: StageCounts): ChipSpec[] {
+  return chipsOf(group).filter((chip) => chip.count > 0);
+}
+
+/**
  * 묶음 전체가 도달한 단계. 묶음 안 모든 채보가 같은 단계 "이상"일 때만 그 단계를 돌려준다.
  * 서버가 준 칩 개수(exc/fc/ss/s)로 판정하므로 화면에서 채보를 다시 세지 않는다.
  * 예) 48개 중 EXC 3 + FC 10 + SS 35 = 48 → "SS"(모두 SS 이상). 한 곡이라도 S 미만이면 null.
@@ -139,7 +147,7 @@ export function TierGroupSection({
           )}
         </h2>
         <ul className={`${detailClass} flex-wrap items-center gap-1.5`} aria-label={t("Table.myProgress")}>
-          {chipsOf(group).map((chip) => (
+          {visibleChipsOf(group).map((chip) => (
             <li
               key={chip.key}
               data-stage={chip.stage ?? undefined}
