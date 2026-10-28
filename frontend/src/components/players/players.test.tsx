@@ -59,6 +59,10 @@ describe("PlayerListView", () => {
     const list = await screen.findByRole("list", { name: "유저 목록" });
     const hrefs = within(list).getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual(["/players/7", "/me"]);
+    // 내 줄에만 `나` 표시(글자로도 알 수 있게)
+    const links = within(list).getAllByRole("link");
+    expect(within(links[1]).getByText("나")).toBeInTheDocument();
+    expect(within(links[0]).queryByText("나")).toBeNull();
   });
 
   it("공개한 유저가 없으면 안내 문구를 보여 준다", async () => {
@@ -179,9 +183,23 @@ describe("PlayerDetailView", () => {
       expect(screen.queryByRole("button", { name: /삭제/ })).not.toBeInTheDocument();
     });
 
+    it("관리자도 `기록 삭제 모드`를 켜야 카드에 삭제 버튼이 보이고, 다시 누르면 숨는다", async () => {
+      fetchMock.mockResolvedValue(json(withEntry));
+      renderWith(<PlayerDetailView viewerId={1} playerId={7} canDeleteRecords />);
+      const toggle = await screen.findByRole("button", { name: "기록 삭제 모드" });
+      expect(toggle).toHaveAttribute("aria-pressed", "false");
+      expect(screen.queryByRole("button", { name: "テスト曲 기록 삭제" })).not.toBeInTheDocument();
+      fireEvent.click(toggle);
+      expect(screen.getByRole("button", { name: "삭제 모드 끝내기" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: "テスト曲 기록 삭제" })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "삭제 모드 끝내기" }));
+      expect(screen.queryByRole("button", { name: "テスト曲 기록 삭제" })).not.toBeInTheDocument();
+    });
+
     it("삭제를 누르면 확인 상자가 뜨고, 취소하면 요청을 보내지 않는다", async () => {
       fetchMock.mockResolvedValue(json(withEntry));
       renderWith(<PlayerDetailView viewerId={1} playerId={7} canDeleteRecords />);
+      fireEvent.click(await screen.findByRole("button", { name: "기록 삭제 모드" }));
       fireEvent.click(await screen.findByRole("button", { name: "テスト曲 기록 삭제" }));
 
       expect(screen.getByRole("alertdialog", { name: "기록 삭제 확인" })).toHaveTextContent("모두 삭제할까요?");
@@ -195,6 +213,7 @@ describe("PlayerDetailView", () => {
         Promise.resolve(init?.method === "DELETE" ? new Response(null, { status: 204 }) : json(withEntry)),
       );
       renderWith(<PlayerDetailView viewerId={1} playerId={7} canDeleteRecords />);
+      fireEvent.click(await screen.findByRole("button", { name: "기록 삭제 모드" }));
       fireEvent.click(await screen.findByRole("button", { name: "テスト曲 기록 삭제" }));
       fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "삭제" }));
 
@@ -214,6 +233,7 @@ describe("PlayerDetailView", () => {
         ),
       );
       renderWith(<PlayerDetailView viewerId={1} playerId={7} canDeleteRecords />);
+      fireEvent.click(await screen.findByRole("button", { name: "기록 삭제 모드" }));
       fireEvent.click(await screen.findByRole("button", { name: "テスト曲 기록 삭제" }));
       fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "삭제" }));
 

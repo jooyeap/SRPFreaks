@@ -54,6 +54,7 @@ describe("공식 곡 목록 갱신 화면", () => {
     renderView();
     expect(screen.getByText("아직 받은 곡이 없습니다.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "미리보기" })).toBeDisabled();
+    expect(screen.getByRole("link", { name: "관리로" })).toHaveAttribute("href", "/admin");
   });
 
   it("주소 조각으로 받은 곡을 세고 주소에서 지운다", async () => {

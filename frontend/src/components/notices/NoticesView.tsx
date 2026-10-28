@@ -29,6 +29,7 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
   const t = useTranslations();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
+  const [writing, setWriting] = useState(false);
   const [size, setSize] = usePageSize("notices", NOTICES_PAGE_SIZE);
   useScrollTopOnChange(page); // 다음·이전 페이지를 누르면 화면을 맨 위로 올린다
 
@@ -62,15 +63,32 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
         />
       </div>
 
-      {canWrite ? (
+      {/* 쓰기 폼은 `공지 쓰기`를 눌렀을 때만 펼친다(2026-10-27): 늘 펼쳐 두면 모바일에서 목록이 한 화면 아래로 밀린다.
+          등록에 성공하면 닫고, 실패하면 입력한 내용을 그대로 둔 채 열어 둔다(mutateAsync가 오류를 던지면 닫지 않는다). */}
+      {canWrite && writing ? (
         <NoticeForm
           label={t("Notices.writeTitle")}
           submitLabel={t("Notices.submit")}
           pending={create.isPending}
           error={messageOf(create.error, t)}
-          resetOnSuccess
-          onSubmit={(values) => create.mutateAsync(values)}
+          onSubmit={async (values) => {
+            await create.mutateAsync(values);
+            setWriting(false);
+          }}
+          onCancel={() => {
+            create.reset();
+            setWriting(false);
+          }}
         />
+      ) : canWrite ? (
+        <button
+          type="button"
+          aria-expanded={false}
+          onClick={() => setWriting(true)}
+          className="min-h-11 self-start rounded-lg border border-chip-line px-4 text-sm font-semibold text-fg hover:bg-table-head"
+        >
+          {t("Notices.writeTitle")}
+        </button>
       ) : null}
 
       {isPending ? (

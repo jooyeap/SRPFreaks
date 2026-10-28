@@ -41,6 +41,8 @@ jobs:
         run: bash scripts/deploy/count-stats.test.sh
       - name: 마이그레이션 상태 스크립트
         run: bash scripts/deploy/migration-status.test.sh
+      - name: nginx 경로 규칙(배포 중 안내 화면)
+        run: bash scripts/deploy/nginx-config.test.sh
 
   backend:
     name: 백엔드 테스트

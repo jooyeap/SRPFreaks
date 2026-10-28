@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/Toast";
 import { RatingBody } from "@/components/rating/RatingView";
 import { ApiError } from "@/lib/api";
@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
  *
  * canDeleteRecords (D29): ADMIN·ROOT에게만 true를 넘긴다. 카드마다 `삭제` 버튼이 생기고, 누르면 확인 상자를 거쳐
  * 그 유저의 그 채보 기록을 모두 지운다. 버튼을 보일지는 화면이 정하지만 실제 권한은 서버(403)가 검사한다.
+ * 2026-10-27: 잘못 누르지 않게 `기록 삭제 모드`를 켰을 때만 카드에 `삭제`가 보이고, 확인 상자는 위에 뜨므로 그쪽으로 화면을 옮긴다.
  */
 export function PlayerDetailView({
   viewerId,
@@ -36,6 +37,15 @@ export function PlayerDetailView({
   });
   // 확인 상자에 올려 둔(삭제하려는) 카드. null이면 상자를 닫는다.
   const [target, setTarget] = useState<SkillEntryResponse | null>(null);
+  // 삭제 모드: 켜야 카드마다 `삭제`가 보인다(관리자가 레이팅을 보기만 할 때 잘못 누르지 않게)
+  const [deleteMode, setDeleteMode] = useState(false);
+  const confirmRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // 확인 상자는 목록 위에 뜬다. 아래쪽 카드에서 눌렀으면 보이지 않으니 상자로 화면을 옮긴다(jsdom에는 scrollIntoView가 없다)
+    if (target) {
+      confirmRef.current?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    }
+  }, [target]);
 
   const toast = useToast();
   const deletion = useMutation({
@@ -97,8 +107,24 @@ export function PlayerDetailView({
       <h1 className="text-xl font-semibold text-fg">
         {t.rich("Players.ratingOf", { n: (c) => <span className="font-num">{c}</span>, nickname: data.nickname })}
       </h1>
+      {canDeleteRecords ? (
+        <button
+          type="button"
+          aria-pressed={deleteMode}
+          onClick={() => {
+            setDeleteMode((on) => !on);
+            deletion.reset();
+            setTarget(null);
+          }}
+          className={`min-h-11 self-start rounded-lg border px-4 text-sm font-semibold ${
+            deleteMode ? "border-chip-on-bg bg-chip-on-bg text-chip-on-fg" : "border-chip-line text-fg-sub hover:text-fg"
+          }`}
+        >
+          {deleteMode ? t("Players.deleteModeOff") : t("Players.deleteModeOn")}
+        </button>
+      ) : null}
       {target ? (
-        <div role="alertdialog" aria-label={t("Players.deleteConfirmAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+        <div ref={confirmRef} role="alertdialog" aria-label={t("Players.deleteConfirmAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
           <p className="text-sm text-fg">
             {t.rich("Players.deleteConfirmText", { n: (c) => <span className="font-num">{c}</span>, nickname: data.nickname, title: target.title })}
           </p>
@@ -133,7 +159,7 @@ export function PlayerDetailView({
       <RatingBody
         skill={data.skill}
         emptyHint={t("Players.emptyRated")}
-        onDeleteEntry={canDeleteRecords ? (entry) => { deletion.reset(); setTarget(entry); } : undefined}
+        onDeleteEntry={canDeleteRecords && deleteMode ? (entry) => { deletion.reset(); setTarget(entry); } : undefined}
       />
     </div>
   );
