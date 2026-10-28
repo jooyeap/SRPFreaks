@@ -31,10 +31,13 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
   ] as const;
   return (
     <section aria-label={t("Song.tableInfo")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3.5">
-      <h2 className="sr-only">{t("Song.tableInfo")}</h2>
-      {/* 첫 줄: 도움말 `?` 하나. 둘째 줄: `레이팅 상수 난이도 7.0 · 추천 상 · 레벨 9.15`를 라벨 옆에 값이 오게 한 줄로 둔다.
+      {/* 첫 줄: 카드 제목 `서열표 정보`와 오른쪽 도움말 `?`(2026-10-27: 전에는 제목이 화면 읽기 전용이라 `?`만 덩그러니 보였다).
+          둘째 줄: `레이팅 상수 난이도 7.0 · 추천 상 · 레벨 9.15`를 라벨 옆에 값이 오게 한 줄로 둔다.
           (360px에서 라벨 아래에 큰 값을 두거나 3등분하면 라벨이 꺾이고 ?가 내려가서 이 모양으로 정했다. 폭이 모자라면 줄이 바뀌도록 flex-wrap.) */}
-      <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-[13px] font-bold text-fg">{t("Song.tableInfo")}</h2>
+        <TermHelp term="ratingConstant" label={t("Song.ratingConstant")} />
+      </div>
       {/* 모바일(좁은 폭)은 양 끝으로 벌려 한 줄을 채우고, md 이상은 왼쪽부터 일정한 간격(gap-x-12)으로 둬서 카드가 넓어도 항목이 멀리 떨어지지 않게 한다 */}
       <dl className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-sm md:justify-start md:gap-x-12">
         <div className="flex items-center gap-1.5">
