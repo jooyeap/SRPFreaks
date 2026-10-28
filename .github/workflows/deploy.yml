@@ -100,7 +100,7 @@ jobs:
             echo "== $svc 빌드·재시작"
             docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build "$svc"
           done
-          # 새 컨테이너가 뜬 뒤, 7일 넘은 도커 빌드 캐시만 지운다(디스크가 다시 차지 않게). 실패해도 배포는 성공으로 둔다.
+          # 새 컨테이너가 뜬 뒤, 2일(48시간) 넘은 도커 빌드 캐시만 지운다(디스크가 다시 차지 않게). 실패해도 배포는 성공으로 둔다.
           bash scripts/deploy/prune-build-cache.sh || true
           docker compose --env-file .env.prod -f docker-compose.prod.yml ps
           # 어긋났을 때 원인을 보려는 기록: 방금 배포한 서비스의 컨테이너가 쓰는 이미지와 생성 시각(UTC)
