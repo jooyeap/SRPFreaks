@@ -29,7 +29,7 @@ describe("RatingInsights", () => {
   }
 
   beforeEach(() => {
-    status = { available: true, reason: null };
+    status = { available: true, reason: null, replacesToday: false };
     compare = compareOk;
     fetchMock.mockReset();
     fetchMock.mockImplementation((input, init) => {
@@ -51,8 +51,15 @@ describe("RatingInsights", () => {
     await waitFor(() => expect(fetchMock.mock.calls.some((c) => c[1]?.method === "POST")).toBe(true));
   });
 
-  it("기록할 수 없는 날(이미 기록 / 변경 없음)에는 제안을 보이지 않는다", async () => {
-    status = { available: false, reason: "ALREADY_TODAY" };
+  it("점수가 같아 기록할 수 없으면 제안을 보이지 않는다", async () => {
+    status = { available: false, reason: "NO_CHANGE", replacesToday: false };
+    renderInsights();
+    await screen.findByText(/새로 들어온 곡/); // 요약은 보인다
+    expect(screen.queryByRole("region", { name: "레이팅 기록 제안" })).toBeNull();
+  });
+
+  it("오늘 이미 기록했으면 갱신할 수 있어도 제안을 다시 띄우지 않는다(저장할 때마다 뜨지 않게)", async () => {
+    status = { available: true, reason: null, replacesToday: true };
     renderInsights();
     await screen.findByText(/새로 들어온 곡/); // 요약은 보인다
     expect(screen.queryByRole("region", { name: "레이팅 기록 제안" })).toBeNull();

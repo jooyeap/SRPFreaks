@@ -2,7 +2,7 @@
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { ChartList } from "@/components/songs/ChartList";
-import { chipsOf, groupStage } from "@/components/table/TierGroupSection";
+import { groupStage, visibleChipsOf } from "@/components/table/TierGroupSection";
 import { ApiError } from "@/lib/api";
 import type { ChartFolderResponse } from "@/lib/api-types";
 import { EMPTY_MARK } from "@/lib/format";
@@ -92,7 +92,7 @@ export function FolderSection({
             {title} <span className="ml-1 text-sm font-normal text-fg-sub">{t("Songs.chartCount", { count: folder.total })}</span>
           </span>
           <span className={`${detailClass} flex-wrap items-center gap-1.5`}>
-            {chipsOf(folder).map((chip) => (
+            {visibleChipsOf(folder).map((chip) => (
               <span
                 key={chip.key}
                 data-stage={chip.stage ?? undefined}

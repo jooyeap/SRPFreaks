@@ -19,7 +19,7 @@ const SECTIONS = [
   },
   {
     title: "Privacy.s3Title",
-    body: ["Privacy.s3b1", "Privacy.s3b2"],
+    body: ["Privacy.s3b1", "Privacy.s3b2", "Privacy.s3b3"],
   },
   {
     title: "Privacy.s4Title",

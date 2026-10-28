@@ -185,10 +185,12 @@ export interface SnapshotCompareResponse {
 }
 
 /** 지금 기록할 수 있는지. 못 하면 reason에 이유 코드가 들어 있다. */
-export type SnapshotBlockReason = "ALREADY_TODAY" | "NO_CHANGE" | "NO_RECORDS";
+export type SnapshotBlockReason = "NO_CHANGE" | "NO_RECORDS";
 export interface SkillSnapshotStatusResponse {
   available: boolean;
   reason: SnapshotBlockReason | null;
+  /** 오늘 기록이 이미 있으면 true. 누르면 새 줄 대신 오늘 줄을 덮어쓴다(버튼은 `오늘 기록 갱신`, 2026-10-27) */
+  replacesToday: boolean;
 }
 
 // ---- 곡 (백엔드 SongDetailResponse / DifficultyResponse) ----------------------------------
