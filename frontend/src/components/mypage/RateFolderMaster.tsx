@@ -4,7 +4,7 @@ import { useState } from "react";
 import { BucketList } from "@/components/mypage/RateFolderCard";
 import { Pager, usePaged } from "@/components/Pager";
 import { StageBar } from "@/components/table/StageBar";
-import { chipsOf, groupStage } from "@/components/table/TierGroupSection";
+import { groupStage, visibleChipsOf } from "@/components/table/TierGroupSection";
 import type { RateFolderResponse } from "@/lib/api-types";
 import { folderAverage, folderLabel, folderStageCounts, formatFolderAverage, type StatsAxis } from "@/lib/rate-folders";
 import { useTranslations } from "next-intl";
@@ -97,7 +97,7 @@ function FolderDetail({ axis, folder, includeZero }: { axis: StatsAxis; folder: 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <StageBar counts={counts} total={folder.total} className="h-2 min-w-24 flex-1" />
         <ul aria-label={t("MyPage.stageDistAria")} className="ml-auto flex flex-wrap items-center gap-1.5">
-          {chipsOf(counts).map((chip) => (
+          {visibleChipsOf(counts).map((chip) => (
             <li
               key={chip.key}
               data-stage={chip.stage ?? undefined}
