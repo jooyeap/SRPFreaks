@@ -1167,7 +1167,32 @@
     "registerFromSuggestionAria": "{title} 건의로 곡 등록",
     "menuSongImport": "공식 곡 목록 갱신",
     "menuSongImportDesc": "공식 곡 목록에서 아티스트·레벨을 가져옵니다.",
-    "actionSongOfficialImport": "공식 곡 목록 갱신"
+    "actionSongOfficialImport": "공식 곡 목록 갱신",
+    "detailKey": {
+      "title": "제목",
+      "name": "이름",
+      "status": "상태",
+      "part": "파트",
+      "type": "난이도",
+      "level": "레벨",
+      "songId": "곡 ID",
+      "songDifficultyId": "채보 ID",
+      "difficultyTableId": "서열표 ID",
+      "targetUserId": "대상 사용자 ID",
+      "deletedCount": "지운 기록",
+      "bestRate": "최고 달성률",
+      "artistFilled": "아티스트 채움",
+      "levelChanged": "레벨 변경",
+      "songIds": "곡 ID",
+      "chartIds": "채보 ID",
+      "tier": "레이팅 상수 난이도",
+      "recommend": "추천",
+      "pattern": "속성",
+      "ratingEnabled": "레이팅 반영"
+    },
+    "detailOn": "켜짐",
+    "detailOff": "꺼짐",
+    "detailMore": "{items} 외 {count}개"
   },
   "ServerErrors": {
     "AUTH_FAILED": "로그인할 수 없습니다. 다시 로그인해 주세요.",
