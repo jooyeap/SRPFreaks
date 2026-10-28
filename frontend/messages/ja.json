@@ -207,6 +207,7 @@
     "version": "バージョン",
     "reset": "リセット",
     "searchPlaceholder": "曲名・アーティストを検索（ハングル・日本語・ローマ字）",
+    "searchPlaceholderShort": "曲名・アーティストを検索",
     "searchAria": "曲を検索",
     "didYouMean": "もしかしてこの曲ですか？",
     "suggestionsAria": "検索候補",
