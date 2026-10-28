@@ -32,8 +32,10 @@ import java.util.Optional;
 /**
  * 레이팅 스냅샷 (D32). 사용자가 `기록하기`를 눌렀을 때 그 시점의 합계·소계를 하루에 한 줄만 남긴다.
  *  - 계산은 SkillService.mySkill이 그대로 한다(화면의 레이팅과 같은 값). 스냅샷은 그 결과의 사본이다.
- *  - 막는 경우 세 가지 (순서대로 검사): 오늘(Asia/Seoul) 이미 기록함 / 레이팅에 들어간 기록이 없음 / 마지막 스냅샷과 합계·소계가 같음.
- *  - 하루 1회는 DB의 유일 키(user_id, note_option, snapshot_date)가 마지막으로 보장한다. 동시에 두 번 눌려 검사를 둘 다 통과해도 한 줄만 들어간다.
+ *  - 같은 날(Asia/Seoul) 다시 누르면 새 줄을 만들지 않고 **오늘 줄을 덮어쓴다**(2026-10-27 D32 변경). 가져오기 직후 눌러도
+ *    그날 저녁 더 친 결과로 다시 남길 수 있게 하려는 것이다. 지난 날짜의 줄은 건드리지 않는다.
+ *  - 막는 경우 두 가지 (순서대로 검사): 레이팅에 들어간 기록이 없음 / 마지막 스냅샷(오늘 줄이 있으면 그 줄)과 합계·소계가 같음.
+ *  - 하루 한 줄은 DB의 유일 키(user_id, note_option, snapshot_date)가 마지막으로 보장한다. 그날 첫 기록이 동시에 두 번 눌리면 한 줄만 들어가고 나머지는 SNAPSHOT_ALREADY_TODAY다.
  *  - 대상은 토큰에서 나온 userId뿐이다. 남의 스냅샷은 만들지도 읽지도 못한다.
  */
 @Service
@@ -77,7 +79,10 @@ public class SkillSnapshotService {
     /** 지금 기록할 수 있는지(버튼 상태). create와 같은 검사를 하되 저장하지 않는다. */
     public SkillSnapshotStatusResponse status(Long userId) {
         SkillResponse skill = skillService.mySkill(userId);
-        return blockReason(userId, skill).map(SkillSnapshotStatusResponse::blocked).orElseGet(SkillSnapshotStatusResponse::ok);
+        boolean replacesToday = snapshotRepository.existsByUser_IdAndNoteOptionAndSnapshotDate(userId, skill.noteOption(), today());
+        return blockReason(userId, skill)
+                .map(reason -> SkillSnapshotStatusResponse.blocked(reason, replacesToday))
+                .orElseGet(() -> SkillSnapshotStatusResponse.ok(replacesToday));
     }
 
     @Transactional
@@ -87,15 +92,27 @@ public class SkillSnapshotService {
         if (blocked.isPresent()) {
             throw new ApiException(blocked.get());
         }
+        LocalDate today = today();
+        // 증감은 "어제까지의 마지막 기록" 대비다. 오늘 줄을 덮어쓸 때도 오늘 줄 자신과 비교하지 않는다.
         SkillSnapshot previous = snapshotRepository
-                .findFirstByUser_IdAndNoteOptionOrderBySnapshotDateDesc(userId, skill.noteOption()).orElse(null);
-        SkillSnapshot snapshot = SkillSnapshot.create(userRepository.getReferenceById(userId), skill.noteOption(),
-                today(), skill.totalScore(), skill.singleScore(), skill.otherScore(), averageLevelOf(skill));
-        try {
-            // 유일 키 위반을 여기서 바로 잡으려고 flush까지 한다 (commit 시점이면 이 try 밖에서 터진다)
-            snapshotRepository.saveAndFlush(snapshot);
-        } catch (DataIntegrityViolationException e) {
-            throw new ApiException(ErrorCode.SNAPSHOT_ALREADY_TODAY);
+                .findFirstByUser_IdAndNoteOptionAndSnapshotDateBeforeOrderBySnapshotDateDesc(userId, skill.noteOption(), today)
+                .orElse(null);
+        Optional<SkillSnapshot> todays = snapshotRepository.findByUser_IdAndNoteOptionAndSnapshotDate(userId, skill.noteOption(), today);
+        SkillSnapshot snapshot;
+        if (todays.isPresent()) {
+            // 오늘 기록 갱신: 점수를 바꾸고(변경 감지로 UPDATE) 상세는 지운 뒤 지금 목록으로 다시 넣는다
+            snapshot = todays.get();
+            snapshot.replaceScores(skill.totalScore(), skill.singleScore(), skill.otherScore(), averageLevelOf(skill));
+            entryRepository.deleteAllBySnapshotId(snapshot.getId());
+        } else {
+            snapshot = SkillSnapshot.create(userRepository.getReferenceById(userId), skill.noteOption(),
+                    today, skill.totalScore(), skill.singleScore(), skill.otherScore(), averageLevelOf(skill));
+            try {
+                // 유일 키 위반을 여기서 바로 잡으려고 flush까지 한다 (commit 시점이면 이 try 밖에서 터진다)
+                snapshotRepository.saveAndFlush(snapshot);
+            } catch (DataIntegrityViolationException e) {
+                throw new ApiException(ErrorCode.SNAPSHOT_ALREADY_TODAY);
+            }
         }
         // 비교용 상세: 이 시점의 레이팅 목록(단일 + 그 외)을 그대로 사본으로 남긴다. 스냅샷과 같은 트랜잭션이라 같이 저장되거나 같이 취소된다.
         entryRepository.saveAll(entriesOf(snapshot, skill));
@@ -138,17 +155,16 @@ public class SkillSnapshotService {
 
     private Optional<String> blockReason(Long userId, SkillResponse skill) {
         return blockReasonCode(userId, skill).map(code -> switch (code) {
-            case SNAPSHOT_ALREADY_TODAY -> "ALREADY_TODAY";
             case SNAPSHOT_NO_RECORDS -> "NO_RECORDS";
             default -> "NO_CHANGE";
         });
     }
 
-    /** 막는 이유. 순서가 의미 있다: 오늘 이미 했는지 → 기록이 있는지 → 마지막 기록과 같은지. */
+    /**
+     * 막는 이유. 순서가 의미 있다: 기록이 있는지 → 마지막 기록과 같은지.
+     * "마지막 기록"은 날짜가 가장 늦은 줄이라, 오늘 줄이 있으면 오늘 줄과 비교한다(같은 점수로 덮어쓰는 것을 막는다).
+     */
     private Optional<ErrorCode> blockReasonCode(Long userId, SkillResponse skill) {
-        if (snapshotRepository.existsByUser_IdAndNoteOptionAndSnapshotDate(userId, skill.noteOption(), today())) {
-            return Optional.of(ErrorCode.SNAPSHOT_ALREADY_TODAY);
-        }
         if (skill.single().isEmpty() && skill.other().isEmpty()) {
             return Optional.of(ErrorCode.SNAPSHOT_NO_RECORDS);
         }

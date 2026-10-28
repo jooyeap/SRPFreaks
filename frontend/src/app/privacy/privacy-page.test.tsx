@@ -21,6 +21,12 @@ describe("개인정보 처리방침", () => {
     expect(screen.getByText(/비밀번호는 받지도 저장하지도 않습니다/)).toBeInTheDocument();
   });
 
+  it("공개한 기록이 같은 티어 유저 통계(익명, 5명 이상)에 쓰인다고 알린다", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByText(/같은 티어 유저 통계\(인원 수·중앙값\)에도 쓰입니다/)).toBeInTheDocument();
+    expect(screen.getByText(/5명 이상이 모였을 때만 보이며, 누구의 기록인지는 드러나지 않습니다/)).toBeInTheDocument();
+  });
+
   it("문의 메일이 설정돼 있으면 문의처에 보여 준다", () => {
     vi.stubEnv("NEXT_PUBLIC_CONTACT_EMAIL", "contact@example.com");
     render(<PrivacyPage />);
