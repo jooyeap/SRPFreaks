@@ -48,19 +48,24 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [category, setCategory] = useState<SuggestionCategory | "">("");
-  const [status, setStatus] = useState<SuggestionStatus | "">("");
+  // 상태 필터: 직접 고르기 전에는 접수 대기가 있으면 `접수 대기`, 없으면 `전체`를 보여 준다(2026-10-27).
+  // 대기 건수를 받은 뒤에 정해야 해서, 고르기 전에는 건수를 받을 때까지 목록 요청을 미룬다.
+  const [chosenStatus, setChosenStatus] = useState<SuggestionStatus | "" | null>(null);
   const [page, setPage] = useState(0);
   const [size, setSize] = usePageSize("adminSuggestions", SUGGESTIONS_PAGE_SIZE);
   useScrollTopOnChange(page);
 
+  const count = useQuery({
+    queryKey: suggestionKeys.receivedCount(viewerId),
+    queryFn: ({ signal }) => fetchReceivedCount(signal),
+  });
+  const status: SuggestionStatus | "" = chosenStatus ?? ((count.data?.received ?? 0) > 0 ? "RECEIVED" : "");
   const list = useQuery({
     queryKey: suggestionKeys.admin(viewerId, category, status, page, size),
     queryFn: ({ signal }) => fetchAdminSuggestions({ category, status }, page, size, signal),
     placeholderData: keepPreviousData,
-  });
-  const count = useQuery({
-    queryKey: suggestionKeys.receivedCount(viewerId),
-    queryFn: ({ signal }) => fetchReceivedCount(signal),
+    // 건수를 못 받아도(오류) 목록은 `전체`로 보여 준다
+    enabled: chosenStatus !== null || !count.isPending,
   });
 
   const review = useMutation({
@@ -124,7 +129,7 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
             className={FIELD}
             value={status}
             onChange={(event) => {
-              setStatus(event.target.value as SuggestionStatus | "");
+              setChosenStatus(event.target.value as SuggestionStatus | "");
               setPage(0);
             }}
           >
