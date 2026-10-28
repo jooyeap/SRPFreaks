@@ -208,6 +208,8 @@ describe("SuggestionsAdminView", () => {
     expect(list).toHaveTextContent("보낸 사람 tester");
     expect(list).toHaveTextContent("보낸 사람 other");
     expect(await screen.findByText(/접수 대기/)).toHaveTextContent("3건");
+    // 다른 관리 화면과 같은 뒤로 버튼
+    expect(screen.getByRole("link", { name: "관리로" })).toHaveAttribute("href", "/admin");
   });
 
   it("처음에는 접수 대기가 있으면 `접수 대기`만, 없으면 `전체`를 보여 주고, 직접 고르면 그 값을 쓴다", async () => {

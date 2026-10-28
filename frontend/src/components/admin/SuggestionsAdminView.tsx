@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 import { Pager } from "@/components/Pager";
 import { useToast } from "@/components/Toast";
@@ -79,7 +80,12 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className="flex flex-col gap-2">
+        {/* 다른 관리 화면과 같은 뒤로 버튼(2026-10-27) */}
+        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+          <span aria-hidden="true">←</span>
+        </Link>
+        <div>
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-fg">{t("Admin.suggestionsTitle")}</h1>
           <PageSizeSelect
@@ -95,6 +101,7 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
             {t.rich("Admin.receivedCount", { count: count.data.received, n: (c) => <span className="font-num">{c}</span> })}
           </p>
         ) : null}
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

@@ -33,4 +33,11 @@ describe("ScrollTopButton", () => {
     expect(spy).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
     vi.unstubAllGlobals();
   });
+
+  it("모바일 목록 맨 아래에 버튼 높이만큼 빈칸을 남긴다(마지막 줄이 가려지지 않게), 버튼이 안 보일 때도 남는다", () => {
+    const { container } = render(<ScrollTopButton />);
+    const spacer = container.querySelector('div[aria-hidden="true"]');
+    expect(spacer).not.toBeNull();
+    expect(spacer?.className).toContain("lg:hidden");
+  });
 });

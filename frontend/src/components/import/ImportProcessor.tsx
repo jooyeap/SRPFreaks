@@ -20,6 +20,7 @@ import {
   SKIP_REASON_LABELS,
   type ImportPlayResult,
 } from "@/lib/record-import";
+import { ImportSnapshotPrompt } from "@/components/import/ImportSnapshotPrompt";
 import { AFFECTED_QUERY_KEYS } from "@/lib/records";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
@@ -175,6 +176,7 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
             {line}
           </p>
         )}
+        {done && done.saved > 0 ? <ImportSnapshotPrompt userId={userId} /> : null}
         <div className="flex gap-2">
           <Link href="/me" onClick={onClose} className="flex min-h-12 flex-1 items-center justify-center rounded-xl border border-chip-line text-sm font-medium text-fg">
             {t("Import.viewRecords")}

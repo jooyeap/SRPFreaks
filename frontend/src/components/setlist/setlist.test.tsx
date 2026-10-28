@@ -266,6 +266,14 @@ describe("세트리스트", () => {
       expect(within(ss).getAllByRole("listitem")[0]).toHaveTextContent("이중");
     });
 
+    it("추천 곡명을 누르면 그 채보의 곡 상세로 간다", async () => {
+      recommended = based({ ssChallenge: [rec(1, { songId: 9, songDifficultyId: 91, title: "링크곡" })], sFill: [] });
+      renderWith(<SetlistTab userId={1} />);
+
+      const ss = await screen.findByRole("list", { name: /SS 기준/ });
+      expect(within(ss).getByRole("link", { name: /링크곡/ })).toHaveAttribute("href", "/songs/9?from=table&chart=91");
+    });
+
     it("추천할 채보가 없는 묶음은 안내한다", async () => {
       recommended = based({ ssChallenge: [rec(1)] });
       renderWith(<SetlistTab userId={1} />);
