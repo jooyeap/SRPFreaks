@@ -78,14 +78,14 @@ class SettingAdminServiceTest {
     @Test
     void 목록은_키_순으로_정렬하고_페이지로_자른다() {
         PageResponse<SettingResponse> first = service.list(0, 5);
-        PageResponse<SettingResponse> last = service.list(4, 5);
+        PageResponse<SettingResponse> last = service.list(5, 5);
 
         assertThat(first.content()).hasSize(5);
         assertThat(first.content()).extracting(SettingResponse::key).isSorted();
         assertThat(first.content().get(0).key()).isEqualTo("contact.takedown_email");
-        assertThat(first.totalElements()).isEqualTo(23);
-        assertThat(first.totalPages()).isEqualTo(5);
-        assertThat(last.content()).hasSize(3); // 23개 중 21~23번째
+        assertThat(first.totalElements()).isEqualTo(27);
+        assertThat(first.totalPages()).isEqualTo(6);
+        assertThat(last.content()).hasSize(2); // 27개 중 26~27번째 (사진 입력 설정 4개 추가, 2026-10-28)
         assertThat(service.list(9, 5).content()).isEmpty();
         assertThat(service.list(-1, 0).content()).hasSize(1); // 범위 밖 값은 허용 범위로 맞춘다
     }
