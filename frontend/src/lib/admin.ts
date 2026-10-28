@@ -219,6 +219,11 @@ export const SETTING_META: Record<string, SettingMeta> = {
   "rating.note_option": { label: "Admin.settingNoteOption", description: "Admin.settingNoteOptionDesc", kind: "choice", choices: ["SUPER_RANDOM_PLUS"] },
   "ui.show_song_images": { label: "Admin.settingShowSongImages", description: "Admin.settingShowSongImagesDesc", kind: "boolean" },
   "contact.takedown_email": { label: "Admin.settingTakedownEmail", description: "Admin.settingTakedownEmailDesc", kind: "text" },
+  // 사진 입력(D55). 공개 전환은 recognize.min_role을 USER로 바꾸기만 하면 된다(서버 RecognizeAccessPolicy가 이 값만 본다)
+  "recognize.enabled": { label: "Admin.settingRecognizeEnabled", description: "Admin.settingRecognizeEnabledDesc", kind: "boolean" },
+  "recognize.min_role": { label: "Admin.settingRecognizeMinRole", description: "Admin.settingRecognizeMinRoleDesc", kind: "choice", choices: ["ADMIN", "USER"] },
+  "recognize.weekly_limit": { label: "Admin.settingRecognizeWeekly", description: "Admin.settingRecognizeWeeklyDesc", kind: "integer" },
+  "recognize.daily_total_limit": { label: "Admin.settingRecognizeDaily", description: "Admin.settingRecognizeDailyDesc", kind: "integer" },
 };
 
 export function settingMeta(key: string): SettingMeta {

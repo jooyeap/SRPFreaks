@@ -1185,7 +1185,15 @@
     },
     "detailOn": "オン",
     "detailOff": "オフ",
-    "detailMore": "{items} ほか{count}件"
+    "detailMore": "{items} ほか{count}件",
+    "settingRecognizeEnabled": "사진 입력 켜기",
+    "settingRecognizeEnabledDesc": "켜면 사진으로 기록을 입력할 수 있습니다(아래 사용 권한에 해당하는 사람만). 끄면 바로 모두 막힙니다.",
+    "settingRecognizeMinRole": "사진 입력 사용 권한",
+    "settingRecognizeMinRoleDesc": "ADMIN이면 ROOT·ADMIN만(시험 기간), USER면 모든 로그인 사용자가 씁니다. 시험이 끝나면 USER로 바꾸세요.",
+    "settingRecognizeWeekly": "사진 입력 1인 한도(최근 7일)",
+    "settingRecognizeWeeklyDesc": "사용자 한 명이 최근 7일 동안 인식할 수 있는 사진 장수입니다.",
+    "settingRecognizeDaily": "사진 입력 전체 하루 한도",
+    "settingRecognizeDailyDesc": "모든 사용자를 합쳐 하루(서울 날짜)에 인식할 수 있는 장수입니다. 외부 AI 비용의 상한입니다."
   },
   "ServerErrors": {
     "AUTH_FAILED": "ログインできません。もう一度ログインしてください。",
@@ -1203,7 +1211,10 @@
     "SUGGESTION_LIMIT": "今日はこれ以上ご意見を送れません。明日もう一度送ってください。",
     "SETLIST_FULL": "セットリストには30曲まで追加できます。",
     "RATE_LIMITED": "リクエストが多すぎます。しばらくしてからもう一度お試しください。",
-    "INTERNAL_ERROR": "サーバーで問題が発生しました。しばらくしてからもう一度お試しください。"
+    "INTERNAL_ERROR": "サーバーで問題が発生しました。しばらくしてからもう一度お試しください。",
+    "RECOGNIZE_LIMIT": "写真認識の上限に達しました。しばらくしてからもう一度お試しください。",
+    "RECOGNIZE_UNAVAILABLE": "現在、写真を認識できません。直接入力してください。",
+    "RECOGNIZE_BAD_IMAGE": "写真ファイル（JPEG・PNG・WebP、1MB以下）をアップロードしてください。"
   },
   "SongImport": {
     "title": "公式の曲リストで更新",
@@ -1336,5 +1347,41 @@
     "gain": "予想レーティング",
     "gainValue": "+{value}点",
     "loadFailed": "同じティアのユーザー記録を読み込めませんでした。しばらくしてからもう一度お試しください。"
+  },
+  "Photo": {
+    "title": "写真で入力",
+    "lead": "インポートで入れられなかったリザルト画面の写真をアップロードすると、曲・達成率を読み取って入力欄を埋めます。確認・修正してから保存してください。",
+    "privacy": "写真は認識のみに使い、保存しません。",
+    "login": "ログインすると写真で記録を入力できます。",
+    "notAvailable": "現在、写真入力は利用できません。",
+    "pickAria": "写真を選ぶ",
+    "remaining": "今週の残り回数 <b>{remaining}</b>/{limit}",
+    "refillAt": "{date}から再び利用できます。",
+    "choosePhotos": "写真を選ぶ（最大{max}枚）",
+    "tooMany": "残り回数に合わせて{count}枚だけ読み取ります。",
+    "reading": "写真を読み取っています（{done}/{total}）",
+    "readFailed": "認識できませんでした。直接入力してください。",
+    "listAria": "認識結果の確認リスト",
+    "previewAlt": "アップロードした写真 {n}",
+    "recognizedTitle": "写真から読み取った曲名",
+    "notRead": "読み取れませんでした",
+    "chartPick": "譜面を選ぶ",
+    "chartChange": "選び直す",
+    "chartResultsAria": "写真{n}の譜面検索結果",
+    "choose": "選択",
+    "rate": "達成率",
+    "rateInvalid": "達成率は0.00〜100.00の範囲で入力してください。",
+    "playedDate": "プレー日",
+    "srnUnknown": "写真からSRN+の表示を確認できませんでした。SRN+の記録のみ保存できます。",
+    "srnOther": "写真から別のオプションとして読み取られました。SRN+の記録のみ保存できます。",
+    "srnConfirm": "SRN+でプレーしました",
+    "include": "この記録を保存する",
+    "saveChecked": "チェックした記録を保存（{count}）",
+    "saving": "保存しています",
+    "saved": "保存済み",
+    "saveFailed": "保存できませんでした。値を確認してください。",
+    "allSaved": "{count}件を保存しました。",
+    "toMyPage": "マイページへ",
+    "entryLink": "インポートで入れられなかった曲は写真で入力"
   }
 }

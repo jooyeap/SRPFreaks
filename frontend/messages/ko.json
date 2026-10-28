@@ -1185,7 +1185,15 @@
     },
     "detailOn": "켜짐",
     "detailOff": "꺼짐",
-    "detailMore": "{items} 외 {count}개"
+    "detailMore": "{items} 외 {count}개",
+    "settingRecognizeEnabled": "사진 입력 켜기",
+    "settingRecognizeEnabledDesc": "켜면 사진으로 기록을 입력할 수 있습니다(아래 사용 권한에 해당하는 사람만). 끄면 바로 모두 막힙니다.",
+    "settingRecognizeMinRole": "사진 입력 사용 권한",
+    "settingRecognizeMinRoleDesc": "ADMIN이면 ROOT·ADMIN만(시험 기간), USER면 모든 로그인 사용자가 씁니다. 시험이 끝나면 USER로 바꾸세요.",
+    "settingRecognizeWeekly": "사진 입력 1인 한도(최근 7일)",
+    "settingRecognizeWeeklyDesc": "사용자 한 명이 최근 7일 동안 인식할 수 있는 사진 장수입니다.",
+    "settingRecognizeDaily": "사진 입력 전체 하루 한도",
+    "settingRecognizeDailyDesc": "모든 사용자를 합쳐 하루(서울 날짜)에 인식할 수 있는 장수입니다. 외부 AI 비용의 상한입니다."
   },
   "ServerErrors": {
     "AUTH_FAILED": "로그인할 수 없습니다. 다시 로그인해 주세요.",
@@ -1203,7 +1211,10 @@
     "SUGGESTION_LIMIT": "오늘은 건의를 더 보낼 수 없습니다. 내일 다시 보내 주세요.",
     "SETLIST_FULL": "세트리스트에는 30곡까지 담을 수 있습니다.",
     "RATE_LIMITED": "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
-    "INTERNAL_ERROR": "서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요."
+    "INTERNAL_ERROR": "서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.",
+    "RECOGNIZE_LIMIT": "사진 인식 한도를 모두 사용했습니다. 나중에 다시 시도해 주세요.",
+    "RECOGNIZE_UNAVAILABLE": "지금은 사진을 인식할 수 없습니다. 직접 입력해 주세요.",
+    "RECOGNIZE_BAD_IMAGE": "사진 파일(JPEG·PNG·WebP, 1MB 이하)을 올려 주세요."
   },
   "SongImport": {
     "title": "공식 곡 목록으로 갱신",
@@ -1336,5 +1347,41 @@
     "gain": "내 예상 레이팅",
     "gainValue": "+{value}점",
     "loadFailed": "같은 티어 유저 기록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+  },
+  "Photo": {
+    "title": "사진으로 입력",
+    "lead": "가져오기로 넣지 못한 결과 화면 사진을 올리면 곡·달성률을 읽어 칸을 채웁니다. 확인하고 고친 뒤 저장해 주세요.",
+    "privacy": "사진은 인식에만 쓰고 저장하지 않습니다.",
+    "login": "로그인하면 사진으로 기록을 입력할 수 있습니다.",
+    "notAvailable": "지금은 사진 입력을 쓸 수 없습니다.",
+    "pickAria": "사진 고르기",
+    "remaining": "이번 주 남은 횟수 <b>{remaining}</b>/{limit}",
+    "refillAt": "{date}부터 다시 쓸 수 있습니다.",
+    "choosePhotos": "사진 고르기 (최대 {max}장)",
+    "tooMany": "남은 횟수에 맞춰 {count}장만 읽습니다.",
+    "reading": "사진을 읽는 중입니다 ({done}/{total})",
+    "readFailed": "인식하지 못했습니다. 직접 입력해 주세요.",
+    "listAria": "인식 결과 확인 목록",
+    "previewAlt": "올린 사진 {n}",
+    "recognizedTitle": "사진에서 읽은 곡명",
+    "notRead": "읽지 못함",
+    "chartPick": "채보 고르기",
+    "chartChange": "다시 고르기",
+    "chartResultsAria": "사진 {n}의 채보 검색 결과",
+    "choose": "선택",
+    "rate": "달성률",
+    "rateInvalid": "달성률을 0.00~100.00 사이로 입력해 주세요.",
+    "playedDate": "플레이 날짜",
+    "srnUnknown": "사진에서 SRN+ 표시를 확인하지 못했습니다. SRN+ 기록만 저장할 수 있습니다.",
+    "srnOther": "사진에서 다른 옵션으로 읽혔습니다. SRN+ 기록만 저장할 수 있습니다.",
+    "srnConfirm": "SRN+로 플레이했습니다",
+    "include": "이 기록 저장하기",
+    "saveChecked": "체크한 기록 저장 ({count})",
+    "saving": "저장하는 중입니다",
+    "saved": "저장됨",
+    "saveFailed": "저장하지 못했습니다. 값을 확인해 주세요.",
+    "allSaved": "{count}건을 저장했습니다.",
+    "toMyPage": "마이페이지로",
+    "entryLink": "가져오기로 못 넣은 곡은 사진으로 입력"
   }
 }

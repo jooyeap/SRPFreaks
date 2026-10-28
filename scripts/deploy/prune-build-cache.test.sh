@@ -29,10 +29,10 @@ run() { # 환경변수는 호출 쪽에서 앞에 붙인다. 출력은 $OUT, 종
   CODE=$?
 }
 
-# 1) 기본값: 7일(168시간) 넘은 빌드 캐시만
+# 1) 기본값: 2일(48시간) 넘은 빌드 캐시만
 run env
 check "기본: 종료 코드 0" "$CODE"
-grep -Fxq "builder prune --force --filter until=168h" "$TMP/log"; check "기본: builder prune을 168시간 필터로 부른다" "$?"
+grep -Fxq "builder prune --force --filter until=48h" "$TMP/log"; check "기본: builder prune을 48시간 필터로 부른다" "$?"
 [ "$(wc -l < "$TMP/log")" -eq 1 ]; check "기본: docker를 한 번만 부른다" "$?"
 
 # 2) 위험한 옵션은 어떤 경우에도 붙지 않는다

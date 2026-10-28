@@ -109,6 +109,18 @@ public class SettingAdminService {
             }
             return;
         }
+        if (key.startsWith(RecognizeConfig.KEY_PREFIX)) {
+            // 사진 입력(D55): enabled는 true/false, min_role은 ADMIN/USER, 한도는 1 이상 정수
+            Map<String, String> all = appSettingRepository.findAll().stream()
+                    .collect(Collectors.toMap(AppSetting::getKey, AppSetting::getValue));
+            all.put(key, value);
+            try {
+                RecognizeConfig.from(all);
+            } catch (IllegalStateException e) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR);
+            }
+            return;
+        }
         if (key.startsWith(SetlistRecommendConfig.KEY_PREFIX)) {
             // 세트리스트 추천 설정도 같은 방식으로 검사한다(범위는 양수, S 범위 >= SS 범위, 최소 개수 >= 1)
             Map<String, String> all = appSettingRepository.findAll().stream()

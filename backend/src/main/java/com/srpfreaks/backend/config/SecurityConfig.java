@@ -63,6 +63,9 @@ public class SecurityConfig {
                 new RateLimiter(appProperties.getRateLimit().getRefreshPerMinute(), clock), clock, "/api/v1/auth/refresh");
         RateLimitFilter logoutRateLimit = new RateLimitFilter(
                 new RateLimiter(appProperties.getRateLimit().getRefreshPerMinute(), clock), clock, "/api/v1/auth/logout");
+        // 사진 인식(D55): 외부 AI 비용이 드는 경로라 주간 한도와 별개로 짧은 시간의 몰림을 막는다
+        RateLimitFilter recognizeRateLimit = new RateLimitFilter(
+                new RateLimiter(appProperties.getRateLimit().getRecognizePerMinute(), clock), clock, "/api/v1/records/recognize");
 
         http
             // Access Token을 Authorization 헤더로 보내는 stateless API라 세션/CSRF 쿠키를 쓰지 않는다.
@@ -109,7 +112,8 @@ public class SecurityConfig {
             .addFilterAfter(publicReadRateLimit, JwtAuthenticationFilter.class)
             .addFilterBefore(loginRateLimit, JwtAuthenticationFilter.class)
             .addFilterBefore(refreshRateLimit, JwtAuthenticationFilter.class)
-            .addFilterBefore(logoutRateLimit, JwtAuthenticationFilter.class);
+            .addFilterBefore(logoutRateLimit, JwtAuthenticationFilter.class)
+            .addFilterBefore(recognizeRateLimit, JwtAuthenticationFilter.class);
 
         return http.build();
     }

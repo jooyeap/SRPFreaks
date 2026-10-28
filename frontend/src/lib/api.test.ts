@@ -51,6 +51,17 @@ describe("요청 만들기", () => {
     expect(call(0).headers.get("Authorization")).toBe("Bearer abc");
   });
 
+  it("FormData는 JSON으로 바꾸지 않고 그대로 보내며 Content-Type은 브라우저에 맡긴다(사진 인식)", async () => {
+    fetchMock.mockResolvedValue(json({}));
+    const form = new FormData();
+    form.append("image", new Blob(["x"], { type: "image/jpeg" }), "photo.jpg");
+
+    await apiFetch("/records/recognize", { method: "POST", body: form });
+
+    expect(call(0).init.body).toBe(form);
+    expect(call(0).headers.has("Content-Type")).toBe(false);
+  });
+
   it("토큰이 없으면 Authorization을 붙이지 않는다", async () => {
     fetchMock.mockResolvedValue(json({}));
 
