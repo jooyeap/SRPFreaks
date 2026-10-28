@@ -295,6 +295,7 @@
   },
   "Table": {
     "thresholdBoth": "이 구간은 단일 <b>{single}%</b> · 그 외 <b>{other}%</b> 이상이면 레이팅에 반영돼요.",
+    "thresholdSame": "이 구간은 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
     "thresholdSingle": "이 구간은 단일 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
     "thresholdOther": "이 구간은 그 외 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
     "avgWithZero": "평균 0% 포함",

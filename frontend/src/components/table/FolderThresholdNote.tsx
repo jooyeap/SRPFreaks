@@ -32,7 +32,10 @@ export function FolderThresholdNote({ userId, tier, entries }: { userId: number;
   const b = (chunks: React.ReactNode) => <b className="font-num">{chunks}</b>;
 
   let text: React.ReactNode;
-  if (single !== null && other !== null) {
+  if (single !== null && other !== null && single === other) {
+    // 두 기준이 같으면 같은 숫자를 두 번 쓰지 않는다(2026-10-28)
+    text = t.rich("thresholdSame", { rate: single, b });
+  } else if (single !== null && other !== null) {
     text = t.rich("thresholdBoth", { single, other, b });
   } else if (single !== null) {
     text = t.rich("thresholdSingle", { rate: single, b });
