@@ -25,6 +25,12 @@ public enum ErrorCode {
     SUGGESTION_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "오늘은 건의를 더 보낼 수 없습니다. 내일 다시 보내 주세요."),
     SETLIST_FULL(HttpStatus.CONFLICT, "세트리스트에는 30곡까지 담을 수 있습니다."),
     RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
+    /** 사진 입력(D55): 이번 주(최근 7일) 한도 또는 오늘 전체 한도를 다 썼을 때. 상태 API가 언제 풀리는지 알려 준다. */
+    RECOGNIZE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "사진 인식 한도를 모두 사용했습니다. 나중에 다시 시도해 주세요."),
+    /** 사진 입력(D55): 꺼져 있거나 외부 인식 서비스를 쓸 수 없을 때(키 없음, 응답 실패). 이 경우 한도는 쓰지 않거나 이미 쓴 것으로 센다. */
+    RECOGNIZE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "지금은 사진을 인식할 수 없습니다. 직접 입력해 주세요."),
+    /** 사진 입력(D55): 사진 형식이 아니거나 너무 큰 파일. */
+    RECOGNIZE_BAD_IMAGE(HttpStatus.BAD_REQUEST, "사진 파일(JPEG·PNG·WebP, 1MB 이하)을 올려 주세요."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.");
 
     private final HttpStatus status;
