@@ -19,7 +19,8 @@ export function buildContentSecurityPolicy(isDev: boolean): string {
     "default-src": ["'self'"],
     "script-src": ["'self'", "'unsafe-inline'", GOOGLE_SCRIPT, ...(isDev ? ["'unsafe-eval'"] : [])],
     "style-src": ["'self'", "'unsafe-inline'", GOOGLE_STYLE],
-    "img-src": ["'self'", "data:"],
+    // blob: 사진 입력(D55)에서 고른 사진을 서버에 보내기 전에 같은 화면에서 미리 보여 줄 때(URL.createObjectURL). 다른 곳의 주소는 열지 않는다
+    "img-src": ["'self'", "data:", "blob:"],
     "font-src": ["'self'"],
     "connect-src": ["'self'", GOOGLE_GSI, ...(isDev ? ["ws:", "wss:"] : [])],
     "frame-src": [GOOGLE_GSI],

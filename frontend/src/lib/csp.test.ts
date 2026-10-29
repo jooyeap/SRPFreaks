@@ -20,6 +20,11 @@ describe("Content-Security-Policy", () => {
     expect(prod).not.toMatch(/\*/);
   });
 
+  it("이미지는 같은 출처·data·blob(사진 입력 미리보기)만 허용한다", () => {
+    expect(prod).toContain("img-src 'self' data: blob:");
+    expect(prod).not.toMatch(/img-src[^;]*https?:/);
+  });
+
   it("운영 정책에는 eval과 웹소켓이 없고, 개발 정책에만 있다", () => {
     expect(prod).not.toContain("unsafe-eval");
     expect(prod).not.toContain("ws:");
