@@ -31,8 +31,11 @@ export interface RecognizeResult {
 
 /** 한 번에 고를 수 있는 사진 수(D55). */
 export const MAX_PHOTOS = 10;
-const MAX_SIDE = 1024;
-const JPEG_QUALITY = 0.85;
+/** 긴 변. 옵션 칸(S.RANDOM+)처럼 작은 글자를 읽으려고 1,024 → 1,568px로 올렸다(2026-10-29). 인식 모델이 줄이지 않고 받는 최대 크기다. */
+const MAX_SIDE = 1568;
+/** 서버·nginx 요청 한도(1MB)보다 조금 작게. 넘으면 품질을 낮춰 다시 만든다. */
+const MAX_BYTES = 950 * 1024;
+const JPEG_QUALITIES = [0.85, 0.7, 0.55];
 
 export const recognizeKeys = {
   status: (userId: number) => ["recognize", "status", userId] as const,
@@ -53,7 +56,7 @@ export function showsPhotoEntry(status: RecognizeStatus | undefined): status is 
   return status !== undefined && (status.available || status.reason === "WEEKLY_LIMIT" || status.reason === "DAILY_LIMIT");
 }
 
-/** 원본 크기에서 긴 변을 1,024px 이하로 줄인 크기(작으면 그대로). */
+/** 원본 크기에서 긴 변을 1,568px 이하로 줄인 크기(작으면 그대로). */
 export function fitSize(width: number, height: number, max: number = MAX_SIDE): { width: number; height: number } {
   const scale = Math.min(1, max / Math.max(width, height));
   return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
@@ -72,7 +75,21 @@ export async function shrinkPhoto(file: Blob): Promise<Blob> {
   }
   ctx.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
+  let blob: Blob | null = null;
+  for (const quality of JPEG_QUALITIES) {
+    blob = await toJpeg(canvas, quality);
+    if (blob.size <= MAX_BYTES) {
+      break;
+    }
+  }
+  if (!blob) {
+    throw new Error("toBlob");
+  }
+  return blob;
+}
+
+function toJpeg(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("toBlob"))), "image/jpeg", JPEG_QUALITY);
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("toBlob"))), "image/jpeg", quality);
   });
 }
