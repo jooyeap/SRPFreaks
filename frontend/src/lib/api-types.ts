@@ -11,6 +11,8 @@ export interface UserResponse {
   role: Role;
   /** 유저 목록·상세에 공개할지(D26). 기본 false. 닉네임이 없으면 켤 수 없다. */
   profilePublic: boolean;
+  /** 라이벌 역전 알림 받기(D56). 기본 true. */
+  rivalNotify: boolean;
   createdAt: string; // ISO 8601, UTC
 }
 
@@ -471,4 +473,110 @@ export interface TierHistoryResponse {
   afterTier: number | null;
   beforePattern: string | null;
   afterPattern: string | null;
+}
+
+/* ---------- 라이벌 (D56) ---------- */
+
+/** 곡별 승패 개수. 둘 다 기록 있는 채보만 이김/짐/같음, 상대만 기록 있으면 theirsOnly. */
+export interface RivalCounts {
+  win: number;
+  lose: number;
+  tie: number;
+  theirsOnly: number;
+}
+
+/** 내 라이벌 한 줄. available=false(상대가 비공개·차단)면 닉네임만 오고 나머지는 null. scoreDiff = 상대 총점 - 내 총점. */
+export interface RivalResponse {
+  userId: number;
+  nickname: string | null;
+  available: boolean;
+  mutual: boolean;
+  tier: PlayerTierResponse | null;
+  totalScore: number | null;
+  scoreDiff: number | null;
+  counts: RivalCounts | null;
+}
+
+export interface RivalStatusResponse {
+  registered: boolean;
+  mutual: boolean;
+  count: number;
+  max: number;
+}
+
+/** 상대 레이팅 목록 한 줄 + 같은 채보의 내 기록(없으면 my*·diff가 null). diff = 내 점수 - 상대 점수. */
+export interface RivalRatingRow {
+  rank: number;
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  tier: number;
+  rate: number;
+  stage: AchievementStage;
+  score: number;
+  myRate: number | null;
+  myScore: number | null;
+  diff: number | null;
+}
+
+export interface RivalCompareRatingResponse {
+  userId: number;
+  nickname: string;
+  tier: PlayerTierResponse;
+  totalScore: number;
+  myTier: PlayerTierResponse;
+  myTotalScore: number;
+  counts: RivalCounts;
+  single: RivalRatingRow[];
+  other: RivalRatingRow[];
+}
+
+export type RivalResult = "WIN" | "LOSE" | "TIE" | "THEIRS_ONLY";
+
+/** 곡별 승패 한 줄. myRate는 상대만 기록 있는 줄이면 null. diff = 내 달성률 - 상대 달성률. */
+export interface RivalChartRow {
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  myRate: number | null;
+  theirRate: number;
+  diff: number | null;
+}
+
+export interface RivalCompareChartsResponse {
+  counts: RivalCounts;
+  page: PageResponse<RivalChartRow>;
+}
+
+/** 곡 상세의 라이벌 기록 한 줄. rate = 상대 기록(없으면 null), diff = 내 기록 - 상대 기록. */
+export interface RivalRecordResponse {
+  userId: number;
+  nickname: string;
+  rate: number | null;
+  diff: number | null;
+}
+
+/** 라이벌 역전 알림 한 줄. bundled면 songCount곡을 묶은 줄이고 곡 정보는 첫 곡. myRate = 내 기록. */
+export interface NotificationResponse {
+  id: number;
+  actorUserId: number;
+  actorNickname: string | null;
+  songId: number;
+  songDifficultyId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  actorRate: number;
+  myRate: number;
+  bundled: boolean;
+  songCount: number;
+  visibleAt: string;
+  read: boolean;
 }

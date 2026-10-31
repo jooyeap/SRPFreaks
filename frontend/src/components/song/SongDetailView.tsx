@@ -10,6 +10,7 @@ import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongManageDialog } from "@/components/song/SongManageDialog";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
+import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { PeerStatsCard } from "@/components/song/PeerStatsCard";
 import { TierHistorySection } from "@/components/song/TierHistorySection";
 import { SongHeader } from "@/components/song/SongHeader";
@@ -235,7 +236,11 @@ export function SongDetailView({
           </div>
         </div>
         <div className="contents md:flex md:flex-col md:gap-4">
-          <div className="order-2 md:order-none">{myRecord}</div>
+          <div className="order-2 flex flex-col gap-4 md:order-none">
+            {myRecord}
+            {/* 라이벌 기록(D56): 로그인 + 라이벌이 있을 때만. 없으면 카드가 스스로 그리지 않는다 */}
+            {chart && loggedIn ? <RivalRecordsCard viewerId={userId} songDifficultyId={chart.id} /> : null}
+          </div>
           {isTable && found ? (
             <div className="order-4 md:order-none">
               <GroupSongList group={found.group} index={found.index} />

@@ -68,8 +68,14 @@ export function ProfileVisibilityForm({ user }: { user: UserResponse }) {
         </span>
       </div>
       <p id="visibility-help" className="text-xs leading-relaxed text-fg-dim">
-        {t("Settings.visibilityHelp")}
+        {t("Settings.visibilityHelp")} {t("Settings.visibilityRival")}
       </p>
+      {/* 라이벌(D56)로 공개 범위가 넓어졌다는 안내. 지금 공개 중인 사람에게만 보인다 */}
+      {checked ? (
+        <p className="rounded-lg border border-check-line bg-check-bg px-3 py-2 text-xs leading-relaxed text-check-fg">
+          {t("Settings.visibilityChanged")}
+        </p>
+      ) : null}
       {blocked ? <p className="text-xs text-fg-sub">{t("Settings.needNickname")}</p> : null}
       <p id="visibility-error" role="alert" className="min-h-4 text-xs text-danger">
         {message}

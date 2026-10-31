@@ -11,6 +11,8 @@ import { AFFECTED_QUERY_KEYS } from "@/lib/records";
 import { deletePlayerChartRecords, fetchPlayer, playerKeys } from "@/lib/players";
 import { useTranslations } from "next-intl";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
+import { RivalButtons } from "@/components/rivals/RivalButtons";
+import { isLoggedInViewer } from "@/lib/viewer";
 
 /**
  * 유저 상세 (D26): 그 유저의 레이팅 카드와 단일 / 복합·이중·삼중 목록. 기록 입력·수정 버튼은 없다.
@@ -29,6 +31,8 @@ export function PlayerDetailView({
   playerId: number;
   canDeleteRecords?: boolean;
 }) {
+  // 라이벌 등록·비교(D56)는 로그인했고 본인 상세가 아닐 때만
+  const showRival = isLoggedInViewer(viewerId) && viewerId !== playerId;
   const t = useTranslations();
   const queryClient = useQueryClient();
   const { data, isPending, isError, error } = useQuery({
@@ -108,6 +112,7 @@ export function PlayerDetailView({
       <h1 className="text-xl font-semibold text-fg">
         {t.rich("Players.ratingOf", { n: (c) => <span className="font-num">{c}</span>, nickname: data.nickname })}
       </h1>
+      {showRival ? <RivalButtons viewerId={viewerId} targetId={playerId} nickname={data.nickname} /> : null}
       {canDeleteRecords ? (
         <button
           type="button"
