@@ -111,7 +111,7 @@ export function SongListView({
         {/* 모바일: 필터 버튼으로 펼치는 패널. 데스크톱(md 이상)은 항상 보이는 둘째 줄 */}
         <SongListFilterPanel
           id="song-filters"
-          className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:flex md:flex-row md:flex-wrap md:items-center md:gap-3 md:rounded-none md:border-0 md:bg-transparent md:p-0`}
+          className={`${filtersOpen ? "flex motion-reveal md:animate-none" : "hidden"} flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:flex md:flex-row md:flex-wrap md:items-center md:gap-3 md:rounded-none md:border-0 md:bg-transparent md:p-0`}
           filters={filters}
           versions={versions}
           onChange={onFiltersChange}

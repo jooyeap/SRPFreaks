@@ -118,12 +118,12 @@ function Bell({ viewerId }: { viewerId: number }) {
       </button>
       {open ? (
         <>
-          <div aria-hidden="true" className="fixed inset-0 z-40 bg-black/60 lg:hidden" />
+          <div aria-hidden="true" className="motion-fade fixed inset-0 z-40 bg-black/60 lg:hidden" />
           <div
             ref={panelRef}
             role="dialog"
             aria-label={t("title")}
-            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[80svh] flex-col gap-2 rounded-t-2xl border-t border-line bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:absolute lg:inset-x-auto lg:bottom-auto lg:right-0 lg:top-full lg:mt-2 lg:max-h-[70vh] lg:w-[380px] lg:rounded-2xl lg:border lg:p-3 lg:shadow-xl"
+            className="motion-sheet fixed inset-x-0 bottom-0 z-50 flex max-h-[80svh] flex-col gap-2 rounded-t-2xl border-t border-line bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:absolute lg:inset-x-auto lg:bottom-auto lg:right-0 lg:top-full lg:mt-2 lg:max-h-[70vh] lg:w-[380px] lg:rounded-2xl lg:border lg:p-3 lg:shadow-xl"
           >
             <span aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-chip-line lg:hidden" />
             <div className="flex items-center gap-2">

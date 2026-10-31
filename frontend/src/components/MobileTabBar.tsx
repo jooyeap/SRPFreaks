@@ -48,10 +48,10 @@ export function MobileTabBar() {
       {moreOpen ? (
         <div className="fixed inset-0 z-40 lg:hidden">
           {/* 바깥을 누르면 닫는다. 키보드 사용자는 Esc나 더보기 버튼을 쓴다 */}
-          <div className="absolute inset-0 bg-black/55" onClick={() => setMoreOpen(false)} aria-hidden="true" />
+          <div className="motion-fade absolute inset-0 bg-black/55" onClick={() => setMoreOpen(false)} aria-hidden="true" />
           <section
             aria-label={t("more")}
-            className="absolute inset-x-0 bottom-[var(--tabbar-h)] max-h-[calc(100dvh-var(--tabbar-h)-3rem)] overflow-y-auto rounded-t-2xl border border-b-0 border-line bg-card px-4 pb-4 pt-3"
+            className="motion-sheet absolute inset-x-0 bottom-[var(--tabbar-h)] max-h-[calc(100dvh-var(--tabbar-h)-3rem)] overflow-y-auto rounded-t-2xl border border-b-0 border-line bg-card px-4 pb-4 pt-3"
           >
             <h2 className="px-1 pb-1 text-[13px] font-bold text-fg-dim">{t("more")}</h2>
             <ul>

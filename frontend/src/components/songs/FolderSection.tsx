@@ -118,7 +118,7 @@ export function FolderSection({
           </span>
         </button>
       </HeadingTag>
-      <div id={bodyId} hidden={!open}>
+      <div id={bodyId} hidden={!open} className="motion-reveal">
         {!open ? null : !showsCharts ? (
           <div className="flex flex-col gap-2 p-2">
             {subFolders.map((sub) => (

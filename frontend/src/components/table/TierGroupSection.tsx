@@ -170,7 +170,8 @@ export function TierGroupSection({
       </header>
 
       {expanded ? (
-        <div id={bodyId}>
+        // 펼칠 때만 살짝 내려오며 나타난다(D57). 접을 수 없는 묶음(항상 펼침)은 처음부터 있으므로 움직이지 않는다
+        <div id={bodyId} className={collapsible ? "motion-reveal" : undefined}>
           <TableHeadRow />
           {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
           <ul>
