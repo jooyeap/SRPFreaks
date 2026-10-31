@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, type RefObject } from "react";
-// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
+import { SongJacket } from "@/components/SongJacket";
+import { useJackets } from "@/lib/jackets";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
@@ -167,6 +168,7 @@ function GroupSongItem({
   itemRef?: RefObject<HTMLLIElement | null>;
 }) {
   const t = useTranslations();
+  const jackets = useJackets();
   return (
     <li ref={itemRef} aria-current={current ? "true" : undefined} className="border-t border-row-line first:border-t-0">
       <Link
@@ -174,10 +176,10 @@ function GroupSongItem({
         href={tableDetailHref(entry)}
         className={`flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-table-head ${current ? "bg-table-head" : ""}`}
       >
-        {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
-        {/* <SongJacket className="h-8 w-8 rounded-[7px]" /> */}
+        {/* 재킷(D54): 같은 난이도의 곡 줄은 32px */}
+        {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-8 rounded-[7px]" /> : null}
         <span className="min-w-0 flex-1">
-          <span className={`block truncate text-sm ${current ? "font-bold text-fg" : "text-fg"}`}>
+          <span className={`block truncate ${jackets.visible ? "text-[13px]" : "text-sm"} ${current ? "font-bold text-fg" : "text-fg"}`}>
             {entry.title}
             {/* 색만으로 구분하지 않도록 현재 곡에는 글자 표시를 같이 둔다 */}
             {current ? <span className="ml-1.5 text-[11px] font-normal text-fg-dim">{t("Song.viewing")}</span> : null}

@@ -132,6 +132,10 @@ export interface CardTileView {
   scoreText: string;
   /** 곡 점수 색(점수 글자와 왼쪽 띠) */
   tier: CardTierStyle;
+  /** 재킷 칸을 그릴지(D54: 운영 설정 + 개인 `재킷 표시`). 켜져 있으면 칸 띠 오른쪽에 68×68 칸을 두고 속성 칩을 아래 줄로 내린다 */
+  jacket: boolean;
+  /** 재킷 주소(우리 사이트 같은 출처). 없거나 못 불러오면 단색 칸 */
+  jacketUrl: string | null;
 }
 
 export interface CardSectionView {
@@ -249,8 +253,11 @@ export function accentColor(tier: CardTierStyle): string {
   return [...tier.stops].sort((a, b) => luminance(b) - luminance(a))[0];
 }
 
-function tileView(entry: SkillEntryResponse, box: { x: number; y: number; w: number; h: number }, t: Translator): CardTileView {
+function tileView(entry: SkillEntryResponse, box: { x: number; y: number; w: number; h: number }, t: Translator, options: CardOptions): CardTileView {
+  const jacket = options.jacketUrlOf !== undefined;
   return {
+    jacket,
+    jacketUrl: jacket ? (options.jacketUrlOf?.(entry.songId) ?? null) : null,
     ...box,
     title: entry.title,
     patternText: entry.pattern ? patternLabel(entry.pattern, t) : "",
@@ -269,6 +276,8 @@ export interface CardOptions {
   /** 카드에 보일 닉네임. null이면 이름 줄을 그리지 않는다 */
   nickname: string | null;
   now: Date;
+  /** 재킷을 그릴 때만 넘긴다(D54). 곡 id → 재킷 주소(없으면 null). 넘기지 않으면 재킷 칸 없이 예전 배치다 */
+  jacketUrlOf?: (songId: number) => string | null;
 }
 
 /**
@@ -305,6 +314,7 @@ export function buildCardModel(layout: CardLayout, skill: SkillResponse, t: Tran
           h: g.tileH,
         },
         t,
+        options,
       ),
     );
     const rows = Math.ceil(group.entries.length / g.cols);

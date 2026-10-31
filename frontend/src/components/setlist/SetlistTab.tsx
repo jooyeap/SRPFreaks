@@ -1,5 +1,7 @@
 "use client";
 
+import { SongJacket } from "@/components/SongJacket";
+import { useJackets } from "@/lib/jackets";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
@@ -33,6 +35,7 @@ import type { Translator } from "@/i18n/translator";
 function toRecordChart(item: SetlistItemResponse): RecordChart {
   return {
     songDifficultyId: item.songDifficultyId,
+    songId: item.songId,
     title: item.title,
     part: item.part,
     difficulty: item.difficulty,
@@ -172,11 +175,14 @@ function SetlistRow({
 }) {
   const t = useTranslations();
   const stage = item.mine?.stage ?? null;
+  const jackets = useJackets();
   return (
     <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
       <div className="flex items-start justify-between gap-3">
+        {/* 재킷(D54): 카드 안 왼쪽 48px. 보일 때는 곡명을 13px 한 줄로 줄인다 */}
+        {jackets.visible ? <SongJacket url={jackets.urlOf(item.songId)} title={item.title} className="size-12 rounded-lg" /> : null}
         <div className="min-w-0 flex-1">
-          <Link href={`/songs/${item.songId}?chart=${item.songDifficultyId}`} className="block truncate text-sm font-bold text-fg hover:underline">
+          <Link href={`/songs/${item.songId}?chart=${item.songDifficultyId}`} className={`block truncate ${jackets.visible ? "text-[13px]" : "text-sm"} font-bold text-fg hover:underline`}>
             {item.title}
           </Link>
           <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">

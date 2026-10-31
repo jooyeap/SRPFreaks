@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { apiFetch } from "@/lib/api";
 
 /**
@@ -106,5 +106,7 @@ export function useJackets(): { visible: boolean; urlOf: (songId: number) => str
   const on = useShowJacketsSetting();
   const data = useJacketData();
   const visible = on && data?.enabled === true;
-  return { visible, urlOf: (songId) => (visible ? (data?.jackets[String(songId)] ?? null) : null) };
+  // 같은 목록·설정이면 같은 함수를 돌려준다(카드 이미지처럼 이 함수를 의존값으로 쓰는 곳이 매번 다시 그리지 않게)
+  const urlOf = useCallback((songId: number) => (visible ? (data?.jackets[String(songId)] ?? null) : null), [visible, data]);
+  return { visible, urlOf };
 }

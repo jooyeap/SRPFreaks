@@ -177,7 +177,37 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
   ctx.fillRect(x0, y0 + m.geometry.headerH - 4, w, 1);
 }
 
-function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean): void {
+/** 재킷 칸 크기와 위치(D54): 칸 띠(8px) 바로 오른쪽, 위아래 8px 여백. 칸 높이 84px는 그대로다 */
+export const CARD_JACKET = 68;
+const JACKET_COLOR = "#3b4660";
+
+/** 카드에 쓸 재킷 이미지를 미리 불러온다(같은 출처라 캔버스에 그려도 내려받기가 막히지 않는다). 못 불러온 것은 빠진다 */
+export async function loadCardJackets(model: CardModel): Promise<Map<string, HTMLImageElement>> {
+  const urls = new Set<string>();
+  for (const section of model.sections) {
+    for (const tile of section.tiles) {
+      if (tile.jacketUrl) urls.add(tile.jacketUrl);
+    }
+  }
+  const images = new Map<string, HTMLImageElement>();
+  await Promise.all(
+    [...urls].map(
+      (url) =>
+        new Promise<void>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            images.set(url, img);
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = url;
+        }),
+    ),
+  );
+  return images;
+}
+
+function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean, images: Map<string, HTMLImageElement>): void {
   const { x, y, w, h } = tile;
   roundRect(ctx, x, y, w, h, 10);
   ctx.fillStyle = PANEL;
@@ -193,7 +223,24 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean):
   });
   ctx.restore();
 
-  const left = x + 24;
+  // 재킷 칸(D54): 띠 바로 오른쪽. 이미지를 못 불러왔으면 단색 칸
+  if (tile.jacket) {
+    const jx = x + 8;
+    const jy = y + (h - CARD_JACKET) / 2;
+    ctx.save();
+    roundRect(ctx, jx, jy, CARD_JACKET, CARD_JACKET, 6);
+    ctx.clip();
+    const img = tile.jacketUrl ? images.get(tile.jacketUrl) : undefined;
+    if (img) {
+      ctx.drawImage(img, jx, jy, CARD_JACKET, CARD_JACKET);
+    } else {
+      ctx.fillStyle = JACKET_COLOR;
+      ctx.fillRect(jx, jy, CARD_JACKET, CARD_JACKET);
+    }
+    ctx.restore();
+  }
+
+  const left = tile.jacket ? x + 8 + CARD_JACKET + 14 : x + 24;
   const right = x + w - 16;
 
   // 좁은 타일(가로 5열)은 점수를 조금 줄여 알약(세 칸)과 점수가 겹치지 않게 한다
@@ -209,9 +256,33 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean):
   text(ctx, tile.rateText, right, y + 28, `600 17px ${f.num}`, tile.stageColor, "right");
 
 
-  // 속성 칩: 곡명 줄의 오른쪽(`rate · stage` 왼쪽). 아래 줄은 알약과 점수가 이미 차지해서 여기에 둔다.
+  // 알약 폭을 먼저 잰다(재킷이 있으면 속성 칩을 알약 옆 아래 줄로 내리므로)
+  const pillY = y + h - 34;
+  const pillH = 22;
+  ctx.font = `700 13px ${f.num}`;
+  const partW = ctx.measureText(tile.partText).width + 14;
+  const diffW = ctx.measureText(tile.diffText).width + 14;
+  const tierW = ctx.measureText(tile.tierText).width + 14;
+  let chipBelow = false;
+  if (tile.jacket && tile.patternText) {
+    ctx.font = `700 12px ${f.sans}`;
+    const w0 = ctx.measureText(tile.patternText).width + 16;
+    // 아래 줄에 자리가 있을 때만 내린다(가로 5열처럼 좁으면 예전처럼 곡명 줄에 둔다)
+    chipBelow = left + partW + diffW + tierW + 8 + w0 <= right - scoreW - 12;
+  }
+
+  // 속성 칩: 곡명 줄의 오른쪽(`rate · stage` 왼쪽). 재킷이 있고 자리가 있으면 아래 줄 알약 옆.
   let chipW = 0;
-  if (tile.patternText) {
+  if (tile.patternText && chipBelow) {
+    ctx.font = `700 12px ${f.sans}`;
+    const cw = ctx.measureText(tile.patternText).width + 16;
+    const chipX = left + partW + diffW + tierW + 8;
+    roundRect(ctx, chipX, pillY + 1, cw, 20, 10);
+    ctx.strokeStyle = "#3a4258";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    text(ctx, tile.patternText, chipX + cw / 2, pillY + 16, `700 12px ${f.sans}`, TEXT_SUB, "center");
+  } else if (tile.patternText) {
     ctx.font = `700 12px ${f.sans}`;
     chipW = ctx.measureText(tile.patternText).width + 16;
     const chipX = right - rateW - 12 - chipW;
@@ -222,7 +293,7 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean):
     text(ctx, tile.patternText, chipX + chipW / 2, y + 28, `700 12px ${f.sans}`, TEXT_SUB, "center");
     chipW += 12;
   }
-  const textMax = w - 24 - 16 - rateW - chipW - 12;
+  const textMax = right - left - rateW - chipW - 12;
 
   // 곡명: 24px로 시작해 칸에 안 들어가면 18px까지 줄이고, 그래도 넘으면 `…`로 줄인다(짧은 곡명은 크게, 긴 곡명은 덜 잘리게)
   const fit = fitTitle(tile.title, textMax, (size, value) => {
@@ -232,12 +303,6 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean):
   text(ctx, fit.text, left, y + 33, `500 ${fit.size}px ${f.sans}`, TEXT);
 
   // 파트 | 난이도 | 서열 기준 난이도 (한 덩어리 알약. 세 번째 칸은 숫자만)
-  const pillY = y + h - 34;
-  const pillH = 22;
-  ctx.font = `700 13px ${f.num}`;
-  const partW = ctx.measureText(tile.partText).width + 14;
-  const diffW = ctx.measureText(tile.diffText).width + 14;
-  const tierW = ctx.measureText(tile.tierText).width + 14;
   ctx.save();
   roundRect(ctx, left, pillY, partW + diffW + tierW, pillH, 5);
   ctx.clip();
@@ -254,7 +319,7 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean):
 }
 
 /** 카드 전체를 그린다. 캔버스 크기는 호출하는 쪽이 model.width × model.height로 맞춰 둔다. */
-export function drawRatingCard(ctx: Ctx, m: CardModel, fonts: CardFonts): void {
+export function drawRatingCard(ctx: Ctx, m: CardModel, fonts: CardFonts, images: Map<string, HTMLImageElement> = new Map()): void {
   const { width, height } = m;
 
   // 바깥 테두리: 티어 색 (Bronze 이상은 빛)
@@ -273,7 +338,7 @@ export function drawRatingCard(ctx: Ctx, m: CardModel, fonts: CardFonts): void {
     const tw = ctx.measureText(section.title).width;
     text(ctx, section.sumText, m.contentX + tw + 14, titleBase, `700 22px ${fonts.num}`, accentColor(m.header.tier));
     for (const tile of section.tiles) {
-      drawTile(ctx, tile, fonts, m.layout === "landscape");
+      drawTile(ctx, tile, fonts, m.layout === "landscape", images);
     }
   }
 
@@ -286,6 +351,7 @@ export function drawRatingCard(ctx: Ctx, m: CardModel, fonts: CardFonts): void {
 export async function renderRatingCard(model: CardModel): Promise<HTMLCanvasElement> {
   const fonts = readCardFonts();
   await loadCardFonts(model, fonts);
+  const images = await loadCardJackets(model);
   const canvas = document.createElement("canvas");
   canvas.width = model.width;
   canvas.height = model.height;
@@ -293,6 +359,6 @@ export async function renderRatingCard(model: CardModel): Promise<HTMLCanvasElem
   if (!ctx) {
     throw new Error("canvas 2d is not available");
   }
-  drawRatingCard(ctx, model, fonts);
+  drawRatingCard(ctx, model, fonts, images);
   return canvas;
 }

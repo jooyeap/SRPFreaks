@@ -6,6 +6,7 @@ import { useOptionalUser } from "@/components/AuthProvider";
 import type { SkillResponse } from "@/lib/api-types";
 import { buildCardModel, CARD_LAYOUTS, cardFileName, type CardLayout } from "@/lib/rating-card";
 import { renderRatingCard } from "@/lib/rating-card-draw";
+import { useJackets } from "@/lib/jackets";
 
 /**
  * 레이팅 카드 이미지 저장 (D44). 버튼을 누르면 창이 열리고, 브라우저 캔버스로 PNG를 만들어 미리 보여 준다. 서버로 아무것도 보내지 않는다.
@@ -49,7 +50,8 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
   const [now] = useState(() => new Date());
 
   const nickname = showName ? (user?.nickname ?? null) : null;
-  const key = `${layout}|${nickname ?? ""}`;
+  const { visible: jacketsVisible, urlOf: jacketUrlOf } = useJackets();
+  const key = `${layout}|${nickname ?? ""}|${jacketsVisible ? "j" : ""}`;
   const status: Status = result?.key !== key ? "preparing" : result.dataUrl ? "ready" : "failed";
   const dataUrl = status === "ready" ? result?.dataUrl : null;
   // t는 렌더마다 새로 만들어질 수 있어 창을 연 때의 것을 고정한다(창이 열린 동안 언어는 바뀌지 않는다).
@@ -69,7 +71,8 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
 
   useEffect(() => {
     let cancelled = false;
-    const model = buildCardModel(layout, skill, translate, { nickname, now });
+    // 재킷(D54): 화면에 재킷이 보이는 설정일 때만 카드에도 그린다
+    const model = buildCardModel(layout, skill, translate, { nickname, now, jacketUrlOf: jacketsVisible ? jacketUrlOf : undefined });
     renderRatingCard(model)
       .then((canvas) => {
         if (cancelled) return;
@@ -82,7 +85,7 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
     return () => {
       cancelled = true;
     };
-  }, [key, layout, nickname, skill, now, translate]);
+  }, [key, layout, nickname, skill, now, translate, jacketsVisible, jacketUrlOf]);
 
   function download() {
     const canvas = canvasRef.current;
