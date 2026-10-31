@@ -99,7 +99,7 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
           </span>
         </button>
       </h3>
-      <div id={bodyId} hidden={!open}>
+      <div id={bodyId} hidden={!open} className="motion-reveal">
         {open ? (
           <BucketList axis={axis} folder={folder} />
         ) : null}
