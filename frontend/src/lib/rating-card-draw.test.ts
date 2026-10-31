@@ -56,4 +56,25 @@ describe("drawRatingCard", () => {
     drawRatingCard(ctx, model, { sans: "sans", num: "num" });
     expect((calls.fillText ?? []).map((a) => a[0])).not.toContain("Tester");
   });
+
+  it("재킷을 켜면(D54) 재킷이 있는 곡은 이미지를, 없는 곡은 단색 칸을 띠 오른쪽에 그린다", () => {
+    const urlOf = (songId: number) => (songId === 1 ? "/jackets/1.webp" : null);
+    const model = buildCardModel("portrait", skill, koT, { nickname: null, now: new Date(), jacketUrlOf: urlOf });
+    expect(model.sections[0].tiles[0]).toMatchObject({ jacket: true, jacketUrl: "/jackets/1.webp" });
+    expect(model.sections[0].tiles[1]).toMatchObject({ jacket: true, jacketUrl: null });
+    const img = {} as HTMLImageElement;
+    const { ctx, calls } = fakeCtx();
+    drawRatingCard(ctx, model, { sans: "sans", num: "num" }, new Map([["/jackets/1.webp", img]]));
+    // 재킷이 있는 곡은 두 번(단일·그 외 구역) 나온다
+    expect((calls.drawImage ?? []).filter((a) => a[0] === img)).toHaveLength(2);
+    expect((calls.drawImage ?? [])[0]?.slice(3)).toEqual([68, 68]);
+  });
+
+  it("재킷 옵션을 넘기지 않으면 재킷 칸이 없다", () => {
+    const model = buildCardModel("portrait", skill, koT, { nickname: null, now: new Date() });
+    expect(model.sections[0].tiles[0]).toMatchObject({ jacket: false, jacketUrl: null });
+    const { ctx, calls } = fakeCtx();
+    drawRatingCard(ctx, model, { sans: "sans", num: "num" });
+    expect(calls.drawImage ?? []).toHaveLength(0);
+  });
 });

@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
-// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
+import { SongJacket } from "@/components/SongJacket";
+import { useJackets } from "@/lib/jackets";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
 import { StageBadge } from "@/components/table/StageBadge";
@@ -36,6 +37,8 @@ import { useTranslations } from "next-intl";
 /** 기록을 입력할 채보 정보 (서열표 줄에서 넘어온다). */
 export interface RecordChart {
   songDifficultyId: number;
+  /** 곡 id. 있으면 창 머리에 재킷을 그린다(D54). 서열표 줄처럼 songId를 가진 값을 그대로 넘겨도 된다 */
+  songId?: number;
   title: string;
   part: InstrumentPart;
   difficulty: DifficultyType;
@@ -80,6 +83,7 @@ export function RecordForm({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const t = useTranslations();
+  const jackets = useJackets();
   const queryClient = useQueryClient();
   const toast = useToast();
   // 스키마와 기본값은 한 번만 만든다 ("오늘"은 폼을 연 시점 기준)
@@ -187,8 +191,10 @@ export function RecordForm({
   return (
     <form onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
-        {/* <SongJacket className="h-11 w-11 rounded-[9px]" /> */}
+        {/* 재킷(D54): 창 머리 44px. 곡 id를 모르는 경우(일부 진입 경로)는 그리지 않는다 */}
+        {jackets.visible && chart.songId !== undefined ? (
+          <SongJacket url={jackets.urlOf(chart.songId)} title={chart.title} className="size-11 rounded-[9px]" />
+        ) : null}
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-bold text-fg">{chart.title}</p>
           <p className="mt-1 flex items-center gap-2 text-xs text-fg-sub">

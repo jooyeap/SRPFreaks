@@ -35,7 +35,7 @@ export function RecentCharts({ currentChartId, onPick }: { currentChartId: numbe
             <button
               type="button"
               onClick={() =>
-                onPick({ songDifficultyId: r.songDifficultyId, title: r.title, part: r.part, difficulty: r.difficulty, level: r.level })
+                onPick({ songDifficultyId: r.songDifficultyId, songId: r.songId, title: r.title, part: r.part, difficulty: r.difficulty, level: r.level })
               }
               className="flex min-h-11 max-w-44 flex-col items-start justify-center rounded-lg border border-chip-line px-3 py-1 text-left hover:bg-chip-on-bg"
             >
