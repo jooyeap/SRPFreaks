@@ -18,6 +18,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumSet;
@@ -60,6 +61,7 @@ public class OptionRecordService {
     private final OptionRecordRepository optionRecordRepository;
     private final SongDifficultyRepository songDifficultyRepository;
     private final UserRepository userRepository;
+    private final RivalAlertTrigger rivalAlertTrigger;
 
     @Transactional
     public RecordResponse create(Long userId, RecordRequest request) {
@@ -72,10 +74,15 @@ public class OptionRecordService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
         checkPlayedAt(request.playedAt());
 
+        NoteOption option = resolveOption(request.noteOption());
+        // 라이벌 역전 알림(D56)용: 저장 직전의 최고 기록. 저장 뒤 최고값은 이전 최고와 새 기록 중 큰 값이다.
+        BigDecimal prev = optionRecordRepository.findBestRate(userId, difficulty.getId(), option);
         OptionRecord record = OptionRecord.create(userRepository.getReferenceById(userId), difficulty,
-                resolveOption(request.noteOption()), request.achievementRate(), request.fullCombo(),
+                option, request.achievementRate(), request.fullCombo(),
                 request.playedAt(), request.platform(), normalizeMemo(request.memo()));
         optionRecordRepository.save(record);
+        rivalAlertTrigger.recordSaved(userId, difficulty.getId(), option, prev,
+                prev == null ? record.getAchievementRate() : prev.max(record.getAchievementRate()));
         return RecordResponse.from(record);
     }
 
@@ -100,9 +107,16 @@ public class OptionRecordService {
     public RecordResponse update(Long userId, Long recordId, RecordRequest request) {
         OptionRecord record = findOwned(userId, recordId);
         checkPlayedAt(request.playedAt());
+        Long chartId = record.getSongDifficulty().getId();
+        NoteOption option = resolveOption(request.noteOption());
+        BigDecimal prev = optionRecordRepository.findBestRate(userId, chartId, option);
         // 변경 감지(dirty checking): 엔티티 값만 바꾸면 트랜잭션이 끝날 때 UPDATE가 나간다. save 호출 불필요.
-        record.update(resolveOption(request.noteOption()), request.achievementRate(), request.fullCombo(),
+        record.update(option, request.achievementRate(), request.fullCombo(),
                 request.playedAt(), request.platform(), normalizeMemo(request.memo()));
+        // 라이벌 역전 알림(D56): 고친 기록을 포함한 최고값을 다시 읽어야 하므로 UPDATE를 먼저 내보낸다(flush).
+        // 같은 트랜잭션 안의 쿼리라 아직 커밋 전이어도 고친 값이 보인다.
+        optionRecordRepository.flush();
+        rivalAlertTrigger.recordSaved(userId, chartId, option, prev, optionRecordRepository.findBestRate(userId, chartId, option));
         return RecordResponse.from(record);
     }
 

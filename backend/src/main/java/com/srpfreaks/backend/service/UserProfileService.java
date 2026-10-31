@@ -60,10 +60,18 @@ public class UserProfileService {
         return UserResponse.from(user);
     }
 
+    /** `라이벌 알림 받기`(D56). 끄면 나에게 오는 역전 알림만 멈춘다. */
+    @Transactional
+    public UserResponse updateRivalNotify(Long userId, boolean enabled) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
+        user.changeRivalNotify(enabled);
+        return UserResponse.from(user);
+    }
+
     /**
      * 탈퇴 = 완전 삭제(D20). users 행 하나만 지우면 된다.
      * 나머지는 DB 외래키가 처리한다(V1__init_schema.sql):
-     *  - option_records, refresh_tokens, skill_snapshots: ON DELETE CASCADE라 같이 지워진다(기록·토큰이 남지 않는다).
+     *  - option_records, refresh_tokens, skill_snapshots, rivals, rival_notifications: ON DELETE CASCADE라 같이 지워진다(기록·토큰이 남지 않는다).
      *  - audit_logs.actor_id, songs.created_by, app_settings.updated_by: ON DELETE SET NULL이라 행은 남고 사용자 식별만 사라진다.
      * 그래서 대부분은 여기서 일일이 지우지 않는다(코드로 지우면 빠뜨릴 수 있고, FK가 이미 같은 규칙을 보장한다).
      * 예외: 닉네임 변경 로그는 닉네임 글자(detail)가 남으므로 직접 지운다(D48). 나머지 감사 로그에는 사용자 id·역할 같은 값만 있다.

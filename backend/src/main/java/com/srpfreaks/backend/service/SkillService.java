@@ -135,6 +135,11 @@ public class SkillService {
         return RatingConfig.from(ratingSettings()).noteOption();
     }
 
+    /** 지금 설정으로 만든 레이팅 계산기. 레이팅 목록 밖의 채보 점수(라이벌 비교, D56)를 같은 수식으로 계산할 때 쓴다. */
+    public RatingCalculator calculator() {
+        return new RatingCalculator(RatingConfig.from(ratingSettings()));
+    }
+
     /** rating.* 설정만 맵으로 모은다(설정 테이블은 작아서 전부 읽어도 가볍다). */
     private Map<String, String> ratingSettings() {
         return appSettingRepository.findAll().stream()

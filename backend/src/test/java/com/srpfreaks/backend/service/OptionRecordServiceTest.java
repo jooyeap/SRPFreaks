@@ -48,6 +48,7 @@ class OptionRecordServiceTest {
     @Mock OptionRecordRepository recordRepository;
     @Mock SongDifficultyRepository difficultyRepository;
     @Mock UserRepository userRepository;
+    @Mock RivalAlertTrigger rivalAlertTrigger;
 
     OptionRecordService service;
     User me;
@@ -55,7 +56,7 @@ class OptionRecordServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OptionRecordService(recordRepository, difficultyRepository, userRepository);
+        service = new OptionRecordService(recordRepository, difficultyRepository, userRepository, rivalAlertTrigger);
         me = User.create("sub-me", "me@example.com", "me");
         ReflectionTestUtils.setField(me, "id", ME);
         Song song = Song.create("곡", null, "test", null);
@@ -85,6 +86,28 @@ class OptionRecordServiceTest {
         assertThat(response.achievementRate()).isEqualByComparingTo("96.50");
         assertThat(response.stage()).isEqualTo(AchievementStage.SS);
         assertThat(response.title()).isEqualTo("곡");
+    }
+
+    @Test
+    void 등록하면_이전_최고와_새_최고로_라이벌_알림_판정을_부른다() {
+        when(difficultyRepository.findByIdAndDeletedFalse(200L)).thenReturn(Optional.of(chart));
+        when(recordRepository.findBestRate(ME, 200L, NoteOption.SUPER_RANDOM_PLUS)).thenReturn(new BigDecimal("90.00"));
+
+        service.create(ME, req("95.10", false));
+
+        verify(rivalAlertTrigger).recordSaved(ME, 200L, NoteOption.SUPER_RANDOM_PLUS, new BigDecimal("90.00"),
+                new BigDecimal("95.10"));
+    }
+
+    @Test
+    void 더_낮은_기록을_등록하면_새_최고는_이전_최고_그대로다() {
+        when(difficultyRepository.findByIdAndDeletedFalse(200L)).thenReturn(Optional.of(chart));
+        when(recordRepository.findBestRate(ME, 200L, NoteOption.SUPER_RANDOM_PLUS)).thenReturn(new BigDecimal("97.00"));
+
+        service.create(ME, req("95.10", false));
+
+        verify(rivalAlertTrigger).recordSaved(ME, 200L, NoteOption.SUPER_RANDOM_PLUS, new BigDecimal("97.00"),
+                new BigDecimal("97.00"));
     }
 
     @Test

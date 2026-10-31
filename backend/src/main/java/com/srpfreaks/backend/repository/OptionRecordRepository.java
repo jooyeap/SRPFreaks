@@ -2,6 +2,8 @@ package com.srpfreaks.backend.repository;
 
 import com.srpfreaks.backend.entity.OptionRecord;
 import com.srpfreaks.backend.entity.NoteOption;
+import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -101,5 +103,35 @@ public interface OptionRecordRepository extends JpaRepository<OptionRecord, Long
             group by r.songDifficulty.id
             """)
     List<RecordLatestUpdate> findLatestUpdates(@Param("userId") Long userId, @Param("noteOption") NoteOption noteOption,
-                                               @Param("chartIds") java.util.Collection<Long> chartIds);
+                                               @Param("chartIds") Collection<Long> chartIds);
+
+    /** 한 사람의 한 채보 최고 달성률(D56 역전 알림). 기록이 없으면 null. */
+    @Query("""
+            select max(r.achievementRate) from OptionRecord r
+            where r.user.id = :userId and r.songDifficulty.id = :chartId and r.noteOption = :noteOption
+            """)
+    BigDecimal findBestRate(@Param("userId") Long userId, @Param("chartId") Long chartId,
+                                      @Param("noteOption") NoteOption noteOption);
+
+    /** 여러 사람의 한 채보 최고 달성률을 한 번에(D56 역전 판정·곡 상세 라이벌 기록, 사람마다 쿼리하면 N+1). 기록 없는 사람은 결과에 없다. */
+    @Query("""
+            select new com.srpfreaks.backend.repository.UserBest(r.user.id, max(r.achievementRate))
+            from OptionRecord r
+            where r.songDifficulty.id = :chartId and r.noteOption = :noteOption and r.user.id in :userIds
+            group by r.user.id
+            """)
+    List<UserBest> findBestRatesForUsers(@Param("chartId") Long chartId, @Param("noteOption") NoteOption noteOption,
+                                         @Param("userIds") Collection<Long> userIds);
+
+    /**
+     * 한 사람의 채보별 최고 달성률 + 채보 레벨(D56 라이벌 비교). 삭제된 곡·채보는 뺀다(비교 개수에 섞이지 않게).
+     * 레벨은 곡별 승패 목록의 정렬(차이가 같으면 레벨 높은 순)에 쓴다.
+     */
+    @Query("""
+            select new com.srpfreaks.backend.repository.ChartBest(d.id, max(r.achievementRate), d.level)
+            from OptionRecord r join r.songDifficulty d join d.song s
+            where r.user.id = :userId and r.noteOption = :noteOption and d.deleted = false and s.deleted = false
+            group by d.id, d.level
+            """)
+    List<ChartBest> findActiveBestByUser(@Param("userId") Long userId, @Param("noteOption") NoteOption noteOption);
 }

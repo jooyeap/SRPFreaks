@@ -74,6 +74,10 @@ public class User extends BaseTimeEntity {
     @Column(name = "profile_public", nullable = false)
     private boolean profilePublic;
 
+    /** 라이벌 역전 알림을 받을지(D56). 기본 켜짐. 끄면 나에게 오는 알림만 멈춘다(내가 보내는 쪽에는 영향 없음). */
+    @Column(name = "rival_notify", nullable = false)
+    private boolean rivalNotify = true;
+
     private User(String googleSub, String email, String nickname, Role role) {
         this.googleSub = googleSub;
         this.email = email;
@@ -81,6 +85,7 @@ public class User extends BaseTimeEntity {
         this.role = role;
         this.status = UserStatus.ACTIVE;
         this.profilePublic = false;
+        this.rivalNotify = true;
     }
 
     /** 일반 사용자를 만든다 (구글 로그인 첫 성공 시). */
@@ -116,6 +121,10 @@ public class User extends BaseTimeEntity {
             throw new IllegalArgumentException("닉네임이 있어야 공개할 수 있습니다.");
         }
         this.profilePublic = profilePublic;
+    }
+
+    public void changeRivalNotify(boolean rivalNotify) {
+        this.rivalNotify = rivalNotify;
     }
 
     /** 구글 쪽 이메일이 바뀌었을 때 로그인 시점에 동기화한다. */

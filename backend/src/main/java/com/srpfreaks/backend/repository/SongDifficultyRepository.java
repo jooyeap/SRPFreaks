@@ -3,10 +3,12 @@ package com.srpfreaks.backend.repository;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.SongDifficulty;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** 채보 조회/저장. */
 public interface SongDifficultyRepository extends JpaRepository<SongDifficulty, Long> {
@@ -28,4 +30,11 @@ public interface SongDifficultyRepository extends JpaRepository<SongDifficulty, 
             where d.deleted = false and s.deleted = false
             """)
     List<SongDifficulty> findAllActiveWithSong();
+
+    /** 채보 여러 개를 곡과 함께(D56 비교 목록의 한 페이지). 삭제된 곡·채보는 뺀다. */
+    @Query("""
+            select d from SongDifficulty d join fetch d.song s
+            where d.id in :ids and d.deleted = false and s.deleted = false
+            """)
+    List<SongDifficulty> findActiveWithSongByIdIn(@Param("ids") Collection<Long> ids);
 }
