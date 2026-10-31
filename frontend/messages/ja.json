@@ -316,6 +316,8 @@
     "sort": "並び替え",
     "filterRecommend": "おすすめ",
     "filterPattern": "属性",
+    "patternNotSingle": "単色以外",
+    "patternNotSingleDetail": "単色以外の内訳",
     "searchTitle": "難易度表の曲検索",
     "close": "閉じる",
     "searchQueryAria": "曲の検索語",
