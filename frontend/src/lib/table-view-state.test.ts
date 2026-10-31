@@ -11,14 +11,18 @@ describe("서열표 보기 상태 <-> 주소 쿼리", () => {
 
   it("모든 값을 담았다가 같은 상태로 되돌린다", () => {
     const state: TableViewState = {
-      filters: { part: "BASS", recommend: ["상"], pattern: ["단일", "복합"] },
+      filters: { part: null, recommend: ["상"], pattern: ["단일", "복합"] },
       sort: "rateDesc",
       includeZero: true,
       page: 2,
     };
     const query = viewStateToQuery(state);
-    expect(query).toBe(new URLSearchParams({ part: "B", rec: "상", pat: "단일,복합", sort: "rateDesc", zero: "1", page: "3" }).toString());
+    expect(query).toBe(new URLSearchParams({ rec: "상", pat: "단일,복합", sort: "rateDesc", zero: "1", page: "3" }).toString());
     expect(parse(query)).toEqual(state);
+  });
+
+  it("옛 주소의 파트(part)는 무시한다(서열표 파트 필터 없음, 2026-10-31)", () => {
+    expect(parse("part=B").filters.part).toBeNull();
   });
 
   it("추천 필터를 전부 푼 상태(전체)는 `rec=all`로 기본값(상·중)과 구분된다", () => {
