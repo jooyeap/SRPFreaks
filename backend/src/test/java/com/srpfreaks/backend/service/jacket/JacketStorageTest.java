@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,6 +35,27 @@ class JacketStorageTest {
         try (var files = Files.list(folder)) {
             assertThat(files.map(p -> p.getFileName().toString())).containsExactly("12.webp");
         }
+    }
+
+    @Test
+    void 저장한_파일은_다른_사용자도_읽을_수_있다() throws Exception {
+        // 임시 파일 기본 권한(rw-------)으로 두면 nginx가 읽지 못해 403이 된다
+        JacketStorage storage = storage(dir);
+        storage.save(7L, new byte[]{1});
+        assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(dir.resolve("7.webp")))).isEqualTo("rw-r--r--");
+    }
+
+    @Test
+    void 시작할_때_읽을_수_없는_예전_재킷_파일의_권한만_고친다() throws Exception {
+        Path old = Files.writeString(dir.resolve("5.webp"), "x");
+        Path other = Files.writeString(dir.resolve("notes.txt"), "x");
+        Files.setPosixFilePermissions(old, PosixFilePermissions.fromString("rw-------"));
+        Files.setPosixFilePermissions(other, PosixFilePermissions.fromString("rw-------"));
+
+        storage(dir).fixPermissions();
+
+        assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(old))).isEqualTo("rw-r--r--");
+        assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(other))).isEqualTo("rw-------");
     }
 
     @Test
