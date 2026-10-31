@@ -36,7 +36,7 @@ export function Segmented<T extends string>({
               type="button"
               aria-pressed={on}
               onClick={() => onChange(item.value)}
-              className={`min-h-10 rounded-lg px-3.5 py-1 text-sm ${
+              className={`min-h-[34px] rounded-lg px-3 py-0.5 text-sm [@media(min-width:64rem)_and_(pointer:fine)]:min-h-7 ${
                 on ? "bg-card font-bold text-fg shadow-sm ring-1 ring-chip-line" : "text-fg-dim hover:text-fg"
               }`}
             >
@@ -82,7 +82,10 @@ export function AverageToggle({ includeZero, onChange }: { includeZero: boolean;
   );
 }
 
-/** 여러 개 고르는 필터의 칩 하나. 켜지면 ✓가 앞에 붙는다. */
+/**
+ * 여러 개 고르는 필터의 칩 하나. 켜지면 ✓가 앞에 붙는다.
+ * 높이(2026-10-31): 모바일 36px, 마우스 데스크톱(64rem 이상 + pointer:fine) 30px. 선택 버튼(Segmented)은 34px / 28px.
+ */
 export function CheckChip({
   pressed,
   onClick,
@@ -101,7 +104,7 @@ export function CheckChip({
       aria-pressed={pressed}
       disabled={disabled}
       onClick={onClick}
-      className={`inline-flex min-h-11 items-center gap-1 rounded-[10px] border px-3.5 py-1 text-sm ${
+      className={`inline-flex min-h-9 items-center gap-1 rounded-[10px] border px-3 py-0.5 text-sm [@media(min-width:64rem)_and_(pointer:fine)]:min-h-[30px] ${
         pressed ? "border-check-line bg-check-bg font-bold text-check-fg" : "border-chip-line text-fg-sub hover:text-fg"
       }`}
     >
