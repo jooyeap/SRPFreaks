@@ -9,6 +9,7 @@ import type { SettingResponse } from "@/lib/api-types";
 import { adminKeys, fetchSettings, SETTING_AFFECTED_KEYS, settingMeta, updateSetting, validateSettingValue } from "@/lib/admin";
 import { formatPlayedDate } from "@/lib/format";
 import { useTranslations } from "next-intl";
+import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -27,8 +28,8 @@ export function SettingsAdminView({ viewerId }: { viewerId: number }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
-          <span aria-hidden="true">←</span>
+        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className={BACK_BUTTON_CLASS}>
+          <BackArrow />
         </Link>
         <h1 className="text-xl font-semibold text-fg">{t("Admin.settingsTitle")}</h1>
         <p className="text-sm text-fg-sub">
