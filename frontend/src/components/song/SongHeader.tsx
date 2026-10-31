@@ -1,4 +1,5 @@
-// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
+import { SongJacket } from "@/components/SongJacket";
+import { useJackets } from "@/lib/jackets";
 import { ChartBadge } from "@/components/table/Badges";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
@@ -26,12 +27,16 @@ export function SongHeader({
   action?: React.ReactNode;
 }) {
   const t = useTranslations();
+  const jackets = useJackets();
+  const withJacket = jackets.visible;
   return (
     <section aria-label={t("Song.songInfo")} className="flex items-stretch gap-3.5">
-      {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
-      {/* <SongJacket className="h-[124px] w-[124px] rounded-[18px]">
-        {chart ? <span data-difficulty={chart.difficultyType} className="diff-band absolute inset-x-0 bottom-0 h-1.5" /> : null}
-      </SongJacket> */}
+      {/* 재킷(D54, A안): 모바일 96px · 데스크톱 140px. 아래 띠는 선택된 채보의 난이도 색(글자는 알약에도 있다) */}
+      {withJacket ? (
+        <SongJacket url={jackets.urlOf(song.id)} title={song.title} className="size-24 self-start rounded-[14px] md:size-[140px] md:rounded-[18px]">
+          {chart ? <span data-difficulty={chart.difficultyType} className="diff-band absolute inset-x-0 bottom-0 h-1.5" /> : null}
+        </SongJacket>
+      ) : null}
       <div className="flex min-w-0 flex-1 flex-col justify-between gap-1.5 py-0.5">
         {/* 속성 칩 자리는 값이 없어도 높이를 잡아 둬서, 속성 유무로 곡명 위치가 흔들리지 않게 한다 */}
         <div className="flex min-h-[26px] justify-end">
@@ -43,14 +48,16 @@ export function SongHeader({
         </div>
         <div className="flex flex-col gap-1">
           <div className="flex items-start justify-between gap-3">
-            <h1 className="min-w-0 break-words font-num text-[26px] font-bold leading-[1.15] text-fg">{song.title}</h1>
-            {action ? <div className="shrink-0">{action}</div> : null}
+            <h1 className={`min-w-0 break-words font-num font-bold leading-[1.15] text-fg ${withJacket ? "line-clamp-2 text-[22px] md:line-clamp-none md:text-[26px]" : "text-[26px]"}`}>{song.title}</h1>
+            {/* 재킷이 있으면 모바일에서는 버튼을 아래 배지 줄 오른쪽으로 내린다(곡명 칸이 좁아서) */}
+            {action ? <div className={`shrink-0 ${withJacket ? "hidden md:block" : ""}`}>{action}</div> : null}
           </div>
           {song.artist ? <p className="break-words text-[13px] text-fg-dim">{song.artist}</p> : null}
         </div>
         <p className="flex flex-wrap items-center gap-1.5">
           {song.addedVersion ? <span title={song.addedVersion} className={`${CHIP} max-w-full truncate font-num`}>{song.addedVersion}</span> : null}
           {chart ? <ChartBadge part={chart.instrumentPart} difficulty={chart.difficultyType} level={chart.level} /> : null}
+          {withJacket && action ? <span className="ml-auto md:hidden">{action}</span> : null}
         </p>
       </div>
     </section>

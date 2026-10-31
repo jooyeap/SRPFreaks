@@ -12,7 +12,7 @@ class PublicReadPathsTest {
         for (String uri : new String[] {
                 "/api/v1/notices", "/api/v1/notices/12",
                 "/api/v1/songs", "/api/v1/songs/5", "/api/v1/songs/suggest", "/api/v1/songs/chart-folders", "/api/v1/songs/charts",
-                "/api/v1/songs/5/tier-history",
+                "/api/v1/songs/5/tier-history", "/api/v1/songs/jackets",
                 "/api/v1/players", "/api/v1/players/3",
                 "/api/v1/difficulty-tables", "/api/v1/difficulty-tables/1/entries"}) {
             assertThat(PublicReadPaths.matches("GET", uri)).as(uri).isTrue();

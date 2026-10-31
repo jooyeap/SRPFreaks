@@ -7,6 +7,7 @@ import { canSeeAdminMenu } from "@/lib/admin";
 import { canUseImport } from "@/lib/features";
 import { ProfileVisibilityForm } from "@/components/settings/ProfileVisibilityForm";
 import { RivalNotifyForm } from "@/components/settings/RivalNotifyForm";
+import { JacketDisplayForm } from "@/components/settings/JacketDisplayForm";
 import { useTranslations } from "next-intl";
 
 /** 설정 화면: 계정 정보, 닉네임, 유저 목록 공개 여부, 로그아웃, 탈퇴로 가는 링크. 내 정보이므로 로그인이 필요하다. */
@@ -58,6 +59,7 @@ export default function SettingsPage() {
       <section aria-label={t("Settings.rivalNotifyHeading")} className={card}>
         <RivalNotifyForm user={user} />
       </section>
+      <JacketDisplayForm />
       {canUseImport(user.role) ? (
         <section aria-label={t("Nav.import")} className={card}>
           <h2 className="text-xs font-bold text-fg-sub">{t("Nav.import")}</h2>

@@ -66,4 +66,8 @@ public interface SongRepository extends JpaRepository<Song, Long> {
     /** 곡명 후보(표기·별칭). 삭제된 곡의 표기는 제외한다. */
     @Query("select new com.srpfreaks.backend.repository.SongRepository$SongText(t.song.id, t.title) from SongTitle t where t.song.deleted = false")
     List<SongText> findAllAliasTitles();
+
+    /** 재킷 주소가 있는 (삭제되지 않은) 곡 전부(D54 재킷 표시). 곡 수백 개 규모라 한 번에 읽는다. */
+    @Query("select new com.srpfreaks.backend.repository.SongRepository$SongText(s.id, s.imageUrl) from Song s where s.deleted = false and s.imageUrl is not null")
+    List<SongText> findAllJacketUrls();
 }

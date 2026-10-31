@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { RatedScore } from "@/components/table/RatedScore";
 import { StageBadge } from "@/components/table/StageBadge";
-// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
+import { SongJacket } from "@/components/SongJacket";
+import { useJackets } from "@/lib/jackets";
 import { tableDetailHref } from "@/components/song/TableContext";
 import { patternLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatRate } from "@/lib/format";
@@ -51,15 +52,16 @@ export function EntryRow({
 }) {
   const t = useTranslations();
   const stage = entry.mine?.stage ?? null;
+  const jackets = useJackets();
   return (
     <li
       data-stage={stage ?? undefined}
       className={`hidden min-h-[52px] border-t border-row-line px-3 py-2 text-sm md:grid ${ROW_GRID} ${stage ? "stage-tint" : ""}`}
     >
       <span className={`h-8 w-1 rounded ${stage ? "stage-bar" : "bg-transparent"}`} aria-hidden="true" />
-      {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. (ROW_GRID의 재킷 열도 함께 뺐다) */}
-      {/* <SongJacket className="h-10 w-10 rounded-lg" /> */}
       <span className="flex min-w-0 items-center gap-2">
+        {/* 재킷(D54): 데스크톱 표는 곡명 앞에 작은 칸(32px)으로 둔다 */}
+        {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-8 rounded" /> : null}
         <Link
           href={tableDetailHref(entry)}
           className={`truncate hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
