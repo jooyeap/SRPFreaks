@@ -423,9 +423,10 @@ describe("DifficultyTableView", () => {
     fireEvent.click(screen.getByRole("button", { name: "다음" }));
     await waitFor(() => expect(entryParams(1).get("page")).toBe("1"));
 
-    fireEvent.click(within(screen.getByRole("group", { name: "파트" })).getByRole("button", { name: "Bass" }));
-    await waitFor(() => expect(entryParams(2).get("part")).toBe("BASS"));
+    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "단일 외" }));
+    await waitFor(() => expect(entryParams(2).get("pattern")).toBe("복합,이중,삼중"));
     expect(entryParams(2).get("page")).toBe("0");
+    expect(screen.queryByRole("group", { name: "파트" })).toBeNull(); // 서열표에는 파트 필터가 없다(2026-10-31)
   });
 
   it("처음에는 추천 상·중만 걸려 있고, 그 값으로 조회한다", async () => {
@@ -481,7 +482,7 @@ describe("DifficultyTableView", () => {
     // 데스크톱: 항상 보이고 가로로 놓이며 넘치면 줄바꿈
     expect(panel).toHaveClass("md:flex", "md:flex-row", "md:flex-wrap");
     // 파트·추천·속성·정렬·평균 계산이 모두 이 카드 안에 있다
-    for (const name of ["파트", "추천", "속성", "평균 계산"]) {
+    for (const name of ["추천", "속성", "평균 계산"]) {
       expect(panel).toContainElement(screen.getByRole("group", { name }));
     }
   });
@@ -515,13 +516,21 @@ describe("DifficultyTableView", () => {
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Guitar" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "단일 외" }));
     fireEvent.click(within(screen.getByRole("group", { name: "추천" })).getByRole("button", { name: "상" })); // 상 끄기
     fireEvent.click(screen.getByRole("button", { name: "0% 포함" }));
-    expect(toggle).toHaveTextContent("Guitar · 추천 중 · 평균 0% 포함");
+    expect(toggle).toHaveTextContent("추천 중 · 속성 단일 외 · 평균 0% 포함");
+
+    // `단일 외` 세부: 삼중을 끄면 요약이 복합·이중으로 바뀌고, 마지막 하나는 끌 수 없다
+    const detail = within(screen.getByRole("group", { name: "단일 외 세부" }));
+    fireEvent.click(detail.getByRole("button", { name: "삼중" }));
+    fireEvent.click(detail.getByRole("button", { name: /이중/ }));
+    expect(detail.getByRole("button", { name: /복합/ })).toBeDisabled();
+    expect(toggle).toHaveTextContent("속성 복합");
 
     fireEvent.click(within(screen.getByRole("group", { name: "추천" })).getByRole("button", { name: "전체" }));
-    expect(toggle).toHaveTextContent("Guitar · 평균 0% 포함"); // 추천을 모두 풀면 요약에서 빠진다
+    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "전체" }));
+    expect(toggle).toHaveTextContent("전체 · 평균 0% 포함"); // 다 풀면 요약에서 빠진다
   });
 
   it("평균 토글은 서버를 다시 부르지 않고 표시만 바꾼다", async () => {

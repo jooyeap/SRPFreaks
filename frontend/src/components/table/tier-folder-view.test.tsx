@@ -119,16 +119,17 @@ describe("TierFolderView", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("묶음을 찾을 수 없습니다.");
   });
 
-  it("처음에는 필터 없이 묶음 전체를 보여 주고, 파트 칩으로 거르면 머리 개수도 걸러진 채보 기준이다", async () => {
+  it("처음에는 필터 없이 묶음 전체를 보여 주고, 속성 `단일 외`로 거르면 머리 개수도 걸러진 채보 기준이다", async () => {
     renderView("5.8");
     await screen.findByRole("heading", { name: /5\.8\s*2개/ });
 
-    const parts = screen.getByRole("group", { name: "파트" });
-    expect(within(parts).getByRole("button", { name: "전체" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(within(parts).getByRole("button", { name: "Bass" }));
+    expect(screen.queryByRole("group", { name: "파트" })).toBeNull(); // 파트 필터 없음(2026-10-31)
+    const pattern = screen.getByRole("group", { name: "속성" });
+    expect(within(pattern).getByRole("button", { name: "전체" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(pattern).getByRole("button", { name: "단일 외" }));
 
     expect(await screen.findByRole("heading", { name: /5\.8\s*1개/ })).toBeInTheDocument();
-    expect(screen.getAllByText("가곡").length).toBeGreaterThan(0); // Bass인 곡
+    expect(screen.getAllByText("가곡").length).toBeGreaterThan(0); // 복합인 곡
     expect(screen.queryByText("나곡")).not.toBeInTheDocument();
     // 인접 난이도 막대는 묶음 전체 기준이라 필터와 상관없이 그대로 있다
     expect(screen.getByRole("navigation", { name: "인접 난이도" })).toBeInTheDocument();
@@ -140,7 +141,7 @@ describe("TierFolderView", () => {
 
     fireEvent.click(within(screen.getByRole("group", { name: "추천" })).getByRole("button", { name: "하" }));
     expect(await screen.findByRole("heading", { name: /5\.8\s*1개/ })).toBeInTheDocument();
-    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "삼중" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "단일" }));
     expect(await screen.findByText("조건에 맞는 채보가 없습니다.")).toBeInTheDocument();
 
     // 전체를 누르면 풀린다

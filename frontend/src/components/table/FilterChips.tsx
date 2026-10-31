@@ -83,11 +83,23 @@ export function AverageToggle({ includeZero, onChange }: { includeZero: boolean;
 }
 
 /** 여러 개 고르는 필터의 칩 하나. 켜지면 ✓가 앞에 붙는다. */
-export function CheckChip({ pressed, onClick, children }: { pressed: boolean; onClick: () => void; children: string }) {
+export function CheckChip({
+  pressed,
+  onClick,
+  children,
+  disabled = false,
+}: {
+  pressed: boolean;
+  onClick: () => void;
+  children: string;
+  /** 끌 수 없는 칩(예: `단일 외` 세부에서 마지막 하나) */
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       aria-pressed={pressed}
+      disabled={disabled}
       onClick={onClick}
       className={`inline-flex min-h-11 items-center gap-1 rounded-[10px] border px-3.5 py-1 text-sm ${
         pressed ? "border-check-line bg-check-bg font-bold text-check-fg" : "border-chip-line text-fg-sub hover:text-fg"
