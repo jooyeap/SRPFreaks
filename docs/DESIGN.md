@@ -1080,9 +1080,10 @@ com.srpfreaks.backend
 6. 미리보기: 썸네일과 함께 `새로 넣기` / `이미 있음(교체 후보, 기본 체크 해제)` / `마스터에 없음(제외, 개수만)` / `공식 목록에 없음(개수와 곡명)`. ROOT가 체크한 것만 저장한다.
 
 **서버**
-- `POST /admin/song-jackets` (ROOT): 곡 id와 WebP 바이트. 파일 앞부분(RIFF/WEBP)으로 형식을 확인하고 1장 50KB 이하, 가로세로 256px 이하만 받는다. 이미지를 다시 인코딩하지 않는다(의존성 추가 없음).
+- `POST /admin/song-jackets/match` (ROOT, 1단계 구현): 공식 곡명 목록(최대 4,000개)을 받아 마스터와 맞춘 결과(`matches`: 공식 곡명·곡 id·마스터 곡명·`hasJacket`, `unmatchedCount`, `missingSongs`: 공식 목록에서 못 찾은 마스터 곡)를 돌려준다. 저장하지 않는다.
+- `POST /admin/song-jackets` (ROOT, 1단계 구현): multipart `songIds`(여러 칸)와 `images`(같은 순서), **한 번에 10장까지**(10 × 50KB로 요청 한도 1MB 안). 파일 앞부분(RIFF/WEBP와 VP8·VP8L·VP8X 머리)으로 형식과 가로세로를 읽어 1장 50KB 이하, 가로세로 256px 이하만 받는다. 하나라도 틀리면 그 요청은 아무것도 저장하지 않는다(400 `JACKET_BAD_IMAGE`). 이미지를 다시 인코딩하지 않는다(의존성 추가 없음). 파일은 임시 이름으로 쓴 뒤 옮겨서 반쯤 쓴 파일이 나가지 않게 한다.
 - `DELETE /admin/song-jackets/{songId}` (ROOT·ADMIN): 재킷 삭제(삭제 요청 대응).
-- 저장: 새 도커 볼륨 `jackets`. 백엔드는 쓰기, nginx는 읽기 전용으로 붙이고 `/jackets/{songId}.webp`로 보낸다(`Content-Type: image/webp`, `nosniff`, 오래 캐시). `songs.image_url`에는 `/jackets/{songId}.webp?v=<내용 해시 앞 8자>`를 넣어 교체 시 주소가 바뀌게 한다. 출처는 `songs.source`와 별개로 감사 로그에 남는다.
+- 저장: 새 도커 볼륨 `jackets`(`JACKETS_DIR=/data/jackets`). 백엔드는 쓰기, nginx는 읽기 전용(`/srv/jackets`)으로 붙이고 `/jackets/{숫자}.webp`만 내보낸다(`image/webp`, 서버 공통 `nosniff`, **7일 캐시**: 내리기 뒤 브라우저에 남는 기간을 짧게). 다른 이름·폴더 목록은 404. `songs.image_url`에는 `/jackets/{songId}.webp?v=<내용 해시 앞 8자>`를 넣어 교체 시 주소가 바뀌게 한다. 출처는 `songs.source`와 별개로 감사 로그에 남는다.
 - 감사 로그: `SONG_JACKET_IMPORT`(곡 id·개수, 이미지 값은 넣지 않음), `SONG_JACKET_DELETE`.
 - 서버는 공식 사이트와 통신하지 않는다(D18·D42 원칙 유지). 외부 주소에서 직접 불러오기(hotlink)는 하지 않는다.
 
@@ -1269,4 +1270,5 @@ com.srpfreaks.backend
 | 2026-10-28 | D55 1단계: V18 `recognize_usages`(user_id, used_at, 8일 보관) + 설정 `recognize.enabled`(false)·`min_role`(ADMIN)·`weekly_limit`(30)·`daily_total_limit`(300), 상태 API `GET /records/recognize/status`, 관리 설정 검사 |
 | 2026-10-28 | D55 2단계: `POST /records/recognize`(Anthropic Claude API, 결과만 반환·저장 없음), 키는 `LLM_API_KEY`(없으면 503, 사용량 안 셈), 1MB·IP당 1분 20회, 오류 코드 3개 |
 | 2026-10-28 | **D54 승인.** CLAUDE.md의 D42 "재킷 제외" 문구를 D54 허용으로 바꿈. 화면 배치는 시안에서 고르는 중 |
+| 2026-10-28 | D54 1단계(서버): 재킷 곡명 매칭·저장(ROOT)·내리기(ROOT·ADMIN) API, 도커 볼륨 `jackets`, nginx `/jackets/` 경로. 화면 표시(`imageUrl` 내보내기)와 가져오기 스크립트는 다음 단계 |
 | 2026-10-29 | D55 인식 개선: 실제 사진에서 옵션(`S.RANDOM+`)을 놓쳐 지시문을 화면 위치 기준으로 다시 씀(곡명=재킷 아래 흰 칸 첫 줄, 레벨·파트·난이도=그 아래 띠, 달성률=오른쪽 위, Miss=판정표, 옵션=Fast/Slow 아래 첫 칸). 옵션은 칸 글자 그대로(`randomOption`) 받고 서버가 SRN+인지 정함(`S.RANDOM+`·`SUPER RANDOM+`만, +가 없으면 다른 옵션). 사진 긴 변 1,024 → 1,568px |

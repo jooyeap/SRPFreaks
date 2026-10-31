@@ -31,6 +31,8 @@ public enum ErrorCode {
     RECOGNIZE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "지금은 사진을 인식할 수 없습니다. 직접 입력해 주세요."),
     /** 사진 입력(D55): 사진 형식이 아니거나 너무 큰 파일. */
     RECOGNIZE_BAD_IMAGE(HttpStatus.BAD_REQUEST, "사진 파일(JPEG·PNG·WebP, 1MB 이하)을 올려 주세요."),
+    /** 재킷 가져오기(D54): WebP가 아니거나, 50KB·256px를 넘거나, 곡 id와 이미지 개수가 맞지 않을 때. */
+    JACKET_BAD_IMAGE(HttpStatus.BAD_REQUEST, "재킷 이미지(WebP, 50KB·256px 이하)를 올려 주세요."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버에 문제가 생겼습니다. 잠시 후 다시 시도해 주세요.");
 
     private final HttpStatus status;

@@ -21,6 +21,7 @@ public class AppProperties {
     private final RateLimit rateLimit = new RateLimit();
     private final ImportApi importApi = new ImportApi();
     private final Llm llm = new Llm();
+    private final Jackets jackets = new Jackets();
 
     /**
      * 이 이메일로 처음 Google 로그인하는 계정만 ROOT가 된다(단, 아직 ROOT가 없을 때). 비워 두면 ROOT를 만들지 않는다.
@@ -81,5 +82,13 @@ public class AppProperties {
         private String baseUrl = "https://api.anthropic.com";
         /** 한 번 호출의 최대 대기 시간(초). */
         private int timeoutSeconds = 30;
+    }
+
+    /** 재킷 이미지(D54) 저장 위치. 운영은 도커 볼륨(/data/jackets)이고 nginx가 같은 볼륨을 읽기 전용으로 내보낸다. */
+    @Getter
+    @Setter
+    public static class Jackets {
+        /** {songId}.webp 파일을 두는 폴더. 없으면 처음 저장할 때 만든다. */
+        private String dir = "./data/jackets";
     }
 }
