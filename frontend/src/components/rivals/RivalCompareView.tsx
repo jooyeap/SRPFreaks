@@ -6,8 +6,11 @@ import { useState } from "react";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 import { Pager } from "@/components/Pager";
 import { ApiError } from "@/lib/api";
-import type { PlayerTierResponse, RivalChartRow, RivalCounts, RivalRatingRow, RivalResult } from "@/lib/api-types";
-import { difficultyLabel, formatLevel, formatRate, formatScore, partLabel } from "@/lib/format";
+import type { PlayerTierResponse, RivalChartRow, RivalCounts, RivalResult } from "@/lib/api-types";
+import { formatRate, formatScore } from "@/lib/format";
+import { ChartBadge } from "@/components/table/Badges";
+import { StageBadge } from "@/components/table/StageBadge";
+import { chartTierAttrs } from "@/lib/chart-tier";
 import { fetchCompareCharts, fetchCompareRating, formatDiff, rivalKeys, signed } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
@@ -50,22 +53,14 @@ function Segment<T extends string>({ label, items, value, onChange }: {
 
 function TierChip({ tier }: { tier: PlayerTierResponse }) {
   return (
-    <span data-tier={tier.key} className="tier-chip inline-block rounded-full px-2 py-0.5 text-[11px] font-bold">
+    <span data-tier={tier.key} className="tier-chip inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold">
       {tier.displayName}
     </span>
   );
 }
 
-function ChartPill({ part, difficulty, level }: { part: RivalRatingRow["part"]; difficulty: RivalRatingRow["difficulty"]; level: number }) {
-  return (
-    <span className="font-num inline-flex shrink-0 items-center gap-1 rounded-md border border-chip-line px-1.5 text-[11px] font-semibold text-fg-sub">
-      {partLabel(part)} | {difficultyLabel(difficulty)} {formatLevel(level)}
-    </span>
-  );
-}
-
 /**
- * 라이벌 비교 화면(D56). 머리: 나 총점 · 승·패·같음 · 상대 총점. 보기: 상대 레이팅 목록에 내 점수 나란히 / 곡별 승패.
+ * 라이벌 비교 화면(D56). 머리: 나 총점 · 승·패·무 · 상대 총점. 보기: 상대 레이팅 목록에 내 점수 나란히 / 곡별 승패.
  * 승패·점수는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다).
  */
 export function RivalCompareView({ viewerId, targetId, initialView = "rating" }: { viewerId: number; targetId: number; initialView?: View }) {
@@ -166,10 +161,10 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
                       <span className="font-num text-xs text-fg-dim">{row.rank}</span>
                       <span className="min-w-0">
                         <span className="block truncate text-[13px] text-fg">{row.title}</span>
-                        <span className="mt-0.5 flex"><ChartPill part={row.part} difficulty={row.difficulty} level={row.level} /></span>
+                        <span className="mt-1 flex flex-wrap items-center gap-1.5"><ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} /><StageBadge stage={row.stage} /></span>
                       </span>
                       <span className="text-right">
-                        <span className="block font-num text-[13px] text-fg">{formatScore(row.score)}</span>
+                        <span {...chartTierAttrs(row.score)} className="tier-score block font-num text-[13px] font-semibold">{formatScore(row.score)}</span>
                         <span className="block font-num text-[11px] text-fg-dim">{formatRate(row.rate)}%</span>
                       </span>
                       <span className={`text-right font-num text-xs ${diff?.sign === "up" ? "text-done-text" : diff?.sign === "down" ? "text-danger" : "text-fg-dim"}`}>
@@ -209,7 +204,7 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
                     <Link href={`/songs/${row.songId}?chart=${row.songDifficultyId}`} className="grid grid-cols-[minmax(0,1fr)_auto_56px] items-center gap-2 px-3 py-2.5 hover:bg-table-head">
                       <span className="min-w-0">
                         <span className="block truncate text-[13px] text-fg">{row.title}</span>
-                        <span className="mt-0.5 flex"><ChartPill part={row.part} difficulty={row.difficulty} level={row.level} /></span>
+                        <span className="mt-1 flex"><ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} /></span>
                       </span>
                       <span className="text-right font-num text-xs">
                         <span className="block text-fg" aria-label={t("myRateAria")}>{formatRate(row.myRate)}</span>

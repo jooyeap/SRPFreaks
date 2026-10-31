@@ -477,7 +477,7 @@ export interface TierHistoryResponse {
 
 /* ---------- 라이벌 (D56) ---------- */
 
-/** 곡별 승패 개수. 둘 다 기록 있는 채보만 이김/짐/같음, 상대만 기록 있으면 theirsOnly. */
+/** 곡별 승패 개수. 둘 다 기록 있는 채보만 승/패/무, 상대만 기록 있으면 theirsOnly. */
 export interface RivalCounts {
   win: number;
   lose: number;

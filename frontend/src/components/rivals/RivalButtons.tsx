@@ -46,7 +46,7 @@ export function RivalButtons({ viewerId, targetId, nickname }: { viewerId: numbe
   const full = data !== undefined && !data.registered && data.count >= data.max;
   const error = register.error ?? unregister.error;
   const message = error instanceof ApiError ? error.message : error ? t("failed") : null;
-  const base = "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-4 text-sm font-bold disabled:opacity-60";
+  const base = "inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border px-4 text-sm disabled:text-disabled";
 
   return (
     <div className="flex flex-col gap-2">
@@ -56,7 +56,7 @@ export function RivalButtons({ viewerId, targetId, nickname }: { viewerId: numbe
             type="button"
             aria-pressed="true"
             onClick={() => setConfirming(true)}
-            className={`${base} flex-1 border-check-line bg-check-bg text-check-fg`}
+            className={`${base} flex-1 border-chip-on-bg bg-chip-on-bg font-semibold text-chip-on-fg`}
           >
             <span aria-hidden="true">✓</span>
             {data.mutual ? t("mutualOn") : t("on")}
@@ -67,7 +67,7 @@ export function RivalButtons({ viewerId, targetId, nickname }: { viewerId: numbe
             aria-pressed="false"
             disabled={data === undefined || full || register.isPending}
             onClick={() => register.mutate()}
-            className={`${base} flex-1 border-chip-on-bg bg-chip-on-bg text-chip-on-fg`}
+            className={`${base} flex-1 border-chip-line text-fg enabled:hover:bg-table-head`}
           >
             <span aria-hidden="true">+</span>
             {t("register")}

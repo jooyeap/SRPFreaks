@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
 
 /**
  * 곡 상세의 `라이벌 기록` (D56): 이 채보의 내 라이벌 기록과 내 기록과의 차이. 로그인했을 때만 부모가 그리고,
- * 라이벌이 없으면(빈 목록) 아무것도 그리지 않는다. `이김/짐/같음`은 글자로도 보인다(색만 쓰지 않는다).
+ * 라이벌이 없으면(빈 목록) 아무것도 그리지 않는다. `승/패/무`은 글자로도 보인다(색만 쓰지 않는다).
  */
 export function RivalRecordsCard({ viewerId, songDifficultyId }: { viewerId: number; songDifficultyId: number }) {
   const t = useTranslations("Rival");
