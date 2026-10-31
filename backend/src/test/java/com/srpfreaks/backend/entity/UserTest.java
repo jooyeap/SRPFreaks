@@ -17,6 +17,14 @@ class UserTest {
     }
 
     @Test
+    void 라이벌_알림_받기는_기본으로_켜져_있고_끌_수_있다() {
+        User user = User.create("sub-rn", "rn@example.com", "nick");
+        assertThat(user.isRivalNotify()).isTrue();
+        user.changeRivalNotify(false);
+        assertThat(user.isRivalNotify()).isFalse();
+    }
+
+    @Test
     void googleSub나_email이_비면_거부한다() {
         assertThatThrownBy(() -> User.create(" ", "a@example.com", null)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> User.create("sub-1", "", null)).isInstanceOf(IllegalArgumentException.class);

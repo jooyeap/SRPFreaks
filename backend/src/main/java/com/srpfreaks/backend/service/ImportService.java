@@ -88,6 +88,7 @@ public class ImportService {
     private final SongTitleRepository songTitleRepository;
     private final OptionRecordRepository optionRecordRepository;
     private final UserRepository userRepository;
+    private final RivalAlertTrigger rivalAlertTrigger;
     private final Clock clock;
 
     /** 가져오기 토큰 경로와 저장 API가 쓴다: 걸러서 실제로 저장한다. */
@@ -205,6 +206,9 @@ public class ImportService {
             if (commit) {
                 optionRecordRepository.save(OptionRecord.create(user, c.chart(), SAVED_OPTION, c.rate(), c.fullCombo(),
                         c.playedAt(), Platform.ARCADE, null));
+                // 라이벌 역전 알림(D56): 이전 최고(없으면 첫 기록이라 알림 없음) → 새 최고
+                rivalAlertTrigger.recordSaved(user.getId(), chartId, SAVED_OPTION, previous,
+                        previous == null ? c.rate() : previous.max(c.rate()));
             }
             bests.put(chartId, new RecordBest(chartId,
                     best == null ? c.rate() : best.bestRate().max(c.rate()), c.fullCombo() || (best != null && best.fullCombo())));

@@ -38,6 +38,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -57,6 +60,7 @@ class ImportServiceTest {
     @Mock SongTitleRepository songTitleRepository;
     @Mock OptionRecordRepository optionRecordRepository;
     @Mock UserRepository userRepository;
+    @Mock RivalAlertTrigger rivalAlertTrigger;
 
     ImportService service;
     User user;
@@ -68,7 +72,7 @@ class ImportServiceTest {
     @BeforeEach
     void setUp() {
         service = new ImportService(songDifficultyRepository, songTitleRepository, optionRecordRepository,
-                userRepository, Clock.fixed(NOW, ZoneOffset.UTC));
+                userRepository, rivalAlertTrigger, Clock.fixed(NOW, ZoneOffset.UTC));
         user = User.create("sub", "a@example.com", "tester");
         ReflectionTestUtils.setField(user, "id", USER_ID);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
@@ -125,6 +129,23 @@ class ImportServiceTest {
         assertThat(saved.getAchievementRate()).isEqualByComparingTo("73.87");
         assertThat(saved.isFullCombo()).isFalse();
         assertThat(saved.getPlayedAt()).isEqualTo(Instant.ofEpochMilli(PLAYED_MS));
+    }
+
+    @Test
+    void 저장하면_이전_최고와_새_최고로_라이벌_알림_판정을_부른다() {
+        best(alphaGuitar, "70.00", false);
+        run(play("Alpha", "gf_mst", 7387, 2, 5));
+
+        verify(rivalAlertTrigger).recordSaved(eq(USER_ID), eq(11L), eq(NoteOption.SUPER_RANDOM_PLUS),
+                argThat(v -> v.compareTo(new BigDecimal("70.00")) == 0), argThat(v -> v.compareTo(new BigDecimal("73.87")) == 0));
+    }
+
+    @Test
+    void 첫_기록이면_이전_최고는_null로_넘긴다() {
+        run(play("Alpha", "gf_mst", 7387, 2, 5));
+
+        verify(rivalAlertTrigger).recordSaved(eq(USER_ID), eq(11L), eq(NoteOption.SUPER_RANDOM_PLUS), isNull(),
+                argThat(v -> v.compareTo(new BigDecimal("73.87")) == 0));
     }
 
     @Test
