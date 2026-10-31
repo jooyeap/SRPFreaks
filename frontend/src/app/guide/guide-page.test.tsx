@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import GuidePage from "@/app/guide/page";
 
@@ -121,5 +121,14 @@ describe("레이팅 설명서", () => {
     expect(within(screenGuide).getByRole("heading", { name: /85% 이상이면 레이팅에 반영돼요/ })).toBeInTheDocument();
     expect(within(screenGuide).getByText(/같은 날 다시 누르면 오늘 기록이 최신 값으로 바뀝니다/)).toBeInTheDocument();
     expect(within(screenGuide).getByText("지금 레이팅 기록하기").tagName).toBe("B");
+  });
+
+  it("레이팅 / 라이벌 탭이 있고 라이벌 탭을 누르면 라이벌 설명서가 보인다", () => {
+    render(<GuidePage />);
+    expect(screen.getByRole("tab", { name: "레이팅" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("tab", { name: "라이벌" }));
+    expect(screen.getByRole("heading", { level: 1, name: "라이벌 설명서" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "역전 알림" })).toHaveTextContent("10분 뒤");
+    expect(window.location.search).toContain("tab=rival");
   });
 });

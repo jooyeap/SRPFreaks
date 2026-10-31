@@ -4,17 +4,18 @@ import type { StatsAxis } from "@/lib/rate-folders";
 import type { MessageKey } from "@/i18n/translator";
 
 /** 마이페이지 탭. 주소 쿼리(`/me?tab=stats`)에 두어 새로고침·뒤로가기·링크 공유에도 같은 탭이 열린다. */
-export type MyPageTab = "rating" | "stats" | "setlist";
+export type MyPageTab = "rating" | "stats" | "setlist" | "rival";
 
 export const MY_PAGE_TABS: readonly { value: MyPageTab; labelKey: MessageKey }[] = [
   { value: "rating", labelKey: "MyPage.tabRating" },
   { value: "stats", labelKey: "MyPage.tabStats" },
   { value: "setlist", labelKey: "MyPage.tabSetlist" },
+  { value: "rival", labelKey: "MyPage.tabRival" },
 ];
 
 /** 알 수 없는 값(주소는 사용자가 고칠 수 있다)은 기본 탭(레이팅)으로 본다. */
 export function tabFromParam(value: string | null): MyPageTab {
-  return value === "stats" || value === "setlist" ? value : "rating";
+  return value === "stats" || value === "setlist" || value === "rival" ? value : "rating";
 }
 
 /** 마이페이지의 화면 상태: 탭, 통계 탭의 기준(레벨 폴더 / 서열표 난이도). */
@@ -32,8 +33,8 @@ export function myPageStateFromParams(params: URLSearchParams): MyPageState {
 /** 기본값(레이팅 탭, 레벨 폴더)은 주소에 쓰지 않는다. 기준(axis)은 통계 탭일 때만 의미가 있어서 그때만 쓴다. */
 export function myPageStateToQuery(state: MyPageState): string {
   const params = new URLSearchParams();
-  if (state.tab === "setlist") {
-    params.set("tab", "setlist");
+  if (state.tab === "setlist" || state.tab === "rival") {
+    params.set("tab", state.tab);
   } else if (state.tab === "stats") {
     params.set("tab", "stats");
     if (state.axis === "tier") params.set("axis", "tier");

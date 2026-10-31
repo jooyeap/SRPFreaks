@@ -14,6 +14,7 @@ const BASE: UserResponse = {
   nickname: "たろう",
   role: "USER",
   profilePublic: false,
+  rivalNotify: true,
   createdAt: "2026-10-01T00:00:00Z",
 };
 

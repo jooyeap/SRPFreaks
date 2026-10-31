@@ -18,7 +18,7 @@ const authAs = (role: "USER" | "ADMIN") => ({
   accessToken: "t",
   tokenType: "Bearer",
   expiresIn: 900,
-  user: { id: 1, email: "a@example.com", nickname: "たろう", role, profilePublic: false, createdAt: "2026-10-01T00:00:00Z" },
+  user: { id: 1, email: "a@example.com", nickname: "たろう", role, profilePublic: false, rivalNotify: true, createdAt: "2026-10-01T00:00:00Z" },
 });
 
 // 더보기 시트의 관리·로그인/로그아웃 줄이 로그인 상태를 읽으므로 AuthProvider 안에서 그린다

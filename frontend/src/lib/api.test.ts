@@ -19,7 +19,7 @@ function authResponse(token: string): AuthResponse {
     accessToken: token,
     tokenType: "Bearer",
     expiresIn: 900,
-    user: { id: 1, email: "me@example.com", nickname: null, role: "USER", profilePublic: false, createdAt: "2026-10-05T00:00:00Z" },
+    user: { id: 1, email: "me@example.com", nickname: null, role: "USER", profilePublic: false, rivalNotify: true, createdAt: "2026-10-05T00:00:00Z" },
   };
 }
 

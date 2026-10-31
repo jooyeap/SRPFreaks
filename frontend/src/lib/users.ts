@@ -18,3 +18,8 @@ export function withdrawMyAccount(): Promise<void> {
 export function updateMyVisibility(profilePublic: boolean): Promise<UserResponse> {
   return apiFetch<UserResponse>("/users/me/visibility", { method: "PATCH", body: { profilePublic } });
 }
+
+/** `라이벌 알림 받기` 켜기/끄기(D56). 끄면 나에게 오는 역전 알림만 멈춘다. */
+export function updateMyRivalNotify(enabled: boolean): Promise<UserResponse> {
+  return apiFetch<UserResponse>("/users/me/rival-notify", { method: "PATCH", body: { enabled } });
+}

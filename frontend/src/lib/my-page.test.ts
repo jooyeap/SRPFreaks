@@ -12,6 +12,7 @@ function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
 describe("tabFromParam", () => {
   it("stats만 통계 탭이고, 없거나 알 수 없는 값은 레이팅 탭이다", () => {
     expect(tabFromParam("stats")).toBe("stats");
+    expect(tabFromParam("rival")).toBe("rival");
     expect(tabFromParam("setlist")).toBe("setlist");
     expect(tabFromParam("rating")).toBe("rating");
     expect(tabFromParam(null)).toBe("rating");

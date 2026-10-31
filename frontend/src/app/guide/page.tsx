@@ -1,5 +1,7 @@
 import { useTranslations } from "next-intl";
 import { ConstantTable } from "@/components/guide/ConstantTable";
+import { GuideTabs } from "@/components/guide/GuideTabs";
+import { RivalGuide } from "@/components/guide/RivalGuide";
 import { DEFAULT_COEFFICIENTS, pointsPerPercentAboveCap } from "@/lib/rating-guide";
 
 // 항목은 번역 키로 들고 있다가 화면에서 `t(...)`로 푼다. SRN+는 어느 언어에서나 같은 이름이라 키가 없다.
@@ -36,10 +38,15 @@ function CrossIcon() {
 }
 
 /**
- * 레이팅 설명서. 로그인 없이 볼 수 있는 정적 화면이다(기록을 쓰지 않는다).
+ * 설명서. 로그인 없이 볼 수 있는 정적 화면이다(기록을 쓰지 않는다). 2026-10-31부터 `레이팅 / 라이벌` 탭(D56)으로 나눈다.
  * 문구는 시안(모바일)의 것을 그대로 옮겼다. 포함/제외 아이콘(✓/✕)은 항목 글자 옆의 보조 표시이고 의미는 제목("포함되는/포함되지 않는")이 전달한다.
  */
 export default function GuidePage() {
+  return <GuideTabs rating={<RatingGuide />} rival={<RivalGuide />} />;
+}
+
+/** `레이팅` 탭 본문(2026-10-31 탭을 나누기 전의 설명서 전체). */
+function RatingGuide() {
   const t = useTranslations();
   const b = { b: (c: React.ReactNode) => <b className="text-fg">{c}</b> };
   const n = { n: (c: React.ReactNode) => <b className="font-num text-fg">{c}</b> };
