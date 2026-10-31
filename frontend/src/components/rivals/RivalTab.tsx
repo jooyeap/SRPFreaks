@@ -55,9 +55,9 @@ export function RivalTab({ userId }: { userId: number }) {
             <span className="flex items-center gap-1.5">
               <b className="min-w-0 flex-1 truncate text-[15px] text-fg">{rival.nickname}</b>
               {rival.mutual ? (
-                <span className="shrink-0 rounded-md border border-check-line bg-check-bg px-1.5 text-[11px] text-check-fg">{t("mutualChip")}</span>
+                <span className="shrink-0 rounded-full border border-chip-line px-1.5 text-[11px] font-semibold text-fg-sub">{t("mutualChip")}</span>
               ) : null}
-              <span data-tier={rival.tier.key} className="tier-chip shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold">
+              <span data-tier={rival.tier.key} className="tier-chip shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
                 {rival.tier.displayName}
               </span>
             </span>
@@ -94,7 +94,7 @@ export function RivalTab({ userId }: { userId: number }) {
             <button
               type="button"
               onClick={() => setRemoving(rival)}
-              className="min-h-10 rounded-xl border border-chip-line text-sm text-fg hover:bg-table-head"
+              className="min-h-10 rounded-lg border border-chip-line text-sm text-fg hover:bg-table-head"
             >
               {t("unregister")}
             </button>

@@ -111,7 +111,7 @@ function Bell({ viewerId }: { viewerId: number }) {
       >
         <BellIcon />
         {badge ? (
-          <span aria-hidden="true" className="font-num absolute -right-1.5 -top-1.5 min-w-[18px] rounded-full bg-chip-on-bg px-1 text-center text-[11px] font-bold leading-[18px] text-chip-on-fg">
+          <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 min-w-4 rounded bg-chip-on-bg px-1 text-center text-[10px] font-extrabold leading-4 text-chip-on-fg">
             {badge}
           </span>
         ) : null}

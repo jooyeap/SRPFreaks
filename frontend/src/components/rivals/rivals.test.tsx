@@ -115,7 +115,7 @@ describe("RivalCompareView", () => {
     expect(row).toHaveTextContent("95.63");
     expect(row).toHaveTextContent("96.10");
     expect(row).toHaveTextContent("-0.47");
-    expect(screen.getByRole("button", { name: "짐 61" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "패 61" })).toHaveAttribute("aria-pressed", "true");
     expect(fetchMock.mock.calls.some((c) => urlOf(c).includes("result=LOSE"))).toBe(true);
   });
 
@@ -127,7 +127,7 @@ describe("RivalCompareView", () => {
 });
 
 describe("RivalRecordsCard", () => {
-  it("라이벌 기록과 차이를 이김/짐 글자와 함께 보이고 기록 없는 라이벌은 `없음`이다", async () => {
+  it("라이벌 기록과 차이를 승/패 글자와 함께 보이고 기록 없는 라이벌은 `없음`이다", async () => {
     fetchMock.mockResolvedValue(json([
       { userId: 7, nickname: "Rumi", rate: 96.1, diff: 0.3 },
       { userId: 8, nickname: "KJY", rate: 98.02, diff: -1.62 },
@@ -138,9 +138,9 @@ describe("RivalRecordsCard", () => {
     const card = await screen.findByRole("region", { name: "라이벌 기록" });
     const items = within(card).getAllByRole("listitem");
     expect(items[0]).toHaveTextContent("+0.30");
-    expect(items[0]).toHaveTextContent("이김");
+    expect(items[0]).toHaveTextContent("승");
     expect(items[1]).toHaveTextContent("-1.62");
-    expect(items[1]).toHaveTextContent("짐");
+    expect(items[1]).toHaveTextContent("패");
     expect(items[2]).toHaveTextContent("없음");
   });
 
