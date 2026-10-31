@@ -785,7 +785,12 @@
     "rivalNotifyOn": "受け取る",
     "rivalNotifyOff": "受け取らない",
     "rivalNotifyHelp": "お互いにライバル登録した人が自分の記録を逆転するとお知らせします。",
-    "rivalNotifySaved": "通知設定を保存しました。"
+    "rivalNotifySaved": "通知設定を保存しました。",
+    "jacketHeading": "ジャケット",
+    "jacketLabel": "ジャケット表示",
+    "jacketOn": "表示",
+    "jacketOff": "非表示",
+    "jacketHelp": "曲一覧・難易度表・曲詳細・レーティングに曲のジャケットを表示します。この端末にだけ適用されます。オフにすると画像を読み込みません。"
   },
   "Import": {
     "chipMain": "メイン画面",

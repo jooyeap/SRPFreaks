@@ -1,5 +1,6 @@
 import Link from "next/link";
-// import { SongJacket } from "@/components/SongJacket"; // 재킷 칸 숨김 (아래 주석 참고)
+import { SongJacket } from "@/components/SongJacket";
+import { useJackets } from "@/lib/jackets";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
 import { chartTierAttrs } from "@/lib/chart-tier";
@@ -23,6 +24,7 @@ export function RatingEntryCard({
 }) {
   const t = useTranslations();
   const nameAccent = entry.stage === "FC" || entry.stage === "EXC";
+  const jackets = useJackets();
   return (
     <li
       data-stage={entry.stage}
@@ -32,10 +34,10 @@ export function RatingEntryCard({
     >
       {/* 왼쪽 띠는 점수의 플레이어 티어 색 하나다(상수표 칸과 같은 색, lib/chart-tier.ts). 색만으로 전달하지 않는다: 점수 숫자가 오른쪽에 있다 */}
       <span {...chartTierAttrs(entry.score)} className="tier-bar tier-bar-v absolute inset-y-0 left-0 w-1.5" aria-hidden="true" />
-      {/* 재킷 칸은 저작권(이미지 사용 허락) 문제가 정리될 때까지 숨긴다. 복원할 때 이 줄과 위의 import 주석을 되살린다. */}
-      {/* <SongJacket className="h-14 w-14 rounded-lg max-[359px]:h-10 max-[359px]:w-10" /> */}
+      {/* 재킷(D54): 왼쪽 티어 띠에 바로 붙여 카드 높이만큼 채운다(안쪽 여백 없음). 보일 때는 곡명을 13px 한 줄로 줄인다 */}
+      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="-my-2 ml-[-0.625rem] w-14 self-stretch max-[359px]:ml-[-0.375rem] max-[359px]:w-11" /> : null}
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm ${nameAccent ? "stage-name" : "text-fg"}`}>
+        <p className={`truncate ${jackets.visible ? "text-[13px]" : "text-sm"} ${nameAccent ? "stage-name" : "text-fg"}`}>
           {/* 곡명 링크의 클릭 영역을 ::after로 카드 전체에 넓힌다(카드 안에 다른 링크·버튼이 없다). 서열표에서 들어온 것과 같은 상세 화면(서열표 정보 포함)으로 간다 */}
           <Link
             href={`/songs/${entry.songId}?from=table&chart=${entry.songDifficultyId}`}

@@ -785,7 +785,12 @@
     "rivalNotifyOn": "받음",
     "rivalNotifyOff": "받지 않음",
     "rivalNotifyHelp": "서로 라이벌로 등록한 사람이 내 기록을 역전하면 알려 드립니다.",
-    "rivalNotifySaved": "알림 설정을 저장했습니다."
+    "rivalNotifySaved": "알림 설정을 저장했습니다.",
+    "jacketHeading": "재킷",
+    "jacketLabel": "재킷 표시",
+    "jacketOn": "표시",
+    "jacketOff": "숨김",
+    "jacketHelp": "곡 목록·서열표·곡 상세·레이팅에 곡 재킷을 보여 줍니다. 이 기기에만 적용됩니다. 끄면 이미지를 불러오지 않습니다."
   },
   "Import": {
     "chipMain": "메인 화면",

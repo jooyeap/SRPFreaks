@@ -4,6 +4,8 @@ import { StageBadge } from "@/components/table/StageBadge";
 import { formatRate } from "@/lib/format";
 import type { ChartRowResponse } from "@/lib/api-types";
 import { songListDetailHref } from "@/lib/song-list";
+import { SongJacket } from "@/components/SongJacket";
+import { useJackets } from "@/lib/jackets";
 
 /** 데스크톱 열: 곡명 · 랭크(달성 단계) · 채보 알약(파트·난이도·레벨) · 달성률. 모든 행이 같은 열 너비를 써서 줄마다 위치가 맞는다. 열 머리글(ChartList)도 같은 값을 쓴다. */
 export const ROW_COLUMNS = "md:grid-cols-[minmax(0,1fr)_70px_190px_90px]";
@@ -23,20 +25,25 @@ const ROW_GRID = `md:grid ${ROW_COLUMNS} md:items-center md:gap-x-3`;
  */
 export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }) {
   const stage = row.mine?.stage ?? null;
+  const jackets = useJackets();
+  const jacketUrl = jackets.urlOf(row.songId);
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex min-h-14 items-center gap-3 border-t border-row-line py-2 pl-4 pr-3 first:border-t-0 md:min-h-12 ${ROW_GRID} ${
+      className={`relative flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-1 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:min-h-12 ${ROW_GRID} ${
         stage ? "stage-tint" : ""
       }`}
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      {/* 재킷(D54): 모바일은 왼쪽 띠에 붙여 줄 높이만큼, 데스크톱은 곡명 앞 32px 칸 */}
+      {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="-my-2 w-11 self-stretch md:hidden" /> : null}
       <div className="min-w-0 flex-1 md:contents">
         <Link
           href={href ?? songListDetailHref(row)}
-          className={`block truncate text-sm hover:underline md:order-1 ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
+          className={`flex min-w-0 items-center gap-2 ${jackets.visible ? "text-[13px] md:text-sm" : "text-sm"} hover:underline md:order-1 ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
         >
-          {row.title}
+          {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="hidden size-8 rounded md:block" /> : null}
+          <span className="truncate">{row.title}</span>
         </Link>
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 md:contents">
           <span className="md:order-3">

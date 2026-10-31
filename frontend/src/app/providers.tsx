@@ -8,6 +8,13 @@ import { queryRetryDelay, shouldRetryQuery } from "@/lib/query-retry";
 import { AuthProvider } from "@/components/AuthProvider";
 import { QueryCacheCleaner } from "@/components/QueryCacheCleaner";
 import { ToastProvider } from "@/components/Toast";
+import { useJacketsLoader } from "@/lib/jackets";
+
+/** 재킷 목록(D54)을 앱 전체에서 한 번 받는다. 그리는 것은 없다. */
+function JacketsLoader() {
+  useJacketsLoader();
+  return null;
+}
 
 /**
  * 서버 데이터(TanStack Query) 설정.
@@ -40,6 +47,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <QueryCacheCleaner />
+        <JacketsLoader />
         <ToastProvider>{children}</ToastProvider>
       </AuthProvider>
     </QueryClientProvider>

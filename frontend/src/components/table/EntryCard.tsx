@@ -7,6 +7,8 @@ import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 import { patternLabel } from "@/lib/chart-labels";
 import { useTranslations } from "next-intl";
+import { SongJacket } from "@/components/SongJacket";
+import { useJackets } from "@/lib/jackets";
 
 /**
  * 서열표 한 줄 (모바일). 재킷 칸을 숨기면서 4열 카드 격자 대신 한 줄 행으로 바꿨다.
@@ -25,18 +27,21 @@ export function EntryCard({
 }) {
   const t = useTranslations();
   const stage = entry.mine?.stage ?? null;
+  const jackets = useJackets();
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex min-h-[60px] items-center gap-2 border-t border-row-line py-2 pl-4 pr-3 first:border-t-0 md:hidden ${
+      className={`relative flex min-h-[60px] items-center gap-2 border-t border-row-line py-2 ${jackets.visible ? "pl-1" : "pl-4"} pr-3 first:border-t-0 md:hidden ${
         stage ? "stage-tint" : ""
       }`}
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      {/* 재킷(D54): 왼쪽 띠에 바로 붙여 줄 높이만큼 채운다(안쪽 여백 없음). 보일 때는 곡명을 13px 한 줄로 줄인다 */}
+      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="-my-2 w-11 self-stretch" /> : null}
       <div className="min-w-0 flex-1">
         <Link
           href={tableDetailHref(entry)}
-          className={`block truncate text-sm hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
+          className={`block truncate ${jackets.visible ? "text-[13px]" : "text-sm"} hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
         >
           {entry.title}
         </Link>
