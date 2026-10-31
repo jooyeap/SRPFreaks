@@ -62,9 +62,9 @@ class RivalRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        a = User.create("sub-rival-a", "a-rival@example.com", "A");
-        b = User.create("sub-rival-b", "b-rival@example.com", "B");
-        c = User.create("sub-rival-c", "c-rival@example.com", "C");
+        a = User.create("sub-rival-a", "a-rival@example.com", "AA");
+        b = User.create("sub-rival-b", "b-rival@example.com", "BB");
+        c = User.create("sub-rival-c", "c-rival@example.com", "CC");
         em.persist(a);
         em.persist(b);
         em.persist(c);

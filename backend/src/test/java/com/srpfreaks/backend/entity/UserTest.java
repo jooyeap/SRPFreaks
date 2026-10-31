@@ -18,7 +18,7 @@ class UserTest {
 
     @Test
     void 라이벌_알림_받기는_기본으로_켜져_있고_끌_수_있다() {
-        User user = User.create("sub-rn", "rn@example.com", "닉네임");
+        User user = User.create("sub-rn", "rn@example.com", "nick");
         assertThat(user.isRivalNotify()).isTrue();
         user.changeRivalNotify(false);
         assertThat(user.isRivalNotify()).isFalse();
