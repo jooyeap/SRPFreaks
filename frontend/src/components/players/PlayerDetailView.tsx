@@ -10,6 +10,7 @@ import type { SkillEntryResponse } from "@/lib/api-types";
 import { AFFECTED_QUERY_KEYS } from "@/lib/records";
 import { deletePlayerChartRecords, fetchPlayer, playerKeys } from "@/lib/players";
 import { useTranslations } from "next-intl";
+import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 
 /**
  * 유저 상세 (D26): 그 유저의 레이팅 카드와 단일 / 복합·이중·삼중 목록. 기록 입력·수정 버튼은 없다.
@@ -69,9 +70,9 @@ export function PlayerDetailView({
       href="/players"
       aria-label={t("Players.backAria")}
       title={t("Players.backAria")}
-      className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+      className={BACK_BUTTON_CLASS}
     >
-      <span aria-hidden="true">←</span>
+      <BackArrow />
     </Link>
   );
 

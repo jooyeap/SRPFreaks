@@ -26,6 +26,7 @@ import { ErrorRetry } from "@/components/ErrorRetry";
 import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
+import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 
 function errorMessage(error: unknown, t: Translator): string {
   if (error instanceof ApiError) {
@@ -117,9 +118,9 @@ export function SongDetailView({
         onClick={() => router.back()}
         aria-label={t("Song.back")}
         title={t("Song.back")}
-        className="min-h-9 min-w-11 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg"
+        className={BACK_BUTTON_CLASS}
       >
-        <span aria-hidden="true">←</span>
+        <BackArrow />
       </button>
       <span className="text-sm font-semibold text-fg">{t("Songs.detailTitle")}</span>
       {origin === "table" && found ? (

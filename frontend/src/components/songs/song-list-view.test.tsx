@@ -367,30 +367,30 @@ describe("SongListView", () => {
     expect(await screen.findByRole("alert")).toBeInTheDocument();
   });
 
-  it("데스크톱: 검색창과 필터가 한 카드 안에 있고, 필터 패널은 칸으로 풀려(md:contents) 한 줄에 놓인다", async () => {
+  it("데스크톱: 한 카드 안에 1줄 검색·평균 계산·개수, 2줄 필터(파트·난이도·버전·초기화)가 놓인다", async () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
     const search = screen.getByRole("searchbox", { name: "곡 검색" });
+    const toggle = screen.getByRole("button", { name: "0% 미포함" });
     const filters = document.getElementById("song-filters");
     expect(filters).not.toBeNull();
-    // 검색창과 필터 패널의 가장 가까운 공통 조상이 카드(md:border md:bg-card)다
     const card = filters!.parentElement!;
-    expect(card).toContainElement(search);
-    expect(card).toHaveClass("md:flex-row", "md:border", "md:bg-card");
-    expect(filters).toHaveClass("md:contents");
-    // 모바일 전용 필터 버튼은 데스크톱에서 숨긴다
+    expect(card).toHaveClass("md:border", "md:bg-card");
+    // 1줄: 검색창과 평균 계산 토글이 같은 줄(카드의 첫 자식) 안에 있다
+    const firstRow = card.firstElementChild as HTMLElement;
+    expect(firstRow).toContainElement(search);
+    expect(firstRow).toContainElement(toggle);
+    // 2줄: 필터 패널은 데스크톱에서 항상 보이는 가로 줄이다
+    expect(filters).toHaveClass("md:flex", "md:flex-row");
     expect(screen.getByRole("button", { name: "필터" })).toHaveClass("md:hidden");
   });
 
-  it("데스크톱: 평균 계산 토글이 제목 줄 오른쪽 격자 칸(md:col-start-2 md:row-start-1)에 놓인다", async () => {
+  it("제목 줄에는 제목과 곡 등록만 있고 평균 계산은 없다", async () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
-    const toggleCell = screen.getByRole("button", { name: "0% 미포함" }).closest(".md\\:col-start-2");
-    expect(toggleCell).not.toBeNull();
-    expect(toggleCell).toHaveClass("md:row-start-1");
-    // 모바일 순서는 그대로: 토글은 DOM에서 폴더 목록(첫 폴더 머리)보다 앞에 있다
-    const folderHead = screen.getByRole("button", { name: /9\.50 ~ 9\.99/ });
-    expect(toggleCell!.compareDocumentPosition(folderHead) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const heading = screen.getByRole("heading", { name: "곡 목록" });
+    const titleRow = heading.parentElement!.parentElement!;
+    expect(titleRow).not.toContainElement(screen.getByRole("button", { name: "0% 미포함" }));
   });
 
   it("데스크톱: 채보 목록 위에 열 머리글(곡명·랭크·채보·달성률)이 있고 화면 읽기 프로그램에는 숨긴다", async () => {

@@ -30,14 +30,26 @@ public class AnthropicVisionClient implements VisionClient {
 
     static final String TOOL_NAME = "report_result";
     private static final String API_VERSION = "2023-06-01";
+    /**
+     * 화면의 어느 자리에서 무엇을 읽을지 위치로 알려 준다(2026-10-29 실제 사진에서 옵션을 놓쳐서 고침).
+     * 옵션은 예/아니오 대신 칸에 적힌 글자 그대로 받고, SRN+인지는 서버가 정한다(isSuperRandomPlus).
+     */
     private static final String PROMPT = """
-            This is a photo of a GITADORA (GuitarFreaks / DrumMania arcade game) GUITAR or BASS result screen.
+            This is a photo of a GITADORA (GuitarFreaks / DrumMania arcade game) GUITAR or BASS result screen, often taken at an angle.
             Call the report_result tool with what you can read. Use null for anything you cannot read with confidence.
-            - title: the song title exactly as shown.
-            - part: GUITAR or BASS. difficulty: BASIC, ADVANCED, EXTREME or MASTER. level: the chart level such as 9.75.
-            - achievementRate: the achievement percentage such as 92.45 (MAX means 100.00).
-            - missCount: the MISS count. fullCombo: true if FULL COMBO / EXCELLENT is shown or MISS is 0.
-            - superRandomPlus: true only if the SUPER RANDOM+ (S-RANDOM+) option is shown, false if a different random option is shown.
+            Where each value is on the result screen:
+            - title: the white box directly below the song jacket on the left. Its first, larger line is the song title (copy it exactly).
+              The smaller second line is the artist; do not include it.
+            - level, part, difficulty: the colored strip just below that white box, e.g. "8.65 BASS MASTER".
+              level is the number (e.g. 8.65). part is GUITAR or BASS. difficulty is BASIC, ADVANCED, EXTREME or MASTER.
+              The same level is also shown in large digits under "LEVEL" at the top right.
+            - achievementRate: the large percentage under the achievement label (達成率 / 달성률 / ACHIEVEMENT) at the top right,
+              e.g. 95.63. MAX means 100.00. Do not use the smaller "+x.xx%" difference shown below it.
+            - missCount: the number on the "Miss" row of the judgement table (Perfect, Great, Good, Ok, Miss) in the middle right.
+              fullCombo: true if FULL COMBO / EXCELLENT is shown or the Miss count is 0.
+            - randomOption: the option badges are a row of small boxes below the Fast / Slow box (e.g. "S.RANDOM+", "BUTTON OFF", "AUTO OFF").
+              Copy the text of the FIRST badge exactly, keeping every symbol, especially a trailing "+"
+              (examples: "S.RANDOM+", "S.RANDOM", "RANDOM", "MIRROR", "OFF"). Use null if that row is not visible.
             Do NOT read or report the player name, player ID, rival names, or any other personal information.
             """;
 
@@ -115,9 +127,9 @@ public class AnthropicVisionClient implements VisionClient {
         props.put("achievementRate", nullable("string"));
         props.put("missCount", nullable("integer"));
         props.put("fullCombo", nullable("boolean"));
-        props.put("superRandomPlus", nullable("boolean"));
+        props.put("randomOption", nullable("string"));
         return Map.of("type", "object", "properties", props,
-                "required", List.of("title", "part", "difficulty", "level", "achievementRate", "missCount", "fullCombo", "superRandomPlus"));
+                "required", List.of("title", "part", "difficulty", "level", "achievementRate", "missCount", "fullCombo", "randomOption"));
     }
 
     private static Map<String, Object> nullable(String type) {
@@ -139,10 +151,26 @@ public class AnthropicVisionClient implements VisionClient {
                         text(in, "achievementRate"),
                         in.path("missCount").isIntegralNumber() ? in.path("missCount").asInt() : null,
                         in.path("fullCombo").isBoolean() ? in.path("fullCombo").asBoolean() : null,
-                        in.path("superRandomPlus").isBoolean() ? in.path("superRandomPlus").asBoolean() : null);
+                        isSuperRandomPlus(text(in, "randomOption")));
             }
         }
         throw new VisionException("인식 결과 형식이 맞지 않습니다");
+    }
+
+    /**
+     * 옵션 칸 글자로 SUPER RANDOM+인지 정한다. 기호·공백을 빼고 대문자로 맞춘 뒤
+     * "SRANDOM+"(화면 표기 S.RANDOM+) 또는 "SUPERRANDOM+"면 true, 다른 글자면 false(S.RANDOM처럼 +가 없으면 다른 옵션),
+     * 읽지 못했으면 null(화면에서 사용자가 직접 확인한다).
+     */
+    static Boolean isSuperRandomPlus(String optionText) {
+        if (optionText == null) {
+            return null;
+        }
+        String key = optionText.toUpperCase(java.util.Locale.ROOT).replaceAll("[^A-Z+]", "");
+        if (key.isEmpty()) {
+            return null;
+        }
+        return key.equals("SRANDOM+") || key.equals("SUPERRANDOM+");
     }
 
     /** 글자 또는 숫자 칸을 글자로 읽는다(모델이 92.45를 숫자로 줄 때도 있다). null·빈 값은 null. */
