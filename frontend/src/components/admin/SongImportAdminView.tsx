@@ -17,6 +17,7 @@ import {
   type SongImportCommitResult,
   type SongImportPreview,
 } from "@/lib/song-import";
+import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 
 const CARD = "flex flex-col gap-3 rounded-2xl border border-line bg-card p-4";
 const BUTTON = "min-h-11 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg hover:bg-table-head disabled:opacity-50";
@@ -95,8 +96,8 @@ export function SongImportAdminView() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-1">
         {/* 다른 관리 화면과 같은 뒤로 버튼(2026-10-27) */}
-        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
-          <span aria-hidden="true">←</span>
+        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className={BACK_BUTTON_CLASS}>
+          <BackArrow />
         </Link>
         <h1 className="text-xl font-semibold text-fg">{t("SongImport.title")}</h1>
         <p className="text-sm text-fg-sub">{t("SongImport.lead")}</p>

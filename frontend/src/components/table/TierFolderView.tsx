@@ -32,6 +32,7 @@ import { ErrorRetry } from "@/components/ErrorRetry";
 import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
+import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 
 function errorMessage(error: unknown, t: Translator): string {
   return error instanceof ApiError ? error.message : t("Table.groupLoadFailed");
@@ -73,9 +74,9 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
       href="/table"
       aria-label={t("Table.toTable")}
       title={t("Table.toTable")}
-      className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+      className={BACK_BUTTON_CLASS}
     >
-      <span aria-hidden="true">←</span>
+      <BackArrow />
     </Link>
   );
 

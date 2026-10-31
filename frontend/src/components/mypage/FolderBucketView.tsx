@@ -23,6 +23,7 @@ import type { InstrumentPart } from "@/lib/types";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
+import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 
 const PART_OPTIONS: readonly { value: InstrumentPart; label: string }[] = [
   { value: "GUITAR", label: "Guitar" },
@@ -74,8 +75,8 @@ export function FolderBucketView({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Link href={backHref} aria-label={t("MyPage.backToStats")} title={t("MyPage.backToStats")} className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
-          <span aria-hidden="true">←</span>
+        <Link href={backHref} aria-label={t("MyPage.backToStats")} title={t("MyPage.backToStats")} className={BACK_BUTTON_CLASS}>
+          <BackArrow />
         </Link>
         <div>
           <h1 className="font-num text-lg font-semibold text-fg">{title}</h1>

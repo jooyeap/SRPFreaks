@@ -316,6 +316,8 @@
     "sort": "정렬",
     "filterRecommend": "추천",
     "filterPattern": "속성",
+    "patternNotSingle": "단일 외",
+    "patternNotSingleDetail": "단일 외 세부",
     "searchTitle": "서열표 곡 검색",
     "close": "닫기",
     "searchQueryAria": "곡 검색어",

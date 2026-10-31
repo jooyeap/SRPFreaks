@@ -71,11 +71,10 @@ export function SongListView({
   const total = folders.data ? t("Songs.totalSummary", { songs: folders.data.totalSongs, charts: folders.data.totalCharts }) : null;
 
   return (
-    // 모바일은 세로 한 줄(flex-col). 데스크톱(md 이상)은 2열 격자로 바꿔 제목 줄 오른쪽 끝에 `평균 계산` 토글을 둔다(시안). 제목 줄도 md에서는 세로 가운데 정렬이라 `곡 등록` 버튼과 토글의 높이·세로 위치가 같다.
-    // 토글은 DOM에서는 폴더 목록 바로 위(모바일 위치)에 그대로 두고, 격자 자리만 CSS로 제목 줄 오른쪽(md:col-start-2 md:row-start-1)으로 옮긴다.
-    <div className="flex flex-col gap-4 md:grid md:grid-cols-[1fr_auto] md:items-start md:gap-x-3">
+    // 머리 줄에는 제목과 `곡 등록`만 둔다(2026-10-31). `평균 계산`·개수는 검색창 줄로, 파트·난이도·버전·초기화는 그 아래 줄로 모은다.
+    <div className="flex flex-col gap-4">
       <SearchFocusButton targetId={SONG_SEARCH_INPUT_ID} />
-      <div className="flex items-start justify-between gap-3 md:col-start-1 md:row-start-1 md:items-center">
+      <div className="flex items-start justify-between gap-3 md:items-center">
         <div>
           <h1 className="text-xl font-semibold text-fg">{t("Songs.title")}</h1>
           {total ? <p className="mt-1 text-sm text-fg-sub font-num">{total}</p> : null}
@@ -84,28 +83,35 @@ export function SongListView({
       </div>
 
       {/*
-        검색창 + 필터. 모바일: 검색 줄과 접이식 필터 패널이 따로 있다(gap-4로 이전과 같은 간격).
-        데스크톱(md 이상): 한 카드 안에 `검색창 · 파트 · 난이도 · 버전 · 초기화`가 한 줄로 놓인다(시안).
-        안쪽 두 묶음은 md:contents로 "없는 것처럼" 풀어서 자식들이 이 카드의 칸이 되게 한다.
+        검색·보기 설정 + 필터. 데스크톱(md 이상)은 한 카드 안에 두 줄:
+        1줄 `검색창 · 평균 계산 · 개수`, 2줄 `파트 · 난이도 · 버전 · 초기화`.
+        모바일은 검색 줄 아래에 `평균 계산 · 개수`가 한 줄로 내려가고, 필터는 `필터` 버튼으로 펼친다(서열표와 같은 방식).
       */}
-      <div className="flex flex-col gap-4 md:col-span-2 md:flex-row md:flex-wrap md:items-center md:gap-3 md:rounded-2xl md:border md:border-line md:bg-card md:px-4 md:py-3">
-        <div className="flex items-center gap-2 md:contents">
-          <SongSearchBox id={SONG_SEARCH_INPUT_ID} value={filters.q} onCommit={(q) => onFiltersChange({ ...filters, q })} />
-          <button
-            type="button"
-            aria-expanded={filtersOpen}
-            aria-controls="song-filters"
-            onClick={() => setFiltersOpen((open) => !open)}
-            className="shrink-0 rounded-lg border border-chip-line px-3 py-2 text-sm text-fg-sub hover:text-fg md:hidden"
-          >
-            {filterCount > 0 ? t("Songs.filterCount", { count: filterCount }) : t("Songs.filter")}
-          </button>
+      <div className="flex flex-col gap-4 md:gap-3 md:rounded-2xl md:border md:border-line md:bg-card md:px-4 md:py-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="flex min-w-0 flex-1 basis-60 items-center gap-2">
+            <SongSearchBox id={SONG_SEARCH_INPUT_ID} value={filters.q} onCommit={(q) => onFiltersChange({ ...filters, q })} />
+            <button
+              type="button"
+              aria-expanded={filtersOpen}
+              aria-controls="song-filters"
+              onClick={() => setFiltersOpen((open) => !open)}
+              className="shrink-0 rounded-lg border border-chip-line px-3 py-2 text-sm text-fg-sub hover:text-fg md:hidden"
+            >
+              {filterCount > 0 ? t("Songs.filterCount", { count: filterCount }) : t("Songs.filter")}
+            </button>
+          </div>
+          <div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
+            <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
+            {/* 폴더를 펼쳤을 때 `더 보기` 한 번에 보이는 채보 수. 바꾸면 펼친 폴더가 새 개수로 다시 받는다 */}
+            <PageSizeSelect value={chartSize} onChange={setChartSize} />
+          </div>
         </div>
 
-        {/* 모바일: 필터 버튼으로 펼치는 패널. 데스크톱(md 이상)은 항상 보인다. (시안의 아래에서 올라오는 시트 대신 접이식 패널을 쓴다 — 서열표 필터와 같은 방식) */}
+        {/* 모바일: 필터 버튼으로 펼치는 패널. 데스크톱(md 이상)은 항상 보이는 둘째 줄 */}
         <SongListFilterPanel
           id="song-filters"
-          className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:contents`}
+          className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:flex md:flex-row md:flex-wrap md:items-center md:gap-3 md:rounded-none md:border-0 md:bg-transparent md:p-0`}
           filters={filters}
           versions={versions}
           onChange={onFiltersChange}
@@ -113,16 +119,16 @@ export function SongListView({
       </div>
 
       {/* 검색어에 맞는 채보의 바로가기 후보(누르면 곡 상세). 아래 폴더 목록은 같은 검색어로 걸러진다 */}
-      <SongJumpCandidates userId={userId} query={filters.q} className="md:col-span-2" />
+      <SongJumpCandidates userId={userId} query={filters.q} />
 
       {folders.isError ? (
-        <ErrorRetry className="md:col-span-2" onRetry={() => void folders.refetch()} retrying={folders.isFetching}>
+        <ErrorRetry onRetry={() => void folders.refetch()} retrying={folders.isFetching}>
           {errorMessage(folders.error, t)}
         </ErrorRetry>
       ) : !folders.data ? (
-        <p className="text-sm text-fg-sub md:col-span-2">{t("Common.loading")}</p>
+        <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : folders.data.folders.length === 0 ? (
-        <div className="md:col-span-2">
+        <div>
           <p className="text-sm text-fg-sub">{filtering ? t("Songs.noMatch") : t("Songs.noSongs")}</p>
           {filters.q.trim() !== "" ? (
             <>
@@ -132,14 +138,7 @@ export function SongListView({
           ) : null}
         </div>
       ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-2 md:col-start-2 md:row-start-1 md:self-center">
-            <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
-            {/* 폴더를 펼쳤을 때 `더 보기` 한 번에 보이는 채보 수. 바꾸면 펼친 폴더가 새 개수로 다시 받는다 */}
-            <PageSizeSelect value={chartSize} onChange={setChartSize} />
-          </div>
-          <PagedFolders userId={userId} folders={folders.data.folders} includeZero={includeZero} filters={filters} />
-        </>
+        <PagedFolders userId={userId} folders={folders.data.folders} includeZero={includeZero} filters={filters} />
       )}
     </div>
   );
@@ -160,7 +159,7 @@ function PagedFolders({
   const { page, totalPages, pageItems, setPage } = usePaged(folders);
   // 폴더 목록과 페이지 이동을 한 묶음(gap-4 = 이전 간격)으로 두고, 데스크톱 격자에서는 두 열을 모두 차지한다
   return (
-    <div className="flex flex-col gap-4 md:col-span-2">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3">
         {pageItems.map((folder) => (
           <FolderSection key={folder.lo} userId={userId} folder={folder} includeZero={includeZero} filters={filters} />

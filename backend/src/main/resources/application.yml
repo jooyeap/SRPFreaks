@@ -17,7 +17,7 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 1MB      # 사진 인식(D55): 브라우저가 긴 변 1,024px JPEG로 줄여 보낸다. nginx 요청 크기 제한(1m)과 같게 둔다
+      max-file-size: 1MB      # 사진 인식(D55): 브라우저가 긴 변 1,568px JPEG(950KB 넘으면 품질을 낮춤)로 줄여 보낸다. nginx 요청 크기 제한(1m)과 같게 둔다
       max-request-size: 1MB
     encoding:
       charset: UTF-8

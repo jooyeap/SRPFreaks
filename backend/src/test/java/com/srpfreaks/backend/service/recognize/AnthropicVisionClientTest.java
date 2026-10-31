@@ -59,7 +59,7 @@ class AnthropicVisionClientTest {
                 {"content":[{"type":"text","text":"ok"},
                   {"type":"tool_use","name":"report_result","input":{
                     "title":"Step forward","part":"GUITAR","difficulty":"MASTER","level":"9.65",
-                    "achievementRate":92.45,"missCount":3,"fullCombo":false,"superRandomPlus":true}}]}
+                    "achievementRate":92.45,"missCount":3,"fullCombo":false,"randomOption":"S.RANDOM+"}}]}
                 """;
         VisionResult r = client.read(new byte[]{1, 2, 3}, "image/jpeg");
 
@@ -78,6 +78,20 @@ class AnthropicVisionClientTest {
         assertThat(body).contains("\"model\":\"claude-haiku-5-5\"");
         assertThat(body).contains("\"data\":\"AQID\"");          // 사진은 base64로만 보낸다
         assertThat(body).doesNotContain("playerName");               // 플레이어 이름 칸을 묻지 않는다
+        assertThat(body).contains("\"randomOption\"");             // 옵션은 칸 글자 그대로 받는다
+    }
+
+    @Test
+    void 옵션_칸_글자로_SRN_플러스인지_정한다() {
+        assertThat(AnthropicVisionClient.isSuperRandomPlus("S.RANDOM+")).isTrue();
+        assertThat(AnthropicVisionClient.isSuperRandomPlus("S-RANDOM+")).isTrue();
+        assertThat(AnthropicVisionClient.isSuperRandomPlus("s.random +")).isTrue();
+        assertThat(AnthropicVisionClient.isSuperRandomPlus("SUPER RANDOM+")).isTrue();
+        assertThat(AnthropicVisionClient.isSuperRandomPlus("S.RANDOM")).isFalse();   // +가 없으면 다른 옵션
+        assertThat(AnthropicVisionClient.isSuperRandomPlus("RANDOM")).isFalse();
+        assertThat(AnthropicVisionClient.isSuperRandomPlus("OFF")).isFalse();
+        assertThat(AnthropicVisionClient.isSuperRandomPlus(null)).isNull();
+        assertThat(AnthropicVisionClient.isSuperRandomPlus(" . ")).isNull();
     }
 
     @Test
@@ -85,7 +99,7 @@ class AnthropicVisionClientTest {
         responseBody = """
                 {"content":[{"type":"tool_use","name":"report_result","input":{
                   "title":null,"part":null,"difficulty":null,"level":null,"achievementRate":null,
-                  "missCount":null,"fullCombo":null,"superRandomPlus":null}}]}
+                  "missCount":null,"fullCombo":null,"randomOption":null}}]}
                 """;
         VisionResult r = client.read(new byte[]{1}, "image/png");
         assertThat(r).isEqualTo(new VisionResult(null, null, null, null, null, null, null, null));
