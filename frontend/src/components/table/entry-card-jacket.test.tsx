@@ -10,7 +10,7 @@ const base: TableEntryResponse = {
   ratingEnabled: true, mine: { rate: 100, fullCombo: true, stage: "EXC" },
 };
 
-describe("서열표 줄 + 재킷 썸네일 (D54)", () => {
+describe("서열표 모바일 줄 (B+D 안)", () => {
   beforeEach(() => {
     localStorage.clear();
     resetShowJacketsForTest();
@@ -18,24 +18,35 @@ describe("서열표 줄 + 재킷 썸네일 (D54)", () => {
   });
   afterEach(() => act(() => setJacketData(null)));
 
-  it("44px 둥근 썸네일 + 재킷 전 배치(속성·달성률·추천·점수)", () => {
+  it("재킷 켬: 44px 썸네일 + 추천 꼬리표, 오른쪽은 [랭크 | 달성률] 알약 + 점수, 줄 높이 60px", () => {
     render(<ul><EntryCard entry={base} tier={5.0} onRecord={() => {}} /></ul>);
     const row = screen.getByRole("listitem");
-    expect(row.className).not.toContain("h-[72px]");
+    expect(row.className).toContain("h-[60px]");
     const img = within(row).getByRole("img", { name: "MIND ERUPTION" });
     expect(img).toHaveAttribute("src", "/jackets/100.webp");
     expect(img.parentElement?.className).toContain("size-11");
     expect(img.parentElement?.className).toContain("max-[359px]:size-9"); // 360px 미만은 알약 자리를 위해 36px
+    // 추천 꼬리표는 재킷 칸 안에 있다
+    expect(img.parentElement?.parentElement).toHaveTextContent("추천 중");
+    expect(within(row).getByLabelText("달성 단계 EXC")).toHaveTextContent("EXC");
     expect(row).toHaveTextContent("MAX");
-    expect(row).toHaveTextContent("EXC");
     expect(row).toHaveTextContent("속성 단일");
-    expect(row).not.toHaveTextContent("추천 중");
     expect(within(row).getAllByRole("button", { name: /MIND ERUPTION/ }).length).toBeGreaterThan(0);
   });
 
-  it("재킷을 끄면 썸네일이 없다", () => {
+  it("기록이 없으면 알약은 [– | –], 줄 높이는 같다", () => {
+    render(<ul><EntryCard entry={{ ...base, mine: null }} tier={5.0} /></ul>);
+    const row = screen.getByRole("listitem");
+    expect(row.className).toContain("h-[60px]");
+    expect(within(row).queryByLabelText(/달성 단계/)).toBeNull();
+    expect(row).toHaveTextContent("––");
+  });
+
+  it("재킷을 끄면 썸네일이 없고 추천은 속성 옆 칩이다", () => {
     act(() => setJacketData({ enabled: false, jackets: {} }));
     render(<ul><EntryCard entry={base} tier={5.0} /></ul>);
-    expect(within(screen.getByRole("listitem")).queryByRole("img")).toBeNull();
+    const row = screen.getByRole("listitem");
+    expect(within(row).queryByRole("img")).toBeNull();
+    expect(row).toHaveTextContent("속성 단일추천 중");
   });
 });

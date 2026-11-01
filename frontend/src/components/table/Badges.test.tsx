@@ -29,7 +29,7 @@ describe("ChartBadge", () => {
 describe("RecommendBadge", () => {
   it("추천도 값만 보여 주고 `?` 같은 불확실 표시는 붙이지 않는다", () => {
     const { container } = render(<RecommendBadge value="상" />);
-    expect(container).toHaveTextContent(/^상$/);
+    expect(container).toHaveTextContent(/^추천 상$/); // `추천`은 읽기 프로그램용 숨김 글자
     expect(container.firstElementChild).not.toHaveAttribute("title");
   });
 

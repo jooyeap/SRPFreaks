@@ -349,6 +349,8 @@
     "patternExcluded": "레이팅 제외",
     "recommendHigh": "상",
     "recommendMid": "중",
+    "recommendSr": "추천",
+    "patternSr": "속성",
     "recommendLow": "하",
     "patternValue": "속성 {pattern}",
     "chartBasis": "{chart} 기준",

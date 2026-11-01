@@ -349,6 +349,8 @@
     "patternExcluded": "レーティング除外",
     "recommendHigh": "高",
     "recommendMid": "中",
+    "recommendSr": "おすすめ",
+    "patternSr": "属性",
     "recommendLow": "低",
     "patternValue": "属性 {pattern}",
     "chartBasis": "{chart} 基準",
