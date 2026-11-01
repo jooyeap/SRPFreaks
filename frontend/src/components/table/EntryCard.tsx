@@ -34,7 +34,7 @@ export function EntryCard({
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex h-[60px] items-center gap-2 border-t border-row-line pl-4 pr-3 first:border-t-0 md:hidden ${
+      className={`relative flex h-[60px] items-center gap-2 border-t border-row-line ${jackets.visible ? "pl-3" : "pl-4"} pr-3 first:border-t-0 md:hidden ${
         stage ? "stage-tint" : ""
       }`}
     >
