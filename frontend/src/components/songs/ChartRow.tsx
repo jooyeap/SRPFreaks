@@ -30,11 +30,11 @@ export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-1 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:min-h-12 ${ROW_GRID} ${
+      className={`relative flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-0 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:min-h-12 ${ROW_GRID} ${
         stage ? "stage-tint" : ""
       }`}
     >
-      {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      {stage ? <span className="stage-bar absolute inset-y-0 left-0 z-10 w-1" aria-hidden="true" /> : null}
       {/* 재킷(D54): 모바일은 왼쪽 띠에 붙여 줄 높이만큼, 데스크톱은 곡명 앞 32px 칸 */}
       {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="-my-2 size-14 md:hidden" /> : null}
       <div className="min-w-0 flex-1 md:contents">

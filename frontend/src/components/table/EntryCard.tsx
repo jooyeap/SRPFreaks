@@ -86,7 +86,7 @@ function RecordButton({ entry, onRecord }: { entry: TableEntryResponse; onRecord
 /**
  * 재킷이 보일 때의 서열표 한 줄(D54 A안, 2026-11-01). 줄 높이 72px = 재킷 72px 정사각이라 왼쪽 띠·재킷·줄이 늘 같은 길이다.
  * 1줄: 곡명 · 달성률 / 2줄: 알약 · 단계 · (오른쪽) 점수 / 3줄: `단일 · 추천 상` 작은 글자. 한 줄에 몰아넣지 않아 글자가 잘리지 않는다.
- * 재킷은 띠 자리(4px)를 늘 비워 둔 채 그 오른쪽에 붙는다(띠가 없는 줄도 재킷 위치가 같다).
+ * 재킷은 줄 왼쪽 끝에 붙이고, 단계 띠(4px)는 재킷 위에 겹쳐 그린다(띠가 없는 줄에 빈 틈이 생기지 않고 재킷 위치가 늘 같다).
  */
 function JacketEntryCard({
   entry,
@@ -105,9 +105,9 @@ function JacketEntryCard({
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex h-[72px] items-center gap-2.5 border-t border-row-line pl-1 pr-3 first:border-t-0 md:hidden ${stage ? "stage-tint" : ""}`}
+      className={`relative flex h-[72px] items-center gap-2.5 border-t border-row-line pr-3 first:border-t-0 md:hidden ${stage ? "stage-tint" : ""}`}
     >
-      {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      {stage ? <span className="stage-bar absolute inset-y-0 left-0 z-10 w-1" aria-hidden="true" /> : null}
       <SongJacket url={jacketUrl} title={entry.title} className="size-[72px]" />
       <div className="min-w-0 flex-1">
         <p className="flex items-baseline gap-2">
@@ -122,7 +122,7 @@ function JacketEntryCard({
         <p className="mt-1 flex items-center gap-1.5">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
           {stage ? <StageBadge stage={stage} /> : null}
-          {stage ? <span className="ml-auto shrink-0"><RatedScore entry={entry} tier={tier} onRecord={onRecord} /></span> : null}
+          {stage ? <span className="ml-auto flex shrink-0 items-center"><RatedScore entry={entry} tier={tier} onRecord={onRecord} /></span> : null}
         </p>
         <p className="mt-1 truncate text-[11px] text-fg-dim">
           {entry.recommend ? t("Chart.patternRecommend", { pattern, recommend: recommendLabel(entry.recommend, t) }) : t("Chart.patternValue", { pattern })}
