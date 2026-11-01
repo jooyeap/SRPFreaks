@@ -67,7 +67,7 @@ export function EntryCard({
 /**
  * 재킷이 보일 때의 서열표 모바일 줄(2026-11-01, 시안 `재킷 옆 정보 새 아이디어` 4번 → `4번 한 줄 가운데 맞춤 안` B). 줄 높이 68px.
  * 재킷(48px, 360px 미만 40px) · 왼쪽 세 줄 묶음 · 오른쪽 묶음 · `+` 버튼을 모두 줄 가운데 한 선에 맞춘다(items-center).
- *   왼쪽: `단일 | 추천 상` 작은 글자 / 곡명 / `Guitar | MAS` 알약(곡명에 바짝 붙임)
+ *   왼쪽: `단일 | 추천 상` 작은 글자 / 곡명 / `Guitar | MAS` 알약 (줄 사이 4px씩, 시안 `4번 B 간격 비교` A)
  *   오른쪽: `[S | 92.93]` 랭크·달성률 알약 / 레이팅 점수. 기록이 없어도 점수 자리(18px)를 비워 둬서
  *   `[– | –]`가 기록 있는 줄의 알약과 같은 높이에 온다(위아래 줄끼리 오른쪽이 가지런함).
  * 속성·추천을 곡명 위 글자로 옮겨 알약 줄에는 알약만 남는다(좁은 기종에서 속성 칩이 잘리던 문제, 갤럭시 S25 360px).
@@ -107,11 +107,11 @@ function JacketEntryCard({
         </p>
         <Link
           href={tableDetailHref(entry)}
-          className={`mt-[3px] block truncate text-sm leading-[18px] hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
+          className={`mt-1 block truncate text-sm leading-[18px] hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
         >
           {entry.title}
         </Link>
-        <span className="mt-px flex overflow-hidden">
+        <span className="mt-1 flex overflow-hidden">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} compact />
         </span>
       </div>
