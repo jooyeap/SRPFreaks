@@ -28,9 +28,10 @@ export function ChartList({
         className={`hidden border-t border-row-line py-1.5 pl-4 pr-3 text-xs text-fg-dim md:grid ${ROW_COLUMNS} md:gap-x-3`}
       >
         <span>{t("Songs.colTitle")}</span>
-        <span>{t("Songs.colRank")}</span>
         <span>{t("Songs.colChart")}</span>
-        <span className="text-right">{t("Songs.colRate")}</span>
+        <span>
+          {t("Songs.colRank")} · {t("Songs.colRate")}
+        </span>
       </div>
       <ul aria-label={label}>
         {rows.map((row) => (
