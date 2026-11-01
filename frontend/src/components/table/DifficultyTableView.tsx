@@ -13,6 +13,13 @@ import { filterSummary, TableFilterPanel } from "@/components/table/TableFilterP
 import { TableSearch } from "@/components/table/TableSearch";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { TierQuickNav } from "@/components/table/TierQuickNav";
+import {
+  countRecentByTier,
+  fetchTierChanges,
+  readTierChangesSeenAt,
+  RECENT_CHANGES_FETCH_SIZE,
+  tierChangeKeys,
+} from "@/lib/tier-changes";
 import { ApiError } from "@/lib/api";
 import { tableNameLabel } from "@/lib/chart-labels";
 import {
@@ -92,6 +99,14 @@ export function DifficultyTableView({
     queryFn: ({ signal }) => fetchTableEntries(table?.id ?? 0, filters, page, signal),
     enabled: table !== null,
     placeholderData: keepPreviousData, // 페이지/필터를 바꾸는 동안 이전 화면을 유지한다 (깜빡임 방지)
+  });
+
+  // 묶음 머리의 `최근 변경 n` 칩(2026-11-01). 최근 서열표 변경 첫 페이지를 받아 묶음별로 센다.
+  // 못 받으면 칩만 없을 뿐 서열표는 그대로다. 세는 기준(7일 + 변경 탭을 본 뒤)은 lib/tier-changes.ts
+  const recentChanges = useQuery({
+    queryKey: tierChangeKeys.recent,
+    queryFn: ({ signal }) => fetchTierChanges(0, signal, RECENT_CHANGES_FETCH_SIZE),
+    select: (page) => countRecentByTier(page.content, new Date(), readTierChangesSeenAt()),
   });
 
   // 난이도 바로가기용 전체 묶음. 홈·곡 상세·묶음 페이지와 같은 키라 캐시를 함께 쓴다. 실패해도 서열표 본문은 그대로 보여 준다
@@ -194,6 +209,7 @@ export function DifficultyTableView({
                 includeZero={includeZero}
                 sort={sort}
                 collapsible
+                recentChanges={group.tier === null ? 0 : (recentChanges.data?.get(group.tier.toFixed(1)) ?? 0)}
                 open={openGroups.has(String(group.tier ?? "undecided"))}
                 onOpenChange={(next) => setGroupOpen(String(group.tier ?? "undecided"), next)}
                 // 비로그인 방문자(D43)는 기록을 입력할 수 없으므로 `기록` 버튼을 그리지 않는다(onRecord가 없으면 줄이 버튼을 만들지 않는다)

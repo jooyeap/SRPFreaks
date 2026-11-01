@@ -2,6 +2,7 @@
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { tableDetailHref } from "@/components/song/TableContext";
@@ -10,7 +11,7 @@ import type { TierChangeResponse } from "@/lib/api-types";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatPlayedDate, formatTier } from "@/lib/format";
 import { patternChanged, tierChanged } from "@/lib/tier-history";
-import { fetchTierChanges, recommendChanged, tierChangeKeys } from "@/lib/tier-changes";
+import { fetchTierChanges, markTierChangesSeen, recommendChanged, tierChangeKeys } from "@/lib/tier-changes";
 import type { Translator } from "@/i18n/translator";
 
 /** 한 줄이 말하는 변경 내용(예: `기준 난이도 5.6 → 5.7`, `추천 중 → 상`). 바뀐 항목만, 추가는 그때 정해진 값. */
@@ -66,6 +67,12 @@ export function TierChangesFeed() {
     getNextPageParam: (last) => (last.page + 1 < last.totalPages ? last.page + 1 : undefined),
   });
   const rows = feed.data?.pages.flatMap((page) => page.content) ?? [];
+  // 이 탭을 열면 "여기까지 확인함"을 이 기기에 남긴다 → 서열표 묶음의 `최근 변경` 칩이 사라진다
+  useEffect(() => {
+    if (feed.isSuccess) {
+      markTierChangesSeen();
+    }
+  }, [feed.isSuccess]);
 
   if (feed.isPending) {
     return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
