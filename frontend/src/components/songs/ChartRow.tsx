@@ -1,14 +1,18 @@
 import Link from "next/link";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
+import { StageRatePill } from "@/components/table/StageRatePill";
 import { formatRate } from "@/lib/format";
 import type { ChartRowResponse } from "@/lib/api-types";
 import { songListDetailHref } from "@/lib/song-list";
 import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
 
-/** 데스크톱 열: 곡명 · 랭크(달성 단계) · 채보 알약(파트·난이도·레벨) · 달성률. 모든 행이 같은 열 너비를 써서 줄마다 위치가 맞는다. 열 머리글(ChartList)도 같은 값을 쓴다. */
-export const ROW_COLUMNS = "md:grid-cols-[minmax(0,1fr)_70px_190px_90px]";
+/**
+ * 데스크톱 열(2026-11-01, 서열표 표와 같은 규칙): 곡명(재킷 40px) · 채보 알약 190 · `[랭크 | 달성률]` 알약 72.
+ * 모든 행이 같은 열 너비를 써서 줄마다 위치가 맞는다. 열 머리글(ChartList)도 같은 값을 쓴다.
+ */
+export const ROW_COLUMNS = "md:grid-cols-[minmax(0,1fr)_190px_72px]";
 const ROW_GRID = `md:grid ${ROW_COLUMNS} md:items-center md:gap-x-3`;
 
 /**
@@ -30,30 +34,34 @@ export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-3 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:min-h-12 ${ROW_GRID} ${
+      className={`relative flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-3 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:h-14 md:min-h-0 md:py-0 ${ROW_GRID} ${
         stage ? "stage-tint" : ""
       }`}
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
-      {/* 재킷(D54): 모바일은 줄 가운데 44px 둥근 썸네일, 데스크톱은 곡명 앞 32px 칸 */}
+      {/* 재킷(D54): 모바일은 줄 가운데 44px 둥근 썸네일, 데스크톱은 곡명 앞 40px 둥근 칸(서열표 표와 같다) */}
       {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="size-11 rounded-lg md:hidden" /> : null}
       <div className="min-w-0 flex-1 md:contents">
         <Link
           href={href ?? songListDetailHref(row)}
-          className={`flex min-w-0 items-center gap-2 ${jackets.visible ? "text-[13px] md:text-sm" : "text-sm"} hover:underline md:order-1 ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
+          className={`flex min-w-0 items-center gap-2 md:gap-2.5 ${jackets.visible ? "text-[13px] md:text-sm" : "text-sm"} hover:underline md:order-1 ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
         >
-          {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="hidden size-8 rounded md:block" /> : null}
+          {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="hidden size-10 rounded-lg md:block" /> : null}
           <span className="truncate">{row.title}</span>
         </Link>
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 md:contents">
-          <span className="md:order-3">
+          <span className="md:order-2">
             <ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} />
           </span>
-          <span className="inline-block w-9 md:order-2 md:w-auto">{stage ? <StageBadge stage={stage} /> : null}</span>
+          {/* 모바일은 알약 옆 단계 배지와 오른쪽 달성률, 데스크톱은 둘을 `[S | 92.93]` 알약 하나로(아래) */}
+          <span className="inline-block w-9 md:hidden">{stage ? <StageBadge stage={stage} /> : null}</span>
         </p>
       </div>
-      <span className={`shrink-0 text-right font-num text-sm font-semibold md:order-4 md:text-base ${stage ? "stage-text" : "text-fg-faint"}`}>
+      <span className={`shrink-0 text-right font-num text-sm font-semibold md:hidden ${stage ? "stage-text" : "text-fg-faint"}`}>
         {formatRate(row.mine?.rate)}
+      </span>
+      <span className="hidden md:order-3 md:block">
+        <StageRatePill stage={stage} rate={row.mine?.rate} />
       </span>
     </li>
   );
