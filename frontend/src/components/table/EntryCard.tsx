@@ -37,7 +37,7 @@ export function EntryCard({
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
       {/* 재킷(D54): 왼쪽 띠에 바로 붙여 줄 높이만큼 채운다(안쪽 여백 없음). 보일 때는 곡명을 13px 한 줄로 줄인다 */}
-      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="-my-2 w-11 self-stretch" /> : null}
+      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="-my-2 size-[60px]" /> : null}
       <div className="min-w-0 flex-1">
         <Link
           href={tableDetailHref(entry)}
