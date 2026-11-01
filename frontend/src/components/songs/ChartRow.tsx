@@ -36,7 +36,7 @@ export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
       {/* 재킷(D54): 모바일은 왼쪽 띠에 붙여 줄 높이만큼, 데스크톱은 곡명 앞 32px 칸 */}
-      {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="-my-2 w-11 self-stretch md:hidden" /> : null}
+      {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="-my-2 size-14 md:hidden" /> : null}
       <div className="min-w-0 flex-1 md:contents">
         <Link
           href={href ?? songListDetailHref(row)}
