@@ -37,8 +37,9 @@ export function EntryCard({
       }`}
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
-      {/* 재킷(D54): 44px 둥근 썸네일을 줄 가운데에 둔다. 줄 높이에 맞춰 늘리지 않아 두 줄로 접혀도 모양이 그대로다 */}
-      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-11 rounded-lg" /> : null}
+      {/* 재킷(D54): 44px 둥근 썸네일을 줄 가운데에 둔다. 줄 높이에 맞춰 늘리지 않아 두 줄로 접혀도 모양이 그대로다.
+          360px 미만은 왼쪽 칸이 약 110px로 `Guitar | MAS 9.80` 알약(약 114px)보다 좁아져 36px로 줄인다 */}
+      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-11 rounded-lg max-[359px]:size-9" /> : null}
       <div className="min-w-0 flex-1">
         <Link
           href={tableDetailHref(entry)}
