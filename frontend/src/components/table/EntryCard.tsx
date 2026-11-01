@@ -65,12 +65,12 @@ export function EntryCard({
 }
 
 /**
- * 재킷이 보일 때의 서열표 모바일 줄(2026-11-01, 시안 `재킷 옆 정보 새 아이디어` 4번). 줄 높이 76px(64px는 글자가 다닥다닥 붙어 보여 늘림, 줄 사이 4~6px).
- * 재킷은 48px 둥근 그림만(360px 미만 40px). 오른쪽은 3줄 격자라 왼쪽 글자와 오른쪽 칸의 높이가 줄마다 맞는다:
- *   1줄: `단일 | 추천 상` 작은 글자 (오른쪽 비움)
- *   2줄: 곡명            ↔ `[S | 92.93]` 랭크·달성률 알약
- *   3줄: `Guitar | MAS` 알약 ↔ 레이팅 점수
- * 속성·추천을 곡명 위 글자로 옮겨 둘째 줄에는 알약만 남는다(좁은 기종에서 속성 칩이 잘리던 문제, 갤럭시 S25 360px).
+ * 재킷이 보일 때의 서열표 모바일 줄(2026-11-01, 시안 `재킷 옆 정보 새 아이디어` 4번 → `4번 한 줄 가운데 맞춤 안` B). 줄 높이 68px.
+ * 재킷(48px, 360px 미만 40px) · 왼쪽 세 줄 묶음 · 오른쪽 묶음 · `+` 버튼을 모두 줄 가운데 한 선에 맞춘다(items-center).
+ *   왼쪽: `단일 | 추천 상` 작은 글자 / 곡명 / `Guitar | MAS` 알약(곡명에 바짝 붙임)
+ *   오른쪽: `[S | 92.93]` 랭크·달성률 알약 / 레이팅 점수. 기록이 없어도 점수 자리(18px)를 비워 둬서
+ *   `[– | –]`가 기록 있는 줄의 알약과 같은 높이에 온다(위아래 줄끼리 오른쪽이 가지런함).
+ * 속성·추천을 곡명 위 글자로 옮겨 알약 줄에는 알약만 남는다(좁은 기종에서 속성 칩이 잘리던 문제, 갤럭시 S25 360px).
  */
 function JacketEntryCard({
   entry,
@@ -88,12 +88,12 @@ function JacketEntryCard({
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex h-[76px] items-center gap-2.5 border-t border-row-line pl-3 pr-3 first:border-t-0 md:hidden ${stage ? "stage-tint" : ""}`}
+      className={`relative flex h-[68px] items-center gap-2.5 border-t border-row-line pl-3 pr-3 first:border-t-0 md:hidden ${stage ? "stage-tint" : ""}`}
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
       <SongJacket url={jacketUrl} title={entry.title} className="size-12 rounded-lg max-[359px]:size-10" />
-      <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_72px] items-center gap-x-2">
-        <p className="col-span-2 truncate text-[10px] font-bold leading-[14px] text-fg-dim">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[10px] font-bold leading-3 text-fg-dim">
           <span className="sr-only">{t("Chart.patternSr")} </span>
           {entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK}
           {entry.recommend ? (
@@ -107,19 +107,17 @@ function JacketEntryCard({
         </p>
         <Link
           href={tableDetailHref(entry)}
-          className={`mt-1 block truncate text-sm leading-5 hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
+          className={`mt-[3px] block truncate text-sm leading-[18px] hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
         >
           {entry.title}
         </Link>
-        <span className="mt-1 justify-self-end">
-          <StageRatePill stage={stage} rate={entry.mine?.rate} />
-        </span>
-        <span className="mt-1.5 flex overflow-hidden">
+        <span className="mt-px flex overflow-hidden">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} compact />
         </span>
-        <span className="mt-1.5 flex h-[18px] justify-self-end">
-          {stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}
-        </span>
+      </div>
+      <div className="flex w-[72px] shrink-0 flex-col items-end gap-1">
+        <StageRatePill stage={stage} rate={entry.mine?.rate} />
+        <span className="flex h-[18px]">{stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}</span>
       </div>
       {onRecord ? <RecordButton entry={entry} onRecord={onRecord} /> : null}
     </li>
