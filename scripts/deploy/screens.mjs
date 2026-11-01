@@ -31,6 +31,14 @@ export function findErrorText(text) {
   return ERROR_TEXTS.find((needle) => text.includes(needle)) ?? null;
 }
 
+/**
+ * 화면 문제로 볼 콘솔 오류인지. 로그인하지 않은 방문이라 `/auth/refresh`·`/users/me` 같은 요청이 401로 끝나는 것은 정상이고,
+ * 브라우저는 이를 "Failed to load resource" 콘솔 오류로 찍는다. 이런 네트워크 응답 줄은 세지 않는다(화면 오류가 아님).
+ */
+export function isRealConsoleError(text) {
+  return !text.startsWith("Failed to load resource");
+}
+
 async function firstSongId(site) {
   try {
     const res = await fetch(`${site}/api/v1/songs?page=0&size=1`);
@@ -60,7 +68,7 @@ async function main() {
       const tab = await context.newPage();
       const consoleErrors = [];
       tab.on("console", (msg) => {
-        if (msg.type() === "error") consoleErrors.push(msg.text().slice(0, 200));
+        if (msg.type() === "error" && isRealConsoleError(msg.text())) consoleErrors.push(msg.text().slice(0, 200));
       });
       let status = 0;
       let problem = null;
@@ -89,6 +97,11 @@ async function main() {
   for (const r of results) lines.push(`| ${r.viewport} | ${r.page} | ${r.problem ?? "정상"} |`);
   lines.push("", failed.length === 0 ? "모든 화면 정상. 사진은 실행 결과의 `screens` 묶음에 있다." : `문제 ${failed.length}건. 사진을 확인하세요.`);
   await writeFile("screens/summary.md", lines.join("\n") + "\n");
+  // 실패한 화면은 GitHub 주석(annotation)으로도 남긴다. 실행 요약·사진 묶음을 못 여는 곳(API)에서도 이유를 읽을 수 있게.
+  for (const r of failed) {
+    const detail = r.consoleErrors.length > 0 ? ` · ${r.consoleErrors[0].replace(/[\r\n]+/g, " ")}` : "";
+    console.log(`::error title=화면 확인 실패 (${r.viewport}px ${r.page})::${r.problem}${detail}`);
+  }
   console.log(lines.join("\n"));
   process.exit(failed.length === 0 ? 0 : 1);
 }
