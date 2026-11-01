@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useState } from "react";
 import { EntryCard } from "@/components/table/EntryCard";
 import { EntryRow, TableHeadRow } from "@/components/table/EntryRow";
@@ -82,6 +83,7 @@ export function TierGroupSection({
   collapsible = false,
   open: controlledOpen,
   onOpenChange,
+  recentChanges = 0,
 }: {
   group: TierGroupResponse;
   /**
@@ -100,6 +102,8 @@ export function TierGroupSection({
   sort?: TableSort;
   /** 기록 입력 버튼을 눌렀을 때. 묶음의 레이팅 상수 난이도(미정이면 null)를 함께 넘겨 입력창이 점수를 바로 계산하게 한다 */
   onRecord?: (entry: TableEntryResponse, tier: number | null) => void;
+  /** 이 묶음의 최근 서열표 변경 수(2026-11-01). 0이면 칩이 없다. 칩을 누르면 공지 화면의 `서열표 변경` 탭으로 간다 */
+  recentChanges?: number;
 }) {
   const t = useTranslations();
   const [innerOpen, setInnerOpen] = useState(false);
@@ -146,6 +150,16 @@ export function TierGroupSection({
             </>
           )}
         </h2>
+        {recentChanges > 0 ? (
+          // 머리 전체를 덮는 펼치기 버튼(::after)보다 위(z-10)에 둬서 칩을 누르면 펼치지 않고 변경 탭으로 간다
+          <Link
+            href="/notices#tier-changes"
+            aria-label={t("Table.recentChangesAria", { count: recentChanges })}
+            className="relative z-10 rounded-full border border-[var(--check-line)] bg-[var(--check-bg)] px-2 py-0.5 text-[11px] font-bold text-[var(--check-fg)] hover:brightness-110"
+          >
+            {t("Table.recentChanges", { count: recentChanges })}
+          </Link>
+        ) : null}
         <ul className={`${detailClass} flex-wrap items-center gap-1.5`} aria-label={t("Table.myProgress")}>
           {visibleChipsOf(group).map((chip) => (
             <li

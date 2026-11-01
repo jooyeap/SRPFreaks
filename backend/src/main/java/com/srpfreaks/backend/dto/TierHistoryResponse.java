@@ -12,5 +12,6 @@ import java.time.Instant;
  */
 public record TierHistoryResponse(Instant changedAt, boolean created, Long songDifficultyId, InstrumentPart part,
                                   DifficultyType difficulty, BigDecimal level, BigDecimal beforeTier,
-                                  BigDecimal afterTier, String beforePattern, String afterPattern) {
+                                  BigDecimal afterTier, String beforePattern, String afterPattern,
+                                  String beforeRecommend, String afterRecommend) {
 }

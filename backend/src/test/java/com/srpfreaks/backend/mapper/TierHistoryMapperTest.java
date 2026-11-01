@@ -129,10 +129,21 @@ class TierHistoryMapperTest {
     }
 
     @Test
-    void 추천도나_레이팅_반영만_바뀐_수정은_제외한다() {
-        log("TABLE_ENTRY_UPDATE", guitar, values("9.5", "상", "단일", false), values("9.5", "중", "단일", true));
+    void 레이팅_반영만_바뀐_수정은_제외한다() {
+        log("TABLE_ENTRY_UPDATE", guitar, values("9.5", "상", "단일", false), values("9.5", "상", "단일", true));
 
         assertThat(history(song.getId())).isEmpty();
+    }
+
+    @Test
+    void 추천도만_바뀐_수정도_보이고_전후_값을_돌려준다() {
+        log("TABLE_ENTRY_UPDATE", guitar, values("9.5", "상", "단일", false), values("9.5", "중", "단일", true));
+
+        List<TierHistoryRow> rows = history(song.getId());
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).beforeRecommend()).isEqualTo("상");
+        assertThat(rows.get(0).afterRecommend()).isEqualTo("중");
     }
 
     @Test

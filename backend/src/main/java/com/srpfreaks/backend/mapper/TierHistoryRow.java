@@ -11,5 +11,5 @@ import java.time.LocalDateTime;
  */
 public record TierHistoryRow(String action, LocalDateTime changedAt, Long songDifficultyId, String part, String difficulty,
                              BigDecimal level, String beforeTier, String afterTier, String beforePattern,
-                             String afterPattern) {
+                             String afterPattern, String beforeRecommend, String afterRecommend) {
 }

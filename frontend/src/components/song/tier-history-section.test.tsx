@@ -24,6 +24,8 @@ function row(over: Partial<TierHistoryResponse> = {}): TierHistoryResponse {
     afterTier: 9.6,
     beforePattern: "단일",
     afterPattern: "단일",
+    beforeRecommend: "중",
+    afterRecommend: "중",
     ...over,
   };
 }
@@ -82,6 +84,17 @@ describe("서열표 변경 이력", () => {
     expect(items[1]).not.toHaveTextContent("기준 난이도");
   });
 
+  it("추천만 바뀐 줄은 `추천 중 → 상`만 보여 준다", async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(json(page([row({ beforeTier: 9.5, afterTier: 9.5, afterRecommend: "상" })]))),
+    );
+    renderSection();
+
+    const item = (await screen.findAllByRole("listitem"))[0];
+    expect(item).toHaveTextContent("추천 중 → 상");
+    expect(item).not.toHaveTextContent("기준 난이도");
+  });
+
   it("값이 사라지면 미정, 속성이 없으면 –로 보여 준다", async () => {
     fetchMock.mockImplementation(() =>
       Promise.resolve(json(page([row({ beforeTier: 9.5, afterTier: null, beforePattern: "단일", afterPattern: null })]))),
@@ -103,6 +116,7 @@ describe("서열표 변경 이력", () => {
     expect(item).toHaveTextContent("서열표에 추가");
     expect(item).toHaveTextContent("기준 난이도 9.5");
     expect(item).toHaveTextContent("속성 복합");
+    expect(item).toHaveTextContent("추천 중");
   });
 
   it("더 보기를 누르면 다음 페이지를 이어 붙인다", async () => {

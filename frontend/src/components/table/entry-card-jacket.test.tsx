@@ -45,11 +45,13 @@ describe("서열표 모바일 줄 (B+D 안)", () => {
     expect(screen.getByRole("listitem")).toHaveTextContent("속성 –");
   });
 
-  it("재킷을 끄면 썸네일이 없고 추천은 속성 옆 칩이다", () => {
+  it("재킷을 끄면 재킷 칸만 없고 배치는 같다(곡명 위 `단일 | 추천 중`, 68px)", () => {
     act(() => setJacketData({ enabled: false, jackets: {} }));
     render(<ul><EntryCard entry={base} tier={5.0} /></ul>);
     const row = screen.getByRole("listitem");
     expect(within(row).queryByRole("img")).toBeNull();
-    expect(row).toHaveTextContent("속성 단일추천 중");
+    expect(row.className).toContain("h-[68px]");
+    expect(row.className).toContain("pl-4");
+    expect(row).toHaveTextContent("속성 단일|추천 중");
   });
 });

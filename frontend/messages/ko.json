@@ -294,6 +294,8 @@
     "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>"
   },
   "Table": {
+    "recentChanges": "최근 변경 {count}",
+    "recentChangesAria": "최근 서열표 변경 {count}건, 서열표 변경 보기",
     "thresholdBoth": "이 구간은 단일 <b>{single}%</b> · 그 외 <b>{other}%</b> 이상이면 레이팅에 반영돼요.",
     "thresholdSame": "이 구간은 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
     "thresholdSingle": "이 구간은 단일 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
@@ -1351,7 +1353,7 @@
   "TierHistory": {
     "title": "서열표 변경 이력",
     "empty": "아직 변경 이력이 없습니다.",
-    "note": "서열표의 기준 난이도·속성을 고친 기록입니다. 처음 정해진 값은 표시되지 않습니다.",
+    "note": "서열표의 기준 난이도·속성·추천을 고친 기록입니다. 처음 정해진 값은 표시되지 않습니다.",
     "added": "서열표에 추가",
     "tierChange": "기준 난이도 {from} → {to}",
     "patternChange": "속성 {from} → {to}",

@@ -294,6 +294,8 @@
     "titleDuplicate": "⚠ 同じ名前の曲がすでにあります。<l>{title}</l>"
   },
   "Table": {
+    "recentChanges": "最近の変更 {count}",
+    "recentChangesAria": "最近の難易度表の変更 {count}件、難易度表の変更を見る",
     "thresholdBoth": "この区間は単色<b>{single}%</b>・それ以外<b>{other}%</b>以上でレーティングに反映されます。",
     "thresholdSame": "この区間は<b>{rate}%</b>以上でレーティングに反映されます。",
     "thresholdSingle": "この区間は単色<b>{rate}%</b>以上でレーティングに反映されます。",
@@ -1351,7 +1353,7 @@
   "TierHistory": {
     "title": "難易度表の変更履歴",
     "empty": "変更履歴はまだありません。",
-    "note": "難易度表の基準難易度・属性を修正した履歴です。最初に決まった値は表示されません。",
+    "note": "難易度表の基準難易度・属性・おすすめを修正した履歴です。最初に決まった値は表示されません。",
     "added": "難易度表に追加",
     "tierChange": "基準難易度 {from} → {to}",
     "patternChange": "属性 {from} → {to}",

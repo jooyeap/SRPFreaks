@@ -54,9 +54,9 @@ class TierHistoryServiceTest {
         when(mapper.countBySong(1L)).thenReturn(2L);
         when(mapper.findBySong(1L, 10, 0)).thenReturn(List.of(
                 new TierHistoryRow("TABLE_ENTRY_UPDATE", LocalDateTime.of(2026, 10, 22, 6, 0), 7L, "BASS", "MASTER",
-                        new BigDecimal("9.00"), "9.0", null, "단일", "복합"),
+                        new BigDecimal("9.00"), "9.0", null, "단일", "복합", "중", "상"),
                 new TierHistoryRow("TABLE_ENTRY_CREATE", LocalDateTime.of(2026, 10, 1, 0, 0), 7L, "BASS", "MASTER",
-                        new BigDecimal("9.00"), null, "9.0", null, "단일")));
+                        new BigDecimal("9.00"), null, "9.0", null, "단일", null, "중")));
 
         PageResponse<TierHistoryResponse> result = service.history(1L, 0, 10);
 
@@ -71,6 +71,8 @@ class TierHistoryServiceTest {
         assertThat(update.afterTier()).isNull();
         assertThat(update.beforePattern()).isEqualTo("단일");
         assertThat(update.afterPattern()).isEqualTo("복합");
+        assertThat(update.beforeRecommend()).isEqualTo("중");
+        assertThat(update.afterRecommend()).isEqualTo("상");
         TierHistoryResponse created = result.content().get(1);
         assertThat(created.created()).isTrue();
         assertThat(created.beforeTier()).isNull();

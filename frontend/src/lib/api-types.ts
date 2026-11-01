@@ -473,6 +473,9 @@ export interface TierHistoryResponse {
   afterTier: number | null;
   beforePattern: string | null;
   afterPattern: string | null;
+  /** 추천도 전·후(2026-11-01부터 이력에 포함) */
+  beforeRecommend: string | null;
+  afterRecommend: string | null;
 }
 
 /** 사이트 전체 서열표 변경 목록(D58, 공지 화면 `서열표 변경` 탭) 한 줄. 바꾼 사람은 없다. */
