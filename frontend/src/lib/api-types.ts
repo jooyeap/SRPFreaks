@@ -478,6 +478,14 @@ export interface TierHistoryResponse {
   afterRecommend: string | null;
 }
 
+/** 사이트 전체 서열표 변경 목록(D58, 공지 화면 `서열표 변경` 탭) 한 줄. 바꾼 사람은 없다. */
+export interface TierChangeResponse extends TierHistoryResponse {
+  songId: number;
+  title: string;
+  beforeRecommend: string | null;
+  afterRecommend: string | null;
+}
+
 /* ---------- 라이벌 (D56) ---------- */
 
 /** 곡별 승패 개수. 둘 다 기록 있는 채보만 승/패/무, 상대만 기록 있으면 theirsOnly. */

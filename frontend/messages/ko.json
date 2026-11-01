@@ -690,6 +690,9 @@
     "goalPositive": "0보다 큰 값을 입력해 주세요."
   },
   "Notices": {
+    "tabsAria": "공지 종류",
+    "tabNotices": "공지사항",
+    "tabTierChanges": "서열표 변경",
     "edited": "공지사항을 수정했습니다.",
     "deleted": "공지사항을 삭제했습니다.",
     "backToList": "← 목록으로",
@@ -1358,7 +1361,11 @@
     "loadingMore": "불러오는 중",
     "loadFailed": "변경 이력을 불러오지 못했습니다.",
     "recommendChange": "추천 {from} → {to}",
-    "recommendValue": "추천 {value}"
+    "recommendValue": "추천 {value}",
+    "feedTitle": "서열표 변경",
+    "feedNote": "서열표의 기준 난이도·속성·추천이 바뀐 기록을 자동으로 보여 줍니다.",
+    "feedEmpty": "아직 서열표 변경이 없습니다.",
+    "feedLoadFailed": "서열표 변경을 불러오지 못했습니다."
   },
   "PeerStats": {
     "title": "같은 티어 유저 기록",
