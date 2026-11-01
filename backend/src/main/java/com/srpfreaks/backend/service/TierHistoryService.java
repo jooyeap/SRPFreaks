@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 import java.time.ZoneOffset;
 import java.util.List;
 
-/** 곡 상세의 서열표 변경 이력(기준 난이도·속성). 로그인 없이 읽을 수 있고, 변경한 사람은 알려 주지 않는다. */
+/** 곡 상세의 서열표 변경 이력(기준 난이도·속성·추천). 로그인 없이 읽을 수 있고, 변경한 사람은 알려 주지 않는다. */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -54,7 +54,9 @@ public class TierHistoryService {
                 decimal(row.beforeTier()),
                 decimal(row.afterTier()),
                 row.beforePattern(),
-                row.afterPattern());
+                row.afterPattern(),
+                row.beforeRecommend(),
+                row.afterRecommend());
     }
 
     private static BigDecimal decimal(String value) {

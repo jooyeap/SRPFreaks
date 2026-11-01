@@ -22,3 +22,7 @@ export function tierChanged(row: TierHistoryResponse): boolean {
 export function patternChanged(row: TierHistoryResponse): boolean {
   return row.beforePattern !== row.afterPattern;
 }
+
+export function recommendChanged(row: TierHistoryResponse): boolean {
+  return row.beforeRecommend !== row.afterRecommend;
+}
