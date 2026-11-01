@@ -294,6 +294,8 @@
     "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>"
   },
   "Table": {
+    "recentChanges": "최근 변경 {count}",
+    "recentChangesAria": "최근 서열표 변경 {count}건, 서열표 변경 보기",
     "thresholdBoth": "이 구간은 단일 <b>{single}%</b> · 그 외 <b>{other}%</b> 이상이면 레이팅에 반영돼요.",
     "thresholdSame": "이 구간은 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",
     "thresholdSingle": "이 구간은 단일 <b>{rate}%</b> 이상이면 레이팅에 반영돼요.",

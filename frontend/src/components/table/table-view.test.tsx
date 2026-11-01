@@ -75,6 +75,14 @@ describe("groupStage (묶음 전체 달성 단계)", () => {
 });
 
 describe("TierGroupSection", () => {
+  it("최근 변경이 있으면 머리에 `최근 변경 n` 칩이 서열표 변경 탭으로 연결되고, 없으면 칩이 없다", () => {
+    const { rerender } = render(<TierGroupSection group={group()} includeZero={false} recentChanges={2} />);
+    expect(screen.getByRole("link", { name: "최근 서열표 변경 2건, 서열표 변경 보기" })).toHaveAttribute("href", "/notices#tier-changes");
+    expect(screen.getByText("최근 변경 2")).toBeInTheDocument();
+    rerender(<TierGroupSection group={group()} includeZero={false} />);
+    expect(screen.queryByText(/최근 변경/)).toBeNull();
+  });
+
   it("묶음 전체가 한 단계 이상이면 머리에 단계 효과(막대)가 붙고, 아니면 붙지 않는다", () => {
     const { container, rerender } = render(
       <TierGroupSection group={group({ total: 4, recorded: 4, exc: 1, fc: 0, ss: 3, s: 0, belowS: 0 })} includeZero={false} />,

@@ -30,7 +30,11 @@ type NoticeTab = "notices" | "tier-changes";
  */
 export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite: boolean }) {
   const t = useTranslations();
-  const [tab, setTab] = useState<NoticeTab>("notices");
+  // 서열표 묶음의 `최근 변경` 칩은 `/notices#tier-changes`로 들어온다. 이 화면은 로그인 확인이 끝난 뒤 브라우저에서만 그려지므로
+  // 첫 값을 주소에서 바로 읽어도 서버 화면과 어긋나지 않는다
+  const [tab, setTab] = useState<NoticeTab>(() =>
+    typeof window !== "undefined" && window.location.hash === "#tier-changes" ? "tier-changes" : "notices",
+  );
   const tabs: readonly { value: NoticeTab; label: string }[] = [
     { value: "notices", label: t("Notices.tabNotices") },
     { value: "tier-changes", label: t("Notices.tabTierChanges") },
