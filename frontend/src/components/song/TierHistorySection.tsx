@@ -4,19 +4,21 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import type { TierHistoryResponse } from "@/lib/api-types";
-import { patternLabel } from "@/lib/chart-labels";
+import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 import { difficultyLabel, EMPTY_MARK, formatPlayedDate, formatTier, partLabel } from "@/lib/format";
-import { fetchTierHistory, patternChanged, tierChanged, tierHistoryKeys } from "@/lib/tier-history";
+import { fetchTierHistory, patternChanged, recommendChanged, tierChanged, tierHistoryKeys } from "@/lib/tier-history";
 import type { Translator } from "@/i18n/translator";
 
 /** 한 줄이 말하는 변경 내용(예: `기준 난이도 9.5 → 9.6`, `속성 단일 → 복합`). 바뀐 항목만 나온다. */
 function changeTexts(row: TierHistoryResponse, t: Translator): string[] {
   const pattern = (value: string | null) => (value === null ? EMPTY_MARK : patternLabel(value, t));
+  const recommend = (value: string | null) => (value === null ? EMPTY_MARK : recommendLabel(value, t));
   if (row.created) {
     // 서열표에 새로 올라온 줄: 그때 정해진 값을 보여 준다
     return [
       t("TierHistory.tierValue", { value: formatTier(row.afterTier, t) }),
       t("TierHistory.patternValue", { value: pattern(row.afterPattern) }),
+      t("TierHistory.recommendValue", { value: recommend(row.afterRecommend) }),
     ];
   }
   const texts: string[] = [];
@@ -26,11 +28,14 @@ function changeTexts(row: TierHistoryResponse, t: Translator): string[] {
   if (patternChanged(row)) {
     texts.push(t("TierHistory.patternChange", { from: pattern(row.beforePattern), to: pattern(row.afterPattern) }));
   }
+  if (recommendChanged(row)) {
+    texts.push(t("TierHistory.recommendChange", { from: recommend(row.beforeRecommend), to: recommend(row.afterRecommend) }));
+  }
   return texts;
 }
 
 /**
- * 곡 상세 맨 아래의 "서열표 변경 이력" (D45). 서열표의 기준 난이도·속성을 운영자가 고친 기록을 최신순으로 보여 준다.
+ * 곡 상세 맨 아래의 "서열표 변경 이력" (D45). 서열표의 기준 난이도·속성·추천(2026-11-01부터)을 운영자가 고친 기록을 최신순으로 보여 준다.
  * 누가 바꿨는지는 서버가 내려 주지 않는다. 로그인 없이 보이는 화면이라 비로그인 방문자도 부른다(공개 읽기 경로).
  * 이력을 못 받아도 곡 상세의 나머지는 그대로 쓸 수 있도록 이 구역 안에서만 오류를 보여 준다.
  */

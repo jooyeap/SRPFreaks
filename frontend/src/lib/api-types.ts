@@ -473,6 +473,9 @@ export interface TierHistoryResponse {
   afterTier: number | null;
   beforePattern: string | null;
   afterPattern: string | null;
+  /** 추천도 전·후(2026-11-01부터 이력에 포함) */
+  beforeRecommend: string | null;
+  afterRecommend: string | null;
 }
 
 /* ---------- 라이벌 (D56) ---------- */
