@@ -177,8 +177,10 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
   ctx.fillRect(x0, y0 + m.geometry.headerH - 4, w, 1);
 }
 
-/** 재킷 칸 크기와 위치(D54): 칸 띠(8px) 바로 오른쪽, 위아래 8px 여백. 칸 높이 84px는 그대로다 */
-export const CARD_JACKET = 68;
+/** 재킷 칸 크기(D54, 세로): 칸 띠(8px)에서 8px 띄운 둥근 썸네일. 칸 높이 84px는 그대로다 */
+export const CARD_JACKET = 64;
+/** 가로 5열(좁은 타일)의 재킷 크기 */
+export const CARD_JACKET_COMPACT = 56;
 const JACKET_COLOR = "#3b4660";
 
 /** 카드에 쓸 재킷 이미지를 미리 불러온다(같은 출처라 캔버스에 그려도 내려받기가 막히지 않는다). 못 불러온 것은 빠진다 */
@@ -223,52 +225,61 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean, 
   });
   ctx.restore();
 
-  // 재킷 칸(D54): 띠 바로 오른쪽. 이미지를 못 불러왔으면 단색 칸
+  // 재킷 칸(D54): 사이트 줄과 같이 띠에서 8px 띄운 둥근 썸네일(2026-11-01). 좁은 타일(가로 5열)은 56px, 세로는 CARD_JACKET.
+  // 이미지를 못 불러왔으면 단색 칸
+  const jSize = compact ? CARD_JACKET_COMPACT : CARD_JACKET;
   if (tile.jacket) {
-    const jx = x + 8;
-    const jy = y + (h - CARD_JACKET) / 2;
+    const jx = x + 8 + 8;
+    const jy = y + (h - jSize) / 2;
     ctx.save();
-    roundRect(ctx, jx, jy, CARD_JACKET, CARD_JACKET, 6);
+    roundRect(ctx, jx, jy, jSize, jSize, 8);
     ctx.clip();
     const img = tile.jacketUrl ? images.get(tile.jacketUrl) : undefined;
     if (img) {
-      ctx.drawImage(img, jx, jy, CARD_JACKET, CARD_JACKET);
+      ctx.drawImage(img, jx, jy, jSize, jSize);
     } else {
       ctx.fillStyle = JACKET_COLOR;
-      ctx.fillRect(jx, jy, CARD_JACKET, CARD_JACKET);
+      ctx.fillRect(jx, jy, jSize, jSize);
     }
     ctx.restore();
   }
 
-  const left = tile.jacket ? x + 8 + CARD_JACKET + 14 : x + 24;
+  const left = tile.jacket ? x + 8 + 8 + jSize + 12 : x + 24;
   const right = x + w - 16;
 
-  // 좁은 타일(가로 5열)은 점수를 조금 줄여 알약(세 칸)과 점수가 겹치지 않게 한다
-  const scoreSize = compact ? 30 : 32;
+  // 알약(파트 | 난이도 | 서열 난이도) 크기. 좁은 타일은 글자·여백을 줄인다
+  const pillFont = compact ? 12 : 13;
+  const pillPad = compact ? 10 : 14;
+  const pillY = y + h - 34;
+  const pillH = 22;
+  ctx.font = `700 ${pillFont}px ${f.num}`;
+  const partW = ctx.measureText(tile.partText).width + pillPad;
+  const diffW = ctx.measureText(tile.diffText).width + pillPad;
+  const tierW = ctx.measureText(tile.tierText).width + pillPad;
+  const pillEnd = left + partW + diffW + tierW;
 
-  // 오른쪽 덩어리: 위에 `rate · stage`, 아래에 점수
+  // 오른쪽 덩어리: 위에 `rate · stage`, 아래에 점수. 점수는 알약과 10px 이상 떨어지도록 32px(좁으면 30px)에서 22px까지 줄인다
+  // (2026-11-01: 가로 5열에서 점수가 알약의 서열 난이도 칸을 덮던 문제)
+  let scoreSize = compact ? 30 : 32;
   ctx.font = `700 ${scoreSize}px ${f.num}`;
-  const scoreW = ctx.measureText(tile.scoreText).width;
+  let scoreW = ctx.measureText(tile.scoreText).width;
+  while (scoreSize > 22 && pillEnd + 10 > right - scoreW) {
+    scoreSize -= 1;
+    ctx.font = `700 ${scoreSize}px ${f.num}`;
+    scoreW = ctx.measureText(tile.scoreText).width;
+  }
   const scoreBase = y + h - 14;
   text(ctx, tile.scoreText, right, scoreBase, `700 ${scoreSize}px ${f.num}`, gradient(ctx, tile.tier, right - scoreW, scoreBase, right, scoreBase), "right");
   ctx.font = `600 17px ${f.num}`;
   const rateW = ctx.measureText(tile.rateText).width;
   text(ctx, tile.rateText, right, y + 28, `600 17px ${f.num}`, tile.stageColor, "right");
 
-
-  // 알약 폭을 먼저 잰다(재킷이 있으면 속성 칩을 알약 옆 아래 줄로 내리므로)
-  const pillY = y + h - 34;
-  const pillH = 22;
-  ctx.font = `700 13px ${f.num}`;
-  const partW = ctx.measureText(tile.partText).width + 14;
-  const diffW = ctx.measureText(tile.diffText).width + 14;
-  const tierW = ctx.measureText(tile.tierText).width + 14;
   let chipBelow = false;
   if (tile.jacket && tile.patternText) {
     ctx.font = `700 12px ${f.sans}`;
     const w0 = ctx.measureText(tile.patternText).width + 16;
     // 아래 줄에 자리가 있을 때만 내린다(가로 5열처럼 좁으면 예전처럼 곡명 줄에 둔다)
-    chipBelow = left + partW + diffW + tierW + 8 + w0 <= right - scoreW - 12;
+    chipBelow = pillEnd + 8 + w0 <= right - scoreW - 12;
   }
 
   // 속성 칩: 곡명 줄의 오른쪽(`rate · stage` 왼쪽). 재킷이 있고 자리가 있으면 아래 줄 알약 옆.
@@ -313,9 +324,10 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean, 
   ctx.fillStyle = TIER_SEG_BG;
   ctx.fillRect(left + partW + diffW, pillY, tierW, pillH);
   ctx.restore();
-  text(ctx, tile.partText, left + 7, pillY + 16, `700 13px ${f.num}`, tile.partText === "Bass" ? PART_BASS : PART_GUITAR);
-  text(ctx, tile.diffText, left + partW + 7, pillY + 16, `700 13px ${f.num}`, DIFF_TEXT);
-  text(ctx, tile.tierText, left + partW + diffW + 7, pillY + 16, `700 13px ${f.num}`, TEXT);
+  const pf = `700 ${pillFont}px ${f.num}`;
+  text(ctx, tile.partText, left + pillPad / 2, pillY + 16, pf, tile.partText === "Bass" ? PART_BASS : PART_GUITAR);
+  text(ctx, tile.diffText, left + partW + pillPad / 2, pillY + 16, pf, DIFF_TEXT);
+  text(ctx, tile.tierText, left + partW + diffW + pillPad / 2, pillY + 16, pf, TEXT);
 }
 
 /** 카드 전체를 그린다. 캔버스 크기는 호출하는 쪽이 model.width × model.height로 맞춰 둔다. */

@@ -57,6 +57,37 @@ describe("drawRatingCard", () => {
     expect((calls.fillText ?? []).map((a) => a[0])).not.toContain("Tester");
   });
 
+  it("가로 5열은 재킷 56px, 점수가 알약과 겹치면 글자를 줄인다(22px까지)", () => {
+    const model = buildCardModel("landscape", skill, koT, { nickname: null, now: new Date(), jacketUrlOf: () => "/jackets/1.webp" });
+    const img = {} as HTMLImageElement;
+    // 글자 폭을 글자 크기에 비례하게 재는 가짜 컨텍스트(크기를 줄이면 폭도 줄어든다)
+    const calls: { font: string; text: string }[] = [];
+    const drawn: number[][] = [];
+    const state: Record<string, unknown> = {};
+    const size = () => Number(/(\d+)px/.exec(String(state.font ?? "10px"))?.[1] ?? 10);
+    const ctx = new Proxy(state, {
+      get(t, prop: string) {
+        if (prop === "measureText") return (s: string) => ({ width: s.length * size() * 0.6 });
+        if (prop === "createLinearGradient") return () => ({ addColorStop: vi.fn() });
+        if (prop === "fillText") return (s: string) => calls.push({ font: String(t.font), text: s });
+        if (prop === "drawImage") return (...a: number[]) => drawn.push(a.slice(3));
+        if (prop in t) return t[prop];
+        return () => {};
+      },
+      set(t, prop: string, value) {
+        t[prop] = value;
+        return true;
+      },
+    }) as unknown as CanvasRenderingContext2D;
+    drawRatingCard(ctx, model, { sans: "sans", num: "num" }, new Map([["/jackets/1.webp", img]]));
+    expect(drawn[0]).toEqual([56, 56]);
+    const score = calls.find((c) => c.text === "200.00");
+    expect(score).toBeDefined();
+    const px = Number(/(\d+)px/.exec(score?.font ?? "")?.[1]);
+    expect(px).toBeLessThanOrEqual(30);
+    expect(px).toBeGreaterThanOrEqual(22);
+  });
+
   it("재킷을 켜면(D54) 재킷이 있는 곡은 이미지를, 없는 곡은 단색 칸을 띠 오른쪽에 그린다", () => {
     const urlOf = (songId: number) => (songId === 1 ? "/jackets/1.webp" : null);
     const model = buildCardModel("portrait", skill, koT, { nickname: null, now: new Date(), jacketUrlOf: urlOf });
@@ -67,7 +98,7 @@ describe("drawRatingCard", () => {
     drawRatingCard(ctx, model, { sans: "sans", num: "num" }, new Map([["/jackets/1.webp", img]]));
     // 재킷이 있는 곡은 두 번(단일·그 외 구역) 나온다
     expect((calls.drawImage ?? []).filter((a) => a[0] === img)).toHaveLength(2);
-    expect((calls.drawImage ?? [])[0]?.slice(3)).toEqual([68, 68]);
+    expect((calls.drawImage ?? [])[0]?.slice(3)).toEqual([64, 64]);
   });
 
   it("재킷 옵션을 넘기지 않으면 재킷 칸이 없다", () => {
