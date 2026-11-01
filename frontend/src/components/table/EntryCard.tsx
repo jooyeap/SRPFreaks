@@ -5,7 +5,7 @@ import { tableDetailHref } from "@/components/song/TableContext";
 import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
 import type { AchievementStage } from "@/lib/types";
-import { patternLabel } from "@/lib/chart-labels";
+import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 import { useTranslations } from "next-intl";
 import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
@@ -14,7 +14,7 @@ import { useJackets } from "@/lib/jackets";
  * 서열표 한 줄 (모바일). 모든 줄 높이를 60px로 맞춘다(2026-11-01, 시안 `서열표 줄 B+D 안`).
  * 왼쪽: 곡명, 그 아래 `Guitar | MAS 9.80` 알약 + 속성 칩(`단일`). 둘째 줄을 접지 않아 기록이 있든 없든 줄 높이가 같다.
  * 오른쪽: `[S | 92.93]` 랭크·달성률 알약(폭 고정, 기록이 없으면 `[– | –]`), 그 아래 레이팅 점수(티어 색), 기록 입력 버튼(+).
- * 추천(상/중/하)은 재킷이 보이면 재킷 오른쪽 아래 꼬리표, 재킷을 끄면 속성 칩 옆 칩이다.
+ * 추천(상/중/하)은 속성 칩 옆 칩이다. 재킷이 보이면 JacketEntryCard(아래)를 쓴다.
  * (예전: 단계 배지가 둘째 줄에 있어 기록 있는 줄만 속성이 아래로 밀려 줄이 길었다.)
  * 기록이 있으면 data-stage를 붙여 왼쪽 4px 막대와 배경 틴트, 곡명·달성률 색을 같은 단계 색으로 맞춘다 (데스크톱 표의 EntryRow와 같은 규칙).
  */
@@ -31,28 +31,17 @@ export function EntryCard({
   const t = useTranslations();
   const stage = entry.mine?.stage ?? null;
   const jackets = useJackets();
+  if (jackets.visible) {
+    return <JacketEntryCard entry={entry} tier={tier} onRecord={onRecord} jacketUrl={jackets.urlOf(entry.songId)} />;
+  }
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex h-[60px] items-center gap-2 border-t border-row-line ${jackets.visible ? "pl-3" : "pl-4"} pr-3 first:border-t-0 md:hidden ${
+      className={`relative flex h-[60px] items-center gap-2 border-t border-row-line pl-4 pr-3 first:border-t-0 md:hidden ${
         stage ? "stage-tint" : ""
       }`}
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
-      {/* 재킷(D54): 44px 둥근 썸네일을 줄 가운데에 두고, 추천을 오른쪽 아래 꼬리표로 얹는다.
-          360px 미만은 왼쪽 칸이 좁아 36px로 줄인다 */}
-      {jackets.visible ? (
-        <span className="relative shrink-0">
-          <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-11 rounded-lg max-[359px]:size-9" />
-          {entry.recommend ? (
-            // 꼬리표 아래 재킷 그림이 비치지 않게 카드 색을 깐다(추천 상은 배경이 반투명)
-            // 18px 정사각 고정: 상/중/하(高/中/低) 어느 글자든 같은 크기이고, 바탕 칸도 배지와 같은 크기·둥글기라 테두리 밖으로 비치지 않는다
-            <span className="absolute -bottom-0.5 -right-0.5 flex size-[18px] rounded bg-card">
-              <RecommendBadge value={entry.recommend} className="flex! size-full items-center justify-center px-0! py-0! text-[10px]! leading-none!" />
-            </span>
-          ) : null}
-        </span>
-      ) : null}
       <div className="min-w-0 flex-1">
         <Link
           href={tableDetailHref(entry)}
@@ -63,7 +52,7 @@ export function EntryCard({
         <p className="mt-1 flex items-center gap-1.5 overflow-hidden">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} compact />
           {entry.pattern ? <PatternChip label={patternLabel(entry.pattern, t)} /> : null}
-          {!jackets.visible ? <RecommendBadge value={entry.recommend} className="shrink-0" /> : null}
+          <RecommendBadge value={entry.recommend} className="shrink-0" />
         </p>
       </div>
       <div className="flex w-[72px] shrink-0 flex-col items-end gap-1">
@@ -73,6 +62,76 @@ export function EntryCard({
       {onRecord ? <RecordButton entry={entry} onRecord={onRecord} /> : null}
     </li>
   );
+}
+
+/**
+ * 재킷이 보일 때의 서열표 모바일 줄(2026-11-01, 시안 `재킷 옆 정보 새 아이디어` 4번). 줄 높이 64px.
+ * 재킷은 48px 둥근 그림만(360px 미만 40px). 오른쪽은 3줄 격자라 왼쪽 글자와 오른쪽 칸의 높이가 줄마다 맞는다:
+ *   1줄: `단일 | 추천 상` 작은 글자 (오른쪽 비움)
+ *   2줄: 곡명            ↔ `[S | 92.93]` 랭크·달성률 알약
+ *   3줄: `Guitar | MAS` 알약 ↔ 레이팅 점수
+ * 속성·추천을 곡명 위 글자로 옮겨 둘째 줄에는 알약만 남는다(좁은 기종에서 속성 칩이 잘리던 문제, 갤럭시 S25 360px).
+ */
+function JacketEntryCard({
+  entry,
+  tier,
+  onRecord,
+  jacketUrl,
+}: {
+  entry: TableEntryResponse;
+  tier: number | null;
+  onRecord?: (entry: TableEntryResponse) => void;
+  jacketUrl: string | null;
+}) {
+  const t = useTranslations();
+  const stage = entry.mine?.stage ?? null;
+  return (
+    <li
+      data-stage={stage ?? undefined}
+      className={`relative flex h-16 items-center gap-2 border-t border-row-line pl-3 pr-3 first:border-t-0 md:hidden ${stage ? "stage-tint" : ""}`}
+    >
+      {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      <SongJacket url={jacketUrl} title={entry.title} className="size-12 rounded-lg max-[359px]:size-10" />
+      <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_72px] items-center gap-x-2">
+        <p className="col-span-2 truncate text-[10px] font-bold leading-3 text-fg-dim">
+          <span className="sr-only">{t("Chart.patternSr")} </span>
+          {entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK}
+          {entry.recommend ? (
+            <>
+              <span className="mx-1 text-chip-line" aria-hidden="true">|</span>
+              <span className={recommendTextClass(entry.recommend)}>
+                {t("Chart.recommendSr")} {recommendLabel(entry.recommend, t)}
+              </span>
+            </>
+          ) : null}
+        </p>
+        <Link
+          href={tableDetailHref(entry)}
+          className={`mt-0.5 block truncate text-sm leading-[18px] hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
+        >
+          {entry.title}
+        </Link>
+        <span className="mt-0.5 justify-self-end">
+          <StageRatePill stage={stage} rate={entry.mine?.rate} />
+        </span>
+        <span className="mt-1 flex overflow-hidden">
+          <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} compact />
+        </span>
+        <span className="mt-1 flex h-[18px] justify-self-end">
+          {stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} /> : null}
+        </span>
+      </div>
+      {onRecord ? <RecordButton entry={entry} onRecord={onRecord} /> : null}
+    </li>
+  );
+}
+
+/** 곡명 위 작은 줄의 추천 글자 색. 추천 배지(RecommendBadge)와 같은 색 변수(DESIGN-UI 3장) */
+function recommendTextClass(value: string): string {
+  if (value === "상") {
+    return "text-[var(--rec-high-text)]";
+  }
+  return value === "중" ? "text-fg-sub" : "text-fg-faint";
 }
 
 /** 속성 칩(`단일`). 읽기 프로그램에는 앞에 `속성`을 숨겨 읽힌다. 자리가 모자라면 이 칩만 줄어들어 잘린다 */

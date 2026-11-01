@@ -18,28 +18,31 @@ describe("서열표 모바일 줄 (B+D 안)", () => {
   });
   afterEach(() => act(() => setJacketData(null)));
 
-  it("재킷 켬: 44px 썸네일 + 추천 꼬리표, 오른쪽은 [랭크 | 달성률] 알약 + 점수, 줄 높이 60px", () => {
+  it("재킷 켬: 48px 재킷, 곡명 위 `단일 | 추천 중`, 곡명↔[랭크 | 달성률], 알약↔점수, 줄 높이 64px", () => {
     render(<ul><EntryCard entry={base} tier={5.0} onRecord={() => {}} /></ul>);
     const row = screen.getByRole("listitem");
-    expect(row.className).toContain("h-[60px]");
+    expect(row.className).toContain("h-16");
     const img = within(row).getByRole("img", { name: "MIND ERUPTION" });
     expect(img).toHaveAttribute("src", "/jackets/100.webp");
-    expect(img.parentElement?.className).toContain("size-11");
-    expect(img.parentElement?.className).toContain("max-[359px]:size-9"); // 360px 미만은 알약 자리를 위해 36px
-    // 추천 꼬리표는 재킷 칸 안에 있다
-    expect(img.parentElement?.parentElement).toHaveTextContent("추천 중");
+    expect(img.parentElement?.className).toContain("size-12");
+    expect(img.parentElement?.className).toContain("max-[359px]:size-10");
+    expect(row).toHaveTextContent("속성 단일|추천 중");
     expect(within(row).getByLabelText("달성 단계 EXC")).toHaveTextContent("EXC");
     expect(row).toHaveTextContent("MAX");
-    expect(row).toHaveTextContent("속성 단일");
     expect(within(row).getAllByRole("button", { name: /MIND ERUPTION/ }).length).toBeGreaterThan(0);
   });
 
   it("기록이 없으면 알약은 [– | –], 줄 높이는 같다", () => {
     render(<ul><EntryCard entry={{ ...base, mine: null }} tier={5.0} /></ul>);
     const row = screen.getByRole("listitem");
-    expect(row.className).toContain("h-[60px]");
+    expect(row.className).toContain("h-16");
     expect(within(row).queryByLabelText(/달성 단계/)).toBeNull();
     expect(row).toHaveTextContent("––");
+  });
+
+  it("속성·추천이 없으면 곡명 위 줄은 `–`", () => {
+    render(<ul><EntryCard entry={{ ...base, pattern: null, recommend: null }} tier={5.0} /></ul>);
+    expect(screen.getByRole("listitem")).toHaveTextContent("속성 –");
   });
 
   it("재킷을 끄면 썸네일이 없고 추천은 속성 옆 칩이다", () => {
