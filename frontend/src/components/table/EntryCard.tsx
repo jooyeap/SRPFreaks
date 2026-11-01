@@ -45,10 +45,11 @@ export function EntryCard({
         >
           {entry.title}
         </Link>
-        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        {/* 재킷이 보이면 이 줄을 접지 않는다(줄마다 높이가 달라지면 재킷·왼쪽 띠와 줄 높이가 어긋난다). 자리가 모자라면 속성 글자를 `…`로 줄인다 */}
+        <p className={`mt-1 flex items-center gap-x-1.5 gap-y-1 ${jackets.visible ? "flex-nowrap" : "flex-wrap"}`}>
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
           {stage ? <StageBadge stage={stage} /> : null}
-          <span className="text-xs text-fg-dim">{t("Chart.patternValue", { pattern: entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK })}</span>
+          <span className={`text-xs text-fg-dim ${jackets.visible ? "min-w-0 truncate" : ""}`}>{t("Chart.patternValue", { pattern: entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK })}</span>
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
