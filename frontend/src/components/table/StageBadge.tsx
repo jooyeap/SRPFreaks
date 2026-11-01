@@ -11,7 +11,7 @@ export function StageBadge({ stage }: { stage: AchievementStage }) {
     <span
       data-stage={stage}
       aria-label={t("Chart.stage", { stage })}
-      className="stage-chip inline-block rounded px-1.5 py-px font-num text-[11px] font-bold leading-4"
+      className="stage-chip inline-block shrink-0 rounded px-1.5 py-px font-num text-[11px] font-bold leading-4"
     >
       {stage}
     </span>
