@@ -360,8 +360,7 @@
     "groupTotal": "{count}개",
     "recordedOf": "기록 {recorded}/{total}",
     "average": "평균",
-    "nav": "{direction} 난이도 {label}",
-    "patternRecommend": "{pattern} · 추천 {recommend}"
+    "nav": "{direction} 난이도 {label}"
   },
   "SongCreate": {
     "created": "곡을 등록했습니다.",

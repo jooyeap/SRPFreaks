@@ -5,7 +5,7 @@ import { StageBadge } from "@/components/table/StageBadge";
 import { tableDetailHref } from "@/components/song/TableContext";
 import { EMPTY_MARK, formatRate } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
-import { patternLabel, recommendLabel } from "@/lib/chart-labels";
+import { patternLabel } from "@/lib/chart-labels";
 import { useTranslations } from "next-intl";
 import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
@@ -13,6 +13,7 @@ import { useJackets } from "@/lib/jackets";
 /**
  * 서열표 한 줄 (모바일). 재킷 칸을 숨기면서 4열 카드 격자 대신 한 줄 행으로 바꿨다.
  * 왼쪽: 곡명, 그 아래 `Guitar | MAS 9.80` 알약 + 달성 단계 + 속성. 오른쪽: 달성률, 그 아래 추천 + 레이팅 점수(티어 색), 기록 입력 버튼(+).
+ * 재킷이 보이면 곡명 앞에 44px 둥근 썸네일을 둔다(D54, 2026-11-01. 줄을 채우던 72px 재킷·세 줄 배치에서 바꿈).
  * 레이팅 점수는 2026-10-10에 단계 배지 앞(왼쪽)에 뒀다가 2026-10-18에 달성률·추천과 같은 오른쪽 묶음으로 옮겼다. 기록이 있으면 data-stage를 붙여 왼쪽 4px 막대와 배경 틴트, 곡명·달성률 색을 같은 단계 색으로 맞춘다 (데스크톱 표의 EntryRow와 같은 규칙).
  */
 export function EntryCard({
@@ -28,17 +29,16 @@ export function EntryCard({
   const t = useTranslations();
   const stage = entry.mine?.stage ?? null;
   const jackets = useJackets();
-  if (jackets.visible) {
-    return <JacketEntryCard entry={entry} tier={tier} onRecord={onRecord} jacketUrl={jackets.urlOf(entry.songId)} />;
-  }
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex min-h-[60px] items-center gap-2 border-t border-row-line py-2 pl-4 pr-3 first:border-t-0 md:hidden ${
+      className={`relative flex min-h-[60px] items-center ${jackets.visible ? "gap-2.5" : "gap-2"} border-t border-row-line py-2 pl-4 pr-3 first:border-t-0 md:hidden ${
         stage ? "stage-tint" : ""
       }`}
     >
       {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      {/* 재킷(D54): 44px 둥근 썸네일을 줄 가운데에 둔다. 줄 높이에 맞춰 늘리지 않아 두 줄로 접혀도 모양이 그대로다 */}
+      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-11 rounded-lg" /> : null}
       <div className="min-w-0 flex-1">
         <Link
           href={tableDetailHref(entry)}
@@ -80,55 +80,5 @@ function RecordButton({ entry, onRecord }: { entry: TableEntryResponse; onRecord
     >
       +
     </button>
-  );
-}
-
-/**
- * 재킷이 보일 때의 서열표 한 줄(D54 A안, 2026-11-01). 줄 높이 72px = 재킷 72px 정사각이라 왼쪽 띠·재킷·줄이 늘 같은 길이다.
- * 1줄: 곡명 · 달성률 / 2줄: 알약 · 단계 · (오른쪽) 점수 / 3줄: `단일 · 추천 상` 작은 글자. 한 줄에 몰아넣지 않아 글자가 잘리지 않는다.
- * 재킷은 띠 자리(4px)를 늘 비워 둔 채 그 오른쪽에 붙는다(띠가 없는 줄도 재킷 위치가 같다).
- */
-function JacketEntryCard({
-  entry,
-  tier,
-  onRecord,
-  jacketUrl,
-}: {
-  entry: TableEntryResponse;
-  tier: number | null;
-  onRecord?: (entry: TableEntryResponse) => void;
-  jacketUrl: string | null;
-}) {
-  const t = useTranslations();
-  const stage = entry.mine?.stage ?? null;
-  const pattern = entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK;
-  return (
-    <li
-      data-stage={stage ?? undefined}
-      className={`relative flex h-[72px] items-center gap-2.5 border-t border-row-line pl-1 pr-3 first:border-t-0 md:hidden ${stage ? "stage-tint" : ""}`}
-    >
-      {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
-      <SongJacket url={jacketUrl} title={entry.title} className="size-[72px]" />
-      <div className="min-w-0 flex-1">
-        <p className="flex items-baseline gap-2">
-          <Link
-            href={tableDetailHref(entry)}
-            className={`min-w-0 flex-1 truncate text-[13px] hover:underline ${stage === "EXC" || stage === "FC" ? "stage-name" : "text-fg"}`}
-          >
-            {entry.title}
-          </Link>
-          <span className={`shrink-0 font-num text-sm font-semibold ${stage ? "stage-text" : "text-fg-faint"}`}>{formatRate(entry.mine?.rate)}</span>
-        </p>
-        <p className="mt-1 flex items-center gap-1.5">
-          <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
-          {stage ? <StageBadge stage={stage} /> : null}
-          {stage ? <span className="ml-auto shrink-0"><RatedScore entry={entry} tier={tier} onRecord={onRecord} /></span> : null}
-        </p>
-        <p className="mt-1 truncate text-[11px] text-fg-dim">
-          {entry.recommend ? t("Chart.patternRecommend", { pattern, recommend: recommendLabel(entry.recommend, t) }) : t("Chart.patternValue", { pattern })}
-        </p>
-      </div>
-      {onRecord ? <RecordButton entry={entry} onRecord={onRecord} /> : null}
-    </li>
   );
 }
