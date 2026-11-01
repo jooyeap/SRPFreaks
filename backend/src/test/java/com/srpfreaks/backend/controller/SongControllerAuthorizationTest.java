@@ -12,6 +12,7 @@ import com.srpfreaks.backend.service.DifficultyTableViewService;
 import com.srpfreaks.backend.service.SongAdminService;
 import com.srpfreaks.backend.service.SongQueryService;
 import com.srpfreaks.backend.service.SongSuggestService;
+import com.srpfreaks.backend.service.TierChangeService;
 import com.srpfreaks.backend.service.TierHistoryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,9 +59,11 @@ class SongControllerAuthorizationTest {
 
         @Bean TierHistoryService tierHistoryService() { return Mockito.mock(TierHistoryService.class); }
 
+        @Bean TierChangeService tierChangeService() { return Mockito.mock(TierChangeService.class); }
+
         @Bean SongController songController(SongQueryService q, SongAdminService a, SongSuggestService s,
-                                            TierHistoryService h) {
-            return new SongController(q, a, s, h);
+                                            TierHistoryService h, TierChangeService c) {
+            return new SongController(q, a, s, h, c);
         }
 
         @Bean DifficultyTableService difficultyTableService() { return Mockito.mock(DifficultyTableService.class); }
