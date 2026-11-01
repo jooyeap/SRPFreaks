@@ -495,8 +495,8 @@ describe("DifficultyTableView", () => {
     }
   });
 
-  it("표형 열 너비: 랭크 70 · 채보 190 · 달성률 90px (머리 행과 행이 같은 값을 쓴다)", () => {
-    expect(ROW_GRID).toContain("_70px_190px_90px_");
+  it("표형 열: 곡명 · 채보 190 · 속성 52 · 추천 44 · 랭크·달성률 72 · 점수 64 · 기록 32 (머리 행과 행이 같은 값을 쓴다)", () => {
+    expect(ROW_GRID).toContain("minmax(0,1fr)_190px_52px_44px_72px_64px_32px");
   });
 
   it("여러 개를 고르면 접힌 줄 요약에 모두 보인다", async () => {

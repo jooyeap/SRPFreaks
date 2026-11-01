@@ -183,7 +183,7 @@ describe("SetlistAddButton (곡 상세의 담기, D49)", () => {
 
     it("서열표 머리 행의 칸 수가 줄의 칸 수와 같다 (열이 어긋나지 않는다)", () => {
       const { container } = render(<TableHeadRow />);
-      expect(container.firstElementChild?.children).toHaveLength(9);
+      expect(container.firstElementChild?.children).toHaveLength(7);
     });
   });
 });

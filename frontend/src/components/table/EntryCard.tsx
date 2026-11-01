@@ -2,12 +2,12 @@ import Link from "next/link";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { RatedScore } from "@/components/table/RatedScore";
 import { tableDetailHref } from "@/components/song/TableContext";
-import { EMPTY_MARK, formatRate } from "@/lib/format";
+import { EMPTY_MARK } from "@/lib/format";
 import type { TableEntryResponse } from "@/lib/api-types";
-import type { AchievementStage } from "@/lib/types";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 import { useTranslations } from "next-intl";
 import { SongJacket } from "@/components/SongJacket";
+import { StageRatePill } from "@/components/table/StageRatePill";
 import { useJackets } from "@/lib/jackets";
 
 /**
@@ -139,28 +139,6 @@ function PatternChip({ label }: { label: string }) {
     <span className="min-w-0 truncate rounded border border-chip-line px-1 text-[11px] leading-4 text-fg-sub">
       <span className="sr-only">{t("Chart.patternSr")} </span>
       {label}
-    </span>
-  );
-}
-
-/**
- * `[S | 92.93]` 랭크·달성률 알약. 폭 72px 고정(왼쪽 랭크 칸 28px)이라 `EXC | MAX`, `S | 92.93`, `– | –`가 위아래로 맞는다.
- * 랭크 칸 색은 StageBadge와 같은 .stage-chip, 달성률 색은 .stage-text. 글자를 항상 적어 색만으로 전달하지 않는다.
- */
-function StageRatePill({ stage, rate }: { stage: AchievementStage | null; rate: number | null | undefined }) {
-  const t = useTranslations();
-  return (
-    <span className="inline-flex w-[72px] overflow-hidden rounded font-num text-[11px] font-bold leading-[18px]">
-      {stage ? (
-        <span data-stage={stage} aria-label={t("Chart.stage", { stage })} className="stage-chip w-7 shrink-0 text-center">
-          {stage}
-        </span>
-      ) : (
-        <span className="w-7 shrink-0 bg-table-head text-center text-fg-faint">{EMPTY_MARK}</span>
-      )}
-      <span className={`flex-1 bg-table-head px-1.5 text-right text-xs ${stage ? "stage-text" : "text-fg-faint"}`}>
-        {stage ? formatRate(rate) : EMPTY_MARK}
-      </span>
     </span>
   );
 }

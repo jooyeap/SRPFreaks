@@ -209,7 +209,8 @@ describe("SongDetailView", () => {
     const neighbors = screen.getByRole("region", { name: "같은 난이도의 곡" });
     expect(within(neighbors).getByRole("link", { name: /앞곡/ })).toHaveAttribute("href", "/songs/9?from=table&chart=90");
     expect(within(neighbors).getByRole("link", { name: /뒷곡/ })).toHaveAttribute("href", "/songs/8?from=table&chart=91");
-    expect(within(neighbors).getByText("기록 없음")).toBeInTheDocument();
+    // 기록이 없는 곡은 `[– | –]` 알약(랭크·달성률 칸 모두 비움)
+    expect(within(neighbors).getByRole("link", { name: /뒷곡/ })).toHaveTextContent("––");
     // 묶음 전체 목록: 지금 보는 곡은 강조(aria-current)와 글자("보는 중")로 표시하고, 묶음 페이지로 가는 링크가 있다
     const current = within(neighbors).getAllByRole("listitem").filter((li) => li.getAttribute("aria-current") === "true");
     expect(current).toHaveLength(1);
