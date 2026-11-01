@@ -14,18 +14,21 @@ export function ChartBadge({
   part,
   difficulty,
   level,
+  compact = false,
 }: {
   part: InstrumentPart;
   difficulty: DifficultyType;
   level: number;
+  /** 좁은 줄(서열표 모바일)용: 칸 안쪽 여백과 파트 칸 최소 폭을 줄여 옆 속성 칩 자리를 만든다 */
+  compact?: boolean;
 }) {
   return (
     <span
       data-difficulty={difficulty}
       className="inline-flex shrink-0 overflow-hidden rounded align-middle font-num text-[11px] font-bold leading-4"
     >
-      <span className="chart-chip-part min-w-[3.25rem] px-1.5 py-px text-center">{partLabel(part)}</span>
-      <span className="chart-chip-diff whitespace-nowrap px-1.5 py-px">
+      <span className={`chart-chip-part py-px text-center ${compact ? "min-w-[2.75rem] px-1" : "min-w-[3.25rem] px-1.5"}`}>{partLabel(part)}</span>
+      <span className={`chart-chip-diff whitespace-nowrap py-px ${compact ? "px-1" : "px-1.5"}`}>
         {difficultyLabel(difficulty)} {formatLevel(level)}
       </span>
     </span>

@@ -34,7 +34,7 @@ export function EntryCard({
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex h-[60px] items-center gap-2.5 border-t border-row-line pl-4 pr-3 first:border-t-0 md:hidden ${
+      className={`relative flex h-[60px] items-center gap-2 border-t border-row-line pl-4 pr-3 first:border-t-0 md:hidden ${
         stage ? "stage-tint" : ""
       }`}
     >
@@ -46,8 +46,9 @@ export function EntryCard({
           <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-11 rounded-lg max-[359px]:size-9" />
           {entry.recommend ? (
             // 꼬리표 아래 재킷 그림이 비치지 않게 카드 색을 깐다(추천 상은 배경이 반투명)
-            <span className="absolute -bottom-1 -right-1 rounded bg-card">
-              <RecommendBadge value={entry.recommend} className="px-1 text-[10px] leading-[14px]" />
+            // 18px 정사각 고정: 상/중/하(高/中/低) 어느 글자든 같은 크기이고, 바탕 칸도 배지와 같은 크기·둥글기라 테두리 밖으로 비치지 않는다
+            <span className="absolute -bottom-0.5 -right-0.5 flex size-[18px] rounded bg-card">
+              <RecommendBadge value={entry.recommend} className="flex! size-full items-center justify-center px-0! py-0! text-[10px]! leading-none!" />
             </span>
           ) : null}
         </span>
@@ -60,7 +61,7 @@ export function EntryCard({
           {entry.title}
         </Link>
         <p className="mt-1 flex items-center gap-1.5 overflow-hidden">
-          <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
+          <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} compact />
           {entry.pattern ? <PatternChip label={patternLabel(entry.pattern, t)} /> : null}
           {!jackets.visible ? <RecommendBadge value={entry.recommend} className="shrink-0" /> : null}
         </p>
