@@ -6,6 +6,7 @@ import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
 import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { StageBadge } from "@/components/table/StageBadge";
+import { StageRatePill } from "@/components/table/StageRatePill";
 import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
 import { TermHelp } from "@/components/TermHelp";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
@@ -188,7 +189,8 @@ function GroupSongItem({
             <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
           </span>
         </span>
-        {entry.mine ? <StageBadge stage={entry.mine.stage} /> : <span className="text-[11px] text-fg-faint">{t("Song.noRecord")}</span>}
+        {/* 랭크·달성률(2026-11-01): 서열표 줄과 같은 `[S | 92.93]` 알약. 기록이 없으면 `[– | –]` */}
+        <StageRatePill stage={entry.mine?.stage ?? null} rate={entry.mine?.rate} />
       </Link>
     </li>
   );
