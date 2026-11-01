@@ -393,16 +393,16 @@ describe("SongListView", () => {
     expect(titleRow).not.toContainElement(screen.getByRole("button", { name: "0% 미포함" }));
   });
 
-  it("데스크톱: 채보 목록 위에 열 머리글(곡명·랭크·채보·달성률)이 있고 화면 읽기 프로그램에는 숨긴다", async () => {
+  it("데스크톱: 채보 목록 위에 열 머리글(곡명·채보·랭크·달성률)이 있고 화면 읽기 프로그램에는 숨긴다", async () => {
     renderView();
     fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
     const list = await screen.findByRole("list", { name: "9.50 ~ 9.99 채보" });
     const header = list.previousElementSibling as HTMLElement;
     expect(header).toHaveAttribute("aria-hidden", "true");
     expect(header).toHaveClass("hidden", "md:grid");
-    expect(header.textContent).toBe("곡명랭크채보달성률");
+    expect(header.textContent).toBe("곡명채보랭크 · 달성률");
     // 머리글과 행이 같은 열 너비를 쓴다
-    expect(header.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px]");
-    expect(list.querySelector("li")?.className).toContain("md:grid-cols-[minmax(0,1fr)_70px_190px_90px]");
+    expect(header.className).toContain("md:grid-cols-[minmax(0,1fr)_190px_72px]");
+    expect(list.querySelector("li")?.className).toContain("md:grid-cols-[minmax(0,1fr)_190px_72px]");
   });
 });

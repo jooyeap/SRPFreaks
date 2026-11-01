@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useToast } from "@/components/Toast";
 import { NoticeForm } from "@/components/notices/NoticeForm";
+import { TierChangesFeed } from "@/components/notices/TierChangesFeed";
 import { ApiError } from "@/lib/api";
 import { formatPlayedDate } from "@/lib/format";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
@@ -21,11 +22,56 @@ function messageOf(error: unknown, t: Translator): string | null {
   return error instanceof ApiError ? error.message : t("Common.saveFailed");
 }
 
+type NoticeTab = "notices" | "tier-changes";
+
+/**
+ * 공지 화면은 두 탭이다(2026-11-01, D58): `공지사항`(운영자가 쓰는 글) / `서열표 변경`(서열표 변경 기록을 자동으로 보여 주는 목록).
+ * 서열표 변경은 공지로 따로 쓰지 않는다. 공지에 분류를 붙이지 않는 D30은 그대로다.
+ */
+export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite: boolean }) {
+  const t = useTranslations();
+  const [tab, setTab] = useState<NoticeTab>("notices");
+  const tabs: readonly { value: NoticeTab; label: string }[] = [
+    { value: "notices", label: t("Notices.tabNotices") },
+    { value: "tier-changes", label: t("Notices.tabTierChanges") },
+  ];
+  return (
+    <div className="flex flex-col gap-4">
+      <h1 className="text-xl font-semibold text-fg">{t("Notices.title")}</h1>
+      <div role="tablist" aria-label={t("Notices.tabsAria")} className="flex gap-1 rounded-xl border border-line bg-table-head p-1">
+        {tabs.map((item) => {
+          const selected = tab === item.value;
+          return (
+            <button
+              key={item.value}
+              type="button"
+              role="tab"
+              id={`notices-tab-${item.value}`}
+              aria-selected={selected}
+              aria-controls="notices-panel"
+              onClick={() => setTab(item.value)}
+              // 선택은 굵은 글씨와 테두리로도 보인다(색만으로 구분하지 않는다)
+              className={`min-h-10 flex-1 rounded-lg px-2 text-sm sm:px-4 ${
+                selected ? "bg-card font-bold text-fg shadow-sm ring-1 ring-chip-line" : "text-fg-sub hover:text-fg"
+              }`}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+      <div role="tabpanel" id="notices-panel" aria-labelledby={`notices-tab-${tab}`}>
+        {tab === "notices" ? <NoticeList viewerId={viewerId} canWrite={canWrite} /> : <TierChangesFeed />}
+      </div>
+    </div>
+  );
+}
+
 /**
  * 공지사항 목록 (D30). 게시판처럼 제목·작성일만 최근 순으로 보여 주고, 줄을 누르면 상세 페이지(/notices/{id})로 간다.
  * 쓰기 폼은 canWrite(ADMIN·ROOT)일 때만 보인다(권한은 서버가 다시 검사한다). 고치기·삭제는 상세 페이지에서 한다.
  */
-export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite: boolean }) {
+function NoticeList({ viewerId, canWrite }: { viewerId: number; canWrite: boolean }) {
   const t = useTranslations();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
@@ -52,8 +98,7 @@ export function NoticesView({ viewerId, canWrite }: { viewerId: number; canWrite
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-fg">{t("Notices.title")}</h1>
+      <div className="flex items-center justify-end gap-3">
         <PageSizeSelect
           value={size}
           onChange={(next) => {
