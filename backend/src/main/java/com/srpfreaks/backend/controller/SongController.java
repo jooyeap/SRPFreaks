@@ -6,11 +6,13 @@ import com.srpfreaks.backend.dto.SongRequest;
 import com.srpfreaks.backend.dto.SongSuggestionResponse;
 import com.srpfreaks.backend.dto.SongSummaryResponse;
 import com.srpfreaks.backend.dto.SongTitleCheckResponse;
+import com.srpfreaks.backend.dto.TierChangeResponse;
 import com.srpfreaks.backend.dto.TierHistoryResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.SongAdminService;
 import com.srpfreaks.backend.service.SongQueryService;
 import com.srpfreaks.backend.service.SongSuggestService;
+import com.srpfreaks.backend.service.TierChangeService;
 import com.srpfreaks.backend.service.TierHistoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +45,7 @@ public class SongController {
     private final SongAdminService songAdminService;
     private final SongSuggestService songSuggestService;
     private final TierHistoryService tierHistoryService;
+    private final TierChangeService tierChangeService;
 
     @GetMapping
     public PageResponse<SongSummaryResponse> search(
@@ -78,6 +81,17 @@ public class SongController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + TierHistoryService.DEFAULT_PAGE_SIZE) int size) {
         return tierHistoryService.history(songId, page, size);
+    }
+
+    /**
+     * 사이트 전체의 서열표 변경 목록(D58, 공지 화면 `서열표 변경` 탭). 로그인 없이 읽는다. 최신순, 페이지네이션.
+     * `/{songId}`보다 구체적인 경로라 Spring이 이쪽을 먼저 고른다.
+     */
+    @GetMapping("/tier-changes")
+    public PageResponse<TierChangeResponse> tierChanges(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "" + TierChangeService.DEFAULT_PAGE_SIZE) int size) {
+        return tierChangeService.changes(page, size);
     }
 
     @PostMapping

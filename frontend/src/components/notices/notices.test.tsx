@@ -77,6 +77,16 @@ describe("NoticesView", () => {
     expect(screen.queryByRole("form", { name: "공지 쓰기" })).not.toBeInTheDocument();
   });
 
+  it("`서열표 변경` 탭을 누르면 서열표 변경 목록을 불러온다(D58)", async () => {
+    // 응답 본문은 한 번만 읽을 수 있어서 부를 때마다 새로 만든다
+    fetchMock.mockImplementation(async () => json(pageOf([])));
+    renderView(false);
+    expect(screen.getByRole("tab", { name: "공지사항" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("tab", { name: "서열표 변경" }));
+    expect(await screen.findByText("아직 서열표 변경이 없습니다.")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/songs/tier-changes"))).toBe(true);
+  });
+
   it("공지가 없으면 안내 문구를 보여 준다", async () => {
     fetchMock.mockResolvedValue(json(pageOf([], { totalElements: 0, totalPages: 0 })));
     renderView(false);
