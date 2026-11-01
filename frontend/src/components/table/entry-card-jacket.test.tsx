@@ -10,7 +10,7 @@ const base: TableEntryResponse = {
   ratingEnabled: true, mine: { rate: 100, fullCombo: true, stage: "EXC" },
 };
 
-describe("서열표 줄 + 재킷 (D54 A안)", () => {
+describe("서열표 줄 + 재킷 썸네일 (D54)", () => {
   beforeEach(() => {
     localStorage.clear();
     resetShowJacketsForTest();
@@ -18,19 +18,23 @@ describe("서열표 줄 + 재킷 (D54 A안)", () => {
   });
   afterEach(() => act(() => setJacketData(null)));
 
-  it("72px 세 줄: 곡명·달성률 / 알약·단계·점수 / 속성·추천", () => {
+  it("44px 둥근 썸네일 + 재킷 전 배치(속성·달성률·추천·점수)", () => {
     render(<ul><EntryCard entry={base} tier={5.0} onRecord={() => {}} /></ul>);
     const row = screen.getByRole("listitem");
-    expect(row.className).toContain("h-[72px]");
-    expect(within(row).getByRole("img", { name: "MIND ERUPTION" })).toHaveAttribute("src", "/jackets/100.webp");
+    expect(row.className).not.toContain("h-[72px]");
+    const img = within(row).getByRole("img", { name: "MIND ERUPTION" });
+    expect(img).toHaveAttribute("src", "/jackets/100.webp");
+    expect(img.parentElement?.className).toContain("size-11");
     expect(row).toHaveTextContent("MAX");
     expect(row).toHaveTextContent("EXC");
-    expect(row).toHaveTextContent("단일 · 추천 중");
+    expect(row).toHaveTextContent("속성 단일");
+    expect(row).not.toHaveTextContent("추천 중");
     expect(within(row).getAllByRole("button", { name: /MIND ERUPTION/ }).length).toBeGreaterThan(0);
   });
 
-  it("추천이 없으면 속성만 쓴다", () => {
-    render(<ul><EntryCard entry={{ ...base, recommend: null, mine: null }} tier={5.0} /></ul>);
-    expect(screen.getByRole("listitem")).toHaveTextContent("속성 단일");
+  it("재킷을 끄면 썸네일이 없다", () => {
+    act(() => setJacketData({ enabled: false, jackets: {} }));
+    render(<ul><EntryCard entry={base} tier={5.0} /></ul>);
+    expect(within(screen.getByRole("listitem")).queryByRole("img")).toBeNull();
   });
 });

@@ -34,8 +34,8 @@ export function RatingEntryCard({
     >
       {/* 왼쪽 띠는 점수의 플레이어 티어 색 하나다(상수표 칸과 같은 색, lib/chart-tier.ts). 색만으로 전달하지 않는다: 점수 숫자가 오른쪽에 있다 */}
       <span {...chartTierAttrs(entry.score)} className="tier-bar tier-bar-v absolute inset-y-0 left-0 w-1.5" aria-hidden="true" />
-      {/* 재킷(D54): 왼쪽 티어 띠에 바로 붙여 카드 높이만큼 채운다(안쪽 여백 없음). 보일 때는 곡명을 13px 한 줄로 줄인다 */}
-      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="-my-2 ml-[-0.625rem] size-[76px] max-[359px]:ml-[-0.375rem] max-[359px]:size-14" /> : null}
+      {/* 재킷(D54): 52px 둥근 썸네일을 카드 가운데에, 띠와 여백을 두고 둔다(360px 미만 44px). 보일 때는 곡명을 13px 한 줄로 줄인다 */}
+      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-[52px] rounded-lg max-[359px]:size-11" /> : null}
       <div className="min-w-0 flex-1">
         <p className={`truncate ${jackets.visible ? "text-[13px]" : "text-sm"} ${nameAccent ? "stage-name" : "text-fg"}`}>
           {/* 곡명 링크의 클릭 영역을 ::after로 카드 전체에 넓힌다(카드 안에 다른 링크·버튼이 없다). 서열표에서 들어온 것과 같은 상세 화면(서열표 정보 포함)으로 간다 */}
