@@ -25,6 +25,7 @@ describe("서열표 줄 + 재킷 썸네일 (D54)", () => {
     const img = within(row).getByRole("img", { name: "MIND ERUPTION" });
     expect(img).toHaveAttribute("src", "/jackets/100.webp");
     expect(img.parentElement?.className).toContain("size-11");
+    expect(img.parentElement?.className).toContain("max-[359px]:size-9"); // 360px 미만은 알약 자리를 위해 36px
     expect(row).toHaveTextContent("MAX");
     expect(row).toHaveTextContent("EXC");
     expect(row).toHaveTextContent("속성 단일");
