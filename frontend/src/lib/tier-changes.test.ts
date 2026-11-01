@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TierChangeResponse } from "@/lib/api-types";
-import { countRecentByTier } from "@/lib/tier-changes";
+import { countRecentByTier, mergeSameChart } from "@/lib/tier-changes";
 
 const NOW = new Date("2026-11-08T12:00:00Z");
 
@@ -36,5 +36,41 @@ describe("countRecentByTier (묶음 머리 `최근 변경` 칩)", () => {
   it("탭을 본 지 7일이 넘었으면 7일 기준이고, 저장값이 망가졌으면 무시한다", () => {
     expect(countRecentByTier(rows, NOW, "2026-10-01T00:00:00Z").get("5.6")).toBe(2);
     expect(countRecentByTier(rows, NOW, "not-a-date").get("5.6")).toBe(2);
+  });
+});
+
+describe("mergeSameChart (같은 날 같은 채보 묶기)", () => {
+  const r = (over: Partial<TierChangeResponse>): TierChangeResponse => ({
+    ...row("2026-11-02T00:00:00Z", 5.1),
+    beforePattern: "복합",
+    afterPattern: "복합",
+    beforeRecommend: "상",
+    afterRecommend: "상",
+    ...over,
+  });
+
+  it("추가 → 5.1→5.2 → 5.2→5.1 은 한 줄, 흐름은 5.1 → 5.2 → 5.1", () => {
+    // 최신순으로 들어온다
+    const merged = mergeSameChart([
+      r({ changedAt: "2026-11-02T03:00:00Z", beforeTier: 5.2, afterTier: 5.1 }),
+      r({ changedAt: "2026-11-02T02:00:00Z", beforeTier: 5.1, afterTier: 5.2 }),
+      r({ changedAt: "2026-11-02T01:00:00Z", created: true, beforeTier: null, afterTier: 5.1, beforePattern: null, afterPattern: "복합", afterRecommend: "상" }),
+    ]);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].created).toBe(true);
+    expect(merged[0].tiers).toEqual([5.1, 5.2, 5.1]);
+    expect(merged[0].patterns).toEqual(["복합"]);
+    expect(merged[0].latest.changedAt).toBe("2026-11-02T03:00:00Z");
+  });
+
+  it("다른 채보는 따로, 줄 순서는 각 채보의 마지막 변경 시각(최신순)", () => {
+    const merged = mergeSameChart([
+      r({ songDifficultyId: 2, changedAt: "2026-11-02T05:00:00Z" }),
+      r({ songDifficultyId: 1, changedAt: "2026-11-02T04:00:00Z", beforeTier: 5.0, afterTier: 5.1 }),
+      r({ songDifficultyId: 2, changedAt: "2026-11-02T01:00:00Z", beforeTier: 4.9, afterTier: 5.0 }),
+    ]);
+    expect(merged.map((m) => m.latest.songDifficultyId)).toEqual([2, 1]);
+    expect(merged[0].tiers).toEqual([4.9, 5.0, 5.1]);
+    expect(merged[1].tiers).toEqual([5.0, 5.1]);
   });
 });

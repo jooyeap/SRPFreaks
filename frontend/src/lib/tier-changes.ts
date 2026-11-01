@@ -71,3 +71,56 @@ export function fetchTierChanges(
 export function recommendChanged(row: TierChangeResponse): boolean {
   return row.beforeRecommend !== row.afterRecommend;
 }
+
+/** 같은 날 같은 채보의 여러 변경을 한 줄로 묶은 것(2026-11-02). 각 값은 그날 바뀐 순서대로의 흐름이다(연속으로 같은 값은 한 번만). */
+export interface MergedTierChange {
+  latest: TierChangeResponse;
+  /** 그날 서열표에 새로 추가된 채보인지 */
+  created: boolean;
+  tiers: (number | null)[];
+  patterns: (string | null)[];
+  recommends: (string | null)[];
+}
+
+function pushDistinct<T>(chain: T[], value: T): void {
+  if (chain.length === 0 || chain[chain.length - 1] !== value) {
+    chain.push(value);
+  }
+}
+
+/**
+ * 하루치 변경(최신순)을 채보별로 한 줄로 묶는다. 줄 순서는 그 채보의 마지막 변경 시각(최신순)이다.
+ * 예: 추가(5.1) → 5.1→5.2 → 5.2→5.1 이면 `추가, 기준 난이도 5.1 → 5.2 → 5.1` 한 줄.
+ */
+export function mergeSameChart(rows: readonly TierChangeResponse[]): MergedTierChange[] {
+  const byChart = new Map<number, TierChangeResponse[]>();
+  const order: number[] = [];
+  for (const row of rows) {
+    const list = byChart.get(row.songDifficultyId);
+    if (list) {
+      list.push(row);
+    } else {
+      byChart.set(row.songDifficultyId, [row]);
+      order.push(row.songDifficultyId);
+    }
+  }
+  return order.map((id) => {
+    const newestFirst = byChart.get(id) ?? [];
+    const oldestFirst = [...newestFirst].reverse();
+    const first = oldestFirst[0];
+    const tiers: (number | null)[] = [];
+    const patterns: (string | null)[] = [];
+    const recommends: (string | null)[] = [];
+    if (!first.created) {
+      tiers.push(first.beforeTier);
+      patterns.push(first.beforePattern);
+      recommends.push(first.beforeRecommend);
+    }
+    for (const row of oldestFirst) {
+      pushDistinct(tiers, row.afterTier);
+      pushDistinct(patterns, row.afterPattern);
+      pushDistinct(recommends, row.afterRecommend);
+    }
+    return { latest: newestFirst[0], created: oldestFirst.some((row) => row.created), tiers, patterns, recommends };
+  });
+}

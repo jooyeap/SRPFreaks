@@ -49,6 +49,19 @@ describe("서열표 변경 탭 (D58)", () => {
     expect(before).toHaveTextContent("기준 난이도 5.7 · 속성 단일 · 추천 상");
   });
 
+  it("같은 날 같은 채보가 여러 번 바뀌면 한 줄로 흐름을 보여 준다", async () => {
+    renderFeed([
+      { ...base, changedAt: "2026-11-01T05:00:00Z", beforeTier: 5.2, afterTier: 5.1 },
+      { ...base, changedAt: "2026-11-01T04:00:00Z", beforeTier: 5.1, afterTier: 5.2 },
+      { ...base, changedAt: "2026-11-01T03:00:00Z", created: true, beforeTier: null, afterTier: 5.1, beforePattern: null, beforeRecommend: null },
+    ]);
+    const day = await screen.findByRole("region", { name: "2026-11-01" });
+    const links = within(day).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveTextContent("서열표에 추가");
+    expect(links[0]).toHaveTextContent("기준 난이도 5.1 → 5.2 → 5.1 · 속성 단일 · 추천 중");
+  });
+
   it("변경이 없으면 안내 문구", async () => {
     renderFeed([]);
     expect(await screen.findByText("아직 서열표 변경이 없습니다.")).toBeInTheDocument();
