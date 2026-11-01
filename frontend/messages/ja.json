@@ -360,7 +360,8 @@
     "groupTotal": "{count}譜面",
     "recordedOf": "記録 {recorded}/{total}",
     "average": "平均",
-    "nav": "{direction} 難易度 {label}"
+    "nav": "{direction} 難易度 {label}",
+    "patternRecommend": "{pattern} · おすすめ {recommend}"
   },
   "SongCreate": {
     "created": "曲を登録しました。",
