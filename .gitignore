@@ -42,3 +42,7 @@ scripts/seed/out/
 
 # 재킷(D54) 로컬 저장 폴더 (JACKETS_DIR 기본값)
 /backend/data/
+
+# 배포 후 화면 확인이 만드는 사진·결과 (CI에서만 생김)
+/screens/
+/node_modules/

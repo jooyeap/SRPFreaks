@@ -210,3 +210,41 @@ jobs:
       - name: SSH 키 지우기
         if: always()
         run: rm -f ~/.ssh/deploy_key
+
+  # 배포 뒤 화면 확인(2026-11-01). 배포가 성공했을 때만, 운영 사이트의 공개 화면을 360px·1280px로 찍어 사진을 7일 보관한다.
+  # 실패해도 배포를 되돌리지 않는다(이 작업만 빨간색으로 표시). 계정 정보·비밀값을 쓰지 않는다.
+  # playwright는 이 실행 안에서만 설치한다(저장소의 package.json에는 넣지 않는다).
+  screens:
+    name: 배포 후 화면 확인
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: 브라우저 준비
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: 화면 찍기
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://srpfreaks.com' }}
+        run: |
+          node --test scripts/deploy/screens.test.mjs
+          node scripts/deploy/screens.mjs "$SITE_URL"
+      - name: 결과 요약
+        if: always()
+        run: |
+          if [ -f screens/summary.md ]; then cat screens/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: 사진 올리기
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screens
+          path: screens/
+          retention-days: 7
+          if-no-files-found: ignore
