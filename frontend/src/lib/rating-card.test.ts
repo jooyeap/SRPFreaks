@@ -184,6 +184,21 @@ describe("buildCardModel", () => {
     expect(small.height).toBeLessThan(full.height);
   });
 
+  it("단일 구역은 속성 칩을 붙이지 않고, 그 외 구역은 붙인다", () => {
+    const s = skill(1, 1);
+    s.single[0] = entry(1, { pattern: "단일" });
+    s.other[0] = entry(2, { pattern: "복합" });
+    const m = buildCardModel("portrait", s, koT, { nickname: "a", now: NOW });
+    expect(m.sections[0].tiles[0].patternText).toBe("");
+    expect(m.sections[1].tiles[0].patternText).toBe("복합");
+  });
+
+  it("fitTitle에 크기 범위를 고정하면 줄이지 않고 `…`로만 자른다", () => {
+    const measure = (size: number, value: string) => value.length * size;
+    expect(fitTitle("abcdefghij", 100, measure, { max: 20, min: 20 }).size).toBe(20);
+    expect(fitTitle("abcdefghij", 100, measure, { max: 20, min: 20 }).text.endsWith("…")).toBe(true);
+  });
+
   it("문구를 만든다", () => {
     const s = skill(1, 0);
     s.single[0] = entry(1, { achievementRate: 100, stage: "EXC", part: "BASS", pattern: null, score: 140 });

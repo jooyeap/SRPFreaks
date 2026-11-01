@@ -235,13 +235,14 @@ export function fitTitle(
   title: string,
   maxWidth: number,
   measure: (size: number, text: string) => number,
+  range: { max: number; min: number } = { max: TITLE_FONT_MAX, min: TITLE_FONT_MIN },
 ): { size: number; text: string } {
-  for (let size = TITLE_FONT_MAX; size >= TITLE_FONT_MIN; size -= 1) {
+  for (let size = range.max; size >= range.min; size -= 1) {
     if (measure(size, title) <= maxWidth) {
       return { size, text: title };
     }
   }
-  return { size: TITLE_FONT_MIN, text: truncateText(title, maxWidth, (value) => measure(TITLE_FONT_MIN, value)) };
+  return { size: range.min, text: truncateText(title, maxWidth, (value) => measure(range.min, value)) };
 }
 
 /** 구역 합계 글자색: 티어 색 중 가장 밝은 것(어두운 배경에서 읽히게). */
@@ -253,14 +254,20 @@ export function accentColor(tier: CardTierStyle): string {
   return [...tier.stops].sort((a, b) => luminance(b) - luminance(a))[0];
 }
 
-function tileView(entry: SkillEntryResponse, box: { x: number; y: number; w: number; h: number }, t: Translator, options: CardOptions): CardTileView {
+function tileView(
+  entry: SkillEntryResponse,
+  box: { x: number; y: number; w: number; h: number },
+  t: Translator,
+  options: CardOptions,
+  hidePattern = false,
+): CardTileView {
   const jacket = options.jacketUrlOf !== undefined;
   return {
     jacket,
     jacketUrl: jacket ? (options.jacketUrlOf?.(entry.songId) ?? null) : null,
     ...box,
     title: entry.title,
-    patternText: entry.pattern ? patternLabel(entry.pattern, t) : "",
+    patternText: entry.pattern && !hidePattern ? patternLabel(entry.pattern, t) : "",
     partText: partLabel(entry.part),
     diffText: `${difficultyLabel(entry.difficulty)} ${formatLevel(entry.level)}`,
     tierText: formatTier(entry.tier, t),
@@ -315,6 +322,8 @@ export function buildCardModel(layout: CardLayout, skill: SkillResponse, t: Tran
         },
         t,
         options,
+        // 단일 구역은 제목이 `단일 15곡`이라 칸마다 `단일` 칩을 붙이지 않는다(곡명 자리를 넓힌다, 2026-11-01)
+        group.kind === "single",
       ),
     );
     const rows = Math.ceil(group.entries.length / g.cols);

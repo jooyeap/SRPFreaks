@@ -306,11 +306,18 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean, 
   }
   const textMax = right - left - rateW - chipW - 12;
 
-  // 곡명: 24px로 시작해 칸에 안 들어가면 18px까지 줄이고, 그래도 넘으면 `…`로 줄인다(짧은 곡명은 크게, 긴 곡명은 덜 잘리게)
-  const fit = fitTitle(tile.title, textMax, (size, value) => {
-    ctx.font = `500 ${size}px ${f.sans}`;
-    return ctx.measureText(value).width;
-  });
+  // 곡명: 칸마다 글자 크기가 들쭉날쭉하지 않게 고정 크기(세로 22px, 가로 5열 20px)로 쓰고, 넘으면 `…`로 줄인다(2026-11-01.
+  // 예전에는 24px에서 18px까지 줄여 짧은 곡명만 커 보였다)
+  const titleSize = compact ? 20 : 22;
+  const fit = fitTitle(
+    tile.title,
+    textMax,
+    (size, value) => {
+      ctx.font = `500 ${size}px ${f.sans}`;
+      return ctx.measureText(value).width;
+    },
+    { max: titleSize, min: titleSize },
+  );
   text(ctx, fit.text, left, y + 33, `500 ${fit.size}px ${f.sans}`, TEXT);
 
   // 파트 | 난이도 | 서열 기준 난이도 (한 덩어리 알약. 세 번째 칸은 숫자만)
