@@ -65,7 +65,7 @@ export function PartBadge({ part }: { part: InstrumentPart }) {
  * 파랑/금색은 SS, EXC와 헷갈려서 쓰지 않는다. 값이 없으면 아무것도 그리지 않는다.
  * 값이 확정되지 않았더라도(API의 *Uncertain) `?`는 붙이지 않고 값만 보여 준다.
  */
-export function RecommendBadge({ value }: { value: string | null }) {
+export function RecommendBadge({ value, className = "" }: { value: string | null; className?: string }) {
   const t = useTranslations();
   if (!value) {
     return null;
@@ -77,6 +77,10 @@ export function RecommendBadge({ value }: { value: string | null }) {
         ? "border-[var(--rec-mid-line)] text-fg-sub"
         : "border-[var(--rec-low-line)] text-fg-faint";
   return (
-    <span className={`inline-block rounded border px-1.5 py-px text-[11px] font-bold leading-4 ${style}`}>{recommendLabel(value, t)}</span>
+    <span className={`inline-block rounded border px-1.5 py-px text-[11px] font-bold leading-4 ${style} ${className}`}>
+      {/* 글자만 `상`이면 읽기 프로그램에는 무엇인지 알 수 없어 앞에 `추천`을 숨겨 읽힌다 */}
+      <span className="sr-only">{t("Chart.recommendSr")} </span>
+      {recommendLabel(value, t)}
+    </span>
   );
 }
