@@ -22,4 +22,15 @@ describe("레이팅 카드 (2026-11-02, 알약 통일 A)", () => {
     render(<ul><RatingEntryCard entry={{ ...entry, achievementRate: 100, stage: "EXC" }} /></ul>);
     expect(screen.getByLabelText("달성 단계 EXC").parentElement).toHaveTextContent("EXCMAX");
   });
+
+  it("점수와 달성률 숫자는 같은 4px 여백으로 오른쪽 끝을 맞추고 tabular-nums다", () => {
+    render(<ul><RatingEntryCard entry={entry} /></ul>);
+    const score = screen.getByText("240.00");
+    expect(score).toHaveClass("pr-1", "tabular-nums");
+    const rate = screen.getByLabelText("달성 단계 SS").nextElementSibling?.nextElementSibling;
+    expect(rate).toHaveTextContent("95.75");
+    expect(rate).toHaveClass("pr-1", "text-right", "tabular-nums");
+    // 알약 바깥 끝은 점수와 같은 열의 오른쪽 끝(items-end)
+    expect(score.parentElement).toHaveClass("items-end");
+  });
 });
