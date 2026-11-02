@@ -291,7 +291,8 @@
     "manageEditHeading": "수정",
     "manageDeleteHeading": "삭제",
     "addChart": "채보 추가",
-    "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>"
+    "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>",
+    "editJacket": "재킷 바꾸기"
   },
   "Table": {
     "recentChanges": "최근 변경 {count}",
@@ -1544,5 +1545,17 @@
     "result": "저장 결과: 새로 {saved}곡, 교체 {replaced}곡",
     "saveFailed": "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "matchFailed": "곡명을 맞추지 못했습니다. 잠시 후 다시 시도해 주세요."
+  },
+  "JacketUpload": {
+    "title": "재킷 바꾸기",
+    "pick": "이미지 고르기",
+    "hint": "고른 이미지는 가운데를 정사각으로 잘라 200px WebP로 줄여 저장합니다.",
+    "previewAlt": "{title} 재킷 미리보기",
+    "save": "저장",
+    "remove": "재킷 지우기",
+    "saved": "재킷을 저장했습니다.",
+    "removed": "재킷을 지웠습니다.",
+    "tooLarge": "이미지를 줄여도 50KB를 넘습니다. 다른 이미지를 골라 주세요.",
+    "readFailed": "이미지를 읽지 못했습니다."
   }
 }

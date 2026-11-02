@@ -20,6 +20,7 @@ export function SongManageDialog({
   onEditSong,
   onEditChart,
   onAddChart,
+  onEditJacket = null,
   songId,
   songTitle,
   chartId,
@@ -36,6 +37,8 @@ export function SongManageDialog({
   onEditChart: (() => void) | null;
   /** null이면 `채보 추가` 항목을 숨긴다(파트·난이도 8가지가 이미 모두 있을 때) */
   onAddChart: (() => void) | null;
+  /** ROOT일 때만 넘긴다(2026-11-02). 있으면 `재킷 바꾸기` 항목을 보여 준다 */
+  onEditJacket?: (() => void) | null;
   songId: number;
   songTitle: string;
   chartId: number | null;
@@ -105,6 +108,11 @@ export function SongManageDialog({
               {onEditChart ? (
                 <button type="button" onClick={pick(onEditChart)} className={ROW}>
                   {t("Song.editChart")}
+                </button>
+              ) : null}
+              {onEditJacket ? (
+                <button type="button" onClick={pick(onEditJacket)} className={ROW}>
+                  {t("Song.editJacket")}
                 </button>
               ) : null}
             </section>

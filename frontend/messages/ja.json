@@ -291,7 +291,8 @@
     "manageEditHeading": "編集",
     "manageDeleteHeading": "削除",
     "addChart": "譜面を追加",
-    "titleDuplicate": "⚠ 同じ名前の曲がすでにあります。<l>{title}</l>"
+    "titleDuplicate": "⚠ 同じ名前の曲がすでにあります。<l>{title}</l>",
+    "editJacket": "ジャケット変更"
   },
   "Table": {
     "recentChanges": "最近の変更 {count}",
@@ -1544,5 +1545,17 @@
     "result": "保存結果: 新規 {saved}曲、差し替え {replaced}曲",
     "saveFailed": "保存できませんでした。しばらくしてから再度お試しください。",
     "matchFailed": "曲名を照合できませんでした。しばらくしてから再度お試しください。"
+  },
+  "JacketUpload": {
+    "title": "ジャケット変更",
+    "pick": "画像を選ぶ",
+    "hint": "選んだ画像は中央を正方形に切り取り、200pxのWebPに縮小して保存します。",
+    "previewAlt": "{title}のジャケットのプレビュー",
+    "save": "保存",
+    "remove": "ジャケットを削除",
+    "saved": "ジャケットを保存しました。",
+    "removed": "ジャケットを削除しました。",
+    "tooLarge": "縮小しても50KBを超えます。別の画像を選んでください。",
+    "readFailed": "画像を読み込めませんでした。"
   }
 }
