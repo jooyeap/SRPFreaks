@@ -794,6 +794,9 @@
     "rivalNotifyOff": "受け取らない",
     "rivalNotifyHelp": "お互いにライバル登録した人が自分の記録を逆転するとお知らせします。",
     "rivalNotifySaved": "通知設定を保存しました。",
+    "tierNotifyHeading": "難易度表変更通知",
+    "tierNotifyLabel": "難易度表変更通知を受け取る",
+    "tierNotifyHelp": "記録した譜面の基準難易度が変わり、自分のスコアが変わるとお知らせします。オンにした後の変更からお知らせします。",
     "jacketHeading": "ジャケット",
     "jacketLabel": "ジャケット表示",
     "jacketOn": "表示",
@@ -1490,7 +1493,14 @@
     "minute": "{n}分前",
     "hour": "{n}時間前",
     "day": "{n}日前",
-    "new": "新着"
+    "new": "新着",
+    "kindRival": "ライバル",
+    "kindTier": "難易度表",
+    "tierSingle": "<b>{title}</b> ({chart}) 基準難易度 {before} → {after}",
+    "tierBundled": "<b>{n}譜面</b>の基準難易度が変更されました。",
+    "tierScore": "自分のスコア {before} → {after} ({diff})",
+    "tierScoreNoDiff": "自分のスコア {before} → {after}",
+    "tierBundledSub": "{title} ほか{n}譜面"
   },
   "RivalGuide": {
     "title": "ライバル説明書",

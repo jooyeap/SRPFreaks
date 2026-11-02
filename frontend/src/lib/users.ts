@@ -23,3 +23,8 @@ export function updateMyVisibility(profilePublic: boolean): Promise<UserResponse
 export function updateMyRivalNotify(enabled: boolean): Promise<UserResponse> {
   return apiFetch<UserResponse>("/users/me/rival-notify", { method: "PATCH", body: { enabled } });
 }
+
+/** `서열표 변경 알림 받기`(D61) 켜기/끄기. */
+export function updateMyTierNotify(enabled: boolean): Promise<UserResponse> {
+  return apiFetch<UserResponse>("/users/me/tier-notify", { method: "PATCH", body: { enabled } });
+}

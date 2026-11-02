@@ -78,6 +78,17 @@ public class User extends BaseTimeEntity {
     @Column(name = "rival_notify", nullable = false)
     private boolean rivalNotify = true;
 
+    /** 서열표 변경 알림을 받을지(D61). 기본 켜짐. 끄면 알림을 만들지 않는다(이미 받은 알림은 남는다). */
+    @Column(name = "tier_notify", nullable = false)
+    private boolean tierNotify = true;
+
+    /**
+     * 서열표 변경 알림의 커서: 마지막으로 확인한 audit_logs 번호(D61). 이 번호 뒤의 로그만 알림 후보로 본다.
+     * null = 아직 시작 전. 처음 확인할 때 그 시점의 최대 번호로 채운다("처음 켤 때는 그 시점부터만").
+     */
+    @Column(name = "tier_notify_cursor")
+    private Long tierNotifyCursor;
+
     private User(String googleSub, String email, String nickname, Role role) {
         this.googleSub = googleSub;
         this.email = email;
@@ -86,6 +97,7 @@ public class User extends BaseTimeEntity {
         this.status = UserStatus.ACTIVE;
         this.profilePublic = false;
         this.rivalNotify = true;
+        this.tierNotify = true;
     }
 
     /** 일반 사용자를 만든다 (구글 로그인 첫 성공 시). */
@@ -125,6 +137,24 @@ public class User extends BaseTimeEntity {
 
     public void changeRivalNotify(boolean rivalNotify) {
         this.rivalNotify = rivalNotify;
+    }
+
+    /**
+     * `서열표 변경 알림 받기`를 바꾼다(D61). 꺼져 있다가 켜면 커서를 지금의 최대 로그 번호로 옮긴다:
+     * 꺼 둔 동안의 변경을 켜는 순간 한꺼번에 알리지 않는다("켤 때는 그 시점부터만").
+     */
+    public void changeTierNotify(boolean tierNotify, long currentMaxAuditLogId) {
+        if (tierNotify && !this.tierNotify) {
+            this.tierNotifyCursor = currentMaxAuditLogId;
+        }
+        this.tierNotify = tierNotify;
+    }
+
+    /** 서열표 변경 알림 커서를 옮긴다. 뒤로 가지 않는다(같은 로그로 알림이 두 번 생기지 않게). */
+    public void moveTierNotifyCursor(long auditLogId) {
+        if (this.tierNotifyCursor == null || auditLogId > this.tierNotifyCursor) {
+            this.tierNotifyCursor = auditLogId;
+        }
     }
 
     /** 구글 쪽 이메일이 바뀌었을 때 로그인 시점에 동기화한다. */

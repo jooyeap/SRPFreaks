@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
  *  - rating.* 키: 바꾼 값을 끼워 넣은 전체 설정으로 RatingConfig를 만들어 본다. 만들어지면 계산에 쓸 수 있는 값이다.
  *  - peer.* 키: 같은 티어 유저 기록의 표시 기준(정수, 1 이상). PeerStatsConfig로 만들어 본다.
  *  - rival.* 키: 라이벌 등록 수·알림 지연·하루 개수·보관 일수(정수, 1 이상). RivalConfig로 만들어 본다.
+ *  - tier.notify_* 키: 서열표 변경 알림 보관 일수·묶음 기준(정수, 1 이상). TierNotifyConfig로 만들어 본다.
  *  - ui.show_song_images: true / false 만.
  *  - 그 밖의 키: 비어 있지 않은 글자.
  * 모든 변경은 audit_logs에 변경 전/후 값과 함께 남긴다.
@@ -129,6 +130,18 @@ public class SettingAdminService {
             all.put(key, value);
             try {
                 RivalConfig.from(all);
+            } catch (IllegalStateException e) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR);
+            }
+            return;
+        }
+        if (key.startsWith(TierNotifyConfig.KEY_PREFIX)) {
+            // 서열표 변경 알림(D61): 모두 1 이상 정수
+            Map<String, String> all = appSettingRepository.findAll().stream()
+                    .collect(Collectors.toMap(AppSetting::getKey, AppSetting::getValue));
+            all.put(key, value);
+            try {
+                TierNotifyConfig.from(all);
             } catch (IllegalStateException e) {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR);
             }
