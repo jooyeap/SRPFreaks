@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import type {
+  NotificationKind,
   NotificationResponse,
   PageResponse,
   RivalCompareChartsResponse,
@@ -78,8 +79,10 @@ export function markAllNotificationsRead(): Promise<void> {
   return apiFetch<void>("/notifications/read-all", { method: "POST" });
 }
 
-export function markNotificationRead(id: number): Promise<void> {
-  return apiFetch<void>(`/notifications/${id}/read`, { method: "POST" });
+/** 알림 하나를 읽음으로. 종류마다 id가 따로 매겨져 경로가 다르다(라이벌 `/{id}/read`, 서열표 `/tier/{id}/read`). */
+export function markNotificationRead(kind: NotificationKind, id: number): Promise<void> {
+  const path = kind === "TIER" ? `/notifications/tier/${id}/read` : `/notifications/${id}/read`;
+  return apiFetch<void>(path, { method: "POST" });
 }
 
 /** 배지 글자: 0이면 없음, 9 넘으면 `9+`. */

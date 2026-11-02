@@ -7,6 +7,7 @@ import { canSeeAdminMenu } from "@/lib/admin";
 import { canUseImport } from "@/lib/features";
 import { ProfileVisibilityForm } from "@/components/settings/ProfileVisibilityForm";
 import { RivalNotifyForm } from "@/components/settings/RivalNotifyForm";
+import { TierNotifyForm } from "@/components/settings/TierNotifyForm";
 import { JacketDisplayForm } from "@/components/settings/JacketDisplayForm";
 import { useTranslations } from "next-intl";
 
@@ -58,6 +59,9 @@ export default function SettingsPage() {
       </section>
       <section aria-label={t("Settings.rivalNotifyHeading")} className={card}>
         <RivalNotifyForm user={user} />
+      </section>
+      <section aria-label={t("Settings.tierNotifyHeading")} className={card}>
+        <TierNotifyForm user={user} />
       </section>
       <JacketDisplayForm />
       {canUseImport(user.role) ? (
