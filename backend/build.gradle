@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '4.1.1'
+	id 'org.springframework.boot' version '4.1.2'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -41,7 +41,7 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	// MyBatis(복잡한 읽기 쿼리), API 문서, 통합 테스트 (Boot 4 호환 버전, 빌드로 확인 필요)
 	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.1.0'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 	testImplementation 'org.testcontainers:testcontainers-mysql'
