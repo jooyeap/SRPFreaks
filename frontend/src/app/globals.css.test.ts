@@ -19,6 +19,21 @@ function varsOf(selector: string): Record<string, string> {
   return out;
 }
 
+describe("globals.css 포커스 링", () => {
+  it(":focus-visible 전역 규칙이 @layer base 안에 있다 (Tailwind 유틸리티의 outline-none이 이길 수 있게)", () => {
+    const layerStart = css.indexOf("@layer base {");
+    expect(layerStart).toBeGreaterThanOrEqual(0);
+    const layerEnd = css.indexOf("\n}", layerStart);
+    const layerBody = css.slice(layerStart, layerEnd);
+    expect(layerBody).toMatch(/:focus-visible\s*\{\s*outline:\s*2px solid var\(--check-line\)/);
+  });
+
+  it("포커스 링 색(--check-line)은 다크와 라이트 모두에 정의돼 있다", () => {
+    expect(varsOf(":root {")["--check-line"]).toBeDefined();
+    expect(varsOf(':root[data-theme="light"] {')["--check-line"]).toBeDefined();
+  });
+});
+
 describe("globals.css 테마 변수", () => {
   const dark = varsOf(":root {");
   const lightPicked = varsOf(':root[data-theme="light"] {');
