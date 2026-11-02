@@ -292,7 +292,10 @@
     "manageDeleteHeading": "삭제",
     "addChart": "채보 추가",
     "titleDuplicate": "⚠ 같은 이름의 곡이 이미 있습니다. <l>{title}</l>",
-    "editJacket": "재킷 바꾸기"
+    "editJacket": "재킷 바꾸기",
+    "arriveChanged": "변경",
+    "arriveBefore": "이전 값 {value}",
+    "arriveScore": "내 점수"
   },
   "Table": {
     "recentChanges": "최근 변경 {count}",

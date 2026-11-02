@@ -12,6 +12,8 @@ import { TermHelp } from "@/components/TermHelp";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import { folderHref } from "@/lib/difficulty-table";
 import { useTranslations } from "next-intl";
+import { ArrivalBefore, ArrivalChip } from "@/components/song/ArrivalMarks";
+import type { TierArrival } from "@/lib/tier-arrival";
 
 /** 서열표에서 들어온 곡 상세 주소. */
 export function tableDetailHref(entry: Pick<TableEntryResponse, "songId" | "songDifficultyId">): string {
@@ -22,7 +24,16 @@ export function tableDetailHref(entry: Pick<TableEntryResponse, "songId" | "song
  * 서열표 정보 카드: 기준 난이도 · 추천 · 레벨, 그 아래 `5.3 묶음 48개 · 내 평균 91.20%`와 묶음 안의 EXC/FC/SS/S 개수.
  * 숫자는 서열표 화면의 묶음 통계와 같은 값(서버 계산)이다. 평균은 기록이 있는 채보만의 평균(`0% 미포함`)이다.
  */
-export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entry: TableEntryResponse }) {
+export function TableInfoCard({
+  group,
+  entry,
+  arrival = null,
+}: {
+  group: TierGroupResponse;
+  entry: TableEntryResponse;
+  /** 서열표 변경 알림(D61)에서 왔을 때의 전·후 값. 알림의 후 값이 지금 값과 같을 때만 이전 값과 `변경` 칩을 보여 준다 */
+  arrival?: TierArrival | null;
+}) {
   const t = useTranslations();
   const average = group.averageRecorded === null ? EMPTY_MARK : `${group.averageRecorded.toFixed(2)}%`;
   const counts = [
@@ -31,8 +42,13 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
     { label: "SS", stage: "SS", count: group.ss },
     { label: "S", stage: "S", count: group.s },
   ] as const;
+  // 알림 뒤에 또 바뀌었으면(후 값 ≠ 지금 값) 이전 값이 맞지 않으므로 강조하지 않는다
+  const changed = arrival !== null && arrival.afterTier === group.tier && arrival.beforeTier !== arrival.afterTier;
   return (
-    <section aria-label={t("Song.tableInfo")} className="flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3.5">
+    <section
+      aria-label={t("Song.tableInfo")}
+      className={`flex flex-col gap-3 rounded-2xl border border-line bg-card px-4 py-3.5 ${changed ? "arrive-glow" : ""}`}
+    >
       {/* 첫 줄: 카드 제목 `서열표 정보`와 오른쪽 도움말 `?`(2026-10-27: 전에는 제목이 화면 읽기 전용이라 `?`만 덩그러니 보였다).
           둘째 줄: `레이팅 상수 난이도 7.0 · 추천 상 · 레벨 9.15`를 라벨 옆에 값이 오게 한 줄로 둔다.
           (360px에서 라벨 아래에 큰 값을 두거나 3등분하면 라벨이 꺾이고 ?가 내려가서 이 모양으로 정했다. 폭이 모자라면 줄이 바뀌도록 flex-wrap.) */}
@@ -44,7 +60,11 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
       <dl className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 text-sm md:justify-start md:gap-x-12">
         <div className="flex items-center gap-1.5">
           <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Song.ratingConstant")}</dt>
-          <dd className="font-num text-lg font-bold leading-none text-fg">{formatTier(group.tier, t)}</dd>
+          <dd className="flex items-center gap-1 font-num text-lg font-bold leading-none text-fg">
+            {changed ? <ArrivalBefore text={formatTier(arrival.beforeTier, t)} /> : null}
+            {formatTier(group.tier, t)}
+            {changed ? <ArrivalChip /> : null}
+          </dd>
         </div>
         <div className="flex items-center gap-1.5">
           <dt className="whitespace-nowrap text-xs text-fg-dim">{t("Nav.importBadge")}</dt>
