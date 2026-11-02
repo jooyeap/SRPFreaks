@@ -146,7 +146,7 @@ function BookmarkGuide() {
               >
                 {t("Import.bookmarkName")}
               </a>
-              <button type="button" onClick={() => void copy()} className="h-10 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
+              <button type="button" onClick={() => void copy()} className="h-10 rounded-xl border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg">
                 {t("Import.copyBookmark")}
               </button>
             </div>
@@ -295,7 +295,7 @@ export function RecordImportGate() {
       <section className="flex min-h-[40svh] flex-col items-start justify-center gap-3">
         <h1 className="text-xl font-semibold text-fg">{t("Import.title")}</h1>
         <p className="text-sm text-fg-sub">{t("Import.loginLead")}</p>
-        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+        <Link href="/login" className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           {t("Import.login")}
         </Link>
       </section>

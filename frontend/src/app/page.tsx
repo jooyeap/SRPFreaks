@@ -31,7 +31,7 @@ export default function Home() {
         <p className="mt-2 text-xs text-fg-dim">{t("landingNote")}</p>
         <Link
           href="/login"
-          className="mt-3 inline-block min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+          className="mt-3 inline-block min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head"
         >
           {tn("login")}
         </Link>

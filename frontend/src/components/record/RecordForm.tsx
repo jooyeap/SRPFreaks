@@ -205,7 +205,7 @@ export function RecordForm({
           type="button"
           aria-pressed={oneHand}
           onClick={() => setOneHandMode(!oneHand)}
-          className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3 text-xs font-semibold text-fg-sub hover:text-fg aria-pressed:border-chip-on-bg aria-pressed:text-fg"
+          className="min-h-9 shrink-0 rounded-lg border border-ctl px-3 text-xs font-semibold text-fg-sub hover:text-fg aria-pressed:border-chip-on-bg aria-pressed:text-fg"
         >
           {t("Record.oneHandMode")}
         </button>
@@ -416,7 +416,7 @@ export function RecordForm({
         <button
           type="button"
           onClick={onCancel}
-          className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+          className="h-12 w-24 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
         >
           {t("Common.cancel")}
         </button>

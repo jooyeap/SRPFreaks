@@ -99,7 +99,7 @@ export function FolderBucketView({
           <select
             value={state.sort}
             onChange={(e) => onStateChange({ ...state, sort: e.target.value as FolderChartSort })}
-            className="rounded-lg border border-chip-line bg-card px-3 py-1 text-sm text-fg"
+            className="rounded-lg border border-ctl bg-card px-3 py-1 text-sm text-fg"
           >
             {FOLDER_SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>

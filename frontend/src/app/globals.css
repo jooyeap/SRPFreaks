@@ -28,6 +28,8 @@
   --fg-faint: #8a94a8;
   --disabled: #4a5368;
   --chip-line: #3a4358;
+  /* 버튼·칩·입력칸의 윤곽(border-ctl). 카드 배경 대비 3:1 이상(비텍스트 대비 기준). chip-line은 대비 1.7이라 윤곽이 거의 안 보여서 따로 뒀다. 구분선(--line)은 그대로 */
+  --ctl-line: #6b7590;
   --jacket: #3b4660;
   /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
   --part-guitar: #f9a8d4; --part-bass: #5eead4;
@@ -85,6 +87,7 @@
   --fg-faint: #667086;
   --disabled: #9aa3b5;
   --chip-line: #b5bdcd;
+  --ctl-line: #7c869b;
   --jacket: #c8d0df;
   /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
   --part-guitar: #be185d; --part-bass: #0f766e;
@@ -125,6 +128,7 @@
     --fg-faint: #667086;
     --disabled: #9aa3b5;
     --chip-line: #b5bdcd;
+    --ctl-line: #7c869b;
     --jacket: #c8d0df;
     /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
     --part-guitar: #be185d; --part-bass: #0f766e;
@@ -163,6 +167,7 @@
   --color-fg-faint: var(--fg-faint);
   --color-disabled: var(--disabled);
   --color-chip-line: var(--chip-line);
+  --color-ctl: var(--ctl-line);
   --color-jacket: var(--jacket);
   --color-chip-on-bg: var(--chip-on-bg);
   --color-chip-on-fg: var(--chip-on-fg);

@@ -71,7 +71,7 @@ export function ConfirmDialog({
           type="button"
           onClick={onCancel}
           disabled={pending}
-          className="h-11 flex-1 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg disabled:opacity-60"
+          className="h-11 flex-1 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg disabled:opacity-60"
         >
           {t("cancel")}
         </button>

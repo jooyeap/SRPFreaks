@@ -22,7 +22,7 @@ export function PlayerRow({ player, viewerId }: { player: PlayerSummaryResponse;
           <span className="flex min-w-0 items-center gap-1.5">
             <span className="truncate text-sm font-bold text-fg">{player.nickname}</span>
             {isMe ? (
-              <span className="shrink-0 rounded-full border border-chip-line px-1.5 text-[11px] font-semibold text-fg-sub">{t("Players.me")}</span>
+              <span className="shrink-0 rounded-full border border-ctl px-1.5 text-[11px] font-semibold text-fg-sub">{t("Players.me")}</span>
             ) : null}
           </span>
           <span

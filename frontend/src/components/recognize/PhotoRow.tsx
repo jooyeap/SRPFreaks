@@ -95,7 +95,7 @@ export function PhotoRow({
               <ChartBadge part={draft.chart.part} difficulty={draft.chart.difficulty} level={draft.chart.level} />
             </p>
           </div>
-          <button type="button" onClick={() => set({ chart: null })} disabled={state === "saved"} className="min-h-11 shrink-0 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg disabled:opacity-50">
+          <button type="button" onClick={() => set({ chart: null })} disabled={state === "saved"} className="min-h-11 shrink-0 rounded-lg border border-ctl px-3 text-sm text-fg-sub hover:text-fg disabled:opacity-50">
             {t("Photo.chartChange")}
           </button>
         </div>
@@ -118,7 +118,7 @@ export function PhotoRow({
                   <button
                     type="button"
                     onClick={() => set({ chart: { songDifficultyId: c.songDifficultyId, title: c.title, part: c.part, difficulty: c.difficulty, level: c.level } })}
-                    className="min-h-11 shrink-0 rounded-lg border border-chip-line px-3 text-sm font-semibold text-fg hover:bg-table-head"
+                    className="min-h-11 shrink-0 rounded-lg border border-ctl px-3 text-sm font-semibold text-fg hover:bg-table-head"
                   >
                     {t("Photo.choose")}
                   </button>

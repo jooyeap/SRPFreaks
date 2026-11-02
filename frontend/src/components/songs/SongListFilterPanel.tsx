@@ -53,7 +53,7 @@ export function SongListFilterPanel({
         <select
           value={filters.version ?? ""}
           onChange={(e) => onChange({ ...filters, version: e.target.value === "" ? null : e.target.value })}
-          className="min-h-11 rounded-[10px] border border-chip-line bg-card px-3 py-1 text-sm text-fg"
+          className="min-h-11 rounded-[10px] border border-ctl bg-card px-3 py-1 text-sm text-fg"
         >
           <option value="">{t("Songs.all")}</option>
           {versions.map((v) => (
@@ -66,7 +66,7 @@ export function SongListFilterPanel({
       <button
         type="button"
         onClick={() => onChange({ ...EMPTY_SONG_FILTERS, q: filters.q })}
-        className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg md:self-auto"
+        className="self-start min-h-11 rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg md:self-auto"
       >
         {t("Songs.reset")}
       </button>

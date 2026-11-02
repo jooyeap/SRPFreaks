@@ -67,7 +67,7 @@ export function NicknameForm({ initialNickname }: { initialNickname: string | nu
           autoComplete="off"
           aria-invalid={nicknameError ? true : undefined}
           aria-describedby="nickname-help nickname-error"
-          className="w-full rounded-xl border border-chip-line bg-page px-3 py-2 text-base text-fg"
+          className="w-full rounded-xl border border-ctl bg-page px-3 py-2 text-base text-fg"
           {...register("nickname")}
         />
         <p id="nickname-help" className="text-xs text-fg-dim">

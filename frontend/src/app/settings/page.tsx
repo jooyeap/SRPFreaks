@@ -23,7 +23,7 @@ export default function SettingsPage() {
       <section className="flex min-h-[40svh] flex-col items-start justify-center gap-3">
         <h1 className="text-xl font-semibold text-fg">{t("Nav.settings")}</h1>
         <p className="text-sm text-fg-sub">{t("SettingsPage.lead")}</p>
-        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+        <Link href="/login" className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           {t("Nav.login")}
         </Link>
       </section>
@@ -66,7 +66,7 @@ export default function SettingsPage() {
           <p className="text-xs leading-relaxed text-fg-sub">{t("SettingsPage.importLead")}</p>
           <Link
             href="/import"
-            className="flex h-11 items-center justify-center rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+            className="flex h-11 items-center justify-center rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
           >
             {t("SettingsPage.importBtn")}
           </Link>
@@ -77,7 +77,7 @@ export default function SettingsPage() {
           <h2 className="text-xs font-bold text-fg-sub">{t("Nav.admin")}</h2>
           <Link
             href="/admin"
-            className="flex h-11 items-center justify-center rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+            className="flex h-11 items-center justify-center rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
           >
             {t("SettingsPage.adminBtn")}
           </Link>
@@ -88,7 +88,7 @@ export default function SettingsPage() {
         <button
           type="button"
           onClick={() => void logout()}
-          className="h-11 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+          className="h-11 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
         >
           {t("Nav.logout")}
         </button>

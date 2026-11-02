@@ -29,7 +29,7 @@ export function LocaleSwitcher() {
       lang={target}
       aria-label={t("switchTo", { language })}
       title={t("switchTo", { language })}
-      className="min-h-9 shrink-0 rounded-lg border border-chip-line px-2.5 text-xs font-medium text-fg-sub hover:text-fg"
+      className="min-h-9 shrink-0 rounded-lg border border-ctl px-2.5 text-xs font-medium text-fg-sub hover:text-fg"
     >
       {language}
     </button>

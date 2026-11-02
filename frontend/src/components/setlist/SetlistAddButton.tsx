@@ -64,7 +64,7 @@ function AddInner({ userId, songDifficultyId, title }: { userId: number; songDif
       aria-label={added ? t("Setlist.removeAria", { title }) : t("Setlist.addAria", { title })}
       title={full && !added ? t("Setlist.limitFull", { limit: SETLIST_LIMIT }) : undefined}
       // 보이는 높이는 32px 그대로, ::after로 누를 수 있는 영역만 사방 6px 넓힌다(44px). 옆의 기록 입력 버튼과 겹치지 않게 가로는 4px만 넓힌다
-      className="relative flex h-9 shrink-0 items-center gap-1 rounded-lg border border-chip-line px-3 text-sm text-fg after:absolute after:-inset-x-1 after:-inset-y-1 after:content-[''] enabled:hover:bg-table-head disabled:text-disabled"
+      className="relative flex h-9 shrink-0 items-center gap-1 rounded-lg border border-ctl px-3 text-sm text-fg after:absolute after:-inset-x-1 after:-inset-y-1 after:content-[''] enabled:hover:bg-table-head disabled:text-disabled"
     >
       {added ? (
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

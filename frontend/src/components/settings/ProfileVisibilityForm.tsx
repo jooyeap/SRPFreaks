@@ -54,7 +54,7 @@ export function ProfileVisibilityForm({ user }: { user: UserResponse }) {
             aria-describedby="visibility-help visibility-error"
             disabled={mutation.isPending || blocked}
             onClick={() => mutation.mutate(!checked)}
-            className={`relative h-6 w-11 shrink-0 rounded-lg border border-chip-line transition-colors disabled:opacity-50 ${
+            className={`relative h-6 w-11 shrink-0 rounded-lg border border-ctl transition-colors disabled:opacity-50 ${
               checked ? "bg-chip-on-bg" : "bg-table-head"
             }`}
           >

@@ -32,7 +32,7 @@ export function Pager({ page, totalPages, onChange }: { page: number; totalPages
         type="button"
         disabled={page <= 0}
         onClick={() => onChange(page - 1)}
-        className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+        className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
       >
         {t("prev")}
       </button>
@@ -43,7 +43,7 @@ export function Pager({ page, totalPages, onChange }: { page: number; totalPages
         type="button"
         disabled={page + 1 >= totalPages}
         onClick={() => onChange(page + 1)}
-        className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+        className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
       >
         {t("next")}
       </button>

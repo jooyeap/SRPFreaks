@@ -100,7 +100,7 @@ export function SuggestionForm({
         <button
           type="submit"
           disabled={pending}
-          className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+          className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
         >
           {pending ? t("Suggestions.sending") : t("Suggestions.sendAria")}
         </button>

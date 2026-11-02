@@ -36,7 +36,7 @@ export function ScrollTopButton({ lifted = false }: { lifted?: boolean }) {
       aria-label={t("scrollTop")}
       title={t("scrollTop")}
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className={`fixed right-3 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-chip-line bg-card/85 text-fg shadow-lg hover:bg-table-head lg:right-4 lg:h-11 lg:w-11 lg:bg-card ${
+      className={`fixed right-3 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-ctl bg-card/85 text-fg shadow-lg hover:bg-table-head lg:right-4 lg:h-11 lg:w-11 lg:bg-card ${
         lifted ? "bottom-[calc(var(--tabbar-h)+5rem)]" : "bottom-[calc(var(--tabbar-h)+1rem)]"
       }`}
     >

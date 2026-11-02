@@ -38,7 +38,7 @@ export function SongSearchBox({ value, onCommit, id }: { value: string; onCommit
       onChange={(e) => setText(e.target.value)}
       placeholder={placeholder}
       aria-label={t("Songs.searchAria")}
-      className="min-h-12 min-w-0 flex-1 rounded-[10px] border border-chip-line bg-card px-4 py-2 text-[15px] text-fg placeholder:text-fg-dim md:basis-[280px]"
+      className="min-h-12 min-w-0 flex-1 rounded-[10px] border border-ctl bg-card px-4 py-2 text-[15px] text-fg placeholder:text-fg-dim md:basis-[280px]"
     />
   );
 }

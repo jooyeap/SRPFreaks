@@ -87,7 +87,7 @@ export function EntryRow({
             type="button"
             onClick={() => onRecord(entry)}
             aria-label={t("Chart.recordInput", { title: entry.title })}
-            className="flex size-8 items-center justify-center rounded-lg border border-chip-line text-base leading-none text-fg hover:bg-table-head"
+            className="flex size-8 items-center justify-center rounded-lg border border-ctl text-base leading-none text-fg hover:bg-table-head"
           >
             +
           </button>

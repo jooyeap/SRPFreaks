@@ -105,7 +105,7 @@ export function CheckChip({
       disabled={disabled}
       onClick={onClick}
       className={`inline-flex min-h-9 items-center gap-1 rounded-[10px] border px-3 py-0.5 text-sm [@media(min-width:64rem)_and_(pointer:fine)]:min-h-[30px] ${
-        pressed ? "border-check-line bg-check-bg font-bold text-check-fg" : "border-chip-line text-fg-sub hover:text-fg"
+        pressed ? "border-check-line bg-check-bg font-bold text-check-fg" : "border-ctl text-fg-sub hover:text-fg"
       }`}
     >
       {pressed ? <span aria-hidden="true">✓</span> : null}

@@ -30,7 +30,7 @@ export function JacketDisplayForm() {
             aria-labelledby="jacket-label"
             aria-describedby="jacket-help"
             onClick={() => setShowJackets(!checked)}
-            className={`relative h-6 w-11 shrink-0 rounded-lg border border-chip-line transition-colors ${checked ? "bg-chip-on-bg" : "bg-table-head"}`}
+            className={`relative h-6 w-11 shrink-0 rounded-lg border border-ctl transition-colors ${checked ? "bg-chip-on-bg" : "bg-table-head"}`}
           >
             <span
               aria-hidden="true"

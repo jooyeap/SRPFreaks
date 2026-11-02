@@ -39,7 +39,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={t("themeToggle")}
       title={t("themeToggle")}
-      className="theme-switch relative grid h-7 w-14 shrink-0 grid-cols-2 items-center rounded-lg border border-chip-line bg-table-head"
+      className="theme-switch relative grid h-7 w-14 shrink-0 grid-cols-2 items-center rounded-lg border border-ctl bg-table-head"
     >
       <span className="theme-thumb absolute left-0.5 top-0.5 h-5 w-6 rounded-full bg-chip-on-bg" aria-hidden="true" />
       <svg className="theme-sun relative mx-auto h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">

@@ -98,7 +98,7 @@ export function AuditLogView({ viewerId }: { viewerId: number }) {
           placeholder={t("Admin.auditSearchPlaceholder")}
           className={`${FIELD} min-w-40 flex-1`}
         />
-        <button type="submit" className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+        <button type="submit" className="min-h-11 rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg">
           {t("Admin.usersSearch")}
         </button>
         {filtered ? (
@@ -109,7 +109,7 @@ export function AuditLogView({ viewerId }: { viewerId: number }) {
               setFilters(EMPTY_AUDIT_FILTERS);
               setPage(0);
             }}
-            className="min-h-11 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+            className="min-h-11 rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg"
           >
             {t("Admin.usersSearchReset")}
           </button>
@@ -151,7 +151,7 @@ export function AuditLogView({ viewerId }: { viewerId: number }) {
               type="button"
               disabled={page <= 0}
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
-              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               {t("Common.prev")}
             </button>
@@ -162,7 +162,7 @@ export function AuditLogView({ viewerId }: { viewerId: number }) {
               type="button"
               disabled={page + 1 >= data.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               {t("Common.next")}
             </button>

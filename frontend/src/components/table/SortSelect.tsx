@@ -10,7 +10,7 @@ export function SortSelect({ value, onChange }: { value: TableSort; onChange: (s
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as TableSort)}
-        className="min-h-11 rounded-[10px] border border-chip-line bg-card px-3 py-1 text-sm text-fg"
+        className="min-h-11 rounded-[10px] border border-ctl bg-card px-3 py-1 text-sm text-fg"
       >
         {SORT_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
