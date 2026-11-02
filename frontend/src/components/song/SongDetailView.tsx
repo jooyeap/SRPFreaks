@@ -9,6 +9,8 @@ import { SetlistAddButton } from "@/components/setlist/SetlistAddButton";
 import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongManageDialog } from "@/components/song/SongManageDialog";
+import { JacketUploadDialog } from "@/components/song/JacketUploadDialog";
+import { useJackets } from "@/lib/jackets";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { PeerStatsCard } from "@/components/song/PeerStatsCard";
@@ -49,6 +51,7 @@ export function SongDetailView({
   origin,
   userId,
   canEditTable = false,
+  canEditJacket = false,
 }: {
   songId: number;
   chartId: number | null;
@@ -56,6 +59,8 @@ export function SongDetailView({
   userId: number;
   /** ROOT·ADMIN이면 true. 서열표 값(기준 난이도·추천도·속성) 수정 버튼을 보여 준다. 서버도 권한을 다시 검사한다. */
   canEditTable?: boolean;
+  /** ROOT면 true. `관리`에 `재킷 바꾸기`를 보여 준다(공식 목록에 없는 곡의 재킷을 직접 넣는다). 서버도 권한을 다시 검사한다 */
+  canEditJacket?: boolean;
 }) {
   const t = useTranslations();
   const router = useRouter();
@@ -64,6 +69,8 @@ export function SongDetailView({
   const [songEdit, setSongEdit] = useState<SongEditTarget | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [chartAddOpen, setChartAddOpen] = useState(false);
+  const [jacketOpen, setJacketOpen] = useState(false);
+  const { urlOf: jacketUrlOf } = useJackets();
 
   const song = useQuery({
     queryKey: songKeys.detail(songId),
@@ -281,6 +288,15 @@ export function SongDetailView({
           onClose={() => setChartAddOpen(false)}
         />
       ) : null}
+      {canEditJacket ? (
+        <JacketUploadDialog
+          open={jacketOpen}
+          onClose={() => setJacketOpen(false)}
+          songId={data.id}
+          songTitle={data.title}
+          hasJacket={jacketUrlOf(data.id) !== null}
+        />
+      ) : null}
       {canEditTable ? (
         <SongManageDialog
           open={manageOpen}
@@ -290,6 +306,7 @@ export function SongDetailView({
           onEditSong={() => setSongEdit({ kind: "song", song: data })}
           onEditChart={chart ? () => setSongEdit({ kind: "chart", song: data, chart }) : null}
           onAddChart={availableCombos(data.difficulties).length > 0 ? () => setChartAddOpen(true) : null}
+          onEditJacket={canEditJacket ? () => setJacketOpen(true) : null}
           songId={data.id}
           songTitle={data.title}
           chartId={chart?.id ?? null}
