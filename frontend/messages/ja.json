@@ -292,7 +292,10 @@
     "manageDeleteHeading": "削除",
     "addChart": "譜面を追加",
     "titleDuplicate": "⚠ 同じ名前の曲がすでにあります。<l>{title}</l>",
-    "editJacket": "ジャケット変更"
+    "editJacket": "ジャケット変更",
+    "arriveChanged": "変更",
+    "arriveBefore": "変更前 {value}",
+    "arriveScore": "自分のスコア"
   },
   "Table": {
     "recentChanges": "最近の変更 {count}",

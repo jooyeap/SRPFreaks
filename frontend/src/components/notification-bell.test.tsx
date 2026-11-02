@@ -108,7 +108,7 @@ describe("NotificationBell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "알림 12개" }));
     fireEvent.click(await screen.findByRole("button", { name: /Cosmic Cat/ }));
 
-    expect(push).toHaveBeenCalledWith("/songs/9");
+    expect(push).toHaveBeenCalledWith("/songs/9?chart=11&from=tier-noti&bt=6.5&at=7&bs=322.67&as=362.67");
     await waitFor(() =>
       expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/notifications/tier/1/read"))).toBe(true),
     );

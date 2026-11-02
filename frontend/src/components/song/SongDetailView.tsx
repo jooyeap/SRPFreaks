@@ -3,7 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { TierArrival } from "@/lib/tier-arrival";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { SetlistAddButton } from "@/components/setlist/SetlistAddButton";
 import { ChartAddDialog } from "@/components/song/ChartAddDialog";
@@ -52,6 +53,7 @@ export function SongDetailView({
   userId,
   canEditTable = false,
   canEditJacket = false,
+  tierArrival = null,
 }: {
   songId: number;
   chartId: number | null;
@@ -61,9 +63,23 @@ export function SongDetailView({
   canEditTable?: boolean;
   /** ROOT면 true. `관리`에 `재킷 바꾸기`를 보여 준다(공식 목록에 없는 곡의 재킷을 직접 넣는다). 서버도 권한을 다시 검사한다 */
   canEditJacket?: boolean;
+  /** 서열표 변경 알림(D61)에서 왔을 때 알림에 있던 전·후 값. 바뀐 카드를 잠깐 강조하고 이전 값을 같이 보여 준다 */
+  tierArrival?: TierArrival | null;
 }) {
   const t = useTranslations();
   const router = useRouter();
+  // 처음 받은 값만 기억하고 주소에서는 지운다: 새로고침·뒤로 가기로 다시 열면 평소 화면이다.
+  // useState의 처음 값은 첫 렌더 때만 쓰이므로, 주소가 바뀌어 prop이 null이 돼도 이 화면에 있는 동안은 남는다.
+  const [arrival] = useState(tierArrival);
+  useEffect(() => {
+    if (!tierArrival) return;
+    const url = new URL(window.location.href);
+    for (const key of ["from", "bt", "at", "bs", "as"]) url.searchParams.delete(key);
+    url.searchParams.set("from", "table");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    // 처음 한 번만 지우면 된다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [recordOpen, setRecordOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<TableEntryTarget | null>(null);
   const [songEdit, setSongEdit] = useState<SongEditTarget | null>(null);
@@ -169,6 +185,7 @@ export function SongDetailView({
       best={best.data ?? null}
       chart={chart ? { part: chart.instrumentPart, difficulty: chart.difficultyType, level: chart.level } : null}
       emphasizeSrn={isTable}
+      arrival={arrival}
       onRecord={() => setRecordOpen(true)}
     />
   ) : (
@@ -220,7 +237,7 @@ export function SongDetailView({
               <>
                 {found ? (
                   <>
-                    <TableInfoCard group={found.group} entry={found.entry} />
+                    <TableInfoCard group={found.group} entry={found.entry} arrival={arrival} />
                     {/* 같은 티어 유저 기록(D53): 로그인했을 때만. 기준 인원에 못 미치면 카드가 스스로 사라진다 */}
                     {chart && loggedIn ? <PeerStatsCard chartId={chart.id} userId={userId} /> : null}
                   </>

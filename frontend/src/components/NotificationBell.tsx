@@ -1,5 +1,6 @@
 "use client";
 
+import { tierArrivalHref } from "@/lib/tier-arrival";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -167,7 +168,7 @@ function Bell({ viewerId }: { viewerId: number }) {
  */
 export function notificationHref(item: NotificationResponse): string {
   if (item.kind === "TIER") {
-    return item.bundled && item.songCount > 1 ? "/notices#tier-changes" : `/songs/${item.songId}`;
+    return item.bundled && item.songCount > 1 ? "/notices#tier-changes" : tierArrivalHref(item);
   }
   return `/players/${item.actorUserId}/compare?view=charts`;
 }

@@ -37,6 +37,8 @@
   --chip-on-fg: #0f1218;
   /* 여러 개 고르는 필터 칩(체크 칩)이 켜졌을 때: 윤곽 + 연한 배경 + 글자색. 칩 안에 ✓도 같이 나온다 */
   --check-line: #6ea0ff; --check-bg: rgb(110 160 255 / 0.14); --check-fg: #b3c9ff;
+  /* 알림에서 곡 상세로 왔을 때 바뀐 값 강조(D61): 테두리·칩 */
+  --arrive-ring: #ffd77a; --arrive-bg: rgb(255 215 122 / 0.12); --arrive-fg: #ffd77a;
   --danger: #ff8f8f;
   /* 서열표 진행도에서 기록이 모두 채워진 묶음: 막대(done)와 기준 난이도 글자(done-text). 기록 숫자 n/n이 같이 보인다 */
   --done: #4ade80; --done-text: #86efac;
@@ -93,6 +95,7 @@
   --chip-on-bg: #12151c;
   --chip-on-fg: #f3f5f9;
   --check-line: #2563eb; --check-bg: rgb(37 99 235 / 0.08); --check-fg: #1d4ed8;
+  --arrive-ring: #d97706; --arrive-bg: rgb(217 119 6 / 0.10); --arrive-fg: #92400e;
   /* 라이트에서 --danger를 빼먹으면 다크용 연한 색(#ff8f8f)이 흰 배경에 남아 대비가 2.19까지 떨어진다 */
   --danger: #b91c1c;
   --done: #16a34a; --done-text: #15803d;
@@ -133,6 +136,7 @@
     --chip-on-bg: #12151c;
     --chip-on-fg: #f3f5f9;
     --check-line: #2563eb; --check-bg: rgb(37 99 235 / 0.08); --check-fg: #1d4ed8;
+    --arrive-ring: #d97706; --arrive-bg: rgb(217 119 6 / 0.10); --arrive-fg: #92400e;
     --danger: #b91c1c;
   --done: #16a34a; --done-text: #15803d;
     --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
@@ -167,6 +171,9 @@
   --color-chip-on-bg: var(--chip-on-bg);
   --color-chip-on-fg: var(--chip-on-fg);
   --color-check-line: var(--check-line);
+  --color-arrive-ring: var(--arrive-ring);
+  --color-arrive-bg: var(--arrive-bg);
+  --color-arrive-fg: var(--arrive-fg);
   --color-check-bg: var(--check-bg);
   --color-check-fg: var(--check-fg);
   --color-danger: var(--danger);
@@ -423,4 +430,20 @@ dialog[open]::backdrop { animation: motion-fade-in var(--motion-base) var(--ease
   .min-h-10 {
     min-height: 2.25rem;
   }
+}
+
+/*
+ * 알림에서 곡 상세로 왔을 때(D61) 바뀐 카드를 잠깐 강조한다.
+ * 툭 생겼다 사라지지 않게: 0.5초 동안 테두리가 서서히 차오르고, 1.2초 머문 뒤, 1.3초 동안 서서히 빠진다(합 3초).
+ * box-shadow만 움직여서 카드 크기·배치는 그대로다. 움직임 줄이기 설정이면 애니메이션 없이 칩·이전 값만 남는다.
+ */
+@keyframes arrive-glow {
+  0% { box-shadow: 0 0 0 0 transparent; }
+  17% { box-shadow: 0 0 0 2px var(--arrive-ring), 0 0 18px var(--arrive-bg); }
+  57% { box-shadow: 0 0 0 2px var(--arrive-ring), 0 0 18px var(--arrive-bg); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.arrive-glow { animation: arrive-glow 3s ease-in-out 0.2s both; }
+@media (prefers-reduced-motion: reduce) {
+  .arrive-glow { animation: none; }
 }

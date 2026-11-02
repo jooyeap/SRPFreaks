@@ -1,5 +1,6 @@
 "use client";
 
+import { parseTierArrival } from "@/lib/tier-arrival";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { useAuth } from "@/components/AuthProvider";
@@ -24,6 +25,7 @@ function SongDetailPage() {
     return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
   const songId = parseId(params.songId);
+  const tierArrival = parseTierArrival(search);
   if (songId === null) {
     return <p role="alert" className="text-sm text-fg">{t("Songs.notFoundSong")}</p>;
   }
@@ -31,7 +33,9 @@ function SongDetailPage() {
     <SongDetailView
       songId={songId}
       chartId={parseId(search.get("chart"))}
-      origin={parseOrigin(search.get("from"))}
+      // 서열표 변경 알림(D61)에서 왔으면 서열표 정보가 보이는 구성(table)으로 연다
+      origin={tierArrival ? "table" : parseOrigin(search.get("from"))}
+      tierArrival={tierArrival}
       userId={user?.id ?? ANONYMOUS_VIEWER_ID}
       canEditTable={user !== null && user.role !== "USER"}
       canEditJacket={user !== null && user.role === "ROOT"}
