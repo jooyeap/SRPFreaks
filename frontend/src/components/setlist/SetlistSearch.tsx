@@ -83,7 +83,7 @@ export function SetlistSearch({ userId, addedIds, full }: { userId: number; adde
                     disabled={added || full || (add.isPending && add.variables?.songDifficultyId === chart.songDifficultyId)}
                     onClick={() => add.mutate(chart)}
                     aria-label={added ? t("Setlist.addedAria", { title: chart.title }) : t("Setlist.addAria", { title: chart.title })}
-                    className="flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-chip-line px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
+                    className="flex min-h-9 shrink-0 items-center gap-1 rounded-lg border border-ctl px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
                   >
                     {added ? (
                       <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

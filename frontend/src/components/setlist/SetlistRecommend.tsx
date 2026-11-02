@@ -86,7 +86,7 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
                 type="button"
                 aria-expanded={adjusting}
                 onClick={() => setAdjusting((open) => !open)}
-                className="flex min-h-9 w-fit items-center gap-1 rounded-lg border border-chip-line px-3 text-sm text-fg hover:bg-table-head"
+                className="flex min-h-9 w-fit items-center gap-1 rounded-lg border border-ctl px-3 text-sm text-fg hover:bg-table-head"
               >
                 {t("Setlist.adjustRange")} {adjusting ? "\u25B4" : "\u25BE"}
               </button>
@@ -191,7 +191,7 @@ function Group({
                   disabled={added || full || pendingId === item.songDifficultyId}
                   onClick={() => onAdd(item)}
                   aria-label={added ? t("Setlist.addedAria", { title: item.title }) : t("Setlist.addAria", { title: item.title })}
-                  className="flex min-h-9 shrink-0 items-center rounded-lg border border-chip-line px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
+                  className="flex min-h-9 shrink-0 items-center rounded-lg border border-ctl px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
                 >
                   {added ? t("Setlist.addedMark") : t("Setlist.addBtn")}
                 </button>

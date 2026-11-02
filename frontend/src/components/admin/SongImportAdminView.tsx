@@ -20,7 +20,7 @@ import {
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 
 const CARD = "flex flex-col gap-3 rounded-2xl border border-line bg-card p-4";
-const BUTTON = "min-h-11 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg hover:bg-table-head disabled:opacity-50";
+const BUTTON = "min-h-11 rounded-xl border border-ctl px-4 text-sm font-bold text-fg hover:bg-table-head disabled:opacity-50";
 const PRIMARY = "min-h-11 rounded-xl bg-chip-on-bg px-4 text-sm font-extrabold text-chip-on-fg disabled:opacity-50";
 
 /**
@@ -191,7 +191,7 @@ function BookmarkGuide() {
       <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm text-fg-sub">
         <li>
           {t("SongImport.guideStep1")}{" "}
-          <a ref={linkRef} onClick={(e) => e.preventDefault()} className="inline-block rounded-lg border border-chip-line px-2 py-0.5 text-fg">
+          <a ref={linkRef} onClick={(e) => e.preventDefault()} className="inline-block rounded-lg border border-ctl px-2 py-0.5 text-fg">
             {t("SongImport.bookmarkName")}
           </a>
         </li>

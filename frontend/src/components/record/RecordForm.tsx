@@ -205,7 +205,7 @@ export function RecordForm({
           type="button"
           aria-pressed={oneHand}
           onClick={() => setOneHandMode(!oneHand)}
-          className="min-h-9 shrink-0 rounded-lg border border-chip-line px-3 text-xs font-semibold text-fg-sub hover:text-fg aria-pressed:border-chip-on-bg aria-pressed:text-fg"
+          className="min-h-9 shrink-0 rounded-lg border border-ctl px-3 text-xs font-semibold text-fg-sub hover:text-fg aria-pressed:border-chip-on-bg aria-pressed:text-fg"
         >
           {t("Record.oneHandMode")}
         </button>
@@ -216,7 +216,8 @@ export function RecordForm({
           <label htmlFor="achievementRate" className="text-xs font-bold text-fg-dim">
             {t("Songs.colRate")}
           </label>
-          <div className="flex h-[54px] items-center justify-between rounded-xl border-2 border-chip-on-bg bg-card px-3.5">
+          {/* 안쪽 input은 outline-none이라, 포커스는 감싼 상자가 대신 보여 준다(focus-within). 키보드·마우스 모두 입력 중임을 알 수 있다 */}
+          <div className="flex h-[54px] items-center justify-between rounded-xl border-2 border-chip-on-bg bg-card px-3.5 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-check-line">
             <input
               id="achievementRate"
               type="text"
@@ -415,7 +416,7 @@ export function RecordForm({
         <button
           type="button"
           onClick={onCancel}
-          className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+          className="h-12 w-24 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
         >
           {t("Common.cancel")}
         </button>

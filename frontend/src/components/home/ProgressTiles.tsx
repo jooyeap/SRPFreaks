@@ -64,7 +64,7 @@ export function ProgressTiles({
           type="button"
           aria-expanded={!folded}
           onClick={() => setUnfolded((v) => !v)}
-          className="mb-1 min-h-11 w-full rounded-lg border border-dashed border-chip-line px-3 text-left text-[13px] text-fg-sub hover:bg-table-head sm:mb-2"
+          className="mb-1 min-h-11 w-full rounded-lg border border-dashed border-ctl px-3 text-left text-[13px] text-fg-sub hover:bg-table-head sm:mb-2"
         >
           <span aria-hidden="true">{folded ? "▸ " : "▴ "}</span>
           {folded ? t("foldClosed", { from: groups[0].label, to: groups[foldCount - 1].label, count: foldCount }) : t("foldOpen")}
@@ -136,7 +136,7 @@ export function ProgressTiles({
                           <span
                             key={chip.key}
                             data-stage={chip.stage ?? undefined}
-                            className={`rounded-md border border-chip-line px-1.5 py-px text-[11px] ${
+                            className={`rounded-md border border-ctl px-1.5 py-px text-[11px] ${
                               chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
                             }`}
                           >

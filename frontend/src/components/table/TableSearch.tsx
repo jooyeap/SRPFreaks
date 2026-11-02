@@ -73,7 +73,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
           onChange={(event) => setText(event.target.value)}
           placeholder={placeholder}
           aria-label={t("Table.searchQueryAria")}
-          className="min-h-12 w-full rounded-[10px] border border-chip-line bg-page px-4 py-2 text-[15px] text-fg placeholder:text-fg-dim"
+          className="min-h-12 w-full rounded-[10px] border border-ctl bg-page px-4 py-2 text-[15px] text-fg placeholder:text-fg-dim"
         />
 
         <div aria-live="polite" className="max-h-[60vh] overflow-y-auto">
@@ -103,7 +103,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
                   <li key={entry.songDifficultyId}>
                     <Link
                       href={tableSearchHref(entry)}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-line bg-page px-3 py-2.5 hover:border-chip-line"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-line bg-page px-3 py-2.5 hover:border-ctl"
                     >
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm text-fg">{entry.title}</span>

@@ -9,7 +9,7 @@ export function LoginBanner() {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-card px-4 py-3 text-sm text-fg-sub">
       <span>{t("Songs.loginBanner")}</span>
-      <Link href="/login" className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg hover:bg-table-head">
+      <Link href="/login" className="min-h-9 rounded-lg border border-ctl px-3 py-1 text-sm text-fg hover:bg-table-head">
         {t("Nav.login")}
       </Link>
     </div>

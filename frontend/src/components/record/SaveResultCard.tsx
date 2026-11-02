@@ -122,7 +122,7 @@ export function SaveResultCard({ outcome, onClose }: { outcome: SaveOutcome; onC
       </dl>
       {notice && !ratingChange?.inList ? <p className="text-xs text-fg-dim">{notice}</p> : null}
       <div className="flex gap-2">
-        <Link href="/me?tab=rating" onClick={onClose} className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-chip-line text-sm text-fg">
+        <Link href="/me?tab=rating" onClick={onClose} className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-ctl text-sm text-fg">
           {t("Record.viewRating")}
         </Link>
         <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl bg-chip-on-bg text-sm font-bold text-chip-on-fg">

@@ -32,7 +32,7 @@ export function SongJumpCandidates({ userId, query, className = "" }: { userId: 
         <li key={row.songDifficultyId}>
           <Link
             href={songListDetailHref(row)}
-            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-page px-3 py-2.5 hover:border-chip-line"
+            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-page px-3 py-2.5 hover:border-ctl"
           >
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm text-fg">{row.title}</span>

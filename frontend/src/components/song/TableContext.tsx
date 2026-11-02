@@ -63,7 +63,7 @@ export function TableInfoCard({ group, entry }: { group: TierGroupResponse; entr
       </dl>
       {/* 스위치가 꺼진 채보는 기록만 남고 레이팅 목록에는 안 들어간다. 이유를 알 수 있게 모든 사용자에게 보여 준다 */}
       {!entry.ratingEnabled ? (
-        <p role="note" className="rounded-lg border border-chip-line px-3 py-1.5 text-xs text-fg-sub">
+        <p role="note" className="rounded-lg border border-ctl px-3 py-1.5 text-xs text-fg-sub">
           {t("Song.ratingOff")}
         </p>
       ) : null}

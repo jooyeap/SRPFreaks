@@ -85,7 +85,7 @@ export function NoticeForm({
         <button
           type="submit"
           disabled={pending}
-          className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+          className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
         >
           {pending ? t("Common.saving") : submitLabel}
         </button>
@@ -94,7 +94,7 @@ export function NoticeForm({
             type="button"
             disabled={pending}
             onClick={onCancel}
-            className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+            className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
           >
             {t("Common.cancel")}
           </button>

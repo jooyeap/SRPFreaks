@@ -55,7 +55,7 @@ export function TierQuickNav({ groups }: { groups: readonly TierGroupResponse[] 
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-lg border border-chip-line bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+        className="flex items-center gap-2 rounded-lg border border-ctl bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
       >
         {t("Table.goToTier")}
         <svg className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -77,7 +77,7 @@ export function TierQuickNav({ groups }: { groups: readonly TierGroupResponse[] 
                   <Link
                     href={folderHref(g.tier)}
                     onClick={() => setOpen(false)}
-                    className="flex flex-col items-center rounded-xl border border-chip-line px-1 py-1.5 hover:bg-table-head"
+                    className="flex flex-col items-center rounded-xl border border-ctl px-1 py-1.5 hover:bg-table-head"
                   >
                     <span className={`font-num text-base font-bold ${done ? "text-done-text" : "text-fg"}`}>{formatTier(g.tier, t)}</span>
                     <span className="font-num text-[11px] text-fg-dim">

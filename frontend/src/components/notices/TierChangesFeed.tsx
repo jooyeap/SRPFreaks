@@ -128,7 +128,7 @@ export function TierChangesFeed() {
                         {row.title}
                       </span>
                       {item.created ? (
-                        <span className="shrink-0 rounded-md border border-chip-line px-1.5 text-[11px] text-fg-sub">
+                        <span className="shrink-0 rounded-md border border-ctl px-1.5 text-[11px] text-fg-sub">
                           {t("TierHistory.added")}
                         </span>
                       ) : null}
@@ -155,7 +155,7 @@ export function TierChangesFeed() {
           type="button"
           onClick={() => void feed.fetchNextPage()}
           disabled={feed.isFetchingNextPage}
-          className="min-h-10 self-center rounded-lg border border-chip-line px-4 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
+          className="min-h-10 self-center rounded-lg border border-ctl px-4 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
         >
           {feed.isFetchingNextPage
             ? t("TierHistory.loadingMore")

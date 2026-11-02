@@ -123,7 +123,7 @@ export function PlayerDetailView({
             setTarget(null);
           }}
           className={`min-h-11 self-start rounded-lg border px-4 text-sm font-semibold ${
-            deleteMode ? "border-chip-on-bg bg-chip-on-bg text-chip-on-fg" : "border-chip-line text-fg-sub hover:text-fg"
+            deleteMode ? "border-chip-on-bg bg-chip-on-bg text-chip-on-fg" : "border-ctl text-fg-sub hover:text-fg"
           }`}
         >
           {deleteMode ? t("Players.deleteModeOff") : t("Players.deleteModeOn")}
@@ -139,7 +139,7 @@ export function PlayerDetailView({
               type="button"
               disabled={deletion.isPending}
               onClick={() => deletion.mutate(target)}
-              className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+              className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
             >
               {deletion.isPending ? t("Common.deleting") : t("Common.delete")}
             </button>
@@ -150,7 +150,7 @@ export function PlayerDetailView({
                 deletion.reset();
                 setTarget(null);
               }}
-              className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+              className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
             >
               {t("Common.cancel")}
             </button>

@@ -88,7 +88,7 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
                 <span
                   key={chip.key}
                   data-stage={chip.stage ?? undefined}
-                  className={`rounded-lg border border-chip-line px-2 py-0.5 text-xs ${
+                  className={`rounded-lg border border-ctl px-2 py-0.5 text-xs ${
                     chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
                   }`}
                 >
@@ -142,7 +142,7 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
                 {/* 단계 글자를 채운 칩으로 같이 보인다(색만으로 구분하지 않는다) */}
                 <span
                   data-stage={stage ?? undefined}
-                  className={`inline-flex min-w-9 justify-center rounded px-1.5 py-px font-num text-[11px] font-bold ${stage ? "stage-chip" : "border border-chip-line text-fg-dim"}`}
+                  className={`inline-flex min-w-9 justify-center rounded px-1.5 py-px font-num text-[11px] font-bold ${stage ? "stage-chip" : "border border-ctl text-fg-dim"}`}
                 >
                   {BUCKET_CHIP[key]}
                 </span>

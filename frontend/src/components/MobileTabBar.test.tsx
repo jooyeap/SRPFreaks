@@ -7,7 +7,7 @@ import { SONG_TAB_KEY, resetSongTabForTest } from "@/lib/song-tab";
 import { MobileTabBar } from "@/components/MobileTabBar";
 
 let pathname = "/";
-vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/lib/google", () => ({ loadGoogleIdentity: vi.fn(() => Promise.resolve({ disableAutoSelect: vi.fn() })) }));
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -99,6 +99,16 @@ describe("MobileTabBar", () => {
     ]);
     expect(within(sheet).getByText("추천")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "더보기" })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("시트에 화면 테마·언어 스위치가 있다 (lg 미만 헤더에서 옮겨 온 것)", () => {
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    const sheet = screen.getByRole("region", { name: "더보기" });
+    expect(within(sheet).getByText("화면 테마")).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "다크/라이트 테마 전환" })).toBeInTheDocument();
+    expect(within(sheet).getByText("언어")).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "언어를 日本語(으)로 바꾸기" })).toBeInTheDocument();
   });
 
   it("시트는 Esc, 바깥 누르기, 링크 누르기, 더보기 다시 누르기로 닫힌다", () => {

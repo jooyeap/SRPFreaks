@@ -175,7 +175,7 @@ export function PhotoInputView() {
           {t.rich("Photo.remaining", { remaining: st.remaining, limit: st.weeklyLimit, b: (c) => <b className="font-num">{c}</b> })}
         </p>
         {!st.available && st.nextRefillAt ? <p className="text-sm text-fg-sub">{t("Photo.refillAt", { date: formatSeoulDateTime(st.nextRefillAt) })}</p> : null}
-        <label className={`flex min-h-11 w-fit items-center rounded-lg px-4 text-sm font-semibold ${st.available && !busy ? "cursor-pointer bg-chip-on-bg text-chip-on-fg" : "border border-chip-line text-fg-dim"}`}>
+        <label className={`flex min-h-11 w-fit items-center rounded-lg px-4 text-sm font-semibold ${st.available && !busy ? "cursor-pointer bg-chip-on-bg text-chip-on-fg" : "border border-ctl text-fg-dim"}`}>
           {t("Photo.choosePhotos", { max: Math.min(MAX_PHOTOS, st.remaining) })}
           <input
             ref={fileInput}

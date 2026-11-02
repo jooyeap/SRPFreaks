@@ -176,8 +176,8 @@ function GoalBody({ userId, skill }: { userId: number; skill: SkillResponse }) {
                   <span className="font-num">
                     {step.fromRate === null ? t("Rating.noRecord") : `${formatRate(step.fromRate)}%`} → <span className="font-semibold text-fg">{formatRate(step.toRate)}%</span>
                   </span>
-                  {step.entering ? <span className="rounded-md border border-chip-line px-1.5 py-0.5 text-[11px] text-fg">{t("Rating.entersList")}</span> : null}
-                  {step.challenge ? <span className="rounded-md border border-chip-line px-1.5 py-0.5 text-[11px] text-fg">{t("Rating.challenge")}</span> : null}
+                  {step.entering ? <span className="rounded-md border border-ctl px-1.5 py-0.5 text-[11px] text-fg">{t("Rating.entersList")}</span> : null}
+                  {step.challenge ? <span className="rounded-md border border-ctl px-1.5 py-0.5 text-[11px] text-fg">{t("Rating.challenge")}</span> : null}
                   <span className="font-num text-fg">+{formatScore(step.gain)}</span>
                 </li>
               ))}

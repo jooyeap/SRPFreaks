@@ -144,7 +144,7 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
           </p>
           <Link
             href={weak.group.href}
-            className="flex min-h-11 shrink-0 items-center rounded-[10px] border border-chip-line px-3 text-[13px] text-fg hover:bg-table-head"
+            className="flex min-h-11 shrink-0 items-center rounded-[10px] border border-ctl px-3 text-[13px] text-fg hover:bg-table-head"
           >
             {t("viewRange")}
           </Link>
