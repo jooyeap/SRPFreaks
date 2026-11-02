@@ -2,10 +2,10 @@ import Link from "next/link";
 import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
 import { ChartBadge } from "@/components/table/Badges";
-import { StageBadge } from "@/components/table/StageBadge";
+import { StageRatePill } from "@/components/table/StageRatePill";
 import { chartTierAttrs } from "@/lib/chart-tier";
 import { patternLabel } from "@/lib/chart-labels";
-import { EMPTY_MARK, formatRate, formatScore, formatTier } from "@/lib/format";
+import { EMPTY_MARK, formatScore, formatTier } from "@/lib/format";
 import type { SkillEntryResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
 
@@ -56,15 +56,15 @@ export function RatingEntryCard({
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-1.5">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
-          <StageBadge stage={entry.stage} />
         </p>
       </div>
-      <div className="shrink-0 text-right">
+      {/* 오른쪽: 점수(위) / `[SS | 95.75]` 랭크·달성률 알약(아래). 서열표 줄의 오른쪽 칸과 같은 모양이다(2026-11-02, 시안 `레이팅 카드 알약 통일` A) */}
+      <div className="flex shrink-0 flex-col items-end gap-1">
         {/* 곡 점수는 플레이어 티어 색 글자다(lib/chart-tier.ts). 숫자가 그대로 보이므로 색만으로 전달하지 않는다. 하수봉 기준을 넘으면 빛이 더해진다 */}
-        <p {...chartTierAttrs(entry.score)} className="tier-score font-num text-lg font-semibold">
+        <p {...chartTierAttrs(entry.score)} className="tier-score font-num text-lg font-semibold leading-6">
           {formatScore(entry.score)}
         </p>
-        <p className="stage-text font-num text-xs">{formatRate(entry.achievementRate)}</p>
+        <StageRatePill stage={entry.stage} rate={entry.achievementRate} />
         {onDelete ? (
           <button
             type="button"
