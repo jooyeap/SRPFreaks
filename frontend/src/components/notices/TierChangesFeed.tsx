@@ -10,36 +10,43 @@ import { ChartBadge } from "@/components/table/Badges";
 import type { TierChangeResponse } from "@/lib/api-types";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatPlayedDate, formatTier } from "@/lib/format";
-import { patternChanged, tierChanged } from "@/lib/tier-history";
-import { fetchTierChanges, markTierChangesSeen, recommendChanged, tierChangeKeys } from "@/lib/tier-changes";
+import {
+  fetchTierChanges,
+  markTierChangesSeen,
+  mergeSameChart,
+  tierChangeKeys,
+  type MergedTierChange,
+} from "@/lib/tier-changes";
 import type { Translator } from "@/i18n/translator";
 
-/** 한 줄이 말하는 변경 내용(예: `기준 난이도 5.6 → 5.7`, `추천 중 → 상`). 바뀐 항목만, 추가는 그때 정해진 값. */
-function changeTexts(row: TierChangeResponse, t: Translator): string[] {
-  const pattern = (value: string | null) => (value === null ? EMPTY_MARK : patternLabel(value, t));
-  const recommend = (value: string | null) => (value === null ? EMPTY_MARK : recommendLabel(value, t));
-  if (row.created) {
-    return [
-      t("TierHistory.tierValue", { value: formatTier(row.afterTier, t) }),
-      t("TierHistory.patternValue", { value: pattern(row.afterPattern) }),
-      t("TierHistory.recommendValue", { value: recommend(row.afterRecommend) }),
-    ];
-  }
-  const texts: string[] = [];
-  if (tierChanged(row)) {
-    texts.push(t("TierHistory.tierChange", { from: formatTier(row.beforeTier, t), to: formatTier(row.afterTier, t) }));
-  }
-  if (patternChanged(row)) {
-    texts.push(t("TierHistory.patternChange", { from: pattern(row.beforePattern), to: pattern(row.afterPattern) }));
-  }
-  if (recommendChanged(row)) {
-    texts.push(t("TierHistory.recommendChange", { from: recommend(row.beforeRecommend), to: recommend(row.afterRecommend) }));
-  }
-  return texts;
+/**
+ * 한 줄(같은 날 같은 채보를 묶은 것)이 말하는 변경 내용. 바뀐 항목만 흐름대로(`기준 난이도 5.1 → 5.2 → 5.1`),
+ * 그날 추가된 채보는 모든 항목을 보여 준다(한 번도 안 바뀐 항목은 `속성 복합`처럼 값만).
+ */
+function changeTexts(item: MergedTierChange, t: Translator): string[] {
+  const pattern = (value: string | null) =>
+    value === null ? EMPTY_MARK : patternLabel(value, t);
+  const recommend = (value: string | null) =>
+    value === null ? EMPTY_MARK : recommendLabel(value, t);
+  const tier = (value: number | null) => formatTier(value, t);
+  // 흐름이 2개 이상이면 `전 → … → 후`, 그날 추가된 채보면 값만, 아니면(그날 안 바뀐 항목) 쓰지 않는다
+  const describe = <T,>(chain: T[], label: (v: T) => string, value: (v: string) => string, change: (from: string, to: string) => string): string | null => {
+    if (chain.length > 1) {
+      return change(chain.slice(0, -1).map(label).join(" → "), label(chain[chain.length - 1]));
+    }
+    return item.created ? value(label(chain[0])) : null;
+  };
+  return [
+    describe(item.tiers, tier, (v) => t("TierHistory.tierValue", { value: v }), (from, to) => t("TierHistory.tierChange", { from, to })),
+    describe(item.patterns, pattern, (v) => t("TierHistory.patternValue", { value: v }), (from, to) => t("TierHistory.patternChange", { from, to })),
+    describe(item.recommends, recommend, (v) => t("TierHistory.recommendValue", { value: v }), (from, to) => t("TierHistory.recommendChange", { from, to })),
+  ].filter((text): text is string => text !== null);
 }
 
 /** 최신순 목록을 서울 날짜별로 묶는다(같은 날 바뀐 것끼리 한 덩어리). 순서는 그대로 둔다. */
-function groupByDate(rows: readonly TierChangeResponse[]): { date: string; rows: TierChangeResponse[] }[] {
+function groupByDate(
+  rows: readonly TierChangeResponse[],
+): { date: string; rows: TierChangeResponse[] }[] {
   const groups: { date: string; rows: TierChangeResponse[] }[] = [];
   for (const row of rows) {
     const date = formatPlayedDate(row.changedAt);
@@ -64,7 +71,8 @@ export function TierChangesFeed() {
     queryKey: tierChangeKeys.all,
     queryFn: ({ pageParam, signal }) => fetchTierChanges(pageParam, signal),
     initialPageParam: 0,
-    getNextPageParam: (last) => (last.page + 1 < last.totalPages ? last.page + 1 : undefined),
+    getNextPageParam: (last) =>
+      last.page + 1 < last.totalPages ? last.page + 1 : undefined,
   });
   const rows = feed.data?.pages.flatMap((page) => page.content) ?? [];
   // 이 탭을 열면 "여기까지 확인함"을 이 기기에 남긴다 → 서열표 묶음의 `최근 변경` 칩이 사라진다
@@ -79,7 +87,10 @@ export function TierChangesFeed() {
   }
   if (feed.isError) {
     return (
-      <ErrorRetry onRetry={() => void feed.refetch()} retrying={feed.isFetching}>
+      <ErrorRetry
+        onRetry={() => void feed.refetch()}
+        retrying={feed.isFetching}
+      >
         {t("TierHistory.feedLoadFailed")}
       </ErrorRetry>
     );
@@ -91,27 +102,51 @@ export function TierChangesFeed() {
     <div className="flex flex-col gap-4">
       <p className="text-xs text-fg-dim">{t("TierHistory.feedNote")}</p>
       {groupByDate(rows).map((group) => (
-        <section key={group.date} aria-label={group.date} className="flex flex-col gap-2">
+        <section
+          key={group.date}
+          aria-label={group.date}
+          className="flex flex-col gap-2"
+        >
           <h2 className="px-1 font-num text-sm font-bold text-fg-sub">
             <time dateTime={group.rows[0].changedAt}>{group.date}</time>
           </h2>
           <ul className="overflow-hidden rounded-2xl border border-line bg-card">
-            {group.rows.map((row, index) => (
-              <li key={`${row.changedAt}-${row.songDifficultyId}-${index}`} className="border-t border-row-line first:border-t-0">
-                <Link href={tableDetailHref(row)} className="flex flex-col gap-1 px-4 py-2.5 hover:bg-table-head">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span className="min-w-0 truncate text-sm font-medium text-fg">{row.title}</span>
-                    {row.created ? (
-                      <span className="shrink-0 rounded-md border border-chip-line px-1.5 text-[11px] text-fg-sub">{t("TierHistory.added")}</span>
-                    ) : null}
-                  </span>
-                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} />
-                    <span className="text-xs text-fg">{changeTexts(row, t).join(" · ")}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
+            {/* 같은 날 같은 채보가 여러 번 바뀌었으면 한 줄로 묶는다(2026-11-02) */}
+            {mergeSameChart(group.rows).map((item) => {
+              const row = item.latest;
+              return (
+                <li
+                  key={`${group.date}-${row.songDifficultyId}`}
+                  className="border-t border-row-line first:border-t-0"
+                >
+                  <Link
+                    href={tableDetailHref(row)}
+                    className="flex flex-col gap-1 px-4 py-2.5 hover:bg-table-head"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="min-w-0 truncate text-sm font-medium text-fg">
+                        {row.title}
+                      </span>
+                      {item.created ? (
+                        <span className="shrink-0 rounded-md border border-chip-line px-1.5 text-[11px] text-fg-sub">
+                          {t("TierHistory.added")}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <ChartBadge
+                        part={row.part}
+                        difficulty={row.difficulty}
+                        level={row.level}
+                      />
+                      <span className="text-xs text-fg">
+                        {changeTexts(item, t).join(" · ")}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ))}
@@ -122,7 +157,9 @@ export function TierChangesFeed() {
           disabled={feed.isFetchingNextPage}
           className="min-h-10 self-center rounded-lg border border-chip-line px-4 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
         >
-          {feed.isFetchingNextPage ? t("TierHistory.loadingMore") : t("TierHistory.loadMore")}
+          {feed.isFetchingNextPage
+            ? t("TierHistory.loadingMore")
+            : t("TierHistory.loadMore")}
         </button>
       ) : null}
     </div>
