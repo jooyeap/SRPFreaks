@@ -7,7 +7,9 @@ import { useEffect, useState } from "react";
 import { AdminNavLink } from "@/components/AdminNavLink";
 import { useAuth } from "@/components/AuthProvider";
 import { isActivePath } from "@/components/DesktopNav";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { NavIcon } from "@/components/NavIcon";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { MORE_ITEMS, SONG_PATHS, TAB_ITEMS } from "@/lib/nav";
 import { useSongHomeHref } from "@/lib/song-tab";
 
@@ -71,6 +73,17 @@ export function MobileTabBar() {
                 </li>
               ))}
             </ul>
+            {/* 화면 설정 줄: 헤더에서 옮겨 온 테마·언어 스위치(lg 미만 헤더를 비우려고, 2026-11-02). 스위치는 헤더와 같은 컴포넌트라 동작이 같다 */}
+            <div className="border-t border-line">
+              <div className="flex min-h-[52px] items-center justify-between gap-3 border-b border-line px-1 text-[15px] text-fg">
+                <span>{t("theme")}</span>
+                <ThemeToggle />
+              </div>
+              <div className="flex min-h-[52px] items-center justify-between gap-3 border-b border-line px-1 text-[15px] text-fg">
+                <span>{t("language")}</span>
+                <LocaleSwitcher />
+              </div>
+            </div>
             {/* 관리(ADMIN·ROOT만)와 계정 줄: 예전 ☰ 메뉴에 있던 것을 이 시트로 합쳤다. 시트 안 링크는 눌러서 이동하면 닫힌다 */}
             <div className="border-t border-line">
               <AdminNavLink
