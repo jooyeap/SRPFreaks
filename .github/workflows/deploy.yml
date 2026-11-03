@@ -242,7 +242,7 @@ jobs:
           if [ -f screens/summary.md ]; then cat screens/summary.md >> "$GITHUB_STEP_SUMMARY"; fi
       - name: 사진 올리기
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: screens
           path: screens/
