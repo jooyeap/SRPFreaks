@@ -63,7 +63,7 @@ export function TierFolderNav({ groups, currentTier }: { groups: readonly TierGr
                   aria-current={here ? "page" : undefined}
                   // 지금 난이도는 배경으로 강조하고, 완료는 글자 색으로 구분한다(숫자 n/n이 같이 있어 색만으로 구분하지 않는다)
                   className={`flex min-w-[3.25rem] flex-col items-center rounded-xl border px-2 py-1 ${
-                    here ? "border-transparent bg-chip-on-bg text-chip-on-fg" : "border-chip-line hover:bg-table-head"
+                    here ? "border-transparent bg-chip-on-bg text-chip-on-fg" : "border-ctl hover:bg-table-head"
                   }`}
                 >
                   <span className={`font-num text-sm font-bold ${here ? "" : done ? "text-done-text" : "text-fg"}`}>{formatTier(g.tier, t)}</span>
@@ -98,7 +98,7 @@ function StepLink({ group, direction }: { group: TierGroupResponse | null; direc
       href={folderHref(group.tier)}
       replace
       aria-label={t("Chart.nav", { direction: direction === "prev" ? t("Common.prev") : t("Common.next"), label })}
-      className={`${base} border-chip-line text-fg hover:bg-table-head`}
+      className={`${base} border-ctl text-fg hover:bg-table-head`}
     >
       <span aria-hidden="true" className="font-num text-sm font-semibold">
         {direction === "prev" ? `${arrow} ${label}` : `${label} ${arrow}`}

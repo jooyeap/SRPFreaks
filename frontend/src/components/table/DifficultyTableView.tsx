@@ -160,7 +160,7 @@ export function DifficultyTableView({
           <button
             type="button"
             onClick={() => replaceOpenGroups(allOpen ? [] : groupKeys)}
-            className="rounded-lg border border-chip-line bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+            className="rounded-lg border border-ctl bg-card px-4 py-1.5 text-sm text-fg hover:bg-table-head"
           >
             {allOpen ? t("Table.collapseAll") : t("Table.expandAll")}
           </button>
@@ -222,7 +222,7 @@ export function DifficultyTableView({
               type="button"
               disabled={page <= 0}
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
-              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               {t("Common.prev")}
             </button>
@@ -233,7 +233,7 @@ export function DifficultyTableView({
               type="button"
               disabled={page + 1 >= data.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               {t("Common.next")}
             </button>

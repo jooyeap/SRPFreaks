@@ -59,7 +59,8 @@ const players: PlayerSummaryResponse[] = [
   { userId: 7, rank: 1, nickname: "あか", tier: { key: "GOLD", displayName: "Gold", minScore: 5500, nextMinScore: 6000, nextDisplayName: "Platinum" }, totalScore: 5842.6 },
 ];
 const noticesPage: PageResponse<{ id: number; title: string; content: string; createdAt: string; updatedAt: string }> = {
-  content: [{ id: 1, title: "점검 안내", content: "본문", createdAt: "2026-10-18T15:30:00Z", updatedAt: "2026-10-18T15:30:00Z" }],
+  // 홈은 최근 7일 안의 공지만 보인다. 날짜를 고정하면 시간이 지나 깨지므로 지금 기준 하루 전으로 만든다
+  content: [{ id: 1, title: "점검 안내", content: "본문", createdAt: new Date(Date.now() - 86_400_000).toISOString(), updatedAt: new Date(Date.now() - 86_400_000).toISOString() }],
   page: 0,
   size: 3,
   totalElements: 1,
@@ -295,6 +296,45 @@ describe("HomeDashboard", () => {
     const preview = await screen.findByRole("region", { name: "유저 목록 미리보기" });
     expect(within(preview).getByRole("link", { name: /あか/ })).toHaveAttribute("href", "/players/7");
     expect(within(preview).getByRole("link", { name: "전체 보기" })).toHaveAttribute("href", "/players");
+  });
+
+  it("레이팅 요약이 맨 위, 새 공지는 진행도 아래, 유저 목록은 그 아래 순서다 (2026-11-02)", async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
+      if (url.includes("/skills/me")) return Promise.resolve(json(skill));
+      if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
+      if (url.includes("/players")) return Promise.resolve(json(playersPage));
+      if (url.includes("/entries")) {
+        const page: PageResponse<TierGroupResponse> = { content: groups, page: 0, size: 20, totalElements: 3, totalPages: 1 };
+        return Promise.resolve(json(page));
+      }
+      return Promise.resolve(json([table]));
+    });
+    renderView();
+    const rating = await screen.findByRole("link", { name: "마이페이지로" });
+    const progress = await screen.findByRole("region", { name: "서열표 진행도" });
+    const notices = await screen.findByRole("region", { name: "공지사항" });
+    const players = await screen.findByRole("region", { name: "유저 목록 미리보기" });
+    const before = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(before(rating, progress)).toBe(true);
+    expect(before(progress, notices)).toBe(true);
+    expect(before(notices, players)).toBe(true);
+  });
+
+  it("바로가기는 모바일에서 숨기고(hidden) md 이상에서만 보인다 (하단 탭바와 겹침)", async () => {
+    fetchMock.mockImplementation((input) => {
+      const url = String(input);
+      if (url.includes("/songs/chart-folders")) return Promise.resolve(json(foldersBody));
+      if (url.includes("/skills/me")) return Promise.resolve(json(skill));
+      if (url.includes("/notices")) return Promise.resolve(json(noticesPage));
+      if (url.includes("/players")) return Promise.resolve(json(playersPage));
+      return Promise.resolve(json([]));
+    });
+    renderView();
+    const shortcut = await screen.findByRole("link", { name: /^마이페이지.*달성 현황/ });
+    const list = shortcut.closest("ul") as HTMLElement;
+    expect(list).toHaveClass("hidden", "md:grid");
   });
 
   it("공개한 유저가 없으면 설정에서 공개할 수 있다는 안내를 보여 준다", async () => {

@@ -80,7 +80,7 @@ export function WithdrawForm() {
       <div className="flex gap-2.5">
         <Link
           href="/settings"
-          className="flex h-12 w-24 shrink-0 items-center justify-center rounded-xl border border-chip-line text-sm font-bold text-fg-sub"
+          className="flex h-12 w-24 shrink-0 items-center justify-center rounded-xl border border-ctl text-sm font-bold text-fg-sub"
         >
           {t("Common.cancel")}
         </Link>

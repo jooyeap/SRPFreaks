@@ -129,7 +129,7 @@ export function SetlistTab({ userId }: { userId: number }) {
             type="button"
             disabled={done === 0 || clear.isPending}
             onClick={() => clear.mutate()}
-            className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
+            className="min-h-9 rounded-lg border border-ctl px-3 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
           >
             {clear.isPending ? t("Setlist.clearing") : t("Setlist.clearDone")}
           </button>
@@ -215,7 +215,7 @@ function SetlistRow({
             type="button"
             onClick={onRecord}
             aria-label={t("Setlist.recordAria", { title: item.title })}
-            className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg hover:bg-table-head"
+            className="min-h-9 rounded-lg border border-ctl px-3 text-sm text-fg hover:bg-table-head"
           >
             {t("Setlist.enterRecord")}
           </button>
@@ -224,7 +224,7 @@ function SetlistRow({
             disabled={removing}
             onClick={onRemove}
             aria-label={t("Setlist.removeAria", { title: item.title })}
-            className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg disabled:opacity-60"
+            className="min-h-9 rounded-lg border border-ctl px-3 text-sm text-fg-sub hover:text-fg disabled:opacity-60"
           >
             {t("Setlist.removeBtn")}
           </button>

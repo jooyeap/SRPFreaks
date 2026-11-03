@@ -41,7 +41,7 @@ export function RatingEntryCard({
           {/* 곡명 링크의 클릭 영역을 ::after로 카드 전체에 넓힌다(카드 안에 다른 링크·버튼이 없다). 서열표에서 들어온 것과 같은 상세 화면(서열표 정보 포함)으로 간다 */}
           <Link
             href={`/songs/${entry.songId}?from=table&chart=${entry.songDifficultyId}`}
-            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-chip-line"
+            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-check-line"
           >
             {entry.title}
           </Link>
@@ -70,7 +70,7 @@ export function RatingEntryCard({
             type="button"
             onClick={() => onDelete(entry)}
             aria-label={t("Rating.deleteRecordAria", { title: entry.title })}
-            className="relative z-10 mt-1 rounded-lg border border-chip-line px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
+            className="relative z-10 mt-1 rounded-lg border border-ctl px-2.5 py-0.5 text-xs text-fg-sub hover:text-fg"
           >
             {t("Song.delete")}
           </button>
