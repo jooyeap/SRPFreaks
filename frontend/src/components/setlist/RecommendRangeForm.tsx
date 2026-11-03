@@ -42,7 +42,7 @@ export function RecommendRangeForm({ current, onDone }: { current: Current; onDo
     mode: "onTouched",
   });
 
-  const onError = (error: unknown) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed"));
+  const onError = (error: unknown) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed"), { kind: "error" });
   const afterChange = async (message: string) => {
     toast(message);
     await queryClient.invalidateQueries({ queryKey: setlistKeys.all });

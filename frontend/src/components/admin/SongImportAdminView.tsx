@@ -171,7 +171,7 @@ function BookmarkGuide() {
       await navigator.clipboard.writeText(href);
       toast(t("SongImport.bookmarkCopied"));
     } catch {
-      toast(t("SongImport.copyFailed"));
+      toast(t("SongImport.copyFailed"), { kind: "error" });
     }
   }
 
@@ -181,7 +181,7 @@ function BookmarkGuide() {
       await navigator.clipboard.writeText(`avascript:${encodeURIComponent(buildSongBookmarkletSource(window.location.origin, messages))}`);
       toast(t("SongImport.scriptCopied"));
     } catch {
-      toast(t("SongImport.copyFailed"));
+      toast(t("SongImport.copyFailed"), { kind: "error" });
     }
   }
 

@@ -86,7 +86,7 @@ export function SetlistTab({ userId }: { userId: number }) {
       toast(t("Setlist.removed"));
       await refresh();
     },
-    onError: (error) => toast(errorText(error, t)),
+    onError: (error) => toast(errorText(error, t), { kind: "error" }),
   });
   const clear = useMutation({
     mutationFn: () => clearDoneSetlist(),
@@ -94,7 +94,7 @@ export function SetlistTab({ userId }: { userId: number }) {
       toast(t("Setlist.clearedToast", { count: result.removed }));
       await refresh();
     },
-    onError: (error) => toast(errorText(error, t)),
+    onError: (error) => toast(errorText(error, t), { kind: "error" }),
   });
 
   if (list.isPending) {

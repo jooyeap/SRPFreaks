@@ -43,7 +43,7 @@ function AddInner({ userId, songDifficultyId, title }: { userId: number; songDif
       await queryClient.invalidateQueries({ queryKey: setlistKeys.all });
     },
     // 30곡이 찼거나 이미 담긴 경우 등 서버가 거절한 문구를 그대로 보여 준다
-    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed")),
+    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed"), { kind: "error" }),
   });
 
   const remove = useMutation({
@@ -52,7 +52,7 @@ function AddInner({ userId, songDifficultyId, title }: { userId: number; songDif
       toast(t("Setlist.removed"));
       await queryClient.invalidateQueries({ queryKey: setlistKeys.all });
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed")),
+    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed"), { kind: "error" }),
   });
 
   return (
