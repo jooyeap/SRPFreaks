@@ -10,7 +10,7 @@ export function ImportEntryLink() {
   return (
     <Link
       href="/import"
-      className="flex items-center justify-between gap-3 rounded-2xl border border-chip-line bg-card p-4 hover:bg-table-head"
+      className="flex items-center justify-between gap-3 rounded-2xl border border-ctl bg-card p-4 hover:bg-table-head"
     >
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="text-sm font-bold text-fg">{t("Import.title")}</span>

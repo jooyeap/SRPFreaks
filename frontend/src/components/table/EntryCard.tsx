@@ -112,7 +112,7 @@ function RecordButton({ entry, onRecord }: { entry: TableEntryResponse; onRecord
       type="button"
       onClick={() => onRecord(entry)}
       aria-label={t("Chart.recordInput", { title: entry.title })}
-      className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-chip-line text-base leading-none text-fg after:absolute after:-inset-1.5 after:content-[''] hover:bg-table-head"
+      className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-ctl text-base leading-none text-fg after:absolute after:-inset-1.5 after:content-[''] hover:bg-table-head"
     >
       +
     </button>

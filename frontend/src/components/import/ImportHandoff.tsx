@@ -94,7 +94,7 @@ export function ImportHandoff() {
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-fg-sub">{t("Import.handoffBody", { count: handoff.pending.length })}</p>
           <div className="mt-5 flex gap-2.5">
-            <button type="button" onClick={close} className="h-11 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
+            <button type="button" onClick={close} className="h-11 rounded-xl border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg">
               {t("Import.later")}
             </button>
             <Link href="/login" onClick={close} className="flex h-11 flex-1 items-center justify-center rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg">

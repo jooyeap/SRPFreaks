@@ -5,7 +5,7 @@ import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
 import { patternLabel } from "@/lib/chart-labels";
 
-const CHIP = "rounded-lg border border-chip-line px-2 py-0.5 text-xs font-bold text-fg-sub";
+const CHIP = "rounded-lg border border-ctl px-2 py-0.5 text-xs font-bold text-fg-sub";
 
 /**
  * 곡 정보 헤더 (시안 "곡 상세"): 큰 재킷 칸(단색) + 곡명, 아티스트, 칩 줄(버전, `Guitar | MAS 9.80` 알약).
@@ -41,7 +41,7 @@ export function SongHeader({
         {/* 속성 칩 자리는 값이 없어도 높이를 잡아 둬서, 속성 유무로 곡명 위치가 흔들리지 않게 한다 */}
         <div className="flex min-h-[26px] justify-end">
           {pattern ? (
-            <span className="rounded-lg border border-chip-line bg-card px-2.5 py-0.5 text-[13px] font-bold text-fg">
+            <span className="rounded-lg border border-ctl bg-card px-2.5 py-0.5 text-[13px] font-bold text-fg">
               {t("Chart.patternValue", { pattern: patternLabel(pattern, t) })}
             </span>
           ) : null}

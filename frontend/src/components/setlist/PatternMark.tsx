@@ -11,6 +11,6 @@ import { patternLabel } from "@/lib/chart-labels";
 export function PatternMark({ pattern }: { pattern: string }) {
   const t = useTranslations();
   return (
-    <span className="rounded-md border border-chip-line px-1.5 py-0.5 text-xs text-fg-sub">{patternLabel(pattern, t)}</span>
+    <span className="rounded-md border border-ctl px-1.5 py-0.5 text-xs text-fg-sub">{patternLabel(pattern, t)}</span>
   );
 }

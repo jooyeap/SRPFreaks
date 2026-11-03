@@ -19,6 +19,51 @@ function varsOf(selector: string): Record<string, string> {
   return out;
 }
 
+/** WCAG 상대 휘도 기반 대비비. `#rrggbb`만 받는다. */
+function contrast(a: string, b: string): number {
+  const lum = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe("globals.css 컨트롤 테두리(--ctl-line)", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 카드 배경 위에서 대비 3:1 이상이다 (버튼·칩·입력칸 윤곽, 비텍스트 대비 기준)`, () => {
+      expect(vars["--ctl-line"], "--ctl-line이 없음").toBeDefined();
+      expect(vars["--card"], "--card가 없음").toBeDefined();
+      expect(contrast(vars["--ctl-line"], vars["--card"])).toBeGreaterThanOrEqual(3);
+    });
+  }
+
+  it("Tailwind 유틸리티(border-ctl)로 쓸 수 있게 @theme에 등록돼 있다", () => {
+    expect(css).toMatch(/--color-ctl:\s*var\(--ctl-line\)/);
+  });
+});
+
+describe("globals.css 포커스 링", () => {
+  it(":focus-visible 전역 규칙이 @layer base 안에 있다 (Tailwind 유틸리티의 outline-none이 이길 수 있게)", () => {
+    const layerStart = css.indexOf("@layer base {");
+    expect(layerStart).toBeGreaterThanOrEqual(0);
+    const layerEnd = css.indexOf("\n}", layerStart);
+    const layerBody = css.slice(layerStart, layerEnd);
+    expect(layerBody).toMatch(/:focus-visible\s*\{\s*outline:\s*2px solid var\(--check-line\)/);
+  });
+
+  it("포커스 링 색(--check-line)은 다크와 라이트 모두에 정의돼 있다", () => {
+    expect(varsOf(":root {")["--check-line"]).toBeDefined();
+    expect(varsOf(':root[data-theme="light"] {')["--check-line"]).toBeDefined();
+  });
+});
+
 describe("globals.css 테마 변수", () => {
   const dark = varsOf(":root {");
   const lightPicked = varsOf(':root[data-theme="light"] {');

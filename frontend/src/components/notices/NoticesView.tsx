@@ -134,7 +134,7 @@ function NoticeList({ viewerId, canWrite }: { viewerId: number; canWrite: boolea
           type="button"
           aria-expanded={false}
           onClick={() => setWriting(true)}
-          className="min-h-11 self-start rounded-lg border border-chip-line px-4 text-sm font-semibold text-fg hover:bg-table-head"
+          className="min-h-11 self-start rounded-lg border border-ctl px-4 text-sm font-semibold text-fg hover:bg-table-head"
         >
           {t("Notices.writeTitle")}
         </button>
@@ -168,7 +168,7 @@ function NoticeList({ viewerId, canWrite }: { viewerId: number; canWrite: boolea
               type="button"
               disabled={page <= 0}
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
-              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               {t("Common.prev")}
             </button>
@@ -179,7 +179,7 @@ function NoticeList({ viewerId, canWrite }: { viewerId: number; canWrite: boolea
               type="button"
               disabled={page + 1 >= data.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               {t("Common.next")}
             </button>

@@ -53,7 +53,9 @@
     "admin": "관리",
     "login": "로그인",
     "logout": "로그아웃",
-    "notKonami": "KONAMI와 무관"
+    "notKonami": "KONAMI와 무관",
+    "theme": "화면 테마",
+    "language": "언어"
   },
   "Footer": {
     "notKonami": "KONAMI와 무관한 팬 사이트입니다.",

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 export function StatusLabel({ status }: { status: SuggestionStatus }) {
   const t = useTranslations();
   return (
-    <span className="shrink-0 rounded-full border border-chip-line px-2 py-0.5 text-xs text-fg-sub">
+    <span className="shrink-0 rounded-full border border-ctl px-2 py-0.5 text-xs text-fg-sub">
       {t(STATUS_LABELS[status])}
     </span>
   );

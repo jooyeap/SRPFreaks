@@ -4,7 +4,7 @@ import { useEffect, useId, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { SongDeleteControl } from "@/components/song/SongDeleteControl";
 
-const ROW = "min-h-11 w-full rounded-lg border border-chip-line px-3 py-2 text-left text-sm text-fg hover:bg-table-head";
+const ROW = "min-h-11 w-full rounded-lg border border-ctl px-3 py-2 text-left text-sm text-fg hover:bg-table-head";
 
 /**
  * 곡 상세의 `관리` 창(ROOT·ADMIN 전용, 부모가 role을 보고 연다. 서버도 권한을 다시 검사한다).
@@ -130,7 +130,7 @@ export function SongManageDialog({
               />
             </section>
           </div>
-          <button type="button" onClick={onClose} className="mt-4 h-12 w-full rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg">
+          <button type="button" onClick={onClose} className="mt-4 h-12 w-full rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg">
             {t("Common.close")}
           </button>
         </>

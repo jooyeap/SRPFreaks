@@ -108,7 +108,7 @@ export function JacketUploadDialog({
             {t("JacketUpload.title")}
           </h2>
           <p className="truncate text-sm text-fg-sub">{songTitle}</p>
-          <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-lg border border-chip-line px-3 text-sm font-semibold hover:bg-table-head">
+          <label className="flex min-h-11 cursor-pointer items-center justify-center rounded-lg border border-ctl px-3 text-sm font-semibold hover:bg-table-head">
             {t("JacketUpload.pick")}
             <input
               type="file"
@@ -162,12 +162,12 @@ export function JacketUploadDialog({
               type="button"
               disabled={remove.isPending}
               onClick={() => remove.mutate()}
-              className="h-11 rounded-xl border border-chip-line text-sm text-fg-sub hover:text-fg disabled:opacity-50"
+              className="h-11 rounded-xl border border-ctl text-sm text-fg-sub hover:text-fg disabled:opacity-50"
             >
               {t("JacketUpload.remove")}
             </button>
           ) : null}
-          <button type="button" onClick={close} className="h-11 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg">
+          <button type="button" onClick={close} className="h-11 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg">
             {t("Common.close")}
           </button>
         </div>

@@ -132,7 +132,7 @@ export function SongDetailView({
       </button>
       <span className="text-sm font-semibold text-fg">{t("Songs.detailTitle")}</span>
       {origin === "table" && found ? (
-        <span className="rounded-lg border border-chip-line px-2 py-0.5 text-xs text-fg-sub">
+        <span className="rounded-lg border border-ctl px-2 py-0.5 text-xs text-fg-sub">
           {t.rich("Song.tableHeading", { tier: formatTier(found.group.tier, t), num: (chunks) => <span className="font-num">{chunks}</span> })}
         </span>
       ) : (
@@ -176,7 +176,7 @@ export function SongDetailView({
     <section aria-label={t("Song.myRecord")} className="flex flex-col items-start gap-3 rounded-lg border border-line bg-card p-4">
       <h2 className="text-sm font-semibold text-fg-sub">{t("Song.myRecord")}</h2>
       <p className="text-sm text-fg-sub">{t("Songs.loginToRecord")}</p>
-      <Link href="/login" className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg hover:bg-table-head">
+      <Link href="/login" className="min-h-9 rounded-lg border border-ctl px-3 py-1 text-sm text-fg hover:bg-table-head">
         {t("Nav.login")}
       </Link>
     </section>
@@ -206,7 +206,7 @@ export function SongDetailView({
                     <button
                       type="button"
                       onClick={() => setManageOpen(true)}
-                      className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                      className="min-h-9 rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg"
                     >
                       {t("Song.manage")}
                     </button>

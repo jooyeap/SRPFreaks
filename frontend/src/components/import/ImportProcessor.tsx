@@ -181,14 +181,14 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
         {/* 가져오기는 최근 20곡만 읽으므로, 놓친 곡을 사진으로 넣는 길을 같이 보여 준다(D55, 쓸 수 있는 사람에게만) */}
         {done ? <PhotoEntryLink onNavigate={onClose} /> : null}
         <div className="flex gap-2">
-          <Link href="/me" onClick={onClose} className="flex min-h-12 flex-1 items-center justify-center rounded-xl border border-chip-line text-sm font-medium text-fg">
+          <Link href="/me" onClick={onClose} className="flex min-h-12 flex-1 items-center justify-center rounded-xl border border-ctl text-sm font-medium text-fg">
             {t("Import.viewRecords")}
           </Link>
           <Link href="/me?tab=rating" onClick={onClose} className="flex min-h-12 flex-1 items-center justify-center rounded-xl bg-chip-on-bg text-sm font-bold text-chip-on-fg">
             {t("Record.viewRating")}
           </Link>
         </div>
-        <button type="button" onClick={onClose} className="min-h-11 rounded-xl border border-chip-line text-sm font-medium text-fg-sub hover:text-fg">
+        <button type="button" onClick={onClose} className="min-h-11 rounded-xl border border-ctl text-sm font-medium text-fg-sub hover:text-fg">
           {t("Common.close")}
         </button>
       </div>
@@ -215,8 +215,8 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
       {results && (
         <>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full border border-chip-line px-2.5 py-1 font-bold text-fg">{t("Import.willSave", { count: selected.length })}</span>
-            <span className="rounded-full border border-chip-line px-2.5 py-1 text-fg-sub">{t("Import.skippedChip", { count: skippedCount })}</span>
+            <span className="rounded-full border border-ctl px-2.5 py-1 font-bold text-fg">{t("Import.willSave", { count: selected.length })}</span>
+            <span className="rounded-full border border-ctl px-2.5 py-1 text-fg-sub">{t("Import.skippedChip", { count: skippedCount })}</span>
             {excludedCount > 0 && <span className="rounded-full border border-weak-line px-2.5 py-1 text-weak-text">{t("Import.excludedChip", { count: excludedCount })}</span>}
           </div>
           {/* 20곡까지 올 수 있어서 목록만 스크롤한다(버튼은 항상 보인다) */}
@@ -241,7 +241,7 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
             onClose();
           }}
           disabled={commit.isPending}
-          className="min-h-12 rounded-xl border border-chip-line px-4 text-sm font-medium text-fg disabled:opacity-60"
+          className="min-h-12 rounded-xl border border-ctl px-4 text-sm font-medium text-fg disabled:opacity-60"
         >
           {t("Common.cancel")}
         </button>

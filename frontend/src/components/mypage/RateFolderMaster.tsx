@@ -101,7 +101,7 @@ function FolderDetail({ axis, folder, includeZero }: { axis: StatsAxis; folder: 
             <li
               key={chip.key}
               data-stage={chip.stage ?? undefined}
-              className={`rounded-full border border-chip-line px-2 py-0.5 text-xs ${
+              className={`rounded-full border border-ctl px-2 py-0.5 text-xs ${
                 chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
               }`}
             >

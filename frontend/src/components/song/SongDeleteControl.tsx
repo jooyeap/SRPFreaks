@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 
 type Target = "song" | "chart";
 
-const BTN = "rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg";
+const BTN = "rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg";
 
 /**
  * 곡 삭제 / 채보 삭제 (ROOT·ADMIN 전용, 부모가 role을 보고 그린다. 서버도 권한을 다시 검사한다).
@@ -83,7 +83,7 @@ export function SongDeleteControl({
               mutation.reset();
               setConfirming(null);
             }}
-            className="h-10 rounded-xl border border-chip-line px-5 text-sm font-bold text-fg-sub hover:text-fg"
+            className="h-10 rounded-xl border border-ctl px-5 text-sm font-bold text-fg-sub hover:text-fg"
           >
             {t("Common.cancel")}
           </button>

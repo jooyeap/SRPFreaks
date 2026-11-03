@@ -107,7 +107,7 @@ function Bell({ viewerId }: { viewerId: number }) {
         aria-expanded={open}
         aria-haspopup="dialog"
         onClick={() => setOpen((v) => !v)}
-        className="relative inline-flex size-9 items-center justify-center rounded-lg border border-chip-line text-fg-sub hover:text-fg"
+        className="relative inline-flex size-9 items-center justify-center rounded-lg border border-ctl text-fg-sub hover:text-fg"
       >
         <BellIcon />
         {badge ? (
@@ -132,7 +132,7 @@ function Bell({ viewerId }: { viewerId: number }) {
                 type="button"
                 disabled={readAll.isPending || n === 0}
                 onClick={() => readAll.mutate()}
-                className="min-h-9 rounded-lg border border-chip-line px-3 text-xs text-fg-sub hover:text-fg disabled:opacity-50"
+                className="min-h-9 rounded-lg border border-ctl px-3 text-xs text-fg-sub hover:text-fg disabled:opacity-50"
               >
                 {t("readAll")}
               </button>
@@ -169,7 +169,7 @@ function NotificationItem({ item, onOpen }: { item: NotificationResponse; onOpen
         onClick={onOpen}
         className={`flex w-full gap-2.5 rounded-xl p-3 text-left hover:bg-table-head ${item.read ? "" : "bg-table-head"}`}
       >
-        <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full ${item.read ? "border border-chip-line" : "bg-fg"}`} />
+        <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full ${item.read ? "border border-ctl" : "bg-fg"}`} />
         <span className="min-w-0">
           <span className={`block text-[13px] leading-relaxed ${item.read ? "text-fg-sub" : "text-fg"}`}>
             {item.bundled && item.songCount > 1

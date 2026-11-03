@@ -41,7 +41,7 @@ export function MyRecordCard({
       <div
         data-stage={stage ?? undefined}
         className={`relative flex items-center gap-3 overflow-hidden rounded border px-4 py-3 ${
-          emphasizeSrn ? "border-chip-line" : "border-line"
+          emphasizeSrn ? "border-ctl" : "border-line"
         } ${stage ? "stage-tint" : ""}`}
       >
         {fancy ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}

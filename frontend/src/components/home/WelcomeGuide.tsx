@@ -41,7 +41,7 @@ export function WelcomeGuide() {
           </div>
         </li>
         <li className="flex gap-3 rounded-xl border border-line p-3">
-          <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-chip-line font-num text-sm font-bold text-fg-sub">
+          <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-ctl font-num text-sm font-bold text-fg-sub">
             2
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -53,7 +53,7 @@ export function WelcomeGuide() {
           </div>
         </li>
         <li className="flex gap-3 rounded-xl border border-line p-3">
-          <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-chip-line font-num text-sm font-bold text-fg-dim">
+          <span aria-hidden="true" className="grid h-7 w-7 shrink-0 place-items-center rounded-full border border-ctl font-num text-sm font-bold text-fg-dim">
             3
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">

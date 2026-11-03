@@ -56,7 +56,7 @@ export function RecordList({
               onClick={() => onEdit(record)}
               aria-pressed={editingId === record.id}
               aria-label={t("Record.editRateAria", { rate: formatRate(record.achievementRate) })}
-              className="ml-auto min-h-9 rounded-lg border border-chip-line px-3.5 text-sm text-fg-sub hover:text-fg"
+              className="ml-auto min-h-9 rounded-lg border border-ctl px-3.5 text-sm text-fg-sub hover:text-fg"
             >
               {t("Record.edit")}
             </button>
