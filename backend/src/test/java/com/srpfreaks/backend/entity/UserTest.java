@@ -172,4 +172,46 @@ class UserTest {
         assertThat(user.getNickname()).isEqualTo("たろう");
         assertThat(user.isProfilePublic()).isTrue();
     }
+
+    @Test
+    void 서열표_변경_알림은_기본으로_켜져_있다() {
+        User user = User.create("sub-t", "t@example.com", null);
+
+        assertThat(user.isTierNotify()).isTrue();
+        assertThat(user.getTierNotifyCursor()).isNull();
+    }
+
+    @Test
+    void 서열표_변경_알림을_다시_켜면_커서를_그_시점으로_옮긴다() {
+        User user = User.create("sub-t", "t@example.com", null);
+        user.moveTierNotifyCursor(10L);
+        user.changeTierNotify(false, 20L);
+
+        assertThat(user.getTierNotifyCursor()).isEqualTo(10L);   // 끌 때는 그대로
+
+        user.changeTierNotify(true, 30L);
+
+        assertThat(user.isTierNotify()).isTrue();
+        assertThat(user.getTierNotifyCursor()).isEqualTo(30L);   // 꺼 둔 동안(11~30)의 변경은 알리지 않는다
+    }
+
+    @Test
+    void 켜진_상태에서_다시_켜도_커서는_그대로다() {
+        User user = User.create("sub-t", "t@example.com", null);
+        user.moveTierNotifyCursor(10L);
+
+        user.changeTierNotify(true, 30L);
+
+        assertThat(user.getTierNotifyCursor()).isEqualTo(10L);
+    }
+
+    @Test
+    void 서열표_알림_커서는_뒤로_가지_않는다() {
+        User user = User.create("sub-t", "t@example.com", null);
+        user.moveTierNotifyCursor(10L);
+
+        user.moveTierNotifyCursor(5L);
+
+        assertThat(user.getTierNotifyCursor()).isEqualTo(10L);
+    }
 }

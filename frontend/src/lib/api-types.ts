@@ -13,6 +13,8 @@ export interface UserResponse {
   profilePublic: boolean;
   /** 라이벌 역전 알림 받기(D56). 기본 true. */
   rivalNotify: boolean;
+  /** `서열표 변경 알림 받기`(D61). 기본 켜짐 */
+  tierNotify: boolean;
   createdAt: string; // ISO 8601, UTC
 }
 
@@ -573,21 +575,49 @@ export interface RivalRecordResponse {
   diff: number | null;
 }
 
-/** 라이벌 역전 알림 한 줄. bundled면 songCount곡을 묶은 줄이고 곡 정보는 첫 곡. myRate = 내 기록. */
-export interface NotificationResponse {
+/** 알림 종류(D61). 화면은 줄 앞 칩(`라이벌` / `서열표`)으로 구분한다. */
+export type NotificationKind = "RIVAL" | "TIER";
+
+/** 두 종류 알림이 같이 가진 값. bundled면 songCount곡(채보)을 묶은 줄이고 곡 정보는 첫 곡. visibleAt = 정렬·`n분 전` 시각. */
+interface NotificationBase {
   id: number;
-  actorUserId: number;
-  actorNickname: string | null;
   songId: number;
   songDifficultyId: number;
   title: string;
   part: InstrumentPart;
   difficulty: DifficultyType;
   level: number;
-  actorRate: number;
-  myRate: number;
   bundled: boolean;
   songCount: number;
   visibleAt: string;
   read: boolean;
 }
+
+/** 라이벌 역전 알림 한 줄(D56). myRate = 내 기록. */
+export interface RivalNotificationResponse extends NotificationBase {
+  kind: "RIVAL";
+  actorUserId: number;
+  actorNickname: string | null;
+  actorRate: number;
+  myRate: number;
+}
+
+/**
+ * 서열표 변경 알림 한 줄(D61). 기준 난이도 null = 미정. 점수는 알림을 만든 때의 내 달성률(myRate)로 계산한 전·후(둘째 자리),
+ * 미정이면 null. scoreDiff = 후 - 전(둘 다 있을 때만).
+ */
+export interface TierNotificationResponse extends NotificationBase {
+  kind: "TIER";
+  myRate: number;
+  beforeTier: number | null;
+  afterTier: number | null;
+  beforeScore: number | null;
+  afterScore: number | null;
+  scoreDiff: number | null;
+}
+
+/**
+ * 알림 목록의 한 줄. `kind`로 어느 쪽인지 고른다("구별된 유니온"): `if (item.kind === "TIER")` 안에서는
+ * TypeScript가 item을 TierNotificationResponse로 좁혀 주므로 beforeTier 같은 값을 바로 쓸 수 있다.
+ */
+export type NotificationResponse = RivalNotificationResponse | TierNotificationResponse;

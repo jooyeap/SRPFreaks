@@ -116,13 +116,22 @@ public class RivalAlertService {
 
     @Transactional
     public PageResponse<NotificationResponse> list(Long recipientId, NoteOption noteOption, int page, int size) {
-        deliverDue(recipientId, noteOption);
-        RivalConfig config = RivalConfig.load(appSettingRepository);
-        notificationRepository.deleteOlderThan(clock.instant().minus(Duration.ofDays(config.notifyKeepDays())));
+        refresh(recipientId, noteOption);
         PageRequest pageable = PageRequest.of(Math.max(page, 0), Math.min(Math.max(size, 1), MAX_PAGE_SIZE),
                 Sort.by(Sort.Direction.DESC, "visibleAt").and(Sort.by(Sort.Direction.DESC, "id")));
         return PageResponse.of(notificationRepository.findByRecipient_IdAndStatus(recipientId, RivalNotificationStatus.SHOWN,
                 pageable), NotificationResponse::from);
+    }
+
+    /**
+     * 목록을 읽기 전 정리: 보일 시각이 지난 알림을 처리하고 보관 기간이 지난 알림을 지운다.
+     * 서열표 변경 알림과 섞은 목록(NotificationService)도 읽기 전에 이것을 부른다.
+     */
+    @Transactional
+    public void refresh(Long recipientId, NoteOption noteOption) {
+        deliverDue(recipientId, noteOption);
+        RivalConfig config = RivalConfig.load(appSettingRepository);
+        notificationRepository.deleteOlderThan(clock.instant().minus(Duration.ofDays(config.notifyKeepDays())));
     }
 
     @Transactional

@@ -7,7 +7,11 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /** 사용자 조회/저장. */
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -16,6 +20,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByGoogleSub(String googleSub);
 
     Optional<User> findByEmail(String email);
+
+    /**
+     * 사용자 한 명을 행 잠금(SELECT ... FOR UPDATE)으로 읽는다. 서열표 변경 알림(D61)을 만들 때 쓴다.
+     * 헤더 종의 개수 요청과 목록 요청이 거의 동시에 오면, 잠그지 않으면 둘 다 같은 커서를 읽어 같은 알림을 두 번 만든다.
+     * 잠그면 두 번째 요청은 첫 번째가 커밋(커서 이동)할 때까지 기다렸다가 옮겨진 커서를 읽는다.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.id = :id")
+    Optional<User> findByIdForUpdate(@Param("id") Long id);
 
     /** ROOT는 1명만 둔다. ROOT 계정이 이미 있는지 확인할 때 쓴다. */
     boolean existsByRole(Role role);
