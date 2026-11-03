@@ -78,7 +78,7 @@ export function RecordDialog({
     (next: RecordChart) => {
       // 입력 중인 값이 있으면 옮기지 않는다 (바깥 클릭으로 닫히지 않게 하는 것과 같은 이유)
       if (dirtyRef.current) {
-        toast(t("Record.hasInput"));
+        toast(t("Record.hasInput"), { kind: "info" });
         return;
       }
       setSwitched(next);

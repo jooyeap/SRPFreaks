@@ -45,7 +45,7 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
       toast(t("Setlist.added"));
       await queryClient.invalidateQueries({ queryKey: setlistKeys.all });
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed")),
+    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed"), { kind: "error" }),
   });
 
   return (

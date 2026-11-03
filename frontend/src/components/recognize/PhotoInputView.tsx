@@ -98,7 +98,7 @@ export function PhotoInputView() {
     }
     const picked = Array.from(files).slice(0, Math.min(MAX_PHOTOS, st.remaining));
     if (files.length > picked.length) {
-      toast(t("Photo.tooMany", { count: picked.length }));
+      toast(t("Photo.tooMany", { count: picked.length }), { kind: "info" });
     }
     setProgress({ done: 0, total: picked.length });
     for (let i = 0; i < picked.length; i += 1) {

@@ -82,7 +82,7 @@ function BookmarkGuide() {
       await navigator.clipboard.writeText(href);
       toast(t("Import.bookmarkCopied"));
     } catch {
-      toast(t("Import.copyFailedBookmark"));
+      toast(t("Import.copyFailedBookmark"), { kind: "error" });
     }
   }
 
@@ -97,7 +97,7 @@ function BookmarkGuide() {
       await navigator.clipboard.writeText(`avascript:${stub}`);
       toast(t("Import.scriptCopied"));
     } catch {
-      toast(t("Import.copyFailedScript"));
+      toast(t("Import.copyFailedScript"), { kind: "error" });
     }
   }
 
