@@ -11,7 +11,6 @@ import { useToast } from "@/components/Toast";
 import { StageBadge } from "@/components/table/StageBadge";
 import { ChartBadge } from "@/components/table/Badges";
 import { ApiError } from "@/lib/api";
-import { setOneHandMode, useOneHandMode } from "@/lib/one-hand";
 import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
 import {
   AFFECTED_QUERY_KEYS,
@@ -27,7 +26,6 @@ import {
 } from "@/lib/records";
 import { chartTierAttrs, previewScore } from "@/lib/chart-tier";
 import type { SaveOutcome } from "@/components/record/SaveResultCard";
-import { OneHandPad } from "@/components/record/OneHandPad";
 import { RatingPreviewLine } from "@/components/record/RatingPreviewLine";
 import { formatRate, formatScore, formatTier, rateFromInput } from "@/lib/format";
 import { achievementStage } from "@/lib/stage";
@@ -106,7 +104,6 @@ export function RecordForm({
     control,
     setError,
     setFocus,
-    setValue,
     formState: { errors, isDirty },
   } = useForm<RecordFormValues>({ resolver: zodResolver(schema), defaultValues, mode: "onTouched" });
 
@@ -122,8 +119,6 @@ export function RecordForm({
   // useWatch: 입력이 바뀔 때마다 이 컴포넌트를 다시 그려서 미리보기를 갱신한다 (watch는 React 컴파일러와 맞지 않는다)
   const rate = useWatch({ control, name: "achievementRate" });
   const fullComboChecked = useWatch({ control, name: "fullCombo" });
-  // 한 손 입력 모드(이 기기 설정): 숫자 패드로 달성률을 넣고, 풀콤보는 큰 버튼으로 켠다
-  const oneHand = useOneHandMode();
   const maxRate = isMaxRate(rate);
   const fullCombo = maxRate || fullComboChecked; // 100.00이면 풀콤보를 자동으로 켠다 (DESIGN-UI 10장)
   // 입력칸은 소수점 없는 정수(9971)이고 ÷100이 실제 달성률(99.71)이다. 범위 밖이면 null
@@ -210,14 +205,6 @@ export function RecordForm({
             <ChartBadge part={chart.part} difficulty={chart.difficulty} level={chart.level} />
           </p>
         </div>
-        <button
-          type="button"
-          aria-pressed={oneHand}
-          onClick={() => setOneHandMode(!oneHand)}
-          className="min-h-9 shrink-0 rounded-lg border border-ctl px-3 text-xs font-semibold text-fg-sub hover:text-fg aria-pressed:border-chip-on-bg aria-pressed:text-fg"
-        >
-          {t("Record.oneHandMode")}
-        </button>
       </div>
 
       <div className="flex items-stretch gap-2.5">
@@ -230,9 +217,7 @@ export function RecordForm({
             <input
               id="achievementRate"
               type="text"
-              // 한 손 모드에서는 화면 키보드를 띄우지 않고(inputMode none) 아래 숫자 패드로만 입력한다
-              inputMode={oneHand ? "none" : "numeric"}
-              readOnly={oneHand}
+              inputMode="numeric"
               autoComplete="off"
               placeholder="0 ~ 10000"
               aria-invalid={errors.achievementRate ? true : undefined}
@@ -284,8 +269,6 @@ export function RecordForm({
         </div>
       ) : null}
 
-      {/* 한 손 모드에서는 이 체크박스 대신 아래 패드의 큰 풀콤보 버튼을 쓴다 */}
-      {oneHand ? null : (
       <div className="flex flex-col gap-1">
         <label className="flex h-[46px] items-center justify-between rounded-2xl border border-line bg-card px-3.5 text-sm font-bold text-fg">
           {t("Record.fullComboLabel")}
@@ -299,13 +282,7 @@ export function RecordForm({
         </label>
         {maxRate ? <p className="text-xs text-fg-dim">{t("Record.fullComboNote")}</p> : null}
       </div>
-      )}
 
-      {/* 날짜·메모는 평소처럼 보이고, 한 손 모드에서는 접어 둔다(대부분 오늘 날짜 그대로 저장하므로). 접어도 입력값은 그대로 폼에 있다 */}
-      {oneHand ? (
-        <details className="rounded-2xl border border-line bg-card px-3.5 py-2">
-          <summary className="min-h-9 cursor-pointer text-sm font-semibold text-fg-sub">{t("Record.dateMemo")}</summary>
-          <div className="flex flex-col gap-4 pb-2 pt-2">
       <div className="flex flex-col gap-1">
         <label htmlFor="playedDate" className="text-sm text-fg-sub">
           {t("Record.playedDate")}
@@ -341,59 +318,6 @@ export function RecordForm({
           </p>
         ) : null}
       </div>
-
-          </div>
-        </details>
-      ) : (
-        <>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="playedDate" className="text-sm text-fg-sub">
-          {t("Record.playedDate")}
-        </label>
-        <input
-          id="playedDate"
-          type="date"
-          max={todaySeoul()}
-          aria-invalid={errors.playedDate ? true : undefined}
-          className="w-44 rounded-[10px] border border-line bg-card px-3 py-2 font-num text-fg"
-          {...register("playedDate")}
-        />
-        {errors.playedDate ? (
-          <p role="alert" className="text-sm text-fg">
-            {errors.playedDate.message}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="memo" className="text-sm text-fg-sub">
-          {t("Record.memoOptional")}
-        </label>
-        <textarea
-          id="memo"
-          rows={2}
-          className="rounded-[10px] border border-line bg-card px-3 py-2 text-fg"
-          {...register("memo")}
-        />
-        {errors.memo ? (
-          <p role="alert" className="text-sm text-fg">
-            {errors.memo.message}
-          </p>
-        ) : null}
-      </div>
-
-        </>
-      )}
-
-      {oneHand ? (
-        <OneHandPad
-          value={rate}
-          onChange={(next) => setValue("achievementRate", next, { shouldDirty: true })}
-          fullCombo={fullCombo}
-          fullComboLocked={maxRate}
-          onToggleFullCombo={() => setValue("fullCombo", !fullComboChecked, { shouldDirty: true })}
-        />
-      ) : null}
 
       <p className="text-xs text-fg-dim">{t("Record.saveNote")}</p>
 

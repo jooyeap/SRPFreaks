@@ -175,6 +175,25 @@ describe("세트리스트", () => {
       expect(await screen.findByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
       await waitFor(() => expect(screen.getByLabelText("달성률")).toBeInTheDocument());
     });
+
+    it("저장하면 결과 카드에 `다음 곡 ›`이 나오고, 누르면 창을 닫지 않고 다음 미완료 곡의 입력으로 넘어간다 (모드 설정 없이)", async () => {
+      listed = [item(1), item(2)];
+      const base = fetchMock.getMockImplementation()!;
+      fetchMock.mockImplementation((input, init) => {
+        if (String(input).endsWith("/records") && init?.method === "POST") return Promise.resolve(json({ id: 1, stage: "SS" }, 201));
+        // 예상 레이팅 줄은 이 테스트의 관심사가 아니라서 스킬 조회는 실패시켜 숨긴다
+        if (String(input).includes("/skill")) return Promise.resolve(json({ code: "ERROR", message: "x" }, 500));
+        return base(input, init);
+      });
+      renderWith(<SetlistTab userId={1} />);
+      fireEvent.click(await screen.findByRole("button", { name: "곡01 기록 입력" }));
+      fireEvent.change(await screen.findByLabelText("달성률"), { target: { value: "9650" } });
+      fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
+
+      fireEvent.click(await screen.findByRole("button", { name: "다음 곡 ›" }));
+      expect(await screen.findByText("곡02")).toBeInTheDocument();
+      expect(await screen.findByLabelText("달성률")).toHaveValue("");
+    });
   });
   describe("곡 검색해서 담기", () => {
     const search = (text: string) => fireEvent.change(screen.getByRole("searchbox", { name: "곡 검색" }), { target: { value: text } });

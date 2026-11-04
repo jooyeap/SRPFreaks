@@ -106,6 +106,15 @@ describe("RecordForm", () => {
     expect(screen.getByText("달성률 MAX(으)로 저장됩니다")).toBeInTheDocument();
   });
 
+  it("한 손 모드 토글이 없고 달성률 칸은 항상 직접 입력할 수 있다", () => {
+    renderForm();
+    expect(screen.queryByRole("button", { name: /한 손/ })).toBeNull();
+    expect(screen.queryByRole("group", { name: /한 손/ })).toBeNull();
+    expect(rateInput()).not.toHaveAttribute("readonly");
+    expect(rateInput()).toHaveAttribute("inputmode", "numeric");
+    expect(screen.getByLabelText("플레이 날짜")).toBeVisible();
+  });
+
   it("세 자리를 치면 끝에 0이 붙은 달성률로 안내한다 (965 → 96.50, 100 → MAX, 0965 → 9.65)", () => {
     renderForm();
     fireEvent.change(rateInput(), { target: { value: "965" } });
