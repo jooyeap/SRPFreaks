@@ -16,6 +16,8 @@
     "pageSizeOption": "{count}件ずつ",
     "pendingLabel": "{label}中",
     "themeToggle": "ダーク/ライトテーマの切り替え",
+    "themeLight": "ライト",
+    "themeDark": "ダーク",
     "scrollTop": "ページ上部へ",
     "settingsLink": "設定する",
     "viewAll": "すべて見る",
