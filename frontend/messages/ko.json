@@ -16,6 +16,8 @@
     "pageSizeOption": "{count}개씩",
     "pendingLabel": "{label} 중",
     "themeToggle": "다크/라이트 테마 전환",
+    "themeLight": "라이트",
+    "themeDark": "다크",
     "scrollTop": "맨 위로",
     "settingsLink": "설정하기",
     "viewAll": "전체 보기",
