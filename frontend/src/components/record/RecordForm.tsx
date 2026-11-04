@@ -31,6 +31,9 @@ import { OneHandPad } from "@/components/record/OneHandPad";
 import { RatingPreviewLine } from "@/components/record/RatingPreviewLine";
 import { formatRate, formatScore, formatTier, rateFromInput } from "@/lib/format";
 import { achievementStage } from "@/lib/stage";
+import type { SkillResponse } from "@/lib/api-types";
+import { entryGroupOf } from "@/lib/rating-preview";
+import { skillKeys } from "@/lib/rating";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 import { useTranslations } from "next-intl";
 
@@ -138,6 +141,8 @@ export function RecordForm({
       return record ? updateRecord(record.id, body) : createRecord(body);
     },
     onSuccess: async (saved) => {
+      // 진입 안내(단일 15 / 그 외 25)용 설정 개수. 무효화하면 목록이 다시 받아지므로 그 전에 캐시에서 읽는다(없으면 안내는 기존 문구)
+      const skill = userId === undefined ? undefined : queryClient.getQueryData<SkillResponse>(skillKeys.me(userId));
       // 서열표(내 기록, 칩, 평균)와 기록 목록이 바로 바뀌도록 관련 캐시를 무효화한다
       await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       // 창이 바로 닫히므로 저장됐다는 확인을 남긴다. 수정이면 달성률이 어떻게 바뀌었는지도 같이 알려 준다
@@ -155,6 +160,7 @@ export function RecordForm({
         after: { rate: saved.achievementRate, fullCombo: saved.fullCombo },
         tier: chart.tier ?? null,
         ratingChange: saved.ratingChange ?? null,
+        entry: entryGroupOf(skill, chart.pattern),
       });
     },
     onError: (error) => {
@@ -181,6 +187,9 @@ export function RecordForm({
   });
 
   const failure = mutation.error ?? removal.error;
+  // 저장이 실패한 경우만 [다시 시도]를 준다(입력값은 그대로이고 같은 값으로 다시 보낸다). 칸별 검증 오류는 값을 고쳐야 하므로 제외
+  const retryable =
+    mutation.isError && mutation.variables !== undefined && !(mutation.error instanceof ApiError && mutation.error.fieldErrors);
   const serverMessage =
     failure instanceof ApiError && !failure.fieldErrors
       ? failure.message
@@ -389,9 +398,27 @@ export function RecordForm({
       <p className="text-xs text-fg-dim">{t("Record.saveNote")}</p>
 
       {serverMessage ? (
-        <p role="alert" className="text-sm text-fg">
-          {serverMessage}
-        </p>
+        // 빨강 ! 는 장식이고 글자가 오류를 전한다 (토스트의 오류 표시와 같은 규칙, DESIGN-UI 35장)
+        <div role="alert" className="flex items-center gap-2 text-sm text-fg">
+          <span aria-hidden="true" className="font-extrabold text-danger">
+            !
+          </span>
+          <p className="min-w-0 flex-1">{serverMessage}</p>
+          {retryable ? (
+            <button
+              type="button"
+              onClick={() => {
+                const values = mutation.variables;
+                if (values) {
+                  mutation.mutate(values);
+                }
+              }}
+              className="min-h-9 shrink-0 rounded-lg border border-ctl px-3 text-sm font-semibold text-fg"
+            >
+              {t("Common.retry")}
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {record ? (

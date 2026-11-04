@@ -17,7 +17,6 @@ import { StageBadge } from "@/components/table/StageBadge";
 import { ApiError } from "@/lib/api";
 import type { SetlistItemResponse } from "@/lib/api-types";
 import { EMPTY_MARK, formatRate, formatTier } from "@/lib/format";
-import { useOneHandMode } from "@/lib/one-hand";
 import {
   clearDoneSetlist,
   doneCount,
@@ -58,7 +57,6 @@ export function SetlistTab({ userId }: { userId: number }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [recording, setRecording] = useState<RecordChart | null>(null);
-  const oneHand = useOneHandMode();
 
   const list = useQuery({ queryKey: setlistKeys.list(userId), queryFn: ({ signal }) => fetchSetlist(signal) });
   const items = list.data?.content ?? [];
@@ -67,14 +65,12 @@ export function SetlistTab({ userId }: { userId: number }) {
   const refresh = () => queryClient.invalidateQueries({ queryKey: setlistKeys.all });
 
   /**
-   * 한 손 모드에서 기록을 저장하면 창을 닫지 않고 세트리스트의 다음 곡으로 넘어간다(게임장에서 곡마다 창을 다시 여는 수고를 줄인다).
+   * 세트리스트에서 기록을 저장하면 결과 카드에 `다음 곡 ›` 버튼이 생기고, 누르면 창을 닫지 않고 세트리스트의 다음 곡 입력으로 넘어간다(게임장에서 곡마다 창을 다시 여는 수고를 줄인다).
+   * 예전에는 한 손 모드일 때 카드 없이 자동으로 넘어갔는데, 이제 모드와 상관없이 버튼으로 넘어간다.
    * 지금 곡 뒤쪽에서 아직 완료하지 않은 첫 줄, 없으면 앞쪽의 첫 미완료 줄이다. 방금 저장한 곡은 서버의 완료 표시가 아직 안 바뀌었을 수 있어 직접 뺀다.
-   * 더 입력할 곡이 없으면 null을 돌려줘서 창이 평소처럼 닫힌다. 한 손 모드가 꺼져 있으면 항상 null이다(기존 동작 그대로).
+   * 더 입력할 곡이 없으면 null을 돌려줘서 창이 평소처럼 닫힌다. 
    */
   const nextChartAfterSave = (saved: RecordChart): RecordChart | null => {
-    if (!oneHand) {
-      return null;
-    }
     const index = items.findIndex((item) => item.songDifficultyId === saved.songDifficultyId);
     const order = [...items.slice(index + 1), ...items.slice(0, Math.max(index, 0))];
     const next = order.find((item) => !item.done && item.songDifficultyId !== saved.songDifficultyId);

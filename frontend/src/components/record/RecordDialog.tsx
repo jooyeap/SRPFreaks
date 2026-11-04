@@ -35,8 +35,8 @@ export function RecordDialog({
   chart: RecordChart | null;
   onClose: () => void;
   /**
-   * 저장한 뒤 이어서 입력할 다음 채보를 돌려주면 창을 닫지 않고 그 채보로 바꾼다(한 손 모드에서 세트리스트를 차례로 입력할 때).
-   * 생략하거나 null을 돌려주면 평소처럼 창을 닫는다. 삭제는 항상 창을 닫는다.
+   * 세트리스트에서 입력 중일 때 저장한 뒤 이어서 입력할 다음 채보를 돌려준다. 돌려주면 결과 카드에 `다음 곡 ›` 버튼이 생기고,
+   * 누르면 창을 닫지 않고 그 채보의 입력으로 바뀐다. 생략하거나 null이면 버튼이 없고 [닫기]만 있다. 삭제는 항상 창을 닫는다.
    */
   nextChartAfterSave?: (saved: RecordChart) => RecordChart | null;
 }) {
@@ -50,30 +50,36 @@ export function RecordDialog({
   const toast = useToast();
   // "최근 입력한 곡"으로 옮겨 간 채보. 창을 닫으면 비워서 다음에 열 때는 부모가 준 채보로 열린다
   const [switched, setSwitched] = useState<RecordChart | null>(null);
-  // 저장 직후 결과 카드. 세트리스트로 이어 입력할 때(다음 채보가 있을 때)는 흐름을 끊지 않으려고 카드 없이 바로 넘어간다
+  // 저장 직후 결과 카드와, 세트리스트에서 입력 중일 때 카드의 `다음 곡 ›`이 열 다음 채보(없으면 버튼을 숨긴다)
   const [outcome, setOutcome] = useState<SaveOutcome | null>(null);
+  const [nextChart, setNextChart] = useState<RecordChart | null>(null);
   const active = chart ? (switched ?? chart) : null;
   // 기록 창이 열려 있는 동안 화면이 꺼지지 않게 한다(게임 사이에 달성률을 옮겨 적는 동안)
   useWakeLock(active !== null);
   const close = useCallback(() => {
     setSwitched(null);
     setOutcome(null);
+    setNextChart(null);
     onClose();
   }, [onClose]);
   const handleSaved = useCallback(
     (_saved: RecordResponse, result: SaveOutcome) => {
-      const next = active && nextChartAfterSave ? nextChartAfterSave(active) : null;
-      if (next) {
-        // 저장이 끝나 입력 중인 값이 없으므로 바로 바꾼다 (RecordDialogBody의 key가 바뀌어 폼이 새로 만들어진다)
-        setSwitched(next);
-      } else {
-        // 창을 닫지 않고 같은 창에서 결과를 보여 준다. 입력 중인 값은 없다(저장됨)
-        dirtyRef.current = false;
-        setOutcome(result);
-      }
+      // 창을 닫지 않고 같은 창에서 결과를 보여 준다. 입력 중인 값은 없다(저장됨)
+      // 세트리스트의 다음 곡은 저장 직후 정해 두고, 카드의 `다음 곡 ›`을 눌렀을 때만 그 곡으로 넘어간다(예전에는 카드 없이 자동으로 넘어갔다)
+      dirtyRef.current = false;
+      setNextChart(active && nextChartAfterSave ? nextChartAfterSave(active) : null);
+      setOutcome(result);
     },
     [active, nextChartAfterSave],
   );
+  const goNext = useCallback(() => {
+    if (nextChart) {
+      // RecordDialogBody의 key가 바뀌어 폼이 새로 만들어진다
+      setSwitched(nextChart);
+    }
+    setNextChart(null);
+    setOutcome(null);
+  }, [nextChart]);
   const switchTo = useCallback(
     (next: RecordChart) => {
       // 입력 중인 값이 있으면 옮기지 않는다 (바깥 클릭으로 닫히지 않게 하는 것과 같은 이유)
@@ -127,7 +133,7 @@ export function RecordDialog({
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
           {outcome ? (
-            <SaveResultCard outcome={outcome} onClose={close} />
+            <SaveResultCard outcome={outcome} onClose={close} onNext={nextChart ? goNext : undefined} />
           ) : (
             <>
               <RecentCharts currentChartId={active.songDifficultyId} onPick={switchTo} />

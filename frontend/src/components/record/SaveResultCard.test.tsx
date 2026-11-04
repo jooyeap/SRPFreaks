@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SaveResultCard, type SaveOutcome } from "@/components/record/SaveResultCard";
 
@@ -9,8 +9,8 @@ const base: SaveOutcome = {
   ratingChange: { totalBefore: 10638.13, totalAfter: 10654.35, change: 16.22, entered: true, inList: true },
 };
 
-function renderCard(outcome: SaveOutcome = base, onClose = vi.fn()) {
-  render(<SaveResultCard outcome={outcome} onClose={onClose} />);
+function renderCard(outcome: SaveOutcome = base, onClose = vi.fn(), onNext?: () => void) {
+  render(<SaveResultCard outcome={outcome} onClose={onClose} onNext={onNext} />);
   return { onClose, card: screen.getByRole("group", { name: "저장 결과" }) };
 }
 
@@ -65,11 +65,67 @@ describe("SaveResultCard", () => {
     expect(within(card).queryByText("레이팅 목록")).toBeNull();
   });
 
-  it("내 레이팅 보기는 레이팅 탭으로 가고, 둘 다 창을 닫는다", () => {
+  it("제목은 `저장했어요`이고 ✓는 장식으로 따로 둔다", () => {
+    const { card } = renderCard();
+    expect(within(card).getByRole("heading", { name: "저장했어요" })).toBeInTheDocument();
+    expect(within(card).getByText("✓")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("진입 안내: 단일이면 `단일 15 안으로 들어왔어요`, 그 외면 `그 외 25 안으로 들어왔어요`", () => {
+    const single = renderCard({ ...base, entry: { group: "single", limit: 15 } });
+    expect(within(single.card).getByText("단일 15 안으로 들어왔어요")).toBeInTheDocument();
+    expect(within(single.card).queryByText("새로 들어갔습니다")).toBeNull();
+    cleanup();
+    const other = renderCard({ ...base, entry: { group: "other", limit: 25 } });
+    expect(within(other.card).getByText("그 외 25 안으로 들어왔어요")).toBeInTheDocument();
+  });
+
+  it("그룹을 판정할 수 없으면(entry 없음) 기존 `새로 들어갔습니다` 문구를 쓴다", () => {
+    const { card } = renderCard({ ...base, entry: null });
+    expect(within(card).getByText("새로 들어갔습니다")).toBeInTheDocument();
+  });
+
+  it("목록에 새로 들어온 게 아니면 진입 안내를 쓰지 않는다", () => {
+    const { card } = renderCard({
+      ...base,
+      entry: { group: "single", limit: 15 },
+      ratingChange: { totalBefore: 100, totalAfter: 110, change: 10, entered: false, inList: true },
+    });
+    expect(within(card).queryByText(/안으로 들어왔어요/)).toBeNull();
+    expect(within(card).getByText("목록에 있습니다")).toBeInTheDocument();
+  });
+
+  it("기준 난이도가 미정이면 점수·목록 줄 대신 안내 한 줄만 보인다", () => {
+    const { card } = renderCard({ ...base, tier: null, entry: null });
+    expect(within(card).queryByText("곡 점수")).toBeNull();
+    expect(within(card).queryByText("레이팅 목록")).toBeNull();
+    expect(within(card).getByText("기준 난이도가 정해지지 않아 레이팅에는 반영되지 않습니다.")).toBeInTheDocument();
+  });
+
+  it("기준 난이도가 있으면 미정 안내는 없다", () => {
+    const { card } = renderCard();
+    expect(within(card).queryByText(/기준 난이도가 정해지지 않아/)).toBeNull();
+  });
+
+  it("내 레이팅 보기 링크는 카드에 없다", () => {
+    const { card } = renderCard(base, vi.fn(), vi.fn());
+    expect(within(card).queryByRole("link")).toBeNull();
+    expect(within(card).queryByText("내 레이팅 보기")).toBeNull();
+  });
+
+  it("세트리스트에서 입력 중이 아니면(onNext 없음) [닫기]만 보이고 `다음 곡 ›`은 숨긴다", () => {
     const { card, onClose } = renderCard();
-    expect(within(card).getByRole("link", { name: "내 레이팅 보기" })).toHaveAttribute("href", "/me?tab=rating");
-    fireEvent.click(within(card).getByRole("link", { name: "내 레이팅 보기" }));
-    fireEvent.click(within(card).getByRole("button", { name: "다음 곡 입력" }));
-    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(within(card).getAllByRole("button").map((b) => b.textContent)).toEqual(["닫기"]);
+    fireEvent.click(within(card).getByRole("button", { name: "닫기" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("세트리스트에서 입력 중이면 [닫기] [다음 곡 ›] 두 개이고, `다음 곡 ›`은 onNext만 부른다", () => {
+    const onNext = vi.fn();
+    const { card, onClose } = renderCard(base, vi.fn(), onNext);
+    expect(within(card).getAllByRole("button").map((b) => b.textContent)).toEqual(["닫기", "다음 곡 ›"]);
+    fireEvent.click(within(card).getByRole("button", { name: "다음 곡 ›" }));
+    expect(onNext).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
   });
 });
