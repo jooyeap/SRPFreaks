@@ -8,7 +8,12 @@ import { LOCALES, saveLocale, type Locale } from "@/i18n/config";
 import type { Theme } from "@/lib/theme";
 
 const THEMES: readonly Theme[] = ["light", "dark"];
-const SEGMENT_BASE = "flex min-h-11 flex-1 items-center justify-center whitespace-nowrap px-1 text-xs font-medium";
+// 보이는 높이 34px(바깥 상자), 글자 12px. 눌리는 영역은 위아래로 2px씩 넓힌 38px(before 가상 요소도 버튼의 일부라 눌린다)이다.
+// 바깥 상자에 overflow-hidden을 쓰면 넓힌 영역이 잘리므로, 둥근 모서리는 양끝 버튼이 직접 가진다.
+const SEGMENT_BASE =
+  "relative flex h-full flex-1 items-center justify-center whitespace-nowrap px-1 text-xs font-medium before:absolute before:inset-x-0 before:-inset-y-0.5 before:content-[''] first:rounded-l-[7px] last:rounded-r-[7px]";
+const SEGMENT_BOX = "flex h-[34px] rounded-lg border border-ctl";
+const LABEL_CLASS = "px-0.5 pb-0.5 text-[11px] leading-4 text-fg-dim";
 
 /** 분할 버튼 한 칸. 현재 값은 채워진 배경 + aria-pressed로 알려 색만으로 구분하지 않는다(글자도 그대로 보인다). */
 function segmentClass(selected: boolean): string {
@@ -43,10 +48,10 @@ export function MoreSettingsStrip() {
   }
 
   return (
-    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-line pt-3">
+    <div className="mt-2 grid grid-cols-2 gap-2 border-t border-line pt-2">
       <div role="group" aria-label={t("theme")} className="min-w-0">
-        <div className="px-0.5 pb-1 text-[11px] text-fg-dim">{t("theme")}</div>
-        <div className="flex overflow-hidden rounded-lg border border-ctl">
+        <div className={LABEL_CLASS}>{t("theme")}</div>
+        <div className={SEGMENT_BOX}>
           {THEMES.map((value) => (
             <button
               key={value}
@@ -61,8 +66,8 @@ export function MoreSettingsStrip() {
         </div>
       </div>
       <div role="group" aria-label={t("language")} className="min-w-0">
-        <div className="px-0.5 pb-1 text-[11px] text-fg-dim">{t("language")}</div>
-        <div className="flex overflow-hidden rounded-lg border border-ctl">
+        <div className={LABEL_CLASS}>{t("language")}</div>
+        <div className={SEGMENT_BOX}>
           {LOCALES.map((value) => (
             <button
               key={value}

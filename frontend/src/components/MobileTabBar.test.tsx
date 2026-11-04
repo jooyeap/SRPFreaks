@@ -138,7 +138,6 @@ describe("MobileTabBar", () => {
     const group = within(screen.getByRole("group", { name: "화면 테마" }));
     expect(group.getByRole("button", { name: "다크" })).toHaveAttribute("aria-pressed", "true");
     expect(group.getByRole("button", { name: "라이트" })).toHaveAttribute("aria-pressed", "false");
-    expect(group.getByRole("button", { name: "라이트" })).toHaveClass("min-h-11");
 
     fireEvent.click(group.getByRole("button", { name: "라이트" }));
 
@@ -147,6 +146,41 @@ describe("MobileTabBar", () => {
     expect(group.getByRole("button", { name: "라이트" })).toHaveAttribute("aria-pressed", "true");
     expect(group.getByRole("button", { name: "다크" })).toHaveAttribute("aria-pressed", "false");
     document.documentElement.removeAttribute("data-theme");
+  });
+
+  it("설정 띠 크기: 보이는 높이 34px · 글자 12px · 라벨 11px, 눌리는 영역은 위아래 2px씩 넓힌 38px (2026-11-04)", () => {
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    for (const name of ["화면 테마", "언어"]) {
+      const group = screen.getByRole("group", { name });
+      // 라벨 11px
+      expect(within(group).getByText(name)).toHaveClass("text-[11px]");
+      // 분할 버튼 상자 34px, 둥근 모서리가 잘리지 않도록 overflow-hidden은 쓰지 않는다
+      const box = group.querySelector("button")?.parentElement as HTMLElement;
+      expect(box).toHaveClass("h-[34px]");
+      expect(box).not.toHaveClass("overflow-hidden");
+      for (const button of within(group).getAllByRole("button")) {
+        expect(button).toHaveClass("h-full", "text-xs", "before:-inset-y-0.5"); // 12px, 34 + 2 + 2 = 38px(24px 이상)
+        expect(button).not.toHaveClass("min-h-11");
+      }
+    }
+  });
+
+  it("설정 띠 360px: 두 칸이 같은 폭으로 나뉘고 글자는 줄바꿈하지 않는다 (한국어·일본어 표기 포함)", () => {
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    const strip = screen.getByRole("group", { name: "화면 테마" }).parentElement as HTMLElement;
+    expect(strip).toHaveClass("grid-cols-2", "mt-2", "pt-2"); // 여백을 줄였고 위 구분선은 그대로
+    expect(strip).toHaveClass("border-t");
+    for (const name of ["화면 테마", "언어"]) {
+      const group = screen.getByRole("group", { name });
+      expect(group).toHaveClass("min-w-0");
+      for (const button of within(group).getAllByRole("button")) {
+        expect(button).toHaveClass("whitespace-nowrap", "flex-1");
+      }
+    }
+    // 가장 긴 표기(日本語 · 한국어)도 한 칸 160px 안의 절반(약 80px)에 12px 글자로 들어가는 길이다
+    expect(["한국어", "日本語", "라이트", "다크"].every((text) => text.length <= 3)).toBe(true);
   });
 
   it("설정 띠의 언어 버튼은 쿠키에 저장하고 화면을 새로 받아 온다 (현재 언어는 눌림 표시)", () => {

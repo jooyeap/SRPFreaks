@@ -136,7 +136,7 @@ describe("기록 수정 / 삭제", () => {
     fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "5050" } });
     fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
     await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
-    fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
     expect(onClose).toHaveBeenCalled();
     expect(JSON.parse(String(callsOf("PUT")[0][1]?.body))).toMatchObject({ achievementRate: 50.5 });
   });
@@ -203,7 +203,7 @@ describe("기록 수정 / 삭제", () => {
     fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "95" } });
     fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
     await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
-    fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
     expect(onClose).toHaveBeenCalled();
     expect(screen.getByRole("status")).toHaveTextContent("기록을 수정했습니다. (91.25 → 95.00)");
   });
@@ -226,7 +226,7 @@ describe("기록 수정 / 삭제", () => {
     fireEvent.change(screen.getByLabelText("달성률"), { target: { value: "95" } });
     fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
     await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
-    fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
     expect(onClose).toHaveBeenCalled();
     expect(screen.getByRole("status")).toHaveTextContent(
       "기록을 수정했습니다. (91.25 → 95.00) 레이팅 +3.40 (100.00 → 103.40) · NEW 레이팅 목록에 새로 들어갔습니다.",
@@ -240,7 +240,7 @@ describe("기록 수정 / 삭제", () => {
     fireEvent.click(screen.getByRole("button", { name: "수정 저장" }));
 
     await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
-    fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
     expect(onClose).toHaveBeenCalled();
     expect(screen.getByRole("status")).toHaveTextContent("기록을 수정했습니다.");
     const [url, init] = callsOf("PUT")[0];

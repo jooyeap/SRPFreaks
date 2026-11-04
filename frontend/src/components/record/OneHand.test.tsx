@@ -154,31 +154,37 @@ describe("한 손 입력 모드", () => {
       fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     }
 
-    it("다음 곡을 돌려주면 창을 닫지 않고 그 곡의 기록 입력으로 바뀐다", async () => {
+    it("다음 곡을 돌려주면 결과 카드에 `다음 곡 ›`이 생기고, 누르면 창을 닫지 않고 그 곡의 기록 입력으로 바뀐다", async () => {
       const nextChartAfterSave = vi.fn(() => next);
       const onClose = renderDialog(nextChartAfterSave);
       await saveWith("9650");
       await waitFor(() => expect(nextChartAfterSave).toHaveBeenCalledWith(expect.objectContaining({ songDifficultyId: 42 })));
       const dialog = screen.getByRole("dialog", { hidden: true });
+      // 저장하면 카드가 먼저 보이고, 자동으로 넘어가지 않는다
+      expect(await within(dialog).findByRole("group", { name: "저장 결과" })).toBeInTheDocument();
+      expect(within(dialog).queryByText("다음곡")).toBeNull();
+      fireEvent.click(within(dialog).getByRole("button", { name: "다음 곡 ›" }));
       expect(await within(dialog).findByText("다음곡")).toBeInTheDocument();
       expect(within(dialog).queryByText("테스트곡")).toBeNull();
       expect(onClose).not.toHaveBeenCalled();
       expect(await screen.findByLabelText("달성률")).toHaveValue(""); // 새 곡의 빈 입력
     });
 
-    it("null을 돌려주면 평소처럼 창을 닫는다", async () => {
+    it("null을 돌려주면 `다음 곡 ›` 없이 [닫기]만 있고, 닫기는 창을 닫는다", async () => {
       const onClose = renderDialog(() => null);
       await saveWith("9650");
-      await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
-      fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
+      const card = await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
+      expect(within(card).queryByRole("button", { name: "다음 곡 ›" })).toBeNull();
+      fireEvent.click(within(card).getByRole("button", { name: "닫기" }));
       expect(onClose).toHaveBeenCalled();
     });
 
-    it("함수를 주지 않으면(다른 화면) 평소처럼 창을 닫는다", async () => {
+    it("함수를 주지 않으면(다른 화면) `다음 곡 ›`은 숨기고 [닫기]로 창을 닫는다", async () => {
       const onClose = renderDialog(undefined);
       await saveWith("9650");
-      await screen.findByRole("group", { name: "저장 결과" }); // 저장하면 닫지 않고 결과 카드를 보여 준다
-      fireEvent.click(screen.getByRole("button", { name: "다음 곡 입력" }));
+      const card = await screen.findByRole("group", { name: "저장 결과" });
+      expect(within(card).queryByRole("button", { name: "다음 곡 ›" })).toBeNull();
+      fireEvent.click(within(card).getByRole("button", { name: "닫기" }));
       expect(onClose).toHaveBeenCalled();
     });
   });
