@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
@@ -106,6 +107,112 @@ describe("Toast", () => {
       vi.advanceTimersByTime(3100);
     });
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("countdown 옵션이 있을 때만 남은 시간 막대가 있고, 기존 호출에는 없다", () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <Button text="보통" />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "알림" }));
+    expect(document.querySelector("[data-countdown]")).toBeNull();
+    rerender(
+      <ToastProvider>
+        <Button text="막대" options={{ countdown: true, durationMs: 5000 }} />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "알림" }));
+    const bar = document.querySelector("[data-countdown='bar']");
+    expect(bar).not.toBeNull();
+    expect(bar?.firstElementChild).toHaveStyle({ animationDuration: "5000ms" });
+    expect(bar?.firstElementChild).toHaveClass("bg-done"); // 색은 토큰 유틸리티만
+  });
+
+  it("countdown 토스트는 서로 대체되지 않고 쌓이며 각자 자기 시간에 사라진다", () => {
+    function Two() {
+      const toast = useToast();
+      return (
+        <>
+          <button onClick={() => toast("하나", { countdown: true, durationMs: 5000 })}>1</button>
+          <button onClick={() => toast("둘", { countdown: true, durationMs: 5000 })}>2</button>
+          <button onClick={() => toast("보통")}>3</button>
+        </>
+      );
+    }
+    render(
+      <ToastProvider>
+        <Two />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "1" }));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+    fireEvent.click(screen.getByRole("button", { name: "3" })); // 보통 안내가 와도 countdown은 그대로
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("하나");
+    expect(status).toHaveTextContent("둘");
+    expect(status).toHaveTextContent("보통");
+    act(() => {
+      vi.advanceTimersByTime(3100);
+    });
+    expect(status).not.toHaveTextContent("하나");
+    expect(status).toHaveTextContent("둘");
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(status).toBeEmptyDOMElement();
+  });
+
+  it("반환된 함수로 토스트를 닫을 수 있다", () => {
+    function Closer() {
+      const toast = useToast();
+      const [close, setClose] = useState<(() => void) | null>(null);
+      return (
+        <>
+          <button onClick={() => setClose(() => toast("닫힐 것", { countdown: true, durationMs: 5000 }))}>열기</button>
+          <button onClick={() => close?.()}>닫기</button>
+        </>
+      );
+    }
+    render(
+      <ToastProvider>
+        <Closer />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "열기" }));
+    expect(screen.getByRole("status")).toHaveTextContent("닫힐 것");
+    fireEvent.click(screen.getByRole("button", { name: "닫기" }));
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("움직임 줄이기 설정이면 막대 대신 남은 초 숫자를 보인다", () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("prefers-reduced-motion"),
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+    try {
+      render(
+        <ToastProvider>
+          <Button text="숫자" options={{ countdown: true, durationMs: 5000 }} />
+        </ToastProvider>,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "알림" }));
+      expect(document.querySelector("[data-countdown='bar']")).toBeNull();
+      const num = document.querySelector("[data-countdown='number']");
+      expect(num).toHaveTextContent("5");
+      act(() => {
+        vi.advanceTimersByTime(2100);
+      });
+      expect(num).toHaveTextContent("3");
+    } finally {
+      window.matchMedia = original;
+    }
   });
 });
 
