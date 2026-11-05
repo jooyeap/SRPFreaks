@@ -522,6 +522,8 @@
     "playedDate": "プレイ日",
     "saveNote": "記録は本人のみ登録・編集・削除できます。",
     "deleteThis": "この記録を削除",
+    "deleteTitle": "記録の削除",
+    "deleteMessage": "この記録を削除しますか？元に戻せません。",
     "saveEdit": "編集を保存",
     "listAria": "この譜面の自分の記録",
     "edit": "編集",

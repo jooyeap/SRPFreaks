@@ -2,10 +2,11 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useRecordDelete } from "@/components/RecordDeleteProvider";
 import { useToast } from "@/components/Toast";
 import { StageBadge } from "@/components/table/StageBadge";
@@ -96,6 +97,7 @@ export function RecordForm({
     [record],
   );
   const { requestDelete } = useRecordDelete();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const {
     register,
@@ -169,9 +171,10 @@ export function RecordForm({
     },
   });
 
-  // 삭제는 확인 창 없이 바로 예약한다: 목록에서 사라지고 5초 안에 `되돌리기`를 누를 수 있다(RecordDeleteProvider).
+  // 삭제는 확인 창으로 한 번 묻고(같은 줄의 버튼을 잘못 누르는 일을 줄인다), 확정하면 바로 예약한다: 목록에서 사라지고 5초 안에 `되돌리기`를 누를 수 있다(RecordDeleteProvider).
   // 서버 요청은 5초 뒤에 나가므로 여기서는 오류를 기다리지 않고 창을 닫는다(실패하면 Provider가 오류 토스트로 알린다).
   const deleteThis = () => {
+    setConfirmingDelete(false);
     if (record && requestDelete(record)) {
       onDeleted?.();
     }
@@ -343,11 +346,20 @@ export function RecordForm({
 
       {record ? (
         <div className="border-t border-row-line pt-3">
-          <button type="button" onClick={deleteThis} className="min-h-9 text-sm text-danger underline">
+          <button type="button" onClick={() => setConfirmingDelete(true)} className="min-h-9 text-sm text-danger underline">
             {t("Record.deleteThis")}
           </button>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={confirmingDelete}
+        title={t("Record.deleteTitle")}
+        message={t("Record.deleteMessage")}
+        confirmLabel={t("Song.delete")}
+        onConfirm={deleteThis}
+        onCancel={() => setConfirmingDelete(false)}
+      />
+
       <div className="flex gap-2.5">
         <button
           type="button"

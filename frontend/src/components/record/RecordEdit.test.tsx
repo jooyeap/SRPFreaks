@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { RecordDialog } from "@/components/record/RecordDialog";
@@ -251,14 +251,53 @@ describe("기록 수정 / 삭제", () => {
     expect(JSON.parse(String(init?.body))).toMatchObject({ achievementRate: 95, noteOption: "SUPER_RANDOM_PLUS" });
   });
 
-  it("`이 기록 삭제`는 확인 창 없이 창을 닫고 5초 되돌리기 토스트를 띄운다(요청은 아직 없다)", async () => {
+  it("`이 기록 삭제`를 누르면 먼저 확인 창이 뜨고, 아직 닫히거나 삭제 대기가 생기지 않는다", async () => {
     renderDialog();
     await openEdit();
     fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
-    expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull(); // 확인 창이 없다
+    const confirm = screen.getByRole("dialog", { name: "기록 삭제" });
+    expect(within(confirm).getByText("이 기록을 삭제할까요? 되돌릴 수 없습니다.")).toBeInTheDocument();
+    expect(within(confirm).getByRole("button", { name: "취소" })).toBeInTheDocument();
+    expect(within(confirm).getByRole("button", { name: "삭제" })).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByText("기록을 삭제했어요")).toBeNull(); // 되돌리기 토스트 없음
+    expect(callsOf("DELETE")).toHaveLength(0);
+  });
+
+  it("확인 창에서 취소하면 아무 일도 없다(기록 창·입력값 그대로)", async () => {
+    renderDialog();
+    await openEdit();
+    fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "기록 삭제" })).getByRole("button", { name: "취소" }));
+    expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull();
+    expect(screen.getByLabelText("달성률")).toHaveValue("9125");
+    expect(screen.getByRole("button", { name: "이 기록 삭제" })).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.queryByText("기록을 삭제했어요")).toBeNull();
+    expect(callsOf("DELETE")).toHaveLength(0);
+  });
+
+  it("확인 창에서 삭제하면 창을 닫고 5초 되돌리기 토스트가 뜨며, 5초 뒤에 DELETE를 보낸다", async () => {
+    renderDialog();
+    await openEdit();
+    fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "기록 삭제" })).getByRole("button", { name: "삭제" }));
+    expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull();
     expect(onClose).toHaveBeenCalled();
     expect(screen.getByRole("status")).toHaveTextContent("기록을 삭제했어요");
     expect(screen.getByRole("button", { name: "되돌리기" })).toBeInTheDocument();
+    expect(callsOf("DELETE")).toHaveLength(0); // 5초 전에는 서버 요청이 없다
+    await waitFor(() => expect(callsOf("DELETE")).toHaveLength(1), { timeout: 7000 });
+    expect(callsOf("DELETE")[0][0]).toBe("/api/v1/records/7");
+  }, 10000);
+
+  it("확인한 뒤에도 `되돌리기`를 누르면 서버에 아무것도 보내지 않는다", async () => {
+    renderDialog();
+    await openEdit();
+    fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "기록 삭제" })).getByRole("button", { name: "삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "되돌리기" }));
     expect(callsOf("DELETE")).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: "되돌리기" })).toBeNull();
   });
 });
