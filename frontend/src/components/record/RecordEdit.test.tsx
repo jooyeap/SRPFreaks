@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { RecordDialog } from "@/components/record/RecordDialog";
+import { RecordDeleteProvider } from "@/components/RecordDeleteProvider";
 import { ToastProvider } from "@/components/Toast";
 import type { RecordChart } from "@/components/record/RecordForm";
 import { clearAccessToken } from "@/lib/auth-token";
@@ -68,7 +69,9 @@ describe("기록 수정 / 삭제", () => {
       <QueryClientProvider client={client}>
         <AuthProvider>
           <ToastProvider>
-            <RecordDialog chart={chart} onClose={onClose} />
+            <RecordDeleteProvider>
+              <RecordDialog chart={chart} onClose={onClose} />
+            </RecordDeleteProvider>
           </ToastProvider>
         </AuthProvider>
       </QueryClientProvider>,
@@ -248,42 +251,14 @@ describe("기록 수정 / 삭제", () => {
     expect(JSON.parse(String(init?.body))).toMatchObject({ achievementRate: 95, noteOption: "SUPER_RANDOM_PLUS" });
   });
 
-  it("삭제는 한 번 더 확인한 뒤에만 DELETE를 보낸다", async () => {
+  it("`이 기록 삭제`는 확인 창 없이 창을 닫고 5초 되돌리기 토스트를 띄운다(요청은 아직 없다)", async () => {
     renderDialog();
     await openEdit();
     fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
+    expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull(); // 확인 창이 없다
+    expect(onClose).toHaveBeenCalled();
+    expect(screen.getByRole("status")).toHaveTextContent("기록을 삭제했어요");
+    expect(screen.getByRole("button", { name: "되돌리기" })).toBeInTheDocument();
     expect(callsOf("DELETE")).toHaveLength(0);
-    const confirm = screen.getByRole("dialog", { name: "기록 삭제" });
-    expect(within(confirm).getByText("이 기록을 삭제할까요? 되돌릴 수 없습니다.")).toBeInTheDocument();
-
-    fireEvent.click(within(confirm).getByRole("button", { name: "삭제" }));
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
-    expect(screen.getByRole("status")).toHaveTextContent("기록을 삭제했습니다.");
-    expect(callsOf("DELETE")[0][0]).toBe("/api/v1/records/7");
-  });
-
-  it("삭제 확인에서 취소하면 아무것도 지우지 않는다", async () => {
-    renderDialog();
-    await openEdit();
-    fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
-    fireEvent.click(within(screen.getByRole("dialog", { name: "기록 삭제" })).getByRole("button", { name: "취소" }));
-    expect(callsOf("DELETE")).toHaveLength(0);
-    expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull();
-    expect(screen.getByRole("button", { name: "이 기록 삭제" })).toBeInTheDocument();
-  });
-
-  it("삭제가 서버 오류로 실패하면 문구를 보여 주고 창을 닫지 않는다", async () => {
-    renderDialog();
-    await openEdit();
-    fetchMock.mockImplementation((_input, init) =>
-      Promise.resolve(
-        init?.method === "DELETE" ? json({ code: "NOT_FOUND", message: "찾을 수 없습니다.", timestamp: "t" }, 404) : json({}),
-      ),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
-    fireEvent.click(within(screen.getByRole("dialog", { name: "기록 삭제" })).getByRole("button", { name: "삭제" }));
-    expect(await screen.findByText("찾을 수 없습니다.")).toBeInTheDocument();
-    expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull(); // 확인 창은 닫혀서 오류 문구가 가려지지 않는다
-    expect(onClose).not.toHaveBeenCalled();
   });
 });
