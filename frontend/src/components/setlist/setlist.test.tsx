@@ -98,7 +98,45 @@ describe("세트리스트", () => {
       expect(rows[0]).toHaveTextContent("곡01");
       expect(rows[0]).toHaveTextContent("완료");
       expect(rows[0]).toHaveTextContent("96.50");
-      expect(rows[1]).toHaveTextContent("미완료");
+      // 미완료 줄에는 `미완료` 글자 대신 `입력` 버튼이, 완료 줄에는 `수정` 버튼이 있다 (A안, 2026-11-05)
+      expect(rows[0]).not.toHaveTextContent("미완료");
+      expect(within(rows[0]).getByRole("button", { name: "곡01 기록 수정" })).toHaveTextContent("수정");
+      expect(within(rows[1]).getByRole("button", { name: "곡02 기록 입력" })).toHaveTextContent("입력");
+    });
+
+    it("카드 A안: `속성 | 상수 x.x` 작은 줄, 상수 미정, 속성 없음, 완료 표시와 버튼 구성, 높이 고정", async () => {
+      listed = [
+        item(1, { pattern: "복합", tier: 5.6 }),
+        item(2, { pattern: "단일", tier: null, done: true, mine: { rate: 100, fullCombo: true, stage: "EXC" } }),
+        item(3, { pattern: null, tier: null, title: "아주 아주 긴 곡 이름 아주 아주 긴 곡 이름 아주 아주 긴 곡 이름" }),
+      ];
+      renderWith(<SetlistTab userId={1} />);
+      const rows = within(await screen.findByRole("list", { name: "세트리스트" })).getAllByRole("listitem");
+
+      expect(rows[0]).toHaveTextContent("속성 복합|상수 5.6");
+      expect(rows[0]).not.toHaveTextContent("레이팅 상수 난이도");
+      expect(rows[1]).toHaveTextContent("속성 단일|상수 미정");
+      expect(rows[2]).toHaveTextContent("속성 –|상수 미정");
+
+      // 미완료: [입력][빼기], 완료 글자 없음. 완료: [수정][빼기], `완료` 글자와 초록 테두리
+      expect(within(rows[0]).getAllByRole("button").map((b) => b.textContent)).toEqual(["입력", "빼기"]);
+      expect(within(rows[0]).queryByText("완료")).not.toBeInTheDocument();
+      expect(rows[0]).toHaveClass("border-line");
+      expect(within(rows[1]).getAllByRole("button").map((b) => b.textContent)).toEqual(["수정", "빼기"]);
+      expect(within(rows[1]).getByText("완료")).toBeInTheDocument();
+      expect(rows[1]).toHaveClass("border-done");
+
+      // 기록 없음 `– | –`, 있으면 랭크·달성률
+      expect(rows[0]).toHaveTextContent("––");
+      expect(rows[1]).toHaveTextContent("EXC");
+      expect(rows[1]).toHaveTextContent("MAX");
+
+      // 높이는 곡명 길이·기록 유무와 상관없이 같고, 곡명은 한 줄 말줄임, 눌리는 영역을 넓힌 버튼
+      for (const row of rows) expect(row).toHaveClass("h-[76px]");
+      expect(within(rows[2]).getByRole("link")).toHaveClass("truncate");
+      for (const b of within(rows[0]).getAllByRole("button")) {
+        expect(b).toHaveClass("h-[26px]", "after:-inset-1.5");
+      }
     });
 
     it("줄마다 서열표의 속성 글자를 보여 주고, 서열표에 없는 채보는 속성을 비운다", async () => {
@@ -133,6 +171,7 @@ describe("세트리스트", () => {
       renderWith(<SetlistTab userId={1} />);
       expect(await screen.findByText(/담은 곡이 없습니다/)).toBeInTheDocument();
       expect(screen.getByText(/위 검색창에서/)).toBeInTheDocument();
+      expect(screen.getByText("담은 곡이 없습니다. 위 검색창에서 오늘 플레이할 곡을 찾아 담아 보세요.")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "완료한 곡 비우기" })).toBeDisabled();
     });
 
