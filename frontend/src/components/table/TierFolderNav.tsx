@@ -8,9 +8,8 @@ import type { TierGroupResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
 
 /**
- * 서열표 묶음 화면 상단의 난이도 이동 막대. 두 가지를 함께 쓴다.
- * 1) `‹ 5.6 · 5.7 · 5.8 ›`: 지금 묶음의 바로 아래/위 난이도로 한 번에 간다.
- * 2) 칩 띠: 모든 난이도를 가로로 늘어놓고 지금 것을 강조한다(내 기록 `n/전체`). 열 때 지금 칩이 보이는 자리로 맞춘다.
+ * 서열표 폴더 화면의 난이도 칩 띠(2026-11-05 PR 2에서 머리의 `‹ ›` 버튼은 없앴다. 이웃 이동은 화면 아래 버튼과 좌우 스와이프가 맡는다).
+ * 모든 난이도를 가로로 늘어놓고 지금 것을 강조한다(내 기록 `n/전체`). 열 때 지금 칩이 가운데 보이게 맞춘다.
  *
  * 이동은 모두 `replace`다. push로 가면 5.7 → 5.8 → 5.9를 누를 때마다 기록이 쌓여서 뒤로 가기를 여러 번 눌러야 서열표로 돌아간다
  * ("위에 쌓이는 느낌"). replace는 지금 주소를 갈아 끼우므로 뒤로 가기 한 번이 곧 서열표/곡 상세다.
@@ -30,25 +29,9 @@ export function TierFolderNav({ groups, currentTier }: { groups: readonly TierGr
   if (index < 0) {
     return null;
   }
-  const higher = index > 0 ? groups[index - 1] : null; // 서버 순서에서 앞 = 더 높은 난이도
-  const lower = index < groups.length - 1 ? groups[index + 1] : null;
-  const current = groups[index];
 
   return (
     <div className="flex flex-col gap-2">
-      <nav aria-label={t("Table.neighborTiers")} className="flex items-stretch justify-between gap-2">
-        <StepLink group={lower} direction="prev" />
-        <div className="flex min-w-0 flex-1 flex-col items-center justify-center rounded-2xl border border-line bg-card px-3 py-1.5">
-          <span aria-current="page" className="font-num text-lg font-semibold text-fg">
-            {formatTier(current.tier, t)}
-          </span>
-          <span className="font-num text-[11px] text-fg-dim">
-            {t("Chart.recordedOf", { recorded: current.recorded, total: current.total })}
-          </span>
-        </div>
-        <StepLink group={higher} direction="next" />
-      </nav>
-
       <nav aria-label={t("Table.tierList")}>
         <ul className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
           {[...groups].reverse().map((g) => {
@@ -77,32 +60,5 @@ export function TierFolderNav({ groups, currentTier }: { groups: readonly TierGr
         </ul>
       </nav>
     </div>
-  );
-}
-
-/** 이전(낮은)/다음(높은) 난이도 버튼. 끝이라 갈 곳이 없으면 눌리지 않는 자리 표시만 둔다(막대 폭이 흔들리지 않게). */
-function StepLink({ group, direction }: { group: TierGroupResponse | null; direction: "prev" | "next" }) {
-  const t = useTranslations();
-  const arrow = direction === "prev" ? "‹" : "›";
-  const base = "flex w-20 flex-col items-center justify-center rounded-xl border px-2 py-1.5";
-  if (!group) {
-    return (
-      <span aria-hidden="true" className={`${base} border-line text-disabled`}>
-        <span className="text-lg leading-none">{arrow}</span>
-      </span>
-    );
-  }
-  const label = formatTier(group.tier, t);
-  return (
-    <Link
-      href={folderHref(group.tier)}
-      replace
-      aria-label={t("Chart.nav", { direction: direction === "prev" ? t("Common.prev") : t("Common.next"), label })}
-      className={`${base} border-ctl text-fg hover:bg-table-head`}
-    >
-      <span aria-hidden="true" className="font-num text-sm font-semibold">
-        {direction === "prev" ? `${arrow} ${label}` : `${label} ${arrow}`}
-      </span>
-    </Link>
   );
 }
