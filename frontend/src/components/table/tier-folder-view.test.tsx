@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TierFolderView } from "@/components/table/TierFolderView";
+import { readDetailNav, resetDetailNavForTest } from "@/lib/detail-nav";
 import { rememberTableReturn, viewStateToQuery, DEFAULT_VIEW_STATE } from "@/lib/table-view-state";
 import type { DifficultyTableResponse, PageResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 
@@ -121,6 +122,18 @@ describe("TierFolderView", () => {
     renderView("undecided");
     expect(await screen.findByRole("alert")).toHaveTextContent("묶음을 찾을 수 없습니다.");
     expect(screen.queryByText("미정곡")).not.toBeInTheDocument();
+  });
+
+  it("곡 링크를 누르면 이 목록의 정렬·필터와 채보를 곡 상세의 이전/다음 이동용으로 기억한다", async () => {
+    resetDetailNavForTest();
+    renderView("5.8");
+    await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+    const link = screen.getAllByRole("link").find((a) => /\/songs\/\d+\?from=table&chart=\d+/.test(a.getAttribute("href") ?? ""));
+    expect(link).toBeDefined();
+    link?.addEventListener("click", (e) => e.preventDefault());
+    fireEvent.click(link as HTMLElement);
+    expect(readDetailNav()).toMatchObject({ source: "table", sort: "level" });
+    resetDetailNavForTest();
   });
 
   it("없는 묶음 주소는 `묶음을 찾을 수 없습니다.`", async () => {
