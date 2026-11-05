@@ -10,7 +10,7 @@ const block = css.slice(start, css.indexOf("데스크톱 컨트롤 높이", star
 describe("움직임 규칙 (D57)", () => {
   it("움직임 클래스는 모두 움직임 줄이기 설정에서 꺼진다", () => {
     const reduced = block.slice(block.indexOf("@media (prefers-reduced-motion: reduce)"));
-    for (const name of [".motion-fade", ".motion-sheet", ".motion-reveal", "dialog[open]", "dialog[open]::backdrop"]) {
+    for (const name of [".motion-fade", ".motion-sheet", ".motion-reveal", ".tile-glow::after", "dialog[open]", "dialog[open]::backdrop"]) {
       expect(block).toContain(`${name} {`);
       expect(reduced).toContain(name);
     }

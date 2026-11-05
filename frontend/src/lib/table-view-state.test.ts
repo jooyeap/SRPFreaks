@@ -15,10 +15,19 @@ describe("서열표 보기 상태 <-> 주소 쿼리", () => {
       sort: "rateDesc",
       includeZero: true,
       page: 2,
+      order: "easy",
     };
     const query = viewStateToQuery(state);
-    expect(query).toBe(new URLSearchParams({ rec: "상", pat: "단일,복합", sort: "rateDesc", zero: "1", page: "3" }).toString());
+    expect(query).toBe(new URLSearchParams({ rec: "상", pat: "단일,복합", sort: "rateDesc", zero: "1", page: "3", order: "easy" }).toString());
     expect(parse(query)).toEqual(state);
+  });
+
+  it("타일 순서(order)는 hard·easy만 받고, 알 수 없는 값이나 없으면 null(기본)이다", () => {
+    expect(parse("order=hard").order).toBe("hard");
+    expect(parse("order=easy").order).toBe("easy");
+    expect(parse("order=zzz").order).toBeNull();
+    expect(parse("").order).toBeNull();
+    expect(viewStateToQuery({ ...DEFAULT_VIEW_STATE, order: "hard" })).toBe("order=hard");
   });
 
   it("옛 주소의 파트(part)는 무시한다(서열표 파트 필터 없음, 2026-10-31)", () => {
