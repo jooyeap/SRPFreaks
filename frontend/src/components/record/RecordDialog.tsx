@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/Toast";
+import { useVisibleRecords } from "@/components/RecordDeleteProvider";
 import { RecentCharts } from "@/components/record/RecentCharts";
 import { RecordForm, type RecordChart } from "@/components/record/RecordForm";
 import { SaveResultCard, type SaveOutcome } from "@/components/record/SaveResultCard";
@@ -174,9 +175,10 @@ function RecordDialogBody({
     enabled: user !== null,
   });
   const loadingRecords = user !== null && records.isPending; // 불러오는 동안 폼을 먼저 그리면 입력이 사라진다
-  const best = bestOf(records.data?.content);
+  const visibleRecords = useVisibleRecords(records.data?.content); // 삭제 대기 중인 기록은 뺀다
+  const best = bestOf(visibleRecords);
   const editing = picked === "new" ? null : picked; // null이면 새 기록 등록
-  const hasRecords = (records.data?.content.length ?? 0) > 0;
+  const hasRecords = visibleRecords.length > 0;
 
   return (
     <>

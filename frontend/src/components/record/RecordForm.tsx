@@ -7,6 +7,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useRecordDelete } from "@/components/RecordDeleteProvider";
 import { useToast } from "@/components/Toast";
 import { StageBadge } from "@/components/table/StageBadge";
 import { ChartBadge } from "@/components/table/Badges";
@@ -15,7 +16,6 @@ import { makeRecordSchema, type RecordFormValues } from "@/lib/record-schema";
 import {
   AFFECTED_QUERY_KEYS,
   createRecord,
-  deleteRecord,
   isMaxRate,
   ratingChangeText,
   recordToFormValues,
@@ -96,6 +96,7 @@ export function RecordForm({
         : { achievementRate: "", fullCombo: false, playedDate: todaySeoul(), memo: "" },
     [record],
   );
+  const { requestDelete } = useRecordDelete();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const {
@@ -170,18 +171,16 @@ export function RecordForm({
     },
   });
 
-  const removal = useMutation({
-    mutationFn: () => (record ? deleteRecord(record.id) : Promise.resolve()),
-    onSuccess: async () => {
-      await Promise.all(AFFECTED_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
-      toast(t("Record.deleted"));
+  // 삭제는 확인 창으로 한 번 묻고(같은 줄의 버튼을 잘못 누르는 일을 줄인다), 확정하면 바로 예약한다: 목록에서 사라지고 5초 안에 `되돌리기`를 누를 수 있다(RecordDeleteProvider).
+  // 서버 요청은 5초 뒤에 나가므로 여기서는 오류를 기다리지 않고 창을 닫는다(실패하면 Provider가 오류 토스트로 알린다).
+  const deleteThis = () => {
+    setConfirmingDelete(false);
+    if (record && requestDelete(record)) {
       onDeleted?.();
-    },
-    // 실패하면 확인 창을 닫아서 폼 아래의 오류 문구가 보이게 한다
-    onError: () => setConfirmingDelete(false),
-  });
+    }
+  };
 
-  const failure = mutation.error ?? removal.error;
+  const failure = mutation.error;
   // 저장이 실패한 경우만 [다시 시도]를 준다(입력값은 그대로이고 같은 값으로 다시 보낸다). 칸별 검증 오류는 값을 고쳐야 하므로 제외
   const retryable =
     mutation.isError && mutation.variables !== undefined && !(mutation.error instanceof ApiError && mutation.error.fieldErrors);
@@ -352,14 +351,12 @@ export function RecordForm({
           </button>
         </div>
       ) : null}
-      {/* 삭제는 되돌릴 수 없어서 별도 확인 창으로 한 번 더 묻는다(같은 줄에 붙은 버튼을 잘못 누르는 일을 줄인다) */}
       <ConfirmDialog
         open={confirmingDelete}
         title={t("Record.deleteTitle")}
         message={t("Record.deleteMessage")}
         confirmLabel={t("Song.delete")}
-        pending={removal.isPending}
-        onConfirm={() => removal.mutate()}
+        onConfirm={deleteThis}
         onCancel={() => setConfirmingDelete(false)}
       />
 

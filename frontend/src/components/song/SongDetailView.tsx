@@ -23,6 +23,7 @@ import { ApiError } from "@/lib/api";
 import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { difficultyLabel, formatTier, partLabel } from "@/lib/format";
 import { availableCombos } from "@/lib/song-admin";
+import { useRecordDelete } from "@/components/RecordDeleteProvider";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
 import { ErrorRetry } from "@/components/ErrorRetry";
@@ -100,6 +101,10 @@ export function SongDetailView({
     enabled: chart !== null && loggedIn, // 비로그인(D43)은 내 기록이 없으므로 /records를 부르지 않는다(401 방지)
   });
 
+  // 삭제 대기 중인 기록이 그 채보의 최고 기록이면 "내 기록"에서 바로 뺀다(RecordDeleteProvider). 확정되면 쿼리가 새로 받아진다
+  const { hiddenIds: hiddenRecordIds } = useRecordDelete();
+  const bestRecord = best.data && !hiddenRecordIds.has(best.data.id) ? best.data : null;
+
   // 서열표를 받은 뒤에만 수정할 수 있다 (표 id와 현재 값이 필요하다). 표에 없는 채보는 "추가"가 된다.
   const openTableEdit = () => {
     if (!chart || !song.data || tableId === null) {
@@ -166,7 +171,7 @@ export function SongDetailView({
   const myRecord = loggedIn ? (
     <MyRecordCard
       mine={found?.entry.mine ?? null}
-      best={best.data ?? null}
+      best={bestRecord}
       chart={chart ? { part: chart.instrumentPart, difficulty: chart.difficultyType, level: chart.level } : null}
       emphasizeSrn={isTable}
       onRecord={() => setRecordOpen(true)}

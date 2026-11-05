@@ -7,6 +7,7 @@ import { setClientTranslator } from "@/i18n/client-messages";
 import { queryRetryDelay, shouldRetryQuery } from "@/lib/query-retry";
 import { AuthProvider } from "@/components/AuthProvider";
 import { QueryCacheCleaner } from "@/components/QueryCacheCleaner";
+import { RecordDeleteProvider } from "@/components/RecordDeleteProvider";
 import { ToastProvider } from "@/components/Toast";
 import { useJacketsLoader } from "@/lib/jackets";
 
@@ -48,7 +49,10 @@ export function Providers({ children }: { children: ReactNode }) {
       <AuthProvider>
         <QueryCacheCleaner />
         <JacketsLoader />
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          {/* 본인 기록 삭제의 5초 되돌리기: 화면을 옮겨도 대기가 이어지도록 앱 맨 위에 둔다 */}
+          <RecordDeleteProvider>{children}</RecordDeleteProvider>
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
