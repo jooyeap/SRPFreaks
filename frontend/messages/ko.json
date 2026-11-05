@@ -346,7 +346,18 @@
     "pageTitle": "서열표",
     "groupPageTitle": "서열표 묶음",
     "summaryRecommend": "추천 {values}",
-    "summaryPattern": "속성 {values}"
+    "summaryPattern": "속성 {values}",
+    "tilesMyAverage": "내 평균 난이도",
+    "tilesRecordedCount": "기록 {count}곡",
+    "tilesStartHint": "처음이라면 5.0부터 시작해 보세요",
+    "tilesFoldHigher": "더 높은 난이도 {count}개 {from}~{to}",
+    "tilesFoldLower": "더 낮은 난이도 {count}개 {from}~{to}",
+    "tilesFoldClose": "접기",
+    "tilesOrderLabel": "난이도 순서",
+    "tilesOrderHard": "어려운 순",
+    "tilesOrderEasy": "쉬운 순",
+    "tilesDone": "완료",
+    "tilesTip": "색이 진할수록 기록이 많은 난이도입니다. 타일을 누르면 그 난이도의 곡이 열립니다."
   },
   "Chart": {
     "patternSingle": "단일",

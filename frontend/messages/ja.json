@@ -346,7 +346,18 @@
     "pageTitle": "難易度表",
     "groupPageTitle": "難易度表グループ",
     "summaryRecommend": "おすすめ {values}",
-    "summaryPattern": "属性 {values}"
+    "summaryPattern": "属性 {values}",
+    "tilesMyAverage": "自分の平均難易度",
+    "tilesRecordedCount": "記録 {count}曲",
+    "tilesStartHint": "はじめての方は5.0から始めてみましょう",
+    "tilesFoldHigher": "さらに高い難易度 {count}個 {from}〜{to}",
+    "tilesFoldLower": "さらに低い難易度 {count}個 {from}〜{to}",
+    "tilesFoldClose": "たたむ",
+    "tilesOrderLabel": "難易度の順序",
+    "tilesOrderHard": "難しい順",
+    "tilesOrderEasy": "やさしい順",
+    "tilesDone": "完了",
+    "tilesTip": "色が濃いほど記録が多い難易度です。タイルを押すと、その難易度の曲が開きます。"
   },
   "Chart": {
     "patternSingle": "単色",

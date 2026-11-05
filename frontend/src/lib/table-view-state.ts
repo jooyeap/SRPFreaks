@@ -1,5 +1,6 @@
 import { DEFAULT_FILTERS, PATTERN_OPTIONS, RECOMMEND_OPTIONS, type TableFilters } from "@/lib/difficulty-table";
 import { DEFAULT_SORT, SORT_OPTIONS, type TableSort } from "@/lib/table-sort";
+import type { TileOrder } from "@/lib/table-tiles";
 
 /**
  * 서열표 화면의 보기 상태(필터·정렬·평균 계산·페이지). 주소 쿼리에 두어서 곡 상세로 갔다가 뒤로 와도,
@@ -9,6 +10,7 @@ import { DEFAULT_SORT, SORT_OPTIONS, type TableSort } from "@/lib/table-sort";
  * 주소 예: `/table?rec=상&pat=단일,복합&sort=rateDesc&zero=1&page=3` (옛 주소의 `part`는 무시)
  *  - rec: 없으면 기본(상·중), `all`이면 추천 필터 없음(전체), 아니면 쉼표로 이은 값
  *  - page: 1부터 (화면의 `1 / 5`와 같다). 내부 값은 0부터
+ *  - order: 첫 화면 타일의 난이도 순서(`hard` 어려운 순 / `easy` 쉬운 순). 없으면 null = 평균이 있으면 어려운 순, 없으면 쉬운 순(table-tiles.ts defaultOrder)
  */
 export interface TableViewState {
   filters: TableFilters;
@@ -16,9 +18,10 @@ export interface TableViewState {
   includeZero: boolean;
   /** 0부터 */
   page: number;
+  order: TileOrder | null;
 }
 
-export const DEFAULT_VIEW_STATE: TableViewState = { filters: DEFAULT_FILTERS, sort: DEFAULT_SORT, includeZero: false, page: 0 };
+export const DEFAULT_VIEW_STATE: TableViewState = { filters: DEFAULT_FILTERS, sort: DEFAULT_SORT, includeZero: false, page: 0, order: null };
 
 const MAX_PAGE = 1000;
 
@@ -44,6 +47,7 @@ export function viewStateFromParams(params: URLSearchParams): TableViewState {
     sort,
     includeZero: params.get("zero") === "1",
     page: Number.isInteger(pageNumber) && pageNumber >= 2 ? Math.min(pageNumber, MAX_PAGE) - 1 : 0,
+    order: params.get("order") === "hard" ? "hard" : params.get("order") === "easy" ? "easy" : null,
   };
 }
 
@@ -58,5 +62,6 @@ export function viewStateToQuery(state: TableViewState): string {
   if (state.sort !== DEFAULT_SORT) params.set("sort", state.sort);
   if (state.includeZero) params.set("zero", "1");
   if (state.page > 0) params.set("page", String(state.page + 1));
+  if (state.order !== null) params.set("order", state.order);
   return params.toString();
 }
