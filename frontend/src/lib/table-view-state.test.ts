@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_VIEW_STATE, viewStateFromParams, viewStateToQuery, type TableViewState } from "@/lib/table-view-state";
+import {
+  clearTableReturn,
+  DEFAULT_VIEW_STATE,
+  folderStartFilters,
+  readTableReturn,
+  rememberTableReturn,
+  tableReturnHref,
+  viewStateFromParams,
+  viewStateToQuery,
+  type TableViewState,
+} from "@/lib/table-view-state";
 
 const parse = (query: string) => viewStateFromParams(new URLSearchParams(query));
 
@@ -61,5 +71,39 @@ describe("서열표 보기 상태 <-> 주소 쿼리", () => {
     expect(parse("page=-3").page).toBe(0);
     expect(parse("page=2.5").page).toBe(0);
     expect(parse("page=99999").page).toBe(999);
+  });
+});
+
+describe("서열표 -> 폴더 복귀 기억", () => {
+  it("기억이 없으면 `←`는 /table, 폴더 시작 필터는 필터 없음(묶음 전체)이다", () => {
+    expect(readTableReturn()).toBeNull();
+    expect(tableReturnHref()).toBe("/table");
+    expect(folderStartFilters()).toEqual({ part: null, recommend: [], pattern: [] });
+  });
+
+  it("기억한 쿼리로 `←` 주소와 폴더 시작 필터가 정해진다 (기본 쿼리는 추천 상·중)", () => {
+    rememberTableReturn({ query: "", scrollY: 10, unfolded: false });
+    expect(tableReturnHref()).toBe("/table");
+    expect(folderStartFilters().recommend).toEqual(["상", "중"]);
+    rememberTableReturn({ query: "rec=all&pat=%EB%B3%B5%ED%95%A9", scrollY: 10, unfolded: false });
+    expect(tableReturnHref()).toBe("/table?rec=all&pat=%EB%B3%B5%ED%95%A9");
+    expect(folderStartFilters()).toEqual({ part: null, recommend: [], pattern: ["복합"] });
+  });
+
+  it("메모리가 비어도 sessionStorage 값을 읽고, 모양이 틀린 값은 없는 것으로 본다", () => {
+    sessionStorage.setItem("srp.tableReturn", JSON.stringify({ query: "rec=all", scrollY: 5, unfolded: true }));
+    expect(readTableReturn()).toEqual({ query: "rec=all", scrollY: 5, unfolded: true });
+    clearTableReturn();
+    for (const bad of ["not json", JSON.stringify({ query: 1, scrollY: 5, unfolded: true }), JSON.stringify({ query: "", scrollY: -3, unfolded: false })]) {
+      sessionStorage.setItem("srp.tableReturn", bad);
+      expect(readTableReturn()).toBeNull();
+    }
+  });
+
+  it("clearTableReturn은 기억을 지운다", () => {
+    rememberTableReturn({ query: "", scrollY: 1, unfolded: false });
+    clearTableReturn();
+    expect(readTableReturn()).toBeNull();
+    expect(sessionStorage.getItem("srp.tableReturn")).toBeNull();
   });
 });

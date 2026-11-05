@@ -6,6 +6,7 @@ import type { CSSProperties } from "react";
 import { folderHref } from "@/lib/difficulty-table";
 import { tileTint } from "@/lib/progress";
 import { foldRange, layoutTiles, markIntroPlayed, wasIntroPlayed, type TileOrder } from "@/lib/table-tiles";
+import { clearTableReturn, readTableReturn, rememberTableReturn } from "@/lib/table-view-state";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { useTranslations } from "next-intl";
 
@@ -29,19 +30,41 @@ function mix(token: string, percent: number): string {
  * - 평균 타일: 주황 윤곽(--weak-line)과 숨은 글자 `내 평균 난이도`. 이 탭에서 처음 들어올 때만 1.1초 빛남 ×3회 하고(globals.css tile-glow),
  *   화면 밖이면 그 위치로 스크롤한다. 폴더에 갔다 돌아오면 다시 하지 않는다(lib/table-tiles.ts의 첫 진입 기억). 움직임 줄이기 설정이면 빛남 없이 윤곽만.
  * - 평균 근처 3칸을 뺀 먼 쪽 타일은 한 줄로 접는다(눌러서 그 자리에서 펼침).
+ * - 타일을 누르면 보던 스크롤 위치·접힘 상태·보기 상태 쿼리를 기억해 두고(rememberTableReturn), 폴더의 `←`로 돌아와 이 격자가 다시 그려질 때 되살린다.
+ *   되살릴 때는 첫 진입 연출(빛남·자동 스크롤)을 하지 않는다.
  */
-export function TierTileGrid({ tiles, average, order, label }: { tiles: readonly TierTile[]; average: number | null; order: TileOrder; label: string }) {
+export function TierTileGrid({
+  tiles,
+  average,
+  order,
+  label,
+  returnQuery = "",
+}: {
+  tiles: readonly TierTile[];
+  average: number | null;
+  order: TileOrder;
+  label: string;
+  /** 지금 서열표의 보기 상태 쿼리(viewStateToQuery). 폴더로 갈 때 기억해 `←`와 폴더 시작 필터에 쓴다 */
+  returnQuery?: string;
+}) {
   const t = useTranslations("Table");
   const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const [unfolded, setUnfolded] = useState(false);
+  // 폴더에서 돌아온 경우의 기억. 처음 그릴 때 한 번만 읽고, 되살린 뒤 effect에서 지운다(필터를 바꿔 격자가 다시 만들어질 때 옛 기억을 쓰지 않게)
+  const [restored] = useState(() => readTableReturn());
+  const [unfolded, setUnfolded] = useState(restored?.unfolded ?? false);
   const layout = layoutTiles(tiles, average, order);
   const { ordered, folded, averageTier } = layout;
   const hidden = folded.length > 0 && !unfolded ? new Set(folded) : null;
 
   // 첫 진입 연출 여부는 처음 그릴 때 한 번만 정한다(그린 뒤 기억을 남겨도 이번 화면의 연출은 끝까지 간다)
-  const [intro] = useState(() => averageTier !== null && !wasIntroPlayed());
+  const [intro] = useState(() => averageTier !== null && !restored && !wasIntroPlayed());
   const averageRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
+    if (restored) {
+      window.scrollTo({ top: restored.scrollY, behavior: "instant" }); // 부드럽게 굴러가지 않고 보던 자리로 바로
+      clearTableReturn();
+      return;
+    }
     if (!intro) return;
     markIntroPlayed();
     const el = averageRef.current;
@@ -84,6 +107,7 @@ export function TierTileGrid({ tiles, average, order, label }: { tiles: readonly
             <Link
               ref={isAverage ? averageRef : undefined}
               href={folderHref(tile.tier)}
+              onClick={() => rememberTableReturn({ query: returnQuery, scrollY: window.scrollY, unfolded })}
               data-average={isAverage ? "true" : undefined}
               // 평균 타일은 주황 윤곽(2px)으로 윤곽 색이 달라서 tile-line을 쓰지 않는다. 빛남 막(::after)이 position 기준이 되도록 relative
               className={`relative flex min-h-14 flex-col items-center justify-center rounded-xl px-1 py-2 [background:var(--tile-bg)] hover:opacity-90 ${
