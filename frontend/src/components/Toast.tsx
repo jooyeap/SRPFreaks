@@ -110,7 +110,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
-      <div data-toast-region className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--tabbar-h)+1.5rem)] z-[60] flex justify-center px-4 md:justify-end md:px-6">
+      <div data-toast-region className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--tabbar-h)+var(--bottom-bar-h,0px)+1.5rem)] z-[60] flex justify-center px-4 md:justify-end md:px-6">
         <div role="status" aria-live="polite" className="contents">
           {stack.length > 0 ? (
             // 쌓인 토스트는 세로로 나란히(새것이 아래)

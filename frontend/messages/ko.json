@@ -222,6 +222,13 @@
     "searchPlaceholderShort": "곡명·아티스트 검색"
   },
   "Song": {
+    "navAria": "이전·다음 곡",
+    "navPrevTier": "이전 묶음 {tier}",
+    "navNextTier": "다음 묶음 {tier}",
+    "navTable": "서열표 {tier}",
+    "navSongs": "곡 목록",
+    "navHint": "화면을 좌우로 밀어도 이전·다음 곡으로 이동할 수 있어요.",
+    "navHintClose": "안내 닫기",
     "myRecord": "내 기록",
     "tableBasis": "서열표는 SRN+, Premium Free, S 랭 기준입니다.",
     "addRecord": "기록 등록",
