@@ -256,7 +256,7 @@ describe("기록 수정 / 삭제", () => {
     await openEdit();
     fireEvent.click(screen.getByRole("button", { name: "이 기록 삭제" }));
     const confirm = screen.getByRole("dialog", { name: "기록 삭제" });
-    expect(within(confirm).getByText("이 기록을 삭제할까요? 되돌릴 수 없습니다.")).toBeInTheDocument();
+    expect(within(confirm).getByText("이 기록을 삭제할까요?")).toBeInTheDocument();
     expect(within(confirm).getByRole("button", { name: "취소" })).toBeInTheDocument();
     expect(within(confirm).getByRole("button", { name: "삭제" })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();

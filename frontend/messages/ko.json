@@ -523,7 +523,7 @@
     "saveNote": "기록은 본인만 등록·수정·삭제할 수 있습니다.",
     "deleteThis": "이 기록 삭제",
     "deleteTitle": "기록 삭제",
-    "deleteMessage": "이 기록을 삭제할까요? 되돌릴 수 없습니다.",
+    "deleteMessage": "이 기록을 삭제할까요?",
     "saveEdit": "수정 저장",
     "listAria": "이 채보의 내 기록",
     "edit": "수정",
