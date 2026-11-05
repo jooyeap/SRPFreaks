@@ -22,7 +22,7 @@ import {
   type TableFilters,
 } from "@/lib/difficulty-table";
 import { fetchMyPlayLevel, skillKeys } from "@/lib/rating";
-import { DEFAULT_VIEW_STATE, type TableViewState } from "@/lib/table-view-state";
+import { DEFAULT_VIEW_STATE, viewStateToQuery, type TableViewState } from "@/lib/table-view-state";
 import { averageTenth, defaultOrder, type TileOrder } from "@/lib/table-tiles";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { isLoggedInViewer } from "@/lib/viewer";
@@ -208,7 +208,7 @@ export function DifficultyTableView({
             <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
           ) : (
             // key: 순서나 필터가 바뀌면 접힘 상태를 처음(접힘)으로 돌린다
-            <TierTileGrid key={`${order}|${filters.recommend.join()}|${filters.pattern.join()}`} tiles={tiles} average={average} order={order} label={t("Table.tierList")} />
+            <TierTileGrid key={`${order}|${filters.recommend.join()}|${filters.pattern.join()}`} tiles={tiles} average={average} order={order} label={t("Table.tierList")} returnQuery={viewStateToQuery(view)} />
           )}
         </>
       )}

@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { TierTileGrid, type TierTile } from "@/components/table/TierTileGrid";
 import { resetTableTilesForTest } from "@/lib/table-tiles";
+import { readTableReturn, rememberTableReturn } from "@/lib/table-view-state";
 
 /** 4.9 ~ 7.0 (0.1 단위) 22칸. 기록은 모두 비워 둔다 */
 const all: TierTile[] = Array.from({ length: 22 }, (_, i) => ({ tier: (49 + i) / 10, total: 10, recorded: 0 }));
@@ -208,6 +209,39 @@ describe("TierTileGrid", () => {
       scroll.mockClear();
       render(<TierTileGrid tiles={all} average={5.8} order="hard" label="난이도 목록" />);
       expect(scroll).not.toHaveBeenCalled();
+    });
+  });
+  describe("폴더 왕복 복원 (PR 2)", () => {
+    const tiles = all; // 평균 5.8 근처에서 먼 쪽이 접힌다
+
+    it("타일을 누르면 보기 상태 쿼리·스크롤 위치·접힘 상태를 기억한다", () => {
+      Object.defineProperty(window, "scrollY", { value: 321, configurable: true });
+      render(<TierTileGrid tiles={tiles} average={5.8} order="hard" label="난이도 목록" returnQuery="rec=all" />);
+      fireEvent.click(screen.getByRole("button", { name: /더 높은 난이도/ })); // 접힘을 펼친다
+      fireEvent.click(link("5.8"));
+      expect(readTableReturn()).toEqual({ query: "rec=all", scrollY: 321, unfolded: true });
+    });
+
+    it("기억이 있으면 접힘 상태와 스크롤 위치를 되살리고, 첫 진입 연출(빛남·자동 스크롤)은 하지 않는다", () => {
+      const scrollTo = vi.fn();
+      vi.stubGlobal("scrollTo", scrollTo);
+      const scrollIntoView = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoView;
+      onTestFinished(() => void Reflect.deleteProperty(Element.prototype, "scrollIntoView")); // jsdom에는 원래 없다
+      rememberTableReturn({ query: "", scrollY: 480, unfolded: true });
+      render(<TierTileGrid tiles={tiles} average={5.8} order="hard" label="난이도 목록" />);
+      expect(screen.getByRole("button", { name: /접기/ })).toHaveAttribute("aria-expanded", "true"); // 펼쳐 둔 채로 돌아온다
+      expect(scrollTo).toHaveBeenCalledWith({ top: 480, behavior: "instant" });
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      expect(link("5.8")).not.toHaveClass("tile-glow");
+      expect(readTableReturn()).toBeNull(); // 한 번 되살린 뒤에는 지운다
+    });
+
+    it("기억이 없으면 스크롤을 건드리지 않는다", () => {
+      const scrollTo = vi.fn();
+      vi.stubGlobal("scrollTo", scrollTo);
+      render(<TierTileGrid tiles={tiles} average={null} order="hard" label="난이도 목록" />);
+      expect(scrollTo).not.toHaveBeenCalled();
     });
   });
 });

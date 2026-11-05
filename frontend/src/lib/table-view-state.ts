@@ -1,4 +1,4 @@
-import { DEFAULT_FILTERS, PATTERN_OPTIONS, RECOMMEND_OPTIONS, type TableFilters } from "@/lib/difficulty-table";
+import { DEFAULT_FILTERS, EMPTY_FILTERS, PATTERN_OPTIONS, RECOMMEND_OPTIONS, type TableFilters } from "@/lib/difficulty-table";
 import { DEFAULT_SORT, SORT_OPTIONS, type TableSort } from "@/lib/table-sort";
 import type { TileOrder } from "@/lib/table-tiles";
 
@@ -64,4 +64,75 @@ export function viewStateToQuery(state: TableViewState): string {
   if (state.page > 0) params.set("page", String(state.page + 1));
   if (state.order !== null) params.set("order", state.order);
   return params.toString();
+}
+
+/**
+ * 서열표(타일 화면) -> 폴더 -> `←`로 돌아올 때 보던 자리를 되살리려고 타일을 누르는 순간 남기는 기억(2026-11-05, PR 2).
+ *  - query: 그때 서열표의 보기 상태 쿼리(viewStateToQuery). `←`가 이 쿼리를 붙여 돌아가고, 폴더는 여기서 시작 필터를 가져온다
+ *  - scrollY: 보던 스크롤 위치, unfolded: 먼 타일 접힘을 펼쳐 두었는지
+ * 메모리 + sessionStorage(이 탭 한정). 저장소를 못 쓰면 메모리에만 남아 화면 이동으로는 유지된다. 서열표가 한 번 되살린 뒤에는 지운다(clearTableReturn).
+ */
+export interface TableReturn {
+  query: string;
+  scrollY: number;
+  unfolded: boolean;
+}
+
+const RETURN_KEY = "srp.tableReturn";
+let returnMemory: TableReturn | null = null;
+
+export function rememberTableReturn(value: TableReturn): void {
+  returnMemory = value;
+  try {
+    sessionStorage.setItem(RETURN_KEY, JSON.stringify(value));
+  } catch {
+    // 저장할 수 없어도 메모리 값으로 이번 탭의 화면 이동은 유지된다
+  }
+}
+
+/** 남겨 둔 기억을 읽는다(지우지 않는다). 저장소 값은 바깥에서 고칠 수 있으므로 모양을 확인하고 틀리면 없는 것으로 본다. */
+export function readTableReturn(): TableReturn | null {
+  if (returnMemory) return returnMemory;
+  try {
+    const raw = sessionStorage.getItem(RETURN_KEY);
+    if (raw === null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    const { query, scrollY, unfolded } = parsed as Record<string, unknown>;
+    if (typeof query !== "string" || typeof scrollY !== "number" || !Number.isFinite(scrollY) || scrollY < 0 || typeof unfolded !== "boolean") return null;
+    returnMemory = { query, scrollY, unfolded };
+    return returnMemory;
+  } catch {
+    return null;
+  }
+}
+
+export function clearTableReturn(): void {
+  returnMemory = null;
+  try {
+    sessionStorage.removeItem(RETURN_KEY);
+  } catch {
+    // 지울 수 없어도 화면은 정상이다
+  }
+}
+
+/** `←`가 갈 서열표 주소: 떠날 때의 보기 상태가 있으면 그 쿼리를 붙인다. */
+export function tableReturnHref(): string {
+  const saved = readTableReturn();
+  return saved && saved.query ? `/table?${saved.query}` : "/table";
+}
+
+/**
+ * 폴더 화면의 시작 필터. 서열표에서 타일을 눌러 들어왔으면 그때의 필터(타일의 n/전체를 센 규칙)로 시작해서
+ * 폴더 머리·이웃 버튼의 n/전체가 눌렀던 타일과 같게 한다. 곡 상세 등 다른 길로 오면(기억 없음) 필터 없이(묶음 전체) 시작한다.
+ * 폴더 안에서 바꾼 필터는 그 폴더에만 적용하고 서열표로 되돌려 쓰지 않는다.
+ */
+export function folderStartFilters(): TableFilters {
+  const saved = readTableReturn();
+  return saved ? viewStateFromParams(new URLSearchParams(saved.query)).filters : EMPTY_FILTERS;
+}
+
+/** 테스트용: 기억을 비운다 */
+export function resetTableReturnForTest(): void {
+  clearTableReturn();
 }
