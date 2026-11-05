@@ -133,8 +133,9 @@ export function updateRecord(recordId: number, body: RecordRequestBody): Promise
   return apiFetch<RecordResponse>(`/records/${recordId}`, { method: "PUT", body });
 }
 
-export function deleteRecord(recordId: number): Promise<void> {
-  return apiFetch(`/records/${recordId}`, { method: "DELETE" });
+/** keepalive: 앱을 닫기 직전에 보낼 때 true(기존 인증 흐름 그대로, 요청만 화면보다 오래 산다) */
+export function deleteRecord(recordId: number, options: { keepalive?: boolean } = {}): Promise<void> {
+  return apiFetch(`/records/${recordId}`, { method: "DELETE", keepalive: options.keepalive });
 }
 
 /** 한 채보에 내가 남긴 기록 목록(최근 순). 한 페이지(최대 20건)만 가져온다. */

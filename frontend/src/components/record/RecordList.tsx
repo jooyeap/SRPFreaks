@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/AuthProvider";
+import { useVisibleRecords } from "@/components/RecordDeleteProvider";
 import { StageBadge } from "@/components/table/StageBadge";
 import { formatPlayedDate, formatRate } from "@/lib/format";
 import { fetchRecordsOfChart, isEdited, recordKeys, recordOriginText, type RecordResponse } from "@/lib/records";
@@ -29,14 +30,17 @@ export function RecordList({
     enabled: user !== null,
   });
 
-  if (!data || data.content.length === 0) {
+  // 삭제 대기 중인 기록은 바로 숨긴다(RecordDeleteProvider)
+  const records = useVisibleRecords(data?.content);
+
+  if (records.length === 0) {
     return null;
   }
   return (
     <section aria-label={t("Record.listAria")} className="mb-4">
       <h3 className="mb-2 text-sm font-semibold text-fg-sub">{t("Record.listAria")}</h3>
       <ul className="flex flex-col gap-1">
-        {data.content.map((record) => (
+        {records.map((record) => (
           <li
             key={record.id}
             className="flex items-center gap-3 rounded border border-line py-1 pl-3 pr-1.5 text-sm"
