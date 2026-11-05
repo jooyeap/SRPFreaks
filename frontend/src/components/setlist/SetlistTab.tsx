@@ -11,12 +11,12 @@ import { SetlistRecommend } from "@/components/setlist/SetlistRecommend";
 import { SetlistSearch } from "@/components/setlist/SetlistSearch";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import type { RecordChart } from "@/components/record/RecordForm";
-import { PatternMark } from "@/components/setlist/PatternMark";
 import { ChartBadge } from "@/components/table/Badges";
-import { StageBadge } from "@/components/table/StageBadge";
+import { StageRatePill } from "@/components/table/StageRatePill";
+import { patternLabel } from "@/lib/chart-labels";
 import { ApiError } from "@/lib/api";
 import type { SetlistItemResponse } from "@/lib/api-types";
-import { EMPTY_MARK, formatRate, formatTier } from "@/lib/format";
+import { EMPTY_MARK, formatTier } from "@/lib/format";
 import {
   clearDoneSetlist,
   doneCount,
@@ -157,6 +157,13 @@ export function SetlistTab({ userId }: { userId: number }) {
   );
 }
 
+/**
+ * 세트리스트 한 줄 (2026-11-05, 시안 `세트리스트 카드 A안 다듬기` A-1/A-2): 서열표 EntryCard와 같은 모양이다.
+ * 왼쪽 세 줄 = `속성 | 상수 5.6` 작은 글자(서열표에서 추천이 들어가는 자리에 추천 대신 상수) / 곡명 14px 한 줄 / `Guitar | MAS 9.45` 알약(+ 완료하면 `✓ 완료`).
+ * 오른쪽 88px = 랭크·달성률 알약 위, `[입력] [빼기]`(완료하면 `[수정] [빼기]`) 아래.
+ * 카드 높이는 곡명 길이·기록 유무와 상관없이 같도록 h-[76px]로 고정하고 안쪽을 가운데 맞춘다.
+ * 완료는 계산된 값(item.done)이다. 초록 테두리와 `✓ 완료` 글자를 같이 써서 색만으로 구분하지 않는다.
+ */
 function SetlistRow({
   item,
   removing,
@@ -171,55 +178,58 @@ function SetlistRow({
   const t = useTranslations();
   const stage = item.mine?.stage ?? null;
   const jackets = useJackets();
+  // 버튼: 보이는 높이 26px, ::after로 눌리는 영역만 사방 6px 넓힌다(38px). 옆 버튼과 겹치지 않게 gap-2 (8px > 6+6 의 절반씩)
+  const buttonBase =
+    "relative flex h-[26px] flex-1 items-center justify-center rounded-md border border-ctl px-1 text-xs after:absolute after:-inset-1.5 after:content-['']";
   return (
-    <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
-      <div className="flex items-start justify-between gap-3">
-        {/* 재킷(D54): 카드 안 왼쪽 48px. 보일 때는 곡명을 13px 한 줄로 줄인다 */}
-        {jackets.visible ? <SongJacket url={jackets.urlOf(item.songId)} title={item.title} className="size-12 rounded-lg" /> : null}
-        <div className="min-w-0 flex-1">
-          <Link href={`/songs/${item.songId}?chart=${item.songDifficultyId}`} className={`block truncate ${jackets.visible ? "text-[13px]" : "text-sm"} font-bold text-fg hover:underline`}>
-            {item.title}
-          </Link>
-          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-            <ChartBadge part={item.part} difficulty={item.difficulty} level={item.level} />
-            <span className="text-xs text-fg-dim">
-              {t.rich("Setlist.tierLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
+    <li
+      data-done={item.done ? "true" : "false"}
+      className={`flex h-[76px] items-center gap-2.5 rounded-2xl border bg-card ${jackets.visible ? "pl-3" : "pl-4"} pr-3 ${item.done ? "border-done" : "border-line"}`}
+    >
+      {/* 재킷(D54): 서열표 줄과 같이 48px(360px 미만 40px). 끄면 칸이 없다 */}
+      {jackets.visible ? <SongJacket url={jackets.urlOf(item.songId)} title={item.title} className="size-12 rounded-lg max-[359px]:size-10" /> : null}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[10px] font-bold leading-3 text-fg-dim">
+          <span className="sr-only">{t("Chart.patternSr")} </span>
+          {item.pattern ? patternLabel(item.pattern, t) : EMPTY_MARK}
+          <span className="mx-1 text-chip-line" aria-hidden="true">|</span>
+          {t.rich("Setlist.constLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
+        </p>
+        <Link
+          href={`/songs/${item.songId}?chart=${item.songDifficultyId}`}
+          className="mt-1 block truncate text-sm leading-[18px] text-fg hover:underline"
+        >
+          {item.title}
+        </Link>
+        <span className="mt-1 flex items-center gap-1.5 overflow-hidden">
+          <ChartBadge part={item.part} difficulty={item.difficulty} level={item.level} compact />
+          {item.done ? (
+            <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-bold text-done-text">
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12l5 5 9-10" />
+              </svg>
+              {t("Setlist.doneMark")}
             </span>
-            {item.pattern ? <PatternMark pattern={item.pattern} /> : null}
-          </p>
-        </div>
-        <div className="shrink-0 text-right">
-          {stage ? <StageBadge stage={stage} /> : <span className="text-xs text-fg-faint">{EMPTY_MARK}</span>}
-          <span className="mt-0.5 block font-num text-xs text-fg-sub">{formatRate(item.mine?.rate)}</span>
-        </div>
+          ) : null}
+        </span>
       </div>
-      <div className="flex items-center justify-between gap-2">
-        {/* 완료는 색이 아니라 글자와 체크 아이콘으로 보인다 */}
-        {item.done ? (
-          <span className="flex items-center gap-1 text-sm font-bold text-fg">
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12l5 5 9-10" />
-            </svg>
-            {t("Setlist.doneMark")}
-          </span>
-        ) : (
-          <span className="text-sm text-fg-dim">{t("Setlist.notDone")}</span>
-        )}
-        <div className="flex gap-2">
+      <div className="flex w-[88px] shrink-0 flex-col items-end gap-1.5">
+        <StageRatePill stage={stage} rate={item.mine?.rate} />
+        <div className="flex w-full gap-2">
           <button
             type="button"
             onClick={onRecord}
-            aria-label={t("Setlist.recordAria", { title: item.title })}
-            className="min-h-9 rounded-lg border border-ctl px-3 text-sm text-fg hover:bg-table-head"
+            aria-label={t(item.done ? "Setlist.editAria" : "Setlist.recordAria", { title: item.title })}
+            className={`${buttonBase} text-fg hover:bg-table-head`}
           >
-            {t("Setlist.enterRecord")}
+            {item.done ? t("Record.edit") : t("Setlist.inputBtn")}
           </button>
           <button
             type="button"
             disabled={removing}
             onClick={onRemove}
             aria-label={t("Setlist.removeAria", { title: item.title })}
-            className="min-h-9 rounded-lg border border-ctl px-3 text-sm text-fg-sub hover:text-fg disabled:opacity-60"
+            className={`${buttonBase} text-fg-sub hover:text-fg disabled:opacity-60`}
           >
             {t("Setlist.removeBtn")}
           </button>

@@ -630,7 +630,7 @@
     "loadFailed": "세트리스트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "clearing": "비우는 중",
     "clearDone": "완료한 곡 비우기",
-    "emptyList": "담은 곡이 없습니다. 위 검색창에서 오늘 칠 곡을 찾아 담아 보세요.",
+    "emptyList": "담은 곡이 없습니다. 위 검색창에서 오늘 플레이할 곡을 찾아 담아 보세요.",
     "title": "세트리스트",
     "doneMark": "완료",
     "notDone": "미완료",
@@ -653,6 +653,8 @@
     "maxSongs": " (최대 {limit}곡)",
     "tierLabel": "레이팅 상수 난이도 <n>{tier}</n>",
     "recordAria": "{title} 기록 입력",
+    "editAria": "{title} 기록 수정",
+    "inputBtn": "입력",
     "removeAria": "{title} 세트리스트에서 빼기",
     "offsetRange": "평균 {min} ~ {max}"
   },

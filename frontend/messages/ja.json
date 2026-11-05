@@ -630,7 +630,7 @@
     "loadFailed": "セットリストを読み込めませんでした。しばらくしてからもう一度お試しください。",
     "clearing": "クリア中",
     "clearDone": "完了した曲をクリア",
-    "emptyList": "追加した曲がありません。上の検索欄で、今日叩く曲を探して追加してみましょう。",
+    "emptyList": "追加した曲がありません。上の検索欄で、今日プレイする曲を探して追加してみましょう。",
     "title": "セットリスト",
     "doneMark": "完了",
     "notDone": "未完了",
@@ -653,6 +653,8 @@
     "maxSongs": "（最大{limit}曲）",
     "tierLabel": "レーティング定数難易度 <n>{tier}</n>",
     "recordAria": "{title} の記録入力",
+    "editAria": "{title} の記録編集",
+    "inputBtn": "入力",
     "removeAria": "{title} をセットリストから外す",
     "offsetRange": "平均 {min} ~ {max}"
   },
