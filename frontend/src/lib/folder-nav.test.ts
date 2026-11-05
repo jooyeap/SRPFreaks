@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { judgeSwipe, neighborGroups, SWIPE_MIN_PX } from "@/lib/folder-nav";
+import { DETAIL_SWIPE_RULES, judgeSwipe, neighborGroups, SWIPE_MIN_PX } from "@/lib/folder-nav";
 import type { TierGroupResponse } from "@/lib/api-types";
 
 function group(tier: number | null): TierGroupResponse {
@@ -39,5 +39,19 @@ describe("judgeSwipe", () => {
     expect(judgeSwipe(80, 80)).toBeNull();
     expect(judgeSwipe(-80, 100)).toBeNull();
     expect(judgeSwipe(80, -79)).toBe("lower");
+  });
+});
+
+describe("judgeSwipe (곡 상세 규칙: 80px, 가로축 30° 이내)", () => {
+  it("79px는 무시하고 80px부터 인정한다", () => {
+    expect(judgeSwipe(-79, 0, DETAIL_SWIPE_RULES)).toBeNull();
+    expect(judgeSwipe(-80, 0, DETAIL_SWIPE_RULES)).toBe("higher");
+    expect(judgeSwipe(80, 0, DETAIL_SWIPE_RULES)).toBe("lower");
+  });
+  it("30° 안쪽만 인정한다 (dx 100 기준 dy 57은 안쪽, 58은 바깥)", () => {
+    expect(judgeSwipe(-100, 57, DETAIL_SWIPE_RULES)).toBe("higher");
+    expect(judgeSwipe(-100, -57, DETAIL_SWIPE_RULES)).toBe("higher");
+    expect(judgeSwipe(-100, 58, DETAIL_SWIPE_RULES)).toBeNull();
+    expect(judgeSwipe(100, 80, DETAIL_SWIPE_RULES)).toBeNull();
   });
 });
