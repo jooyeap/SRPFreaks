@@ -414,6 +414,20 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .toast-countdown-bar { animation: none; }
 }
+/* 폴더 화면 곡 목록 영역: 끝 난이도에서 더 쓸었을 때 쓸린 방향으로 살짝(10px) 밀렸다 돌아온다(PR 2). 움직임 줄이기에서는 쓰지 않는다 */
+@keyframes edge-bounce-left {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(-10px); }
+}
+@keyframes edge-bounce-right {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(10px); }
+}
+.edge-bounce-higher { animation: edge-bounce-left 260ms var(--ease-out); }
+.edge-bounce-lower { animation: edge-bounce-right 260ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  .edge-bounce-higher, .edge-bounce-lower { animation: none; }
+}
 .motion-reveal { animation: motion-drop-in var(--motion-base) var(--ease-out); }
 /* 서열표 첫 화면 평균 타일의 첫 진입 빛남(2026-11-05): 1.1초씩 3번. 타일 위에 겹친 장식 막(::after)의 투명도만 움직인다(크기·배치는 그대로).
    빛남이 끝나면 막은 투명으로 돌아가고 주황 윤곽(--weak-line)만 남는다. 움직임 줄이기에서는 막을 쓰지 않는다(컴포넌트도 클래스를 붙이지 않는다). */
