@@ -200,28 +200,59 @@ describe("TierFolderView", () => {
       expect(screen.queryByText("내 평균 난이도")).not.toBeInTheDocument();
     });
 
-    it("아래 고정 막대: 왼쪽은 바로 아래 난이도, 오른쪽은 바로 위 난이도(기록 n/전체와 함께)", async () => {
+    it("아래 고정 알약: 왼쪽 구역은 바로 아래 난이도, 오른쪽 구역은 바로 위 난이도, 가운데는 지금 난이도와 기록 n/전체", async () => {
       renderView("5.8");
       await screen.findByRole("heading", { name: /5\.8\s*2개/ });
-      const prev = within(bar()).getByRole("link", { name: /이전 난이도 5\.0/ });
-      const next = within(bar()).getByRole("link", { name: /다음 난이도 5\.9/ });
-      expect(prev).toHaveAttribute("href", "/table/folder/5.0");
-      expect(prev).toHaveTextContent("5.00/1");
-      expect(next).toHaveAttribute("href", "/table/folder/5.9");
-      expect(next).toHaveTextContent("5.90/1");
-      expect(bar().querySelector("a")).toBe(prev); // 왼쪽이 낮은 난이도
+      const prev = within(bar()).getByRole("button", { name: "이전 난이도 5.0" });
+      const next = within(bar()).getByRole("button", { name: "다음 난이도 5.9" });
+      expect(prev).toHaveTextContent("5.0");
+      expect(next).toHaveTextContent("5.9");
+      expect(within(bar()).getByTestId("folder-pill-center")).toHaveTextContent("5.80/2");
+      expect(bar().querySelector("button")).toBe(prev); // 왼쪽이 낮은 난이도
     });
 
-    it("가장 높은/낮은 난이도에서는 없는 쪽 버튼이 링크가 아니다", async () => {
+    it("구역 전체가 눌린다: 구역 자체와 숫자 라벨을 눌러도 replace로 이동한다 (아이콘만이 아니다)", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      const prev = within(bar()).getByRole("button", { name: "이전 난이도 5.0" });
+      fireEvent.click(prev);
+      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.0");
+      fireEvent.click(within(prev).getByText("5.0"));
+      expect(replaceMock).toHaveBeenCalledTimes(2);
+      const next = within(bar()).getByRole("button", { name: "다음 난이도 5.9" });
+      fireEvent.click(within(next).getByText("5.9"));
+      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.9");
+    });
+
+    it("가장 높은/낮은 난이도에서는 없는 쪽 구역이 숨겨지고(접근성 트리에서 빠짐) 자리는 남는다", async () => {
       const { unmount } = renderView("5.9");
       await screen.findByRole("heading", { name: /5\.9\s*1개/ });
-      expect(within(bar()).queryByRole("link", { name: /다음 난이도/ })).not.toBeInTheDocument();
-      expect(within(bar()).getByRole("link", { name: /이전 난이도 5\.8/ })).toBeInTheDocument();
+      expect(within(bar()).queryByRole("button", { name: /다음 난이도/ })).not.toBeInTheDocument();
+      expect(within(bar()).getByRole("button", { name: "이전 난이도 5.8" })).toBeInTheDocument();
+      // 세 칸(왼쪽 구역 · 가운데 · 오른쪽 구역 자리)이 모두 있어서 가운데 라벨이 정중앙이다
+      const pill = within(bar()).getByTestId("folder-pill");
+      expect(pill.children).toHaveLength(3);
+      expect(pill.className).toContain("grid-cols-[1fr_auto_1fr]");
+      const empty = within(bar()).getByTestId("folder-pill-next-empty");
+      expect(empty).toHaveAttribute("aria-hidden", "true");
+      expect(empty).toHaveAttribute("inert");
       unmount();
       renderView("5.0");
       await screen.findByRole("heading", { name: /5\.0\s*1개/ });
-      expect(within(bar()).queryByRole("link", { name: /이전 난이도/ })).not.toBeInTheDocument();
-      expect(within(bar()).getByRole("link", { name: /다음 난이도 5\.8/ })).toBeInTheDocument();
+      expect(within(bar()).queryByRole("button", { name: /이전 난이도/ })).not.toBeInTheDocument();
+      expect(within(bar()).getByRole("button", { name: "다음 난이도 5.8" })).toBeInTheDocument();
+      expect(within(bar()).getByTestId("folder-pill").children).toHaveLength(3);
+      expect(within(bar()).getByTestId("folder-pill-prev-empty")).toHaveAttribute("aria-hidden", "true");
+    });
+
+    it("화살표 아이콘과 진행 막대는 장식(aria-hidden)이고 n/전체는 글자로 읽힌다", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      expect(bar().querySelectorAll("svg").length).toBe(2);
+      bar().querySelectorAll("svg").forEach((svg) => expect(svg).toHaveAttribute("aria-hidden", "true"));
+      expect(within(bar()).getByTestId("folder-pill-bar")).toHaveAttribute("aria-hidden", "true");
+      expect(within(bar()).getByTestId("folder-pill-fill")).toHaveStyle({ width: "0%" }); // 기록 0/2
+      expect(within(bar()).getByText("0/2")).toBeInTheDocument();
     });
 
     it("곡 목록 영역을 왼쪽으로 60px 이상 쓸면 더 높은 난이도로, 오른쪽이면 더 낮은 난이도로 replace 이동한다", async () => {

@@ -461,9 +461,17 @@ dialog[open]::backdrop { animation: motion-fade-in var(--motion-base) var(--ease
    */
   :focus-visible { outline: 2px solid var(--check-line); outline-offset: 2px; }
 }
+/* 폴더 화면 하단 알약의 이전/다음 구역(FolderNeighborBar): 눌림 배경은 구역 전체에 짧게 전환하고, 큰 구역이라 눌림 축소(scale)는 쓰지 않는다.
+   포커스 링은 구역 모양을 따라 안쪽에 그린다(알약 테두리 밖으로 잘리지 않게) */
+.folder-pill-zone { transition: background-color var(--motion-fast) var(--ease-out); }
+@layer base {
+  button.folder-pill-zone:not(:disabled):active { scale: none; }
+}
+.folder-pill-zone:focus-visible { outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) {
   .motion-fade, .motion-sheet, .motion-reveal, dialog[open], dialog[open]::backdrop { animation: none; }
   .tile-glow::after { animation: none; }
+  .folder-pill-zone { transition: none; }
   button:not(:disabled):active { scale: none; }
 }
 

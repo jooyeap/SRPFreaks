@@ -343,6 +343,8 @@
     "searchResults": "検索結果",
     "searchTooMany": "結果が多いため一部のみ表示しています。検索語をより詳しく入力してください。",
     "neighborTiers": "隣接難易度",
+    "neighborPrevTier": "前へ 難易度 {tier}",
+    "neighborNextTier": "次へ 難易度 {tier}",
     "tierList": "難易度リスト",
     "groupLoadFailed": "グループを読み込めませんでした。しばらくしてからもう一度お試しください。",
     "toTable": "難易度表へ",
