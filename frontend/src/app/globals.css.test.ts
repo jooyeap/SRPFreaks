@@ -80,4 +80,11 @@ describe("globals.css 테마 변수", () => {
       expect(lightPicked[name], `${name}: 라이트가 다크와 같은 값`).not.toBe(dark[name]);
     }
   });
+
+  it("일본어에서는 break-keep을 풀어 줄바꿈을 허용한다 (띄어쓰기 없는 문장이 360px를 넘지 않게)", () => {
+    const m = css.match(/:lang\(ja\)\s+\.break-keep\s*\{([^}]*)\}/);
+    expect(m, ":lang(ja) .break-keep 규칙이 없음").not.toBeNull();
+    expect(m?.[1]).toMatch(/word-break:\s*normal/);
+    expect(m?.[1]).toMatch(/overflow-wrap:\s*anywhere/);
+  });
 });
