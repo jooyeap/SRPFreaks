@@ -277,6 +277,17 @@ class PeerStatsServiceTest {
     }
 
     @Test
+    void 복합단일_채보도_그_외_그룹의_최저_점수를_기준으로_한다() {
+        // 단일 15개가 가득 차 있어도 복합(단일)은 그 외 그룹(비어 있음)으로 센다(D62)
+        List<SkillEntryResponse> single = IntStream.rangeClosed(1, 15)
+                .mapToObj(i -> entry(i, "단일", "90.00", "400.00")).toList();
+        when(skillService.mySkill(ME)).thenReturn(skill(tier(1000, 1100), single, List.of()));
+        givenPeers(8, rates(CHART, "90", "90", "90", "90", "90"), "복합(단일)");
+
+        assertThat(service.stats(ME, List.of(CHART)).charts().get(0).expectedGain()).isEqualByComparingTo("362.67");
+    }
+
+    @Test
     void 그룹이_덜_차_있으면_점수_전체가_상승분() {
         when(skillService.mySkill(ME)).thenReturn(skill(tier(1000, 1100), List.of(entry(1L, "단일", "90.00", "400.00")), List.of()));
         givenPeers(8, rates(CHART, "90", "90", "90", "90", "90"), "단일");

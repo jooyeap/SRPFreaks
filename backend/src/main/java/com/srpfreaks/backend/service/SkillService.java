@@ -153,7 +153,7 @@ public class SkillService {
         List<Scored> result = new ArrayList<>();
         for (RatingCandidate c : candidates) {
             PatternType pattern = parsePattern(c.pattern());
-            if (pattern == null || pattern == PatternType.EXCLUDED || c.tier() == null) {
+            if (PatternType.ratingGroupOf(pattern) == PatternType.RatingGroup.NONE || c.tier() == null) {
                 continue;   // 쿼리가 이미 거르지만, 값이 이상할 때 방어적으로 한 번 더 제외한다
             }
             BigDecimal constant = calc.constant(c.tier());
@@ -169,7 +169,7 @@ public class SkillService {
      */
     private static List<Scored> top(List<Scored> all, boolean singleGroup, int limit) {
         return all.stream()
-                .filter(s -> (s.pattern() == PatternType.SINGLE) == singleGroup)
+                .filter(s -> (s.pattern().ratingGroup() == PatternType.RatingGroup.SINGLE) == singleGroup)
                 .sorted(Comparator.comparing(Scored::value).reversed()
                         .thenComparing(s -> s.candidate().songDifficultyId()))
                 .limit(limit)

@@ -87,11 +87,12 @@ class DifficultyTableEntryTest {
     }
 
     @Test
-    void 복합_이중_삼중은_그_외_그룹에_들어간다() {
+    void 복합_이중_삼중_복합단일은_그_외_그룹에_들어간다() {
         entry.changeRatingEnabled(true);
         entry.changeTier(new BigDecimal("6.0"), false, 1);
 
-        for (PatternType type : new PatternType[]{PatternType.COMPOUND, PatternType.DOUBLE, PatternType.TRIPLE}) {
+        for (PatternType type : new PatternType[]{PatternType.COMPOUND, PatternType.DOUBLE, PatternType.TRIPLE,
+                PatternType.COMPOSITE_SINGLE}) {
             entry.changePattern(type, false);
             assertThat(entry.isOtherGroup()).as(type.name()).isTrue();
             assertThat(entry.isSingleGroup()).as(type.name()).isFalse();

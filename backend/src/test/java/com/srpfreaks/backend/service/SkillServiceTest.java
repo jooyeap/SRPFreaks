@@ -141,6 +141,27 @@ class SkillServiceTest {
     }
 
     @Test
+    void 복합단일은_그_외_그룹에_들어가고_단일_15에는_들어가지_않으며_레이팅_제외는_어느_그룹에도_없다() {
+        settings(2, 2);
+        tableExists();
+        tiers(0);
+        candidates(
+                cand(1, 10, PatternType.SINGLE, "6.0", "95.00"),            // 15.2 -> 304.00 (단일)
+                cand(2, 11, PatternType.COMPOSITE_SINGLE, "7.0", "80.00"),  // R=20, V=16.0 -> 320.00 (그 외, 단일 아님)
+                cand(3, 12, PatternType.COMPOUND, "6.0", "95.00"),          // 304.00 (그 외)
+                cand(4, 13, PatternType.COMPOSITE_SINGLE, "5.0", "100.00"), // 144.00 (그 외, 2개 제한으로 탈락)
+                cand(5, 14, PatternType.EXCLUDED, "9.0", "100.00"));        // 어느 그룹에도 없다
+
+        SkillResponse response = service.mySkill(USER);
+
+        assertThat(response.single()).extracting(SkillEntryResponse::songDifficultyId).containsExactly(1L);
+        assertThat(response.other()).extracting(SkillEntryResponse::songDifficultyId).containsExactly(2L, 3L);
+        assertThat(response.singleScore()).isEqualByComparingTo("304.00");
+        assertThat(response.otherScore()).isEqualByComparingTo("624.00");      // 320 + 304
+        assertThat(response.totalScore()).isEqualByComparingTo("928.00");
+    }
+
+    @Test
     void 합계는_반올림하기_전_점수로_더하고_표시할_때만_둘째_자리로_반올림한다() {
         settings(2, 5);
         tableExists();
