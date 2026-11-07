@@ -58,3 +58,13 @@ export function judgeSwipe(dx: number, dy: number, rules?: SwipeRules): SwipeDir
   }
   return dx < 0 ? "higher" : "lower";
 }
+
+/**
+ * 폴더 하단 알약의 진행 막대 채움 비율(0~100). 기록 수 ÷ 전체 × 100.
+ * 전체가 0이거나 숫자가 아니면 0, 범위를 벗어나면 0~100으로 고정한다. 소수 셋째 자리까지만 쓴다(화면 폭용이라 그 이상은 의미 없다).
+ */
+export function folderProgressPercent(recorded: number, total: number): number {
+  if (!Number.isFinite(recorded) || !Number.isFinite(total) || total <= 0) return 0;
+  const percent = Math.min(100, Math.max(0, (recorded / total) * 100));
+  return Math.round(percent * 1000) / 1000;
+}
