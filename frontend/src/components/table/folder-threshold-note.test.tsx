@@ -45,6 +45,11 @@ describe("서열표 묶음 화면의 레이팅 반영 기준", () => {
     expect(await screen.findByText(/이 구간은 단일/)).toHaveTextContent("이 구간은 단일 85% · 그 외 95% 이상이면 레이팅에 반영돼요.");
   });
 
+  it("복합(단일) 채보는 그 외 쪽으로 센다", async () => {
+    renderNote([entry("복합(단일)")]);
+    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 그 외 95% 이상이면 레이팅에 반영돼요.");
+  });
+
   it("두 기준이 같으면 숫자를 한 번만 쓴다", async () => {
     skill = { single: list(15, 258), other: list(25, 258), singleLimit: 15, otherLimit: 25 };
     renderNote([entry("단일"), entry("복합")]);

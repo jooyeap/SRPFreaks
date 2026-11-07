@@ -371,6 +371,7 @@
     "patternCompound": "複合",
     "patternDouble": "二色",
     "patternTriple": "三色",
+    "patternCompoundSingle": "複合(単色)",
     "patternExcluded": "レーティング除外",
     "recommendHigh": "高",
     "recommendMid": "中",

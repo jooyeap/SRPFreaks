@@ -32,6 +32,14 @@ describe("서열표 보기 상태 <-> 주소 쿼리", () => {
     expect(parse(query)).toEqual(state);
   });
 
+  it("복합(단일)의 괄호는 주소에 인코딩되고 같은 상태로 복원된다", () => {
+    const state: TableViewState = { ...DEFAULT_VIEW_STATE, filters: { part: null, recommend: ["상", "중"], pattern: ["복합", "복합(단일)"] } };
+    const query = viewStateToQuery(state);
+    expect(new URLSearchParams(query).get("pat")).toBe("복합,복합(단일)");
+    expect(parse(query).filters.pattern).toEqual(["복합", "복합(단일)"]);
+    expect(parse("pat=복합(단일),단일").filters.pattern).toEqual(["단일", "복합(단일)"]);
+  });
+
   it("타일 순서(order)는 hard·easy만 받고, 알 수 없는 값이나 없으면 null(기본)이다", () => {
     expect(parse("order=hard").order).toBe("hard");
     expect(parse("order=easy").order).toBe("easy");
