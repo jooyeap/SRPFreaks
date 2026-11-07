@@ -5,6 +5,7 @@ import type {
   RivalCompareChartsResponse,
   RivalCompareRatingResponse,
   RivalRecordResponse,
+  RivalRegistrantResponse,
   RivalResponse,
   RivalResult,
   RivalStatusResponse,
@@ -17,6 +18,7 @@ import type {
 export const rivalKeys = {
   all: ["rivals"] as const,
   list: (viewerId: number) => ["rivals", "list", viewerId] as const,
+  registeredMe: (viewerId: number, page: number) => ["rivals", "registered-me", viewerId, page] as const,
   status: (viewerId: number, targetId: number) => ["rivals", "status", viewerId, targetId] as const,
   rating: (viewerId: number, targetId: number) => ["rivals", "compare-rating", viewerId, targetId] as const,
   charts: (viewerId: number, targetId: number, result: RivalResult) => ["rivals", "compare-charts", viewerId, targetId, result] as const,
@@ -31,11 +33,20 @@ export const notificationKeys = {
 
 export const RIVAL_CHART_PAGE_SIZE = 20;
 export const NOTIFICATION_PAGE_SIZE = 20;
+export const REGISTERED_ME_PAGE_SIZE = 20;
 /** 알림 개수를 다시 읽는 간격(ms). 화면에 다시 들어올 때도 읽는다. */
 export const NOTIFICATION_POLL_MS = 60_000;
 
 export function fetchRivals(signal?: AbortSignal): Promise<RivalResponse[]> {
   return apiFetch<RivalResponse[]>("/rivals", { signal });
+}
+
+/** 나를 라이벌로 등록한 공개 유저(D63). 항상 로그인한 본인 기준이고 userId를 보내지 않는다. */
+export function fetchRegisteredMe(page: number, signal?: AbortSignal): Promise<PageResponse<RivalRegistrantResponse>> {
+  return apiFetch<PageResponse<RivalRegistrantResponse>>("/rivals/registered-me", {
+    query: { page, size: REGISTERED_ME_PAGE_SIZE },
+    signal,
+  });
 }
 
 export function registerRival(targetUserId: number): Promise<void> {

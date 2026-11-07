@@ -508,6 +508,14 @@ export interface RivalResponse {
   counts: RivalCounts | null;
 }
 
+/** 나를 라이벌로 등록한 공개 유저 한 줄(D63). mutual = 내가 그 사람도 등록함(서로 라이벌). 이메일·역할은 오지 않는다. */
+export interface RivalRegistrantResponse {
+  userId: number;
+  nickname: string;
+  tier: PlayerTierResponse;
+  mutual: boolean;
+}
+
 export interface RivalStatusResponse {
   registered: boolean;
   mutual: boolean;
