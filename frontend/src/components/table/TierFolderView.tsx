@@ -225,8 +225,8 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
         <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined} />
       </div>
       {/* 아래 고정 이웃 난이도 버튼에 마지막 줄이 가려지지 않게 그 높이만큼 비운다 */}
-      <div aria-hidden="true" className="h-14" />
-      <FolderNeighborBar neighbors={neighbors} />
+      <div aria-hidden="true" className="h-[67px]" />
+      <FolderNeighborBar neighbors={neighbors} tier={rawGroup.tier} recorded={group.recorded} total={group.total} />
       <ScrollTopButton lifted />
       <RecordDialog
         chart={

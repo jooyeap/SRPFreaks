@@ -343,6 +343,8 @@
     "searchResults": "검색 결과",
     "searchTooMany": "결과가 많아 일부만 보입니다. 검색어를 더 자세히 입력해 주세요.",
     "neighborTiers": "인접 난이도",
+    "neighborPrevTier": "이전 난이도 {tier}",
+    "neighborNextTier": "다음 난이도 {tier}",
     "tierList": "난이도 목록",
     "groupLoadFailed": "묶음을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "toTable": "서열표로",
