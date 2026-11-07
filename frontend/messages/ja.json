@@ -222,6 +222,13 @@
     "searchPlaceholderShort": "曲名・アーティストを検索"
   },
   "Song": {
+    "navAria": "前の曲・次の曲",
+    "navPrevTier": "前のグループ {tier}",
+    "navNextTier": "次のグループ {tier}",
+    "navTable": "難易度表 {tier}",
+    "navSongs": "曲一覧",
+    "navHint": "画面を左右にスワイプしても前の曲・次の曲へ移動できます。",
+    "navHintClose": "案内を閉じる",
     "myRecord": "自分の記録",
     "tableBasis": "難易度表はSRN+、Premium Free、Sランク基準です。",
     "addRecord": "記録を登録",

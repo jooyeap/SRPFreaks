@@ -29,6 +29,7 @@ import {
   tableKeys,
   type TableFilters,
 } from "@/lib/difficulty-table";
+import { chartIdOfDetailLink, rememberDetailNav } from "@/lib/detail-nav";
 import { neighborGroups, type SwipeDirection } from "@/lib/folder-nav";
 import { fetchMyPlayLevel, skillKeys } from "@/lib/rating";
 import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
@@ -209,6 +210,11 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
           입력 칸·가로로 스크롤되는 영역 위에서는 시작하지 않는다(useSwipeNav). 난이도 칩 띠는 이 영역 밖이라 칩 띠 스크롤이 그대로다 */}
       <div
         {...swipe}
+        // 곡 링크를 누르면 이 목록의 정렬·필터를 기억해 둔다 -> 곡 상세의 이전/다음 곡 이동이 같은 순서로 이웃을 찾는다(lib/detail-nav.ts)
+        onClick={(e) => {
+          const chartId = chartIdOfDetailLink(e.target);
+          if (chartId !== null) rememberDetailNav({ source: "table", sort, filters, current: chartId });
+        }}
         data-testid="folder-swipe-area"
         data-bounce={bounce ?? undefined}
         className={`flex min-h-[40vh] touch-pan-y flex-col gap-4 ${bounce ? `edge-bounce-${bounce}` : ""}`}

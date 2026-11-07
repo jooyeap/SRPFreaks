@@ -15,6 +15,8 @@ import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { PeerStatsCard } from "@/components/song/PeerStatsCard";
 import { TierHistorySection } from "@/components/song/TierHistorySection";
+import { SongNavBar } from "@/components/song/SongNavBar";
+import { useDetailNav } from "@/components/song/use-detail-nav";
 import { SongHeader } from "@/components/song/SongHeader";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
 import { InfoCards, LevelTable } from "@/components/song/SongInfo";
@@ -91,6 +93,17 @@ export function SongDetailView({
   });
   const groups = groupsQuery.data ?? null;
 
+  // 이전/다음 곡 이동: 열린 창이 있으면 스와이프를 끈다. 바는 목록에서 들어온 기억이 지금 채보와 맞을 때만 보인다(use-detail-nav)
+  const dialogOpen = recordOpen || editTarget !== null || songEdit !== null || manageOpen || chartAddOpen || jacketOpen;
+  const nav = useDetailNav({ origin, chartId, userId, groups, swipeEnabled: !dialogOpen });
+  const navBar = nav.view ? (
+    <>
+      {/* 아래 고정 바에 마지막 줄이 가려지지 않게 그 높이만큼 비운다 */}
+      <div aria-hidden="true" className="h-14" />
+      <SongNavBar view={nav.view} onStep={(direction) => void nav.go(direction)} />
+    </>
+  ) : null;
+
   const chart = song.data ? resolveChart(song.data.difficulties, chartId) : null;
   const found = chart && groups ? findChart(groups, chart.id) : null;
 
@@ -151,6 +164,7 @@ export function SongDetailView({
       <div className="flex flex-col gap-4">
         {backBar}
         <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
+        {navBar}
       </div>
     );
   }
@@ -161,6 +175,7 @@ export function SongDetailView({
         <ErrorRetry onRetry={() => void song.refetch()} retrying={song.isFetching}>
           {errorMessage(song.error, t)}
         </ErrorRetry>
+        {navBar}
       </div>
     );
   }
@@ -188,7 +203,8 @@ export function SongDetailView({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    // 좌우 스와이프: 세로 스크롤은 브라우저에 맡기고(pan-y) 확대(pinch-zoom)도 막지 않는다. 가로 스크롤 표·입력 칸·열린 창에서는 시작하지 않는다(useSwipeNav)
+    <div {...nav.swipe} className={`flex flex-col gap-4 ${nav.view ? "touch-pan-y touch-pinch-zoom" : ""}`}>
       {backBar}
       {/*
         모바일(한 열)은 곡 정보 → 내 기록(기록 등록 버튼) → 나머지 정보 → 같은 난이도의 곡 순서로 보인다.
@@ -322,6 +338,7 @@ export function SongDetailView({
           }}
         />
       ) : null}
+      {navBar}
     </div>
   );
 }
