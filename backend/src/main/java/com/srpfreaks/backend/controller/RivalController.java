@@ -2,7 +2,9 @@ package com.srpfreaks.backend.controller;
 
 import com.srpfreaks.backend.dto.RivalCompareChartsResponse;
 import com.srpfreaks.backend.dto.RivalCompareRatingResponse;
+import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.RivalRecordResponse;
+import com.srpfreaks.backend.dto.RivalRegistrantResponse;
 import com.srpfreaks.backend.dto.RivalRequest;
 import com.srpfreaks.backend.dto.RivalResponse;
 import com.srpfreaks.backend.dto.RivalStatusResponse;
@@ -38,6 +40,14 @@ public class RivalController {
     @GetMapping("/rivals")
     public List<RivalResponse> list(@AuthenticationPrincipal AuthenticatedUser user) {
         return rivalService.list(user.id());
+    }
+
+    /** 나를 라이벌로 등록한 공개 유저(D63). userId를 받지 않고 토큰의 본인 기준으로만 조회한다. */
+    @GetMapping("/rivals/registered-me")
+    public PageResponse<RivalRegistrantResponse> registeredMe(@AuthenticationPrincipal AuthenticatedUser user,
+                                                              @RequestParam(defaultValue = "0") int page,
+                                                              @RequestParam(defaultValue = "" + RivalService.DEFAULT_PAGE_SIZE) int size) {
+        return rivalService.registeredMe(user.id(), page, size);
     }
 
     @PostMapping("/rivals")

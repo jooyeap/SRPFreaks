@@ -1493,7 +1493,11 @@
     "private": "非公開",
     "privateLine": "相手が記録を非公開にしました。",
     "unknown": "不明",
-    "listHint": "<a>ユーザー一覧</a>から公開ユーザーを選んでライバルに登録できます。"
+    "listHint": "<a>ユーザー一覧</a>から公開ユーザーを選んでライバルに登録できます。",
+    "registeredMeTitle": "自分を登録したユーザー",
+    "registeredMeCount": "{count}人",
+    "registeredMeEmpty": "まだ自分をライバルに登録した公開ユーザーはいません。",
+    "alreadyRegistered": "登録済み"
   },
   "Notify": {
     "bellAria": "通知",

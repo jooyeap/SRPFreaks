@@ -5,7 +5,9 @@ import { RivalButtons } from "@/components/rivals/RivalButtons";
 import { RivalCompareView } from "@/components/rivals/RivalCompareView";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { RivalTab } from "@/components/rivals/RivalTab";
-import type { RivalCompareRatingResponse, RivalResponse } from "@/lib/api-types";
+import type { PageResponse, RivalCompareRatingResponse, RivalRegistrantResponse, RivalResponse } from "@/lib/api-types";
+import ja from "../../../messages/ja.json";
+import ko from "../../../messages/ko.json";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -152,6 +154,13 @@ describe("RivalRecordsCard", () => {
   });
 });
 
+function registrant(userId: number, nickname: string, mutual: boolean): RivalRegistrantResponse {
+  return { userId, nickname, tier: gold, mutual };
+}
+function registrantPage(content: RivalRegistrantResponse[], over: Partial<PageResponse<RivalRegistrantResponse>> = {}) {
+  return { content, page: 0, size: 20, totalElements: content.length, totalPages: content.length > 0 ? 1 : 0, ...over };
+}
+
 describe("RivalTab", () => {
   it("라이벌 카드는 비교 화면 링크이고, 비공개가 된 상대는 해제 버튼만 있다", async () => {
     const rivals: RivalResponse[] = [
@@ -159,7 +168,8 @@ describe("RivalTab", () => {
         counts: { win: 48, lose: 61, tie: 3, theirsOnly: 27 } },
       { userId: 9, nickname: "HJY", available: false, mutual: false, tier: null, totalScore: null, scoreDiff: null, counts: null },
     ];
-    fetchMock.mockResolvedValue(json(rivals));
+    fetchMock.mockImplementation(async (input) =>
+      String(input).includes("/rivals/registered-me") ? json(registrantPage([])) : json(rivals));
     renderWith(<RivalTab userId={1} />);
 
     const card = await screen.findByRole("link", { name: /Rumi/ });
@@ -169,5 +179,110 @@ describe("RivalTab", () => {
     expect(screen.getByText("상대가 기록을 비공개로 바꿨습니다.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "라이벌 해제" })).toBeInTheDocument();
     expect(screen.getByText("2/5")).toBeInTheDocument();
+  });
+});
+
+describe("RivalTab - 나를 등록한 유저 (D63)", () => {
+  const mine: RivalResponse[] = [];
+
+  function mockApi(pages: (page: number) => PageResponse<RivalRegistrantResponse>, onRegister?: () => Response) {
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes("/rivals/registered-me")) return json(pages(Number(new URL(url, "http://x").searchParams.get("page") ?? 0)));
+      if (url.endsWith("/rivals") && init?.method === "POST") return onRegister ? onRegister() : new Response(null, { status: 204 });
+      return json(mine);
+    });
+  }
+
+  it("구역 제목, 줄(닉네임·티어·서로 라이벌 칩), 인원수를 보인다", async () => {
+    mockApi(() => registrantPage([registrant(7, "Rumi", true), registrant(8, "Mika", false)]));
+    renderWith(<RivalTab userId={1} />);
+
+    const section = await screen.findByRole("region", { name: "나를 등록한 유저" });
+    expect(await within(section).findByText("Rumi")).toHaveAttribute("href", "/players/7");
+    expect(within(section).getByText("2명")).toBeInTheDocument();
+    const rows = within(section).getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toHaveTextContent("Gold");
+    expect(rows[0]).toHaveTextContent("서로 라이벌");
+    expect(rows[1]).not.toHaveTextContent("서로 라이벌");
+    // 이미 등록한 줄은 `등록됨` 글자로 막고, 아닌 줄만 `라이벌 등록`이 켜져 있다
+    expect(within(rows[0]).getByRole("button", { name: /등록됨/ })).toBeDisabled();
+    expect(within(rows[1]).getByRole("button", { name: /라이벌 등록/ })).toBeEnabled();
+    // 요청에는 사용자 id가 없고 쪽 번호와 크기만 있다
+    const call = fetchMock.mock.calls.map(urlOf).find((u) => u.includes("/rivals/registered-me"));
+    expect(call).toContain("page=0");
+    expect(call).not.toMatch(/userId|user_id/i);
+  });
+
+  it("비면 안내 한 줄만 보이고 비공개를 암시하는 문구는 없다", async () => {
+    mockApi(() => registrantPage([]));
+    renderWith(<RivalTab userId={1} />);
+
+    expect(await screen.findByText("아직 나를 라이벌로 등록한 공개 유저가 없습니다.")).toBeInTheDocument();
+    expect(screen.getByText("0명")).toBeInTheDocument();
+    expect(screen.queryByText(/비공개/)).not.toBeInTheDocument();
+  });
+
+  it("줄에서 라이벌 등록을 누르면 기존 등록 API를 부르고 목록을 다시 읽는다", async () => {
+    let registered = false;
+    fetchMock.mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.includes("/rivals/registered-me")) return json(registrantPage([registrant(8, "Mika", registered)]));
+      if (url.endsWith("/rivals") && init?.method === "POST") {
+        registered = true;
+        return new Response(null, { status: 204 });
+      }
+      return json(mine);
+    });
+    renderWith(<RivalTab userId={1} />);
+
+    const section = await screen.findByRole("region", { name: "나를 등록한 유저" });
+    fireEvent.click(await within(section).findByRole("button", { name: /라이벌 등록/ }));
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find((c) => urlOf(c).endsWith("/rivals") && c[1]?.method === "POST");
+      expect(post?.[1]?.body).toBe(JSON.stringify({ targetUserId: 8 }));
+    });
+    expect(await within(section).findByRole("button", { name: /등록됨/ })).toBeDisabled();
+    expect(within(section).getByText("서로 라이벌")).toBeInTheDocument();
+  });
+
+  it("상한이 찼으면 서버의 오류 문구를 그대로 보인다", async () => {
+    mockApi(
+      () => registrantPage([registrant(8, "Mika", false)]),
+      () => json({ code: "RIVAL_LIMIT", message: "라이벌은 5명까지 등록할 수 있습니다.", timestamp: "2026-11-07T00:00:00Z" }, 409),
+    );
+    renderWith(<RivalTab userId={1} />);
+
+    const section = await screen.findByRole("region", { name: "나를 등록한 유저" });
+    fireEvent.click(await within(section).findByRole("button", { name: /라이벌 등록/ }));
+
+    expect(await within(section).findByRole("alert")).toHaveTextContent("라이벌은 5명까지 등록할 수 있습니다.");
+  });
+
+  it("여러 쪽이면 이전/다음으로 이동하고 쪽 번호를 서버에 보낸다", async () => {
+    mockApi((page) =>
+      registrantPage([registrant(10 + page, `user${page}`, false)], { page, totalPages: 2, totalElements: 21 }));
+    renderWith(<RivalTab userId={1} />);
+
+    const section = await screen.findByRole("region", { name: "나를 등록한 유저" });
+    expect(await within(section).findByText("user0")).toBeInTheDocument();
+    expect(within(section).getByText("1 / 2")).toBeInTheDocument();
+    fireEvent.click(within(section).getByRole("button", { name: "다음" }));
+
+    expect(await within(section).findByText("user1")).toBeInTheDocument();
+    expect(within(section).getByText("2 / 2")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.map(urlOf).some((u) => u.includes("/rivals/registered-me") && u.includes("page=1"))).toBe(true);
+  });
+});
+
+describe("나를 등록한 유저 문구", () => {
+  it("ko/ja 둘 다 같은 키가 있다", () => {
+    const keys = ["registeredMeTitle", "registeredMeCount", "registeredMeEmpty", "alreadyRegistered"] as const;
+    for (const key of keys) {
+      expect(ko.Rival[key]).toBeTruthy();
+      expect(ja.Rival[key]).toBeTruthy();
+    }
   });
 });

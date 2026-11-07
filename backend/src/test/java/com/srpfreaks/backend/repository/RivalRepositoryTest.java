@@ -12,6 +12,7 @@ import com.srpfreaks.backend.entity.RivalNotificationStatus;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.User;
+import com.srpfreaks.backend.entity.UserStatus;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,7 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.context.TestPropertySource;
@@ -97,6 +99,53 @@ class RivalRepositoryTest {
         assertThat(rivalRepository.findUserIdsRegistering(a.getId())).containsExactly(b.getId());
         assertThat(rivalRepository.findWithTargetByUserId(a.getId())).hasSize(2);
         assertThat(rivalRepository.countByUser_Id(a.getId())).isEqualTo(2);
+    }
+
+    @Test
+    void 나를_등록한_사람은_공개_유저만_최근_순으로_나오고_합계에_비공개가_섞이지_않는다() {
+        User pub1 = persistUser("pub1", "Pub1", true);
+        User pub2 = persistUser("pub2", "Pub2", true);
+        User hidden = persistUser("hid1", "Hidden", false);
+        User blocked = persistUser("blk1", "Blocked", true);
+        blocked.block();
+        User other = persistUser("oth1", "Other", true);
+        rivalRepository.save(Rival.of(pub1, a, NOW));
+        rivalRepository.save(Rival.of(pub2, a, NOW.plusSeconds(60)));
+        rivalRepository.save(Rival.of(hidden, a, NOW.plusSeconds(120)));
+        rivalRepository.save(Rival.of(blocked, a, NOW.plusSeconds(180)));
+        rivalRepository.save(Rival.of(other, b, NOW));   // 다른 사람(b)을 등록한 행은 a의 결과에 없다
+        em.flush();
+        em.clear();
+
+        Page<User> first = rivalRepository.findPublicRegistrants(a.getId(), UserStatus.ACTIVE, PageRequest.of(0, 1));
+        assertThat(first.getTotalElements()).isEqualTo(2);   // 비공개·차단은 합계에도 없다
+        assertThat(first.getTotalPages()).isEqualTo(2);
+        assertThat(first.getContent()).extracting(User::getId).containsExactly(pub2.getId());   // 최근 등록이 먼저
+
+        Page<User> second = rivalRepository.findPublicRegistrants(a.getId(), UserStatus.ACTIVE, PageRequest.of(1, 1));
+        assertThat(second.getContent()).extracting(User::getId).containsExactly(pub1.getId());
+        assertThat(rivalRepository.findPublicRegistrants(c.getId(), UserStatus.ACTIVE, PageRequest.of(0, 10)).getTotalElements())
+                .isZero();
+    }
+
+    @Test
+    void 같은_시각에_등록하면_rival_id가_큰_쪽이_먼저() {
+        User p1 = persistUser("tie1", "Tie1", true);
+        User p2 = persistUser("tie2", "Tie2", true);
+        rivalRepository.save(Rival.of(p1, a, NOW));
+        rivalRepository.save(Rival.of(p2, a, NOW));
+        em.flush();
+        em.clear();
+
+        assertThat(rivalRepository.findPublicRegistrants(a.getId(), UserStatus.ACTIVE, PageRequest.of(0, 10)).getContent())
+                .extracting(User::getId).containsExactly(p2.getId(), p1.getId());
+    }
+
+    private User persistUser(String key, String nickname, boolean open) {
+        User u = User.create("sub-reg-" + key, key + "-reg@example.com", nickname);
+        u.changeProfilePublic(open);
+        em.persist(u);
+        return u;
     }
 
     @Test

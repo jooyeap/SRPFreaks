@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { RegisteredMeSection } from "@/components/rivals/RegisteredMeSection";
 import { ApiError } from "@/lib/api";
 import type { RivalResponse } from "@/lib/api-types";
 import { formatScore } from "@/lib/format";
@@ -11,7 +12,7 @@ import { fetchRivals, rivalKeys, signed, unregisterRival } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 /**
- * 마이페이지 `라이벌` 탭(D56): 내 라이벌 카드(최대 5). 카드를 누르면 비교 화면.
+ * 마이페이지 `라이벌` 탭(D56): 내 라이벌 카드(최대 5). 카드를 누르면 비교 화면. 아래에 `나를 등록한 유저` 구역(D63).
  * 비공개가 된 상대는 흐린 카드에 안내 + `라이벌 해제`만 둔다. `서로 라이벌`은 칩 글자로 보인다.
  */
 export function RivalTab({ userId }: { userId: number }) {
@@ -109,6 +110,7 @@ export function RivalTab({ userId }: { userId: number }) {
       <p className="text-xs text-fg-dim">
         {t.rich("listHint", { a: (c) => <Link href="/players" className="underline">{c}</Link> })}
       </p>
+      <RegisteredMeSection userId={userId} />
       <ConfirmDialog
         open={removing !== null}
         title={t("unregisterTitle")}
