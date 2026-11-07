@@ -73,7 +73,7 @@ export interface TableEntryResponse {
   /** 시트와 같은 한글 값: 상 / 중 / 하 (없으면 null) */
   recommend: string | null;
   recommendUncertain: boolean;
-  /** 단일 / 복합 / 이중 / 삼중 / 레이팅 제외 (없으면 null) */
+  /** 단일 / 복합 / 이중 / 삼중 / 복합(단일) / 레이팅 제외 (없으면 null) */
   pattern: string | null;
   patternUncertain: boolean;
   /** 레이팅 반영 스위치(D28). 꺼져 있으면 기준 난이도·속성이 있어도 레이팅에서 빠진다. */
@@ -404,7 +404,7 @@ export interface SetlistItemResponse {
   difficulty: DifficultyType;
   level: number;
   tier: number | null;
-  /** 서열표의 속성 글자(단일 / 복합 / 이중 / 삼중 / 레이팅 제외). 서열표에 없으면 null. */
+  /** 서열표의 속성 글자(단일 / 복합 / 이중 / 삼중 / 복합(단일) / 레이팅 제외). 서열표에 없으면 null. */
   pattern: string | null;
   mine: MyRecord | null;
   done: boolean;

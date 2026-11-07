@@ -16,7 +16,7 @@ export const PLAN_RANKS: Record<PlanKind, readonly number[]> = {
 /** 목록 종류별로 해당하는 속성. 단일 목록에는 단일 채보만, 그 외 목록에는 복합·이중·삼중 채보만 들어간다. */
 const PATTERNS: Record<PlanKind, readonly string[]> = {
   single: ["단일"],
-  other: ["복합", "이중", "삼중"],
+  other: ["복합", "이중", "삼중", "복합(단일)"],
 };
 
 export interface PlanTarget {

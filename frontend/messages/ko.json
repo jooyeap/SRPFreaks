@@ -371,6 +371,7 @@
     "patternCompound": "복합",
     "patternDouble": "이중",
     "patternTriple": "삼중",
+    "patternCompoundSingle": "복합(단일)",
     "patternExcluded": "레이팅 제외",
     "recommendHigh": "상",
     "recommendMid": "중",

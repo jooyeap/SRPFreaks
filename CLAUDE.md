@@ -56,6 +56,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 - **기준 난이도가 없는 채보(미정)는 계산하지 않고** 목록에서 제외한다. 화면에는 `미정`.
 - 계수(80, 95, 3.2, 20, 기준점 6.0)는 `app_settings`의 `rating.*`로 두고 수식 모양은 코드에 둔다.
 - **목록은 SRN+ 하나만** (ALL·SRN 없음). 속성(`pattern_type`)이 단일인 채보 상위 **15** + 그 외(복합·이중·삼중) 상위 **25** = 40채보를 합산한다. **곡당 1채보로 거르지 않는다** (같은 곡의 다른 채보도 각각 센다). 개수는 `rating.list_single`, `rating.list_other` 설정. HOT은 쓰지 않는다. Guitar와 Bass는 한 목록.
+- 속성 `복합(단일)`은 현재 `그 외` 그룹으로 계산한다(D62). 그룹 판정은 `PatternType.ratingGroup()` 한 곳에서만 한다.
 - **서열표에 기준 난이도가 없는 채보와 서열표에 없는 채보는 레이팅에서 제외**하고 기록만 남긴다.
 - 속성이 `레이팅 제외`(또는 NULL)인 채보는 어느 그룹에도 넣지 않는다. 레이팅 대상 = 기준 난이도와 속성이 모두 있는 채보.
 - **기록은 `SUPER_RANDOM_PLUS` 하나만 받는다 (D25).** 요청에서 노트 옵션을 비우면 SRN+로 저장하고 다른 옵션은 400. enum(`NoteOption` 5값)과 `note_option` 컬럼은 확장 대비로 그대로 두고, 허용 집합(`OptionRecordService.RECORDABLE_OPTIONS`)에 값을 추가해 늘린다. "옵션별 최고 기록" API는 만들지 않는다.
