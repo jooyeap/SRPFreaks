@@ -8,6 +8,7 @@ import com.srpfreaks.backend.dto.RivalCompareChartsResponse;
 import com.srpfreaks.backend.dto.RivalCompareRatingResponse;
 import com.srpfreaks.backend.dto.RivalCounts;
 import com.srpfreaks.backend.dto.RivalRecordResponse;
+import com.srpfreaks.backend.dto.RivalRegistrantResponse;
 import com.srpfreaks.backend.dto.RivalResponse;
 import com.srpfreaks.backend.dto.RivalStatusResponse;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
@@ -26,6 +27,8 @@ import com.srpfreaks.backend.repository.UserBest;
 import com.srpfreaks.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -131,6 +134,25 @@ public class RivalService {
                     skill.totalScore().subtract(myTotal), counts(mine, bestsOf(target.getId(), option))));
         }
         return result;
+    }
+
+    /**
+     * 나를 라이벌로 등록한 공개 유저(D63). 항상 로그인한 본인 기준이라 다른 사람의 목록을 묻는 입구가 없다.
+     * 비공개·차단·탈퇴 유저는 쿼리에서 이미 빠지고 count도 같은 조건이라, 숨겨진 사람 수는 어디에도 나오지 않는다.
+     * 티어는 한 페이지(최대 50명)만 한 번에 계산하고, 서로 라이벌 여부는 내 라이벌 목록(최대 5명) 한 번으로 정한다.
+     */
+    public PageResponse<RivalRegistrantResponse> registeredMe(Long userId, int page, int size) {
+        int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int pageIndex = Math.max(page, 0);
+        Page<User> found = rivalRepository.findPublicRegistrants(userId, UserStatus.ACTIVE, PageRequest.of(pageIndex, pageSize));
+        if (found.isEmpty()) {
+            return PageResponse.of(found, u -> null);
+        }
+        Set<Long> mine = rivalRepository.findWithTargetByUserId(userId).stream()
+                .map(r -> r.getTarget().getId()).collect(Collectors.toSet());
+        Map<Long, SkillService.RatedSkill> rated = skillService.ratedAll(found.getContent().stream().map(User::getId).toList());
+        return PageResponse.of(found, u -> new RivalRegistrantResponse(u.getId(), u.getNickname(),
+                rated.get(u.getId()).skill().tier(), mine.contains(u.getId())));
     }
 
     // ---------- 비교 ----------

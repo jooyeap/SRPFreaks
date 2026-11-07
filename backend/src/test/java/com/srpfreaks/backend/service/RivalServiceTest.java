@@ -6,7 +6,9 @@ import com.srpfreaks.backend.dto.RivalChartRow;
 import com.srpfreaks.backend.dto.RivalCompareChartsResponse;
 import com.srpfreaks.backend.dto.RivalCompareRatingResponse;
 import com.srpfreaks.backend.dto.RivalCounts;
+import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.RivalRecordResponse;
+import com.srpfreaks.backend.dto.RivalRegistrantResponse;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
@@ -33,6 +35,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -135,6 +140,63 @@ class RivalServiceTest {
     @Test
     void 비교_상대가_나_자신이면_404() {
         assertThatThrownBy(() -> service.compareCharts(ME, ME, null, 0, 20)).extracting("errorCode").isEqualTo(ErrorCode.NOT_FOUND);
+    }
+
+    // ---------- 나를 등록한 유저 (D63) ----------
+
+    private SkillService.RatedSkill rated(String tierKey) {
+        SkillResponse skill = new SkillResponse(SRN, d("0"), d("0"), d("0"),
+                new SkillResponse.PlayerTierResponse(tierKey, tierKey, 0, null, null), 15, 25, List.of(), List.of());
+        return new SkillService.RatedSkill(skill, null);
+    }
+
+    @Test
+    void 나를_등록한_공개_유저만_담고_서로_라이벌은_내가_등록한_사람이다() {
+        User u3 = user(3L, "Mika");
+        User u4 = user(4L, "Sora");
+        when(rivalRepository.findPublicRegistrants(eq(ME), eq(UserStatus.ACTIVE), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(them, u3, u4), org.springframework.data.domain.PageRequest.of(0, 20), 3));
+        // 내 라이벌은 THEM(2)뿐 -> 2번만 서로 라이벌
+        when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of(Rival.of(me, them, Instant.EPOCH)));
+        when(skillService.ratedAll(List.of(THEM, 3L, 4L))).thenReturn(Map.of(
+                THEM, rated("SS 3"), 3L, rated("S 1"), 4L, rated("A 2")));
+
+        PageResponse<RivalRegistrantResponse> res = service.registeredMe(ME, 0, 20);
+
+        assertThat(res.totalElements()).isEqualTo(3);
+        assertThat(res.content()).extracting(RivalRegistrantResponse::userId).containsExactly(2L, 3L, 4L);
+        assertThat(res.content()).extracting(RivalRegistrantResponse::mutual).containsExactly(true, false, false);
+        assertThat(res.content().get(0).tier().key()).isEqualTo("SS 3");
+    }
+
+    @Test
+    void 조회는_항상_본인_id로_하고_쪽수와_크기는_범위로_고친다() {
+        when(rivalRepository.findPublicRegistrants(any(), any(), any(Pageable.class))).thenAnswer(inv ->
+                new PageImpl<User>(List.of(), inv.getArgument(2), 0));
+
+        PageResponse<RivalRegistrantResponse> res = service.registeredMe(ME, -3, 500);
+
+        assertThat(res.content()).isEmpty();
+        assertThat(res.totalElements()).isZero();
+        assertThat(res.page()).isZero();
+        assertThat(res.size()).isEqualTo(RivalService.MAX_PAGE_SIZE);
+        verify(rivalRepository).findPublicRegistrants(eq(ME), eq(UserStatus.ACTIVE), eq(org.springframework.data.domain.PageRequest.of(0, 50)));
+        verify(skillService, never()).ratedAll(any());
+    }
+
+    @Test
+    void 마지막_쪽은_남은_줄만_담고_합계는_공개_유저_수다() {
+        Page<User> page = new PageImpl<>(List.of(user(5L, "Last")), org.springframework.data.domain.PageRequest.of(2, 2), 5);
+        when(rivalRepository.findPublicRegistrants(eq(ME), eq(UserStatus.ACTIVE), any(Pageable.class))).thenReturn(page);
+        when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of());
+        when(skillService.ratedAll(List.of(5L))).thenReturn(Map.of(5L, rated("C")));
+
+        PageResponse<RivalRegistrantResponse> res = service.registeredMe(ME, 2, 2);
+
+        assertThat(res.content()).hasSize(1);
+        assertThat(res.totalElements()).isEqualTo(5);
+        assertThat(res.totalPages()).isEqualTo(3);
+        assertThat(res.content().get(0).mutual()).isFalse();
     }
 
     // ---------- 곡별 승패 ----------
