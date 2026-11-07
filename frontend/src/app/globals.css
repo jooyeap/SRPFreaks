@@ -478,3 +478,14 @@ dialog[open]::backdrop { animation: motion-fade-in var(--motion-base) var(--ease
     min-height: 2.25rem;
   }
 }
+
+/*
+ * 일본어 줄바꿈 (2026-11-07): `break-keep`(word-break: keep-all)은 띄어쓰기가 있는 한국어 문장을 단어 단위로 끊으려고 쓴다.
+ * 일본어는 띄어쓰기가 없어서 keep-all이면 한 문장 전체가 줄바꿈 없이 이어져 360px 폭을 넘고(홈 진행도 카드의 안내 줄),
+ * 모바일 Chrome이 페이지를 축소해 오른쪽에 빈 띠가 생겼다. 일본어일 때만 보통 줄바꿈(글자 사이에서 끊김)으로 돌린다.
+ * <html lang>은 선택한 언어(layout.tsx)를 따른다.
+ */
+:lang(ja) .break-keep {
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
