@@ -103,12 +103,12 @@ class RivalRepositoryTest {
 
     @Test
     void 나를_등록한_사람은_공개_유저만_최근_순으로_나오고_합계에_비공개가_섞이지_않는다() {
-        User pub1 = persistUser("pub1", "공개1", true);
-        User pub2 = persistUser("pub2", "공개2", true);
-        User hidden = persistUser("hid1", "비공개", false);
-        User blocked = persistUser("blk1", "차단", true);
+        User pub1 = persistUser("pub1", "Pub1", true);
+        User pub2 = persistUser("pub2", "Pub2", true);
+        User hidden = persistUser("hid1", "Hidden", false);
+        User blocked = persistUser("blk1", "Blocked", true);
         blocked.block();
-        User other = persistUser("oth1", "다른사람", true);
+        User other = persistUser("oth1", "Other", true);
         rivalRepository.save(Rival.of(pub1, a, NOW));
         rivalRepository.save(Rival.of(pub2, a, NOW.plusSeconds(60)));
         rivalRepository.save(Rival.of(hidden, a, NOW.plusSeconds(120)));
@@ -130,8 +130,8 @@ class RivalRepositoryTest {
 
     @Test
     void 같은_시각에_등록하면_rival_id가_큰_쪽이_먼저() {
-        User p1 = persistUser("tie1", "동시1", true);
-        User p2 = persistUser("tie2", "동시2", true);
+        User p1 = persistUser("tie1", "Tie1", true);
+        User p2 = persistUser("tie2", "Tie2", true);
         rivalRepository.save(Rival.of(p1, a, NOW));
         rivalRepository.save(Rival.of(p2, a, NOW));
         em.flush();
