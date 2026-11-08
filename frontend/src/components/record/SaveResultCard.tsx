@@ -62,13 +62,7 @@ export function SaveResultCard({ outcome, onClose, onNext }: { outcome: SaveOutc
       ? { group: ratingChange.group === "SINGLE" ? "single" : "other", limit: ratingChange.groupLimit }
       : (entry ?? null);
   const pointsToList = ratingChange && !ratingChange.inList ? (ratingChange.pointsToList ?? null) : null;
-  const pointsText =
-    pointsToList !== null && pointsToList > 0 && ratingChange?.group && ratingChange.groupLimit
-      ? t(ratingChange.group === "SINGLE" ? "Record.pointsToListSingle" : "Record.pointsToListOther", {
-          limit: ratingChange.groupLimit,
-          points: formatScore(pointsToList),
-        })
-      : null;
+  const pointsText = pointsToList !== null && pointsToList > 0 ? t("Record.pointsToList", { points: formatScore(pointsToList) }) : null;
 
   return (
     <section aria-label={t("Record.resultAria")} role="group" className="flex flex-col gap-3 pt-2">

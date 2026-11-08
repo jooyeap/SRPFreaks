@@ -137,21 +137,21 @@ describe("SaveResultCard", () => {
       totalBefore: 100, totalAfter: 100, change: 0, entered: false, inList: false, ...extra,
     });
 
-    it("목록 밖이면 기존 안내 뒤에 그룹 마지막 자리까지 남은 점수 한 줄을 붙인다", () => {
+    it("목록 밖이면 기존 안내 뒤에 레이팅 보더까지 남은 점수 한 줄을 붙인다", () => {
       const { card } = renderCard({
         ...base,
         ratingChange: server({ group: "SINGLE", groupLimit: 15, rank: null, pointsToList: 64, scoreAfter: 240, scoreBefore: null, newBest: true, previousBestRate: null }),
       });
       expect(within(card).getByText("아직 레이팅 목록에는 들지 못했습니다.")).toBeInTheDocument();
-      expect(within(card).getByText("단일 15위까지 64.00점 남았어요")).toBeInTheDocument();
+      expect(within(card).getByText("레이팅 보더까지 64.00점 남았어요")).toBeInTheDocument();
       cleanup();
       const other = renderCard({ ...base, ratingChange: server({ group: "OTHER", groupLimit: 25, pointsToList: 1.5, scoreAfter: 240 }) });
-      expect(within(other.card).getByText("그 외 25위까지 1.50점 남았어요")).toBeInTheDocument();
+      expect(within(other.card).getByText("레이팅 보더까지 1.50점 남았어요")).toBeInTheDocument();
     });
 
     it("그룹이 덜 차서 남은 점수가 없으면(null) 남은 점수 줄은 없다", () => {
       const { card } = renderCard({ ...base, ratingChange: server({ group: "SINGLE", groupLimit: 15, pointsToList: null, scoreAfter: 240 }) });
-      expect(within(card).queryByText(/위까지/)).toBeNull();
+      expect(within(card).queryByText(/레이팅 보더까지/)).toBeNull();
     });
 
     it("최고 기록이 아니면 이전 최고 기록을 말하고 `레이팅은 그대로입니다.` 계열 문구는 대신 쓴다", () => {
@@ -214,13 +214,13 @@ describe("SaveResultCard", () => {
     it("새 필드가 없는 구버전 응답에서도 1단계 동작 그대로다", () => {
       const { card } = renderCard({ ...base, ratingChange: { totalBefore: 100, totalAfter: 100, change: 0, entered: false, inList: false } });
       expect(within(card).getByText("아직 레이팅 목록에는 들지 못했습니다.")).toBeInTheDocument();
-      expect(within(card).queryByText(/위까지/)).toBeNull();
+      expect(within(card).queryByText(/레이팅 보더까지/)).toBeNull();
       expect(within(card).queryByText(/이전 최고 기록/)).toBeNull();
     });
   });
 
   it("새 문구는 ko/ja 둘 다 있고 자리표시자가 같다", () => {
-    const keys = ["excludedNote", "pointsToListSingle", "pointsToListOther", "notBestNote", "sameBestNote"] as const;
+    const keys = ["excludedNote", "pointsToList", "notBestNote", "sameBestNote"] as const;
     for (const key of keys) {
       const ko = koMessages.Record[key];
       const ja = jaMessages.Record[key];
