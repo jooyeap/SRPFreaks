@@ -572,6 +572,25 @@ com.srpfreaks.backend
 - 메모는 본인에게만 보인다 (공개하는 기능이 생기면 비속어 필터를 같이 넣는다, 18장).
 - 서버 검증은 그대로다: 달성률 3중 검증(프론트 Zod, 백엔드 Validation, DB CHECK), 본인 기록만 접근(소유자 검사).
 
+### 12.0 저장 응답의 `ratingChange` (2026-11-08, 저장 결과 카드 2단계)
+
+`POST/PUT /records` 응답에만 담긴다(목록·상세는 null). 기존 5개 값(`totalBefore`·`totalAfter`·`change`·`entered`·`inList`)은 이름·의미 그대로이고, 아래는 **선택(nullable) 필드**다. 본인 데이터만 담으며 새 엔드포인트·DB 변경은 없다. 구버전 화면은 모르는 필드를 무시한다.
+
+| 필드 | 뜻 |
+|---|---|
+| `notRatedReason` | 이 채보가 레이팅 대상이 아닌 이유. 대상이면 null. `TIER_UNDECIDED`(서열표 기준 난이도 없음 = 미정) / `EXCLUDED`(속성이 `레이팅 제외`·없음, 서열표에 없음, 레이팅 반영 끔) / `NOT_RATED`(서버가 이유를 가리지 못함, 예비 값) |
+| `group` | 대상일 때 속한 그룹 `SINGLE`/`OTHER`(판정은 `PatternType.ratingGroup()` 한 곳, 복합(단일)=`OTHER`). 대상이 아니면 null |
+| `rank` | 저장 뒤 그룹 안 순위(1부터). 목록 밖이면 null (카드는 아직 쓰지 않는다) |
+| `groupLimit` | 그 그룹의 한도(`rating.list_single`/`list_other`) |
+| `scoreBefore` / `scoreAfter` | 이 곡 점수 전/후(최고 달성률 기준, 둘째 자리 표시값). 이전 기록이 없던 채보는 `scoreBefore` null. 등록(POST)도 이전 최고가 있으면 채워진다 |
+| `pointsToList` | 목록 밖이고 그룹이 한도까지 찼을 때 `마지막 항목 점수 - 내 점수`(표시값끼리의 차이, 양수). 그룹이 덜 찼거나 이미 안이거나 동점으로 밀렸으면 null |
+| `newBest` | 이번 기록이 이전 최고 달성률보다 **높은가**(이전 기록이 없으면 true, 같으면 false) |
+| `previousBestRate` | 저장 직전의 이 채보 최고 달성률. 없으면 null |
+| `loweredBest` | 고쳐서(PUT) 이 채보의 최고 기록이 내려갔는가. true이면 카드는 `최고 기록 아님` 안내를 쓰지 않는다 |
+
+- 계산 재사용: 점수는 `SkillService.chartRating`이 목록 계산과 같은 `RatingCalculator`(상수 → V → 점수)로 한 채보만 구한다(쿼리 `SkillMapper.findChartRating` 1개). 순위·남은 점수는 저장 뒤 `mySkill` 목록에서 읽는다. `mySkill`은 전후 2번 그대로이고, 채보 상태만 전후로 1번씩 더 읽는다. 저장 전 이전 최고를 알아야 해서 컨트롤러가 채보 id를 넘긴다(PUT은 기록 id로 채보 id를 먼저 조회, 남의 기록은 404).
+- 실패 처리: 레이팅 전후 계산이 실패하면 지금처럼 `ratingChange` 전체가 null이다. 채보 상태만 실패하면 기본 5개 값은 그대로 주고 새 필드만 null이다.
+
 ### 12.1 사진으로 입력 (D16)
 
 기록 등록 시트 맨 위에 **사진으로 입력 / 직접 입력** 탭이 있다. 사진 입력은 입력 칸을 채워 주는 보조 수단이고, 저장되는 기록은 직접 입력과 같다 (`input_type` 같은 구분 열을 두지 않는다).
@@ -747,6 +766,7 @@ com.srpfreaks.backend
 ## 17. 변경 이력
 | 날짜 | 내용 |
 |---|---|
+| 2026-11-08 | **저장 결과 카드 2단계**(12.0장): 기록 저장 응답 `ratingChange`에 선택 필드 추가(`notRatedReason`·`group`·`rank`·`groupLimit`·`scoreBefore/After`·`pointsToList`·`newBest`·`previousBestRate`·`loweredBest`). DB 변경 없음, 새 결정 번호 없음 |
 | 2026-10-16 | **D32 확장.** 스냅샷 곡별 상세(`skill_snapshot_entries`, V6)와 비교 API 2개 추가, 기록 저장 응답에 `ratingChange`, `GET /records`에 `sort=entered` 추가. 화면은 DESIGN-UI 5·10·19장 |
 | 2026-10-19 | 가져오기 북마클릿의 알림창(alert)을 **페이지 위 안내 창**(처리 중 → 결과)으로 바꾸고, 번역된 페이지는 서버로 보내지 않고 안내만 한다(설계의 "번역 흔적이 있으면 실행을 멈춘다"와 일치). 북마클릿 코드는 북마크 자체에 들어 있어서 **이전에 만든 북마크는 예전 동작 그대로**이므로 설정 화면에서 다시 발급해 북마크를 새로 만들어야 한다 |
 | 2026-10-19 | **D40 추가**(가져오기 방식 변경). 서버에 로그인 계정용 `POST /record-imports/preview`·`/commit` 추가(미리보기는 저장하지 않음, 결과 건에 `previousBestRate`), `enabled=false` 동안 이 경로도 ROOT 전용. 화면·북마클릿 변경은 다음 단계 |
