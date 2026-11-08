@@ -510,6 +510,7 @@
     "showMore": "더 보기 ({count}개)",
     "targetFootnote": "표시한 달성률은 그 점수를 낼 수 있는 가장 낮은 값입니다. 곡 점수는 달성률 95%에서 최고이므로, 95%로도 못 내는 난이도는 <b>불가</b>로 보입니다.",
     "entryBase": "기준 <n>{tier}</n> · 상수 <n>{constant}</n> · {pattern}",
+    "entryBaseNoPattern": "기준 <n>{tier}</n> · 상수 <n>{constant}</n>",
     "deleteRecordAria": "{title} 기록 삭제",
     "sectionSum": "합산 <n>{score}</n>",
     "compareWithPrevAria": "{date} 기록을 이전 기록과 비교",

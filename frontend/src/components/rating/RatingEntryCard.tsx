@@ -25,6 +25,7 @@ export function RatingEntryCard({
   const t = useTranslations();
   const nameAccent = entry.stage === "FC" || entry.stage === "EXC";
   const jackets = useJackets();
+  const patternText = entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK;
   return (
     <li
       data-stage={entry.stage}
@@ -35,7 +36,25 @@ export function RatingEntryCard({
       {/* 왼쪽 띠는 점수의 플레이어 티어 색 하나다(상수표 칸과 같은 색, lib/chart-tier.ts). 색만으로 전달하지 않는다: 점수 숫자가 오른쪽에 있다 */}
       <span {...chartTierAttrs(entry.score)} className="tier-bar tier-bar-v absolute inset-y-0 left-0 w-1.5" aria-hidden="true" />
       {/* 재킷(D54): 52px 둥근 썸네일을 카드 가운데에, 띠와 여백을 두고 둔다(360px 미만 44px). 보일 때는 곡명을 13px 한 줄로 줄인다 */}
-      {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-[52px] rounded-lg max-[359px]:size-11" /> : null}
+      {/* 속성은 재킷이 보일 때 재킷 왼쪽 위 모서리 칩으로 옮긴다(2026-11-08): 정보 줄에 두면 일본어 `複合(単色)`가 중간 칸(약 150px)에 안 들어가 그 줄만 꺾이고 카드가 커졌다.
+          칩은 누르는 요소가 아니다. 글자는 읽기 프로그램에도 읽히고(재킷 바깥 상자는 aria-hidden이 아니다) title로 전체 문구를 준다.
+          색은 토큰만(page / fg / ctl-line), 최대 84px를 넘으면 말줄임이 안전장치다. 재킷 왼쪽은 막대에서 9px 떨어져 있고 칩은 -6px라 막대와 3px 남는다 */}
+      {jackets.visible ? (
+        <SongJacket
+          url={jackets.urlOf(entry.songId)}
+          title={entry.title}
+          className="size-[52px] rounded-lg max-[359px]:size-11"
+          badge={
+            <span
+              title={patternText}
+              data-testid="pattern-chip"
+              className="absolute -left-1.5 -top-[5px] z-[1] max-w-[84px] truncate whitespace-nowrap rounded-[7px] border border-ctl bg-page px-[5px] text-[10px] font-semibold leading-[15px] text-fg shadow-sm"
+            >
+              {patternText}
+            </span>
+          }
+        />
+      ) : null}
       <div className="min-w-0 flex-1">
         <p className={`truncate ${jackets.visible ? "text-[13px]" : "text-sm"} ${nameAccent ? "stage-name" : "text-fg"}`}>
           {/* 곡명 링크의 클릭 영역을 ::after로 카드 전체에 넓힌다(카드 안에 다른 링크·버튼이 없다). 서열표에서 들어온 것과 같은 상세 화면(서열표 정보 포함)으로 간다 */}
@@ -47,12 +66,19 @@ export function RatingEntryCard({
           </Link>
         </p>
         <p className="mt-0.5 text-xs text-fg-dim">
-          {t.rich("Rating.entryBase", {
-            n: (c) => <span className="font-num">{c}</span>,
-            tier: formatTier(entry.tier, t),
-            constant: formatScore(entry.ratingConstant),
-            pattern: entry.pattern ? patternLabel(entry.pattern, t) : EMPTY_MARK,
-          })}
+          {/* 재킷이 있으면 속성은 칩에만 둔다(위). 재킷 칸이 없으면 폭이 넓어 한 줄에 들어가므로 예전처럼 맨 뒤에 둔다 */}
+          {jackets.visible
+            ? t.rich("Rating.entryBaseNoPattern", {
+                n: (c) => <span className="font-num">{c}</span>,
+                tier: formatTier(entry.tier, t),
+                constant: formatScore(entry.ratingConstant),
+              })
+            : t.rich("Rating.entryBase", {
+                n: (c) => <span className="font-num">{c}</span>,
+                tier: formatTier(entry.tier, t),
+                constant: formatScore(entry.ratingConstant),
+                pattern: patternText,
+              })}
         </p>
         <p className="mt-1 flex flex-wrap items-center gap-1.5">
           <ChartBadge part={entry.part} difficulty={entry.difficulty} level={entry.level} />
