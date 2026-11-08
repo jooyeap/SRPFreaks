@@ -429,7 +429,7 @@ class SkillServiceTest {
 
     @Test
     void chartRating_기준_난이도_6_0과_달성률_95는_점수_304_00이고_80은_240_00이다() {
-        ChartRating at95 = chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), "단일", true, new BigDecimal("95.00")));
+        ChartRating at95 = chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), "단일", true, new BigDecimal("95.00")));
         assertThat(at95.notRatedReason()).isNull();
         assertThat(at95.group()).isEqualTo(PatternType.RatingGroup.SINGLE);
         assertThat(at95.score()).isEqualByComparingTo("304.00");
@@ -437,22 +437,22 @@ class SkillServiceTest {
 
     @Test
     void chartRating_달성률_80은_240_00이고_복합단일은_그_외_그룹이다() {
-        ChartRating at80 = chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), "복합(단일)", true, new BigDecimal("80.00")));
+        ChartRating at80 = chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), "복합(단일)", true, new BigDecimal("80.00")));
         assertThat(at80.score()).isEqualByComparingTo("240.00");
         assertThat(at80.group()).isEqualTo(PatternType.RatingGroup.OTHER);
     }
 
     @Test
     void chartRating_기준_난이도_없으면_TIER_UNDECIDED_속성_제외나_서열표_없음이면_EXCLUDED이다() {
-        assertThat(chartRating(new ChartRatingRow(1L, null, "단일", true, new BigDecimal("95.00"))).notRatedReason())
+        assertThat(chartRating(new ChartRatingRow(5L, 1L, null, "단일", true, new BigDecimal("95.00"))).notRatedReason())
                 .isEqualTo(NotRatedReason.TIER_UNDECIDED);
-        assertThat(chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), "레이팅 제외", true, null)).notRatedReason())
+        assertThat(chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), "레이팅 제외", true, null)).notRatedReason())
                 .isEqualTo(NotRatedReason.EXCLUDED);
-        assertThat(chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), null, true, null)).notRatedReason())
+        assertThat(chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), null, true, null)).notRatedReason())
                 .isEqualTo(NotRatedReason.EXCLUDED);
-        assertThat(chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), "단일", false, null)).notRatedReason())
+        assertThat(chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), "단일", false, null)).notRatedReason())
                 .isEqualTo(NotRatedReason.EXCLUDED);
-        assertThat(chartRating(new ChartRatingRow(null, null, null, null, new BigDecimal("90.00"))).notRatedReason())
+        assertThat(chartRating(new ChartRatingRow(5L, null, null, null, null, new BigDecimal("90.00"))).notRatedReason())
                 .isEqualTo(NotRatedReason.EXCLUDED);
     }
 }

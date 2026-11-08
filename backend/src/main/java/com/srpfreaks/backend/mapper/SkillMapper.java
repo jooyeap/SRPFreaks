@@ -77,10 +77,12 @@ public interface SkillMapper {
      * 채보 한 개의 레이팅 상태 (저장 결과 카드용): 서열표 값 + 내 최고 달성률.
      * LEFT JOIN인 이유: 서열표에 없는 채보도 "없음"이라는 결과(entryId null)와 내 최고 기록을 돌려줘야 한다.
      * tableId가 null(레이팅 서열표 없음)이면 JOIN이 맞지 않아 서열표에 없는 것으로 본다.
+     * chartId 열: 서열표에도 기록에도 없으면 나머지 열이 모두 NULL이고, MyBatis는 모든 열이 NULL인 줄을 null 객체로 돌려주므로 NULL이 아닌 열을 하나 둔다.
      * 사용자·노트 옵션은 서브쿼리 안에서 건다(다른 사용자의 기록이 섞이지 않게).
      */
     @Select("""
-            SELECT e.difficulty_table_entry_id AS entryId,
+            SELECT d.song_difficulty_id        AS chartId,
+                   e.difficulty_table_entry_id AS entryId,
                    e.tier_label                AS tier,
                    e.pattern_type              AS pattern,
                    e.rating_enabled            AS ratingEnabled,
