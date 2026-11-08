@@ -1,5 +1,6 @@
 package com.srpfreaks.backend.service;
 
+import com.srpfreaks.backend.dto.NotRatedReason;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.dto.SkillResponse.PlayerTierResponse;
@@ -13,6 +14,7 @@ import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.PlayerTier;
 import com.srpfreaks.backend.entity.TableStatus;
+import com.srpfreaks.backend.mapper.ChartRatingRow;
 import com.srpfreaks.backend.mapper.RatingCandidate;
 import com.srpfreaks.backend.mapper.SkillMapper;
 import com.srpfreaks.backend.repository.AppSettingRepository;
@@ -138,6 +140,36 @@ public class SkillService {
     /** 지금 설정으로 만든 레이팅 계산기. 레이팅 목록 밖의 채보 점수(라이벌 비교, D56)를 같은 수식으로 계산할 때 쓴다. */
     public RatingCalculator calculator() {
         return new RatingCalculator(RatingConfig.from(ratingSettings()));
+    }
+
+    /**
+     * 채보 한 개의 내 레이팅 상태 (저장 결과 카드용). 후보 전체를 다시 계산하지 않고 이 채보 한 줄만 읽는다.
+     * 점수는 목록 계산과 같은 RatingCalculator(상수 -> V -> 점수)로 구한다. 대상 판정은 후보 쿼리와 같은 조건이다:
+     * 서열표에 없음/반영 끔/속성 없음·레이팅 제외 = EXCLUDED, 기준 난이도 없음 = TIER_UNDECIDED. 그룹 판정은 PatternType 한 곳.
+     */
+    public ChartRating chartRating(Long userId, Long chartId) {
+        RatingConfig config = RatingConfig.from(ratingSettings());
+        RatingCalculator calculator = new RatingCalculator(config);
+        Long tableId = difficultyTableRepository
+                .findFirstByNoteOptionAndStatusOrderByIdAsc(config.noteOption(), TableStatus.ACTIVE)
+                .map(DifficultyTable::getId).orElse(null);
+        ChartRatingRow row = skillMapper.findChartRating(userId, config.noteOption().name(), tableId, chartId);
+        if (row == null) {
+            return new ChartRating(NotRatedReason.NOT_RATED, null, null, null);
+        }
+        BigDecimal score = row.tier() == null || row.bestRate() == null ? null
+                : RatingCalculator.display(calculator.score(calculator.value(calculator.constant(row.tier()), row.bestRate())));
+        PatternType pattern = parsePattern(row.pattern());
+        PatternType.RatingGroup group = PatternType.ratingGroupOf(pattern);
+        NotRatedReason reason = null;
+        if (row.entryId() == null || !Boolean.TRUE.equals(row.ratingEnabled())) {
+            reason = NotRatedReason.EXCLUDED;
+        } else if (row.tier() == null) {
+            reason = NotRatedReason.TIER_UNDECIDED;
+        } else if (group == PatternType.RatingGroup.NONE) {
+            reason = NotRatedReason.EXCLUDED;
+        }
+        return new ChartRating(reason, reason == null ? group : null, row.bestRate(), score);
     }
 
     /** rating.* 설정만 맵으로 모은다(설정 테이블은 작아서 전부 읽어도 가볍다). */

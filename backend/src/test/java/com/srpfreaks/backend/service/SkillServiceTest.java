@@ -1,5 +1,6 @@
 package com.srpfreaks.backend.service;
 
+import com.srpfreaks.backend.dto.NotRatedReason;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
@@ -9,6 +10,7 @@ import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.PlayerTier;
 import com.srpfreaks.backend.entity.TableStatus;
+import com.srpfreaks.backend.mapper.ChartRatingRow;
 import com.srpfreaks.backend.mapper.RatingCandidate;
 import com.srpfreaks.backend.mapper.SkillMapper;
 import com.srpfreaks.backend.repository.AppSettingRepository;
@@ -414,5 +416,43 @@ class SkillServiceTest {
         assertThat(service.ratedAll(List.of())).isEmpty();
 
         org.mockito.Mockito.verifyNoInteractions(settingRepository, tableRepository, tierRepository, skillMapper);
+    }
+
+    // ---- chartRating (저장 결과 카드용 한 채보 상태)
+
+    private ChartRating chartRating(ChartRatingRow row) {
+        settings(15, 25);
+        tableExists();
+        when(skillMapper.findChartRating(USER, "SUPER_RANDOM_PLUS", TABLE_ID, 5L)).thenReturn(row);
+        return service.chartRating(USER, 5L);
+    }
+
+    @Test
+    void chartRating_기준_난이도_6_0과_달성률_95는_점수_304_00이고_80은_240_00이다() {
+        ChartRating at95 = chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), "단일", true, new BigDecimal("95.00")));
+        assertThat(at95.notRatedReason()).isNull();
+        assertThat(at95.group()).isEqualTo(PatternType.RatingGroup.SINGLE);
+        assertThat(at95.score()).isEqualByComparingTo("304.00");
+    }
+
+    @Test
+    void chartRating_달성률_80은_240_00이고_복합단일은_그_외_그룹이다() {
+        ChartRating at80 = chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), "복합(단일)", true, new BigDecimal("80.00")));
+        assertThat(at80.score()).isEqualByComparingTo("240.00");
+        assertThat(at80.group()).isEqualTo(PatternType.RatingGroup.OTHER);
+    }
+
+    @Test
+    void chartRating_기준_난이도_없으면_TIER_UNDECIDED_속성_제외나_서열표_없음이면_EXCLUDED이다() {
+        assertThat(chartRating(new ChartRatingRow(1L, null, "단일", true, new BigDecimal("95.00"))).notRatedReason())
+                .isEqualTo(NotRatedReason.TIER_UNDECIDED);
+        assertThat(chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), "레이팅 제외", true, null)).notRatedReason())
+                .isEqualTo(NotRatedReason.EXCLUDED);
+        assertThat(chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), null, true, null)).notRatedReason())
+                .isEqualTo(NotRatedReason.EXCLUDED);
+        assertThat(chartRating(new ChartRatingRow(1L, new BigDecimal("6.0"), "단일", false, null)).notRatedReason())
+                .isEqualTo(NotRatedReason.EXCLUDED);
+        assertThat(chartRating(new ChartRatingRow(null, null, null, null, new BigDecimal("90.00"))).notRatedReason())
+                .isEqualTo(NotRatedReason.EXCLUDED);
     }
 }

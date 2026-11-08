@@ -72,4 +72,31 @@ public interface SkillMapper {
                                                @Param("noteOption") String noteOption,
                                                @Param("tableId") Long tableId,
                                                @Param("excludedPattern") String excludedPattern);
+
+    /**
+     * 채보 한 개의 레이팅 상태 (저장 결과 카드용): 서열표 값 + 내 최고 달성률.
+     * LEFT JOIN인 이유: 서열표에 없는 채보도 "없음"이라는 결과(entryId null)와 내 최고 기록을 돌려줘야 한다.
+     * tableId가 null(레이팅 서열표 없음)이면 JOIN이 맞지 않아 서열표에 없는 것으로 본다.
+     * 사용자·노트 옵션은 서브쿼리 안에서 건다(다른 사용자의 기록이 섞이지 않게).
+     */
+    @Select("""
+            SELECT e.difficulty_table_entry_id AS entryId,
+                   e.tier_label                AS tier,
+                   e.pattern_type              AS pattern,
+                   e.rating_enabled            AS ratingEnabled,
+                   (SELECT MAX(r.achievement_rate)
+                      FROM option_records r
+                     WHERE r.user_id = #{userId}
+                       AND r.note_option = #{noteOption}
+                       AND r.song_difficulty_id = d.song_difficulty_id) AS bestRate
+            FROM song_difficulties d
+            LEFT JOIN difficulty_table_entries e
+                   ON e.song_difficulty_id = d.song_difficulty_id
+                  AND e.difficulty_table_id = #{tableId,jdbcType=BIGINT}
+            WHERE d.song_difficulty_id = #{chartId}
+            """)
+    ChartRatingRow findChartRating(@Param("userId") Long userId,
+                                   @Param("noteOption") String noteOption,
+                                   @Param("tableId") Long tableId,
+                                   @Param("chartId") Long chartId);
 }
