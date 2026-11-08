@@ -148,7 +148,7 @@ export function RecordForm({
           : t("Record.editedRateChange", { before: formatRate(record.achievementRate), after: formatRate(saved.achievementRate) })
         : t("Record.registered");
       // 레이팅이 어떻게 바뀌었는지(새로 들어갔으면 NEW)를 같이 보여 준다. 서버가 못 주면 저장 문구만 보인다
-      const ratingText = ratingChangeText(saved.ratingChange, t);
+      const ratingText = ratingChangeText(saved.ratingChange, t, saved.achievementRate);
       toast(ratingText ? `${savedText} ${ratingText}` : savedText);
       // 결과 카드용 값: 달성률/FC 전후(수정일 때만 이전 값을 안다)와 레이팅 변화. 단계·점수는 카드가 계산한다
       onSaved(saved, {
