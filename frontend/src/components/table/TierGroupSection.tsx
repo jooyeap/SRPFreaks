@@ -146,7 +146,7 @@ export function TierGroupSection({
             </button>
           ) : (
             <>
-              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{group.total}개</span>
+              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{t("Chart.groupTotal", { count: group.total })}</span>
             </>
           )}
         </h2>
