@@ -58,8 +58,8 @@ export function updateDetailNavCurrent(chartId: number): void {
   if (now) rememberDetailNav({ ...now, current: chartId });
 }
 
-/** 테스트용: 기억을 비운다 */
-export function resetDetailNavForTest(): void {
+/** 기억을 비운다. 로그아웃 때 쓴다(이전 사용자가 보던 목록 조건이 다음 사람에게 남지 않게). 테스트도 이걸 쓴다. */
+export function clearDetailNav(): void {
   memory = null;
   loaded = false;
   try {
@@ -180,3 +180,6 @@ export function songsNavView(rows: readonly ChartRowResponse[], total: number, h
     next: index < rows.length - 1 ? at(index + 1) : hasMore ? { kind: "more" } : null,
   };
 }
+
+/** 테스트용 이름(예전 호출처 유지) */
+export const resetDetailNavForTest = clearDetailNav;

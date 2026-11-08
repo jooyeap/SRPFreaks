@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 /**
  * 곡 메뉴가 들어갈 화면: 마지막으로 본 탭(서열표 `/table` 또는 곡 목록 `/songs`)을 이 기기에 기억한다.
- * 한 손 모드·시작 안내 숨김과 같은 방식: localStorage 한 칸 + 저장소를 못 쓸 때를 위한 메모리 값. 처음(기억 없음)은 서열표다.
+ * 시작 안내 숨김(lib/welcome-guide.ts)과 같은 방식: localStorage 한 칸 + 저장소를 못 쓸 때를 위한 메모리 값. 처음(기억 없음)은 서열표다.
  * 저장하는 것은 두 값 중 하나뿐이라 외부 입력이 주소로 새어 들어갈 수 없다(읽을 때도 두 값만 받는다).
  */
 export type SongTab = "table" | "songs";
