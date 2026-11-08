@@ -3,7 +3,7 @@
 import { StageBadge } from "@/components/table/StageBadge";
 import { chartTierAttrs, previewScore } from "@/lib/chart-tier";
 import { formatRate, formatScore } from "@/lib/format";
-import { ratingChangeText, type RatingChange } from "@/lib/records";
+import { notBestText, ratingChangeText, type RatingChange } from "@/lib/records";
 import type { EntryGroup } from "@/lib/rating-preview";
 import { achievementStage, isHigherStage } from "@/lib/stage";
 import { useTranslations } from "next-intl";
@@ -21,8 +21,7 @@ export interface SaveOutcome {
   ratingChange: RatingChange | null;
   /**
    * 이 채보가 들어가는 그룹(단일 15 / 그 외 25). 속성과 설정 개수로 프론트가 정한다. 판정할 수 없으면 null이라 기존 문구를 쓴다.
-   * 후속(서버 필드 추가 PR, 11/7 이후): 서버가 그룹·순위·15위까지 남은 점수·최고 기록 아님·등록 때 곡 점수 전을 주면 그 값으로 바꾼다.
-   * 이번에는 서버 값이 필요한 `15위까지 남은 점수`와 `최고 기록 아님` 안내를 만들지 않았다.
+   * 서버가 그룹(ratingChange.group)·곡 점수 전후·남은 점수·최고 기록 아님을 주면 그 값이 이긴다(2단계). 서버 값이 없을 때(구버전 응답)만 이 값과 화면 계산을 쓴다.
    */
   entry?: EntryGroup | null;
 }
@@ -35,17 +34,35 @@ const ROW = "flex min-h-11 items-center justify-between gap-3 border-b border-ro
 export function SaveResultCard({ outcome, onClose, onNext }: { outcome: SaveOutcome; onClose: () => void; onNext?: () => void }) {
   const t = useTranslations();
   const { before, after, tier, ratingChange, entry } = outcome;
-  const undecided = tier === null; // 기준 난이도 미정: 레이팅에 반영되지 않으므로 점수·목록 줄 대신 안내 한 줄
+  // 서버가 레이팅 대상이 아닌 이유를 주면 그것이 이긴다. 없으면(구버전 응답) 기준 난이도 유무로 1단계처럼 판정한다.
+  const reason = ratingChange?.notRatedReason ?? null;
+  const excluded = reason === "EXCLUDED" || reason === "NOT_RATED"; // 속성 제외 등: 점수·목록 줄 대신 안내 한 줄
+  const undecided = reason === "TIER_UNDECIDED" || (reason === null && tier === null); // 기준 난이도 미정: 같은 방식
+  const notRated = undecided || excluded;
   const beforeStage = before ? achievementStage(before.rate, before.fullCombo) : null;
   const afterStage = achievementStage(after.rate, after.fullCombo);
   const stageUp = beforeStage && afterStage && isHigherStage(afterStage, beforeStage);
 
-  const afterScore = tier === null ? null : previewScore(tier, after.rate);
-  const beforeScore = before && tier !== null ? previewScore(tier, before.rate) : null;
-  const scoreDiff = afterScore !== null && beforeScore !== null ? afterScore - beforeScore : null;
+  // 곡 점수: 서버 값(scoreAfter)이 있으면 전/후 모두 서버 값(전이 null이면 처음 기록한 채보). 없으면 1단계의 화면 계산
+  const serverScore = ratingChange?.scoreAfter !== undefined && ratingChange?.scoreAfter !== null;
+  const afterScore = serverScore ? (ratingChange?.scoreAfter ?? null) : tier === null ? null : previewScore(tier, after.rate);
+  const beforeScore = serverScore
+    ? (ratingChange?.scoreBefore ?? null)
+    : before && tier !== null
+      ? previewScore(tier, before.rate)
+      : null;
+  const scoreDiff = afterScore !== null && beforeScore !== null ? Math.round((afterScore - beforeScore) * 100) / 100 : null;
 
   const total = ratingChange && ratingChange.inList ? ratingChange : null;
   const notice = ratingChangeText(ratingChange, t);
+  const notBest = notBestText(ratingChange, after.rate, t); // 이전 최고 기록 이하라 레이팅 그대로 (서버 값이 있을 때만)
+  // 서버가 그룹을 주면 진입 안내도 서버의 그룹·한도를 쓴다
+  const entryGroup: EntryGroup | null =
+    ratingChange?.group && ratingChange.groupLimit
+      ? { group: ratingChange.group === "SINGLE" ? "single" : "other", limit: ratingChange.groupLimit }
+      : (entry ?? null);
+  const pointsToList = ratingChange && !ratingChange.inList ? (ratingChange.pointsToList ?? null) : null;
+  const pointsText = pointsToList !== null && pointsToList > 0 ? t("Record.pointsToList", { points: formatScore(pointsToList) }) : null;
 
   return (
     <section aria-label={t("Record.resultAria")} role="group" className="flex flex-col gap-3 pt-2">
@@ -121,7 +138,7 @@ export function SaveResultCard({ outcome, onClose, onNext }: { outcome: SaveOutc
             </dd>
           </div>
         ) : null}
-        {ratingChange && !undecided ? (
+        {ratingChange && !notRated ? (
           <div className={ROW}>
             <dt className="text-[13px] text-fg-sub">{t("Record.ratingList")}</dt>
             <dd className="flex items-center gap-2 text-[13px] font-bold text-fg">
@@ -129,8 +146,8 @@ export function SaveResultCard({ outcome, onClose, onNext }: { outcome: SaveOutc
                 <span className="rounded bg-chip-on-bg px-1.5 py-0.5 font-num text-[11px] text-chip-on-fg">NEW</span>
               ) : null}
               {ratingChange.entered
-                ? entry
-                  ? t(entry.group === "single" ? "Record.enteredSingle" : "Record.enteredOther", { limit: entry.limit })
+                ? entryGroup
+                  ? t(entryGroup.group === "single" ? "Record.enteredSingle" : "Record.enteredOther", { limit: entryGroup.limit })
                   : t("Record.entered")
                 : ratingChange.inList ? t("Record.inList") : t("Record.notInList")}
             </dd>
@@ -139,9 +156,15 @@ export function SaveResultCard({ outcome, onClose, onNext }: { outcome: SaveOutc
       </dl>
       {undecided ? (
         <p className="text-xs text-fg-dim">{t("Record.tierUndecidedNote")}</p>
-      ) : notice && !ratingChange?.inList ? (
-        <p className="text-xs text-fg-dim">{notice}</p>
-      ) : null}
+      ) : excluded ? (
+        <p className="text-xs text-fg-dim">{t("Record.excludedNote")}</p>
+      ) : (
+        <>
+          {/* 최고 기록 아님 안내가 있으면 `레이팅은 그대로입니다.` 계열 문구를 대신한다 */}
+          {notBest ? <p className="text-xs text-fg-dim">{notBest}</p> : notice && !ratingChange?.inList ? <p className="text-xs text-fg-dim">{notice}</p> : null}
+          {pointsText ? <p className="font-num text-xs text-fg-dim">{pointsText}</p> : null}
+        </>
+      )}
       <div className="flex gap-2">
         <button type="button" onClick={onClose} className="min-h-11 flex-1 rounded-xl border border-ctl text-sm text-fg">
           {t("Common.close")}

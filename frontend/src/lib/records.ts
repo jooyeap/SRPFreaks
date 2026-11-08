@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import type { PageResponse } from "@/lib/api-types";
-import { formatPlayedDate, formatScore, rateFromInput, rateToInput } from "@/lib/format";
+import { formatPlayedDate, formatRate, formatScore, rateFromInput, rateToInput } from "@/lib/format";
 import type { RecordFormValues } from "@/lib/record-schema";
 import type { DifficultyType, InstrumentPart, NoteOption, AchievementStage } from "@/lib/types";
 import type { Translator } from "@/i18n/translator";
@@ -38,6 +38,42 @@ export interface RatingChange {
   entered: boolean;
   /** 저장 뒤에 이 채보가 레이팅 목록에 들어 있는가 */
   inList: boolean;
+  // 아래는 저장 결과 카드 2단계에서 서버가 더한 선택 필드다. 구버전 응답에는 없다(undefined). 값이 없으면 카드는 1단계 동작으로 돌아간다.
+  /** 레이팅 대상이 아닌 이유. 대상이면 null. TIER_UNDECIDED = 기준 난이도 없음(미정), EXCLUDED = 속성 제외/서열표에 없음/반영 끔, NOT_RATED = 이유 불명 */
+  notRatedReason?: "TIER_UNDECIDED" | "EXCLUDED" | "NOT_RATED" | null;
+  /** 대상일 때 속한 그룹 */
+  group?: "SINGLE" | "OTHER" | null;
+  /** 저장 뒤 그룹 안 순위(1부터). 목록 밖이면 null */
+  rank?: number | null;
+  /** 그룹 한도(단일 15 / 그 외 25 등 설정 값) */
+  groupLimit?: number | null;
+  /** 이 곡 점수 전/후(소수 둘째 자리 표시값). 기록이 없던 채보의 scoreBefore는 null */
+  scoreBefore?: number | null;
+  scoreAfter?: number | null;
+  /** 목록 밖일 때 그룹 마지막 자리까지 남은 점수. 그룹이 덜 찼으면 null */
+  pointsToList?: number | null;
+  /** 이번 기록이 이전 최고 기록보다 높은가(이전 기록이 없으면 true) */
+  newBest?: boolean | null;
+  /** 이전 최고 달성률. 없으면 null */
+  previousBestRate?: number | null;
+  /** 고쳐서 이 채보의 최고 기록이 내려갔는가 */
+  loweredBest?: boolean | null;
+}
+
+/**
+ * 이번 기록이 이전 최고 기록 이하라서 레이팅이 그대로일 때의 안내 한 줄. 해당하지 않으면 null.
+ * 서버 값(newBest, previousBestRate)이 있을 때만 쓴다(구버전 응답이면 null). 최고 기록을 고쳐서 낮춘 경우(loweredBest)는 해당하지 않는다.
+ * rate = 이번에 저장한 달성률. 이전 최고보다 낮으면 `보다 낮아`, 같으면 `와 같아` 문구다.
+ */
+export function notBestText(change: RatingChange | null | undefined, rate: number, t: Translator): string | null {
+  if (!change || change.newBest !== false || change.loweredBest === true || change.change !== 0) {
+    return null;
+  }
+  const previous = change.previousBestRate;
+  if (previous === null || previous === undefined) {
+    return null;
+  }
+  return rate < previous ? t("Record.notBestNote", { rate: formatRate(previous) }) : t("Record.sameBestNote");
 }
 
 /**
@@ -46,7 +82,7 @@ export interface RatingChange {
  *  - 목록 밖: 점수가 올라도 레이팅은 그대로라서 이유를 알려 준다
  * 서버가 변화를 주지 않았으면(계산 실패 등) null이라 알림에 아무것도 붙이지 않는다.
  */
-export function ratingChangeText(change: RatingChange | null | undefined, t: Translator): string | null {
+export function ratingChangeText(change: RatingChange | null | undefined, t: Translator, savedRate?: number): string | null {
   if (!change) {
     return null;
   }
@@ -54,7 +90,8 @@ export function ratingChangeText(change: RatingChange | null | undefined, t: Tra
     return t("Record.notInListYet");
   }
   if (change.change === 0) {
-    return t("Record.ratingSame");
+    // 서버가 `최고 기록 아님`을 알려 주면 이유까지 말한다(`레이팅은 그대로입니다.`를 대체). 없으면 기존 문구
+    return (savedRate === undefined ? null : notBestText(change, savedRate, t)) ?? t("Record.ratingSame");
   }
   const sign = change.change > 0 ? "+" : "-";
   return t(change.entered ? "Record.ratingChangeNew" : "Record.ratingChange", {
