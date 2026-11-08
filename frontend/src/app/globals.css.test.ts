@@ -64,6 +64,20 @@ describe("globals.css 포커스 링", () => {
   });
 });
 
+describe("속성 칩(재킷 모서리, 2026-11-08) 색 대비", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 칩 글자(--fg)는 칩 배경(--page) 위에서 4.5:1 이상, 테두리(--ctl-line)는 3:1 이상이다`, () => {
+      expect(contrast(vars["--fg"], vars["--page"])).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(vars["--ctl-line"], vars["--page"])).toBeGreaterThanOrEqual(3);
+    });
+  }
+});
+
 describe("globals.css 테마 변수", () => {
   const dark = varsOf(":root {");
   const lightPicked = varsOf(':root[data-theme="light"] {');

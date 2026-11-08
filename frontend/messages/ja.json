@@ -510,6 +510,7 @@
     "showMore": "もっと見る（{count}件）",
     "targetFootnote": "表示した達成率は、そのスコアを出せる最も低い値です。曲スコアは達成率95%で最大になるため、95%でも出せない難易度は<b>不可</b>と表示されます。",
     "entryBase": "基準 <n>{tier}</n> · 定数 <n>{constant}</n> · {pattern}",
+    "entryBaseNoPattern": "基準 <n>{tier}</n> · 定数 <n>{constant}</n>",
     "deleteRecordAria": "{title} の記録を削除",
     "sectionSum": "合計 <n>{score}</n>",
     "compareWithPrevAria": "{date} の記録を前回の記録と比較",
