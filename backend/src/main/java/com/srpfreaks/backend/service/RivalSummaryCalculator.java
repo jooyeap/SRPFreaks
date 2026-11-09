@@ -104,6 +104,8 @@ public final class RivalSummaryCalculator {
         int losses = 0;
         int close = 0;
         BigDecimal sum = BigDecimal.ZERO;
+        BigDecimal rateDiffSum = BigDecimal.ZERO;
+        int rateCount = 0;
         for (Shared s : rows) {
             int sign = s.diff().signum();
             if (sign > 0) {
@@ -117,9 +119,26 @@ public final class RivalSummaryCalculator {
                 close++;
             }
             sum = sum.add(s.diff());
+            BigDecimal myRate = s.mine().candidate().bestRate();
+            BigDecimal theirRate = s.theirs().candidate().bestRate();
+            if (myRate != null && theirRate != null) {
+                rateDiffSum = rateDiffSum.add(myRate.subtract(theirRate));
+                rateCount++;
+            }
         }
         return new RivalSummaryResponse.PatternSummary(pattern.getLabel(), pattern.name(), wins, ties, losses,
-                sum.setScale(2), close, rows.size());
+                sum.setScale(2), close, rows.size(), rateDiffAvg(rateDiffSum, rateCount));
+    }
+
+    /**
+     * 달성률 차 평균(%p): 합 ÷ 곡 수를 소수 첫째 자리로 반올림한다(HALF_UP = 절반은 0에서 먼 쪽, 예 -0.05 -> -0.1).
+     * 평균을 먼저 내고 한 번만 반올림하므로 화면이 값을 다시 반올림하지 않는다. 곡이 없으면 null(0이 아니다).
+     */
+    static BigDecimal rateDiffAvg(BigDecimal rateDiffSum, int count) {
+        if (count <= 0) {
+            return null;
+        }
+        return rateDiffSum.divide(BigDecimal.valueOf(count), 1, java.math.RoundingMode.HALF_UP);
     }
 
     private static RivalSummaryResponse.Totals totals(List<Shared> all) {

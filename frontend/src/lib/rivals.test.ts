@@ -1,12 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type { RivalRatingRow } from "@/lib/api-types";
-import { badgeText, catchUpRows, formatScoreDiff, relativeMinutes, signed } from "@/lib/rivals";
+import { badgeText, catchUpRows, formatRateDiff, formatScoreDiff, relativeMinutes, signed } from "@/lib/rivals";
 
 describe("라이벌 표시 도우미", () => {
   it("배지는 0이면 없고 9를 넘으면 9+다", () => {
     expect(badgeText(0)).toBeNull();
     expect(badgeText(3)).toBe("3");
     expect(badgeText(10)).toBe("9+");
+  });
+
+  it("평균 달성률 차는 부호 글자로 앞(+)·뒤(−)·같음(±)을 %p와 함께 보이고, 값이 없으면 null이다 (D67 개정)", () => {
+    expect(formatRateDiff(1.8)).toBe("+1.8%p");
+    expect(formatRateDiff(-0.4)).toBe("\u22120.4%p"); // 진짜 마이너스 기호
+    expect(formatRateDiff(0)).toBe("\u00b10.0%p");
+    expect(formatRateDiff(-0)).toBe("\u00b10.0%p");
+    expect(formatRateDiff(0.04)).toBe("\u00b10.0%p"); // 표시 첫째 자리가 0이면 부호도 ±
+    expect(formatRateDiff(-0.04)).toBe("\u00b10.0%p"); // −0.0이 나오지 않는다
+    expect(formatRateDiff(-12.3)).toBe("\u221212.3%p");
+    expect(formatRateDiff(100)).toBe("+100.0%p");
+    expect(formatRateDiff(null)).toBeNull();
+    expect(formatRateDiff(undefined)).toBeNull();
   });
 
   it("점수 차 칩은 부호 글자로 앞(+)·뒤(−)·같음(±)을 보인다 (D65)", () => {

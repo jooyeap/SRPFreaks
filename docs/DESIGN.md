@@ -997,7 +997,7 @@ com.srpfreaks.backend
 - `GET /players/{userId}/rival-status` 그 유저를 내가 등록했는지·서로인지·내 등록 수(유저 상세 버튼용).
 - `GET /players/{userId}/compare/rating` 상대 레이팅 목록(단일·그 외) 줄마다 내 달성률·내 점수(같은 기준 난이도로 계산)·차이. 내 기록이 없으면 null. **줄에 `pattern`(속성, 없으면 null)이 있다(D65, 응답에 필드만 추가).**
 - `GET /players/{userId}/compare/charts?result=WIN|LOSE|TIE|THEIRS_ONLY&page&size` 곡별 승패 목록(차이 작은 순 → 레벨 높은 순 → 채보 id). 머리에 네 가지 개수.
-- `GET /players/{userId}/compare/summary` **라이벌 대시보드 집계(D67, 5단계)**: 두 사람이 모두 기록한 전체 곡(레이팅 대상 채보)을 속성별(`patterns` 다섯 줄 고정)·서열 난이도별(`tiers`)로 승·무·패·접전(`|diff| ≤ closeMargin 1.00`)·점수 차 합계를 센다. `diff = 내 점수 − 상대 점수`(표시 둘째 자리 값). `distribution`은 속성별 차이 목록(분포 차트용). 응답 필드 표는 D67.
+- `GET /players/{userId}/compare/summary` **라이벌 대시보드 집계(D67, 5단계)**: 두 사람이 모두 기록한 전체 곡(레이팅 대상 채보)을 속성별(`patterns` 다섯 줄 고정)·서열 난이도별(`tiers`)로 승·무·패·접전(`|diff| ≤ closeMargin 1.00`)·점수 차 합계를 센다. `diff = 내 점수 − 상대 점수`(표시 둘째 자리 값). `distribution`은 속성별 차이 목록(분포 차트용). 속성 줄에는 `rateDiffAvg`(공유 곡의 평균 달성률 차 %p, 소수 첫째 자리, 공유 곡이 없으면 null)가 더해졌다(2026-11-09 개정, 변경 이력 참고). 응답 필드 표는 D67.
 - `GET /players/{userId}/compare/summary/{key}?filter=ALL|LOSE|CLOSE|WIN&sort=DIFF_ASC|DIFF_DESC|CLOSE|TITLE&page&size` 한 속성(`SINGLE·COMPOUND·COMPOSITE_SINGLE·DOUBLE·TRIPLE`)의 곡 목록. 머리에 `summary`·`filterCounts`, 줄은 공통 줄 필드 + 양쪽 달성률·단계·점수·`diff`. 허용 밖의 key·filter·sort는 400, size 상한 50.
 - `GET /song-difficulties/{id}/rival-records` 이 채보의 내 라이벌(공개인 사람만) 기록. **줄마다 `stage`(상대 기록의 달성 단계, 기록이 없으면 null)가 있다(D65, 응답에 필드만 추가).** 단계는 다른 화면과 같이 `최고 달성률 + 그 채보의 풀콤보 여부`로 계산하고(`AchievementStage.of`), 여러 사람을 한 번의 쿼리로 읽는다(N+1 없음).
 - `GET /notifications?page&size`, `GET /notifications/unread-count`, `POST /notifications/read-all`, `POST /notifications/{id}/read`.
@@ -1354,7 +1354,7 @@ com.srpfreaks.backend
 | 2026-11-09 | **D67 라이벌 대시보드 집계 API(5단계)**: `GET /players/{userId}/compare/summary`(속성별·서열 난이도별 승무패·접전·점수 차 합계·차이 분포)와 `GET /players/{userId}/compare/summary/{key}`(속성별 곡 목록, 필터·정렬 화이트리스트·페이지)를 추가. 범위는 두 사람이 모두 기록한 전체 곡(레이팅 대상 판정은 후보 쿼리 재사용). 읽기 전용, 마이그레이션·새 설정 행 없음(접전 기준 `CLOSE_MARGIN = 1.00`은 코드 상수). 화면은 6·7단계 |
 | 2026-11-09 | **D67 라이벌 대시보드 화면(6단계)**: 비교 화면 맨 위 대시보드(요약 카드·막대·`속성별 상세` 탭)와 속성 상세 화면(`/players/{id}/compare/{key}`)을 추가. 프론트만, 서버·DB 변경 없음. 차트는 막대만(점 분포·레이더는 7단계) |
 | 2026-11-09 | **D67 점 분포·레이더(7단계)**: 대시보드 차트 전환 칸에 `점 분포`·`레이더` 추가(`?chart=dot|radar`). 프론트만, 서버·DB 변경 없음. 이 API의 `distribution`·`patterns`를 그대로 그림(SVG 직접), 5곡 미만·0곡 속성 표시 규칙과 접근성(role=img + 숨김 표)을 D67 (8)에 적음 |
-| 2026-11-09 | **D67 개정: 대시보드의 속성별 값을 승률 %로**(프론트만): 속성별 요약 카드·막대·상세 줄의 점수 차 합계를 승률 %(승 ÷ 공유 곡)로 표시한다. 서버 응답·집계·접전 기준은 그대로이고 새 결정 번호는 만들지 않았다 |
+| 2026-11-09 | **D67 개정: 대시보드의 속성별 값을 평균 달성률 차(%p)로**: `GET /players/{userId}/compare/summary`의 속성 줄(`patterns[]`)에 `rateDiffAvg`(선택, 공유 곡이 없으면 null)를 **추가**했다(기존 필드·판정·접전 기준은 그대로, 마이그레이션 없음). 정의: 속성별 공유 곡(두 사람이 모두 SRN+ 기록이 있고 레이팅 대상인 채보)마다 `내 최고 달성률 − 상대 최고 달성률`(DB에 저장된 **둘째 자리 달성률 그대로** 뺀다. 점수와 달리 95%에서 멈추지 않는다)의 산술평균을 **소수 첫째 자리로 한 번만** 반올림한다(HALF_UP: 절반은 0에서 먼 쪽, `-0.05 → -0.1`, `+0.04 → 0.0`). 승·무·패·접전 판정에는 쓰지 않는다. 화면의 속성별 값(요약 카드·막대·속성 줄)은 이 값을 `+1.8%p`로 보인다(DESIGN-UI 33장) |
 
 ---
 

@@ -13,7 +13,6 @@ import {
   ringPoints,
   dataPoints,
   winRate,
-  winRatePercent,
 } from "@/lib/rival-charts";
 
 function pattern(key: RivalPatternSummary["key"], over: Partial<RivalPatternSummary> = {}): RivalPatternSummary {
@@ -101,17 +100,6 @@ describe("레이더", () => {
     expect(winRate({ wins: 0, sharedCount: 4 })).toBe(0);
     expect(winRate({ wins: 4, sharedCount: 4 })).toBe(1);
     expect(winRate({ wins: 0, sharedCount: 0 })).toBeNull();
-  });
-
-  it("대시보드의 승률 %는 레이더와 같은 정수 반올림이고, 공유 곡이 없으면 null이다", () => {
-    expect(winRatePercent({ wins: 6, sharedCount: 9 })).toBe(67); // 66.67
-    expect(winRatePercent({ wins: 1, sharedCount: 6 })).toBe(17); // 16.67
-    expect(winRatePercent({ wins: 1, sharedCount: 8 })).toBe(13); // 12.5 → 반올림
-    expect(winRatePercent({ wins: 0, sharedCount: 5 })).toBe(0);
-    expect(winRatePercent({ wins: 5, sharedCount: 5 })).toBe(100);
-    expect(winRatePercent({ wins: 0, sharedCount: 0 })).toBeNull();
-    // 레이더 축의 percent와 같은 값이다
-    expect(radarAxes([pattern("SINGLE", { wins: 6, sharedCount: 9 })])[0].percent).toBe(winRatePercent({ wins: 6, sharedCount: 9 }));
   });
 
   it("축은 맨 위(−90°)에서 시계 방향으로 360/5씩 놓인다", () => {

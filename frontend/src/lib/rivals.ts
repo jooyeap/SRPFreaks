@@ -113,6 +113,19 @@ export function formatScoreDiff(diff: number | null): { text: string; sign: "up"
   return { text: "\u00b10.00", sign: "even" };
 }
 
+/**
+ * 속성별 평균 달성률 차(%p, D67 개정): 앞이면 `+1.8%p`, 뒤면 `−0.4%p`(진짜 마이너스 기호 U+2212), 같으면 `±0.0%p`.
+ * 부호가 글자로 보이므로 색만으로 앞뒤를 구분하지 않는다. 값이 없으면(공유 곡 0 · 옛 응답) null이라 부른 쪽이 `–`를 쓴다.
+ * 서버가 이미 소수 첫째 자리로 한 번 반올림한 값이다. 여기서는 부동소수점 찌꺼기로 `+0.0`/`−0.0`이 나오지 않게 첫째 자리 정수로 맞춰 부호를 정한다.
+ */
+export function formatRateDiff(value: number | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  const tenths = Math.round(value * 10);
+  if (tenths > 0) return `+${(tenths / 10).toFixed(1)}%p`;
+  if (tenths < 0) return `\u2212${(-tenths / 10).toFixed(1)}%p`;
+  return "\u00b10.0%p";
+}
+
 /** 따라잡을 곡 구역에 보이는 최대 곡 수(D66). */
 export const CATCH_UP_LIMIT = 3;
 

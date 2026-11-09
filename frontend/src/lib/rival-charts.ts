@@ -99,12 +99,6 @@ export function winRate(pattern: Pick<RivalPatternSummary, "wins" | "sharedCount
   return Math.min(1, Math.max(0, pattern.wins / pattern.sharedCount));
 }
 
-/** 화면에 쓰는 정수 승률 %(레이더와 같은 Math.round). 공유 곡이 없으면 null(0%가 아니다). 속성별 값은 대시보드의 카드·막대·상세 줄이 모두 이 값을 쓴다. */
-export function winRatePercent(pattern: Pick<RivalPatternSummary, "wins" | "sharedCount">): number | null {
-  const rate = winRate(pattern);
-  return rate === null ? null : Math.round(rate * 100);
-}
-
 /** 속성 줄들을 레이더의 축으로 바꾼다. 축은 서버가 준 순서대로 맨 위부터 시계 방향이다. */
 export function radarAxes(patterns: readonly RivalPatternSummary[]): RadarAxis[] {
   const n = Math.max(patterns.length, 1);
