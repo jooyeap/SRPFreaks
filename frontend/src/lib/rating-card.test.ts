@@ -184,12 +184,12 @@ describe("buildCardModel", () => {
     expect(small.height).toBeLessThan(full.height);
   });
 
-  it("단일 구역은 속성 칩을 붙이지 않고, 그 외 구역은 붙인다", () => {
+  it("속성은 단일 구역도 포함해 모든 타일에 들어간다(아랫줄 `Guitar · 속성`용, 2안)", () => {
     const s = skill(1, 1);
     s.single[0] = entry(1, { pattern: "단일" });
     s.other[0] = entry(2, { pattern: "복합" });
     const m = buildCardModel("portrait", s, koT, { nickname: "a", now: NOW });
-    expect(m.sections[0].tiles[0].patternText).toBe("");
+    expect(m.sections[0].tiles[0].patternText).toBe("단일");
     expect(m.sections[1].tiles[0].patternText).toBe("복합");
   });
 
@@ -204,7 +204,11 @@ describe("buildCardModel", () => {
     s.single[0] = entry(1, { achievementRate: 100, stage: "EXC", part: "BASS", pattern: null, score: 140 });
     const m = buildCardModel("landscape", s, koT, { nickname: "Tester", now: NOW });
     const t = m.sections[0].tiles[0];
-    expect(t.rateText).toBe("MAX · EXC");
+    expect(t.rateText).toBe("MAX");
+    expect(t.stageText).toBe("EXC");
+    expect(t.scoreText).toBe("140.00");
+    expect(t.scoreIntText).toBe("140");
+    expect(t.scoreDecText).toBe(".00");
     expect(t.partText).toBe("Bass");
     expect(t.diffText).toBe("MAS 9.45");
     expect(t.patternText).toBe("");
