@@ -33,6 +33,8 @@
   --jacket: #3b4660;
   /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
   --part-guitar: #f9a8d4; --part-bass: #5eead4;
+  /* 서열표·세트리스트 줄의 파트 글자색(D64): Guitar = 보라, Bass = 청록. 글자만 칠하고 `Guitar`/`Bass` 글자를 항상 같이 적는다. 위 --part-*(분홍·청록, 파트 배지 윤곽용)와는 따로 둔다 */
+  --part-text-guitar: #c4b5fd; --part-text-bass: #5eead4;
   /* 추천 "상" 배지: 채우지 않고 연한 배경 + 윤곽 + 글자색만 쓴다 (달성 단계보다 튀지 않게). 임시 값 */
   --rec-high-text: #ffb870; --rec-high-line: #ff9f43; --rec-high-tint: rgb(255 159 67 / 0.14);
   --chip-on-bg: #eef0f6;
@@ -91,6 +93,8 @@
   --jacket: #c8d0df;
   /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
   --part-guitar: #be185d; --part-bass: #0f766e;
+  /* 서열표·세트리스트 줄의 파트 글자색(D64) */
+  --part-text-guitar: #6d28d9; --part-text-bass: #0f766e;
   /* 추천 "상" 배지: 채우지 않고 연한 배경 + 윤곽 + 글자색만 쓴다 (달성 단계보다 튀지 않게). 임시 값 */
   --rec-high-text: #b45309; --rec-high-line: #d97706; --rec-high-tint: rgb(217 119 6 / 0.10);
   --chip-on-bg: #12151c;
@@ -132,6 +136,7 @@
     --jacket: #c8d0df;
     /* 파트 배지 색 (임시 값): Guitar = 분홍, Bass = 청록. 글자와 테두리에만 쓰고 채우지 않는다 */
     --part-guitar: #be185d; --part-bass: #0f766e;
+    --part-text-guitar: #6d28d9; --part-text-bass: #0f766e;
     /* 추천 "상" 배지: 채우지 않고 연한 배경 + 윤곽 + 글자색만 쓴다 (달성 단계보다 튀지 않게). 임시 값 */
     --rec-high-text: #b45309; --rec-high-line: #d97706; --rec-high-tint: rgb(217 119 6 / 0.10);
     --chip-on-bg: #12151c;
@@ -168,6 +173,8 @@
   --color-disabled: var(--disabled);
   --color-chip-line: var(--chip-line);
   --color-ctl: var(--ctl-line);
+  --color-part-text-guitar: var(--part-text-guitar);
+  --color-part-text-bass: var(--part-text-bass);
   --color-jacket: var(--jacket);
   --color-chip-on-bg: var(--chip-on-bg);
   --color-chip-on-fg: var(--chip-on-fg);

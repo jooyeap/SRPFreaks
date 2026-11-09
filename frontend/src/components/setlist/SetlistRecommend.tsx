@@ -1,17 +1,16 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { Pager } from "@/components/Pager";
 import { RecommendRangeForm } from "@/components/setlist/RecommendRangeForm";
 import { useToast } from "@/components/Toast";
-import { PatternMark } from "@/components/setlist/PatternMark";
-import { ChartBadge } from "@/components/table/Badges";
-import { StageBadge } from "@/components/table/StageBadge";
+import { ChartLine } from "@/components/table/ChartLine";
+import { StageRatePill } from "@/components/table/StageRatePill";
 import { ApiError } from "@/lib/api";
 import type { RecommendationItem } from "@/lib/api-types";
-import { formatRate, formatTier } from "@/lib/format";
+import { formatTier } from "@/lib/format";
+import { useJackets } from "@/lib/jackets";
 import { addToSetlist, fetchRecommendations, formatOffsetRange, SETLIST_LIMIT, setlistKeys } from "@/lib/setlist";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { useTranslations } from "next-intl";
@@ -151,6 +150,7 @@ function Group({
   onAdd: (item: RecommendationItem) => void;
 }) {
   const t = useTranslations();
+  const jackets = useJackets();
   return (
     <div className="flex flex-col gap-1">
       <h3 className="text-xs font-bold text-fg-sub">
@@ -164,38 +164,37 @@ function Group({
             const added = addedIds.has(item.songDifficultyId);
             const stage = item.mine?.stage ?? null;
             return (
-              <li key={item.songDifficultyId} className="flex items-center justify-between gap-3 border-t border-row-line py-2 first:border-t-0">
-                <div className="min-w-0 flex-1">
-                  {/* 곡명을 누르면 곡 상세(그 채보)로 간다. 담기 전에 곡 정보를 볼 수 있게(2026-10-27). 옅은 밑줄과 ›로 누를 수 있다는 걸 보인다 */}
-                  <Link
-                    href={`/songs/${item.songId}?from=table&chart=${item.songDifficultyId}`}
-                    className="block truncate text-sm text-fg underline decoration-chip-line underline-offset-4 hover:decoration-fg"
-                  >
-                    {item.title} <span aria-hidden="true">›</span>
-                  </Link>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                    <ChartBadge part={item.part} difficulty={item.difficulty} level={item.level} />
-                    <span className="text-xs text-fg-dim">
-                      {t.rich("Setlist.constLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
-                    </span>
-                    {item.pattern ? <PatternMark pattern={item.pattern} /> : null}
-                  </p>
-                </div>
-                {/* 내 랭크(달성 단계)와 달성률은 오른쪽에 모은다. 기록 유무는 색이 아니라 글자로 보인다 */}
-                <div className="shrink-0 text-right">
-                  {stage ? <StageBadge stage={stage} /> : <span className="text-xs text-fg-dim">{t("Progress.noRecord")}</span>}
-                  {stage ? <span className="mt-0.5 block font-num text-xs text-fg-sub">{formatRate(item.mine?.rate)}</span> : null}
-                </div>
-                <button
-                  type="button"
-                  disabled={added || full || pendingId === item.songDifficultyId}
-                  onClick={() => onAdd(item)}
-                  aria-label={added ? t("Setlist.addedAria", { title: item.title }) : t("Setlist.addAria", { title: item.title })}
-                  className="flex min-h-9 shrink-0 items-center rounded-lg border border-ctl px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
-                >
-                  {added ? t("Setlist.addedMark") : t("Setlist.addBtn")}
-                </button>
-              </li>
+              <ChartLine
+                key={item.songDifficultyId}
+                className="border-t border-row-line first:border-t-0"
+                jacket={jackets.visible ? { url: jackets.urlOf(item.songId) } : null}
+                pattern={item.pattern}
+                tier={item.tier}
+                title={item.title}
+                // 곡명을 누르면 곡 상세(그 채보)로 간다. 담기 전에 곡 정보를 볼 수 있게(2026-10-27)
+                href={`/songs/${item.songId}?from=table&chart=${item.songDifficultyId}`}
+                part={item.part}
+                difficulty={item.difficulty}
+                level={item.level}
+                // 오른쪽: 내 랭크·달성률 알약(기록이 없으면 `–`) 위, `담기`/`담김` 아래. 줄이 좁아서(카드 안 360px) 버튼을 알약 아래에 쌓는다.
+                // 보이는 높이 26px, ::after로 눌리는 영역만 사방 6px 넓힌다. `담김`은 초록 테두리 + 초록 글자(글자로도 구분된다)
+                aside={
+                  <div className="flex w-[72px] shrink-0 flex-col items-end gap-1.5">
+                    <StageRatePill stage={stage} rate={item.mine?.rate} />
+                    <button
+                      type="button"
+                      disabled={added || full || pendingId === item.songDifficultyId}
+                      onClick={() => onAdd(item)}
+                      aria-label={added ? t("Setlist.addedAria", { title: item.title }) : t("Setlist.addAria", { title: item.title })}
+                      className={`relative flex h-[26px] w-full items-center justify-center rounded-md border px-1 text-xs after:absolute after:-inset-1.5 after:content-[''] ${
+                        added ? "border-done text-done-text" : "border-ctl text-fg enabled:hover:bg-table-head disabled:text-disabled"
+                      }`}
+                    >
+                      {added ? t("Setlist.addedMark") : t("Setlist.addBtn")}
+                    </button>
+                  </div>
+                }
+              />
             );
           })}
         </ul>
