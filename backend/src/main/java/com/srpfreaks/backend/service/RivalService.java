@@ -11,7 +11,6 @@ import com.srpfreaks.backend.dto.RivalRecordResponse;
 import com.srpfreaks.backend.dto.RivalRegistrantResponse;
 import com.srpfreaks.backend.dto.RivalResponse;
 import com.srpfreaks.backend.dto.RivalStatusResponse;
-import com.srpfreaks.backend.dto.RivalSummaryResponse;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
@@ -123,8 +122,10 @@ public class RivalService {
         List<Long> rateIds = new ArrayList<>(visibleIds);
         rateIds.add(userId);
         Map<Long, SkillService.RatedSkill> rated = skillService.ratedAll(rateIds);
-        NoteOption option = skillService.ratingNoteOption();
-        Map<Long, ChartBest> mine = bestsOf(userId, option);
+        // 승·패·무·상대만은 대시보드와 같은 기준(레이팅 대상 채보 전체, 달성률 차)이라 두 사람의 채보 점수 목록을 쓴다.
+        // 내 목록은 한 번만 읽어 라이벌마다 다시 쓰고, 라이벌마다 후보 쿼리가 한 번씩이다(최대 5명, 레이팅 계산과 같은 구조라 N+1이 아니다).
+        Map<Long, List<SkillService.ScoredChart>> charts = skillService.scoredChartsAll(rateIds);
+        List<SkillService.ScoredChart> myCharts = charts.getOrDefault(userId, List.of());
         BigDecimal myTotal = rated.get(userId).skill().totalScore();
 
         List<RivalResponse> result = new ArrayList<>();
@@ -137,7 +138,8 @@ public class RivalService {
             }
             SkillResponse skill = rated.get(target.getId()).skill();
             result.add(new RivalResponse(target.getId(), target.getNickname(), true, mutual, skill.tier(), skill.totalScore(),
-                    skill.totalScore().subtract(myTotal), counts(mine, bestsOf(target.getId(), option)),
+                    skill.totalScore().subtract(myTotal),
+                    RivalSummaryCalculator.countsOf(myCharts, charts.getOrDefault(target.getId(), List.of())),
                     topSongsOf(skill)));
         }
         return result;
@@ -196,6 +198,10 @@ public class RivalService {
         SkillResponse mySkill = rated.get(userId).skill();
         NoteOption option = skillService.ratingNoteOption();
         Map<Long, ChartBest> mine = bestsOf(userId, option);
+        // 위쪽 개수(counts)는 대시보드·곡별 승패와 같은 기준(레이팅 대상 채보 전체, 달성률 차)이다(D67 개정). 줄의 내 점수 계산은 그대로다.
+        Map<Long, List<SkillService.ScoredChart>> charts = skillService.scoredChartsAll(List.of(userId, targetUserId));
+        RivalCounts counts = RivalSummaryCalculator.countsOf(charts.getOrDefault(userId, List.of()),
+                charts.getOrDefault(targetUserId, List.of()));
         RatingCalculator calculator = skillService.calculator();
         Function<SkillEntryResponse, RivalCompareRatingResponse.Row> toRow = e -> {
             ChartBest my = mine.get(e.songDifficultyId());
@@ -207,7 +213,7 @@ public class RivalService {
                     my == null ? null : my.bestRate(), myScoreShown, myScoreShown == null ? null : myScoreShown.subtract(e.score()));
         };
         return new RivalCompareRatingResponse(target.getId(), target.getNickname(), theirs.tier(), theirs.totalScore(),
-                mySkill.tier(), mySkill.totalScore(), counts(mine, bestsOf(targetUserId, option)),
+                mySkill.tier(), mySkill.totalScore(), counts,
                 theirs.single().stream().map(toRow).toList(), theirs.other().stream().map(toRow).toList());
     }
 
@@ -228,10 +234,7 @@ public class RivalService {
 
         List<RivalSummaryCalculator.Shared> shared = RivalSummaryCalculator.share(mine, theirs).stream()
                 .filter(s -> RivalSummaryCalculator.PATTERN_ORDER.contains(s.pattern())).toList();
-        RivalSummaryCalculator.Unmatched unmatched = RivalSummaryCalculator.unmatched(mine, theirs);
-        RivalSummaryResponse.Totals totals = RivalSummaryCalculator.totalsOf(shared);
-        RivalCounts counts = new RivalCounts(totals.wins(), totals.losses(), totals.ties(),
-                RivalSummaryCalculator.totalOnlyTheirs(unmatched), RivalSummaryCalculator.totalOnlyMine(unmatched));
+        RivalCounts counts = RivalSummaryCalculator.countsOf(mine, theirs);
 
         List<RivalChartRow> rows;
         if (wanted == Result.THEIRS_ONLY) {
@@ -300,30 +303,6 @@ public class RivalService {
     }
 
     // ---------- 내부 ----------
-
-    static RivalCounts counts(Map<Long, ChartBest> mine, Map<Long, ChartBest> theirs) {
-        int win = 0;
-        int lose = 0;
-        int tie = 0;
-        int theirsOnly = 0;
-        for (ChartBest t : theirs.values()) {
-            switch (classify(mine.get(t.songDifficultyId()), t)) {
-                case WIN -> win++;
-                case LOSE -> lose++;
-                case TIE -> tie++;
-                case THEIRS_ONLY -> theirsOnly++;
-            }
-        }
-        return new RivalCounts(win, lose, tie, theirsOnly);
-    }
-
-    private static Result classify(ChartBest mine, ChartBest theirs) {
-        if (mine == null) {
-            return Result.THEIRS_ONLY;
-        }
-        int cmp = mine.bestRate().compareTo(theirs.bestRate());
-        return cmp > 0 ? Result.WIN : cmp < 0 ? Result.LOSE : Result.TIE;
-    }
 
     private Map<Long, ChartBest> bestsOf(Long userId, NoteOption option) {
         Map<Long, ChartBest> map = new HashMap<>();

@@ -11,6 +11,7 @@ import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.OptionRecord;
 import com.srpfreaks.backend.entity.PatternType;
+import com.srpfreaks.backend.entity.Rival;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.User;
@@ -38,6 +39,7 @@ import org.testcontainers.mysql.MySQLContainer;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -414,5 +416,25 @@ class RivalSummaryServiceDbTest {
                 .isSortedAccordingTo(java.util.Comparator.comparing(BigDecimal::abs));
         // 레이팅 제외 속성·기준 난이도 없음·반영 꺼짐·SRN+ 아닌 기록은 곡별 승패에서도 빠진다(예전에는 기록 있는 채보 전부를 셌다)
         assertThat(charts.counts().win() + charts.counts().tie() + charts.counts().lose()).isEqualTo(summary.totals().sharedCount());
+    }
+
+    @Test
+    void 라이벌_카드와_비교_레이팅_목록의_개수도_실제_DB에서_대시보드_totals와_같다() {
+        // 카드(GET /rivals)·비교 레이팅 목록(compare/rating)의 승·패·무·상대만이 대시보드와 같은 기준(레이팅 대상 채보 전체, 달성률 차)이어야 한다.
+        persist(Rival.of(userRepository.getReferenceById(me.getId()), userRepository.getReferenceById(rival.getId()), Instant.now()));
+        em.flush();
+        em.clear();
+
+        RivalSummaryResponse summary = service.summary(me.getId(), rival.getId());
+        com.srpfreaks.backend.dto.RivalCounts expected = new com.srpfreaks.backend.dto.RivalCounts(
+                summary.totals().wins(), summary.totals().losses(), summary.totals().ties(),
+                summary.patterns().stream().mapToInt(RivalSummaryResponse.PatternSummary::onlyTheirs).sum(),
+                summary.patterns().stream().mapToInt(RivalSummaryResponse.PatternSummary::onlyMine).sum());
+
+        var card = rivalService.list(me.getId()).get(0);
+        assertThat(card.available()).isTrue();
+        assertThat(card.counts()).isEqualTo(expected);
+        assertThat(rivalService.compareRating(me.getId(), rival.getId()).counts()).isEqualTo(expected);
+        assertThat(rivalService.compareCharts(me.getId(), rival.getId(), "LOSE", 0, 50).counts()).isEqualTo(expected);
     }
 }

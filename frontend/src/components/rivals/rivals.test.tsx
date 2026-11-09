@@ -154,7 +154,8 @@ describe("RivalCompareView", () => {
     const row = await screen.findByRole("link", { name: /MEGALOVANIA/ });
     expect(row).toHaveTextContent("95.63");
     expect(row).toHaveTextContent("96.10");
-    expect(row).toHaveTextContent("-0.47");
+    expect(row).toHaveTextContent("\u22120.47%");   // 차이 칸에 %가 붙고 부호는 글자(−)로 보인다
+    expect(row).not.toHaveTextContent("-0.47");
     expect(screen.getByRole("button", { name: "패 61" })).toHaveAttribute("aria-pressed", "true");
     expect(fetchMock.mock.calls.some((c) => urlOf(c).includes("result=LOSE"))).toBe(true);
   });
@@ -203,7 +204,8 @@ describe("RivalCompareView", () => {
     fireEvent.click(await screen.findByRole("button", { name: "곡별 승패" }));
     fireEvent.click(await screen.findByRole("button", { name: "상대만 2" }));
 
-    expect(await screen.findByText("상단 요약과 같은 기준입니다. 상대 달성률이 높은 순")).toBeInTheDocument();
+    expect(await screen.findByText("상대만 기록한 곡입니다. 상대 달성률이 높은 순")).toBeInTheDocument();
+    expect(screen.queryByText("상단 요약과 같은 기준입니다. 차이가 작은 순")).toBeNull();
     expect(screen.getByRole("button", { name: "상대만 2" })).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -269,6 +271,33 @@ describe("RivalTab", () => {
     expect(screen.getByText("상대가 기록을 비공개로 바꿨습니다.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "라이벌 해제" })).toBeInTheDocument();
     expect(screen.getByText("2/5")).toBeInTheDocument();
+  });
+
+  it("카드의 승·패·무·상대만 숫자는 서버가 준 값 그대로다(대시보드와 같은 기준으로 서버가 센다, D67 개정)", async () => {
+    // 대시보드 요약(승 18 무 0 패 24)과 같은 숫자가 카드에도 내려온다. 화면은 다시 세지 않는다.
+    const rivals: RivalResponse[] = [
+      { userId: 7, nickname: "Rumi", available: true, mutual: false, tier: gold, totalScore: 9516.42, scoreDiff: 312.1,
+        counts: { win: 18, lose: 24, tie: 0, theirsOnly: 6, onlyMine: 2 } },
+    ];
+    fetchMock.mockImplementation(async (input) =>
+      String(input).includes("/rivals/registered-me") ? json(registrantPage([])) : json(rivals));
+    renderWith(<RivalTab userId={1} />);
+
+    const card = await screen.findByRole("link", { name: /Rumi/ });
+    expect(card).toHaveTextContent("18");
+    expect(card).toHaveTextContent("24");
+    expect(card).toHaveTextContent("6");
+    expect(card).not.toHaveTextContent("48");
+    expect(card).not.toHaveTextContent("61");
+  });
+});
+
+describe("곡별 승패 캡션 문구 (ko/ja)", () => {
+  it("승·패·무 탭과 상대만 탭의 캡션이 다르고 ja도 같은 구분이다", () => {
+    expect(ko.Rival.chartsBasis).toBe("상단 요약과 같은 기준입니다. 차이가 작은 순");
+    expect(ko.Rival.chartsBasisTheirs).toBe("상대만 기록한 곡입니다. 상대 달성률이 높은 순");
+    expect(ja.Rival.chartsBasis).toBe("上のサマリーと同じ基準です。差が小さい順");
+    expect(ja.Rival.chartsBasisTheirs).toBe("相手だけが記録した曲です。相手の達成率が高い順");
   });
 });
 
