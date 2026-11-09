@@ -1497,6 +1497,7 @@
     "emptyList": "登録したライバルがいません。",
     "mutualChip": "相互ライバル",
     "scoreLine": "総合 <n>{total}</n> · 自分との差 <n>{diff}</n>",
+    "topSongs": "相手の上位曲",
     "private": "非公開",
     "privateLine": "相手が記録を非公開にしました。",
     "unknown": "不明",

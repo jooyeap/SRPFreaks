@@ -496,7 +496,16 @@ export interface RivalCounts {
   theirsOnly: number;
 }
 
-/** 내 라이벌 한 줄. available=false(상대가 비공개·차단)면 닉네임만 오고 나머지는 null. scoreDiff = 상대 총점 - 내 총점. */
+/** 라이벌 카드의 "상대 상위 곡" 한 칸(3단계, D65): 재킷을 찾을 곡 id와 그 곡의 화면 점수(둘째 자리). */
+export interface RivalTopSong {
+  songId: number;
+  score: number;
+}
+
+/**
+ * 내 라이벌 한 줄. available=false(상대가 비공개·차단)면 닉네임만 오고 나머지는 null. scoreDiff = 상대 총점 - 내 총점.
+ * topSongs = 상대 레이팅 목록의 상위 곡 최대 5곡(점수 내림차순, 곡마다 한 번). 구버전 응답에는 없다(없으면 줄을 그리지 않는다).
+ */
 export interface RivalResponse {
   userId: number;
   nickname: string | null;
@@ -506,6 +515,7 @@ export interface RivalResponse {
   totalScore: number | null;
   scoreDiff: number | null;
   counts: RivalCounts | null;
+  topSongs?: RivalTopSong[] | null;
 }
 
 /** 나를 라이벌로 등록한 공개 유저 한 줄(D63). mutual = 내가 그 사람도 등록함(서로 라이벌). 이메일·역할은 오지 않는다. */

@@ -9,6 +9,7 @@ import com.srpfreaks.backend.dto.RivalCounts;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.RivalRecordResponse;
 import com.srpfreaks.backend.dto.RivalRegistrantResponse;
+import com.srpfreaks.backend.dto.RivalResponse;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
@@ -334,5 +335,75 @@ class RivalServiceTest {
         when(optionRecordRepository.findBestWithFullComboForUsers(eq(7L), eq(SRN), anyCollection()))
                 .thenReturn(List.of(new UserBest(THEM, d("100.00"))));
         assertThat(service.rivalRecords(ME, 7L).get(0).stage()).isEqualTo(AchievementStage.EXC);
+    }
+
+    // ---------- 라이벌 카드의 상대 상위 곡 (3단계, D65) ----------
+
+    private static SkillEntryResponse top(int rank, long chartId, long songId, String value, String score) {
+        return new SkillEntryResponse(rank, chartId, songId, "곡" + songId, InstrumentPart.GUITAR, DifficultyType.MASTER,
+                d("9.50"), d("6.0"), "단일", d("96.00"), false, AchievementStage.SS, d("15"), d(value), d(score));
+    }
+
+    private static SkillResponse skillOf(List<SkillEntryResponse> single, List<SkillEntryResponse> other) {
+        return new SkillResponse(SRN, d("1000.00"), d("500.00"), d("500.00"),
+                new SkillResponse.PlayerTierResponse("C", "C", 0, null, null), 15, 25, single, other);
+    }
+
+    @Test
+    void 상위_곡은_단일과_그_외를_합쳐_점수_높은_순_최대_5곡이다() {
+        SkillResponse skill = skillOf(
+                List.of(top(1, 10, 1, "15.2000", "304.00"), top(2, 11, 2, "14.0000", "280.00"), top(3, 12, 3, "12.0000", "240.00")),
+                List.of(top(1, 20, 4, "15.0000", "300.00"), top(2, 21, 5, "13.0000", "260.00"), top(3, 22, 6, "11.0000", "220.00"),
+                        top(4, 23, 7, "10.0000", "200.00")));
+
+        List<RivalResponse.RivalTopSong> songs = RivalService.topSongsOf(skill);
+
+        assertThat(songs).extracting(RivalResponse.RivalTopSong::songId).containsExactly(1L, 4L, 2L, 5L, 3L);
+        assertThat(songs).extracting(RivalResponse.RivalTopSong::score)
+                .usingElementComparator(BigDecimal::compareTo)
+                .containsExactly(d("304.00"), d("300.00"), d("280.00"), d("260.00"), d("240.00"));
+    }
+
+    @Test
+    void 곡이_5곡_미만이면_있는_만큼_없으면_빈_목록이다() {
+        assertThat(RivalService.topSongsOf(skillOf(List.of(top(1, 10, 1, "15.2000", "304.00")), List.of()))).hasSize(1);
+        assertThat(RivalService.topSongsOf(skillOf(List.of(), List.of()))).isEmpty();
+    }
+
+    @Test
+    void 같은_곡의_채보가_둘이면_점수_높은_쪽_하나만_쓰고_동점은_채보_id가_작은_쪽이_먼저다() {
+        SkillResponse skill = skillOf(
+                List.of(top(1, 31, 7, "15.0000", "300.00"), top(2, 30, 8, "15.0000", "300.00")),
+                List.of(top(1, 40, 7, "13.0000", "260.00")));   // 곡 7의 낮은 채보 -> 빠진다
+
+        List<RivalResponse.RivalTopSong> songs = RivalService.topSongsOf(skill);
+
+        // V가 같으면 채보 id가 작은 30(곡 8)이 먼저, 곡 7은 한 번만
+        assertThat(songs).extracting(RivalResponse.RivalTopSong::songId).containsExactly(8L, 7L);
+        assertThat(songs.get(1).score()).isEqualByComparingTo("300.00");
+    }
+
+    @Test
+    void 라이벌_목록은_상대_상위_곡을_담고_비공개_상대는_null이며_레이팅은_한_번에_계산한다() {
+        User hidden = user(3L, "Hidden");
+        hidden.changeProfilePublic(false);
+        when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of(
+                Rival.of(me, them, Instant.EPOCH), Rival.of(me, hidden, Instant.EPOCH)));
+        when(rivalRepository.findUserIdsRegistering(ME)).thenReturn(List.of());
+        SkillResponse theirs = skillOf(List.of(top(1, 10, 1, "15.2000", "304.00")), List.of(top(1, 20, 2, "12.0000", "240.00")));
+        SkillResponse mine = skillOf(List.of(), List.of());
+        when(skillService.ratedAll(List.of(THEM, ME))).thenReturn(Map.of(
+                THEM, new SkillService.RatedSkill(theirs, null), ME, new SkillService.RatedSkill(mine, null)));
+        when(optionRecordRepository.findActiveBestByUser(any(), eq(SRN))).thenReturn(List.of());
+
+        List<RivalResponse> rows = service.list(ME);
+
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).available()).isTrue();
+        assertThat(rows.get(0).topSongs()).extracting(RivalResponse.RivalTopSong::songId).containsExactly(1L, 2L);
+        assertThat(rows.get(1).available()).isFalse();
+        assertThat(rows.get(1).topSongs()).isNull();
+        // 라이벌이 여러 명이어도 레이팅 계산은 한 번에(비공개 상대는 계산 대상에서도 빠진다)
+        verify(skillService, org.mockito.Mockito.times(1)).ratedAll(any());
     }
 }

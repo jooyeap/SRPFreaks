@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 라이벌 등록·목록과 비교 화면(D56, 설계 DESIGN.md 18.2.1). 모두 로그인한 사용자만 부른다.
@@ -132,9 +133,31 @@ public class RivalService {
             }
             SkillResponse skill = rated.get(target.getId()).skill();
             result.add(new RivalResponse(target.getId(), target.getNickname(), true, mutual, skill.tier(), skill.totalScore(),
-                    skill.totalScore().subtract(myTotal), counts(mine, bestsOf(target.getId(), option))));
+                    skill.totalScore().subtract(myTotal), counts(mine, bestsOf(target.getId(), option)),
+                    topSongsOf(skill)));
         }
         return result;
+    }
+
+    /** 라이벌 카드의 "상대 상위 곡" 칸 수(3단계, D65). */
+    static final int TOP_SONG_COUNT = 5;
+
+    /**
+     * 상대 레이팅 목록(단일 + 그 외)에서 점수가 높은 곡 최대 5곡. 이미 계산된 레이팅 목록(ratedAll)에서 뽑으므로 쿼리를 더하지 않고
+     * 점수 수식도 복제하지 않는다(라이벌 목록 화면의 총점과 같은 채보·같은 점수다). 같은 곡의 다른 채보가 함께 들어 있으면
+     * 높은 쪽 하나만 쓴다(재킷은 곡 단위라 같은 그림이 두 번 나오지 않게). 정렬은 채보 값(V) 내림차순, 같으면 채보 id가 작은 쪽
+     * (레이팅 목록과 같은 고정 기준, DESIGN.md 7장)이라 요청마다 순서가 바뀌지 않는다.
+     */
+    static List<RivalResponse.RivalTopSong> topSongsOf(SkillResponse skill) {
+        Comparator<SkillEntryResponse> order = Comparator.comparing(SkillEntryResponse::value).reversed()
+                .thenComparing(SkillEntryResponse::songDifficultyId);
+        Set<Long> seen = new HashSet<>();
+        return Stream.concat(skill.single().stream(), skill.other().stream())
+                .sorted(order)
+                .filter(entry -> seen.add(entry.songId()))
+                .limit(TOP_SONG_COUNT)
+                .map(entry -> new RivalResponse.RivalTopSong(entry.songId(), entry.score()))
+                .toList();
     }
 
     /**
