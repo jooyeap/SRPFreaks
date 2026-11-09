@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RivalRatingRow } from "@/lib/api-types";
-import { badgeText, catchUpRows, formatRateDiff, formatScoreDiff, relativeMinutes, signed } from "@/lib/rivals";
+import { badgeText, catchUpRows, formatRateDiff, formatRateGap, formatScoreDiff, relativeMinutes, signed } from "@/lib/rivals";
 
 describe("라이벌 표시 도우미", () => {
   it("배지는 0이면 없고 9를 넘으면 9+다", () => {
@@ -9,17 +9,30 @@ describe("라이벌 표시 도우미", () => {
     expect(badgeText(10)).toBe("9+");
   });
 
-  it("평균 달성률 차는 부호 글자로 앞(+)·뒤(−)·같음(±)을 %p와 함께 보이고, 값이 없으면 null이다 (D67 개정)", () => {
-    expect(formatRateDiff(1.8)).toBe("+1.8%p");
-    expect(formatRateDiff(-0.4)).toBe("\u22120.4%p"); // 진짜 마이너스 기호
-    expect(formatRateDiff(0)).toBe("\u00b10.0%p");
-    expect(formatRateDiff(-0)).toBe("\u00b10.0%p");
-    expect(formatRateDiff(0.04)).toBe("\u00b10.0%p"); // 표시 첫째 자리가 0이면 부호도 ±
-    expect(formatRateDiff(-0.04)).toBe("\u00b10.0%p"); // −0.0이 나오지 않는다
-    expect(formatRateDiff(-12.3)).toBe("\u221212.3%p");
-    expect(formatRateDiff(100)).toBe("+100.0%p");
+  it("평균 달성률 차는 부호 글자로 앞(+)·뒤(−)·같음(±)을 %와 함께 보이고, 값이 없으면 null이다 (D67 개정)", () => {
+    expect(formatRateDiff(1.8)).toBe("+1.8%");
+    expect(formatRateDiff(-0.4)).toBe("\u22120.4%"); // 진짜 마이너스 기호
+    expect(formatRateDiff(0)).toBe("\u00b10.0%");
+    expect(formatRateDiff(-0)).toBe("\u00b10.0%");
+    expect(formatRateDiff(0.04)).toBe("\u00b10.0%"); // 표시 첫째 자리가 0이면 부호도 ±
+    expect(formatRateDiff(-0.04)).toBe("\u00b10.0%"); // −0.0이 나오지 않는다
+    expect(formatRateDiff(-12.3)).toBe("\u221212.3%");
+    expect(formatRateDiff(100)).toBe("+100.0%");
     expect(formatRateDiff(null)).toBeNull();
     expect(formatRateDiff(undefined)).toBeNull();
+  });
+
+  it("곡 줄 달성률 차는 내 − 상대를 둘째 자리 %로, 부호 글자로 앞(+)·뒤(−)·같음(±) 보이고 기록이 없으면 null이다 (2026-11-09)", () => {
+    expect(formatRateGap(97.84, 96)).toEqual({ text: "+1.84%", sign: "up" });
+    expect(formatRateGap(90, 92.1)).toEqual({ text: "\u22122.10%", sign: "down" }); // 진짜 마이너스 기호
+    expect(formatRateGap(95.2, 95.2)).toEqual({ text: "\u00b10.00%", sign: "even" });
+    expect(formatRateGap(0.3, 0.1 + 0.2)).toEqual({ text: "\u00b10.00%", sign: "even" }); // 부동소수점 찌꺼기
+    expect(formatRateGap(96.01, 96)).toEqual({ text: "+0.01%", sign: "up" });
+    expect(formatRateGap(95.99, 96)).toEqual({ text: "\u22120.01%", sign: "down" });
+    expect(formatRateGap(100, 80)).toEqual({ text: "+20.00%", sign: "up" });
+    expect(formatRateGap(null, 90)).toBeNull();
+    expect(formatRateGap(90, null)).toBeNull();
+    expect(formatRateGap(undefined, 90)).toBeNull();
   });
 
   it("점수 차 칩은 부호 글자로 앞(+)·뒤(−)·같음(±)을 보인다 (D65)", () => {

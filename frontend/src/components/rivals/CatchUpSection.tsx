@@ -1,6 +1,6 @@
 "use client";
 
-import { ScoreDiffChip } from "@/components/rivals/ScoreDiffChip";
+import { RateDiffChip } from "@/components/rivals/RateDiffChip";
 import { SetlistAddCell } from "@/components/rivals/SetlistAddCell";
 import { ChartLine } from "@/components/table/ChartLine";
 import type { RivalRatingRow } from "@/lib/api-types";
@@ -54,7 +54,7 @@ export function CatchUpSection({
               // 오른쪽: 차이 칩 위, `담기`/`담김` 아래. 보이는 높이 26px, ::after로 눌리는 영역만 사방 6px 넓힌다. `담김`은 초록 테두리 + 초록 글자(글자로도 구분된다)
               aside={
                 <div className="flex w-[72px] shrink-0 flex-col items-end gap-1.5">
-                  <ScoreDiffChip diff={row.diff} />
+                  <RateDiffChip myRate={row.myRate} rate={row.rate} />
                   <SetlistAddCell viewerId={viewerId} songDifficultyId={row.songDifficultyId} title={row.title} />
                 </div>
               }

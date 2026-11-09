@@ -48,7 +48,7 @@ function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: Ret
       part={row.part}
       difficulty={row.difficulty}
       level={row.level}
-      aside={<CompareScoreAside score={row.score} myScore={row.myScore} diff={row.diff} />}
+      aside={<CompareScoreAside score={row.score} myScore={row.myScore} myRate={row.myRate} rate={row.rate} />}
     />
   );
 }

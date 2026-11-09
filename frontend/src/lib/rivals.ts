@@ -114,16 +114,31 @@ export function formatScoreDiff(diff: number | null): { text: string; sign: "up"
 }
 
 /**
- * 속성별 평균 달성률 차(%p, D67 개정): 앞이면 `+1.8%p`, 뒤면 `−0.4%p`(진짜 마이너스 기호 U+2212), 같으면 `±0.0%p`.
+ * 속성별 평균 달성률 차(%, D67 개정): 앞이면 `+1.8%`, 뒤면 `−0.4%`(진짜 마이너스 기호 U+2212), 같으면 `±0.0%`(단위는 `%p`가 아니라 `%`로만 쓴다, 2026-11-09).
+ * 소수 첫째 자리(곡 줄 칩의 둘째 자리 달성률 차는 `formatRateGap`).
  * 부호가 글자로 보이므로 색만으로 앞뒤를 구분하지 않는다. 값이 없으면(공유 곡 0 · 옛 응답) null이라 부른 쪽이 `–`를 쓴다.
  * 서버가 이미 소수 첫째 자리로 한 번 반올림한 값이다. 여기서는 부동소수점 찌꺼기로 `+0.0`/`−0.0`이 나오지 않게 첫째 자리 정수로 맞춰 부호를 정한다.
  */
 export function formatRateDiff(value: number | null | undefined): string | null {
   if (value === null || value === undefined) return null;
   const tenths = Math.round(value * 10);
-  if (tenths > 0) return `+${(tenths / 10).toFixed(1)}%p`;
-  if (tenths < 0) return `\u2212${(-tenths / 10).toFixed(1)}%p`;
-  return "\u00b10.0%p";
+  if (tenths > 0) return `+${(tenths / 10).toFixed(1)}%`;
+  if (tenths < 0) return `\u2212${(-tenths / 10).toFixed(1)}%`;
+  return "\u00b10.0%";
+}
+
+/**
+ * 곡 줄 칩의 달성률 차(%, 2026-11-09): `내 달성률 − 상대 달성률`을 **둘째 자리**까지. 앞이면 `+1.84%`(up), 뒤면 `−2.10%`(down),
+ * 같으면 `±0.00%`(even). 부호는 글자로 보이므로 색만으로 앞뒤를 구분하지 않는다. 내 기록이 없어서(둘 중 하나가 null) 차이가 없으면 null.
+ * 달성률은 DB에 둘째 자리까지 저장된 값이라 100을 곱해 정수(1/100 %)로 맞춘 뒤 빼서 부동소수점 찌꺼기(`+0.0000001`, `−0.00`)가 나오지 않게 한다.
+ * 승·무·패 판정과 정렬은 서버가 점수로 하므로 이 값과 어긋날 수 있다(달성률 95 이상은 점수가 같아 `무`인데 여기에는 차이가 보인다).
+ */
+export function formatRateGap(myRate: number | null | undefined, rate: number | null | undefined): { text: string; sign: "up" | "down" | "even" } | null {
+  if (myRate === null || myRate === undefined || rate === null || rate === undefined) return null;
+  const cents = Math.round(myRate * 100) - Math.round(rate * 100);
+  if (cents > 0) return { text: `+${(cents / 100).toFixed(2)}%`, sign: "up" };
+  if (cents < 0) return { text: `\u2212${(-cents / 100).toFixed(2)}%`, sign: "down" };
+  return { text: "\u00b10.00%", sign: "even" };
 }
 
 /** 따라잡을 곡 구역에 보이는 최대 곡 수(D66). */

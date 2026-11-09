@@ -1481,7 +1481,7 @@
     "ratingLegend": "+는 내가 앞, −는 내가 뒤 (내 점수 − 상대 점수)",
     "myScoreLine": "나 {score}",
     "diffNone": "내 기록 없음",
-    "diffAria": "상대와의 점수 차 {diff}",
+    "rateDiffAria": "상대와의 달성률 차 {diff}",
     "resultAria": "결과",
     "resultWin": "승 {n}",
     "resultLose": "패 {n}",

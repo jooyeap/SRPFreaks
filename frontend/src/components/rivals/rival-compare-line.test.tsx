@@ -63,42 +63,60 @@ afterEach(() => {
   act(() => setJacketData(null));
 });
 
-describe("라이벌 비교 줄 차이 칩 (D65)", () => {
-  it("앞이면 +, 뒤면 −(진짜 마이너스), 같으면 ±, 내 기록이 없으면 `내 기록 없음`을 글자로 보인다", async () => {
+describe("라이벌 비교 줄 차이 칩 (D65, 2026-11-09: 달성률 차 %)", () => {
+  it("앞이면 +, 뒤면 −(진짜 마이너스), 같으면 ±, 내 기록이 없으면 `내 기록 없음`을 글자로 보인다(내 달성률 − 상대 달성률, 둘째 자리 %)", async () => {
     show([
-      row(1, { diff: 2.28 }),
-      row(2, { diff: -4.37, myScore: 233.73 }),
-      row(3, { diff: 0, myScore: 238.1 }),
+      row(1, { myRate: 97.84, rate: 96, diff: 2.28 }),
+      row(2, { myRate: 90, rate: 92.1, diff: -4.37, myScore: 233.73 }),
+      row(3, { myRate: 95.2, rate: 95.2, diff: 0, myScore: 238.1 }),
       row(4, { myRate: null, myScore: null, diff: null }),
     ]);
     const items = await lines();
     expect(items).toHaveLength(4);
-    expect(within(items[0]).getByText("+2.28")).toBeInTheDocument();
-    expect(within(items[1]).getByText(`${MINUS}4.37`)).toBeInTheDocument();
-    expect(within(items[2]).getByText("±0.00")).toBeInTheDocument();
+    expect(within(items[0]).getByText("+1.84%")).toBeInTheDocument();
+    expect(within(items[1]).getByText(`${MINUS}2.10%`)).toBeInTheDocument();
+    expect(within(items[2]).getByText("±0.00%")).toBeInTheDocument();
     expect(within(items[3]).getByText("내 기록 없음")).toBeInTheDocument();
+    // 점수 차(+2.28)는 칩에 보이지 않는다
+    expect(within(items[0]).queryByText("+2.28")).toBeNull();
   });
 
-  it("경계: 아주 작은 차이는 ±0.00이고 +0.00, −0.00은 나오지 않는다. +0.01, −0.01은 부호가 보인다", async () => {
-    show([row(1, { diff: 0.004 }), row(2, { diff: -0.004 }), row(3, { diff: 0.01 }), row(4, { diff: -0.01 })]);
+  it("칩 값은 점수가 아니라 달성률 차다: 점수가 같아도(95% 이상) 달성률 차가 보인다", async () => {
+    show([row(1, { myRate: 98.5, rate: 96.4, diff: 0, myScore: 238.1 })]);
+    const [item] = await lines();
+    expect(within(item).getByText("+2.10%")).toBeInTheDocument();
+  });
+
+  it("경계: 부동소수점 찌꺼기는 ±0.00%이고 +0.00%, −0.00%은 나오지 않는다. +0.01%, −0.01%은 부호가 보인다", async () => {
+    show([
+      row(1, { myRate: 0.3, rate: 0.1 + 0.2 }),
+      row(2, { myRate: 95.1, rate: 95.1 }),
+      row(3, { myRate: 96.01, rate: 96 }),
+      row(4, { myRate: 95.99, rate: 96 }),
+    ]);
     const items = await lines();
-    expect(within(items[0]).getByText("±0.00")).toBeInTheDocument();
-    expect(within(items[1]).getByText("±0.00")).toBeInTheDocument();
-    expect(within(items[2]).getByText("+0.01")).toBeInTheDocument();
-    expect(within(items[3]).getByText(`${MINUS}0.01`)).toBeInTheDocument();
-    expect(screen.queryByText("+0.00")).toBeNull();
-    expect(screen.queryByText(`${MINUS}0.00`)).toBeNull();
+    expect(within(items[0]).getByText("±0.00%")).toBeInTheDocument();
+    expect(within(items[1]).getByText("±0.00%")).toBeInTheDocument();
+    expect(within(items[2]).getByText("+0.01%")).toBeInTheDocument();
+    expect(within(items[3]).getByText(`${MINUS}0.01%`)).toBeInTheDocument();
+    expect(screen.queryByText("+0.00%")).toBeNull();
+    expect(screen.queryByText(`${MINUS}0.00%`)).toBeNull();
   });
 
   it("차이 칩 색은 앞=초록·뒤=주황·같음/없음=중립이고, 부호 글자가 같이 있다(색만으로 구분하지 않는다)", async () => {
-    show([row(1, { diff: 2.28 }), row(2, { diff: -4.37 }), row(3, { diff: 0 }), row(4, { myScore: null, myRate: null, diff: null })]);
+    show([
+      row(1, { myRate: 97.84, rate: 96 }),
+      row(2, { myRate: 90, rate: 92.1 }),
+      row(3, { myRate: 95.2, rate: 95.2 }),
+      row(4, { myScore: null, myRate: null, diff: null }),
+    ]);
     const items = await lines();
-    expect(within(items[0]).getByText("+2.28")).toHaveClass("text-done-text", "border-done");
-    expect(within(items[1]).getByText(`${MINUS}4.37`)).toHaveClass("text-weak-text", "border-weak");
-    expect(within(items[2]).getByText("±0.00")).not.toHaveClass("text-done-text", "text-weak-text");
+    expect(within(items[0]).getByText("+1.84%")).toHaveClass("text-done-text", "border-done");
+    expect(within(items[1]).getByText(`${MINUS}2.10%`)).toHaveClass("text-weak-text", "border-weak");
+    expect(within(items[2]).getByText("±0.00%")).not.toHaveClass("text-done-text", "text-weak-text");
     expect(within(items[3]).getByText("내 기록 없음")).not.toHaveClass("text-done-text", "text-weak-text");
-    // 읽기 프로그램용 이름에도 부호가 들어간다
-    expect(within(items[1]).getByLabelText(`상대와의 점수 차 ${MINUS}4.37`)).toBeInTheDocument();
+    // 읽기 프로그램용 이름에도 부호가 들어간다(달성률 차)
+    expect(within(items[1]).getByLabelText(`상대와의 달성률 차 ${MINUS}2.10%`)).toBeInTheDocument();
   });
 });
 
@@ -133,10 +151,10 @@ describe("라이벌 비교 줄 구성 (D65)", () => {
 
   it("일본어도 같은 구조이고 속성은 일본어 표기, 칩 문구와 안내문이 번역된다", async () => {
     state.locale = "ja";
-    show([row(1, { diff: -4.37 }), row(2, { myScore: null, myRate: null, diff: null })]);
+    show([row(1, { myRate: 90, rate: 92.1, diff: -4.37 }), row(2, { myScore: null, myRate: null, diff: null })]);
     const items = await lines();
     expect(items[0]).toHaveTextContent("複合(単色)");
-    expect(within(items[0]).getByText(`${MINUS}4.37`)).toBeInTheDocument();
+    expect(within(items[0]).getByText(`${MINUS}2.10%`)).toBeInTheDocument();
     expect(within(items[0]).getByText("自分 240.38")).toBeInTheDocument();
     expect(within(items[1]).getByText("記録なし")).toBeInTheDocument();
     expect(screen.getByText(`+は自分が上、${MINUS}は自分が下(自分のスコア ${MINUS} 相手のスコア)`)).toBeInTheDocument();
@@ -152,7 +170,7 @@ describe("라이벌 비교 줄 구성 (D65)", () => {
 
 describe("레이팅 비교 문구 (ko/ja)", () => {
   it("새 문구는 ko/ja 둘 다 있고 자리표시자가 같다", () => {
-    const keys = ["ratingLegend", "myScoreLine", "diffNone", "diffAria"] as const;
+    const keys = ["ratingLegend", "myScoreLine", "diffNone", "rateDiffAria"] as const;
     for (const key of keys) {
       const k = ko.Rival[key];
       const j = ja.Rival[key];
