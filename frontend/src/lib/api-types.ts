@@ -578,7 +578,7 @@ export interface RivalPatternSummary {
   scoreDiffSum: number;
   closeCount: number;
   sharedCount: number;
-  /** 공유 곡마다 (내 달성률 − 상대 달성률)의 평균(%p, 소수 첫째 자리). 공유 곡이 없으면 null. 판정(승·무·패)에는 쓰이지 않고 화면에 보이는 값이다(D67 개정). 옛 응답에는 없을 수 있다. */
+  /** 공유 곡마다 (내 달성률 − 상대 달성률)의 평균(%, 소수 첫째 자리). 공유 곡이 없으면 null. 판정(승·무·패)에는 쓰이지 않고 화면에 보이는 값이다(D67 개정). 옛 응답에는 없을 수 있다. */
   rateDiffAvg?: number | null;
 }
 

@@ -124,7 +124,7 @@ describe("RivalCompareView", () => {
     // 총점 차 = 내 총점 - 상대 총점(부호 글자)
     expect(summary).toHaveTextContent("\u2212312.10");
     expect(summary).toHaveTextContent("승 10 무 2 패 7");
-    expect(screen.getByText("+1.90")).toBeInTheDocument();
+    expect(screen.getByText("+0.80%")).toBeInTheDocument(); // 달성률 차: 내 96 − 상대 95.2
     expect(screen.getByText("나 240.00")).toBeInTheDocument();
     expect(screen.getByText("내 기록 없음")).toBeInTheDocument();
     // 목록 맨 아래 안내(내 점수 − 상대 점수)

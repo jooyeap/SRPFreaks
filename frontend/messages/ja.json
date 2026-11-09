@@ -1481,7 +1481,7 @@
     "ratingLegend": "+は自分が上、−は自分が下(自分のスコア − 相手のスコア)",
     "myScoreLine": "自分 {score}",
     "diffNone": "記録なし",
-    "diffAria": "相手とのスコア差 {diff}",
+    "rateDiffAria": "相手との達成率差 {diff}",
     "resultAria": "結果",
     "resultWin": "勝 {n}",
     "resultLose": "敗 {n}",

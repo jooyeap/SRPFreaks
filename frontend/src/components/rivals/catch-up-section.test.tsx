@@ -80,7 +80,7 @@ afterEach(() => {
 
 describe("따라잡을 곡 (D66)", () => {
   it("내가 뒤진 곡만 차이가 작은 순으로 최대 3곡을 보이고, 제목·설명을 쓴다", async () => {
-    show([row(1, { diff: -4.37 }), row(2, { diff: -1.85 }), row(3, { diff: 2.28 })], [row(4, { diff: -0.5 }), row(5, { diff: -9 }), row(6, { diff: -3 })]);
+    show([row(1, { diff: -4.37 }), row(2, { diff: -1.85, myRate: 90, rate: 92.1 }), row(3, { diff: 2.28 })], [row(4, { diff: -0.5, myRate: 94.5, rate: 95.7 }), row(5, { diff: -9 }), row(6, { diff: -3 })]);
     const box = await section();
     expect(within(box).getByRole("heading", { name: "따라잡을 곡" })).toBeInTheDocument();
     expect(within(box).getByText("내가 뒤진 곡 중 차이가 작은 순 · 3곡")).toBeInTheDocument();
@@ -89,9 +89,10 @@ describe("따라잡을 곡 (D66)", () => {
     expect(items[0]).toHaveTextContent("Song 4");
     expect(items[1]).toHaveTextContent("Song 2");
     expect(items[2]).toHaveTextContent("Song 6");
-    // 차이 칩은 부호가 글자로 보이고 뒤진 쪽 색(주황)이다
-    expect(within(items[0]).getByText(`${MINUS}0.50`)).toHaveClass("text-weak-text", "border-weak");
-    expect(within(items[1]).getByText(`${MINUS}1.85`)).toBeInTheDocument();
+    // 선택·정렬은 점수 차(diff) 기준 그대로이고, 차이 칩은 달성률 차(%)로 부호가 글자로 보이며 뒤진 쪽 색(주황)이다
+    expect(within(items[0]).getByText(`${MINUS}1.20%`)).toHaveClass("text-weak-text", "border-weak");
+    expect(within(items[1]).getByText(`${MINUS}2.10%`)).toBeInTheDocument();
+    expect(within(items[0]).queryByText(`${MINUS}0.50`)).toBeNull();
   });
 
   it("앞선 곡·동점·내 기록 없음은 넣지 않는다", async () => {
@@ -165,11 +166,11 @@ describe("따라잡을 곡 (D66)", () => {
 
   it("일본어: 제목·설명·버튼이 번역되고 차이 칩 부호는 그대로다", async () => {
     state.locale = "ja";
-    show([row(1, { diff: -1.85 })]);
+    show([row(1, { diff: -1.85, myRate: 90, rate: 92.1 })]);
     const box = await section();
     expect(within(box).getByRole("heading", { name: "追いつきたい曲" })).toBeInTheDocument();
     expect(within(box).getByText("自分が負けている曲のうち、差が小さい順 · 1曲")).toBeInTheDocument();
-    expect(within(box).getByText(`${MINUS}1.85`)).toBeInTheDocument();
+    expect(within(box).getByText(`${MINUS}2.10%`)).toBeInTheDocument();
     expect(within(box).queryByText(/[가-힣]/)).toBeNull();
   });
 });

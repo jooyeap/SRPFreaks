@@ -5,7 +5,7 @@ import Link from "next/link";
 import { RivalBarChart } from "@/components/rivals/RivalBarChart";
 import { RivalDotChart } from "@/components/rivals/RivalDotChart";
 import { RivalRadarChart } from "@/components/rivals/RivalRadarChart";
-import { ScoreDiffChip } from "@/components/rivals/ScoreDiffChip";
+import { RateDiffChip } from "@/components/rivals/RateDiffChip";
 import { Segment, TierChip } from "@/components/rivals/Segment";
 import { SetlistAddCell } from "@/components/rivals/SetlistAddCell";
 import { ChartLine } from "@/components/table/ChartLine";
@@ -43,13 +43,13 @@ function signedSum(value: number): string {
   return formatScoreDiff(value)?.text ?? "–";
 }
 
-/** 속성별 평균 달성률 차 글자(`+1.8%p`). 공유 곡이 없거나(0곡) 값이 없으면 `–`. 부호는 글자로 보인다. */
+/** 속성별 평균 달성률 차 글자(`+1.8%`). 공유 곡이 없거나(0곡) 값이 없으면 `–`. 부호는 글자로 보인다. */
 function rateDiffText(pattern: RivalPatternSummary): string {
   return pattern.sharedCount === 0 ? "–" : (formatRateDiff(pattern.rateDiffAvg) ?? "–");
 }
 
 /**
- * 속성 줄 오른쪽의 값: 우세·열세 탭은 평균 달성률 차(`+1.8%p`, 아래에 작은 라벨 `평균 달성률 차`), 접전 탭은 접전 곡 수.
+ * 속성 줄 오른쪽의 값: 우세·열세 탭은 평균 달성률 차(`+1.8%`, 아래에 작은 라벨 `평균 달성률 차`), 접전 탭은 접전 곡 수.
  * 속성을 우세·열세로 나누고 정렬하는 기준은 그대로 레이팅 점수 차 합계이고, 여기 보이는 값만 달성률 차다.
  */
 function PatternValue({ pattern, tab }: { pattern: RivalPatternSummary; tab: DashTab }) {
@@ -126,7 +126,7 @@ function PreviewList({
             level={row.level}
             aside={
               <div className="flex w-[72px] shrink-0 flex-col items-end gap-1.5">
-                <ScoreDiffChip diff={row.diff} />
+                <RateDiffChip myRate={row.myRate} rate={row.rate} />
                 {tab === "weak" ? <SetlistAddCell viewerId={viewerId} songDifficultyId={row.songDifficultyId} title={row.title} /> : null}
               </div>
             }

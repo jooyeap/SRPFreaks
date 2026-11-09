@@ -121,28 +121,28 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(box).toHaveTextContent("승 11 무 4 패 10");
   });
 
-  it("요약 카드 3개가 우세·열세·접전 속성과 값(평균 달성률 차 %p / 접전 곡 수)을 보이고 점수 차 합계는 보이지 않는다", async () => {
+  it("요약 카드 3개가 우세·열세·접전 속성과 값(평균 달성률 차 % / 접전 곡 수)을 보이고 점수 차 합계는 보이지 않는다", async () => {
     show();
     const box = await dashboard();
     const cards = within(within(box).getByRole("group", { name: "요약" })).getAllByRole("button");
     expect(cards).toHaveLength(3);
     expect(cards[0]).toHaveTextContent("우세 속성");
     expect(cards[0]).toHaveTextContent("단일");
-    expect(cards[0]).toHaveTextContent("평균 달성률 차 +1.8%p");
+    expect(cards[0]).toHaveTextContent("평균 달성률 차 +1.8%");
     expect(cards[0]).not.toHaveTextContent("+30.50");
     expect(cards[1]).toHaveTextContent("열세 속성");
     expect(cards[1]).toHaveTextContent("삼중");
-    expect(cards[1]).toHaveTextContent("평균 달성률 차 −3.2%p");
+    expect(cards[1]).toHaveTextContent("평균 달성률 차 −3.2%");
     expect(cards[1]).not.toHaveTextContent(`${MINUS}42.67`);
     expect(cards[2]).toHaveTextContent("접전(±1 이내)");
     expect(cards[2]).toHaveTextContent("복합");
     expect(cards[2]).toHaveTextContent("접전 5곡");
-    expect(cards[2]).not.toHaveTextContent("%p");
+    expect(cards[2]).not.toHaveTextContent("%");
   });
 
   it("카드의 값(평균 달성률 차)과 카드를 고르는 기준(점수 차 합계)이 어긋날 수 있다: 우세 카드의 값이 −로 보일 수 있다", async () => {
-    // 단일: 큰 점수 차 몇 곡으로 합계 +50.00이라 우세 카드로 뽑히지만, 점수는 95%에서 멈추므로 달성률 차 평균은 −0.4%p일 수 있다.
-    // 복합: 합계 +10.00이지만 달성률 차 평균은 +2.3%p. 카드는 기존 기준(합계 큰 순)대로 단일을 고르므로 우세 카드에 `−0.4%p`가 보인다.
+    // 단일: 큰 점수 차 몇 곡으로 합계 +50.00이라 우세 카드로 뽑히지만, 점수는 95%에서 멈추므로 달성률 차 평균은 −0.4%일 수 있다.
+    // 복합: 합계 +10.00이지만 달성률 차 평균은 +2.3%. 카드는 기존 기준(합계 큰 순)대로 단일을 고르므로 우세 카드에 `−0.4%`가 보인다.
     show([
       pattern("SINGLE", "단일", { wins: 3, ties: 0, losses: 7, scoreDiffSum: 50, closeCount: 0, sharedCount: 10, rateDiffAvg: -0.4 }),
       pattern("COMPOUND", "복합", { wins: 8, ties: 0, losses: 2, scoreDiffSum: 10, closeCount: 0, sharedCount: 10, rateDiffAvg: 2.3 }),
@@ -153,7 +153,7 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     const box = await dashboard();
     const strongCard = within(within(box).getByRole("group", { name: "요약" })).getAllByRole("button")[0];
     expect(strongCard).toHaveTextContent("단일");
-    expect(strongCard).toHaveTextContent("평균 달성률 차 −0.4%p");
+    expect(strongCard).toHaveTextContent("평균 달성률 차 −0.4%");
     expect(strongCard).not.toHaveTextContent("복합");
   });
 
@@ -161,10 +161,17 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     show();
     const box = await dashboard();
     const rows = within(within(box).getByRole("list", { name: "속성별 승패" })).getAllByRole("listitem");
-    expect(rows[0]).toHaveTextContent("+1.8%p");
-    expect(rows[1]).toHaveTextContent("±0.0%p");
-    expect(rows[2]).toHaveTextContent("−0.4%p");
-    expect(rows[3]).not.toHaveTextContent("%p"); // 이중 0곡
+    expect(rows[0]).toHaveTextContent("+1.8%");
+    expect(rows[1]).toHaveTextContent("±0.0%");
+    expect(rows[2]).toHaveTextContent("−0.4%");
+    expect(rows[3]).not.toHaveTextContent("%"); // 이중 0곡
+  });
+
+  it("`%p`는 화면에 남지 않고 단위는 `%`만 나온다(2026-11-09)", async () => {
+    show();
+    const box = await dashboard();
+    expect(box.textContent).not.toContain("%p");
+    expect(box.textContent).toContain("%");
   });
 
   it("카드를 누르면 해당 탭으로 바뀌고 속성별 상세 구역으로 내려간다", async () => {
@@ -204,14 +211,14 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(names()).toHaveLength(3);
   });
 
-  it("속성 줄은 이름·`승 N · 무 N · 패 N`·값(우세·열세 탭은 평균 달성률 차 %p, 접전 탭은 접전 곡 수)과 카테고리 상세 링크를 가진다", async () => {
+  it("속성 줄은 이름·`승 N · 무 N · 패 N`·값(우세·열세 탭은 평균 달성률 차 %, 접전 탭은 접전 곡 수)과 카테고리 상세 링크를 가진다", async () => {
     show(PATTERNS, { tab: "strong" });
     const box = await dashboard();
     const detail = within(box).getByRole("region", { name: "속성별 상세" });
     const first = (await within(detail).findAllByRole("link"))[0];
     expect(first).toHaveAttribute("href", "/players/7/compare/SINGLE?from=strong");
     expect(first).toHaveTextContent("승 6 · 무 1 · 패 2");
-    expect(first).toHaveTextContent("+1.8%p");
+    expect(first).toHaveTextContent("+1.8%");
     expect(first).toHaveTextContent("평균 달성률 차");
     expect(first).not.toHaveTextContent("+30.50");
   });
@@ -231,13 +238,13 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     const bars = within(box).getByRole("list", { name: "속성별 승패" });
     const rows = within(bars).getAllByRole("listitem");
     expect(rows.map((r) => r.getAttribute("data-key"))).toEqual(["SINGLE", "COMPOUND", "COMPOSITE_SINGLE", "DOUBLE", "TRIPLE"]);
-    // 단일: 패 2 · 승 6 · +1.8%p. 점수 차 합계(+30.50)는 보이지 않는다
+    // 단일: 패 2 · 승 6 · +1.8%. 점수 차 합계(+30.50)는 보이지 않는다
     expect(rows[0]).toHaveTextContent("패 2");
     expect(rows[0]).toHaveTextContent("승 6");
-    expect(rows[0]).toHaveTextContent("+1.8%p");
+    expect(rows[0]).toHaveTextContent("+1.8%");
     expect(rows[0]).not.toHaveTextContent("+30.50");
-    // 복합(단일): −0.4%p. 합계 −18.00은 보이지 않는다
-    expect(rows[2]).toHaveTextContent("−0.4%p");
+    // 복합(단일): −0.4%. 합계 −18.00은 보이지 않는다
+    expect(rows[2]).toHaveTextContent("−0.4%");
     expect(rows[2]).not.toHaveTextContent(`${MINUS}18.00`);
     // 읽기 프로그램용 라벨 글자(숨김)가 값 앞에 붙는다
     expect(within(rows[0]).getByText("평균 달성률 차")).toHaveClass("sr-only");
@@ -257,7 +264,7 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(within(rows[0]).queryByText("※ 5곡 미만이라 참고용")).toBeNull(); // 9곡
     expect(within(rows[3]).getByText("※ 5곡 미만이라 참고용")).toBeInTheDocument(); // 이중 0곡
     expect(rows[3]).toHaveTextContent("–");
-    expect(rows[3]).not.toHaveTextContent("%p"); // 값 옆에 ※를 붙이지도, 0.0%p를 쓰지도 않는다
+    expect(rows[3]).not.toHaveTextContent("%"); // 값 옆에 ※를 붙이지도, 0.0%를 쓰지도 않는다
     expect(within(rows[4]).queryByText("※ 5곡 미만이라 참고용")).toBeNull(); // 삼중 5곡
     // 아래 안내 한 줄(맨 오른쪽 숫자 = 평균 달성률 차)
     expect(within(box).getByText("막대: 왼쪽 패(열세) · 오른쪽 승(우세) · 오른쪽 숫자는 평균 달성률 차")).toBeInTheDocument();
@@ -292,7 +299,9 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     const weak = await within(box).findByRole("region", { name: "가장 크게 뒤진 곡" });
     const items = await within(weak).findAllByRole("listitem");
     expect(items.map((li) => li.textContent)).toEqual([expect.stringContaining("Song 11"), expect.stringContaining("Song 8")]); // −12, −7
-    expect(within(items[0]).getByText(`${MINUS}12.00`)).toBeInTheDocument();
+    // 칩은 점수 차(−12.00)가 아니라 달성률 차(내 94 − 상대 95 = −1.00%)이고, 곡을 고르는 순서는 서버(점수) 그대로다
+    expect(within(items[0]).getByText(`${MINUS}1.00%`)).toBeInTheDocument();
+    expect(within(items[0]).queryByText(`${MINUS}12.00`)).toBeNull();
     expect(await within(weak).findAllByRole("button", { name: /세트리스트에 담기$/ })).toHaveLength(2);
     cleanup();
 
@@ -349,7 +358,7 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     const cards = within(within(box).getByRole("group", { name: "サマリー" })).getAllByRole("button");
     expect(cards[0]).toHaveTextContent("優勢の属性");
     expect(cards[0]).toHaveTextContent("単色");
-    expect(cards[0]).toHaveTextContent("平均達成率差 +1.8%p");
+    expect(cards[0]).toHaveTextContent("平均達成率差 +1.8%");
     expect(cards[1]).toHaveTextContent("劣勢の属性");
     expect(cards[2]).toHaveTextContent("接戦（±1以内）");
     const detail = within(box).getByRole("region", { name: "属性別の詳細" });

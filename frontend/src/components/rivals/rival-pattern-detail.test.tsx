@@ -19,10 +19,10 @@ import { RivalPatternDetailView } from "@/components/rivals/RivalPatternDetailVi
 import type { RivalDetailFilter, RivalDetailRow, RivalSummaryDetailResponse } from "@/lib/api-types";
 
 const MINUS = "−";
-function detailRow(id: number, diff: number): RivalDetailRow {
+function detailRow(id: number, diff: number, myRate = 95): RivalDetailRow {
   return {
     songDifficultyId: id, songId: 100 + id, title: `Song ${id}`, part: "BASS", difficulty: "EXTREME", level: 9.2, tier: 5.6, pattern: "삼중",
-    rate: 96, stage: "SS", score: 240, myRate: 95, myStage: "SS", myScore: 240 + diff, diff,
+    rate: 96, stage: "SS", score: 240, myRate, myStage: "SS", myScore: 240 + diff, diff,
   };
 }
 function response(over: Partial<RivalSummaryDetailResponse> = {}): RivalSummaryDetailResponse {
@@ -30,7 +30,7 @@ function response(over: Partial<RivalSummaryDetailResponse> = {}): RivalSummaryD
     userId: 7, nickname: "Rumi",
     summary: { pattern: "삼중", key: "TRIPLE", wins: 4, ties: 1, losses: 6, scoreDiffSum: -42.67, closeCount: 3, sharedCount: 11 },
     filterCounts: { all: 11, lose: 6, close: 3, win: 4 },
-    rows: { content: [detailRow(1, -4.37), detailRow(2, 2.28), detailRow(3, 0)], page: 0, size: 20, totalElements: 3, totalPages: 1 },
+    rows: { content: [detailRow(1, -4.37, 93.9), detailRow(2, 2.28, 97.84), detailRow(3, 0, 96)], page: 0, size: 20, totalElements: 3, totalPages: 1 },
     ...over,
   };
 }
@@ -93,9 +93,11 @@ describe("라이벌 속성 상세 (D67, 6단계)", () => {
     expect(items).toHaveLength(3);
     expect(items[0]).toHaveTextContent("Song 1");
     expect(items[0]).toHaveTextContent(`나 235.63`);
-    expect(within(items[0]).getByText(`${MINUS}4.37`)).toHaveClass("border-weak");
-    expect(within(items[1]).getByText("+2.28")).toHaveClass("border-done");
-    expect(within(items[2]).getByText("±0.00")).toBeInTheDocument();
+    // 칩은 달성률 차(%, 내 − 상대): 93.9−96=−2.10%, 97.84−96=+1.84%, 96−96=±0.00%
+    expect(within(items[0]).getByText(`${MINUS}2.10%`)).toHaveClass("border-weak");
+    expect(within(items[1]).getByText("+1.84%")).toHaveClass("border-done");
+    expect(within(items[2]).getByText("±0.00%")).toBeInTheDocument();
+    expect(within(items[0]).queryByText(`${MINUS}4.37`)).toBeNull();
     expect(within(items[0]).getByRole("link", { name: /Song 1/ })).toHaveAttribute("href", "/songs/101?chart=1");
     const url = new URL(String(fetchMock.mock.calls[0][0]), "http://localhost");
     expect(url.pathname).toBe("/api/v1/players/7/compare/summary/TRIPLE");
