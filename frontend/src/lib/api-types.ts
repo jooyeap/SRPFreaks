@@ -565,6 +565,60 @@ export interface RivalCompareRatingResponse {
   other: RivalRatingRow[];
 }
 
+/** 라이벌 대시보드(D67)의 속성 키. 속성 한 줄의 `key`이자 카테고리 상세 주소의 마지막 조각이다. */
+export type RivalPatternKey = "SINGLE" | "COMPOUND" | "COMPOSITE_SINGLE" | "DOUBLE" | "TRIPLE";
+
+/** 속성 한 줄(D67). pattern은 화면 라벨(`복합(단일)` 등), 합계 값들은 diff = 내 점수 - 상대 점수(표시 둘째 자리 기준). */
+export interface RivalPatternSummary {
+  pattern: string;
+  key: RivalPatternKey;
+  wins: number;
+  ties: number;
+  losses: number;
+  scoreDiffSum: number;
+  closeCount: number;
+  sharedCount: number;
+}
+
+/** GET /players/{id}/compare/summary. 속성 다섯 줄은 공유 곡이 없어도 항상 같은 순서로 온다. 서열 난이도별·분포는 이 화면(6단계)에서 쓰지 않는다. */
+export interface RivalSummaryResponse {
+  userId: number;
+  nickname: string;
+  closeMargin: number;
+  totals: { wins: number; ties: number; losses: number; closeCount: number; sharedCount: number; scoreDiffSum: number };
+  patterns: RivalPatternSummary[];
+}
+
+export type RivalDetailFilter = "ALL" | "LOSE" | "CLOSE" | "WIN";
+export type RivalDetailSort = "DIFF_ASC" | "DIFF_DESC" | "CLOSE" | "TITLE";
+
+/** 속성별 곡 목록의 한 줄. rate·stage·score는 상대, myRate·myStage·myScore는 나(둘 다 기록이 있는 곡만 나온다). */
+export interface RivalDetailRow {
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  tier: number | null;
+  pattern: string | null;
+  rate: number;
+  stage: AchievementStage;
+  score: number;
+  myRate: number;
+  myStage: AchievementStage;
+  myScore: number;
+  diff: number;
+}
+
+export interface RivalSummaryDetailResponse {
+  userId: number;
+  nickname: string;
+  summary: RivalPatternSummary;
+  filterCounts: { all: number; lose: number; close: number; win: number };
+  rows: PageResponse<RivalDetailRow>;
+}
+
 export type RivalResult = "WIN" | "LOSE" | "TIE" | "THEIRS_ONLY";
 
 /** 곡별 승패 한 줄. myRate는 상대만 기록 있는 줄이면 null. diff = 내 달성률 - 상대 달성률. */
