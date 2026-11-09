@@ -8,8 +8,11 @@ import com.srpfreaks.backend.dto.RivalRegistrantResponse;
 import com.srpfreaks.backend.dto.RivalRequest;
 import com.srpfreaks.backend.dto.RivalResponse;
 import com.srpfreaks.backend.dto.RivalStatusResponse;
+import com.srpfreaks.backend.dto.RivalSummaryDetailResponse;
+import com.srpfreaks.backend.dto.RivalSummaryResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.RivalService;
+import com.srpfreaks.backend.service.RivalSummaryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +39,7 @@ import java.util.List;
 public class RivalController {
 
     private final RivalService rivalService;
+    private final RivalSummaryService rivalSummaryService;
 
     @GetMapping("/rivals")
     public List<RivalResponse> list(@AuthenticationPrincipal AuthenticatedUser user) {
@@ -82,6 +86,26 @@ public class RivalController {
                                                     @RequestParam(defaultValue = "0") int page,
                                                     @RequestParam(defaultValue = "" + RivalService.DEFAULT_PAGE_SIZE) int size) {
         return rivalService.compareCharts(user.id(), userId, result, page, size);
+    }
+
+    /** 라이벌 대시보드 집계(D67): 두 사람이 모두 기록한 전체 곡을 속성별·서열 난이도별로. 상대가 공개 ACTIVE 유저가 아니면 404. */
+    @GetMapping("/players/{userId}/compare/summary")
+    public RivalSummaryResponse compareSummary(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long userId) {
+        return rivalSummaryService.summary(user.id(), userId);
+    }
+
+    /**
+     * 속성별 곡 목록(D67). key = SINGLE·COMPOUND·COMPOSITE_SINGLE·DOUBLE·TRIPLE, filter = ALL·LOSE·CLOSE·WIN,
+     * sort = DIFF_ASC·DIFF_DESC·CLOSE·TITLE(비우면 필터에 맞는 기본). 허용 밖의 값은 400.
+     */
+    @GetMapping("/players/{userId}/compare/summary/{key}")
+    public RivalSummaryDetailResponse compareSummaryDetail(@AuthenticationPrincipal AuthenticatedUser user,
+                                                           @PathVariable Long userId, @PathVariable String key,
+                                                           @RequestParam(required = false) String filter,
+                                                           @RequestParam(required = false) String sort,
+                                                           @RequestParam(defaultValue = "0") int page,
+                                                           @RequestParam(defaultValue = "" + RivalSummaryService.DEFAULT_PAGE_SIZE) int size) {
+        return rivalSummaryService.detail(user.id(), userId, key, filter, sort, page, size);
     }
 
     @GetMapping("/song-difficulties/{songDifficultyId}/rival-records")

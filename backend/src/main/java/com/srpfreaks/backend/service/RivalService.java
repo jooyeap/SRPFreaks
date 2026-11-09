@@ -325,8 +325,8 @@ public class RivalService {
         }
     }
 
-    /** 비교 상대: 나 자신이 아니고 공개한 ACTIVE 유저. 아니면 404. */
-    private User findComparable(Long userId, Long targetUserId) {
+    /** 비교 상대: 나 자신이 아니고 공개한 ACTIVE 유저. 아니면 404. 라이벌 대시보드 집계(RivalSummaryService)도 같은 규칙을 쓴다. */
+    User findComparable(Long userId, Long targetUserId) {
         if (userId.equals(targetUserId)) {
             throw new ApiException(ErrorCode.NOT_FOUND);
         }
