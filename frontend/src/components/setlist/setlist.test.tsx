@@ -304,7 +304,9 @@ describe("세트리스트", () => {
       renderWith(<SetlistTab userId={1} />);
 
       const section = await screen.findByRole("region", { name: "내 실력대 추천" });
-      expect(await within(section).findByText(/내 평균 난이도/)).toHaveTextContent("6.2");
+      expect(await within(section).findByText(/내 평균 난이도 .*기준입니다/)).toHaveTextContent("6.2");
+      // 문장 끝에 `?` 설명 버튼(서열표 첫 화면·홈 진행도 카드와 같은 컴포넌트·같은 문구)
+      expect(within(section).getByRole("button", { name: "내 평균 난이도 설명 보기" })).toBeInTheDocument();
       expect(within(section).getByRole("heading", { name: /SS 기준/ })).toHaveTextContent("평균 \u22120.6 ~ \u22120.1");
       expect(within(section).getByRole("heading", { name: /^S 기준/ })).toHaveTextContent("평균 \u22120.1 ~ +0.4");
       const ss = within(within(section).getByRole("list", { name: "SS 기준 추천" })).getAllByRole("listitem");
