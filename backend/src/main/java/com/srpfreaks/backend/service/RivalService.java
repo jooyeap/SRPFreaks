@@ -11,14 +11,18 @@ import com.srpfreaks.backend.dto.RivalRecordResponse;
 import com.srpfreaks.backend.dto.RivalRegistrantResponse;
 import com.srpfreaks.backend.dto.RivalResponse;
 import com.srpfreaks.backend.dto.RivalStatusResponse;
+import com.srpfreaks.backend.dto.RivalSummaryResponse;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
+import com.srpfreaks.backend.entity.DifficultyType;
+import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.Rival;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.User;
 import com.srpfreaks.backend.entity.UserStatus;
+import com.srpfreaks.backend.mapper.RatingCandidate;
 import com.srpfreaks.backend.repository.AppSettingRepository;
 import com.srpfreaks.backend.repository.ChartBest;
 import com.srpfreaks.backend.repository.OptionRecordRepository;
@@ -208,51 +212,64 @@ public class RivalService {
     }
 
     /**
-     * 곡별 승패 목록. 정렬: 차이(절댓값) 작은 순 → 레벨 높은 순 → 채보 id. 상대만 기록 있는 줄은 상대 달성률 높은 순 → 레벨 높은 순.
-     * 두 사람의 채보별 최고 기록은 각각 쿼리 한 번이고, 곡명 등은 화면에 보일 한 페이지만 읽는다.
+     * 곡별 승패 목록(D56, D67 개정). **라이벌 대시보드 집계와 같은 범위·같은 판정**이다: 두 사람이 모두 기록한 레이팅 대상 채보 전체를
+     * 달성률 차(내 달성률 - 상대 달성률, 반올림 없음)로 가른다(승 > 0, 패 < 0, 무 = 0). 그래서 탭 개수(승·패·무)는 대시보드 totals와,
+     * `상대만` 개수는 속성별 onlyTheirs 합과 항상 같다. 계산은 RivalSummaryCalculator를 그대로 쓰고(두 번 만들지 않는다) 여기서는
+     * 결과 필터·정렬·페이지만 얹는다.
+     * 정렬: 차이(절댓값) 작은 순 → 레벨 높은 순 → 채보 id. 상대만 기록 있는 줄은 상대 달성률 높은 순 → 레벨 높은 순 → 채보 id.
+     * 두 사람의 레이팅 대상 채보는 각각 한 번씩 읽고(SkillService.scoredChartsAll, N+1 없음) 곡 정보는 그 후보에 이미 들어 있다.
      */
     public RivalCompareChartsResponse compareCharts(Long userId, Long targetUserId, String result, int page, int size) {
         Result wanted = parseResult(result);
         findComparable(userId, targetUserId);
-        NoteOption option = skillService.ratingNoteOption();
-        Map<Long, ChartBest> mine = bestsOf(userId, option);
-        Map<Long, ChartBest> theirs = bestsOf(targetUserId, option);
+        Map<Long, List<SkillService.ScoredChart>> charts = skillService.scoredChartsAll(List.of(userId, targetUserId));
+        List<SkillService.ScoredChart> mine = charts.getOrDefault(userId, List.of());
+        List<SkillService.ScoredChart> theirs = charts.getOrDefault(targetUserId, List.of());
 
-        List<RivalChartRow> rows = new ArrayList<>();
-        for (ChartBest t : theirs.values()) {
-            ChartBest m = mine.get(t.songDifficultyId());
-            if (classify(m, t) != wanted) {
-                continue;
-            }
-            BigDecimal diff = m == null ? null : m.bestRate().subtract(t.bestRate());
-            rows.add(new RivalChartRow(t.songDifficultyId(), null, null, null, null, t.level(),
-                    m == null ? null : m.bestRate(), t.bestRate(), diff));
+        List<RivalSummaryCalculator.Shared> shared = RivalSummaryCalculator.share(mine, theirs).stream()
+                .filter(s -> RivalSummaryCalculator.PATTERN_ORDER.contains(s.pattern())).toList();
+        RivalSummaryCalculator.Unmatched unmatched = RivalSummaryCalculator.unmatched(mine, theirs);
+        RivalSummaryResponse.Totals totals = RivalSummaryCalculator.totalsOf(shared);
+        RivalCounts counts = new RivalCounts(totals.wins(), totals.losses(), totals.ties(),
+                RivalSummaryCalculator.totalOnlyTheirs(unmatched), RivalSummaryCalculator.totalOnlyMine(unmatched));
+
+        List<RivalChartRow> rows;
+        if (wanted == Result.THEIRS_ONLY) {
+            Set<Long> myIds = mine.stream().map(m -> m.candidate().songDifficultyId()).collect(Collectors.toSet());
+            rows = theirs.stream()
+                    .filter(t -> RivalSummaryCalculator.PATTERN_ORDER.contains(t.pattern()))
+                    .filter(t -> !myIds.contains(t.candidate().songDifficultyId()))
+                    .sorted(Comparator.comparing((SkillService.ScoredChart t) -> t.candidate().bestRate(), Comparator.reverseOrder())
+                            .thenComparing((SkillService.ScoredChart t) -> t.candidate().level(), Comparator.reverseOrder())
+                            .thenComparing(t -> t.candidate().songDifficultyId()))
+                    .map(t -> chartRow(t.candidate(), null, null))
+                    .toList();
+        } else {
+            rows = shared.stream()
+                    .filter(s -> switch (wanted) {
+                        case WIN -> RivalSummaryCalculator.matches(RivalSummaryCalculator.Filter.WIN, s);
+                        case LOSE -> RivalSummaryCalculator.matches(RivalSummaryCalculator.Filter.LOSE, s);
+                        case TIE -> RivalSummaryCalculator.isTie(s);
+                        case THEIRS_ONLY -> false;
+                    })
+                    .sorted(RivalSummaryCalculator.comparator(RivalSummaryCalculator.Sort.CLOSE))
+                    .map(s -> chartRow(s.chart(), s.mine().candidate().bestRate(), s.rateDiff()))
+                    .toList();
         }
-        Comparator<RivalChartRow> order = wanted == Result.THEIRS_ONLY
-                ? Comparator.comparing(RivalChartRow::theirRate, Comparator.reverseOrder())
-                : Comparator.comparing((RivalChartRow r) -> r.diff().abs());
-        rows.sort(order.thenComparing(RivalChartRow::level, Comparator.reverseOrder())
-                .thenComparing(RivalChartRow::songDifficultyId));
 
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int pageIndex = Math.max(page, 0);
         int from = (int) Math.min((long) pageIndex * pageSize, rows.size());
         int to = Math.min(from + pageSize, rows.size());
-        List<RivalChartRow> slice = rows.subList(from, to);
-        Map<Long, SongDifficulty> charts = songDifficultyRepository
-                .findActiveWithSongByIdIn(slice.stream().map(RivalChartRow::songDifficultyId).toList()).stream()
-                .collect(Collectors.toMap(SongDifficulty::getId, Function.identity()));
-        List<RivalChartRow> content = slice.stream()
-                .filter(r -> charts.containsKey(r.songDifficultyId()))
-                .map(r -> {
-                    SongDifficulty d = charts.get(r.songDifficultyId());
-                    return new RivalChartRow(d.getId(), d.getSong().getId(), d.getSong().getTitle(), d.getInstrumentPart(),
-                            d.getDifficultyType(), d.getLevel(), r.myRate(), r.theirRate(), r.diff());
-                })
-                .toList();
         int totalPages = (rows.size() + pageSize - 1) / pageSize;
-        return new RivalCompareChartsResponse(counts(mine, theirs),
-                new PageResponse<>(content, pageIndex, pageSize, rows.size(), totalPages));
+        return new RivalCompareChartsResponse(counts,
+                new PageResponse<>(rows.subList(from, to), pageIndex, pageSize, rows.size(), totalPages));
+    }
+
+    /** 곡별 승패 한 줄: 후보(레이팅 대상 채보 + 상대 최고 달성률)에서 곡 정보를 그대로 옮긴다. myRate·diff는 상대만 있는 줄이면 null. */
+    private static RivalChartRow chartRow(RatingCandidate c, BigDecimal myRate, BigDecimal diff) {
+        return new RivalChartRow(c.songDifficultyId(), c.songId(), c.title(), InstrumentPart.valueOf(c.part()),
+                DifficultyType.valueOf(c.difficulty()), c.level(), myRate, c.bestRate(), diff);
     }
 
     /** 곡 상세의 라이벌 기록: 이 채보에 대한 내 라이벌(볼 수 있는 사람만, 등록 순) 기록과 내 기록과의 차이. */

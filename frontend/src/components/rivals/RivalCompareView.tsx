@@ -6,7 +6,7 @@ import { useState } from "react";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 import { Pager } from "@/components/Pager";
 import { ApiError } from "@/lib/api";
-import type { RivalChartRow, RivalCounts, RivalRatingRow, RivalResult } from "@/lib/api-types";
+import type { RivalChartRow, RivalRatingRow, RivalResult } from "@/lib/api-types";
 import { formatRate } from "@/lib/format";
 import { ChartBadge } from "@/components/table/Badges";
 import { ChartLine } from "@/components/table/ChartLine";
@@ -22,7 +22,7 @@ import { useTranslations } from "next-intl";
 type View = "rating" | "charts";
 type Group = "single" | "other";
 
-const RESULTS: readonly { value: RivalResult; key: "resultWin" | "resultLose" | "resultTie" | "resultTheirs"; count: keyof RivalCounts }[] = [
+const RESULTS: readonly { value: RivalResult; key: "resultWin" | "resultLose" | "resultTie" | "resultTheirs"; count: "win" | "lose" | "tie" | "theirsOnly" }[] = [
   { value: "WIN", key: "resultWin", count: "win" },
   { value: "LOSE", key: "resultLose", count: "lose" },
   { value: "TIE", key: "resultTie", count: "tie" },
@@ -97,6 +97,8 @@ export function RivalCompareView({
     queryFn: ({ signal }) => fetchCompareCharts(targetId, result, page, signal),
     enabled: view === "charts" && rating.isSuccess,
     retry: false,
+    // 탭을 바꾸거나 쪽을 넘기는 동안에도 탭 개수는 이전 응답 값을 유지한다(목록만 불러오는 중으로 보인다).
+    placeholderData: (previous) => previous,
   });
 
   const back = (
@@ -120,7 +122,10 @@ export function RivalCompareView({
     );
   }
   const data = rating.data;
-  const counts = data.counts;
+  // 곡별 승패 탭 개수는 곡별 승패 응답(`compare/charts`)의 counts를 쓴다. 대시보드 요약과 같은 범위·같은 판정이라
+  // 승·무·패는 요약 totals와, 상대만은 속성별 `상대만` 합과 항상 같다(D67 개정). 아직 못 받았으면 `–`.
+  const counts = charts.data?.counts ?? null;
+  const chartsLoading = charts.isPending || charts.isPlaceholderData;
   const rows = group === "single" ? data.single : data.other;
 
   return (
@@ -172,15 +177,15 @@ export function RivalCompareView({
         <section aria-label={t("viewCharts")} className="flex flex-col gap-3">
           <Segment<RivalResult>
             label={t("resultAria")}
-            items={RESULTS.map((r) => ({ value: r.value, text: t(r.key, { n: counts[r.count] }) }))}
+            items={RESULTS.map((r) => ({ value: r.value, text: t(r.key, { n: counts ? counts[r.count] : "–" }) }))}
             value={result}
             onChange={(next) => {
               setResult(next);
               setPage(0);
             }}
           />
-          <p className="text-xs text-fg-dim">{t("chartsOrder")}</p>
-          {charts.isPending ? (
+          <p className="text-xs text-fg-dim">{t(result === "THEIRS_ONLY" ? "chartsBasisTheirs" : "chartsBasis")}</p>
+          {chartsLoading && !charts.isError ? (
             <p className="text-sm text-fg-sub">{tc("Common.loading")}</p>
           ) : charts.isError ? (
             <p role="alert" className="text-sm text-fg">{charts.error instanceof ApiError ? charts.error.message : t("loadFailed")}</p>

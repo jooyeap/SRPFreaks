@@ -71,6 +71,7 @@ class RivalSummaryServiceDbTest {
     @Autowired SkillMapper skillMapper;
 
     RivalSummaryService service;
+    RivalService rivalService;
     User me;
     User rival;
     DifficultyTable table;
@@ -79,7 +80,7 @@ class RivalSummaryServiceDbTest {
     @BeforeEach
     void setUp() {
         SkillService skillService = new SkillService(appSettingRepository, difficultyTableRepository, playerTierRepository, skillMapper);
-        RivalService rivalService = new RivalService(rivalRepository, userRepository, optionRecordRepository,
+        rivalService = new RivalService(rivalRepository, userRepository, optionRecordRepository,
                 songDifficultyRepository, appSettingRepository, skillService, Clock.systemUTC());
         service = new RivalSummaryService(rivalService, skillService);
         me = publicUser("sub-me", "Me");
@@ -391,5 +392,27 @@ class RivalSummaryServiceDbTest {
         assertThat(r.summary().sharedCount()).isZero();
         assertThat(r.rows().content()).isEmpty();
         assertThat(r.rows().totalElements()).isZero();
+    }
+
+    // ---------- 곡별 승패 보기와 대시보드의 일치(D67 개정) ----------
+
+    @Test
+    void 곡별_승패의_탭_개수는_실제_DB에서도_대시보드_totals와_상대만_합계와_같다() {
+        // 대시보드 집계와 같은 범위(레이팅 대상 채보 전체)·같은 판정(달성률 차)이어야 한다. build()가 만든 장면을 그대로 쓴다.
+        RivalSummaryResponse summary = service.summary(me.getId(), rival.getId());
+        var charts = rivalService.compareCharts(me.getId(), rival.getId(), "LOSE", 0, 50);
+
+        assertThat(charts.counts().win()).isEqualTo(summary.totals().wins());
+        assertThat(charts.counts().tie()).isEqualTo(summary.totals().ties());
+        assertThat(charts.counts().lose()).isEqualTo(summary.totals().losses());
+        assertThat(charts.counts().theirsOnly()).isEqualTo(summary.patterns().stream().mapToInt(RivalSummaryResponse.PatternSummary::onlyTheirs).sum());
+        assertThat(charts.counts().onlyMine()).isEqualTo(summary.patterns().stream().mapToInt(RivalSummaryResponse.PatternSummary::onlyMine).sum());
+        // 진 곡 목록은 달성률 차가 음수인 곡만이고 |차이| 작은 순이다: 이중 -1.00, -1.01(접전 경계), 복합 -10.00
+        assertThat(charts.page().totalElements()).isEqualTo(summary.totals().losses());
+        assertThat(charts.page().content()).extracting(com.srpfreaks.backend.dto.RivalChartRow::diff)
+                .allSatisfy(diff -> assertThat(diff.signum()).isNegative())
+                .isSortedAccordingTo(java.util.Comparator.comparing(BigDecimal::abs));
+        // 레이팅 제외 속성·기준 난이도 없음·반영 꺼짐·SRN+ 아닌 기록은 곡별 승패에서도 빠진다(예전에는 기록 있는 채보 전부를 셌다)
+        assertThat(charts.counts().win() + charts.counts().tie() + charts.counts().lose()).isEqualTo(summary.totals().sharedCount());
     }
 }

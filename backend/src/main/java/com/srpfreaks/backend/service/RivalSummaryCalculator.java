@@ -203,6 +203,26 @@ public final class RivalSummaryCalculator {
         return rateDiffSum.divide(BigDecimal.valueOf(count), 1, java.math.RoundingMode.HALF_UP);
     }
 
+    /** 속성 목록 안의 공유 곡 전체의 합계(요약의 totals와 같다). 곡별 승패 보기의 승·패·무 개수가 이 값을 그대로 쓴다. */
+    public static RivalSummaryResponse.Totals totalsOf(List<Shared> shared) {
+        return totals(shared.stream().filter(s -> PATTERN_ORDER.contains(s.pattern())).toList());
+    }
+
+    /** 달성률이 정확히 같은 곡(무). 승·패는 {@link #matches}의 WIN·LOSE와 같은 부호 규칙이다. */
+    public static boolean isTie(Shared s) {
+        return s.rateDiff().signum() == 0;
+    }
+
+    /** 속성별 미플레이 곡 수의 합(상대만). 곡별 승패의 `상대만` 탭 개수와 같다. */
+    public static int totalOnlyTheirs(Unmatched unmatched) {
+        return PATTERN_ORDER.stream().mapToInt(unmatched::theirs).sum();
+    }
+
+    /** 속성별 미플레이 곡 수의 합(나만). */
+    public static int totalOnlyMine(Unmatched unmatched) {
+        return PATTERN_ORDER.stream().mapToInt(unmatched::mine).sum();
+    }
+
     private static RivalSummaryResponse.Totals totals(List<Shared> all) {
         RivalSummaryResponse.PatternSummary t = patternSummary(PatternType.SINGLE, all);
         return new RivalSummaryResponse.Totals(t.wins(), t.ties(), t.losses(), t.closeCount(), t.sharedCount(), t.scoreDiffSum());
