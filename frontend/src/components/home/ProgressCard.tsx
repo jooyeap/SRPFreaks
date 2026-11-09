@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { AverageLevelHelp } from "@/components/HelpTip";
 import { ProgressDonut } from "@/components/home/ProgressDonut";
 import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
@@ -141,6 +142,7 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
           <p className="break-keep text-[13px] leading-snug text-fg">
             {t.rich("nearText", { average: average.toFixed(1), label: weak.group.label, b: (chunks) => <b className="font-num">{chunks}</b> })}
             {threshold !== null ? <> {t.rich("nearThreshold", { rate: threshold, b: (chunks) => <b className="font-num">{chunks}</b> })}</> : null}
+            <AverageLevelHelp />
           </p>
           <Link
             href={weak.group.href}

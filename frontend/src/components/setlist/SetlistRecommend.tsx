@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { AverageLevelHelp } from "@/components/HelpTip";
 import { Pager } from "@/components/Pager";
 import { RecommendRangeForm } from "@/components/setlist/RecommendRangeForm";
 import { useToast } from "@/components/Toast";
@@ -77,6 +78,7 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
           ) : (
             <p className="text-xs text-fg-sub">
               {t.rich("Setlist.basedOn", { n: (c) => <span className="font-num text-fg">{c}</span>, tier: formatTier(result.data.baseTier, t) })}
+              <AverageLevelHelp />
             </p>
           )}
           {result.data.status === "READY" ? (
