@@ -131,7 +131,7 @@ export function formatRateDiff(value: number | null | undefined): string | null 
  * 곡 줄 칩의 달성률 차(%, 2026-11-09): `내 달성률 − 상대 달성률`을 **둘째 자리**까지. 앞이면 `+1.84%`(up), 뒤면 `−2.10%`(down),
  * 같으면 `±0.00%`(even). 부호는 글자로 보이므로 색만으로 앞뒤를 구분하지 않는다. 내 기록이 없어서(둘 중 하나가 null) 차이가 없으면 null.
  * 달성률은 DB에 둘째 자리까지 저장된 값이라 100을 곱해 정수(1/100 %)로 맞춘 뒤 빼서 부동소수점 찌꺼기(`+0.0000001`, `−0.00`)가 나오지 않게 한다.
- * 승·무·패 판정과 정렬은 서버가 점수로 하므로 이 값과 어긋날 수 있다(달성률 95 이상은 점수가 같아 `무`인데 여기에는 차이가 보인다).
+ * 승·무·패 판정·접전·정렬도 같은 달성률 차(%p)로 한다(D67 개정, 2026-11-09). 예전에는 점수 차로 판정해 달성률 95 이상이 모두 `무`가 되었다.
  */
 export function formatRateGap(myRate: number | null | undefined, rate: number | null | undefined): { text: string; sign: "up" | "down" | "even" } | null {
   if (myRate === null || myRate === undefined || rate === null || rate === undefined) return null;
@@ -145,15 +145,16 @@ export function formatRateGap(myRate: number | null | undefined, rate: number | 
 export const CATCH_UP_LIMIT = 3;
 
 /**
- * 따라잡을 곡(D66): 상대 레이팅 목록 줄 중 **둘 다 기록이 있고 내가 뒤진** 곡을 차이가 작은 순으로 최대 3곡.
- * 서버가 준 `diff`(내 점수 - 상대 점수)를 그대로 쓰되, 앞뒤 판정은 표시하는 둘째 자리 값으로 한다(`formatScoreDiff`와 같은 기준이라 `−0.00`이 나오지 않는다).
+ * 따라잡을 곡(D66, D67 개정): 상대 레이팅 목록 줄 중 **둘 다 기록이 있고 내가 뒤진** 곡을 차이가 작은 순으로 최대 3곡.
+ * 차이는 줄의 칩과 같은 **달성률 차**(`내 달성률 − 상대 달성률`, 둘째 자리 값끼리)다. 그래서 칩이 `±0.00%`나 `+`인 곡은 뽑히지 않고,
+ * 뽑힌 곡의 칩은 항상 `−`다(예전에는 점수 차로 골라 달성률 95 이상에서 `뒤진 곡인데 +로 보이는` 어긋남이 있었다).
  * 같은 차이면 상대 점수가 높은 곡이 먼저, 그다음 곡 id·채보 id 순으로 정해 새로고침해도 순서가 흔들리지 않게 한다.
  */
 export function catchUpRows(rows: readonly RivalRatingRow[], limit: number = CATCH_UP_LIMIT): RivalRatingRow[] {
   const behind: { row: RivalRatingRow; gap: number }[] = [];
   for (const row of rows) {
-    if (row.myScore === null || row.diff === null) continue;
-    const cents = Math.round(row.diff * 100);
+    if (row.myRate === null) continue;
+    const cents = Math.round(row.myRate * 100) - Math.round(row.rate * 100);
     if (cents < 0) behind.push({ row, gap: -cents });
   }
   behind.sort((a, b) => a.gap - b.gap || b.row.score - a.row.score || a.row.songId - b.row.songId || a.row.songDifficultyId - b.row.songDifficultyId);

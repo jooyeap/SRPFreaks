@@ -127,8 +127,8 @@ describe("RivalCompareView", () => {
     expect(screen.getByText("+0.80%")).toBeInTheDocument(); // 달성률 차: 내 96 − 상대 95.2
     expect(screen.getByText("나 240.00")).toBeInTheDocument();
     expect(screen.getByText("내 기록 없음")).toBeInTheDocument();
-    // 목록 맨 아래 안내(내 점수 − 상대 점수)
-    expect(screen.getByText("+는 내가 앞, \u2212는 내가 뒤 (내 점수 \u2212 상대 점수)")).toBeInTheDocument();
+    // 목록 맨 아래 안내(내 달성률 − 상대 달성률): 줄의 칩이 달성률 차라서 안내도 같은 기준이다
+    expect(screen.getByText("+는 내가 앞, \u2212는 내가 뒤 (내 달성률 \u2212 상대 달성률)")).toBeInTheDocument();
   });
 
   it("곡별 승패로 바꾸면 진 곡 목록을 받아 위 나 / 아래 상대 달성률과 차이를 보인다", async () => {

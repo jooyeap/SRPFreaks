@@ -38,7 +38,7 @@ function pattern(key: RivalPatternSummary["key"], label: string, over: Partial<R
 }
 const PATTERNS: RivalPatternSummary[] = [
   pattern("SINGLE", "단일", { wins: 6, ties: 1, losses: 2, scoreDiffSum: 30.5, closeCount: 2, sharedCount: 9, rateDiffAvg: 1.8 }),
-  pattern("COMPOUND", "복합", { wins: 1, losses: 0, scoreDiffSum: 4, closeCount: 5, sharedCount: 6, rateDiffAvg: 0 }),
+  pattern("COMPOUND", "복합", { wins: 1, losses: 0, scoreDiffSum: 4, closeCount: 5, sharedCount: 6, rateDiffAvg: 0.5 }),
   pattern("COMPOSITE_SINGLE", "복합(단일)", { wins: 4, ties: 1, losses: 5, scoreDiffSum: -18, closeCount: 2, sharedCount: 10, rateDiffAvg: -0.4 }),
   pattern("DOUBLE", "이중"),
   pattern("TRIPLE", "삼중", { wins: 0, ties: 2, losses: 3, scoreDiffSum: -42.67, closeCount: 0, sharedCount: 5, rateDiffAvg: -3.2 }),
@@ -49,13 +49,15 @@ function summaryOf(patterns: RivalPatternSummary[]): RivalSummaryResponse {
     totals: { wins: 11, ties: 4, losses: 10, closeCount: 9, sharedCount: 30, scoreDiffSum: -26.17 }, patterns,
     tiers: [],
     distribution: patterns.map((p) => ({ pattern: p.pattern, key: p.key, diffs: [] })),
+    rateDistribution: patterns.map((p) => ({ pattern: p.pattern, key: p.key, diffs: [] })),
   };
 }
 
-function detailRow(id: number, diff: number, pattern = "단일"): RivalDetailRow {
+/** 곡 한 줄: diff 인자는 달성률 차(%p, rateDiff = myRate − rate)다. 점수 차(diff 필드)는 옛 필드라 0으로 둔다(95% 이상은 점수가 같다). */
+function detailRow(id: number, rateDiff: number, pattern = "단일"): RivalDetailRow {
   return {
     songDifficultyId: id, songId: 100 + id, title: `Song ${id}`, part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 5.4, pattern,
-    rate: 95, stage: "SS", score: 240, myRate: 94, myStage: "S", myScore: 240 + diff, diff,
+    rate: 95, stage: "SS", score: 240, myRate: Math.round((95 + rateDiff) * 100) / 100, myStage: "S", myScore: 240, diff: 0, rateDiff,
   };
 }
 /** 속성 키·필터마다 다른 곡을 돌려주는 가짜 상세 응답 */
@@ -134,15 +136,14 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(cards[1]).toHaveTextContent("삼중");
     expect(cards[1]).toHaveTextContent("평균 달성률 차 −3.2%");
     expect(cards[1]).not.toHaveTextContent(`${MINUS}42.67`);
-    expect(cards[2]).toHaveTextContent("접전(±1 이내)");
+    expect(cards[2]).toHaveTextContent("접전(±1% 이내)");
     expect(cards[2]).toHaveTextContent("복합");
     expect(cards[2]).toHaveTextContent("접전 5곡");
-    expect(cards[2]).not.toHaveTextContent("%");
+    expect(cards[2]).not.toHaveTextContent("평균 달성률 차");
   });
 
-  it("카드의 값(평균 달성률 차)과 카드를 고르는 기준(점수 차 합계)이 어긋날 수 있다: 우세 카드의 값이 −로 보일 수 있다", async () => {
-    // 단일: 큰 점수 차 몇 곡으로 합계 +50.00이라 우세 카드로 뽑히지만, 점수는 95%에서 멈추므로 달성률 차 평균은 −0.4%일 수 있다.
-    // 복합: 합계 +10.00이지만 달성률 차 평균은 +2.3%. 카드는 기존 기준(합계 큰 순)대로 단일을 고르므로 우세 카드에 `−0.4%`가 보인다.
+  it("카드를 고르는 기준과 카드의 값이 같다(평균 달성률 차): 점수 차 합계가 커도 평균 달성률 차가 −인 속성은 우세 카드에 뽑히지 않는다(D67 개정)", async () => {
+    // 단일: 점수 차 합계는 +50.00이지만 평균 달성률 차는 −0.4%. 복합: 합계 +10.00, 평균 달성률 차 +2.3%.
     show([
       pattern("SINGLE", "단일", { wins: 3, ties: 0, losses: 7, scoreDiffSum: 50, closeCount: 0, sharedCount: 10, rateDiffAvg: -0.4 }),
       pattern("COMPOUND", "복합", { wins: 8, ties: 0, losses: 2, scoreDiffSum: 10, closeCount: 0, sharedCount: 10, rateDiffAvg: 2.3 }),
@@ -151,10 +152,12 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
       pattern("TRIPLE", "삼중"),
     ]);
     const box = await dashboard();
-    const strongCard = within(within(box).getByRole("group", { name: "요약" })).getAllByRole("button")[0];
-    expect(strongCard).toHaveTextContent("단일");
-    expect(strongCard).toHaveTextContent("평균 달성률 차 −0.4%");
-    expect(strongCard).not.toHaveTextContent("복합");
+    const [strongCard, weakCard] = within(within(box).getByRole("group", { name: "요약" })).getAllByRole("button");
+    expect(strongCard).toHaveTextContent("복합");
+    expect(strongCard).toHaveTextContent("평균 달성률 차 +2.3%");
+    expect(strongCard).not.toHaveTextContent("단일");
+    expect(weakCard).toHaveTextContent("단일");
+    expect(weakCard).toHaveTextContent("평균 달성률 차 −0.4%");
   });
 
   it("평균 달성률 차는 부호가 글자로 보인다(+ / − / ±)와 공유 곡 0이면 `–`", async () => {
@@ -162,9 +165,48 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     const box = await dashboard();
     const rows = within(within(box).getByRole("list", { name: "속성별 승패" })).getAllByRole("listitem");
     expect(rows[0]).toHaveTextContent("+1.8%");
-    expect(rows[1]).toHaveTextContent("±0.0%");
+    expect(rows[1]).toHaveTextContent("+0.5%");
     expect(rows[2]).toHaveTextContent("−0.4%");
     expect(rows[3]).not.toHaveTextContent("%"); // 이중 0곡
+  });
+
+  it("평균 달성률 차가 정확히 0.0이면 `±0.0%`로 보이고 우세·열세 탭에도 들지 않는다", async () => {
+    show([pattern("SINGLE", "단일", { wins: 2, ties: 0, losses: 2, sharedCount: 4, rateDiffAvg: 0 }), pattern("COMPOUND", "복합"), pattern("COMPOSITE_SINGLE", "복합(단일)"), pattern("DOUBLE", "이중"), pattern("TRIPLE", "삼중")]);
+    const box = await dashboard();
+    const rows = within(within(box).getByRole("list", { name: "속성별 승패" })).getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("±0.0%");
+    const tabs = within(within(box).getByRole("group", { name: "속성별 상세" }));
+    expect(tabs.getByRole("button", { name: "우세 0" })).toBeInTheDocument();
+    expect(tabs.getByRole("button", { name: "열세 0" })).toBeInTheDocument();
+  });
+
+  it("판정 기준 안내 한 줄이 요약 영역 아래에 있다(승무패는 달성률, 총점은 레이팅 점수 기준)", async () => {
+    show();
+    const box = await dashboard();
+    expect(within(box).getByText("승·무·패는 달성률로 비교합니다. 총점은 레이팅(점수) 기준이라 승수와 순서가 다를 수 있습니다.")).toBeInTheDocument();
+  });
+
+  it("한쪽만 기록한 곡은 속성 줄 아래 `상대만 N곡 · 나만 N곡`으로 보이고 0인 항은 생략된다. 둘 다 0이거나 옛 응답(필드 없음)이면 줄이 없다", async () => {
+    show([
+      pattern("SINGLE", "단일", { wins: 6, ties: 1, losses: 2, sharedCount: 9, rateDiffAvg: 1.8, onlyTheirs: 3, onlyMine: 2 }),
+      pattern("COMPOUND", "복합", { wins: 1, sharedCount: 6, rateDiffAvg: 0.5, onlyTheirs: 4, onlyMine: 0 }),
+      pattern("COMPOSITE_SINGLE", "복합(단일)", { wins: 1, sharedCount: 6, rateDiffAvg: 0.3, onlyTheirs: 0, onlyMine: 5 }),
+      pattern("DOUBLE", "이중", { wins: 1, sharedCount: 6, rateDiffAvg: 0.2, onlyTheirs: 0, onlyMine: 0 }),
+      pattern("TRIPLE", "삼중", { wins: 1, sharedCount: 6, rateDiffAvg: 0.1 }),   // 옛 응답: 필드 없음
+    ]);
+    const box = await dashboard();
+    const detail = within(box).getByRole("region", { name: "속성별 상세" });
+    const link = (name: string) => within(detail).getAllByRole("link").find((a) => a.getAttribute("href")?.startsWith("/players/") && a.textContent?.includes(name)) as HTMLElement;
+    await waitFor(() => expect(link("단일")).toBeDefined());
+    expect(link("단일")).toHaveTextContent("상대만 3곡 · 나만 2곡");
+    expect(link("복합")).toHaveTextContent("상대만 4곡");
+    expect(link("복합")).not.toHaveTextContent("나만");
+    expect(link("복합(단일)")).toHaveTextContent("나만 5곡");
+    expect(link("복합(단일)")).not.toHaveTextContent("상대만");
+    expect(link("이중")).not.toHaveTextContent("상대만");
+    expect(link("이중")).not.toHaveTextContent("나만");
+    expect(link("삼중")).not.toHaveTextContent("상대만");
+    expect(link("삼중")).not.toHaveTextContent("나만");
   });
 
   it("`%p`는 화면에 남지 않고 단위는 `%`만 나온다(2026-11-09)", async () => {
@@ -299,9 +341,9 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     const weak = await within(box).findByRole("region", { name: "가장 크게 뒤진 곡" });
     const items = await within(weak).findAllByRole("listitem");
     expect(items.map((li) => li.textContent)).toEqual([expect.stringContaining("Song 11"), expect.stringContaining("Song 8")]); // −12, −7
-    // 칩은 점수 차(−12.00)가 아니라 달성률 차(내 94 − 상대 95 = −1.00%)이고, 곡을 고르는 순서는 서버(점수) 그대로다
-    expect(within(items[0]).getByText(`${MINUS}1.00%`)).toBeInTheDocument();
-    expect(within(items[0]).queryByText(`${MINUS}12.00`)).toBeNull();
+    // 칩은 달성률 차(내 83 − 상대 95 = −12.00%)이고, 곡을 고르는 순서도 같은 달성률 차(크게 뒤진 순)다(D67 개정)
+    expect(within(items[0]).getByText(`${MINUS}12.00%`)).toBeInTheDocument();
+    expect(within(items[1]).getByText(`${MINUS}7.00%`)).toBeInTheDocument();
     expect(await within(weak).findAllByRole("button", { name: /세트리스트에 담기$/ })).toHaveLength(2);
     cleanup();
 
@@ -310,7 +352,7 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     const close = await within(box).findByRole("region", { name: "가장 아슬아슬한 곡" });
     const closeItems = await within(close).findAllByRole("listitem");
     expect(closeItems).toHaveLength(3);
-    // |diff| 작은 순: Song 10(0), 4(0.3)나 6(-0.2) → 0, −0.2, 0.3
+    // |달성률 차| 작은 순: Song 10(0), 6(−0.2), 4(0.3)
     expect(closeItems.map((li) => /Song (\d+)/.exec(li.textContent ?? "")?.[1])).toEqual(["10", "6", "4"]);
   });
 
@@ -324,7 +366,7 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
   });
 
   it("공유 곡이 1곡뿐인 속성도 깨지지 않고 참고용 표시가 붙는다", async () => {
-    show([pattern("SINGLE", "단일", { wins: 1, scoreDiffSum: 2.5, sharedCount: 1 })], { tab: "strong" });
+    show([pattern("SINGLE", "단일", { wins: 1, scoreDiffSum: 2.5, sharedCount: 1, rateDiffAvg: 2.5 })], { tab: "strong" });
     const box = await dashboard();
     const detail = within(box).getByRole("region", { name: "속성별 상세" });
     const link = (await within(detail).findAllByRole("link"))[0];
@@ -360,7 +402,7 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(cards[0]).toHaveTextContent("単色");
     expect(cards[0]).toHaveTextContent("平均達成率差 +1.8%");
     expect(cards[1]).toHaveTextContent("劣勢の属性");
-    expect(cards[2]).toHaveTextContent("接戦（±1以内）");
+    expect(cards[2]).toHaveTextContent("接戦（±1%以内）");
     const detail = within(box).getByRole("region", { name: "属性別の詳細" });
     expect(within(detail).getByRole("button", { name: "優勢 2" })).toBeInTheDocument();
     expect(within(detail).getByRole("button", { name: "劣勢 2" })).toBeInTheDocument();

@@ -157,14 +157,14 @@ describe("라이벌 비교 줄 구성 (D65)", () => {
     expect(within(items[0]).getByText(`${MINUS}2.10%`)).toBeInTheDocument();
     expect(within(items[0]).getByText("自分 240.38")).toBeInTheDocument();
     expect(within(items[1]).getByText("記録なし")).toBeInTheDocument();
-    expect(screen.getByText(`+は自分が上、${MINUS}は自分が下(自分のスコア ${MINUS} 相手のスコア)`)).toBeInTheDocument();
+    expect(screen.getByText(`+は自分が上、${MINUS}は自分が下(自分の達成率 ${MINUS} 相手の達成率)`)).toBeInTheDocument();
     expect(screen.queryByText(/내/)).toBeNull();
   });
 
   it("목록 맨 아래에 안내 한 줄이 있다", async () => {
     show([row(1)]);
     await lines();
-    expect(screen.getByText(`+는 내가 앞, ${MINUS}는 내가 뒤 (내 점수 ${MINUS} 상대 점수)`)).toBeInTheDocument();
+    expect(screen.getByText(`+는 내가 앞, ${MINUS}는 내가 뒤 (내 달성률 ${MINUS} 상대 달성률)`)).toBeInTheDocument();
   });
 });
 

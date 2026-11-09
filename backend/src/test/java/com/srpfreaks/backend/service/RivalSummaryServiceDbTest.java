@@ -45,6 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 라이벌 대시보드 집계(D67)를 실제 MySQL(Flyway 스키마·기본 rating.* 설정)과 실제 레이팅 후보 쿼리로 확인한다. Docker가 필요하다.
  *
+ * **판정은 달성률 차(%p)다(D67 개정)**: 승 diff>0, 패 diff<0, 무 diff==0, 접전 |diff|<=1.00. 점수 차(scoreDiffSum·row.diff)는 옛 필드로만 확인한다.
  * 점수는 직접 계산한 값이다. 기준 난이도 5.0은 상수 R=10*5.0-45=5라 달성률 80 이하에서 점수가 달성률과 같아서(V=5*A/100, 점수=V*20)
  * 접전 경계(±1.00, ±1.01)를 달성률 차이로 정확히 만들 수 있다. 기준 난이도 6.0은 R=15라 95%에서 304.00, 80%에서 240.00이다.
  */
@@ -227,10 +228,67 @@ class RivalSummaryServiceDbTest {
 
         assertThat(p.sharedCount()).isEqualTo(2);
         assertThat(p.rateDiffAvg()).isEqualByComparingTo("-1.0");
-        // 승·패는 점수 차로 정해진다: 96 대 94는 점수가 더 높아 승(+4.27), 80 대 84는 점수가 더 낮아 패(-17.07). 평균 -1.0%p는 판정에 쓰이지 않는다
+        // 승·패는 달성률 차로 정해진다: 96 대 94는 +2.00이라 승, 80 대 84는 -4.00이라 패. 점수 차 합계(-12.80)는 옛 필드로만 남는다
         assertThat(p.wins()).isEqualTo(1);
         assertThat(p.losses()).isEqualTo(1);
         assertThat(p.scoreDiffSum()).isEqualByComparingTo("-12.80");
+    }
+
+    @Test
+    void 달성률_95_이상이라도_달성률_차로_승패가_갈린다_점수가_같아도() {
+        // 기준 난이도 6.0(R=15): 달성률 95 이상은 점수가 모두 304.00이라 점수 차는 0이다. 판정은 달성률 차로 한다.
+        SongDifficulty hi = chart("6.0", PatternType.COMPOSITE_SINGLE, true);
+        both(hi, "97.50", "99.80");                                              // -2.30 (패)
+        both(chart("6.0", PatternType.COMPOSITE_SINGLE, true), "100.00", "100.00");   // 0.00 (무)
+        both(chart("6.0", PatternType.COMPOSITE_SINGLE, true), "99.00", "98.50");     // +0.50 (승·접전)
+        em.flush();
+        em.clear();
+
+        RivalSummaryResponse.PatternSummary p = pattern(service.summary(me.getId(), rival.getId()), "COMPOSITE_SINGLE");
+
+        assertThat(p.sharedCount()).isEqualTo(3);
+        assertThat(p.losses()).isEqualTo(1);
+        assertThat(p.ties()).isEqualTo(1);
+        assertThat(p.wins()).isEqualTo(1);
+        assertThat(p.closeCount()).isEqualTo(2);                                // 0.00과 +0.50
+        assertThat(p.scoreDiffSum()).isEqualByComparingTo("0.00");              // 옛 필드: 점수는 모두 304.00
+        assertThat(p.rateDiffAvg()).isEqualByComparingTo("-0.6");               // (-2.30 + 0.00 + 0.50) / 3 = -0.6
+        RivalSummaryDetailResponse lose = service.detail(me.getId(), rival.getId(), "COMPOSITE_SINGLE", "LOSE", null, 0, 20);
+        assertThat(lose.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(hi.getId());
+        assertThat(lose.rows().content().get(0).rateDiff()).isEqualByComparingTo("-2.30");
+        assertThat(lose.rows().content().get(0).diff()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    void 한쪽만_기록한_레이팅_대상_곡은_속성별_곡_수로만_세고_승무패에는_넣지_않는다() {
+        // build(): 나만 기록한 삼중 2곡(상대는 아예 없거나 SRN+ 아닌 기록뿐). 상대만 기록한 단일 1곡과 이중 1곡을 더한다.
+        record(rival, chart("5.6", PatternType.SINGLE, true), "88.00");
+        record(rival, chart("5.0", PatternType.DOUBLE, true), "70.00");
+        // 세지 않는 것: 레이팅 반영 꺼진 채보, 기준 난이도 없는 채보, 레이팅 제외 속성
+        record(rival, chart("5.6", PatternType.SINGLE, false), "88.00");
+        record(rival, chart(null, PatternType.SINGLE, true), "88.00");
+        record(rival, chart("5.6", PatternType.EXCLUDED, true), "88.00");
+        em.flush();
+        em.clear();
+
+        RivalSummaryResponse r = service.summary(me.getId(), rival.getId());
+
+        assertThat(pattern(r, "TRIPLE").onlyMine()).isEqualTo(2);
+        assertThat(pattern(r, "TRIPLE").onlyTheirs()).isZero();
+        assertThat(pattern(r, "SINGLE").onlyTheirs()).isEqualTo(1);
+        assertThat(pattern(r, "SINGLE").onlyMine()).isZero();
+        assertThat(pattern(r, "DOUBLE").onlyTheirs()).isEqualTo(1);
+        assertThat(pattern(r, "COMPOUND").onlyTheirs() + pattern(r, "COMPOUND").onlyMine()).isZero();
+        // 승·무·패·평균·공유 곡 수는 그대로(미플레이를 0%로 보지 않는다)
+        assertThat(r.totals().sharedCount()).isEqualTo(7);
+        assertThat(pattern(r, "TRIPLE").sharedCount()).isEqualTo(1);
+        assertThat(pattern(r, "TRIPLE").rateDiffAvg()).isEqualByComparingTo("0.0");
+        assertThat(pattern(r, "SINGLE").sharedCount()).isEqualTo(1);
+        assertThat(pattern(r, "SINGLE").wins()).isEqualTo(1);
+        // 속성 상세 머리에도 같은 곡 수
+        RivalSummaryDetailResponse d = service.detail(me.getId(), rival.getId(), "TRIPLE", null, null, 0, 20);
+        assertThat(d.summary().onlyMine()).isEqualTo(2);
+        assertThat(d.filterCounts().all()).isEqualTo(1);
     }
 
     @Test
@@ -283,7 +341,7 @@ class RivalSummaryServiceDbTest {
         assertThat(r.filterCounts().win()).isEqualTo(2);
         assertThat(r.filterCounts().lose()).isEqualTo(2);
         assertThat(r.rows().totalElements()).isEqualTo(2);
-        assertThat(r.rows().content()).extracting(RivalSummaryDetailResponse.Row::diff)
+        assertThat(r.rows().content()).extracting(RivalSummaryDetailResponse.Row::rateDiff)
                 .usingElementComparator(BigDecimal::compareTo)
                 .containsExactlyInAnyOrder(new BigDecimal("1.00"), new BigDecimal("-1.00"));
         assertThat(r.rows().content()).allSatisfy(row -> {
@@ -302,7 +360,8 @@ class RivalSummaryServiceDbTest {
         assertThat(row.title()).isEqualTo(compoundLoss.getSong().getTitle());
         assertThat(row.score()).isEqualByComparingTo("218.67");
         assertThat(row.myScore()).isEqualByComparingTo("176.00");
-        assertThat(row.diff()).isEqualByComparingTo("-42.67");
+        assertThat(row.diff()).isEqualByComparingTo("-42.67");          // 옛 필드(점수 차)
+        assertThat(row.rateDiff()).isEqualByComparingTo("-10.00");      // 판정·정렬 기준(달성률 차)
         assertThat(row.rate()).isEqualByComparingTo("90.00");
         assertThat(row.myRate()).isEqualByComparingTo("80.00");
         assertThat(row.stage()).isNotNull();
@@ -312,7 +371,7 @@ class RivalSummaryServiceDbTest {
     @Test
     void 정렬과_페이지는_화이트리스트와_상한을_지킨다() {
         RivalSummaryDetailResponse byDiff = service.detail(me.getId(), rival.getId(), "DOUBLE", "ALL", "DIFF_DESC", 0, 3);
-        assertThat(byDiff.rows().content()).extracting(RivalSummaryDetailResponse.Row::diff)
+        assertThat(byDiff.rows().content()).extracting(RivalSummaryDetailResponse.Row::rateDiff)
                 .usingElementComparator(BigDecimal::compareTo)
                 .containsExactly(new BigDecimal("1.01"), new BigDecimal("1.00"), new BigDecimal("-1.00"));
         assertThat(byDiff.rows().totalPages()).isEqualTo(2);

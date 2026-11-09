@@ -12,7 +12,8 @@ import type {
 /**
  * 라이벌 대시보드(D67, 6단계)의 순수 계산과 요청 함수. 승·무·패·합계·접전은 서버(5단계 API)가 센 값을 그대로 쓰고,
  * 이 파일은 그 값을 탭으로 나누고 정렬하고 막대 길이로 바꾸는 일만 한다(화면에서 다시 세지 않는다).
- * 차이는 모두 `내 점수 - 상대 점수`(표시 둘째 자리 값끼리)라서 양수가 우세, 음수가 열세다.
+ * **판정 기준은 달성률 차다(D67 개정, 2026-11-09)**: 차이는 `내 달성률 − 상대 달성률`(%p)이라 양수가 우세, 음수가 열세다.
+ * 예전(6단계)에는 점수 차 합계로 속성을 나눴는데, 점수는 95%부터 같아져 화면에 보이는 값(달성률 차)과 어긋났다.
  */
 
 /** 서버가 허용하는 속성 키(상세 주소의 마지막 조각). 허용 밖의 값은 서버가 400을 주므로 화면에서 먼저 거른다. */
@@ -47,22 +48,39 @@ export function isSmallSample(pattern: RivalPatternSummary): boolean {
   return pattern.sharedCount < SMALL_SAMPLE_LIMIT;
 }
 
-/** 합계를 센트로 바꿔 비교한다(부동소수점 찌꺼기로 +0.00/-0.00이 갈리지 않게). */
+/** 값을 센트(둘째 자리 정수)로 바꿔 비교한다(부동소수점 찌꺼기로 +0.00/-0.00이 갈리지 않게). */
 function cents(value: number): number {
   return Math.round(value * 100);
 }
 
+/** 평균 달성률 차를 소수 첫째 자리 정수(10분의 1 %)로 바꿔 비교한다. 화면에 `±0.0%`로 보이는 값은 우세도 열세도 아니다. */
+function tenths(value: number): number {
+  return Math.round(value * 10);
+}
+
 /**
- * 탭에 속하는 속성과 순서. 우세 = 합계가 0보다 큰 속성(합계 큰 순), 열세 = 합계가 0보다 작은 속성(합계 작은 순),
- * 접전 = 접전 곡이 있는 속성(접전 곡 많은 순). 한 속성이 우세와 접전에 함께 들어갈 수 있다. 같은 값이면 서버가 준 속성 순서를 지킨다.
+ * 속성을 우세·열세로 나누고 줄 세우는 값 = 속성별 평균 달성률 차(%p, 서버 `rateDiffAvg`, 소수 첫째 자리). 공유 곡이 없으면 null.
+ * 옛 응답(`rateDiffAvg` 없음)이면 예전 값(`scoreDiffSum`, 점수 차 합계)으로 되돌아가 화면이 깨지지 않게 한다.
+ */
+export function patternRateKey(pattern: RivalPatternSummary): number | null {
+  if (pattern.sharedCount === 0) return null;
+  if (pattern.rateDiffAvg === undefined) return pattern.scoreDiffSum;
+  return pattern.rateDiffAvg;
+}
+
+/**
+ * 탭에 속하는 속성과 순서(D67 개정: 점수 차 합계 → 평균 달성률 차). 우세 = 평균 달성률 차가 0보다 큰 속성(큰 순),
+ * 열세 = 0보다 작은 속성(작은 순), 접전 = 접전(달성률 차 ±1%p 이내) 곡이 있는 속성(접전 곡 많은 순).
+ * 한 속성이 우세와 접전에 함께 들어갈 수 있다. 소수 첫째 자리로 0.0이면 우세도 열세도 아니다. 같은 값이면 서버가 준 속성 순서를 지킨다.
  */
 export function tabPatterns(patterns: readonly RivalPatternSummary[], tab: DashTab): RivalPatternSummary[] {
-  const indexed = patterns.map((pattern, index) => ({ pattern, index }));
+  const indexed = patterns.map((pattern, index) => ({ pattern, index, key: patternRateKey(pattern) }));
+  const keyOf = (x: { key: number | null }) => tenths(x.key ?? 0);
   const picked =
     tab === "strong"
-      ? indexed.filter((x) => cents(x.pattern.scoreDiffSum) > 0).sort((a, b) => cents(b.pattern.scoreDiffSum) - cents(a.pattern.scoreDiffSum) || a.index - b.index)
+      ? indexed.filter((x) => x.key !== null && keyOf(x) > 0).sort((a, b) => keyOf(b) - keyOf(a) || a.index - b.index)
       : tab === "weak"
-        ? indexed.filter((x) => cents(x.pattern.scoreDiffSum) < 0).sort((a, b) => cents(a.pattern.scoreDiffSum) - cents(b.pattern.scoreDiffSum) || a.index - b.index)
+        ? indexed.filter((x) => x.key !== null && keyOf(x) < 0).sort((a, b) => keyOf(a) - keyOf(b) || a.index - b.index)
         : indexed.filter((x) => x.pattern.closeCount > 0).sort((a, b) => b.pattern.closeCount - a.pattern.closeCount || a.index - b.index);
   return picked.map((x) => x.pattern);
 }
@@ -93,13 +111,21 @@ export const PREVIEW: Record<DashTab, { count: number; filter: RivalDetailFilter
   close: { count: 3, filter: "CLOSE", sort: "CLOSE" },
 };
 
+/** 곡 한 줄의 달성률 차(%p, 판정·정렬 기준). 서버 `rateDiff`가 없는 옛 응답이면 내 달성률 − 상대 달성률로 계산한다. */
+export function rowRateDiff(row: Pick<RivalDetailRow, "rateDiff" | "myRate" | "rate">): number {
+  return row.rateDiff ?? Math.round((row.myRate - row.rate) * 100) / 100;
+}
+
 /**
- * 속성마다 받아 온 미리보기 곡을 하나로 합쳐 탭 기준으로 다시 정렬하고 앞의 몇 곡만 남긴다.
+ * 속성마다 받아 온 미리보기 곡을 하나로 합쳐 탭 기준으로 다시 정렬하고 앞의 몇 곡만 남긴다(달성률 차 기준, D67 개정).
  * 같은 값이면 채보 id 순이라 새로고침해도 순서가 흔들리지 않는다.
  */
 export function mergePreview(rowsByPattern: readonly (readonly RivalDetailRow[])[], tab: DashTab): RivalDetailRow[] {
   const all = rowsByPattern.flat();
-  const key = (row: RivalDetailRow) => (tab === "close" ? Math.abs(cents(row.diff)) : tab === "strong" ? -cents(row.diff) : cents(row.diff));
+  const key = (row: RivalDetailRow) => {
+    const diff = cents(rowRateDiff(row));
+    return tab === "close" ? Math.abs(diff) : tab === "strong" ? -diff : diff;
+  };
   return [...all].sort((a, b) => key(a) - key(b) || a.songDifficultyId - b.songDifficultyId).slice(0, PREVIEW[tab].count);
 }
 

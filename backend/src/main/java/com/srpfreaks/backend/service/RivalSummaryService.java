@@ -21,7 +21,8 @@ import java.util.Map;
  * 존재 여부가 드러나지 않는다(RivalService.findComparable과 같은 규칙, D56·D63). 누구의 것인지는 토큰에서만 정한다.
  *
  * 흐름: 두 사람의 "레이팅 대상 채보 전체와 점수"를 각각 한 번씩 읽고(SkillService.scoredChartsAll, N+1 없음)
- * 채보 id로 맞춘 뒤 집계는 RivalSummaryCalculator(순수 계산)가 한다.
+ * 채보 id로 맞춘 뒤 집계는 RivalSummaryCalculator(순수 계산)가 한다. 판정은 달성률 차 기준이고(D67 개정),
+ * 한쪽만 기록한 곡은 승·무·패·평균에 넣지 않고 속성별 곡 수(onlyTheirs/onlyMine)로만 준다.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,7 +37,11 @@ public class RivalSummaryService {
 
     public RivalSummaryResponse summary(Long userId, Long targetUserId) {
         User target = rivalService.findComparable(userId, targetUserId);
-        return RivalSummaryCalculator.summarize(target.getId(), target.getNickname(), shared(userId, targetUserId));
+        Map<Long, List<SkillService.ScoredChart>> charts = skillService.scoredChartsAll(List.of(userId, targetUserId));
+        List<SkillService.ScoredChart> mine = charts.get(userId);
+        List<SkillService.ScoredChart> theirs = charts.get(targetUserId);
+        return RivalSummaryCalculator.summarize(target.getId(), target.getNickname(),
+                RivalSummaryCalculator.share(mine, theirs), RivalSummaryCalculator.unmatched(mine, theirs));
     }
 
     /** key = 속성 키(`SINGLE` 등), filter·sort는 화이트리스트(허용 밖은 400). 페이지는 필수라 size를 1~50으로 맞춘다. */
@@ -54,8 +59,12 @@ public class RivalSummaryService {
         }
         User target = rivalService.findComparable(userId, targetUserId);
 
+        Map<Long, List<SkillService.ScoredChart>> charts = skillService.scoredChartsAll(List.of(userId, targetUserId));
+        List<SkillService.ScoredChart> mine = charts.get(userId);
+        List<SkillService.ScoredChart> theirs = charts.get(targetUserId);
+        RivalSummaryCalculator.Unmatched unmatched = RivalSummaryCalculator.unmatched(mine, theirs);
         List<RivalSummaryCalculator.Shared> ofPattern = RivalSummaryCalculator
-                .byPattern(shared(userId, targetUserId)).getOrDefault(pattern, List.of());
+                .byPattern(RivalSummaryCalculator.share(mine, theirs)).getOrDefault(pattern, List.of());
         List<RivalSummaryCalculator.Shared> filtered = ofPattern.stream()
                 .filter(s -> RivalSummaryCalculator.matches(filter, s))
                 .sorted(RivalSummaryCalculator.comparator(sort))
@@ -69,12 +78,8 @@ public class RivalSummaryService {
         List<RivalSummaryDetailResponse.Row> content = filtered.subList(from, to).stream()
                 .map(RivalSummaryCalculator::toRow).toList();
         return new RivalSummaryDetailResponse(target.getId(), target.getNickname(),
-                RivalSummaryCalculator.patternSummary(pattern, ofPattern), RivalSummaryCalculator.filterCounts(ofPattern),
+                RivalSummaryCalculator.patternSummary(pattern, ofPattern, unmatched), RivalSummaryCalculator.filterCounts(ofPattern),
                 new PageResponse<>(content, pageIndex, pageSize, filtered.size(), totalPages));
     }
 
-    private List<RivalSummaryCalculator.Shared> shared(Long userId, Long targetUserId) {
-        Map<Long, List<SkillService.ScoredChart>> charts = skillService.scoredChartsAll(List.of(userId, targetUserId));
-        return RivalSummaryCalculator.share(charts.get(userId), charts.get(targetUserId));
-    }
 }

@@ -21,8 +21,8 @@ function tickText(value: number): string {
 }
 
 /**
- * 속성별 점 분포(D67, 7단계): 속성마다 한 줄, 곡 하나가 점 하나. 가로 위치는 점수 차(내 점수 − 상대 점수, −10 ~ +10, 범위 밖은 끝에 모은다).
- * 가운데 ±접전 폭(서버 값, 1.0)은 회색 띠다. 점이 겹치면 세로로 조금씩 어긋나게 놓는다(결정적 배치, lib/rival-charts.ts).
+ * 속성별 점 분포(D67, 7단계): 속성마다 한 줄, 곡 하나가 점 하나. 가로 위치는 달성률 차(내 달성률 − 상대 달성률, %p, −10 ~ +10, 범위 밖은 끝에 모은다.
+ * D67 개정으로 점수 차에서 바뀌었다). 가운데 ±접전 폭(서버 값, 1.0%p)은 회색 띠다. 옛 응답(`rateDistribution` 없음)이면 점이 없어 `–`로 보인다. 점이 겹치면 세로로 조금씩 어긋나게 놓는다(결정적 배치, lib/rival-charts.ts).
  * 색만으로 전달하지 않는다: 왼쪽이 열세·오른쪽이 우세라는 위치, 아래 눈금 글자, `← 열세 · 접전 · 우세 →` 안내가 같은 뜻을 말한다.
  * 도형은 role="img" 하나로 읽히고, 속성별 값은 숨김 표(RivalChartTable)가 읽어 준다.
  */
@@ -32,12 +32,13 @@ export function RivalDotChart({
   closeMargin,
 }: {
   patterns: readonly RivalPatternSummary[];
-  distribution: readonly RivalPatternDiffs[];
+  /** 속성별 달성률 차(%p) 목록(서버 `rateDistribution`). 없으면(옛 응답) 빈 목록. */
+  distribution: readonly RivalPatternDiffs[] | undefined;
   closeMargin: number;
 }) {
   const t = useTranslations();
   const rows = patterns.map((p) => {
-    const diffs = distribution.find((d) => d.key === p.key)?.diffs ?? [];
+    const diffs = distribution?.find((d) => d.key === p.key)?.diffs ?? [];
     return { pattern: p, dots: layoutDots(diffs, { width: PLOT_W, radius: RADIUS, halfHeight: HALF_H }) };
   });
   const height = rows.length * LANE_H + AXIS_H;

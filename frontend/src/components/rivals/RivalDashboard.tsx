@@ -50,7 +50,7 @@ function rateDiffText(pattern: RivalPatternSummary): string {
 
 /**
  * 속성 줄 오른쪽의 값: 우세·열세 탭은 평균 달성률 차(`+1.8%`, 아래에 작은 라벨 `평균 달성률 차`), 접전 탭은 접전 곡 수.
- * 속성을 우세·열세로 나누고 정렬하는 기준은 그대로 레이팅 점수 차 합계이고, 여기 보이는 값만 달성률 차다.
+ * 속성을 우세·열세로 나누고 정렬하는 기준도 같은 평균 달성률 차다(D67 개정, 예전에는 점수 차 합계).
  */
 function PatternValue({ pattern, tab }: { pattern: RivalPatternSummary; tab: DashTab }) {
   const t = useTranslations();
@@ -63,6 +63,19 @@ function PatternValue({ pattern, tab }: { pattern: RivalPatternSummary; tab: Das
       <span className="text-[10px] leading-3 text-fg-dim">{t("Rival.rateDiffLabel")}</span>
     </span>
   );
+}
+
+/**
+ * 속성 줄 아래 작은 글자 `상대만 N곡 · 나만 N곡`(D67 개정). 한쪽만 기록한 곡은 승·무·패·평균에 넣지 않으므로 따로 알린다.
+ * 0이면 그 항을 생략하고 둘 다 0(또는 옛 응답에 필드 없음)이면 줄이 없다.
+ */
+function UnplayedLine({ pattern }: { pattern: RivalPatternSummary }) {
+  const t = useTranslations();
+  const theirs = pattern.onlyTheirs ?? 0;
+  const mine = pattern.onlyMine ?? 0;
+  if (theirs <= 0 && mine <= 0) return null;
+  const parts = [theirs > 0 ? t("Rival.onlyTheirs", { n: theirs }) : null, mine > 0 ? t("Rival.onlyMine", { n: mine }) : null].filter((x) => x !== null);
+  return <span className="block text-[11px] text-fg-dim">{parts.join(" · ")}</span>;
 }
 
 /** 작은 승패 막대: 왼쪽 패(주황) · 가운데 무(회색 바탕) · 오른쪽 승(초록). 장식이고 같은 값이 `승 N · 무 N · 패 N` 글자로 있다. */
@@ -141,7 +154,8 @@ function PreviewList({
  * 라이벌 대시보드(D67, 6단계). 비교 화면 맨 위에서 두 사람이 모두 기록한 전체 곡을 속성별로 요약해 보여 준다.
  * 구성: ① 헤더(나·티어 / 총점 차 / 상대·티어, 승 무 패) ② 요약 카드 3(우세 속성·열세 속성·접전, 누르면 아래 탭으로) ③ 차트 전환(막대 · 점 분포 · 레이더, 7단계)
  * ④ `속성별 상세`: 탭(우세·열세·접전) + 속성 줄(누르면 카테고리 상세) + 곡 미리보기.
- * 승·무·패·합계·접전은 서버가 센 값을 그대로 쓰고(화면에서 다시 세지 않는다), 총점은 기존 비교 응답의 값이며 `총점 차`는 그 두 값의 차이다.
+ * 승·무·패·접전·평균 달성률 차는 서버가 센 값을 그대로 쓰고(화면에서 다시 세지 않는다), 판정 기준은 달성률 차다(D67 개정).
+ * 총점은 기존 비교 응답의 값(레이팅 점수)이며 `총점 차`는 그 두 값의 차이라서 승수와 순서가 다를 수 있다(요약 아래 안내 한 줄).
  * 여기의 승·무·패는 전체 곡 기준이라 아래 `곡별 승패`(레이팅 목록 기준)의 개수와 다를 수 있다. 상태(차트·탭)는 주소(`?chart=&tab=`)로 부모가 쥔다.
  */
 export function RivalDashboard({
@@ -176,7 +190,7 @@ export function RivalDashboard({
   if (summary.isError) {
     return <p role="alert" className="text-sm text-fg">{summary.error instanceof ApiError ? summary.error.message : t("Rival.loadFailed")}</p>;
   }
-  const { totals, patterns, distribution, closeMargin } = summary.data;
+  const { totals, patterns, rateDistribution, closeMargin } = summary.data;
   const inTab = tabPatterns(patterns, tab);
   const totalDiff = Math.round((rating.myTotalScore - rating.totalScore) * 100) / 100;
 
@@ -206,6 +220,7 @@ export function RivalDashboard({
         <p className="col-span-3 font-num text-sm font-bold text-fg">
           {t("Rival.wltLine", { wins: totals.wins, ties: totals.ties, losses: totals.losses })}
         </p>
+        <p className="col-span-3 text-[11px] leading-4 text-fg-dim">{t("Rival.judgeNote")}</p>
       </div>
 
       <div role="group" aria-label={t("Rival.cardsAria")} className="grid grid-cols-3 gap-2">
@@ -238,7 +253,7 @@ export function RivalDashboard({
             <p className="text-xs text-fg-dim">{t("Rival.barLegend")}</p>
           </>
         ) : chart === "dot" ? (
-          <RivalDotChart patterns={patterns} distribution={distribution} closeMargin={closeMargin} />
+          <RivalDotChart patterns={patterns} distribution={rateDistribution} closeMargin={closeMargin} />
         ) : (
           <RivalRadarChart patterns={patterns} />
         )}
@@ -266,6 +281,7 @@ export function RivalDashboard({
                     <span className="block text-sm font-bold text-fg">{patternLabel(p.pattern, t)}</span>
                     <span className="block font-num text-[11px] text-fg-dim">{t("Rival.patternWlt", { wins: p.wins, ties: p.ties, losses: p.losses })}</span>
                     {isSmallSample(p) ? <span className="block text-[11px] text-fg-dim">{t("Rival.smallSample")}</span> : null}
+                    <UnplayedLine pattern={p} />
                   </span>
                   <MiniBar pattern={p} />
                   <PatternValue pattern={p} tab={tab} />

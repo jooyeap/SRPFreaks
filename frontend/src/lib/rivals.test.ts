@@ -66,31 +66,48 @@ describe("라이벌 표시 도우미", () => {
   });
 });
 
-describe("catchUpRows (D66 따라잡을 곡)", () => {
+describe("catchUpRows (D66 따라잡을 곡, 달성률 차 기준 — D67 개정)", () => {
   const base: RivalRatingRow = {
     rank: 1, songDifficultyId: 1, songId: 1, title: "A", part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 5.4, pattern: "단일",
     rate: 95, stage: "SS", score: 240, myRate: 94, myScore: 238, diff: -2,
   };
-  const r = (id: number, over: Partial<RivalRatingRow>): RivalRatingRow => ({ ...base, songDifficultyId: id, songId: id, title: `S${id}`, ...over });
+  /** 곡 한 줄: gap = 내 달성률 − 상대 달성률(%p). 점수 차(diff)는 일부러 0으로 둔다(95% 이상은 점수가 같다 — 뽑는 기준이 점수 차가 아님을 확인). */
+  const r = (id: number, gap: number | null, over: Partial<RivalRatingRow> = {}): RivalRatingRow => ({
+    ...base,
+    songDifficultyId: id,
+    songId: id,
+    title: `S${id}`,
+    myRate: gap === null ? null : Math.round((95 + gap) * 100) / 100,
+    myScore: gap === null ? null : 240,
+    diff: gap === null ? null : 0,
+    ...over,
+  });
 
-  it("내가 뒤진 곡만, 차이가 작은 순으로 3곡을 고른다", () => {
-    const rows = [r(1, { diff: -4.37 }), r(2, { diff: -1.85 }), r(3, { diff: 2.28 }), r(4, { diff: -0.5 }), r(5, { diff: -9 }), r(6, { diff: -3 })];
+  it("내가 뒤진 곡만, 달성률 차가 작은 순으로 3곡을 고른다", () => {
+    const rows = [r(1, -4.37), r(2, -1.85), r(3, 2.28), r(4, -0.5), r(5, -9), r(6, -3)];
     expect(catchUpRows(rows).map((x) => x.songDifficultyId)).toEqual([4, 2, 6]);
   });
 
+  it("점수 차가 0이어도(달성률 95 이상) 달성률로 뒤졌으면 뽑는다: `뒤진 곡인데 +/±로 보이는` 어긋남이 없다", () => {
+    const picked = catchUpRows([r(1, -2.1, { diff: 0 }), r(2, 0.5, { diff: 0 }), r(3, 0, { diff: 0 })]);
+    expect(picked.map((x) => x.songDifficultyId)).toEqual([1]);
+    // 뽑힌 곡의 칩은 항상 `−`다
+    expect(formatRateGap(picked[0].myRate, picked[0].rate)).toEqual({ text: "\u22122.10%", sign: "down" });
+  });
+
   it("동점(±0.00)·내 기록 없음은 뺀다. 표시 둘째 자리로 같으면(−0.004) 뒤진 것이 아니다", () => {
-    const rows = [r(1, { diff: 0 }), r(2, { diff: -0.004 }), r(3, { myScore: null, myRate: null, diff: null }), r(4, { diff: -0.01 })];
+    const rows = [r(1, 0), r(2, -0.004, { myRate: 94.996 }), r(3, null), r(4, -0.01)];
     expect(catchUpRows(rows).map((x) => x.songDifficultyId)).toEqual([4]);
   });
 
   it("같은 차이면 상대 점수가 높은 곡이 먼저, 그다음 곡 id 순이다", () => {
-    const rows = [r(3, { diff: -1, score: 200 }), r(1, { diff: -1, score: 200 }), r(2, { diff: -1, score: 240 })];
+    const rows = [r(3, -1, { score: 200 }), r(1, -1, { score: 200 }), r(2, -1, { score: 240 })];
     expect(catchUpRows(rows).map((x) => x.songDifficultyId)).toEqual([2, 1, 3]);
   });
 
   it("3곡 미만이면 있는 만큼, 하나도 없으면 빈 목록이다", () => {
-    expect(catchUpRows([r(1, { diff: -1 })])).toHaveLength(1);
-    expect(catchUpRows([r(1, { diff: 1 }), r(2, { diff: 0 })])).toEqual([]);
+    expect(catchUpRows([r(1, -1)])).toHaveLength(1);
+    expect(catchUpRows([r(1, 1), r(2, 0)])).toEqual([]);
     expect(catchUpRows([])).toEqual([]);
   });
 });

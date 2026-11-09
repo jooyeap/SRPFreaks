@@ -568,7 +568,11 @@ export interface RivalCompareRatingResponse {
 /** 라이벌 대시보드(D67)의 속성 키. 속성 한 줄의 `key`이자 카테고리 상세 주소의 마지막 조각이다. */
 export type RivalPatternKey = "SINGLE" | "COMPOUND" | "COMPOSITE_SINGLE" | "DOUBLE" | "TRIPLE";
 
-/** 속성 한 줄(D67). pattern은 화면 라벨(`복합(단일)` 등), 합계 값들은 diff = 내 점수 - 상대 점수(표시 둘째 자리 기준). */
+/**
+ * 속성 한 줄(D67). pattern은 화면 라벨(`복합(단일)` 등).
+ * wins·ties·losses·closeCount는 **달성률 차 기준**(D67 개정, 2026-11-09): diff = 내 달성률 − 상대 달성률(%p), 승 > 0 · 패 < 0 · 무 = 0 · 접전 |diff| ≤ 1.00.
+ * scoreDiffSum(점수 차 합계)은 옛 필드로 남겨 두었고 판정·정렬에는 쓰지 않는다.
+ */
 export interface RivalPatternSummary {
   pattern: string;
   key: RivalPatternKey;
@@ -578,8 +582,12 @@ export interface RivalPatternSummary {
   scoreDiffSum: number;
   closeCount: number;
   sharedCount: number;
-  /** 공유 곡마다 (내 달성률 − 상대 달성률)의 평균(%, 소수 첫째 자리). 공유 곡이 없으면 null. 판정(승·무·패)에는 쓰이지 않고 화면에 보이는 값이다(D67 개정). 옛 응답에는 없을 수 있다. */
+  /** 공유 곡마다 (내 달성률 − 상대 달성률)의 평균(%, 소수 첫째 자리). 공유 곡이 없으면 null. 화면에 보이는 값이고 우세·열세를 고르는 기준이다(D67 개정). 옛 응답에는 없을 수 있다. */
   rateDiffAvg?: number | null;
+  /** 상대만 기록한(나는 기록이 없는) 레이팅 대상 곡 수. 승·무·패·평균에 넣지 않는다(D67 개정). 옛 응답에는 없을 수 있다. */
+  onlyTheirs?: number;
+  /** 나만 기록한 레이팅 대상 곡 수. 승·무·패·평균에 넣지 않는다(D67 개정). 옛 응답에는 없을 수 있다. */
+  onlyMine?: number;
 }
 
 /** 서열 난이도(0.1 단위) 한 줄. 공유 곡이 있는 난이도만, 높은 난이도 먼저. 화면은 아직 쓰지 않는다(타입만). */
@@ -590,7 +598,7 @@ export interface RivalTierSummary {
   losses: number;
 }
 
-/** 점 분포 차트용: 속성별 곡마다의 점수 차(곡 id 없음), 작은 값부터. */
+/** 점 분포 차트용: 속성별 곡마다의 차이(곡 id 없음), 작은 값부터. `distribution`은 점수 차(옛 필드), `rateDistribution`은 달성률 차(%p). */
 export interface RivalPatternDiffs {
   pattern: string;
   key: RivalPatternKey;
@@ -605,7 +613,10 @@ export interface RivalSummaryResponse {
   totals: { wins: number; ties: number; losses: number; closeCount: number; sharedCount: number; scoreDiffSum: number };
   patterns: RivalPatternSummary[];
   tiers: RivalTierSummary[];
+  /** 점수 차 분포(옛 필드, 화면은 쓰지 않는다). */
   distribution: RivalPatternDiffs[];
+  /** 달성률 차(%p) 분포. 점 분포 차트가 쓴다. 옛 응답에는 없을 수 있다(그 경우 점 분포는 `–`로 비어 보인다). */
+  rateDistribution?: RivalPatternDiffs[];
 }
 
 export type RivalDetailFilter = "ALL" | "LOSE" | "CLOSE" | "WIN";
@@ -627,7 +638,10 @@ export interface RivalDetailRow {
   myRate: number;
   myStage: AchievementStage;
   myScore: number;
+  /** 점수 차(옛 필드). 판정·정렬에는 쓰이지 않는다. */
   diff: number;
+  /** 달성률 차(%p) = myRate − rate. 판정·정렬 기준(D67 개정). 옛 응답에는 없을 수 있어 없으면 myRate − rate로 계산한다. */
+  rateDiff?: number;
 }
 
 export interface RivalSummaryDetailResponse {
