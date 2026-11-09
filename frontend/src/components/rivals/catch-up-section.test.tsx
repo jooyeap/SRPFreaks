@@ -21,10 +21,12 @@ import type { RivalCompareRatingResponse, RivalRatingRow, SetlistItemResponse } 
 const gold = { key: "GOLD", displayName: "Gold", minScore: 5500, nextMinScore: 6000, nextDisplayName: "Platinum" };
 const MINUS = "−";
 
-function row(id: number, over: Partial<RivalRatingRow> = {}): RivalRatingRow {
+/** 곡 한 줄: gap = 내 달성률 − 상대 달성률(%p, 상대 95.20 기준). 점수 차(diff)는 일부러 0으로 둔다(95% 이상은 점수가 같다). gap이 null이면 내 기록 없음. */
+function row(id: number, gap: number | null, over: Partial<RivalRatingRow> = {}): RivalRatingRow {
   return {
     rank: id, songDifficultyId: 10 + id, songId: 100 + id, title: `Song ${id}`, part: "GUITAR", difficulty: "MASTER", level: 9.5, tier: 5.4,
-    pattern: "복합(단일)", rate: 95.2, stage: "SS", score: 238.1, myRate: 94, myScore: 236, diff: -2.1, ...over,
+    pattern: "복합(단일)", rate: 95.2, stage: "SS", score: 238.1,
+    myRate: gap === null ? null : Math.round((95.2 + gap) * 100) / 100, myScore: gap === null ? null : 238.1, diff: gap === null ? null : 0, ...over,
   };
 }
 function response(single: RivalRatingRow[], other: RivalRatingRow[] = []): RivalCompareRatingResponse {
@@ -80,7 +82,7 @@ afterEach(() => {
 
 describe("따라잡을 곡 (D66)", () => {
   it("내가 뒤진 곡만 차이가 작은 순으로 최대 3곡을 보이고, 제목·설명을 쓴다", async () => {
-    show([row(1, { diff: -4.37 }), row(2, { diff: -1.85, myRate: 90, rate: 92.1 }), row(3, { diff: 2.28 })], [row(4, { diff: -0.5, myRate: 94.5, rate: 95.7 }), row(5, { diff: -9 }), row(6, { diff: -3 })]);
+    show([row(1, -4.37), row(2, -1.85), row(3, 2.28)], [row(4, -0.5), row(5, -9), row(6, -3)]);
     const box = await section();
     expect(within(box).getByRole("heading", { name: "따라잡을 곡" })).toBeInTheDocument();
     expect(within(box).getByText("내가 뒤진 곡 중 차이가 작은 순 · 3곡")).toBeInTheDocument();
@@ -89,14 +91,25 @@ describe("따라잡을 곡 (D66)", () => {
     expect(items[0]).toHaveTextContent("Song 4");
     expect(items[1]).toHaveTextContent("Song 2");
     expect(items[2]).toHaveTextContent("Song 6");
-    // 선택·정렬은 점수 차(diff) 기준 그대로이고, 차이 칩은 달성률 차(%)로 부호가 글자로 보이며 뒤진 쪽 색(주황)이다
-    expect(within(items[0]).getByText(`${MINUS}1.20%`)).toHaveClass("text-weak-text", "border-weak");
-    expect(within(items[1]).getByText(`${MINUS}2.10%`)).toBeInTheDocument();
-    expect(within(items[0]).queryByText(`${MINUS}0.50`)).toBeNull();
+    // 선택·정렬은 칩과 같은 달성률 차 기준이고(D67 개정), 칩은 달성률 차(%)로 부호가 글자로 보이며 뒤진 쪽 색(주황)이다
+    expect(within(items[0]).getByText(`${MINUS}0.50%`)).toHaveClass("text-weak-text", "border-weak");
+    expect(within(items[1]).getByText(`${MINUS}1.85%`)).toBeInTheDocument();
+    expect(within(items[2]).getByText(`${MINUS}3.00%`)).toBeInTheDocument();
+  });
+
+  it("점수 차가 0이어도(달성률 95 이상) 달성률로 뒤졌으면 뽑히고, 칩은 항상 −다(`뒤진 곡인데 +로 보이는` 어긋남이 없다)", async () => {
+    show([row(1, -2.1), row(2, 0.5), row(3, 0)]);
+    const box = await section();
+    const items = within(box).getAllByRole("listitem");
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent("Song 1");
+    expect(within(items[0]).getByText(`${MINUS}2.10%`)).toBeInTheDocument();
+    expect(within(box).queryByText(/^\+/)).toBeNull();
+    expect(within(box).queryByText("±0.00%")).toBeNull();
   });
 
   it("앞선 곡·동점·내 기록 없음은 넣지 않는다", async () => {
-    show([row(1, { diff: 2.28 }), row(2, { diff: 0 }), row(3, { myScore: null, myRate: null, diff: null }), row(4, { diff: -0.01 })]);
+    show([row(1, 2.28), row(2, 0), row(3, null), row(4, -0.01)]);
     const box = await section();
     const items = within(box).getAllByRole("listitem");
     expect(items).toHaveLength(1);
@@ -104,21 +117,21 @@ describe("따라잡을 곡 (D66)", () => {
   });
 
   it("3곡 미만이면 있는 만큼 보이고, 설명의 곡 수도 그만큼이다", async () => {
-    show([row(1, { diff: -1 }), row(2, { diff: -2 })]);
+    show([row(1, -1), row(2, -2)]);
     const box = await section();
     expect(within(box).getAllByRole("listitem")).toHaveLength(2);
     expect(within(box).getByText("내가 뒤진 곡 중 차이가 작은 순 · 2곡")).toBeInTheDocument();
   });
 
   it("뒤진 곡이 하나도 없으면 구역을 숨긴다", async () => {
-    show([row(1, { diff: 3 }), row(2, { diff: 0 })]);
+    show([row(1, 3), row(2, 0)]);
     await screen.findByText(/^\+는 내가 앞/);
     expect(screen.queryByRole("region", { name: "따라잡을 곡" })).toBeNull();
     expect(screen.queryByText("따라잡을 곡")).toBeNull();
   });
 
   it("`담기`를 누르면 그 곡 하나만 담기 요청을 보내고 `담김`으로 바뀐다(한꺼번에 담기 버튼은 없다)", async () => {
-    show([row(1, { diff: -1 }), row(2, { diff: -2 })]);
+    show([row(1, -1), row(2, -2)]);
     const box = await section();
     const buttons = await within(box).findAllByRole("button", { name: /세트리스트에 담기$/ });
     expect(buttons).toHaveLength(2);
@@ -135,7 +148,7 @@ describe("따라잡을 곡 (D66)", () => {
 
   it("이미 담긴 곡은 처음부터 `담김`(초록 테두리 + 글자)이고 눌리지 않는다", async () => {
     setlist = [setlistItem(11)];
-    show([row(1, { diff: -1 })]);
+    show([row(1, -1)]);
     const box = await section();
     const done = await within(box).findByRole("button", { name: "Song 1 세트리스트에 담김" });
     await waitFor(() => expect(done).toHaveTextContent("담김"));
@@ -145,28 +158,28 @@ describe("따라잡을 곡 (D66)", () => {
 
   it("세트리스트가 30곡 차 있으면 새로 담는 `담기`는 막힌다", async () => {
     setlist = Array.from({ length: 30 }, (_, i) => setlistItem(500 + i));
-    show([row(1, { diff: -1 })]);
+    show([row(1, -1)]);
     const box = await section();
     const button = await within(box).findByRole("button", { name: "Song 1 세트리스트에 담기" });
     await waitFor(() => expect(button).toBeDisabled());
   });
 
   it("재킷이 꺼져 있으면 재킷 칸이 없다", async () => {
-    show([row(1, { diff: -1 })]);
+    show([row(1, -1)]);
     const box = await section();
     expect(box.querySelector("li .bg-jacket")).toBeNull();
   });
 
   it("재킷이 켜져 있으면 줄에 재킷 칸이 생긴다(이미지가 없으면 단색 칸)", async () => {
     act(() => setJacketData({ enabled: true, jackets: {} }));
-    show([row(1, { diff: -1 })]);
+    show([row(1, -1)]);
     const box = await section();
     expect(box.querySelector("li .bg-jacket")).not.toBeNull();
   });
 
   it("일본어: 제목·설명·버튼이 번역되고 차이 칩 부호는 그대로다", async () => {
     state.locale = "ja";
-    show([row(1, { diff: -1.85, myRate: 90, rate: 92.1 })]);
+    show([row(1, -2.1)]);
     const box = await section();
     expect(within(box).getByRole("heading", { name: "追いつきたい曲" })).toBeInTheDocument();
     expect(within(box).getByText("自分が負けている曲のうち、差が小さい順 · 1曲")).toBeInTheDocument();

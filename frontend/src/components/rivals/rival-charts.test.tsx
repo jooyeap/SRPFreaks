@@ -22,10 +22,10 @@ import type { RivalCompareRatingResponse, RivalPatternDiffs, RivalPatternSummary
 import type { DashChart } from "@/lib/rival-dashboard";
 
 function pattern(key: RivalPatternSummary["key"], label: string, over: Partial<RivalPatternSummary> = {}): RivalPatternSummary {
-  return { pattern: label, key, wins: 0, ties: 0, losses: 0, scoreDiffSum: 0, closeCount: 0, sharedCount: 0, ...over };
+  return { pattern: label, key, wins: 0, ties: 0, losses: 0, scoreDiffSum: 0, closeCount: 0, sharedCount: 0, rateDiffAvg: null, ...over };
 }
 const PATTERNS: RivalPatternSummary[] = [
-  pattern("SINGLE", "단일", { wins: 6, ties: 1, losses: 2, scoreDiffSum: 30.5, closeCount: 2, sharedCount: 9 }),
+  pattern("SINGLE", "단일", { wins: 6, ties: 1, losses: 2, scoreDiffSum: 30.5, closeCount: 2, sharedCount: 9, rateDiffAvg: 1.8 }),
   pattern("COMPOUND", "복합", { wins: 1, losses: 0, scoreDiffSum: 4, closeCount: 3, sharedCount: 4 }),
   pattern("COMPOSITE_SINGLE", "복합(단일)", { wins: 4, ties: 1, losses: 5, scoreDiffSum: -18, closeCount: 2, sharedCount: 10 }),
   pattern("DOUBLE", "이중"),
@@ -51,10 +51,18 @@ describe("점 분포 (D67, 7단계)", () => {
     expect(img).toHaveAccessibleName(/점 분포 차트/);
     expect(img.getAttribute("aria-label")).toContain("±1 이내는 접전");
     expect(screen.getByText("← 열세 · 접전 · 우세 →")).toBeInTheDocument();
-    const table = screen.getByRole("table", { name: "속성별 승·무·패와 점수 차" });
+    const table = screen.getByRole("table", { name: "속성별 승·무·패와 평균 달성률 차" });
     expect(table.parentElement).toHaveClass("sr-only"); // 감싼 상자가 숨긴다(표 자체에 주면 가로 스크롤이 생긴다)
     expect(within(table).getAllByRole("row")).toHaveLength(6); // 머리 + 속성 5줄
-    expect(within(table).getByRole("row", { name: /^단일 / })).toHaveTextContent("+30.50");
+    expect(within(table).getByRole("row", { name: /^단일 / })).toHaveTextContent("+1.8%");   // 평균 달성률 차(점수 차 합계 +30.50이 아니다)
+    expect(within(table).getByRole("row", { name: /^단일 / })).not.toHaveTextContent("+30.50");
+    expect(img.getAttribute("aria-label")).toContain("달성률 차");
+  });
+
+  it("옛 응답(달성률 차 분포 없음)이어도 깨지지 않고 점은 없다(`–`)", () => {
+    const { container } = render(<RivalDotChart patterns={PATTERNS} distribution={undefined} closeMargin={1} />);
+    expect(container.querySelectorAll("circle")).toHaveLength(0);
+    expect(screen.getByRole("img")).toBeInTheDocument();
   });
 
   it("곡 하나가 점 하나다(속성별 점 수 = 분포 길이)", () => {
@@ -105,7 +113,7 @@ describe("점 분포 (D67, 7단계)", () => {
     render(<RivalDotChart patterns={PATTERNS} distribution={DISTRIBUTION} closeMargin={1} />);
     expect(screen.getByRole("img")).toHaveAccessibleName(/点分布グラフ/);
     expect(screen.getByText("← 劣勢 · 接戦 · 優勢 →")).toBeInTheDocument();
-    expect(screen.getByRole("table", { name: "属性別の勝・分・敗と点差" })).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "属性別の勝・分・敗と平均達成率差" })).toBeInTheDocument();
     expect(screen.getByText("※ 5曲未満のため参考値")).toBeInTheDocument();
   });
 });
@@ -120,7 +128,7 @@ describe("레이더 (D67, 7단계)", () => {
     expect(label).toContain("복합(단일) 40%");
     expect(label).toContain("이중 –");
     expect(label).toContain("삼중 0%");
-    const table = screen.getByRole("table", { name: "속성별 승·무·패와 점수 차" });
+    const table = screen.getByRole("table", { name: "속성별 승·무·패와 평균 달성률 차" });
     expect(within(table).getByRole("row", { name: /^단일 / })).toHaveTextContent("67%");
     expect(within(table).getByRole("row", { name: /^이중 / })).toHaveTextContent("–");
   });
@@ -179,7 +187,10 @@ const rating: RivalCompareRatingResponse = {
 const summary: RivalSummaryResponse = {
   userId: 7, nickname: "Rumi", closeMargin: 1,
   totals: { wins: 11, ties: 4, losses: 10, closeCount: 9, sharedCount: 30, scoreDiffSum: -26.17 },
-  patterns: PATTERNS, tiers: [], distribution: DISTRIBUTION,
+  patterns: PATTERNS, tiers: [],
+  // 옛 점수 차 분포(화면은 쓰지 않는다)는 일부러 다른 값으로 두고, 점 분포는 달성률 차 분포(rateDistribution)를 그린다(D67 개정)
+  distribution: DISTRIBUTION.map((d) => ({ ...d, diffs: d.diffs.map(() => 99) })),
+  rateDistribution: DISTRIBUTION,
 };
 const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
 const fetchMock = vi.fn<typeof fetch>();
@@ -246,6 +257,39 @@ describe("차트 전환 칸", () => {
     const box2 = await screen.findByRole("region", { name: "라이벌 대시보드" });
     expect(within(box2).getByRole("img")).toHaveAccessibleName(/레이더 차트/);
     expect(within(box2).queryByText(/막대: 왼쪽 패/)).toBeNull();
+  });
+
+  it("대시보드의 점 분포는 달성률 차 분포(rateDistribution)로 그리고 옛 점수 차 분포(distribution)는 쓰지 않는다", async () => {
+    show("dot");
+    const box = await screen.findByRole("region", { name: "라이벌 대시보드" });
+    const svg = within(box).getByRole("img");
+    expect(svg.querySelectorAll('g[data-key="SINGLE"] circle')).toHaveLength(7);
+    // 옛 분포(99점 차)라면 모두 끝에 모여 접전 점이 없다. 달성률 차 분포라서 접전·열세·우세 점이 섞여 있다
+    const sides = Array.from(svg.querySelectorAll('g[data-key="COMPOSITE_SINGLE"] circle')).map((c) => c.getAttribute("data-side"));
+    expect(sides).toContain("lose");
+    expect(sides).toContain("close");
+  });
+
+  it("옛 응답(rateDistribution 없음)에서도 점 분포 화면이 깨지지 않는다", async () => {
+    const old = { ...summary } as Partial<RivalSummaryResponse>;
+    delete old.rateDistribution;
+    fetchMock.mockImplementation(async (input) => {
+      const url = new URL(String(input), "http://localhost");
+      if (/\/compare\/summary\/[A-Z_]+$/.test(url.pathname)) return json({ userId: 7, nickname: "Rumi", summary: PATTERNS[0], filterCounts: { all: 0, lose: 0, close: 0, win: 0 }, rows: { content: [], page: 0, size: 2, totalElements: 0, totalPages: 1 } });
+      if (url.pathname.endsWith("/compare/summary")) return json(old);
+      if (url.pathname.endsWith("/compare/rating")) return json(rating);
+      if (url.pathname.endsWith("/setlist")) return json({ content: [], totalElements: 0, totalPages: 1, number: 0, size: 30 });
+      return json({});
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <RivalCompareView viewerId={1} targetId={7} chart="dot" onChartChange={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    const box = await screen.findByRole("region", { name: "라이벌 대시보드" });
+    expect(within(box).getByRole("img")).toHaveAccessibleName(/점 분포 차트/);
+    expect(box.querySelectorAll("circle")).toHaveLength(0);
   });
 
   it("일본어에서도 세 버튼 글자가 일본어다", async () => {

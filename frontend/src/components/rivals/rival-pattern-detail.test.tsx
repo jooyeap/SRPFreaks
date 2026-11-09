@@ -105,7 +105,7 @@ describe("라이벌 속성 상세 (D67, 6단계)", () => {
     expect(url.searchParams.get("page")).toBe("2");
     expect(url.searchParams.get("size")).toBe("20");
     expect(url.searchParams.has("sort")).toBe(false); // 정렬은 서버 기본값
-    expect(screen.getByText("+는 내가 앞, −는 내가 뒤 (내 점수 − 상대 점수)")).toBeInTheDocument();
+    expect(screen.getByText("+는 내가 앞, −는 내가 뒤 (내 달성률 − 상대 달성률)")).toBeInTheDocument();
   });
 
   it("쪽이 둘 이상이면 이전/다음이 나오고 누르면 쪽을 부모에 알린다", async () => {

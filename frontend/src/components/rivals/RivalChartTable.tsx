@@ -1,12 +1,12 @@
 import type { RivalPatternSummary } from "@/lib/api-types";
 import { patternLabel } from "@/lib/chart-labels";
 import { winRate } from "@/lib/rival-charts";
-import { formatScoreDiff } from "@/lib/rivals";
+import { formatRateDiff } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 /**
  * 점 분포·레이더의 값을 읽기 프로그램용 표로 한 번 더 준다(화면에서는 숨김, 감싼 상자가 sr-only).
- * 도형(SVG)은 role="img" 하나로 읽히므로, 속성별 숫자는 이 표로 읽는다. 값은 서버가 센 승·무·패·접전·합계 그대로이고 승률만 승 ÷ 공유 곡이다.
+ * 도형(SVG)은 role="img" 하나로 읽히므로, 속성별 숫자는 이 표로 읽는다. 값은 서버가 센 승·무·패·접전·평균 달성률 차 그대로(판정은 달성률 차 기준, D67 개정)이고 승률만 승 ÷ 공유 곡이다.
  */
 export function RivalChartTable({ patterns }: { patterns: readonly RivalPatternSummary[] }) {
   const t = useTranslations();
@@ -37,7 +37,7 @@ export function RivalChartTable({ patterns }: { patterns: readonly RivalPatternS
               <td>{p.ties}</td>
               <td>{p.losses}</td>
               <td>{p.closeCount}</td>
-              <td>{p.sharedCount === 0 ? "–" : (formatScoreDiff(p.scoreDiffSum)?.text ?? "–")}</td>
+              <td>{p.sharedCount === 0 ? "–" : (formatRateDiff(p.rateDiffAvg) ?? "–")}</td>
               <td>{p.sharedCount}</td>
               <td>{rate === null ? "–" : `${Math.round(rate * 100)}%`}</td>
             </tr>
