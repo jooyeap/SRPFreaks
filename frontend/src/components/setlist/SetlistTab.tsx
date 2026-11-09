@@ -1,9 +1,7 @@
 "use client";
 
-import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { Pager, usePaged } from "@/components/Pager";
 import { useToast } from "@/components/Toast";
@@ -11,12 +9,10 @@ import { SetlistRecommend } from "@/components/setlist/SetlistRecommend";
 import { SetlistSearch } from "@/components/setlist/SetlistSearch";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import type { RecordChart } from "@/components/record/RecordForm";
-import { ChartBadge } from "@/components/table/Badges";
+import { ChartLine } from "@/components/table/ChartLine";
 import { StageRatePill } from "@/components/table/StageRatePill";
-import { patternLabel } from "@/lib/chart-labels";
 import { ApiError } from "@/lib/api";
 import type { SetlistItemResponse } from "@/lib/api-types";
-import { EMPTY_MARK, formatTier } from "@/lib/format";
 import {
   clearDoneSetlist,
   doneCount,
@@ -158,10 +154,9 @@ export function SetlistTab({ userId }: { userId: number }) {
 }
 
 /**
- * 세트리스트 한 줄 (2026-11-05, 시안 `세트리스트 카드 A안 다듬기` A-1/A-2): 서열표 EntryCard와 같은 모양이다.
- * 왼쪽 세 줄 = `속성 | 상수 5.6` 작은 글자(서열표에서 추천이 들어가는 자리에 추천 대신 상수) / 곡명 14px 한 줄 / `Guitar | MAS 9.45` 알약(+ 완료하면 `✓ 완료`).
+ * 세트리스트 담긴 목록 한 줄. 서열표 줄과 같은 공통 줄(ChartLine, D64)이다(높이 68px, 재킷은 있을 때만 48px).
+ * 왼쪽 = `속성 | 5.6`(서열 난이도 숫자, 라벨 없음, 완료하면 `✓ 완료`가 윗줄 끝에 붙는다) / 곡명 / 난이도 알약 `MAS 9.45` + 파트 글자.
  * 오른쪽 88px = 랭크·달성률 알약 위, `[입력] [빼기]`(완료하면 `[수정] [빼기]`) 아래.
- * 카드 높이는 곡명 길이·기록 유무와 상관없이 같도록 h-[76px]로 고정하고 안쪽을 가운데 맞춘다.
  * 완료는 계산된 값(item.done)이다. 초록 테두리와 `✓ 완료` 글자를 같이 써서 색만으로 구분하지 않는다.
  */
 function SetlistRow({
@@ -182,59 +177,51 @@ function SetlistRow({
   const buttonBase =
     "relative flex h-[26px] flex-1 items-center justify-center rounded-md border border-ctl px-1 text-xs after:absolute after:-inset-1.5 after:content-['']";
   return (
-    <li
-      data-done={item.done ? "true" : "false"}
-      className={`flex h-[76px] items-center gap-2.5 rounded-2xl border bg-card ${jackets.visible ? "pl-3" : "pl-4"} pr-3 ${item.done ? "border-done" : "border-line"}`}
-    >
-      {/* 재킷(D54): 서열표 줄과 같이 48px(360px 미만 40px). 끄면 칸이 없다 */}
-      {jackets.visible ? <SongJacket url={jackets.urlOf(item.songId)} title={item.title} className="size-12 rounded-lg max-[359px]:size-10" /> : null}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[10px] font-bold leading-3 text-fg-dim">
-          <span className="sr-only">{t("Chart.patternSr")} </span>
-          {item.pattern ? patternLabel(item.pattern, t) : EMPTY_MARK}
-          <span className="mx-1 text-chip-line" aria-hidden="true">|</span>
-          {t.rich("Setlist.constLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
-        </p>
-        <Link
-          href={`/songs/${item.songId}?chart=${item.songDifficultyId}`}
-          className="mt-1 block truncate text-sm leading-[18px] text-fg hover:underline"
-        >
-          {item.title}
-        </Link>
-        <span className="mt-1 flex items-center gap-1.5 overflow-hidden">
-          <ChartBadge part={item.part} difficulty={item.difficulty} level={item.level} compact />
-          {item.done ? (
-            <span className="flex shrink-0 items-center gap-0.5 text-[11px] font-bold text-done-text">
-              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12l5 5 9-10" />
-              </svg>
-              {t("Setlist.doneMark")}
-            </span>
-          ) : null}
-        </span>
-      </div>
-      <div className="flex w-[88px] shrink-0 flex-col items-end gap-1.5">
-        <StageRatePill stage={stage} rate={item.mine?.rate} />
-        <div className="flex w-full gap-2">
-          <button
-            type="button"
-            onClick={onRecord}
-            aria-label={t(item.done ? "Setlist.editAria" : "Setlist.recordAria", { title: item.title })}
-            className={`${buttonBase} text-fg hover:bg-table-head`}
-          >
-            {item.done ? t("Record.edit") : t("Setlist.inputBtn")}
-          </button>
-          <button
-            type="button"
-            disabled={removing}
-            onClick={onRemove}
-            aria-label={t("Setlist.removeAria", { title: item.title })}
-            className={`${buttonBase} text-fg-sub hover:text-fg disabled:opacity-60`}
-          >
-            {t("Setlist.removeBtn")}
-          </button>
+    <ChartLine
+      className={`rounded-2xl border bg-card ${item.done ? "border-done" : "border-line"}`}
+      done={item.done}
+      jacket={jackets.visible ? { url: jackets.urlOf(item.songId) } : null}
+      pattern={item.pattern}
+      tier={item.tier}
+      topExtra={
+        item.done ? (
+          <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-bold text-done-text">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12l5 5 9-10" />
+            </svg>
+            {t("Setlist.doneMark")}
+          </span>
+        ) : null
+      }
+      title={item.title}
+      href={`/songs/${item.songId}?chart=${item.songDifficultyId}`}
+      part={item.part}
+      difficulty={item.difficulty}
+      level={item.level}
+      aside={
+        <div className="flex w-[88px] shrink-0 flex-col items-end gap-1.5">
+          <StageRatePill stage={stage} rate={item.mine?.rate} />
+          <div className="flex w-full gap-2">
+            <button
+              type="button"
+              onClick={onRecord}
+              aria-label={t(item.done ? "Setlist.editAria" : "Setlist.recordAria", { title: item.title })}
+              className={`${buttonBase} text-fg hover:bg-table-head`}
+            >
+              {item.done ? t("Record.edit") : t("Setlist.inputBtn")}
+            </button>
+            <button
+              type="button"
+              disabled={removing}
+              onClick={onRemove}
+              aria-label={t("Setlist.removeAria", { title: item.title })}
+              className={`${buttonBase} text-fg-sub hover:text-fg disabled:opacity-60`}
+            >
+              {t("Setlist.removeBtn")}
+            </button>
+          </div>
         </div>
-      </div>
-    </li>
+      }
+    />
   );
 }

@@ -78,6 +78,29 @@ describe("속성 칩(재킷 모서리, 2026-11-08) 색 대비", () => {
   }
 });
 
+describe("파트 글자색(--part-text-*, D64 서열표·세트리스트 줄)", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: Guitar(보라)·Bass(청록) 글자가 줄 배경(카드·페이지·표 머리) 위에서 대비 4.5:1 이상이다`, () => {
+      for (const key of ["--part-text-guitar", "--part-text-bass"]) {
+        expect(vars[key], `${key}가 없음`).toBeDefined();
+        for (const bg of ["--card", "--page", "--table-head"]) {
+          expect(contrast(vars[key], vars[bg]), `${key} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
+
+  it("Tailwind 유틸리티(text-part-text-guitar / text-part-text-bass)로 쓸 수 있게 @theme에 등록돼 있다", () => {
+    expect(css).toMatch(/--color-part-text-guitar:\s*var\(--part-text-guitar\)/);
+    expect(css).toMatch(/--color-part-text-bass:\s*var\(--part-text-bass\)/);
+  });
+});
+
 describe("globals.css 테마 변수", () => {
   const dark = varsOf(":root {");
   const lightPicked = varsOf(':root[data-theme="light"] {');

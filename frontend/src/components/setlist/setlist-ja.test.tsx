@@ -58,12 +58,12 @@ describe("세트리스트 (일본어)", () => {
     expect(await screen.findByText("追加した曲がありません。上の検索欄で、今日プレイする曲を探して追加してみましょう。")).toBeInTheDocument();
   });
 
-  it("줄에 `定数 5.6`과 일본어 버튼이 나온다", async () => {
+  it("줄에 `基準 5.6`(서열 난이도 숫자)과 일본어 버튼이 나온다", async () => {
     listed = [item(1), item(2, { tier: null, done: true })];
     renderTab();
     const rows = within(await screen.findByRole("list", { name: "セットリスト" })).getAllByRole("listitem");
-    expect(rows[0]).toHaveTextContent("定数 5.6");
-    expect(rows[1]).toHaveTextContent("定数 未定");
+    expect(rows[0]).toHaveTextContent("基準 5.6");
+    expect(rows[1]).toHaveTextContent("基準 未定");
     expect(within(rows[0]).getAllByRole("button").map((b) => b.textContent)).toEqual(["入力", "外す"]);
     expect(within(rows[1]).getAllByRole("button").map((b) => b.textContent)).toEqual(["編集", "外す"]);
   });

@@ -104,7 +104,7 @@ describe("세트리스트", () => {
       expect(within(rows[1]).getByRole("button", { name: "곡02 기록 입력" })).toHaveTextContent("입력");
     });
 
-    it("카드 A안: `속성 | 상수 x.x` 작은 줄, 상수 미정, 속성 없음, 완료 표시와 버튼 구성, 높이 고정", async () => {
+    it("공통 줄(D64): `속성 | 서열 난이도` 작은 줄, 난이도 미정, 속성 없음, 완료 표시와 버튼 구성, 높이 고정", async () => {
       listed = [
         item(1, { pattern: "복합", tier: 5.6 }),
         item(2, { pattern: "단일", tier: null, done: true, mine: { rate: 100, fullCombo: true, stage: "EXC" } }),
@@ -113,10 +113,10 @@ describe("세트리스트", () => {
       renderWith(<SetlistTab userId={1} />);
       const rows = within(await screen.findByRole("list", { name: "세트리스트" })).getAllByRole("listitem");
 
-      expect(rows[0]).toHaveTextContent("속성 복합|상수 5.6");
-      expect(rows[0]).not.toHaveTextContent("레이팅 상수 난이도");
-      expect(rows[1]).toHaveTextContent("속성 단일|상수 미정");
-      expect(rows[2]).toHaveTextContent("속성 –|상수 미정");
+      expect(rows[0]).toHaveTextContent("속성 복합|기준 5.6");
+      expect(rows[0]).not.toHaveTextContent("상수");
+      expect(rows[1]).toHaveTextContent("속성 단일|기준 미정");
+      expect(rows[2]).toHaveTextContent("속성 –|기준 미정");
 
       // 미완료: [입력][빼기], 완료 글자 없음. 완료: [수정][빼기], `완료` 글자와 초록 테두리
       expect(within(rows[0]).getAllByRole("button").map((b) => b.textContent)).toEqual(["입력", "빼기"]);
@@ -132,7 +132,7 @@ describe("세트리스트", () => {
       expect(rows[1]).toHaveTextContent("MAX");
 
       // 높이는 곡명 길이·기록 유무와 상관없이 같고, 곡명은 한 줄 말줄임, 눌리는 영역을 넓힌 버튼
-      for (const row of rows) expect(row).toHaveClass("h-[76px]");
+      for (const row of rows) expect(row).toHaveClass("h-[68px]");
       expect(within(rows[2]).getByRole("link")).toHaveClass("truncate");
       for (const b of within(rows[0]).getAllByRole("button")) {
         expect(b).toHaveClass("h-[26px]", "after:-inset-1.5");
@@ -309,7 +309,8 @@ describe("세트리스트", () => {
       expect(within(section).getByRole("heading", { name: /^S 기준/ })).toHaveTextContent("평균 \u22120.1 ~ +0.4");
       const ss = within(within(section).getByRole("list", { name: "SS 기준 추천" })).getAllByRole("listitem");
       expect(ss[0]).toHaveTextContent("추천곡1");
-      expect(ss[0]).toHaveTextContent("기록 없음");
+      expect(ss[0]).toHaveTextContent("––"); // 기록이 없으면 `[– | –]` 알약(`기록 없음` 글자는 쓰지 않는다)
+      expect(ss[0]).not.toHaveTextContent("기록 없음");
       expect(ss[1]).toHaveTextContent("90.50");
       expect(ss[1]).toHaveTextContent("S");
       const s = within(within(section).getByRole("list", { name: "S 기준 추천" })).getAllByRole("listitem");
@@ -322,6 +323,27 @@ describe("세트리스트", () => {
 
       const ss = await screen.findByRole("list", { name: /SS 기준/ });
       expect(within(ss).getAllByRole("listitem")[0]).toHaveTextContent("이중");
+    });
+
+    it("추천 줄도 공통 줄(D64): 68px, `속성 | 서열 난이도`, 기록 없음은 `[– | –]`, `담기`/`담김`(담김은 초록 테두리·글자)", async () => {
+      listed = [item(1, { songDifficultyId: 1 })]; // 추천 1번 채보는 세트리스트에 담겨 있다
+      recommended = based({ ssChallenge: [rec(1, { pattern: "복합", tier: 5.4 }), rec(2)], sFill: [] });
+      renderWith(<SetlistTab userId={1} />);
+
+      const ss = await screen.findByRole("list", { name: /SS 기준/ });
+      const rows = within(ss).getAllByRole("listitem");
+      for (const row of rows) expect(row).toHaveClass("h-[68px]");
+      expect(rows[0]).toHaveTextContent("속성 복합|기준 5.4");
+      expect(rows[0]).not.toHaveTextContent("기록 없음");
+      expect(rows[0]).toHaveTextContent("––");
+      const added = within(rows[0]).getByRole("button");
+      expect(added).toHaveTextContent("담김");
+      expect(added).toBeDisabled();
+      expect(added).toHaveClass("border-done", "text-done-text");
+      const add = within(rows[1]).getByRole("button");
+      expect(add).toHaveTextContent("담기");
+      expect(add).toHaveClass("border-ctl");
+      expect(add).toHaveClass("h-[26px]", "after:-inset-1.5");
     });
 
     it("추천 곡명을 누르면 그 채보의 곡 상세로 간다", async () => {

@@ -11,11 +11,14 @@ export function RatedScore({
   entry,
   tier,
   onRecord,
+  smallDecimal = false,
 }: {
   entry: TableEntryResponse;
   tier: number | null;
   /** 주면 점수 칩이 버튼이 되어 눌렀을 때 이 채보의 기록 창을 바로 연다(점수를 보다가 바로 고치려는 흐름) */
   onRecord?: (entry: TableEntryResponse) => void;
+  /** 소수 부분(`.40`)을 작게 보인다(D64: 서열표 모바일 줄). 데스크톱 표는 그대로 */
+  smallDecimal?: boolean;
 }) {
   const t = useTranslations();
   const score = ratedScore(tier, entry.mine?.rate, entry);
@@ -32,7 +35,7 @@ export function RatedScore({
       aria-label={t("Chart.ratingScore", { score: formatScore(score) })}
       className="chart-cell inline-block rounded px-1.5 py-px font-num text-[11px] font-bold leading-4"
     >
-      {formatScore(score)}
+      {smallDecimal ? <ScoreWithSmallDecimal text={formatScore(score)} /> : formatScore(score)}
     </span>
   );
   if (!onRecord) {
@@ -48,5 +51,19 @@ export function RatedScore({
     >
       {chip}
     </button>
+  );
+}
+
+/** `246.40` → `246` + 작은 `.40`. 보이는 점수 전체는 칩의 aria-label이 그대로 읽어 준다 */
+function ScoreWithSmallDecimal({ text }: { text: string }) {
+  const dot = text.indexOf(".");
+  if (dot < 0) {
+    return <>{text}</>;
+  }
+  return (
+    <>
+      {text.slice(0, dot)}
+      <span className="text-[9px]">{text.slice(dot)}</span>
+    </>
   );
 }
