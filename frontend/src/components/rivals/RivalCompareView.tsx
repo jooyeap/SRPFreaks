@@ -12,7 +12,9 @@ import { ChartBadge } from "@/components/table/Badges";
 import { ChartLine } from "@/components/table/ChartLine";
 import { chartTierAttrs } from "@/lib/chart-tier";
 import { useJackets } from "@/lib/jackets";
-import { fetchCompareCharts, fetchCompareRating, formatScoreDiff, rivalKeys, signed } from "@/lib/rivals";
+import { CatchUpSection } from "@/components/rivals/CatchUpSection";
+import { ScoreDiffChip } from "@/components/rivals/ScoreDiffChip";
+import { fetchCompareCharts, fetchCompareRating, rivalKeys, signed } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 type View = "rating" | "charts";
@@ -68,16 +70,7 @@ function TierChip({ tier }: { tier: PlayerTierResponse }) {
  */
 function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: ReturnType<typeof useJackets> }) {
   const t = useTranslations("Rival");
-  const diff = formatScoreDiff(row.diff);
   const [whole, decimal] = formatScore(row.score).split(".");
-  const tone =
-    diff?.sign === "up"
-      ? "border-done text-done-text"
-      : diff?.sign === "down"
-        ? "border-weak text-weak-text"
-        : diff
-          ? "border-chip-line text-fg-sub"
-          : "border-line text-fg-dim";
   return (
     <ChartLine
       className="border-t border-row-line first:border-t-0"
@@ -97,12 +90,7 @@ function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: Ret
             <span className="text-[11px]">.{decimal}</span>
           </span>
           {row.myScore !== null ? <span className="font-num text-[11px] leading-4 text-fg-dim">{t("myScoreLine", { score: formatScore(row.myScore) })}</span> : null}
-          <span
-            aria-label={diff ? t("diffAria", { diff: diff.text }) : undefined}
-            className={`whitespace-nowrap rounded border px-1.5 font-num text-[11px] font-bold leading-4 ${tone}`}
-          >
-            {diff ? diff.text : t("diffNone")}
-          </span>
+          <ScoreDiffChip diff={row.diff} />
         </div>
       }
     />
@@ -194,6 +182,7 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
 
       {view === "rating" ? (
         <section aria-label={t("viewRating")} className="flex flex-col gap-3">
+          <CatchUpSection viewerId={viewerId} rows={[...data.single, ...data.other]} jackets={jackets} />
           <Segment<Group>
             label={t("groupAria")}
             items={[{ value: "single", text: t("groupSingle") }, { value: "other", text: t("groupOther") }]}

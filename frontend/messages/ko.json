@@ -1479,6 +1479,8 @@
     "groupOther": "그 외",
     "emptyRating": "레이팅 목록이 비어 있습니다.",
     "noRecord": "없음",
+    "catchUpTitle": "따라잡을 곡",
+    "catchUpDesc": "내가 뒤진 곡 중 차이가 작은 순 · {n}곡",
     "ratingLegend": "+는 내가 앞, −는 내가 뒤 (내 점수 − 상대 점수)",
     "myScoreLine": "나 {score}",
     "diffNone": "내 기록 없음",

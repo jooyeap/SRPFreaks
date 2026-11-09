@@ -4,6 +4,7 @@ import type {
   PageResponse,
   RivalCompareChartsResponse,
   RivalCompareRatingResponse,
+  RivalRatingRow,
   RivalRecordResponse,
   RivalRegistrantResponse,
   RivalResponse,
@@ -110,6 +111,25 @@ export function formatScoreDiff(diff: number | null): { text: string; sign: "up"
   if (cents > 0) return { text: `+${(cents / 100).toFixed(2)}`, sign: "up" };
   if (cents < 0) return { text: `\u2212${(-cents / 100).toFixed(2)}`, sign: "down" };
   return { text: "\u00b10.00", sign: "even" };
+}
+
+/** 따라잡을 곡 구역에 보이는 최대 곡 수(D66). */
+export const CATCH_UP_LIMIT = 3;
+
+/**
+ * 따라잡을 곡(D66): 상대 레이팅 목록 줄 중 **둘 다 기록이 있고 내가 뒤진** 곡을 차이가 작은 순으로 최대 3곡.
+ * 서버가 준 `diff`(내 점수 - 상대 점수)를 그대로 쓰되, 앞뒤 판정은 표시하는 둘째 자리 값으로 한다(`formatScoreDiff`와 같은 기준이라 `−0.00`이 나오지 않는다).
+ * 같은 차이면 상대 점수가 높은 곡이 먼저, 그다음 곡 id·채보 id 순으로 정해 새로고침해도 순서가 흔들리지 않게 한다.
+ */
+export function catchUpRows(rows: readonly RivalRatingRow[], limit: number = CATCH_UP_LIMIT): RivalRatingRow[] {
+  const behind: { row: RivalRatingRow; gap: number }[] = [];
+  for (const row of rows) {
+    if (row.myScore === null || row.diff === null) continue;
+    const cents = Math.round(row.diff * 100);
+    if (cents < 0) behind.push({ row, gap: -cents });
+  }
+  behind.sort((a, b) => a.gap - b.gap || b.row.score - a.row.score || a.row.songId - b.row.songId || a.row.songDifficultyId - b.row.songDifficultyId);
+  return behind.slice(0, limit).map((x) => x.row);
 }
 
 /** 부호를 붙인 차이(`+0.30`, `-1.62`, `0.00`). 곡 상세·라이벌 목록용. */

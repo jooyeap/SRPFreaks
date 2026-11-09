@@ -45,7 +45,9 @@ function show(rows: RivalRatingRow[]) {
   );
 }
 async function lines(): Promise<HTMLElement[]> {
-  const list = await screen.findByRole("list");
+  // 따라잡을 곡 구역(ul, D66)이 함께 있을 수 있어서 레이팅 목록(ol)만 고른다
+  const list = (await screen.findAllByRole("list")).find((el) => el.tagName === "OL");
+  if (!list) throw new Error("레이팅 목록(ol)이 없음");
   return within(list).getAllByRole("listitem");
 }
 

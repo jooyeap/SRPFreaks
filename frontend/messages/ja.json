@@ -1479,6 +1479,8 @@
     "groupOther": "その他",
     "emptyRating": "レーティング一覧が空です。",
     "noRecord": "なし",
+    "catchUpTitle": "追いつきたい曲",
+    "catchUpDesc": "自分が負けている曲のうち、差が小さい順 · {n}曲",
     "ratingLegend": "+は自分が上、−は自分が下(自分のスコア − 相手のスコア)",
     "myScoreLine": "自分 {score}",
     "diffNone": "記録なし",
