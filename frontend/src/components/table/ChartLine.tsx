@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SongJacket } from "@/components/SongJacket";
-import { DifficultyPill, PartText } from "@/components/table/Badges";
+import { ChartBadge } from "@/components/table/Badges";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatTier } from "@/lib/format";
 import type { AchievementStage, DifficultyType, InstrumentPart } from "@/lib/types";
@@ -14,8 +14,9 @@ import { useTranslations } from "next-intl";
  * 높이 68px, 모든 칸을 줄 가운데 한 선에 맞춘다(items-center).
  *   [lead] [재킷 48px(360px 미만 40px)]  윗줄 작은 글자 `속성 | 서열 난이도 숫자`(서열표 줄은 `속성 | 추천 상`)
  *                                       곡명 (말줄임)
- *                                       난이도 알약 하나 `MAS 9.65` + 파트 글자 `Guitar`(보라) / `Bass`(청록)   [aside]  [action]
- * 파트는 알약 안에 넣지 않는다. 글자 자체가 파트 이름이라 색만으로 구분하지 않는다.
+ *                                       파트·난이도 한 알약 `Guitar | MAS 9.65`(ChartBadge)   [aside]  [action]
+ * 알약은 예전 서열표·세트리스트 줄과 같은 한 덩어리다(파트 칸 최소 폭이 있어 Guitar/Bass가 섞여도 난이도 칸 시작 위치가 같다).
+ * 난이도 알약과 파트 글자를 따로 그리는 모양(DifficultyPill + PartText)은 레이팅 카드 이미지(캔버스)에만 쓰고 앱 줄에는 쓰지 않는다(2026-11-09 정정).
  * 기록이 있으면(stage) 왼쪽 4px 막대와 배경 틴트를 단계 색으로 준다(데스크톱 표의 EntryRow와 같은 규칙).
  *
  * 오른쪽(aside)·맨 오른쪽(action)은 부르는 쪽이 채운다: 서열표는 `[단계|달성률]` 알약 + 레이팅 점수 + `+` 버튼,
@@ -106,8 +107,7 @@ export function ChartLine({
           {title}
         </Link>
         <span className="mt-1 flex items-center gap-1.5 overflow-hidden">
-          <DifficultyPill difficulty={difficulty} level={level} />
-          <PartText part={part} />
+          <ChartBadge part={part} difficulty={difficulty} level={level} compact />
         </span>
       </div>
       {aside}

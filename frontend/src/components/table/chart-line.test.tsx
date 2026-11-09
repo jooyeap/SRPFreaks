@@ -52,23 +52,24 @@ describe("공통 줄 ChartLine (D64 줄 통일)", () => {
     act(() => setJacketData(null));
   });
 
-  it("윗줄은 `속성 | 서열 난이도 숫자`(라벨 없음), 아랫줄은 난이도 알약 하나 + 파트 글자(알약 안에 파트 없음)", () => {
+  it("윗줄은 `속성 | 서열 난이도 숫자`(라벨 없음), 아랫줄은 파트·난이도 한 알약(ChartBadge)", () => {
     render(line());
     const row = screen.getByRole("listitem");
     expect(row).toHaveTextContent("속성 복합(단일)|기준 5.4"); // `기준`은 읽기 프로그램용 숨김 글자
-    const pill = within(row).getByText("MAS 9.65");
-    expect(pill).toHaveAttribute("data-difficulty", "MASTER");
-    expect(pill.className).toContain("leading-[18px]");
-    expect(pill).not.toHaveTextContent("Guitar");
-    const part = within(row).getByText("Guitar");
-    expect(part).toHaveClass("text-part-text-guitar");
-    expect(part.className).not.toMatch(/#[0-9a-f]{3,6}|rgb\(/i);
-    expect(pill.nextElementSibling).toBe(part); // 파트 글자는 알약 바로 옆
+    const diff = within(row).getByText("MAS 9.65");
+    const badge = diff.parentElement as HTMLElement;
+    expect(badge).toHaveAttribute("data-difficulty", "MASTER");
+    expect(badge).toHaveTextContent("GuitarMAS 9.65"); // 파트와 난이도가 한 알약 안에 있다
+    expect(within(badge).getByText("Guitar")).toHaveClass("chart-chip-part");
+    expect(diff).toHaveClass("chart-chip-diff");
+    expect(badge.className).toContain("overflow-hidden"); // 예전 알약(ChartBadge)과 같은 덩어리
   });
 
-  it("Bass는 청록 글자 토큰이고 글자 `Bass`를 그대로 적는다", () => {
+  it("Bass도 같은 한 알약 안의 파트 칸에 글자 `Bass`로 적는다(파트 칸 최소 폭이 있어 Guitar와 난이도 칸 시작 위치가 같다)", () => {
     render(line({ part: "BASS" }));
-    expect(screen.getByText("Bass")).toHaveClass("text-part-text-bass");
+    const part = screen.getByText("Bass");
+    expect(part).toHaveClass("chart-chip-part", "min-w-[2.75rem]");
+    expect(part.parentElement).toHaveTextContent("BassMAS 9.65");
   });
 
   it("줄 높이는 68px 하나이고 곡명·속성 길이, 재킷 켬/끔, 기록 유무와 상관없다", () => {
@@ -147,13 +148,13 @@ describe("서열표 모바일 줄은 공통 줄을 쓴다", () => {
     act(() => setJacketData(null));
   });
 
-  it("`속성 | 추천 상` 윗줄은 그대로(서열 난이도 숫자는 두지 않는다), 파트는 알약 밖 글자", () => {
+  it("`속성 | 추천 상` 윗줄은 그대로(서열 난이도 숫자는 두지 않는다), 파트는 한 알약 안", () => {
     render(<ul><EntryCard entry={entry} tier={5.0} /></ul>);
     const row = screen.getByRole("listitem");
     expect(row).toHaveTextContent("속성 단일|추천 상");
     expect(row).not.toHaveTextContent("기준");
-    expect(within(row).getByText("EXT 9.05")).not.toHaveTextContent("Bass");
-    expect(within(row).getByText("Bass")).toHaveClass("text-part-text-bass");
+    expect(within(row).getByText("EXT 9.05").parentElement).toHaveTextContent("BassEXT 9.05");
+    expect(within(row).getByText("Bass")).toHaveClass("chart-chip-part");
   });
 
   it("레이팅 점수의 소수 부분은 작게 보이고 전체 점수는 읽기 이름에 있다", () => {
