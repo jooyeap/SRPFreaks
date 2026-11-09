@@ -94,6 +94,8 @@ const summaryResponse: RivalSummaryResponse = {
     { pattern: "이중", key: "DOUBLE", wins: 0, ties: 0, losses: 0, scoreDiffSum: 0, closeCount: 0, sharedCount: 0 },
     { pattern: "삼중", key: "TRIPLE", wins: 0, ties: 0, losses: 0, scoreDiffSum: 0, closeCount: 0, sharedCount: 0 },
   ],
+  tiers: [],
+  distribution: [],
 };
 
 /** 속성별 곡 목록(D67) 빈 응답: 대시보드 미리보기가 이 주소를 부른다. */

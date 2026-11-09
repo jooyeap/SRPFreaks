@@ -580,13 +580,30 @@ export interface RivalPatternSummary {
   sharedCount: number;
 }
 
-/** GET /players/{id}/compare/summary. 속성 다섯 줄은 공유 곡이 없어도 항상 같은 순서로 온다. 서열 난이도별·분포는 이 화면(6단계)에서 쓰지 않는다. */
+/** 서열 난이도(0.1 단위) 한 줄. 공유 곡이 있는 난이도만, 높은 난이도 먼저. 화면은 아직 쓰지 않는다(타입만). */
+export interface RivalTierSummary {
+  tier: number;
+  wins: number;
+  ties: number;
+  losses: number;
+}
+
+/** 점 분포 차트용: 속성별 곡마다의 점수 차(곡 id 없음), 작은 값부터. */
+export interface RivalPatternDiffs {
+  pattern: string;
+  key: RivalPatternKey;
+  diffs: number[];
+}
+
+/** GET /players/{id}/compare/summary. 속성 다섯 줄은 공유 곡이 없어도 항상 같은 순서로 온다. 서열 난이도별(`tiers`)은 화면이 아직 쓰지 않는다. */
 export interface RivalSummaryResponse {
   userId: number;
   nickname: string;
   closeMargin: number;
   totals: { wins: number; ties: number; losses: number; closeCount: number; sharedCount: number; scoreDiffSum: number };
   patterns: RivalPatternSummary[];
+  tiers: RivalTierSummary[];
+  distribution: RivalPatternDiffs[];
 }
 
 export type RivalDetailFilter = "ALL" | "LOSE" | "CLOSE" | "WIN";

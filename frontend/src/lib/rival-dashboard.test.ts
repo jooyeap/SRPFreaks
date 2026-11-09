@@ -118,9 +118,12 @@ describe("주소 값 해석", () => {
     expect(parseTab("nope")).toBe("strong");
     expect(parseTab(null)).toBe("strong");
   });
-  it("차트는 이번 단계에서 막대뿐이다", () => {
+  it("차트는 막대·점 분포·레이더만 받고 모르는 값은 막대로 본다", () => {
     expect(parseChart("bar")).toBe("bar");
-    expect(parseChart("radar")).toBe("bar");
+    expect(parseChart("dot")).toBe("dot");
+    expect(parseChart("radar")).toBe("radar");
+    expect(parseChart("pie")).toBe("bar");
+    expect(parseChart(null)).toBe("bar");
   });
   it("필터는 소문자 값을 서버 값으로 바꾸고 모르는 값은 전체로 본다", () => {
     expect(parseDetailFilter("lose")).toBe("LOSE");

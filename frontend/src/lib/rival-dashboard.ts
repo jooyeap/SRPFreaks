@@ -31,13 +31,13 @@ export function parseTab(value: string | null | undefined): DashTab {
   return (DASH_TABS as readonly (string | null | undefined)[]).includes(value) ? (value as DashTab) : DEFAULT_TAB;
 }
 
-/** 차트 종류. 이번 단계는 막대(`bar`)뿐이고, 점 분포·레이더는 7단계에서 값만 늘린다. 모르는 값은 막대로 본다. */
-export type DashChart = "bar";
+/** 차트 종류. 주소의 `?chart=`에 `bar`(막대) / `dot`(점 분포) / `radar`(레이더)로 남는다. 모르는 값은 막대로 본다. */
+export type DashChart = "bar" | "dot" | "radar";
+export const DASH_CHARTS: readonly DashChart[] = ["bar", "dot", "radar"];
 export const DEFAULT_CHART: DashChart = "bar";
 
 export function parseChart(value: string | null | undefined): DashChart {
-  void value;
-  return DEFAULT_CHART;
+  return (DASH_CHARTS as readonly (string | null | undefined)[]).includes(value) ? (value as DashChart) : DEFAULT_CHART;
 }
 
 /** 공유 곡이 이 수보다 적은 속성은 숫자가 흔들리기 쉬워 `참고용`으로 표시한다. */

@@ -3,6 +3,8 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { RivalBarChart } from "@/components/rivals/RivalBarChart";
+import { RivalDotChart } from "@/components/rivals/RivalDotChart";
+import { RivalRadarChart } from "@/components/rivals/RivalRadarChart";
 import { ScoreDiffChip } from "@/components/rivals/ScoreDiffChip";
 import { Segment, TierChip } from "@/components/rivals/Segment";
 import { SetlistAddCell } from "@/components/rivals/SetlistAddCell";
@@ -14,6 +16,7 @@ import { formatScore } from "@/lib/format";
 import type { useJackets } from "@/lib/jackets";
 import {
   dashboardKeys,
+  DASH_CHARTS,
   DASH_TABS,
   type DashChart,
   type DashTab,
@@ -32,6 +35,7 @@ import { useTranslations } from "next-intl";
 const DETAIL_ID = "rival-detail";
 
 const TAB_LABEL_KEY = { strong: "tabStrong", weak: "tabWeak", close: "tabClose" } as const;
+const CHART_LABEL_KEY = { bar: "chartBar", dot: "chartDot", radar: "chartRadar" } as const;
 const CARD_LABEL_KEY = { strong: "cardStrong", weak: "cardWeak", close: "cardClose" } as const;
 const PREVIEW_TITLE_KEY = { strong: "previewStrong", weak: "previewWeak", close: "previewClose" } as const;
 
@@ -123,7 +127,7 @@ function PreviewList({
 
 /**
  * 라이벌 대시보드(D67, 6단계). 비교 화면 맨 위에서 두 사람이 모두 기록한 전체 곡을 속성별로 요약해 보여 준다.
- * 구성: ① 헤더(나·티어 / 총점 차 / 상대·티어, 승 무 패) ② 요약 카드 3(우세 속성·열세 속성·접전, 누르면 아래 탭으로) ③ 차트 전환(이번에는 막대만)
+ * 구성: ① 헤더(나·티어 / 총점 차 / 상대·티어, 승 무 패) ② 요약 카드 3(우세 속성·열세 속성·접전, 누르면 아래 탭으로) ③ 차트 전환(막대 · 점 분포 · 레이더, 7단계)
  * ④ `속성별 상세`: 탭(우세·열세·접전) + 속성 줄(누르면 카테고리 상세) + 곡 미리보기.
  * 승·무·패·합계·접전은 서버가 센 값을 그대로 쓰고(화면에서 다시 세지 않는다), 총점은 기존 비교 응답의 값이며 `총점 차`는 그 두 값의 차이다.
  * 여기의 승·무·패는 전체 곡 기준이라 아래 `곡별 승패`(레이팅 목록 기준)의 개수와 다를 수 있다. 상태(차트·탭)는 주소(`?chart=&tab=`)로 부모가 쥔다.
@@ -160,7 +164,7 @@ export function RivalDashboard({
   if (summary.isError) {
     return <p role="alert" className="text-sm text-fg">{summary.error instanceof ApiError ? summary.error.message : t("Rival.loadFailed")}</p>;
   }
-  const { totals, patterns } = summary.data;
+  const { totals, patterns, distribution, closeMargin } = summary.data;
   const inTab = tabPatterns(patterns, tab);
   const totalDiff = Math.round((rating.myTotalScore - rating.totalScore) * 100) / 100;
 
@@ -215,9 +219,17 @@ export function RivalDashboard({
       </div>
 
       <section aria-label={t("Rival.chartAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-3">
-        <Segment<DashChart> label={t("Rival.chartAria")} items={[{ value: "bar", text: t("Rival.chartBar") }]} value={chart} onChange={onChartChange} />
-        <RivalBarChart patterns={patterns} />
-        <p className="text-xs text-fg-dim">{t("Rival.barLegend")}</p>
+        <Segment<DashChart> label={t("Rival.chartAria")} items={DASH_CHARTS.map((value) => ({ value, text: t(`Rival.${CHART_LABEL_KEY[value]}`) }))} value={chart} onChange={onChartChange} />
+        {chart === "bar" ? (
+          <>
+            <RivalBarChart patterns={patterns} />
+            <p className="text-xs text-fg-dim">{t("Rival.barLegend")}</p>
+          </>
+        ) : chart === "dot" ? (
+          <RivalDotChart patterns={patterns} distribution={distribution} closeMargin={closeMargin} />
+        ) : (
+          <RivalRadarChart patterns={patterns} />
+        )}
       </section>
 
       <section id={DETAIL_ID} aria-label={t("Rival.detailTitle")} className="flex scroll-mt-4 flex-col gap-3">
