@@ -159,6 +159,54 @@ describe("RivalCompareView", () => {
     expect(fetchMock.mock.calls.some((c) => urlOf(c).includes("result=LOSE"))).toBe(true);
   });
 
+  it("곡별 승패의 탭 개수는 곡별 승패 응답의 counts를 쓰고(레이팅 비교 응답의 counts가 아니다) 캡션은 상단 요약과 같은 기준이라고 말한다 (D67 개정)", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/compare/charts")) {
+        // 대시보드 totals(승 10 무 2 패 7)와 같은 범위·판정의 개수 + 상대만 4곡, 나만 1곡
+        return json({
+          counts: { win: 10, lose: 7, tie: 2, theirsOnly: 4, onlyMine: 1 },
+          page: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 },
+        });
+      }
+      if (url.includes("/compare/summary/")) return json(emptyDetail);
+      if (url.includes("/compare/summary")) return json(summaryResponse);
+      return json(ratingResponse); // counts: 승 48 패 61 무 3 상대만 27 (옛 기준 — 탭에 쓰이면 안 된다)
+    });
+    renderWith(<RivalCompareView viewerId={1} targetId={7} />);
+    fireEvent.click(await screen.findByRole("button", { name: "곡별 승패" }));
+
+    expect(await screen.findByRole("button", { name: "패 7" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "승 10" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "무 2" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "상대만 4" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "패 61" })).toBeNull();
+    // 위 대시보드 요약(승 10 무 2 패 7)과 같은 숫자다
+    expect(screen.getByRole("region", { name: "라이벌 대시보드" })).toHaveTextContent("승 10 무 2 패 7");
+    expect(screen.getByText("상단 요약과 같은 기준입니다. 차이가 작은 순")).toBeInTheDocument();
+  });
+
+  it("상대만 탭은 상대 달성률이 높은 순이라는 캡션을 보이고, 옛 응답(onlyMine 없음)에서도 깨지지 않는다", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/compare/charts")) {
+        return json({
+          counts: { win: 1, lose: 1, tie: 1, theirsOnly: 2 }, // onlyMine 없음(옛 응답)
+          page: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 },
+        });
+      }
+      if (url.includes("/compare/summary/")) return json(emptyDetail);
+      if (url.includes("/compare/summary")) return json(summaryResponse);
+      return json(ratingResponse);
+    });
+    renderWith(<RivalCompareView viewerId={1} targetId={7} />);
+    fireEvent.click(await screen.findByRole("button", { name: "곡별 승패" }));
+    fireEvent.click(await screen.findByRole("button", { name: "상대만 2" }));
+
+    expect(await screen.findByText("상단 요약과 같은 기준입니다. 상대 달성률이 높은 순")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "상대만 2" })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("상대가 비공개면(404) 찾을 수 없다고 안내한다", async () => {
     fetchMock.mockResolvedValue(json({ code: "NOT_FOUND", message: "찾을 수 없습니다." }, 404));
     renderWith(<RivalCompareView viewerId={1} targetId={7} />);

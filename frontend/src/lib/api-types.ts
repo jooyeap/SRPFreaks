@@ -494,6 +494,8 @@ export interface RivalCounts {
   lose: number;
   tie: number;
   theirsOnly: number;
+  /** 나만 기록한 레이팅 대상 곡 수(곡별 승패 응답에만, 승패에 세지 않는다. 옛 응답에는 없을 수 있다). */
+  onlyMine?: number;
 }
 
 /** 라이벌 카드의 "상대 상위 곡" 한 칸(3단계, D65): 재킷을 찾을 곡 id와 그 곡의 화면 점수(둘째 자리). */
