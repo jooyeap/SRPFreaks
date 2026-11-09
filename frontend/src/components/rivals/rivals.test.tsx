@@ -5,7 +5,7 @@ import { RivalButtons } from "@/components/rivals/RivalButtons";
 import { RivalCompareView } from "@/components/rivals/RivalCompareView";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { RivalTab } from "@/components/rivals/RivalTab";
-import type { PageResponse, RivalCompareRatingResponse, RivalRegistrantResponse, RivalResponse } from "@/lib/api-types";
+import type { PageResponse, RivalCompareRatingResponse, RivalRegistrantResponse, RivalResponse, RivalSummaryResponse } from "@/lib/api-types";
 import ja from "../../../messages/ja.json";
 import ko from "../../../messages/ko.json";
 
@@ -81,16 +81,47 @@ const ratingResponse: RivalCompareRatingResponse = {
   other: [],
 };
 
+/** 대시보드 집계(D67) 최소 응답: 속성 다섯 줄은 항상 같은 순서로 온다. */
+const summaryResponse: RivalSummaryResponse = {
+  userId: 7,
+  nickname: "Rumi",
+  closeMargin: 1,
+  totals: { wins: 10, ties: 2, losses: 7, closeCount: 4, sharedCount: 19, scoreDiffSum: 12.5 },
+  patterns: [
+    { pattern: "단일", key: "SINGLE", wins: 6, ties: 1, losses: 2, scoreDiffSum: 30.5, closeCount: 2, sharedCount: 9 },
+    { pattern: "복합", key: "COMPOUND", wins: 0, ties: 0, losses: 0, scoreDiffSum: 0, closeCount: 0, sharedCount: 0 },
+    { pattern: "복합(단일)", key: "COMPOSITE_SINGLE", wins: 4, ties: 1, losses: 5, scoreDiffSum: -18, closeCount: 2, sharedCount: 10 },
+    { pattern: "이중", key: "DOUBLE", wins: 0, ties: 0, losses: 0, scoreDiffSum: 0, closeCount: 0, sharedCount: 0 },
+    { pattern: "삼중", key: "TRIPLE", wins: 0, ties: 0, losses: 0, scoreDiffSum: 0, closeCount: 0, sharedCount: 0 },
+  ],
+};
+
+/** 속성별 곡 목록(D67) 빈 응답: 대시보드 미리보기가 이 주소를 부른다. */
+const emptyDetail = {
+  userId: 7,
+  nickname: "Rumi",
+  summary: summaryResponse.patterns[0],
+  filterCounts: { all: 0, lose: 0, close: 0, win: 0 },
+  rows: { content: [], page: 0, size: 2, totalElements: 0, totalPages: 0 },
+};
+
 describe("RivalCompareView", () => {
-  it("머리에 두 사람 총점과 승패를, 레이팅 목록 줄에 내 점수와 차이 칩을 부호 글자로 보인다", async () => {
-    fetchMock.mockResolvedValue(json(ratingResponse));
+  it("머리에 두 사람 총점과 총점 차·승무패를, 레이팅 목록 줄에 내 점수와 차이 칩을 부호 글자로 보인다", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/compare/summary/")) return json(emptyDetail);
+      if (url.includes("/compare/summary")) return json(summaryResponse);
+      return json(ratingResponse);
+    });
     renderWith(<RivalCompareView viewerId={1} targetId={7} />);
 
     expect(await screen.findByRole("heading", { name: "나 vs Rumi" })).toBeInTheDocument();
-    const summary = screen.getByRole("region", { name: "비교 요약" });
+    const summary = await screen.findByRole("region", { name: "라이벌 대시보드" });
     expect(summary).toHaveTextContent("9204.32");
-    expect(summary).toHaveTextContent("48 · 61 · 3");
-    expect(summary).toHaveTextContent("상대만 27곡");
+    expect(summary).toHaveTextContent("9516.42");
+    // 총점 차 = 내 총점 - 상대 총점(부호 글자)
+    expect(summary).toHaveTextContent("\u2212312.10");
+    expect(summary).toHaveTextContent("승 10 무 2 패 7");
     expect(screen.getByText("+1.90")).toBeInTheDocument();
     expect(screen.getByText("나 240.00")).toBeInTheDocument();
     expect(screen.getByText("내 기록 없음")).toBeInTheDocument();
@@ -111,6 +142,8 @@ describe("RivalCompareView", () => {
           },
         });
       }
+      if (url.includes("/compare/summary/")) return json(emptyDetail);
+      if (url.includes("/compare/summary")) return json(summaryResponse);
       return json(ratingResponse);
     });
     renderWith(<RivalCompareView viewerId={1} targetId={7} />);

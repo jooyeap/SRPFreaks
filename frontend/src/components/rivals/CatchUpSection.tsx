@@ -1,14 +1,11 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ScoreDiffChip } from "@/components/rivals/ScoreDiffChip";
-import { useToast } from "@/components/Toast";
+import { SetlistAddCell } from "@/components/rivals/SetlistAddCell";
 import { ChartLine } from "@/components/table/ChartLine";
-import { ApiError } from "@/lib/api";
 import type { RivalRatingRow } from "@/lib/api-types";
 import type { useJackets } from "@/lib/jackets";
 import { catchUpRows } from "@/lib/rivals";
-import { addToSetlist, fetchSetlist, SETLIST_LIMIT, setlistKeys } from "@/lib/setlist";
 import { useTranslations } from "next-intl";
 
 /**
@@ -30,24 +27,7 @@ export function CatchUpSection({
   jackets: ReturnType<typeof useJackets>;
 }) {
   const t = useTranslations();
-  const queryClient = useQueryClient();
-  const toast = useToast();
   const picked = catchUpRows(rows);
-
-  const list = useQuery({ queryKey: setlistKeys.list(viewerId), queryFn: ({ signal }) => fetchSetlist(signal), enabled: picked.length > 0 });
-  const items = list.data?.content ?? [];
-  const addedIds = new Set(items.map((item) => item.songDifficultyId));
-  const full = items.length >= SETLIST_LIMIT;
-
-  const add = useMutation({
-    mutationFn: (songDifficultyId: number) => addToSetlist(songDifficultyId),
-    onSuccess: async () => {
-      toast(t("Setlist.added"));
-      await queryClient.invalidateQueries({ queryKey: setlistKeys.all });
-    },
-    // 30곡이 찼거나 이미 담긴 경우 등 서버가 거절한 문구를 그대로 보여 준다
-    onError: (error) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed"), { kind: "error" }),
-  });
 
   if (picked.length === 0) return null;
 
@@ -59,8 +39,6 @@ export function CatchUpSection({
       </div>
       <ul aria-label={t("Rival.catchUpTitle")} className="overflow-hidden rounded-2xl border border-line bg-card">
         {picked.map((row) => {
-          const added = addedIds.has(row.songDifficultyId);
-          const pending = add.isPending && add.variables === row.songDifficultyId;
           return (
             <ChartLine
               key={row.songDifficultyId}
@@ -77,18 +55,7 @@ export function CatchUpSection({
               aside={
                 <div className="flex w-[72px] shrink-0 flex-col items-end gap-1.5">
                   <ScoreDiffChip diff={row.diff} />
-                  <button
-                    type="button"
-                    disabled={added || full || list.isPending || pending}
-                    onClick={() => add.mutate(row.songDifficultyId)}
-                    aria-label={added ? t("Setlist.addedAria", { title: row.title }) : t("Setlist.addAria", { title: row.title })}
-                    title={full && !added ? t("Setlist.limitFull", { limit: SETLIST_LIMIT }) : undefined}
-                    className={`relative flex h-[26px] w-full items-center justify-center rounded-md border px-1 text-xs after:absolute after:-inset-1.5 after:content-[''] ${
-                      added ? "border-done text-done-text" : "border-ctl text-fg enabled:hover:bg-table-head disabled:text-disabled"
-                    }`}
-                  >
-                    {added ? t("Setlist.addedMark") : t("Setlist.addBtn")}
-                  </button>
+                  <SetlistAddCell viewerId={viewerId} songDifficultyId={row.songDifficultyId} title={row.title} />
                 </div>
               }
             />

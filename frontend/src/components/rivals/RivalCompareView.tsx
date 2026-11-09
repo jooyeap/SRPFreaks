@@ -6,14 +6,16 @@ import { useState } from "react";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 import { Pager } from "@/components/Pager";
 import { ApiError } from "@/lib/api";
-import type { PlayerTierResponse, RivalChartRow, RivalCounts, RivalRatingRow, RivalResult } from "@/lib/api-types";
-import { formatRate, formatScore } from "@/lib/format";
+import type { RivalChartRow, RivalCounts, RivalRatingRow, RivalResult } from "@/lib/api-types";
+import { formatRate } from "@/lib/format";
 import { ChartBadge } from "@/components/table/Badges";
 import { ChartLine } from "@/components/table/ChartLine";
-import { chartTierAttrs } from "@/lib/chart-tier";
 import { useJackets } from "@/lib/jackets";
 import { CatchUpSection } from "@/components/rivals/CatchUpSection";
-import { ScoreDiffChip } from "@/components/rivals/ScoreDiffChip";
+import { RivalDashboard } from "@/components/rivals/RivalDashboard";
+import { CompareScoreAside } from "@/components/rivals/CompareScoreAside";
+import { Segment } from "@/components/rivals/Segment";
+import { DEFAULT_CHART, DEFAULT_TAB, type DashChart, type DashTab } from "@/lib/rival-dashboard";
 import { fetchCompareCharts, fetchCompareRating, rivalKeys, signed } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
@@ -27,41 +29,6 @@ const RESULTS: readonly { value: RivalResult; key: "resultWin" | "resultLose" | 
   { value: "THEIRS_ONLY", key: "resultTheirs", count: "theirsOnly" },
 ];
 
-/** 둘 중 하나만 고르는 작은 전환(레이팅 목록 / 곡별 승패 같은). 선택은 굵은 글씨·테두리로도 보인다. */
-function Segment<T extends string>({ label, items, value, onChange }: {
-  label: string;
-  items: readonly { value: T; text: string }[];
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div role="group" aria-label={label} className="flex gap-1 rounded-xl border border-line bg-table-head p-1">
-      {items.map((item) => {
-        const on = item.value === value;
-        return (
-          <button
-            key={item.value}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onChange(item.value)}
-            className={`min-h-10 flex-1 rounded-lg px-2 text-sm ${on ? "bg-card font-bold text-fg shadow-sm ring-1 ring-chip-line" : "text-fg-sub hover:text-fg"}`}
-          >
-            {item.text}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function TierChip({ tier }: { tier: PlayerTierResponse }) {
-  return (
-    <span data-tier={tier.key} className="tier-chip inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-      {tier.displayName}
-    </span>
-  );
-}
-
 /**
  * 레이팅 비교 목록의 한 줄(D65). 서열표·세트리스트와 같은 공통 줄(ChartLine, D64)에 왼쪽 순번과 재킷을 끼운다.
  * 오른쪽 열은 위에서부터 상대 점수(티어 색, 소수는 작게) / `나 238.10`(내 점수) / 차이 칩(내 점수 - 상대 점수).
@@ -69,8 +36,6 @@ function TierChip({ tier }: { tier: PlayerTierResponse }) {
  * 점수·차이는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다). 재킷은 운영·개인 설정이 켜졌을 때만 칸을 둔다.
  */
 function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: ReturnType<typeof useJackets> }) {
-  const t = useTranslations("Rival");
-  const [whole, decimal] = formatScore(row.score).split(".");
   return (
     <ChartLine
       className="border-t border-row-line first:border-t-0"
@@ -83,16 +48,7 @@ function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: Ret
       part={row.part}
       difficulty={row.difficulty}
       level={row.level}
-      aside={
-        <div className="flex w-[88px] shrink-0 flex-col items-end gap-0.5">
-          <span {...chartTierAttrs(row.score)} className="tier-score font-num text-lg font-semibold leading-5 tabular-nums">
-            {whole}
-            <span className="text-[11px]">.{decimal}</span>
-          </span>
-          {row.myScore !== null ? <span className="font-num text-[11px] leading-4 text-fg-dim">{t("myScoreLine", { score: formatScore(row.myScore) })}</span> : null}
-          <ScoreDiffChip diff={row.diff} />
-        </div>
-      }
+      aside={<CompareScoreAside score={row.score} myScore={row.myScore} diff={row.diff} />}
     />
   );
 }
@@ -101,13 +57,34 @@ function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: Ret
  * 라이벌 비교 화면(D56). 머리: 나 총점 · 승·패·무 · 상대 총점. 보기: 상대 레이팅 목록에 내 점수 나란히 / 곡별 승패.
  * 승패·점수는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다).
  */
-export function RivalCompareView({ viewerId, targetId, initialView = "rating" }: { viewerId: number; targetId: number; initialView?: View }) {
+export function RivalCompareView({
+  viewerId,
+  targetId,
+  initialView = "rating",
+  tab: tabProp,
+  onTabChange,
+  chart: chartProp,
+  onChartChange,
+}: {
+  viewerId: number;
+  targetId: number;
+  initialView?: View;
+  /** 대시보드의 탭·차트. 주소(`?tab=&chart=`)가 쥐는 값이다. 주지 않으면 이 화면이 스스로 갖는다(처음은 우세·막대) */
+  tab?: DashTab;
+  onTabChange?: (tab: DashTab) => void;
+  chart?: DashChart;
+  onChartChange?: (chart: DashChart) => void;
+}) {
   const t = useTranslations("Rival");
   const tc = useTranslations();
   const [view, setView] = useState<View>(initialView);
   const [group, setGroup] = useState<Group>("single");
   const [result, setResult] = useState<RivalResult>("LOSE");
   const [page, setPage] = useState(0);
+  const [localTab, setLocalTab] = useState<DashTab>(DEFAULT_TAB);
+  const [localChart, setLocalChart] = useState<DashChart>(DEFAULT_CHART);
+  const tab = tabProp ?? localTab;
+  const chart = chartProp ?? localChart;
   const jackets = useJackets();
 
   const rating = useQuery({
@@ -153,25 +130,16 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
         <h1 className="min-w-0 truncate text-xl font-semibold text-fg">{t("vsTitle", { nickname: data.nickname })}</h1>
       </div>
 
-      <section aria-label={t("summaryAria")} className="grid grid-cols-3 gap-2 rounded-2xl border border-line bg-card p-4 text-center">
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-fg-dim">{t("me")}</span>
-          <span data-tier={data.myTier.key} className="tier-score font-num text-lg font-bold">{formatScore(data.myTotalScore)}</span>
-          <TierChip tier={data.myTier} />
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-fg-dim">{t("wlt")}</span>
-          <span className="font-num text-lg font-bold text-fg">
-            {counts.win} · {counts.lose} · {counts.tie}
-          </span>
-          <span className="text-xs text-fg-dim">{t("theirsOnlyLine", { n: counts.theirsOnly })}</span>
-        </div>
-        <div className="flex min-w-0 flex-col items-center gap-1">
-          <span className="max-w-full truncate text-xs text-fg-dim">{data.nickname}</span>
-          <span data-tier={data.tier.key} className="tier-score font-num text-lg font-bold">{formatScore(data.totalScore)}</span>
-          <TierChip tier={data.tier} />
-        </div>
-      </section>
+      <RivalDashboard
+        viewerId={viewerId}
+        targetId={targetId}
+        rating={data}
+        tab={tab}
+        onTabChange={(next) => (onTabChange ? onTabChange(next) : setLocalTab(next))}
+        chart={chart}
+        onChartChange={(next) => (onChartChange ? onChartChange(next) : setLocalChart(next))}
+        jackets={jackets}
+      />
 
       <Segment<View>
         label={t("viewAria")}
