@@ -1,5 +1,6 @@
 package com.srpfreaks.backend.service;
 
+import com.srpfreaks.backend.dto.RivalCounts;
 import com.srpfreaks.backend.dto.RivalSummaryDetailResponse;
 import com.srpfreaks.backend.dto.RivalSummaryResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
@@ -206,6 +207,17 @@ public final class RivalSummaryCalculator {
     /** 속성 목록 안의 공유 곡 전체의 합계(요약의 totals와 같다). 곡별 승패 보기의 승·패·무 개수가 이 값을 그대로 쓴다. */
     public static RivalSummaryResponse.Totals totalsOf(List<Shared> shared) {
         return totals(shared.stream().filter(s -> PATTERN_ORDER.contains(s.pattern())).toList());
+    }
+
+    /**
+     * 승·패·무·상대만·나만 개수를 한 번에(D67 개정). **라이벌 카드(`GET /rivals`)·비교 레이팅 목록(`compare/rating`)·곡별 승패(`compare/charts`)의
+     * 개수가 모두 이 한 곳에서 나온다**(대시보드 요약 totals·속성별 onlyTheirs 합과 같은 값이라 화면의 숫자가 갈라지지 않는다).
+     * 입력은 두 사람의 레이팅 대상 채보 점수 목록이고, 판정은 달성률 차다.
+     */
+    public static RivalCounts countsOf(List<SkillService.ScoredChart> mine, List<SkillService.ScoredChart> theirs) {
+        RivalSummaryResponse.Totals totals = totalsOf(share(mine, theirs));
+        Unmatched unmatched = unmatched(mine, theirs);
+        return new RivalCounts(totals.wins(), totals.losses(), totals.ties(), totalOnlyTheirs(unmatched), totalOnlyMine(unmatched));
     }
 
     /** 달성률이 정확히 같은 곡(무). 승·패는 {@link #matches}의 WIN·LOSE와 같은 부호 규칙이다. */

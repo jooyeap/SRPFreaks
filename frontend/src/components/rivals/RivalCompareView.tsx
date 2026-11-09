@@ -16,7 +16,7 @@ import { RivalDashboard } from "@/components/rivals/RivalDashboard";
 import { CompareScoreAside } from "@/components/rivals/CompareScoreAside";
 import { Segment } from "@/components/rivals/Segment";
 import { DEFAULT_CHART, DEFAULT_TAB, type DashChart, type DashTab } from "@/lib/rival-dashboard";
-import { fetchCompareCharts, fetchCompareRating, rivalKeys, signed } from "@/lib/rivals";
+import { fetchCompareCharts, fetchCompareRating, formatRateGap, rivalKeys } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 type View = "rating" | "charts";
@@ -35,6 +35,11 @@ const RESULTS: readonly { value: RivalResult; key: "resultWin" | "resultLose" | 
  * 칩은 `+2.28`(내가 앞, 초록) / `−4.37`(내가 뒤, 주황) / `±0.00`(같음) / `내 기록 없음`이고, 부호·글자가 있어서 색만으로 구분하지 않는다.
  * 점수·차이는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다). 재킷은 운영·개인 설정이 켜졌을 때만 칸을 둔다.
  */
+/** 곡별 승패 줄의 차이 칸: 둘째 자리 달성률 차에 `%`를 붙인다(`−0.08%`, 칩과 같은 표기·같은 값). 상대만 기록한 줄(내 달성률 없음)은 `–`. */
+function rateGap(row: RivalChartRow): string {
+  return formatRateGap(row.myRate, row.theirRate)?.text ?? "–";
+}
+
 function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: ReturnType<typeof useJackets> }) {
   return (
     <ChartLine
@@ -196,7 +201,7 @@ export function RivalCompareView({
               <ul className="rounded-2xl border border-line bg-card">
                 {charts.data.page.content.map((row: RivalChartRow) => (
                   <li key={row.songDifficultyId} className="border-t border-row-line first:border-t-0">
-                    <Link href={`/songs/${row.songId}?chart=${row.songDifficultyId}`} className="grid grid-cols-[minmax(0,1fr)_auto_56px] items-center gap-2 px-3 py-2.5 hover:bg-table-head">
+                    <Link href={`/songs/${row.songId}?chart=${row.songDifficultyId}`} className="grid grid-cols-[minmax(0,1fr)_auto_60px] items-center gap-2 px-3 py-2.5 hover:bg-table-head">
                       <span className="min-w-0">
                         <span className="block truncate text-[13px] text-fg">{row.title}</span>
                         <span className="mt-1 flex"><ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} /></span>
@@ -205,8 +210,8 @@ export function RivalCompareView({
                         <span className="block text-fg" aria-label={t("myRateAria")}>{formatRate(row.myRate)}</span>
                         <span className="block text-fg-dim" aria-label={t("theirRateAria", { nickname: data.nickname })}>{formatRate(row.theirRate)}</span>
                       </span>
-                      <span className={`text-right font-num text-xs ${row.diff !== null && row.diff > 0 ? "text-done-text" : row.diff !== null && row.diff < 0 ? "text-danger" : "text-fg-dim"}`}>
-                        {row.diff === null ? "–" : signed(row.diff)}
+                      <span className={`whitespace-nowrap text-right font-num text-xs tabular-nums ${row.diff !== null && row.diff > 0 ? "text-done-text" : row.diff !== null && row.diff < 0 ? "text-danger" : "text-fg-dim"}`}>
+                        {rateGap(row)}
                       </span>
                     </Link>
                   </li>
