@@ -100,15 +100,16 @@ export function badgeText(count: number): string | null {
 }
 
 /**
- * 차이 표시: 양수면 `1.90↑`(내가 높음), 음수면 `3.40↓`(낮음), 0이면 `0.00`. null(내 기록 없음)은 null.
- * 화살표 글자로도 구분해서 색만으로 뜻을 전하지 않는다.
+ * 레이팅 비교 줄의 점수 차 칩(D65). 값은 `내 점수 - 상대 점수`다: 앞이면 `+2.28`, 뒤면 `−4.37`(진짜 마이너스 기호 U+2212), 같으면 `±0.00`.
+ * 부호가 글자로 보이므로 색만으로 앞뒤를 구분하지 않는다. 내 기록이 없어서 차이가 없으면(null) null을 돌려준다.
+ * 부호는 **표시하는 둘째 자리 값**으로 정한다(서버 값은 이미 둘째 자리 점수끼리의 차이지만 부동소수점 찌꺼기로 `+0.00`/`−0.00`이 나오지 않게 한 번 더 반올림한다).
  */
-export function formatDiff(diff: number | null): { text: string; sign: "up" | "down" | "even" } | null {
+export function formatScoreDiff(diff: number | null): { text: string; sign: "up" | "down" | "even" } | null {
   if (diff === null) return null;
-  const abs = Math.abs(diff).toFixed(2);
-  if (diff > 0) return { text: `${abs}↑`, sign: "up" };
-  if (diff < 0) return { text: `${abs}↓`, sign: "down" };
-  return { text: abs, sign: "even" };
+  const cents = Math.round(diff * 100);
+  if (cents > 0) return { text: `+${(cents / 100).toFixed(2)}`, sign: "up" };
+  if (cents < 0) return { text: `\u2212${(-cents / 100).toFixed(2)}`, sign: "down" };
+  return { text: "\u00b10.00", sign: "even" };
 }
 
 /** 부호를 붙인 차이(`+0.30`, `-1.62`, `0.00`). 곡 상세·라이벌 목록용. */

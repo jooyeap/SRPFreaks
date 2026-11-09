@@ -6,12 +6,13 @@ import { useState } from "react";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 import { Pager } from "@/components/Pager";
 import { ApiError } from "@/lib/api";
-import type { PlayerTierResponse, RivalChartRow, RivalCounts, RivalResult } from "@/lib/api-types";
+import type { PlayerTierResponse, RivalChartRow, RivalCounts, RivalRatingRow, RivalResult } from "@/lib/api-types";
 import { formatRate, formatScore } from "@/lib/format";
 import { ChartBadge } from "@/components/table/Badges";
-import { StageBadge } from "@/components/table/StageBadge";
+import { ChartLine } from "@/components/table/ChartLine";
 import { chartTierAttrs } from "@/lib/chart-tier";
-import { fetchCompareCharts, fetchCompareRating, formatDiff, rivalKeys, signed } from "@/lib/rivals";
+import { useJackets } from "@/lib/jackets";
+import { fetchCompareCharts, fetchCompareRating, formatScoreDiff, rivalKeys, signed } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 type View = "rating" | "charts";
@@ -60,6 +61,55 @@ function TierChip({ tier }: { tier: PlayerTierResponse }) {
 }
 
 /**
+ * 레이팅 비교 목록의 한 줄(D65). 서열표·세트리스트와 같은 공통 줄(ChartLine, D64)에 왼쪽 순번과 재킷을 끼운다.
+ * 오른쪽 열은 위에서부터 상대 점수(티어 색, 소수는 작게) / `나 238.10`(내 점수) / 차이 칩(내 점수 - 상대 점수).
+ * 칩은 `+2.28`(내가 앞, 초록) / `−4.37`(내가 뒤, 주황) / `±0.00`(같음) / `내 기록 없음`이고, 부호·글자가 있어서 색만으로 구분하지 않는다.
+ * 점수·차이는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다). 재킷은 운영·개인 설정이 켜졌을 때만 칸을 둔다.
+ */
+function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: ReturnType<typeof useJackets> }) {
+  const t = useTranslations("Rival");
+  const diff = formatScoreDiff(row.diff);
+  const [whole, decimal] = formatScore(row.score).split(".");
+  const tone =
+    diff?.sign === "up"
+      ? "border-done text-done-text"
+      : diff?.sign === "down"
+        ? "border-weak text-weak-text"
+        : diff
+          ? "border-chip-line text-fg-sub"
+          : "border-line text-fg-dim";
+  return (
+    <ChartLine
+      className="border-t border-row-line first:border-t-0"
+      lead={<span className="w-5 shrink-0 text-center font-num text-xs text-fg-dim">{row.rank}</span>}
+      jacket={jackets.visible ? { url: jackets.urlOf(row.songId) } : null}
+      pattern={row.pattern}
+      tier={row.tier}
+      title={row.title}
+      href={`/songs/${row.songId}?chart=${row.songDifficultyId}`}
+      part={row.part}
+      difficulty={row.difficulty}
+      level={row.level}
+      aside={
+        <div className="flex w-[88px] shrink-0 flex-col items-end gap-0.5">
+          <span {...chartTierAttrs(row.score)} className="tier-score font-num text-lg font-semibold leading-5 tabular-nums">
+            {whole}
+            <span className="text-[11px]">.{decimal}</span>
+          </span>
+          {row.myScore !== null ? <span className="font-num text-[11px] leading-4 text-fg-dim">{t("myScoreLine", { score: formatScore(row.myScore) })}</span> : null}
+          <span
+            aria-label={diff ? t("diffAria", { diff: diff.text }) : undefined}
+            className={`whitespace-nowrap rounded border px-1.5 font-num text-[11px] font-bold leading-4 ${tone}`}
+          >
+            {diff ? diff.text : t("diffNone")}
+          </span>
+        </div>
+      }
+    />
+  );
+}
+
+/**
  * 라이벌 비교 화면(D56). 머리: 나 총점 · 승·패·무 · 상대 총점. 보기: 상대 레이팅 목록에 내 점수 나란히 / 곡별 승패.
  * 승패·점수는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다).
  */
@@ -70,6 +120,7 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
   const [group, setGroup] = useState<Group>("single");
   const [result, setResult] = useState<RivalResult>("LOSE");
   const [page, setPage] = useState(0);
+  const jackets = useJackets();
 
   const rating = useQuery({
     queryKey: rivalKeys.rating(viewerId, targetId),
@@ -152,31 +203,13 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
           {rows.length === 0 ? (
             <p className="text-sm text-fg-sub">{t("emptyRating")}</p>
           ) : (
-            <ol className="rounded-2xl border border-line bg-card">
-              {rows.map((row) => {
-                const diff = formatDiff(row.diff);
-                return (
-                  <li key={row.songDifficultyId} className="border-t border-row-line first:border-t-0">
-                    <Link href={`/songs/${row.songId}?chart=${row.songDifficultyId}`} className="grid grid-cols-[24px_minmax(0,1fr)_auto_56px] items-center gap-2 px-3 py-2.5 hover:bg-table-head">
-                      <span className="font-num text-xs text-fg-dim">{row.rank}</span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13px] text-fg">{row.title}</span>
-                        <span className="mt-1 flex flex-wrap items-center gap-1.5"><ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} /><StageBadge stage={row.stage} /></span>
-                      </span>
-                      <span className="text-right">
-                        <span {...chartTierAttrs(row.score)} className="tier-score block font-num text-[13px] font-semibold">{formatScore(row.score)}</span>
-                        <span className="block font-num text-[11px] text-fg-dim">{formatRate(row.rate)}%</span>
-                      </span>
-                      <span className={`text-right font-num text-xs ${diff?.sign === "up" ? "text-done-text" : diff?.sign === "down" ? "text-danger" : "text-fg-dim"}`}>
-                        {diff ? diff.text : t("noRecord")}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
+            <ol className="overflow-hidden rounded-2xl border border-line bg-card">
+              {rows.map((row) => (
+                <RatingCompareLine key={row.songDifficultyId} row={row} jackets={jackets} />
+              ))}
             </ol>
           )}
-          <p className="text-xs text-fg-dim">{t("ratingLegend", { nickname: data.nickname })}</p>
+          <p className="text-xs text-fg-dim">{t("ratingLegend")}</p>
         </section>
       ) : (
         <section aria-label={t("viewCharts")} className="flex flex-col gap-3">

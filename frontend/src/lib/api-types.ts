@@ -533,6 +533,8 @@ export interface RivalRatingRow {
   difficulty: DifficultyType;
   level: number;
   tier: number;
+  /** 속성(`단일` 등, 없으면 null). 줄 윗줄의 `속성 | 서열 난이도`에 쓴다(D65) */
+  pattern: string | null;
   rate: number;
   stage: AchievementStage;
   score: number;
@@ -573,12 +575,13 @@ export interface RivalCompareChartsResponse {
   page: PageResponse<RivalChartRow>;
 }
 
-/** 곡 상세의 라이벌 기록 한 줄. rate = 상대 기록(없으면 null), diff = 내 기록 - 상대 기록. */
+/** 곡 상세의 라이벌 기록 한 줄. rate = 상대 기록(없으면 null), diff = 내 기록 - 상대 기록, stage = 상대 기록의 달성 단계(D65, 기록이 없으면 null). */
 export interface RivalRecordResponse {
   userId: number;
   nickname: string;
   rate: number | null;
   diff: number | null;
+  stage?: AchievementStage | null;
 }
 
 /** 라이벌 역전 알림 한 줄. bundled면 songCount곡을 묶은 줄이고 곡 정보는 첫 곡. myRate = 내 기록. */

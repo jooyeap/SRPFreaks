@@ -73,16 +73,16 @@ const ratingResponse: RivalCompareRatingResponse = {
   myTotalScore: 9204.32,
   counts: { win: 48, lose: 61, tie: 3, theirsOnly: 27 },
   single: [
-    { rank: 1, songDifficultyId: 11, songId: 1, title: "KAISER PHOENIX", part: "GUITAR", difficulty: "MASTER", level: 9.9, tier: 9.0,
+    { rank: 1, songDifficultyId: 11, songId: 1, title: "KAISER PHOENIX", part: "GUITAR", difficulty: "MASTER", level: 9.9, tier: 9.0, pattern: "복합(단일)",
       rate: 95.2, stage: "SS", score: 238.1, myRate: 96, myScore: 240, diff: 1.9 },
-    { rank: 2, songDifficultyId: 12, songId: 2, title: "Far East Nightbird", part: "GUITAR", difficulty: "MASTER", level: 9.0, tier: 8.5,
+    { rank: 2, songDifficultyId: 12, songId: 2, title: "Far East Nightbird", part: "GUITAR", difficulty: "MASTER", level: 9.0, tier: 8.5, pattern: "단일",
       rate: 88.9, stage: "S", score: 212.44, myRate: null, myScore: null, diff: null },
   ],
   other: [],
 };
 
 describe("RivalCompareView", () => {
-  it("머리에 두 사람 총점과 승패를, 레이팅 목록 줄에 내 차이를 화살표 글자로 보인다", async () => {
+  it("머리에 두 사람 총점과 승패를, 레이팅 목록 줄에 내 점수와 차이 칩을 부호 글자로 보인다", async () => {
     fetchMock.mockResolvedValue(json(ratingResponse));
     renderWith(<RivalCompareView viewerId={1} targetId={7} />);
 
@@ -91,8 +91,11 @@ describe("RivalCompareView", () => {
     expect(summary).toHaveTextContent("9204.32");
     expect(summary).toHaveTextContent("48 · 61 · 3");
     expect(summary).toHaveTextContent("상대만 27곡");
-    expect(screen.getByText("1.90↑")).toBeInTheDocument();
-    expect(screen.getByText("없음")).toBeInTheDocument();
+    expect(screen.getByText("+1.90")).toBeInTheDocument();
+    expect(screen.getByText("나 240.00")).toBeInTheDocument();
+    expect(screen.getByText("내 기록 없음")).toBeInTheDocument();
+    // 목록 맨 아래 안내(내 점수 − 상대 점수)
+    expect(screen.getByText("+는 내가 앞, \u2212는 내가 뒤 (내 점수 \u2212 상대 점수)")).toBeInTheDocument();
   });
 
   it("곡별 승패로 바꾸면 진 곡 목록을 받아 위 나 / 아래 상대 달성률과 차이를 보인다", async () => {
@@ -131,9 +134,9 @@ describe("RivalCompareView", () => {
 describe("RivalRecordsCard", () => {
   it("라이벌 기록과 차이를 승/패 글자와 함께 보이고 기록 없는 라이벌은 `없음`이다", async () => {
     fetchMock.mockResolvedValue(json([
-      { userId: 7, nickname: "Rumi", rate: 96.1, diff: 0.3 },
-      { userId: 8, nickname: "KJY", rate: 98.02, diff: -1.62 },
-      { userId: 9, nickname: "HSB", rate: null, diff: null },
+      { userId: 7, nickname: "Rumi", rate: 96.1, diff: 0.3, stage: "SS" },
+      { userId: 8, nickname: "KJY", rate: 98.02, diff: -1.62, stage: "FC" },
+      { userId: 9, nickname: "HSB", rate: null, diff: null, stage: null },
     ]));
     renderWith(<RivalRecordsCard viewerId={1} songDifficultyId={5} />);
 
@@ -141,6 +144,10 @@ describe("RivalRecordsCard", () => {
     const items = within(card).getAllByRole("listitem");
     expect(items[0]).toHaveTextContent("+0.30");
     expect(items[0]).toHaveTextContent("승");
+    // 상대 달성률 옆 단계 글자 칩(D65). 기록이 없는 줄에는 칩이 없다
+    expect(within(items[0]).getByText("SS")).toBeInTheDocument();
+    expect(within(items[1]).getByText("FC")).toBeInTheDocument();
+    expect(within(items[2]).queryByText(/^(C|B|A|S|SS|FC|EXC)$/)).toBeNull();
     expect(items[1]).toHaveTextContent("-1.62");
     expect(items[1]).toHaveTextContent("패");
     expect(items[2]).toHaveTextContent("없음");

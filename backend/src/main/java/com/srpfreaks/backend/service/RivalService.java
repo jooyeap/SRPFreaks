@@ -13,6 +13,7 @@ import com.srpfreaks.backend.dto.RivalResponse;
 import com.srpfreaks.backend.dto.RivalStatusResponse;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
+import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.Rival;
 import com.srpfreaks.backend.entity.SongDifficulty;
@@ -175,7 +176,7 @@ public class RivalService {
                     : calculator.score(calculator.value(calculator.constant(e.tier()), my.bestRate()));
             BigDecimal myScoreShown = myScore == null ? null : RatingCalculator.display(myScore);
             return new RivalCompareRatingResponse.Row(e.rank(), e.songDifficultyId(), e.songId(), e.title(), e.part(),
-                    e.difficulty(), e.level(), e.tier(), e.achievementRate(), e.stage(), e.score(),
+                    e.difficulty(), e.level(), e.tier(), e.pattern(), e.achievementRate(), e.stage(), e.score(),
                     my == null ? null : my.bestRate(), myScoreShown, myScoreShown == null ? null : myScoreShown.subtract(e.score()));
         };
         return new RivalCompareRatingResponse(target.getId(), target.getNickname(), theirs.tier(), theirs.totalScore(),
@@ -244,13 +245,17 @@ public class RivalService {
         NoteOption option = skillService.ratingNoteOption();
         List<Long> ids = new ArrayList<>(targets.stream().map(User::getId).toList());
         ids.add(userId);
-        Map<Long, BigDecimal> bests = optionRecordRepository.findBestRatesForUsers(songDifficultyId, option, ids).stream()
-                .collect(Collectors.toMap(UserBest::userId, UserBest::bestRate));
-        BigDecimal mine = bests.get(userId);
+        Map<Long, UserBest> bests = optionRecordRepository.findBestWithFullComboForUsers(songDifficultyId, option, ids).stream()
+                .collect(Collectors.toMap(UserBest::userId, Function.identity()));
+        UserBest myBest = bests.get(userId);
+        BigDecimal mine = myBest == null ? null : myBest.bestRate();
         return targets.stream().map(t -> {
-            BigDecimal rate = bests.get(t.getId());
+            UserBest best = bests.get(t.getId());
+            BigDecimal rate = best == null ? null : best.bestRate();
+            // 단계는 다른 화면과 같은 규칙(AchievementStage.of: 최고 달성률 + 풀콤보 여부). 기록이 없으면 null
+            AchievementStage stage = best == null ? null : AchievementStage.of(best.bestRate(), best.fullCombo());
             return new RivalRecordResponse(t.getId(), t.getNickname(), rate,
-                    rate == null || mine == null ? null : mine.subtract(rate));
+                    rate == null || mine == null ? null : mine.subtract(rate), stage);
         }).toList();
     }
 

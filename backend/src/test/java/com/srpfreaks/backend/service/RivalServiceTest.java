@@ -275,6 +275,7 @@ class RivalServiceTest {
         assertThat(row.myRate()).isEqualByComparingTo("95.00");
         assertThat(row.myScore()).isEqualByComparingTo("544.00");
         assertThat(row.diff()).isEqualByComparingTo("-6.00");
+        assertThat(row.pattern()).isEqualTo("단일");   // D65: 줄 윗줄의 `속성 | 서열 난이도`용
         assertThat(res.counts()).isEqualTo(new RivalCounts(0, 1, 0, 0));
     }
 
@@ -306,8 +307,8 @@ class RivalServiceTest {
         User noRecord = user(4L, "ASTRA");
         when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of(
                 Rival.of(me, them, Instant.EPOCH), Rival.of(me, hidden, Instant.EPOCH), Rival.of(me, noRecord, Instant.EPOCH)));
-        when(optionRecordRepository.findBestRatesForUsers(eq(7L), eq(SRN), anyCollection()))
-                .thenReturn(List.of(new UserBest(ME, d("96.40")), new UserBest(THEM, d("96.10"))));
+        when(optionRecordRepository.findBestWithFullComboForUsers(eq(7L), eq(SRN), anyCollection()))
+                .thenReturn(List.of(new UserBest(ME, d("96.40")), new UserBest(THEM, d("96.10"), true)));
 
         List<RivalRecordResponse> rows = service.rivalRecords(ME, 7L);
 
@@ -315,5 +316,23 @@ class RivalServiceTest {
         assertThat(rows.get(0).diff()).isEqualByComparingTo("0.30");
         assertThat(rows.get(1).rate()).isNull();
         assertThat(rows.get(1).diff()).isNull();
+        // 달성 단계(D65): 풀콤보 기록이 있으면 FC, 기록이 없으면 null
+        assertThat(rows.get(0).stage()).isEqualTo(AchievementStage.FC);
+        assertThat(rows.get(1).stage()).isNull();
+    }
+
+    @Test
+    void 곡_상세_라이벌_기록의_단계는_최고_달성률과_풀콤보_여부로_정한다() {
+        SongDifficulty c = chart(7L);
+        when(songDifficultyRepository.findByIdAndDeletedFalse(7L)).thenReturn(Optional.of(c));
+        when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of(Rival.of(me, them, Instant.EPOCH)));
+        // 풀콤보가 없고 96.10 → SS, 100.00이면 EXC
+        when(optionRecordRepository.findBestWithFullComboForUsers(eq(7L), eq(SRN), anyCollection()))
+                .thenReturn(List.of(new UserBest(THEM, d("96.10"))));
+        assertThat(service.rivalRecords(ME, 7L).get(0).stage()).isEqualTo(AchievementStage.SS);
+
+        when(optionRecordRepository.findBestWithFullComboForUsers(eq(7L), eq(SRN), anyCollection()))
+                .thenReturn(List.of(new UserBest(THEM, d("100.00"))));
+        assertThat(service.rivalRecords(ME, 7L).get(0).stage()).isEqualTo(AchievementStage.EXC);
     }
 }
