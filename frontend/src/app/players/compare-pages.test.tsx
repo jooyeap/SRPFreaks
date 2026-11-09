@@ -35,6 +35,8 @@ const summary: RivalSummaryResponse = {
     { pattern: "단일", key: "SINGLE", wins: 3, ties: 0, losses: 0, scoreDiffSum: 9, closeCount: 1, sharedCount: 3 },
     { pattern: "삼중", key: "TRIPLE", wins: 0, ties: 0, losses: 3, scoreDiffSum: -9, closeCount: 0, sharedCount: 3 },
   ],
+  tiers: [],
+  distribution: [],
 };
 const detail = {
   userId: 7, nickname: "Rumi", summary: summary.patterns[1], filterCounts: { all: 3, lose: 3, close: 0, win: 0 },
@@ -86,6 +88,32 @@ describe("/players/{id}/compare 주소 상태", () => {
     expect(url.searchParams.get("tab")).toBe("weak");
     expect(url.searchParams.get("view")).toBe("charts");
     expect(url.searchParams.get("chart")).toBe("bar");
+    expect(options).toEqual({ scroll: false });
+  });
+
+  it("주소의 `?chart=radar`로 레이더가 열린 채 시작하고, 모르는 차트 값은 막대로 본다", async () => {
+    nav.search = new URLSearchParams("chart=radar");
+    const first = renderPage(<ComparePage />);
+    const box = await screen.findByRole("region", { name: "라이벌 대시보드" });
+    expect(within(box).getByRole("img")).toHaveAccessibleName(/레이더 차트/);
+    expect(within(box).getByRole("button", { name: "레이더" })).toHaveAttribute("aria-pressed", "true");
+    first.unmount();
+    nav.search = new URLSearchParams("chart=zzz");
+    renderPage(<ComparePage />);
+    const box2 = await screen.findByRole("region", { name: "라이벌 대시보드" });
+    expect(within(box2).getByRole("button", { name: "막대" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("점 분포 버튼을 누르면 다른 쿼리는 그대로 두고 `chart=dot`만 바꿔 replace한다", async () => {
+    nav.search = new URLSearchParams("tab=weak&chart=bar");
+    renderPage(<ComparePage />);
+    const box = await screen.findByRole("region", { name: "라이벌 대시보드" });
+    fireEvent.click(within(box).getByRole("button", { name: "점 분포" }));
+    expect(nav.replace).toHaveBeenCalledTimes(1);
+    const [href, options] = nav.replace.mock.calls[0];
+    const url = new URL(href, "http://localhost");
+    expect(url.searchParams.get("chart")).toBe("dot");
+    expect(url.searchParams.get("tab")).toBe("weak");
     expect(options).toEqual({ scroll: false });
   });
 

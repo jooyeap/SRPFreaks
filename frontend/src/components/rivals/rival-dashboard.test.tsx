@@ -47,6 +47,8 @@ function summaryOf(patterns: RivalPatternSummary[]): RivalSummaryResponse {
   return {
     userId: 7, nickname: "Rumi", closeMargin: 1,
     totals: { wins: 11, ties: 4, losses: 10, closeCount: 9, sharedCount: 30, scoreDiffSum: -26.17 }, patterns,
+    tiers: [],
+    distribution: patterns.map((p) => ({ pattern: p.pattern, key: p.key, diffs: [] })),
   };
 }
 
@@ -224,13 +226,12 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(within(box).getByText("막대: 왼쪽 패(열세) · 오른쪽 승(우세) · 오른쪽 숫자는 점수 차 합계")).toBeInTheDocument();
   });
 
-  it("차트 전환 칸에는 막대만 보인다(점 분포·레이더는 다음 단계)", async () => {
+  it("차트 전환 칸에는 막대·점 분포·레이더가 보이고 기본은 막대다(7단계)", async () => {
     show();
     const box = await dashboard();
     const group = within(box).getByRole("group", { name: "차트" });
-    expect(within(group).getAllByRole("button")).toHaveLength(1);
+    expect(within(group).getAllByRole("button").map((b) => b.textContent)).toEqual(["막대", "점 분포", "레이더"]);
     expect(within(group).getByRole("button", { name: "막대" })).toHaveAttribute("aria-pressed", "true");
-    expect(within(box).queryByRole("button", { name: /점 분포|레이더/ })).toBeNull();
   });
 
   it("미리보기: 우세 탭은 크게 앞선 곡 2곡을 속성마다 받아 합쳐 보이고 `담기`는 없다", async () => {
