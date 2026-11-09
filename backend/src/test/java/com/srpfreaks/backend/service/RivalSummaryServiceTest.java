@@ -29,7 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** 라이벌 대시보드 집계 서비스(D67): 접근 규칙(404), 요청 값 검증(400), 목록 페이지·필터·정렬. */
+/** 라이벌 대시보드 집계 서비스(D67): 접근 규칙(404), 요청 값 검증(400), 목록 페이지·필터·정렬(달성률 차 기준), 한쪽만 기록한 곡 수. */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class RivalSummaryServiceTest {
@@ -48,9 +48,9 @@ class RivalSummaryServiceTest {
         when(rivalService.findComparable(1L, 2L)).thenReturn(target);
     }
 
-    private static SkillService.ScoredChart chart(long id, PatternType pattern, String score) {
+    private static SkillService.ScoredChart chart(long id, PatternType pattern, String score, String rate) {
         RatingCandidate c = new RatingCandidate(id, 100 + id, "곡" + id, "GUITAR", "MASTER", new BigDecimal("9.50"),
-                new BigDecimal("5.6"), pattern.getLabel(), new BigDecimal("90.00"), false, null);
+                new BigDecimal("5.6"), pattern.getLabel(), new BigDecimal(rate), false, null);
         return new SkillService.ScoredChart(c, pattern, new BigDecimal(score));
     }
 
@@ -61,13 +61,13 @@ class RivalSummaryServiceTest {
         when(skillService.scoredChartsAll(anyCollection())).thenReturn(map);
     }
 
-    /** 삼중 곡 n개: 차이가 -n.00 ... 처럼 곡마다 다르게(곡 i의 차이 = -i). */
+    /** 삼중 곡 n개: 달성률 차가 -1.00, -2.00 ... 처럼 곡마다 다르게(곡 i의 차이 = -i%p). 점수 차도 같은 크기로 둔다(옛 필드). */
     private void tripleLosses(int n) {
         List<SkillService.ScoredChart> mine = new ArrayList<>();
         List<SkillService.ScoredChart> theirs = new ArrayList<>();
         for (int i = 1; i <= n; i++) {
-            mine.add(chart(i, PatternType.TRIPLE, String.valueOf(200 - i) + ".00"));
-            theirs.add(chart(i, PatternType.TRIPLE, "200.00"));
+            mine.add(chart(i, PatternType.TRIPLE, String.valueOf(200 - i) + ".00", (90 - i) + ".00"));
+            theirs.add(chart(i, PatternType.TRIPLE, "200.00", "90.00"));
         }
         charts(mine, theirs);
     }
@@ -120,19 +120,71 @@ class RivalSummaryServiceTest {
 
         assertThat(r.summary().key()).isEqualTo("TRIPLE");
         assertThat(r.summary().sharedCount()).isEqualTo(3);
-        assertThat(r.summary().scoreDiffSum()).isEqualByComparingTo("-6.00");
+        assertThat(r.summary().scoreDiffSum()).isEqualByComparingTo("-6.00");   // 옛 필드(점수 차 합계)
+        assertThat(r.summary().rateDiffAvg()).isEqualByComparingTo("-2.0");     // (-1 -2 -3) / 3 %p
         assertThat(r.filterCounts().all()).isEqualTo(3);
         assertThat(r.filterCounts().lose()).isEqualTo(3);
         assertThat(r.filterCounts().close()).isEqualTo(1);   // -1.00만 접전(경계 포함)
         assertThat(r.filterCounts().win()).isZero();
         assertThat(r.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(3L, 2L, 1L);
+        assertThat(r.rows().content().get(0).rateDiff()).isEqualByComparingTo("-3.00");
+    }
+
+    @Test
+    void 점수가_같아도_달성률이_다르면_달성률_차로_판정하고_정렬한다() {
+        // 점수는 모두 304.00(95% 이상이라 같다)이지만 달성률 차는 곡마다 다르다
+        charts(List.of(chart(1, PatternType.SINGLE, "304.00", "97.50"), chart(2, PatternType.SINGLE, "304.00", "99.80"),
+                        chart(3, PatternType.SINGLE, "304.00", "99.00")),
+                List.of(chart(1, PatternType.SINGLE, "304.00", "99.80"), chart(2, PatternType.SINGLE, "304.00", "99.80"),
+                        chart(3, PatternType.SINGLE, "304.00", "98.50")));
+
+        RivalSummaryResponse sum = service.summary(1L, 2L);
+        RivalSummaryResponse.PatternSummary single = sum.patterns().get(0);
+        assertThat(single.losses()).isEqualTo(1);    // 97.50 대 99.80
+        assertThat(single.ties()).isEqualTo(1);      // 99.80 대 99.80
+        assertThat(single.wins()).isEqualTo(1);      // 99.00 대 98.50
+        assertThat(single.scoreDiffSum()).isEqualByComparingTo("0.00");
+
+        RivalSummaryDetailResponse lose = service.detail(1L, 2L, "SINGLE", "LOSE", null, 0, 20);
+        assertThat(lose.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(1L);
+        assertThat(lose.rows().content().get(0).rateDiff()).isEqualByComparingTo("-2.30");
+        RivalSummaryDetailResponse win = service.detail(1L, 2L, "SINGLE", "WIN", null, 0, 20);
+        assertThat(win.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(3L);
+        assertThat(service.detail(1L, 2L, "SINGLE", "CLOSE", null, 0, 20).rows().content())
+                .extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(2L, 3L);   // 0.00, +0.50
+    }
+
+    @Test
+    void 한쪽만_기록한_곡은_속성_요약에_곡_수로_들어가고_승무패에는_안_들어간다() {
+        // 공유 1곡(삼중) + 상대만 3곡(삼중 2, 단일 1) + 나만 2곡(삼중 1, 이중 1)
+        charts(List.of(chart(1, PatternType.TRIPLE, "200.00", "90.00"), chart(20, PatternType.TRIPLE, "100.00", "50.00"),
+                        chart(21, PatternType.DOUBLE, "100.00", "40.00")),
+                List.of(chart(1, PatternType.TRIPLE, "200.00", "88.00"), chart(10, PatternType.TRIPLE, "100.00", "70.00"),
+                        chart(11, PatternType.TRIPLE, "100.00", "60.00"), chart(12, PatternType.SINGLE, "100.00", "80.00")));
+
+        RivalSummaryResponse r = service.summary(1L, 2L);
+        RivalSummaryResponse.PatternSummary triple = r.patterns().get(4);
+        assertThat(triple.key()).isEqualTo("TRIPLE");
+        assertThat(triple.sharedCount()).isEqualTo(1);
+        assertThat(triple.wins()).isEqualTo(1);
+        assertThat(triple.onlyTheirs()).isEqualTo(2);
+        assertThat(triple.onlyMine()).isEqualTo(1);
+        assertThat(r.patterns().get(0).onlyTheirs()).isEqualTo(1);   // 단일
+        assertThat(r.patterns().get(3).onlyMine()).isEqualTo(1);     // 이중
+        assertThat(r.totals().sharedCount()).isEqualTo(1);
+
+        // 속성 상세 머리에도 같은 곡 수가 있다
+        RivalSummaryDetailResponse d = service.detail(1L, 2L, "TRIPLE", null, null, 0, 20);
+        assertThat(d.summary().onlyTheirs()).isEqualTo(2);
+        assertThat(d.summary().onlyMine()).isEqualTo(1);
+        assertThat(d.filterCounts().all()).isEqualTo(1);
     }
 
     @Test
     void 필터와_정렬을_적용하고_페이지로_나눈다() {
         tripleLosses(5);
 
-        RivalSummaryDetailResponse close = service.detail(1L, 2L, "triple", "close", null, 0, 20);
+        RivalSummaryDetailResponse close = service.detail(1L, 2L, "triple", "close", null, 0, 20);   // 달성률 차 -1.00만 접전
         assertThat(close.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(1L);
 
         RivalSummaryDetailResponse page = service.detail(1L, 2L, "TRIPLE", "LOSE", "DIFF_DESC", 1, 2);
