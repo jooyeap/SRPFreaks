@@ -4,6 +4,7 @@ import { SongJacket } from "@/components/SongJacket";
 import { ChartBadge } from "@/components/table/Badges";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatTier } from "@/lib/format";
+import { HIT_TITLE } from "@/lib/hit-area";
 import type { AchievementStage, DifficultyType, InstrumentPart } from "@/lib/types";
 import { useTranslations } from "next-intl";
 
@@ -103,8 +104,9 @@ export function ChartLine({
           </span>
           {topExtra}
         </p>
-        <Link href={href} className={`mt-1 block truncate text-sm leading-[18px] hover:underline ${titleClass}`}>
-          {title}
+        {/* 누르는 영역은 위아래로 44px까지 넓힌다(HIT_TITLE). 말줄임(truncate)은 ::after가 잘리지 않게 안쪽 글자 칸에 둔다 */}
+        <Link href={href} className={`mt-1 block text-sm leading-[18px] hover:underline ${HIT_TITLE} ${titleClass}`}>
+          <span className="block truncate">{title}</span>
         </Link>
         <span className="mt-1 flex items-center gap-1.5 overflow-hidden">
           <ChartBadge part={part} difficulty={difficulty} level={level} compact />

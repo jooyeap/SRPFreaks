@@ -1,5 +1,6 @@
 import { chartTierAttrs, ratedScore } from "@/lib/chart-tier";
 import { EMPTY_MARK, formatScore } from "@/lib/format";
+import { HIT_CHIP } from "@/lib/hit-area";
 import type { TableEntryResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
 
@@ -42,12 +43,12 @@ export function RatedScore({
     return chip;
   }
   return (
-    // 보이는 크기는 칩 그대로, ::after로 누를 수 있는 영역만 사방 6px 넓힌다(모바일에서 잘 눌리게)
+    // 보이는 크기는 칩 그대로, ::after로 누를 수 있는 영역만 넓힌다(위아래 13px씩 → 44px, 좌우 6px. HIT_CHIP)
     <button
       type="button"
       onClick={() => onRecord(entry)}
       aria-label={t("Chart.recordEdit", { title: entry.title })}
-      className="relative inline-flex rounded after:absolute after:-inset-1.5 after:content-[''] hover:brightness-110"
+      className={`inline-flex rounded hover:brightness-110 ${HIT_CHIP}`}
     >
       {chip}
     </button>

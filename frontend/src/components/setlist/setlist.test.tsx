@@ -133,7 +133,7 @@ describe("세트리스트", () => {
 
       // 높이는 곡명 길이·기록 유무와 상관없이 같고, 곡명은 한 줄 말줄임, 눌리는 영역을 넓힌 버튼
       for (const row of rows) expect(row).toHaveClass("h-[68px]");
-      expect(within(rows[2]).getByRole("link")).toHaveClass("truncate");
+      expect(within(rows[2]).getByRole("link").querySelector("span")).toHaveClass("truncate");
       for (const b of within(rows[0]).getAllByRole("button")) {
         expect(b).toHaveClass("h-[26px]", "after:-inset-1.5");
       }

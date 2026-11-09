@@ -17,6 +17,7 @@ import {
   shrinkPhoto,
   type RecognizeResult,
 } from "@/lib/recognize";
+import { HIT_STANDALONE } from "@/lib/hit-area";
 import { AFFECTED_QUERY_KEYS, createRecord, seoulDateToInstant, todaySeoul } from "@/lib/records";
 import { useTranslations } from "next-intl";
 
@@ -219,7 +220,7 @@ export function PhotoInputView() {
             )}
           </ul>
           <div className="sticky bottom-[calc(var(--tabbar-h)+0.5rem)] flex items-center justify-between gap-3 rounded-2xl border border-line bg-card/95 p-3">
-            <Link href="/me" className="text-sm text-fg-sub underline underline-offset-2">
+            <Link href="/me" className={`text-sm text-fg-sub underline underline-offset-2 ${HIT_STANDALONE}`}>
               {t("Photo.toMyPage")}
             </Link>
             <button
