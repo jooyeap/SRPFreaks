@@ -28,6 +28,7 @@ import {
   tabPatterns,
   topPattern,
 } from "@/lib/rival-dashboard";
+import { winRatePercent } from "@/lib/rival-charts";
 import { formatScoreDiff } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
@@ -43,12 +44,18 @@ function signedSum(value: number): string {
   return formatScoreDiff(value)?.text ?? "–";
 }
 
-/** 속성 줄 오른쪽의 값: 우세·열세 탭은 점수 차 합계, 접전 탭은 접전 곡 수. */
+/** 속성별 승률 글자(`승률 63%`). 공유 곡이 없으면 `–`(0%가 아니다). 글자를 함께 적어 %만 덩그러니 보이지 않게 한다. */
+function winRateText(pattern: RivalPatternSummary, label: (rate: number) => string): string {
+  const percent = winRatePercent(pattern);
+  return percent === null ? "–" : label(percent);
+}
+
+/** 속성 줄 오른쪽의 값: 우세·열세 탭은 승률 %(승 ÷ 공유 곡), 접전 탭은 접전 곡 수. */
 function PatternValue({ pattern, tab }: { pattern: RivalPatternSummary; tab: DashTab }) {
-  const t = useTranslations("Rival");
+  const t = useTranslations();
   return (
     <span className="shrink-0 font-num text-xs font-bold tabular-nums text-fg">
-      {tab === "close" ? t("patternClose", { n: pattern.closeCount }) : signedSum(pattern.scoreDiffSum)}
+      {tab === "close" ? t("Rival.patternClose", { n: pattern.closeCount }) : winRateText(pattern, (rate) => t("Rival.winRateValue", { rate }))}
     </span>
   );
 }
@@ -211,7 +218,7 @@ export function RivalDashboard({
               <span className="text-[11px] leading-4 text-fg-dim">{t(`Rival.${CARD_LABEL_KEY[key]}`)}</span>
               <span className="max-w-full truncate text-sm font-bold text-fg">{top ? patternLabel(top.pattern, t) : "–"}</span>
               <span className="font-num text-xs font-bold tabular-nums text-fg-sub">
-                {top ? (key === "close" ? t("Rival.patternClose", { n: top.closeCount }) : signedSum(top.scoreDiffSum)) : "–"}
+                {top ? (key === "close" ? t("Rival.patternClose", { n: top.closeCount }) : winRateText(top, (rate) => t("Rival.winRateValue", { rate }))) : "–"}
               </span>
             </button>
           );

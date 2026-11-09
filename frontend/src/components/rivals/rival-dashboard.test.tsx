@@ -121,20 +121,40 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(box).toHaveTextContent("승 11 무 4 패 10");
   });
 
-  it("요약 카드 3개가 우세·열세·접전 속성과 값(합계 부호 글자 / 접전 곡 수)을 보인다", async () => {
+  it("요약 카드 3개가 우세·열세·접전 속성과 값(승률 % / 접전 곡 수)을 보이고 점수 차 합계는 보이지 않는다", async () => {
     show();
     const box = await dashboard();
     const cards = within(within(box).getByRole("group", { name: "요약" })).getAllByRole("button");
     expect(cards).toHaveLength(3);
     expect(cards[0]).toHaveTextContent("우세 속성");
     expect(cards[0]).toHaveTextContent("단일");
-    expect(cards[0]).toHaveTextContent("+30.50");
+    expect(cards[0]).toHaveTextContent("승률 67%"); // 6 ÷ 9
+    expect(cards[0]).not.toHaveTextContent("+30.50");
     expect(cards[1]).toHaveTextContent("열세 속성");
     expect(cards[1]).toHaveTextContent("삼중");
-    expect(cards[1]).toHaveTextContent(`${MINUS}42.67`);
+    expect(cards[1]).toHaveTextContent("승률 0%"); // 0 ÷ 5 (공유 곡이 있으므로 0%이고 `–`가 아니다)
+    expect(cards[1]).not.toHaveTextContent(`${MINUS}42.67`);
     expect(cards[2]).toHaveTextContent("접전(±1 이내)");
     expect(cards[2]).toHaveTextContent("복합");
     expect(cards[2]).toHaveTextContent("접전 5곡");
+    expect(cards[2]).not.toHaveTextContent("승률");
+  });
+
+  it("카드의 값(승률)과 카드를 고르는 기준(점수 차 합계)이 어긋날 수 있다: 우세 카드의 속성이 승률 1등이 아닐 수 있다", async () => {
+    // 단일: 큰 점수 차 몇 곡(합계 +50.00)으로 이겼지만 승률은 3 ÷ 10 = 30%. 복합: 합계 +10.00이지만 승률은 8 ÷ 10 = 80%.
+    // 카드는 기존 기준(합계 큰 순)대로 단일을 고르므로 우세 카드에는 `승률 30%`가 보이고, 승률이 더 높은 복합은 카드에 나오지 않는다(우세 탭 목록에는 나온다).
+    show([
+      pattern("SINGLE", "단일", { wins: 3, ties: 0, losses: 7, scoreDiffSum: 50, closeCount: 0, sharedCount: 10 }),
+      pattern("COMPOUND", "복합", { wins: 8, ties: 0, losses: 2, scoreDiffSum: 10, closeCount: 0, sharedCount: 10 }),
+      pattern("COMPOSITE_SINGLE", "복합(단일)"),
+      pattern("DOUBLE", "이중"),
+      pattern("TRIPLE", "삼중"),
+    ]);
+    const box = await dashboard();
+    const strongCard = within(within(box).getByRole("group", { name: "요약" })).getAllByRole("button")[0];
+    expect(strongCard).toHaveTextContent("단일");
+    expect(strongCard).toHaveTextContent("승률 30%");
+    expect(strongCard).not.toHaveTextContent("복합");
   });
 
   it("카드를 누르면 해당 탭으로 바뀌고 속성별 상세 구역으로 내려간다", async () => {
@@ -174,14 +194,15 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(names()).toHaveLength(3);
   });
 
-  it("속성 줄은 이름·`승 N · 무 N · 패 N`·값(합계 또는 접전 곡 수)과 카테고리 상세 링크를 가진다", async () => {
+  it("속성 줄은 이름·`승 N · 무 N · 패 N`·값(우세·열세 탭은 승률 %, 접전 탭은 접전 곡 수)과 카테고리 상세 링크를 가진다", async () => {
     show(PATTERNS, { tab: "strong" });
     const box = await dashboard();
     const detail = within(box).getByRole("region", { name: "속성별 상세" });
     const first = (await within(detail).findAllByRole("link"))[0];
     expect(first).toHaveAttribute("href", "/players/7/compare/SINGLE?from=strong");
     expect(first).toHaveTextContent("승 6 · 무 1 · 패 2");
-    expect(first).toHaveTextContent("+30.50");
+    expect(first).toHaveTextContent("승률 67%");
+    expect(first).not.toHaveTextContent("+30.50");
   });
 
   it("접전 탭의 속성 줄 값은 접전 곡 수다", async () => {
@@ -193,18 +214,22 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(first).toHaveTextContent("접전 5곡");
   });
 
-  it("막대: 속성 다섯 줄이 항상 같은 순서로 나오고, 왼쪽 `패 N`·오른쪽 `승 N`·맨 오른쪽 합계가 글자로 있다", async () => {
+  it("막대: 속성 다섯 줄이 항상 같은 순서로 나오고, 왼쪽 `패 N`·오른쪽 `승 N`·맨 오른쪽 승률 %가 글자로 있다", async () => {
     show();
     const box = await dashboard();
     const bars = within(box).getByRole("list", { name: "속성별 승패" });
     const rows = within(bars).getAllByRole("listitem");
     expect(rows.map((r) => r.getAttribute("data-key"))).toEqual(["SINGLE", "COMPOUND", "COMPOSITE_SINGLE", "DOUBLE", "TRIPLE"]);
-    // 단일: 패 2 · 승 6 · +30.50
+    // 단일: 패 2 · 승 6 · 67%(6 ÷ 9, 정수 % 반올림). 점수 차 합계(+30.50)는 보이지 않는다
     expect(rows[0]).toHaveTextContent("패 2");
     expect(rows[0]).toHaveTextContent("승 6");
-    expect(rows[0]).toHaveTextContent("+30.50");
-    // 복합(단일): 합계 −18.00
-    expect(rows[2]).toHaveTextContent(`${MINUS}18.00`);
+    expect(rows[0]).toHaveTextContent("67%");
+    expect(rows[0]).not.toHaveTextContent("+30.50");
+    // 복합(단일): 4 ÷ 10 = 40%. 합계 −18.00은 보이지 않는다
+    expect(rows[2]).toHaveTextContent("40%");
+    expect(rows[2]).not.toHaveTextContent(`${MINUS}18.00`);
+    // 읽기 프로그램용 `승률` 글자(숨김)가 값 앞에 붙는다
+    expect(within(rows[0]).getByText("승률")).toHaveClass("sr-only");
     // 막대 글자는 줄바꿈하지 않고 최소 38px을 갖는다. 승 6이 가장 길다(100%), 패 5는 5/6
     const win = within(rows[0]).getByText("승 6");
     expect(win).toHaveClass("whitespace-nowrap", "min-w-[38px]");
@@ -214,16 +239,17 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     expect(within(rows[1]).queryByText(/^패/)).toBeNull();
   });
 
-  it("공유 곡이 5곡 미만인 속성(0곡 포함)에 `※ 5곡 미만이라 참고용`을 보이고, 0곡은 합계가 `–`다", async () => {
+  it("공유 곡이 5곡 미만인 속성(0곡 포함)에 `※ 5곡 미만이라 참고용`을 보이고, 0곡은 승률이 `–`다(0%가 아니다)", async () => {
     show();
     const box = await dashboard();
     const rows = within(within(box).getByRole("list", { name: "속성별 승패" })).getAllByRole("listitem");
     expect(within(rows[0]).queryByText("※ 5곡 미만이라 참고용")).toBeNull(); // 9곡
     expect(within(rows[3]).getByText("※ 5곡 미만이라 참고용")).toBeInTheDocument(); // 이중 0곡
     expect(rows[3]).toHaveTextContent("–");
+    expect(rows[3]).not.toHaveTextContent("%"); // 값 옆에 ※를 붙이지도, 0%를 쓰지도 않는다
     expect(within(rows[4]).queryByText("※ 5곡 미만이라 참고용")).toBeNull(); // 삼중 5곡
-    // 아래 안내 한 줄
-    expect(within(box).getByText("막대: 왼쪽 패(열세) · 오른쪽 승(우세) · 오른쪽 숫자는 점수 차 합계")).toBeInTheDocument();
+    // 아래 안내 한 줄(맨 오른쪽 숫자 = 승률)
+    expect(within(box).getByText("막대: 왼쪽 패(열세) · 오른쪽 승(우세) · 오른쪽 숫자는 승률")).toBeInTheDocument();
   });
 
   it("차트 전환 칸에는 막대·점 분포·레이더가 보이고 기본은 막대다(7단계)", async () => {
@@ -312,6 +338,7 @@ describe("라이벌 대시보드 (D67, 6단계)", () => {
     const cards = within(within(box).getByRole("group", { name: "サマリー" })).getAllByRole("button");
     expect(cards[0]).toHaveTextContent("優勢の属性");
     expect(cards[0]).toHaveTextContent("単色");
+    expect(cards[0]).toHaveTextContent("勝率 67%");
     expect(cards[1]).toHaveTextContent("劣勢の属性");
     expect(cards[2]).toHaveTextContent("接戦（±1以内）");
     const detail = within(box).getByRole("region", { name: "属性別の詳細" });
