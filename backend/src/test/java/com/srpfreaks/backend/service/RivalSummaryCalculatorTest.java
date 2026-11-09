@@ -239,4 +239,71 @@ class RivalSummaryCalculatorTest {
         assertThat(row.songDifficultyId()).isEqualTo(1L);
         assertThat(row.tier()).isEqualByComparingTo("5.6");
     }
+
+    // ---------- 속성별 달성률 차 평균(%p, D67 개정) ----------
+
+    private static SkillService.ScoredChart rated(long id, PatternType pattern, String score, String rate) {
+        RatingCandidate c = new RatingCandidate(id, 100 + id, "곡" + id, "GUITAR", "MASTER", d("9.50"), d("5.6"), pattern.getLabel(),
+                d(rate), false, null);
+        return new SkillService.ScoredChart(c, pattern, d(score));
+    }
+
+    /** 속성 하나에 곡 여러 개: 곡마다 {내 달성률, 상대 달성률}. 점수는 같게 두어 승·패 판정이 달성률 차에 끌려가지 않음을 함께 확인한다. */
+    private static RivalSummaryResponse.PatternSummary rateAvg(PatternType pattern, String[]... ratePairs) {
+        List<SkillService.ScoredChart> mine = new ArrayList<>();
+        List<SkillService.ScoredChart> theirs = new ArrayList<>();
+        long id = 1;
+        for (String[] pair : ratePairs) {
+            mine.add(rated(id, pattern, "200.00", pair[0]));
+            theirs.add(rated(id, pattern, "200.00", pair[1]));
+            id++;
+        }
+        RivalSummaryResponse r = RivalSummaryCalculator.summarize(1L, "a", RivalSummaryCalculator.share(mine, theirs));
+        return pattern(r, pattern.name());
+    }
+
+    @Test
+    void 달성률_차_평균은_공유_곡마다_내_달성률_빼기_상대_달성률의_산술평균이다() {
+        // 내 96.00/상대 94.00(+2.00), 내 80.00/상대 84.00(-4.00) -> 평균 -1.0%p
+        assertThat(rateAvg(PatternType.SINGLE, new String[] {"96.00", "94.00"}, new String[] {"80.00", "84.00"}).rateDiffAvg())
+                .isEqualByComparingTo("-1.0");
+        // 앞서는 경우: +2.00, +1.60 -> +1.8%p
+        assertThat(rateAvg(PatternType.TRIPLE, new String[] {"96.00", "94.00"}, new String[] {"91.60", "90.00"}).rateDiffAvg())
+                .isEqualByComparingTo("1.8");
+        // 같으면 0.0
+        assertThat(rateAvg(PatternType.DOUBLE, new String[] {"90.00", "90.00"}).rateDiffAvg()).isEqualByComparingTo("0.0");
+    }
+
+    @Test
+    void 달성률_차_평균은_평균을_낸_뒤_한_번만_소수_첫째_자리로_반올림한다() {
+        // 합 1.00 / 3곡 = 0.3333 -> 0.3
+        assertThat(rateAvg(PatternType.SINGLE, new String[] {"91.00", "90.00"}, new String[] {"90.00", "90.00"}, new String[] {"90.00", "90.00"}).rateDiffAvg())
+                .isEqualByComparingTo("0.3");
+        // 절반은 0에서 먼 쪽: +0.05 -> +0.1, -0.05 -> -0.1, +0.04 -> 0.0, -0.04 -> 0.0
+        assertThat(rateAvg(PatternType.SINGLE, new String[] {"90.05", "90.00"}).rateDiffAvg()).isEqualByComparingTo("0.1");
+        assertThat(rateAvg(PatternType.SINGLE, new String[] {"89.95", "90.00"}).rateDiffAvg()).isEqualByComparingTo("-0.1");
+        assertThat(rateAvg(PatternType.SINGLE, new String[] {"90.04", "90.00"}).rateDiffAvg()).isEqualByComparingTo("0.0");
+        assertThat(rateAvg(PatternType.SINGLE, new String[] {"89.96", "90.00"}).rateDiffAvg()).isEqualByComparingTo("0.0");
+    }
+
+    @Test
+    void 달성률_차는_승무패_판정에_쓰이지_않는다_점수가_같으면_달성률이_달라도_무() {
+        // 점수는 같다(200.00 대 200.00). 달성률은 내 96.00/상대 97.50이라 평균은 -1.5%p지만 판정은 무승부다.
+        RivalSummaryResponse.PatternSummary p = rateAvg(PatternType.SINGLE, new String[] {"96.00", "97.50"});
+        assertThat(p.ties()).isEqualTo(1);
+        assertThat(p.wins()).isZero();
+        assertThat(p.losses()).isZero();
+        assertThat(p.scoreDiffSum()).isEqualByComparingTo("0.00");
+        assertThat(p.rateDiffAvg()).isEqualByComparingTo("-1.5");
+    }
+
+    @Test
+    void 공유_곡이_없는_속성의_달성률_차_평균은_null이다_0이_아니다() {
+        RivalSummaryResponse r = RivalSummaryCalculator.summarize(1L, "a", List.of());
+        assertThat(r.patterns()).allSatisfy(p -> assertThat(p.rateDiffAvg()).isNull());
+        // 한쪽만 기록한 속성도 공유 곡이 없으므로 null
+        RivalSummaryResponse r2 = RivalSummaryCalculator.summarize(1L, "a",
+                RivalSummaryCalculator.share(List.of(rated(1, PatternType.SINGLE, "100.00", "90.00")), List.of(rated(2, PatternType.SINGLE, "100.00", "90.00"))));
+        assertThat(pattern(r2, "SINGLE").rateDiffAvg()).isNull();
+    }
 }

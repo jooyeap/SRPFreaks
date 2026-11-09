@@ -28,7 +28,7 @@ import {
   tabPatterns,
   topPattern,
 } from "@/lib/rival-dashboard";
-import { formatScoreDiff } from "@/lib/rivals";
+import { formatRateDiff, formatScoreDiff } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 /** 속성별 상세 구역의 id. 요약 카드를 누르면 이 구역으로 스크롤한다. */
@@ -43,12 +43,24 @@ function signedSum(value: number): string {
   return formatScoreDiff(value)?.text ?? "–";
 }
 
-/** 속성 줄 오른쪽의 값: 우세·열세 탭은 점수 차 합계, 접전 탭은 접전 곡 수. */
+/** 속성별 평균 달성률 차 글자(`+1.8%p`). 공유 곡이 없거나(0곡) 값이 없으면 `–`. 부호는 글자로 보인다. */
+function rateDiffText(pattern: RivalPatternSummary): string {
+  return pattern.sharedCount === 0 ? "–" : (formatRateDiff(pattern.rateDiffAvg) ?? "–");
+}
+
+/**
+ * 속성 줄 오른쪽의 값: 우세·열세 탭은 평균 달성률 차(`+1.8%p`, 아래에 작은 라벨 `평균 달성률 차`), 접전 탭은 접전 곡 수.
+ * 속성을 우세·열세로 나누고 정렬하는 기준은 그대로 레이팅 점수 차 합계이고, 여기 보이는 값만 달성률 차다.
+ */
 function PatternValue({ pattern, tab }: { pattern: RivalPatternSummary; tab: DashTab }) {
-  const t = useTranslations("Rival");
+  const t = useTranslations();
+  if (tab === "close") {
+    return <span className="shrink-0 font-num text-xs font-bold tabular-nums text-fg">{t("Rival.patternClose", { n: pattern.closeCount })}</span>;
+  }
   return (
-    <span className="shrink-0 font-num text-xs font-bold tabular-nums text-fg">
-      {tab === "close" ? t("patternClose", { n: pattern.closeCount }) : signedSum(pattern.scoreDiffSum)}
+    <span className="flex shrink-0 flex-col items-end">
+      <span className="font-num text-xs font-bold tabular-nums text-fg">{rateDiffText(pattern)}</span>
+      <span className="text-[10px] leading-3 text-fg-dim">{t("Rival.rateDiffLabel")}</span>
     </span>
   );
 }
@@ -210,8 +222,8 @@ export function RivalDashboard({
             >
               <span className="text-[11px] leading-4 text-fg-dim">{t(`Rival.${CARD_LABEL_KEY[key]}`)}</span>
               <span className="max-w-full truncate text-sm font-bold text-fg">{top ? patternLabel(top.pattern, t) : "–"}</span>
-              <span className="font-num text-xs font-bold tabular-nums text-fg-sub">
-                {top ? (key === "close" ? t("Rival.patternClose", { n: top.closeCount }) : signedSum(top.scoreDiffSum)) : "–"}
+              <span className="break-keep font-num text-xs font-bold tabular-nums text-fg-sub">
+                {top ? (key === "close" ? t("Rival.patternClose", { n: top.closeCount }) : `${t("Rival.rateDiffLabel")} ${rateDiffText(top)}`) : "–"}
               </span>
             </button>
           );

@@ -193,6 +193,12 @@ class RivalSummaryServiceDbTest {
         assertThat(dbl.losses()).isEqualTo(2);
         assertThat(dbl.closeCount()).isEqualTo(2);           // ±1.00은 접전, ±1.01은 아니다
         assertThat(dbl.scoreDiffSum()).isEqualByComparingTo("0.00");
+        // 달성률 차 평균(%p, 직접 계산): 단일 95-80=+15.0, 삼중 90-90=0.0, 복합 80-90=-10.0, 이중 (+1.00+1.01-1.00-1.01)/4=0.0
+        assertThat(pattern(r, "SINGLE").rateDiffAvg()).isEqualByComparingTo("15.0");
+        assertThat(pattern(r, "TRIPLE").rateDiffAvg()).isEqualByComparingTo("0.0");
+        assertThat(pattern(r, "COMPOUND").rateDiffAvg()).isEqualByComparingTo("-10.0");
+        assertThat(dbl.rateDiffAvg()).isEqualByComparingTo("0.0");
+        assertThat(pattern(r, "COMPOSITE_SINGLE").rateDiffAvg()).isNull();   // 공유 곡이 없으면 0이 아니라 null
         assertThat(r.tiers()).extracting(RivalSummaryResponse.TierSummary::tier)
                 .usingElementComparator(BigDecimal::compareTo)
                 .containsExactly(new BigDecimal("6.0"), new BigDecimal("5.6"), new BigDecimal("5.0"));
@@ -204,7 +210,27 @@ class RivalSummaryServiceDbTest {
 
         assertThat(pattern(r, "SINGLE").losses()).isEqualTo(1);
         assertThat(pattern(r, "SINGLE").scoreDiffSum()).isEqualByComparingTo("-64.00");
+        assertThat(pattern(r, "SINGLE").rateDiffAvg()).isEqualByComparingTo("-15.0");
         assertThat(pattern(r, "COMPOUND").wins()).isEqualTo(1);
+        assertThat(pattern(r, "COMPOUND").rateDiffAvg()).isEqualByComparingTo("10.0");
+    }
+
+    @Test
+    void 속성별_달성률_차_평균은_공유_곡의_내_달성률_빼기_상대_달성률_평균이다() {
+        // 복합(단일): 내 96.00/상대 94.00(+2.00)과 내 80.00/상대 84.00(-4.00) -> 평균 -1.0%p
+        both(chart("5.6", PatternType.COMPOSITE_SINGLE, true), "96.00", "94.00");
+        both(chart("5.6", PatternType.COMPOSITE_SINGLE, true), "80.00", "84.00");
+        em.flush();
+        em.clear();
+
+        RivalSummaryResponse.PatternSummary p = pattern(service.summary(me.getId(), rival.getId()), "COMPOSITE_SINGLE");
+
+        assertThat(p.sharedCount()).isEqualTo(2);
+        assertThat(p.rateDiffAvg()).isEqualByComparingTo("-1.0");
+        // 승·패는 점수 차로 정해진다: 96 대 94는 점수가 더 높아 승(+4.27), 80 대 84는 점수가 더 낮아 패(-17.07). 평균 -1.0%p는 판정에 쓰이지 않는다
+        assertThat(p.wins()).isEqualTo(1);
+        assertThat(p.losses()).isEqualTo(1);
+        assertThat(p.scoreDiffSum()).isEqualByComparingTo("-12.80");
     }
 
     @Test
