@@ -101,6 +101,23 @@ describe("파트 글자색(--part-text-*, D64 서열표·세트리스트 줄)", 
   });
 });
 
+describe("라이벌 비교 줄 차이 칩(D65) 색 대비", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 앞(초록 --done-text)·뒤(주황 --weak-text) 칩 글자가 카드·페이지 배경 위에서 4.5:1 이상이다`, () => {
+      for (const key of ["--done-text", "--weak-text"]) {
+        for (const bg of ["--card", "--page"]) {
+          expect(contrast(vars[key], vars[bg]), `${key} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
+});
+
 describe("globals.css 테마 변수", () => {
   const dark = varsOf(":root {");
   const lightPicked = varsOf(':root[data-theme="light"] {');
