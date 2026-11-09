@@ -83,7 +83,9 @@ describe("공통 줄 ChartLine (D64 줄 통일)", () => {
   it("곡명은 한 줄 말줄임이고 속성 윗줄도 한 줄 말줄임이다(가장 긴 `복합(단일)`도 줄바꿈하지 않는다)", () => {
     render(line({ title: LONG_TITLE }));
     const row = screen.getByRole("listitem");
-    expect(within(row).getByRole("link")).toHaveClass("truncate");
+    // 말줄임은 링크 안쪽 글자 칸에 있다(링크 자체에 overflow가 걸리면 누르는 영역 ::after가 잘린다)
+    expect(within(row).getByRole("link").querySelector("span")).toHaveClass("block", "truncate");
+    expect(within(row).getByRole("link")).not.toHaveClass("truncate");
     expect(within(row).getByText("MAS 9.65").parentElement).toHaveClass("overflow-hidden");
     expect(row.querySelector("p > span")).toHaveClass("truncate");
   });

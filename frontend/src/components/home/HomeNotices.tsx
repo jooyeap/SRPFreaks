@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { NewBadge } from "@/components/NewBadge";
 import { formatPlayedDate } from "@/lib/format";
+import { HIT_HEAD } from "@/lib/hit-area";
 import { fetchNotices, noticeKeys } from "@/lib/notices";
 import { useTranslations } from "next-intl";
 
@@ -41,7 +42,7 @@ export function HomeNotices({ viewerId }: { viewerId: number }) {
     <section aria-label={t("noticesAria")} className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3 px-1">
         <h2 className="text-[17px] font-bold text-fg">{t("noticesTitle")}</h2>
-        <Link href="/notices" className="text-xs text-fg-sub hover:text-fg">
+        <Link href="/notices" className={`text-xs text-fg-sub hover:text-fg ${HIT_HEAD}`}>
           {tc("viewAll")}
         </Link>
       </div>

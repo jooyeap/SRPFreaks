@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { HIT_ROW } from "@/lib/hit-area";
 import { StageBadge } from "@/components/table/StageBadge";
 import { formatRate } from "@/lib/format";
 import { fetchRivalRecords, rivalKeys, signed } from "@/lib/rivals";
@@ -32,8 +33,8 @@ export function RivalRecordsCard({ viewerId, songDifficultyId }: { viewerId: num
           const tone = state === "win" ? "text-done-text" : state === "lose" ? "text-danger" : "text-fg-dim";
           return (
             <li key={r.userId} className="flex items-center gap-2 border-t border-row-line py-2 text-[13px] first:border-t-0">
-              <Link href={`/players/${r.userId}/compare`} className="min-w-0 flex-1 truncate text-fg hover:underline">
-                {r.nickname}
+              <Link href={`/players/${r.userId}/compare`} className={`min-w-0 flex-1 text-fg hover:underline ${HIT_ROW}`}>
+                <span className="block truncate">{r.nickname}</span>
               </Link>
               {r.rate === null ? (
                 <span className="text-xs text-fg-dim">{t("noRecord")}</span>

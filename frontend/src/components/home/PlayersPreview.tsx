@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { PlayerRow } from "@/components/players/PlayerRow";
+import { HIT_HEAD } from "@/lib/hit-area";
 import { fetchPlayers, playerKeys } from "@/lib/players";
 import { useTranslations } from "next-intl";
 
@@ -24,7 +25,7 @@ export function PlayersPreview({ viewerId }: { viewerId: number }) {
     <section aria-label={t("playersAria")} className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-3 px-1">
         <h2 className="font-num text-[17px] font-bold text-fg">{t("playersTitle")}</h2>
-        <Link href="/players" className="text-xs text-fg-sub hover:text-fg">
+        <Link href="/players" className={`text-xs text-fg-sub hover:text-fg ${HIT_HEAD}`}>
           {tc("viewAll")}
         </Link>
       </div>
