@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // 주소 상태(?tab=&chart=, ?filter=&page=&from=)와 접근 규칙(로그인·잘못된 id·허용 밖 속성 키)을 확인한다.
 // 라우터와 로그인 상태는 가짜로 끼운다.
@@ -8,17 +8,19 @@ const nav = vi.hoisted(() => ({
   params: { userId: "7", key: "TRIPLE" } as Record<string, string>,
   search: new URLSearchParams(),
   replace: vi.fn<(href: string, options?: { scroll?: boolean }) => void>(),
+  push: vi.fn<(href: string) => void>(),
   pathname: "/players/7/compare",
 }));
 vi.mock("next/navigation", () => ({
   useParams: () => nav.params,
   useSearchParams: () => nav.search,
-  useRouter: () => ({ replace: nav.replace, push: vi.fn(), back: vi.fn() }),
+  useRouter: () => ({ replace: nav.replace, push: nav.push, back: vi.fn() }),
   usePathname: () => nav.pathname,
 }));
 const auth = vi.hoisted(() => ({ value: { status: "authenticated", user: { id: 1 } } as { status: string; user: { id: number } | null } }));
 vi.mock("@/components/AuthProvider", () => ({ useAuth: () => auth.value, useOptionalUser: () => auth.value.user }));
 
+import { resetAppHistoryForTest } from "@/lib/app-history";
 import ComparePage from "@/app/players/[userId]/compare/page";
 import CompareDetailPage from "@/app/players/[userId]/compare/[key]/page";
 import type { RivalCompareRatingResponse, RivalSummaryResponse } from "@/lib/api-types";
@@ -54,6 +56,7 @@ beforeEach(() => {
   nav.params = { userId: "7", key: "TRIPLE" };
   nav.search = new URLSearchParams();
   nav.replace.mockReset();
+  nav.push.mockReset();
   auth.value = { status: "authenticated", user: { id: 1 } };
   fetchMock.mockReset();
   fetchMock.mockImplementation(async (input) => {
@@ -173,5 +176,49 @@ describe("/players/{id}/compare/{속성 키} 주소 상태", () => {
     renderPage(<CompareDetailPage />);
     expect(await screen.findByRole("alert")).toHaveTextContent("찾을 수 없");
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled());
+  });
+});
+
+
+// 뒤로 가기(D67 개정): 들어온 화면으로 돌아가고, 탭·차트 전환은 history를 쌓지 않는다.
+describe("/players/{id}/compare 뒤로 가기", () => {
+  let back: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    resetAppHistoryForTest();
+    back = vi.spyOn(window.history, "back").mockImplementation(() => undefined);
+  });
+  afterEach(() => {
+    back.mockRestore();
+    Reflect.deleteProperty(window, "navigation");
+  });
+
+  it("같은 사이트 안에서 들어왔으면 뒤로 버튼이 history 한 칸 뒤로 간다(들어온 화면으로)", async () => {
+    Object.defineProperty(window, "navigation", { value: { canGoBack: true }, configurable: true, writable: true });
+    renderPage(<ComparePage />);
+    const link = await screen.findByRole("link", { name: "유저 상세로" });
+    expect(fireEvent.click(link)).toBe(false);
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  it("직접 들어왔으면(되돌아갈 칸이 없음) 뒤로 버튼이 `/players/{id}`로 간다", async () => {
+    Object.defineProperty(window, "navigation", { value: { canGoBack: false }, configurable: true, writable: true });
+    renderPage(<ComparePage />);
+    const link = await screen.findByRole("link", { name: "유저 상세로" });
+    expect(link).toHaveAttribute("href", "/players/7");
+    expect(fireEvent.click(link)).toBe(true);
+    expect(back).not.toHaveBeenCalled();
+  });
+
+  it("탭·차트를 바꿔도 push로 기록을 쌓지 않고(replace만), 그 뒤에도 뒤로 버튼은 비교 화면 이전 화면으로 간다", async () => {
+    Object.defineProperty(window, "navigation", { value: { canGoBack: true }, configurable: true, writable: true });
+    nav.search = new URLSearchParams("chart=bar");
+    renderPage(<ComparePage />);
+    const box = await screen.findByRole("region", { name: "라이벌 대시보드" });
+    fireEvent.click(within(box).getByRole("button", { name: "열세 1" }));
+    fireEvent.click(within(box).getByRole("button", { name: "점 분포" }));
+    expect(nav.replace).toHaveBeenCalledTimes(2);
+    expect(nav.push).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("link", { name: "유저 상세로" }));
+    expect(back).toHaveBeenCalledTimes(1); // 한 칸만 뒤로: 탭·차트 상태가 history에 없으니 곧바로 들어온 화면이다
   });
 });
