@@ -41,6 +41,33 @@ export interface SwipeRules {
 export const DETAIL_SWIPE_RULES: SwipeRules = { minPx: 80, maxAngleDeg: 30, edgePx: 24 };
 
 /**
+ * 서열표 폴더 화면 이웃 난이도 스와이프의 규칙(D68): 곡 상세와 같은 값이다(가장자리 24px 무시, 80px 이상, 가로축에서 30° 이내).
+ * 예전에는 60px·가장자리 제외 없음이라 세로 스크롤 중 엄지가 휘면 이동으로 오인됐다. 값을 따로 두지 않고 상세의 규칙을 그대로 가리킨다.
+ */
+export const FOLDER_SWIPE_RULES: SwipeRules = DETAIL_SWIPE_RULES;
+
+/** 끝 난이도(더 갈 곳이 없는 쪽)로 끌 때 목록이 움직일 수 있는 최대 거리(px). 고무줄처럼 이만큼만 따라간다 */
+export const FOLDER_EDGE_PULL_PX = 22;
+
+/** 끌기 중 목록이 손가락을 따라가는 비율. 이동량의 절반만 움직여 "무겁게" 느끼게 한다 */
+export const FOLDER_DRAG_RESISTANCE = 0.5;
+
+/**
+ * 끌기 중 목록이 실제로 움직일 거리(px, 부호는 손가락과 같다).
+ * 이웃 난이도가 있으면 이동량 × 0.5, 없으면(끝 난이도) 22px까지만.
+ */
+export function dragOffsetPx(dx: number, hasNeighbor: boolean): number {
+  const resisted = dx * FOLDER_DRAG_RESISTANCE;
+  if (hasNeighbor) return resisted;
+  return Math.sign(resisted) * Math.min(Math.abs(resisted), FOLDER_EDGE_PULL_PX);
+}
+
+/** 끌고 있는 손가락 이동량(dx)이 "놓으면 이동"으로 넘어간 거리인가(규칙의 minPx와 같은 80px) */
+export function dragPassed(dx: number): boolean {
+  return Math.abs(dx) >= FOLDER_SWIPE_RULES.minPx;
+}
+
+/**
  * 손가락이 (dx, dy)만큼 움직였을 때 이웃 이동으로 볼지 정한다.
  * 기본: 가로 이동이 세로 이동보다 크고 SWIPE_MIN_PX 이상일 때만 인정한다(세로 스크롤 중 살짝 비껴 쓸린 것을 이동으로 오해하지 않게).
  * rules를 주면 그 거리·각도를 쓴다(각도가 정확히 maxAngleDeg인 경계는 인정).

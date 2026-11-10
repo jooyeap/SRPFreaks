@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { TierFolderNav } from "@/components/table/TierFolderNav";
 import type { TierGroupResponse } from "@/lib/api-types";
 
@@ -36,5 +36,22 @@ describe("TierFolderNav (칩 띠)", () => {
   it("없는 난이도면 아무것도 그리지 않는다", () => {
     const { container } = render(<TierFolderNav groups={groups} currentTier={7.7} />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("D68: 지금 칩을 가운데로 맞출 때 칩 띠의 가로 스크롤만 옮기고 페이지 세로 스크롤(scrollIntoView)은 건드리지 않는다", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const rect = (left: number, width: number): DOMRect => ({ left, width, right: left + width, top: 0, bottom: 0, height: 0, x: left, y: 0, toJSON: () => ({}) });
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      if (this.tagName === "A" && this.getAttribute("aria-current") === "page") return rect(500, 50); // 지금 칩: 가운데 525
+      if (this.tagName === "UL") return rect(0, 360); // 칩 띠: 가운데 180
+      return rect(0, 0);
+    });
+    render(<TierFolderNav groups={groups} currentTier={5.8} />);
+    const strip = within(screen.getByRole("navigation", { name: "난이도 목록" })).getByRole("list");
+    expect(strip.scrollLeft).toBe(345); // 525 - 180
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    vi.restoreAllMocks();
   });
 });
