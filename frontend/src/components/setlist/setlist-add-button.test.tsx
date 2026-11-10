@@ -140,8 +140,10 @@ describe("SetlistAddButton (곡 상세의 담기, D49)", () => {
     listed = Array.from({ length: 30 }, (_, i) => item(i + 50));
     renderButton();
     const button = await screen.findByRole("button", { name: "곡10 세트리스트에 담기" });
-    await waitFor(() => expect(button).toBeDisabled());
-    expect(button).toHaveAttribute("title", "30곡이 모두 담겨 있습니다. 곡을 빼면 새로 담을 수 있습니다.");
+    // 목록을 받기 전(isPending)에도 버튼은 disabled라서 disabled만 기다리면 로딩 중에 통과해 버린다.
+    // 30곡이 찼다는 것은 목록을 받은 뒤에야 알 수 있으므로 title이 붙는 것까지 기다린다.
+    await waitFor(() => expect(button).toHaveAttribute("title", "30곡이 모두 담겨 있습니다. 곡을 빼면 새로 담을 수 있습니다."));
+    expect(button).toBeDisabled();
   });
 
   it("서버가 거절하면(이미 담김 등) 그 문구를 안내한다", async () => {
