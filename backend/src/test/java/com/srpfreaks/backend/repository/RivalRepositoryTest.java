@@ -83,7 +83,11 @@ class RivalRepositoryTest {
     }
 
     private void record(User user, SongDifficulty chart, String rate) {
-        em.persist(OptionRecord.create(user, chart, NoteOption.SUPER_RANDOM_PLUS, new BigDecimal(rate), false,
+        record(user, chart, rate, false);
+    }
+
+    private void record(User user, SongDifficulty chart, String rate, boolean fullCombo) {
+        em.persist(OptionRecord.create(user, chart, NoteOption.SUPER_RANDOM_PLUS, new BigDecimal(rate), fullCombo,
                 Instant.parse("2026-10-01T00:00:00Z"), Platform.ARCADE, null));
     }
 
@@ -183,6 +187,26 @@ class RivalRepositoryTest {
         assertThat(optionRecordRepository.findBestRatesForUsers(alive.getId(), NoteOption.SUPER_RANDOM_PLUS,
                 List.of(a.getId(), b.getId(), c.getId()))).extracting(UserBest::userId)
                 .containsExactlyInAnyOrder(a.getId(), b.getId());
+    }
+
+    @Test
+    void 곡_상세용_최고_기록은_풀콤보_기록_여부를_함께_한_번에_읽는다() {
+        // a: 90.00(풀콤보 아님) + 95.50(풀콤보) → 최고 95.50, 풀콤보 있음 / b: 96.10(풀콤보 아님) / c: 기록 없음
+        record(a, alive, "90.00");
+        record(a, alive, "95.50", true);
+        record(b, alive, "96.10");
+        em.flush();
+
+        List<UserBest> bests = optionRecordRepository.findBestWithFullComboForUsers(alive.getId(),
+                NoteOption.SUPER_RANDOM_PLUS, List.of(a.getId(), b.getId(), c.getId()));
+
+        assertThat(bests).extracting(UserBest::userId).containsExactlyInAnyOrder(a.getId(), b.getId());
+        UserBest ofA = bests.stream().filter(x -> x.userId().equals(a.getId())).findFirst().orElseThrow();
+        UserBest ofB = bests.stream().filter(x -> x.userId().equals(b.getId())).findFirst().orElseThrow();
+        assertThat(ofA.bestRate()).isEqualByComparingTo("95.50");
+        assertThat(ofA.fullCombo()).isTrue();
+        assertThat(ofB.bestRate()).isEqualByComparingTo("96.10");
+        assertThat(ofB.fullCombo()).isFalse();
     }
 
     @Test

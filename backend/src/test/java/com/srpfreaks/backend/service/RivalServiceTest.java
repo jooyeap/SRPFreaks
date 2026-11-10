@@ -9,6 +9,8 @@ import com.srpfreaks.backend.dto.RivalCounts;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.RivalRecordResponse;
 import com.srpfreaks.backend.dto.RivalRegistrantResponse;
+import com.srpfreaks.backend.dto.RivalResponse;
+import com.srpfreaks.backend.dto.RivalSummaryResponse;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
@@ -16,11 +18,13 @@ import com.srpfreaks.backend.entity.AppSetting;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.Rival;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.User;
 import com.srpfreaks.backend.entity.UserStatus;
+import com.srpfreaks.backend.mapper.RatingCandidate;
 import com.srpfreaks.backend.repository.AppSettingRepository;
 import com.srpfreaks.backend.repository.ChartBest;
 import com.srpfreaks.backend.repository.OptionRecordRepository;
@@ -201,43 +205,100 @@ class RivalServiceTest {
 
     // ---------- 곡별 승패 ----------
 
-    @Test
-    void 둘_다_기록_있는_채보만_승패를_세고_상대만_있으면_상대만이다() {
-        Map<Long, ChartBest> mine = Map.of(
-                1L, new ChartBest(1L, d("95.00"), d("9.00")),     // 이김
-                2L, new ChartBest(2L, d("90.00"), d("9.00")),     // 짐
-                3L, new ChartBest(3L, d("88.00"), d("9.00")),     // 같음
-                4L, new ChartBest(4L, d("70.00"), d("9.00")));    // 나만 → 세지 않음
-        Map<Long, ChartBest> theirs = Map.of(
-                1L, new ChartBest(1L, d("94.99"), d("9.00")),
-                2L, new ChartBest(2L, d("91.00"), d("9.00")),
-                3L, new ChartBest(3L, d("88.00"), d("9.00")),
-                5L, new ChartBest(5L, d("80.00"), d("9.00")));    // 상대만
+    /** 후보 한 줄(레이팅 대상 채보 + 최고 달성률). 점수는 이 테스트에서 쓰지 않아 0으로 둔다. */
+    private static SkillService.ScoredChart scored(long id, PatternType pattern, String level, String rate) {
+        RatingCandidate c = new RatingCandidate(id, 100 + id, "곡" + id, "GUITAR", "MASTER", d(level), d("5.6"),
+                pattern.getLabel(), d(rate), false, null);
+        return new SkillService.ScoredChart(c, pattern, d("0"));
+    }
 
-        assertThat(RivalService.counts(mine, theirs)).isEqualTo(new RivalCounts(1, 1, 1, 1));
+    private void scoredCharts(List<SkillService.ScoredChart> mine, List<SkillService.ScoredChart> theirs) {
+        when(skillService.scoredChartsAll(any())).thenReturn(Map.of(ME, mine, THEM, theirs));
     }
 
     @Test
-    void 진_곡은_차이가_작은_순_같으면_레벨_높은_순으로_한_페이지만_곡_정보를_붙인다() {
-        bests(ME, new ChartBest(1L, d("90.00"), d("8.00")), new ChartBest(2L, d("95.00"), d("9.50")),
-                new ChartBest(3L, d("80.00"), d("9.90")));
-        bests(THEM, new ChartBest(1L, d("91.00"), d("8.00")), new ChartBest(2L, d("96.00"), d("9.50")),
-                new ChartBest(3L, d("90.00"), d("9.90")));
-        when(songDifficultyRepository.findActiveWithSongByIdIn(any())).thenAnswer(inv -> {
-            List<SongDifficulty> list = new ArrayList<>();
-            for (Object id : (java.util.Collection<?>) inv.getArgument(0)) {
-                list.add(chart((Long) id));
-            }
-            return list;
-        });
+    void 진_곡은_차이가_작은_순_같으면_레벨_높은_순으로_한_페이지만_곡_정보를_준다() {
+        scoredCharts(
+                List.of(scored(1, PatternType.SINGLE, "8.00", "90.00"), scored(2, PatternType.TRIPLE, "9.50", "95.00"),
+                        scored(3, PatternType.DOUBLE, "9.90", "80.00")),
+                List.of(scored(1, PatternType.SINGLE, "8.00", "91.00"), scored(2, PatternType.TRIPLE, "9.50", "96.00"),
+                        scored(3, PatternType.DOUBLE, "9.90", "90.00")));
 
         RivalCompareChartsResponse res = service.compareCharts(ME, THEM, "lose", 0, 2);
 
-        assertThat(res.counts()).isEqualTo(new RivalCounts(0, 3, 0, 0));
+        assertThat(res.counts()).isEqualTo(new RivalCounts(0, 3, 0, 0, 0));
         assertThat(res.page().totalElements()).isEqualTo(3);
+        // |diff| = 1.00(곡1, 레벨 8.00), 1.00(곡2, 레벨 9.50), 10.00(곡3) → 같은 차이는 레벨 높은 순이라 곡2가 먼저
         assertThat(res.page().content()).extracting(RivalChartRow::songDifficultyId).containsExactly(2L, 1L);
         assertThat(res.page().content().get(0).title()).isEqualTo("곡2");
         assertThat(res.page().content().get(0).diff()).isEqualByComparingTo("-1.00");
+    }
+
+    @Test
+    void 곡별_승패의_개수는_대시보드_집계의_totals와_상대만_합계와_항상_같다() {
+        // 레이팅 대상(속성 있음) 채보만 센다. 레이팅 제외 속성(EXCLUDED)은 집계에서 빠진다.
+        List<SkillService.ScoredChart> mine = List.of(
+                scored(1, PatternType.SINGLE, "9.00", "97.50"),      // 상대 99.80 → 패 (diff -2.30, 점수로는 같아도 달성률로는 패)
+                scored(2, PatternType.TRIPLE, "9.00", "100.00"),     // 상대 100.00 → 무
+                scored(3, PatternType.DOUBLE, "9.00", "90.00"),      // 상대 80.00 → 승
+                scored(4, PatternType.COMPOUND, "9.00", "70.00"),    // 나만 → 승패에 안 센다 (나만 1)
+                scored(6, PatternType.EXCLUDED, "9.00", "50.00"));   // 상대는 99.00이지만 레이팅 제외 → 빠진다
+        List<SkillService.ScoredChart> theirs = List.of(
+                scored(1, PatternType.SINGLE, "9.00", "99.80"),
+                scored(2, PatternType.TRIPLE, "9.00", "100.00"),
+                scored(3, PatternType.DOUBLE, "9.00", "80.00"),
+                scored(5, PatternType.COMPOSITE_SINGLE, "9.00", "88.00"),   // 상대만 → 상대만 1
+                scored(6, PatternType.EXCLUDED, "9.00", "99.00"));
+        scoredCharts(mine, theirs);
+
+        RivalCompareChartsResponse res = service.compareCharts(ME, THEM, "LOSE", 0, 20);
+        RivalSummaryResponse summary = RivalSummaryCalculator.summarize(THEM, "Rumi",
+                RivalSummaryCalculator.share(mine, theirs), RivalSummaryCalculator.unmatched(mine, theirs));
+
+        // 같은 입력 → 곡별 승패 탭 개수 = 상단 요약 totals (불일치 회귀 방지)
+        assertThat(res.counts().win()).isEqualTo(summary.totals().wins()).isEqualTo(1);
+        assertThat(res.counts().tie()).isEqualTo(summary.totals().ties()).isEqualTo(1);
+        assertThat(res.counts().lose()).isEqualTo(summary.totals().losses()).isEqualTo(1);
+        // 상대만 탭 개수 = 속성별 onlyTheirs 합, 나만 = onlyMine 합
+        assertThat(res.counts().theirsOnly()).isEqualTo(summary.patterns().stream().mapToInt(RivalSummaryResponse.PatternSummary::onlyTheirs).sum()).isEqualTo(1);
+        assertThat(res.counts().onlyMine()).isEqualTo(summary.patterns().stream().mapToInt(RivalSummaryResponse.PatternSummary::onlyMine).sum()).isEqualTo(1);
+        // 진 곡 목록: 97.50 대 99.80 → 패, diff -2.30
+        assertThat(res.page().content()).extracting(RivalChartRow::songDifficultyId).containsExactly(1L);
+        assertThat(res.page().content().get(0).diff()).isEqualByComparingTo("-2.30");
+    }
+
+    @Test
+    void 이김_같음_상대만_탭은_같은_범위에서_고르고_정렬은_차이_절댓값_작은_순이다() {
+        scoredCharts(
+                List.of(scored(1, PatternType.SINGLE, "9.00", "95.00"), scored(2, PatternType.SINGLE, "9.00", "99.00"),
+                        scored(3, PatternType.DOUBLE, "9.00", "88.00"), scored(4, PatternType.TRIPLE, "9.00", "100.00")),
+                List.of(scored(1, PatternType.SINGLE, "9.00", "94.00"), scored(2, PatternType.SINGLE, "9.00", "98.50"),
+                        scored(3, PatternType.DOUBLE, "9.00", "88.00"), scored(4, PatternType.TRIPLE, "9.00", "100.00"),
+                        scored(5, PatternType.TRIPLE, "9.00", "70.00"), scored(6, PatternType.TRIPLE, "9.50", "90.00")));
+
+        // 이김: 곡2(+0.50), 곡1(+1.00) 순
+        assertThat(service.compareCharts(ME, THEM, "win", 0, 20).page().content())
+                .extracting(RivalChartRow::songDifficultyId).containsExactly(2L, 1L);
+        // 같음: 달성률이 정확히 같은 곡만(곡3, 곡4), 같은 차이(0)라 레벨 같으면 채보 id 순
+        assertThat(service.compareCharts(ME, THEM, "tie", 0, 20).page().content())
+                .extracting(RivalChartRow::songDifficultyId).containsExactly(3L, 4L);
+        // 상대만: 상대 달성률 높은 순(곡6 90.00, 곡5 70.00), 내 달성률·차이는 null
+        RivalCompareChartsResponse only = service.compareCharts(ME, THEM, "THEIRS_ONLY", 0, 20);
+        assertThat(only.page().content()).extracting(RivalChartRow::songDifficultyId).containsExactly(6L, 5L);
+        assertThat(only.page().content().get(0).myRate()).isNull();
+        assertThat(only.page().content().get(0).diff()).isNull();
+        assertThat(only.counts().theirsOnly()).isEqualTo(2);
+    }
+
+    @Test
+    void 공유_곡이_없거나_한쪽_기록이_전무해도_개수는_0이고_목록은_비어_있다() {
+        scoredCharts(List.of(), List.of(scored(1, PatternType.SINGLE, "9.00", "90.00")));
+        RivalCompareChartsResponse res = service.compareCharts(ME, THEM, "LOSE", 0, 20);
+        assertThat(res.counts()).isEqualTo(new RivalCounts(0, 0, 0, 1, 0));
+        assertThat(res.page().content()).isEmpty();
+
+        scoredCharts(List.of(scored(1, PatternType.SINGLE, "9.00", "90.00")), List.of());
+        assertThat(service.compareCharts(ME, THEM, "THEIRS_ONLY", 0, 20).counts()).isEqualTo(new RivalCounts(0, 0, 0, 0, 1));
     }
 
     @Test
@@ -268,6 +329,8 @@ class RivalServiceTest {
                 THEM, new SkillService.RatedSkill(theirs, null), ME, new SkillService.RatedSkill(mine, null)));
         bests(ME, new ChartBest(7L, d("95.00"), d("9.90")));
         bests(THEM, new ChartBest(7L, d("96.00"), d("9.90")));
+        // 위쪽 개수는 대시보드와 같은 기준: 두 사람의 레이팅 대상 채보 점수 목록(달성률 95.00 대 96.00 → 패)
+        scoredCharts(List.of(scored(7, PatternType.SINGLE, "9.90", "95.00")), List.of(scored(7, PatternType.SINGLE, "9.90", "96.00")));
 
         RivalCompareRatingResponse res = service.compareRating(ME, THEM);
 
@@ -275,7 +338,8 @@ class RivalServiceTest {
         assertThat(row.myRate()).isEqualByComparingTo("95.00");
         assertThat(row.myScore()).isEqualByComparingTo("544.00");
         assertThat(row.diff()).isEqualByComparingTo("-6.00");
-        assertThat(res.counts()).isEqualTo(new RivalCounts(0, 1, 0, 0));
+        assertThat(row.pattern()).isEqualTo("단일");   // D65: 줄 윗줄의 `속성 | 서열 난이도`용
+        assertThat(res.counts()).isEqualTo(new RivalCounts(0, 1, 0, 0, 0));
     }
 
     @Test
@@ -288,8 +352,11 @@ class RivalServiceTest {
                 THEM, new SkillService.RatedSkill(theirs, null), ME, new SkillService.RatedSkill(mine, null)));
         bests(ME);
         bests(THEM, new ChartBest(7L, d("96.00"), d("9.90")));
+        scoredCharts(List.of(), List.of(scored(7, PatternType.SINGLE, "9.90", "96.00")));   // 상대만 기록 → 상대만 1
 
-        RivalCompareRatingResponse.Row row = service.compareRating(ME, THEM).single().get(0);
+        RivalCompareRatingResponse res = service.compareRating(ME, THEM);
+        assertThat(res.counts()).isEqualTo(new RivalCounts(0, 0, 0, 1, 0));
+        RivalCompareRatingResponse.Row row = res.single().get(0);
         assertThat(row.myRate()).isNull();
         assertThat(row.myScore()).isNull();
         assertThat(row.diff()).isNull();
@@ -306,8 +373,8 @@ class RivalServiceTest {
         User noRecord = user(4L, "ASTRA");
         when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of(
                 Rival.of(me, them, Instant.EPOCH), Rival.of(me, hidden, Instant.EPOCH), Rival.of(me, noRecord, Instant.EPOCH)));
-        when(optionRecordRepository.findBestRatesForUsers(eq(7L), eq(SRN), anyCollection()))
-                .thenReturn(List.of(new UserBest(ME, d("96.40")), new UserBest(THEM, d("96.10"))));
+        when(optionRecordRepository.findBestWithFullComboForUsers(eq(7L), eq(SRN), anyCollection()))
+                .thenReturn(List.of(new UserBest(ME, d("96.40")), new UserBest(THEM, d("96.10"), true)));
 
         List<RivalRecordResponse> rows = service.rivalRecords(ME, 7L);
 
@@ -315,5 +382,134 @@ class RivalServiceTest {
         assertThat(rows.get(0).diff()).isEqualByComparingTo("0.30");
         assertThat(rows.get(1).rate()).isNull();
         assertThat(rows.get(1).diff()).isNull();
+        // 달성 단계(D65): 풀콤보 기록이 있으면 FC, 기록이 없으면 null
+        assertThat(rows.get(0).stage()).isEqualTo(AchievementStage.FC);
+        assertThat(rows.get(1).stage()).isNull();
+    }
+
+    @Test
+    void 곡_상세_라이벌_기록의_단계는_최고_달성률과_풀콤보_여부로_정한다() {
+        SongDifficulty c = chart(7L);
+        when(songDifficultyRepository.findByIdAndDeletedFalse(7L)).thenReturn(Optional.of(c));
+        when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of(Rival.of(me, them, Instant.EPOCH)));
+        // 풀콤보가 없고 96.10 → SS, 100.00이면 EXC
+        when(optionRecordRepository.findBestWithFullComboForUsers(eq(7L), eq(SRN), anyCollection()))
+                .thenReturn(List.of(new UserBest(THEM, d("96.10"))));
+        assertThat(service.rivalRecords(ME, 7L).get(0).stage()).isEqualTo(AchievementStage.SS);
+
+        when(optionRecordRepository.findBestWithFullComboForUsers(eq(7L), eq(SRN), anyCollection()))
+                .thenReturn(List.of(new UserBest(THEM, d("100.00"))));
+        assertThat(service.rivalRecords(ME, 7L).get(0).stage()).isEqualTo(AchievementStage.EXC);
+    }
+
+    // ---------- 라이벌 카드의 상대 상위 곡 (3단계, D65) ----------
+
+    private static SkillEntryResponse top(int rank, long chartId, long songId, String value, String score) {
+        return new SkillEntryResponse(rank, chartId, songId, "곡" + songId, InstrumentPart.GUITAR, DifficultyType.MASTER,
+                d("9.50"), d("6.0"), "단일", d("96.00"), false, AchievementStage.SS, d("15"), d(value), d(score));
+    }
+
+    private static SkillResponse skillOf(List<SkillEntryResponse> single, List<SkillEntryResponse> other) {
+        return new SkillResponse(SRN, d("1000.00"), d("500.00"), d("500.00"),
+                new SkillResponse.PlayerTierResponse("C", "C", 0, null, null), 15, 25, single, other);
+    }
+
+    @Test
+    void 상위_곡은_단일과_그_외를_합쳐_점수_높은_순_최대_5곡이다() {
+        SkillResponse skill = skillOf(
+                List.of(top(1, 10, 1, "15.2000", "304.00"), top(2, 11, 2, "14.0000", "280.00"), top(3, 12, 3, "12.0000", "240.00")),
+                List.of(top(1, 20, 4, "15.0000", "300.00"), top(2, 21, 5, "13.0000", "260.00"), top(3, 22, 6, "11.0000", "220.00"),
+                        top(4, 23, 7, "10.0000", "200.00")));
+
+        List<RivalResponse.RivalTopSong> songs = RivalService.topSongsOf(skill);
+
+        assertThat(songs).extracting(RivalResponse.RivalTopSong::songId).containsExactly(1L, 4L, 2L, 5L, 3L);
+        assertThat(songs).extracting(RivalResponse.RivalTopSong::score)
+                .usingElementComparator(BigDecimal::compareTo)
+                .containsExactly(d("304.00"), d("300.00"), d("280.00"), d("260.00"), d("240.00"));
+    }
+
+    @Test
+    void 곡이_5곡_미만이면_있는_만큼_없으면_빈_목록이다() {
+        assertThat(RivalService.topSongsOf(skillOf(List.of(top(1, 10, 1, "15.2000", "304.00")), List.of()))).hasSize(1);
+        assertThat(RivalService.topSongsOf(skillOf(List.of(), List.of()))).isEmpty();
+    }
+
+    @Test
+    void 같은_곡의_채보가_둘이면_점수_높은_쪽_하나만_쓰고_동점은_채보_id가_작은_쪽이_먼저다() {
+        SkillResponse skill = skillOf(
+                List.of(top(1, 31, 7, "15.0000", "300.00"), top(2, 30, 8, "15.0000", "300.00")),
+                List.of(top(1, 40, 7, "13.0000", "260.00")));   // 곡 7의 낮은 채보 -> 빠진다
+
+        List<RivalResponse.RivalTopSong> songs = RivalService.topSongsOf(skill);
+
+        // V가 같으면 채보 id가 작은 30(곡 8)이 먼저, 곡 7은 한 번만
+        assertThat(songs).extracting(RivalResponse.RivalTopSong::songId).containsExactly(8L, 7L);
+        assertThat(songs.get(1).score()).isEqualByComparingTo("300.00");
+    }
+
+    @Test
+    void 라이벌_목록은_상대_상위_곡을_담고_비공개_상대는_null이며_레이팅은_한_번에_계산한다() {
+        User hidden = user(3L, "Hidden");
+        hidden.changeProfilePublic(false);
+        when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of(
+                Rival.of(me, them, Instant.EPOCH), Rival.of(me, hidden, Instant.EPOCH)));
+        when(rivalRepository.findUserIdsRegistering(ME)).thenReturn(List.of());
+        SkillResponse theirs = skillOf(List.of(top(1, 10, 1, "15.2000", "304.00")), List.of(top(1, 20, 2, "12.0000", "240.00")));
+        SkillResponse mine = skillOf(List.of(), List.of());
+        when(skillService.ratedAll(List.of(THEM, ME))).thenReturn(Map.of(
+                THEM, new SkillService.RatedSkill(theirs, null), ME, new SkillService.RatedSkill(mine, null)));
+        // 카드의 승·패·무는 대시보드와 같은 기준(레이팅 대상 채보 전체, 달성률 차): 90.00 대 91.00 → 패 1
+        scoredCharts(List.of(scored(1, PatternType.SINGLE, "9.00", "90.00")), List.of(scored(1, PatternType.SINGLE, "9.00", "91.00")));
+
+        List<RivalResponse> rows = service.list(ME);
+
+        assertThat(rows).hasSize(2);
+        assertThat(rows.get(0).available()).isTrue();
+        assertThat(rows.get(0).topSongs()).extracting(RivalResponse.RivalTopSong::songId).containsExactly(1L, 2L);
+        assertThat(rows.get(1).available()).isFalse();
+        assertThat(rows.get(1).topSongs()).isNull();
+        assertThat(rows.get(0).counts()).isEqualTo(new RivalCounts(0, 1, 0, 0, 0));
+        assertThat(rows.get(1).counts()).isNull();
+        // 라이벌이 여러 명이어도 레이팅 계산과 채보 점수 목록 읽기는 각각 한 번에(비공개 상대는 계산 대상에서도 빠진다)
+        verify(skillService, org.mockito.Mockito.times(1)).ratedAll(any());
+        verify(skillService, org.mockito.Mockito.times(1)).scoredChartsAll(any());
+    }
+
+    @Test
+    void 카드_비교_목록_곡별_승패의_개수는_대시보드_요약과_항상_같다_불일치_회귀_방지() {
+        // 같은 입력: 레이팅 대상 5개 속성의 채보 + 레이팅 제외 채보 + 나만/상대만 곡
+        List<SkillService.ScoredChart> mine = List.of(
+                scored(1, PatternType.SINGLE, "9.00", "97.50"),       // 상대 99.80 → 패 (점수로는 같아도 달성률로는 패)
+                scored(2, PatternType.TRIPLE, "9.00", "100.00"),      // 상대 100.00 → 무
+                scored(3, PatternType.DOUBLE, "9.00", "90.00"),       // 상대 80.00 → 승
+                scored(4, PatternType.COMPOUND, "9.00", "70.00"),     // 나만
+                scored(6, PatternType.EXCLUDED, "9.00", "50.00"));    // 레이팅 제외 → 어디에도 안 센다
+        List<SkillService.ScoredChart> theirs = List.of(
+                scored(1, PatternType.SINGLE, "9.00", "99.80"),
+                scored(2, PatternType.TRIPLE, "9.00", "100.00"),
+                scored(3, PatternType.DOUBLE, "9.00", "80.00"),
+                scored(5, PatternType.COMPOSITE_SINGLE, "9.00", "88.00"),   // 상대만
+                scored(6, PatternType.EXCLUDED, "9.00", "99.00"));
+        scoredCharts(mine, theirs);
+        when(rivalRepository.findWithTargetByUserId(ME)).thenReturn(List.of(Rival.of(me, them, Instant.EPOCH)));
+        when(rivalRepository.findUserIdsRegistering(ME)).thenReturn(List.of());
+        SkillResponse skill = skillOf(List.of(), List.of());
+        when(skillService.ratedAll(List.of(THEM, ME))).thenReturn(Map.of(
+                THEM, new SkillService.RatedSkill(skill, null), ME, new SkillService.RatedSkill(skill, null)));
+        bests(ME);
+        bests(THEM);
+
+        RivalSummaryResponse summary = RivalSummaryCalculator.summarize(THEM, "Rumi",
+                RivalSummaryCalculator.share(mine, theirs), RivalSummaryCalculator.unmatched(mine, theirs));
+        RivalCounts expected = new RivalCounts(summary.totals().wins(), summary.totals().losses(), summary.totals().ties(),
+                summary.patterns().stream().mapToInt(RivalSummaryResponse.PatternSummary::onlyTheirs).sum(),
+                summary.patterns().stream().mapToInt(RivalSummaryResponse.PatternSummary::onlyMine).sum());
+        assertThat(expected).isEqualTo(new RivalCounts(1, 1, 1, 1, 1));
+
+        // 라이벌 카드(GET /rivals), 비교 레이팅 목록, 곡별 승패 보기 — 세 곳 모두 대시보드 요약과 같은 숫자
+        assertThat(service.list(ME).get(0).counts()).isEqualTo(expected);
+        assertThat(service.compareRating(ME, THEM).counts()).isEqualTo(expected);
+        assertThat(service.compareCharts(ME, THEM, "LOSE", 0, 20).counts()).isEqualTo(expected);
     }
 }

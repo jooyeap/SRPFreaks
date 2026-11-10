@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { RegisteredMeSection } from "@/components/rivals/RegisteredMeSection";
+import { RivalTopSongs } from "@/components/rivals/RivalTopSongs";
 import { ApiError } from "@/lib/api";
 import type { RivalResponse } from "@/lib/api-types";
 import { formatScore } from "@/lib/format";
@@ -84,6 +85,7 @@ export function RivalTab({ userId }: { userId: number }) {
                 </span>
               ))}
             </span>
+            <RivalTopSongs songs={rival.topSongs} />
           </Link>
         ) : (
           <div key={rival.userId} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4 opacity-80">

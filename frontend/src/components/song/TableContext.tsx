@@ -11,6 +11,7 @@ import { EMPTY_MARK, formatLevel, formatTier } from "@/lib/format";
 import { TermHelp } from "@/components/TermHelp";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import { folderHref } from "@/lib/difficulty-table";
+import { HIT_HEAD, HIT_SUMMARY } from "@/lib/hit-area";
 import { useTranslations } from "next-intl";
 
 /** 서열표에서 들어온 곡 상세 주소. */
@@ -95,7 +96,7 @@ export function OtherCharts({ charts }: { charts: readonly TableEntryResponse[] 
   }
   return (
     <details className="rounded-lg border border-line bg-card px-4 py-3">
-      <summary className="cursor-pointer text-sm text-fg-sub">{t("Song.otherCharts", { count: charts.length })}</summary>
+      <summary className={`cursor-pointer text-sm text-fg-sub ${HIT_SUMMARY}`}>{t("Song.otherCharts", { count: charts.length })}</summary>
       <ul className="mt-2 flex flex-col gap-1">
         {charts.map((c) => (
           <li key={c.songDifficultyId}>
@@ -145,7 +146,7 @@ export function GroupSongList({ group, index }: { group: TierGroupResponse; inde
         </span>
         {/* 미정 묶음은 서열표 화면에서 뺐으므로 갈 곳이 없다 */}
         {group.tier !== null ? (
-          <Link href={folderHref(group.tier)} className="font-sans text-xs font-normal text-fg-sub hover:text-fg">
+          <Link href={folderHref(group.tier)} className={`font-sans text-xs font-normal text-fg-sub hover:text-fg ${HIT_HEAD}`}>
             {t("Song.viewGroup")}
           </Link>
         ) : null}

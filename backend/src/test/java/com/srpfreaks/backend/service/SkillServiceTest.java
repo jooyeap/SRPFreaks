@@ -455,4 +455,40 @@ class SkillServiceTest {
         assertThat(chartRating(new ChartRatingRow(5L, null, null, null, null, new BigDecimal("90.00"))).notRatedReason())
                 .isEqualTo(NotRatedReason.EXCLUDED);
     }
+
+    // ---- 레이팅 목록 40채보의 속성별 점수 합(라이벌 속성별 점수 차용, 2026-11-10)
+
+    private static SkillService.ScoredChart sc(long id, PatternType pattern, String score) {
+        return new SkillService.ScoredChart(cand(id, 100 + id, pattern, "5.6", "90.00"), pattern, new BigDecimal(score));
+    }
+
+    @Test
+    void 레이팅_목록_속성별_점수_합은_그룹별_상위_N개만_속성마다_더한다() {
+        settings(2, 2);   // 단일 2 + 그 외 2
+        List<SkillService.ScoredChart> list = List.of(
+                sc(1, PatternType.SINGLE, "300.00"), sc(2, PatternType.SINGLE, "250.00"), sc(3, PatternType.SINGLE, "200.00"),   // 단일: 300+250
+                sc(4, PatternType.COMPOUND, "240.00"), sc(5, PatternType.TRIPLE, "230.00"), sc(6, PatternType.COMPOUND, "220.00"),   // 그 외: 240+230
+                sc(7, PatternType.COMPOSITE_SINGLE, "225.00"));   // 복합(단일)은 그 외 그룹이라 상위 2에 못 들었다
+
+        java.util.Map<PatternType, BigDecimal> sums = service.ratingListScoreByPattern(java.util.Map.of(USER, list)).get(USER);
+
+        assertThat(sums.get(PatternType.SINGLE)).isEqualByComparingTo("550.00");
+        assertThat(sums.get(PatternType.COMPOUND)).isEqualByComparingTo("240.00");
+        assertThat(sums.get(PatternType.TRIPLE)).isEqualByComparingTo("230.00");
+        assertThat(sums).doesNotContainKeys(PatternType.COMPOSITE_SINGLE, PatternType.DOUBLE);
+        // 속성별 합을 모두 더하면 레이팅 목록 합계(총점)와 같다
+        assertThat(sums.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo("1020.00");
+    }
+
+    @Test
+    void 레이팅_목록_속성별_점수_합에서_점수가_같으면_채보_id가_작은_쪽이_먼저_들어간다() {
+        settings(1, 1);
+        List<SkillService.ScoredChart> list = List.of(
+                sc(9, PatternType.DOUBLE, "230.00"), sc(3, PatternType.TRIPLE, "230.00"));   // 그 외 1자리: 동점이라 id 3(삼중)
+
+        java.util.Map<PatternType, BigDecimal> sums = service.ratingListScoreByPattern(java.util.Map.of(USER, list)).get(USER);
+
+        assertThat(sums.get(PatternType.TRIPLE)).isEqualByComparingTo("230.00");
+        assertThat(sums).doesNotContainKey(PatternType.DOUBLE);
+    }
 }
