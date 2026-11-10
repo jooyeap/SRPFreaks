@@ -344,6 +344,24 @@ describe("SongListView", () => {
     }
   });
 
+  it("버전 선택지는 서버가 준 순서(출시일 최신순) 그대로 나온다(프론트에서 다시 정렬하지 않는다)", async () => {
+    const base = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation((input, init) => {
+      if (String(input).includes("/songs/chart-folders")) {
+        // 문자 순이 아닌 순서로 내려보내도 그대로 보여야 한다
+        return Promise.resolve(json({ ...folders, versions: ["GITADORA Matixx", "XG3", "V8", "미정 신규"] }));
+      }
+      return base!(input, init);
+    });
+    renderView();
+    await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+
+    const versionSelect = screen.getAllByRole("combobox").find((el) => el.getAttribute("aria-label") !== "한 번에 보이는 개수") as HTMLElement;
+    const options = Array.from(versionSelect.querySelectorAll("option")).map((o) => o.textContent);
+    // 첫 칸은 전체 선택지, 그 뒤는 서버 순서
+    expect(options.slice(1)).toEqual(["GITADORA Matixx", "XG3", "V8", "미정 신규"]);
+  });
+
   it("버전을 고르면 그 버전으로 거르고, 초기화하면 조건 없는 폴더 목록으로 돌아온다", async () => {
     renderView();
     await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
