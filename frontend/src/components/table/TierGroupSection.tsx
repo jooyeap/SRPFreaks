@@ -146,7 +146,7 @@ export function TierGroupSection({
             </button>
           ) : (
             <>
-              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{group.total}개</span>
+              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{t("Chart.groupTotal", { count: group.total })}</span>
             </>
           )}
         </h2>
@@ -165,7 +165,7 @@ export function TierGroupSection({
             <li
               key={chip.key}
               data-stage={chip.stage ?? undefined}
-              className={`rounded-lg border border-chip-line px-2 py-0.5 text-xs ${
+              className={`rounded-lg border border-ctl px-2 py-0.5 text-xs ${
                 chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
               }`}
             >

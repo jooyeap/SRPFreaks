@@ -9,10 +9,14 @@ import { SetlistAddButton } from "@/components/setlist/SetlistAddButton";
 import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongManageDialog } from "@/components/song/SongManageDialog";
+import { JacketUploadDialog } from "@/components/song/JacketUploadDialog";
+import { useJackets } from "@/lib/jackets";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { PeerStatsCard } from "@/components/song/PeerStatsCard";
 import { TierHistorySection } from "@/components/song/TierHistorySection";
+import { SongNavBar } from "@/components/song/SongNavBar";
+import { useDetailNav } from "@/components/song/use-detail-nav";
 import { SongHeader } from "@/components/song/SongHeader";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
 import { InfoCards, LevelTable } from "@/components/song/SongInfo";
@@ -21,6 +25,7 @@ import { ApiError } from "@/lib/api";
 import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { difficultyLabel, formatTier, partLabel } from "@/lib/format";
 import { availableCombos } from "@/lib/song-admin";
+import { useRecordDelete } from "@/components/RecordDeleteProvider";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
 import { ErrorRetry } from "@/components/ErrorRetry";
@@ -49,6 +54,7 @@ export function SongDetailView({
   origin,
   userId,
   canEditTable = false,
+  canEditJacket = false,
 }: {
   songId: number;
   chartId: number | null;
@@ -56,6 +62,8 @@ export function SongDetailView({
   userId: number;
   /** ROOT·ADMIN이면 true. 서열표 값(기준 난이도·추천도·속성) 수정 버튼을 보여 준다. 서버도 권한을 다시 검사한다. */
   canEditTable?: boolean;
+  /** ROOT면 true. `관리`에 `재킷 바꾸기`를 보여 준다(공식 목록에 없는 곡의 재킷을 직접 넣는다). 서버도 권한을 다시 검사한다 */
+  canEditJacket?: boolean;
 }) {
   const t = useTranslations();
   const router = useRouter();
@@ -64,6 +72,8 @@ export function SongDetailView({
   const [songEdit, setSongEdit] = useState<SongEditTarget | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [chartAddOpen, setChartAddOpen] = useState(false);
+  const [jacketOpen, setJacketOpen] = useState(false);
+  const { urlOf: jacketUrlOf } = useJackets();
 
   const song = useQuery({
     queryKey: songKeys.detail(songId),
@@ -83,6 +93,17 @@ export function SongDetailView({
   });
   const groups = groupsQuery.data ?? null;
 
+  // 이전/다음 곡 이동: 열린 창이 있으면 스와이프를 끈다. 바는 목록에서 들어온 기억이 지금 채보와 맞을 때만 보인다(use-detail-nav)
+  const dialogOpen = recordOpen || editTarget !== null || songEdit !== null || manageOpen || chartAddOpen || jacketOpen;
+  const nav = useDetailNav({ origin, chartId, userId, groups, swipeEnabled: !dialogOpen });
+  const navBar = nav.view ? (
+    <>
+      {/* 아래 고정 바에 마지막 줄이 가려지지 않게 그 높이만큼 비운다 */}
+      <div aria-hidden="true" className="h-14" />
+      <SongNavBar view={nav.view} onStep={(direction) => void nav.go(direction)} />
+    </>
+  ) : null;
+
   const chart = song.data ? resolveChart(song.data.difficulties, chartId) : null;
   const found = chart && groups ? findChart(groups, chart.id) : null;
 
@@ -92,6 +113,10 @@ export function SongDetailView({
     queryFn: ({ signal }) => fetchBestRecord(chart?.id ?? 0, signal),
     enabled: chart !== null && loggedIn, // 비로그인(D43)은 내 기록이 없으므로 /records를 부르지 않는다(401 방지)
   });
+
+  // 삭제 대기 중인 기록이 그 채보의 최고 기록이면 "내 기록"에서 바로 뺀다(RecordDeleteProvider). 확정되면 쿼리가 새로 받아진다
+  const { hiddenIds: hiddenRecordIds } = useRecordDelete();
+  const bestRecord = best.data && !hiddenRecordIds.has(best.data.id) ? best.data : null;
 
   // 서열표를 받은 뒤에만 수정할 수 있다 (표 id와 현재 값이 필요하다). 표에 없는 채보는 "추가"가 된다.
   const openTableEdit = () => {
@@ -125,7 +150,7 @@ export function SongDetailView({
       </button>
       <span className="text-sm font-semibold text-fg">{t("Songs.detailTitle")}</span>
       {origin === "table" && found ? (
-        <span className="rounded-lg border border-chip-line px-2 py-0.5 text-xs text-fg-sub">
+        <span className="rounded-lg border border-ctl px-2 py-0.5 text-xs text-fg-sub">
           {t.rich("Song.tableHeading", { tier: formatTier(found.group.tier, t), num: (chunks) => <span className="font-num">{chunks}</span> })}
         </span>
       ) : (
@@ -139,6 +164,7 @@ export function SongDetailView({
       <div className="flex flex-col gap-4">
         {backBar}
         <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
+        {navBar}
       </div>
     );
   }
@@ -149,6 +175,7 @@ export function SongDetailView({
         <ErrorRetry onRetry={() => void song.refetch()} retrying={song.isFetching}>
           {errorMessage(song.error, t)}
         </ErrorRetry>
+        {navBar}
       </div>
     );
   }
@@ -159,7 +186,7 @@ export function SongDetailView({
   const myRecord = loggedIn ? (
     <MyRecordCard
       mine={found?.entry.mine ?? null}
-      best={best.data ?? null}
+      best={bestRecord}
       chart={chart ? { part: chart.instrumentPart, difficulty: chart.difficultyType, level: chart.level } : null}
       emphasizeSrn={isTable}
       onRecord={() => setRecordOpen(true)}
@@ -169,14 +196,15 @@ export function SongDetailView({
     <section aria-label={t("Song.myRecord")} className="flex flex-col items-start gap-3 rounded-lg border border-line bg-card p-4">
       <h2 className="text-sm font-semibold text-fg-sub">{t("Song.myRecord")}</h2>
       <p className="text-sm text-fg-sub">{t("Songs.loginToRecord")}</p>
-      <Link href="/login" className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg hover:bg-table-head">
+      <Link href="/login" className="min-h-9 rounded-lg border border-ctl px-3 py-1 text-sm text-fg hover:bg-table-head">
         {t("Nav.login")}
       </Link>
     </section>
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    // 좌우 스와이프: 세로 스크롤은 브라우저에 맡기고(pan-y) 확대(pinch-zoom)도 막지 않는다. 가로 스크롤 표·입력 칸·열린 창에서는 시작하지 않는다(useSwipeNav)
+    <div {...nav.swipe} className={`flex flex-col gap-4 ${nav.view ? "touch-pan-y touch-pinch-zoom" : ""}`}>
       {backBar}
       {/*
         모바일(한 열)은 곡 정보 → 내 기록(기록 등록 버튼) → 나머지 정보 → 같은 난이도의 곡 순서로 보인다.
@@ -199,7 +227,7 @@ export function SongDetailView({
                     <button
                       type="button"
                       onClick={() => setManageOpen(true)}
-                      className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                      className="min-h-9 rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg"
                     >
                       {t("Song.manage")}
                     </button>
@@ -281,6 +309,15 @@ export function SongDetailView({
           onClose={() => setChartAddOpen(false)}
         />
       ) : null}
+      {canEditJacket ? (
+        <JacketUploadDialog
+          open={jacketOpen}
+          onClose={() => setJacketOpen(false)}
+          songId={data.id}
+          songTitle={data.title}
+          hasJacket={jacketUrlOf(data.id) !== null}
+        />
+      ) : null}
       {canEditTable ? (
         <SongManageDialog
           open={manageOpen}
@@ -290,6 +327,7 @@ export function SongDetailView({
           onEditSong={() => setSongEdit({ kind: "song", song: data })}
           onEditChart={chart ? () => setSongEdit({ kind: "chart", song: data, chart }) : null}
           onAddChart={availableCombos(data.difficulties).length > 0 ? () => setChartAddOpen(true) : null}
+          onEditJacket={canEditJacket ? () => setJacketOpen(true) : null}
           songId={data.id}
           songTitle={data.title}
           chartId={chart?.id ?? null}
@@ -300,6 +338,7 @@ export function SongDetailView({
           }}
         />
       ) : null}
+      {navBar}
     </div>
   );
 }

@@ -211,6 +211,13 @@ describe("goalPlan 목록 밖의 곡", () => {
     expect(plan?.steps.some((s) => s.entry.title === "T401" && s.entering)).toBe(true);
   });
 
+  it("복합(단일) 채보도 그 외 목록에 들어가므로 단일 목록의 곡을 밀어내지 않는다", () => {
+    const other = tableEntry(402, "복합(단일)", 70);
+    const plan = goalPlan(smallSkill([S1, S2], [], 586.6667), 600, [group(6.0, [other])]);
+    expect(plan?.displaced).toEqual([]);
+    expect(plan?.steps.some((s) => s.entry.title === "T402" && s.entering)).toBe(true);
+  });
+
   it("pool을 주지 않으면 내 레이팅 목록 안의 곡만으로 계산한다", () => {
     const plan = goalPlan(smallSkill([S1, S2], [], 586.6667), 600);
     expect(plan?.steps.map((s) => s.entry.title)).toEqual(["S1"]);

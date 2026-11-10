@@ -25,7 +25,7 @@ export function RatingCardButton({ skill }: { skill: SkillResponse }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="h-11 self-start rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg"
+        className="h-11 self-start rounded-xl border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg"
       >
         {t("open")}
       </button>
@@ -129,7 +129,7 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
               aria-checked={layout === value}
               onClick={() => setLayout(value)}
               className={`h-10 rounded-xl border px-4 text-sm font-bold ${
-                layout === value ? "border-fg text-fg" : "border-chip-line text-fg-sub hover:text-fg"
+                layout === value ? "border-fg text-fg" : "border-ctl text-fg-sub hover:text-fg"
               }`}
             >
               {value === "landscape" ? t("RatingCard.layoutLandscape") : t("RatingCard.layoutPortrait")}
@@ -165,7 +165,7 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
         <button
           type="button"
           onClick={onClose}
-          className="h-11 flex-1 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+          className="h-11 flex-1 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
         >
           {t("RatingCard.close")}
         </button>

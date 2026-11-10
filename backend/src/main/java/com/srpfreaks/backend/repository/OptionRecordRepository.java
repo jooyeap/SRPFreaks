@@ -124,6 +124,20 @@ public interface OptionRecordRepository extends JpaRepository<OptionRecord, Long
                                          @Param("userIds") Collection<Long> userIds);
 
     /**
+     * 위와 같되 풀콤보 기록이 있는지도 함께 읽는다(D65, 곡 상세 라이벌 기록의 달성 단계). 사람마다 쿼리하지 않고 한 번에 읽는다(N+1 금지).
+     * 단계는 다른 화면과 같이 `최고 달성률 + 그 채보의 풀콤보 여부`로 계산한다.
+     */
+    @Query("""
+            select new com.srpfreaks.backend.repository.UserBest(
+                r.user.id, max(r.achievementRate), sum(case when r.fullCombo = true then 1L else 0L end))
+            from OptionRecord r
+            where r.songDifficulty.id = :chartId and r.noteOption = :noteOption and r.user.id in :userIds
+            group by r.user.id
+            """)
+    List<UserBest> findBestWithFullComboForUsers(@Param("chartId") Long chartId, @Param("noteOption") NoteOption noteOption,
+                                                 @Param("userIds") Collection<Long> userIds);
+
+    /**
      * 한 사람의 채보별 최고 달성률 + 채보 레벨(D56 라이벌 비교). 삭제된 곡·채보는 뺀다(비교 개수에 섞이지 않게).
      * 레벨은 곡별 승패 목록의 정렬(차이가 같으면 레벨 높은 순)에 쓴다.
      */

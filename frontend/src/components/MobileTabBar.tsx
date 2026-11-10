@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { AdminNavLink } from "@/components/AdminNavLink";
 import { useAuth } from "@/components/AuthProvider";
 import { isActivePath } from "@/components/DesktopNav";
+import { MoreSettingsStrip } from "@/components/MoreSettingsStrip";
 import { NavIcon } from "@/components/NavIcon";
 import { MORE_ITEMS, SONG_PATHS, TAB_ITEMS } from "@/lib/nav";
 import { useSongHomeHref } from "@/lib/song-tab";
@@ -95,6 +96,8 @@ export function MobileTabBar() {
                 </Link>
               ) : null}
             </div>
+            {/* 화면 테마·언어 설정 띠: 이동 메뉴와 섞이지 않게 맨 아래(문구 바로 위)에 둔다. 로그인 전에도 쓴다 */}
+            <MoreSettingsStrip />
             <p className="mt-2 text-center text-[11px] text-fg-dim">
               <strong>{tc("unofficial")}</strong> · {t("notKonami")}
             </p>

@@ -157,7 +157,7 @@ public class PeerStatsService {
             return null;
         }
         PatternType pattern = parsePattern(meta.pattern());
-        if (pattern == null || pattern == PatternType.EXCLUDED) {
+        if (PatternType.ratingGroupOf(pattern) == PatternType.RatingGroup.NONE) {
             return null;
         }
         BigDecimal score = RatingCalculator.display(
@@ -166,7 +166,7 @@ public class PeerStatsService {
         if (own != null) {
             baseline = own.score();
         } else {
-            boolean single = pattern == PatternType.SINGLE;
+            boolean single = pattern.ratingGroup() == PatternType.RatingGroup.SINGLE;
             List<SkillEntryResponse> group = single ? mine.single() : mine.other();
             int limit = single ? mine.singleLimit() : mine.otherLimit();
             boolean full = !group.isEmpty() && group.size() >= limit;

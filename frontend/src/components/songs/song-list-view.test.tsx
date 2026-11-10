@@ -4,6 +4,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SongListView } from "@/components/songs/SongListView";
 import type { ChartFolderListResponse, ChartFolderResponse, ChartRowResponse, PageResponse } from "@/lib/api-types";
+import { readDetailNav, resetDetailNavForTest } from "@/lib/detail-nav";
 import { resetPageSizeForTest } from "@/lib/page-size";
 import { EMPTY_SONG_FILTERS, type SongListFilters } from "@/lib/song-list";
 
@@ -179,6 +180,17 @@ describe("SongListView", () => {
     expect(chartCalls()[0]).toContain("folder=9.50");
     expect(chartCalls()[0]).toContain("folderStep=0.50");
     expect(screen.getByText("두번째곡")).toBeInTheDocument();
+  });
+
+  it("채보 링크를 누르면 그 폴더의 조건과 채보를 곡 상세의 이전/다음 이동용으로 기억한다", async () => {
+    resetDetailNavForTest();
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    const link = await screen.findByRole("link", { name: "첫번째곡" });
+    link.addEventListener("click", (e) => e.preventDefault());
+    fireEvent.click(link);
+    expect(readDetailNav()).toMatchObject({ source: "songs", userId: 1, lo: 9.5, step: "0.50", size: 20, current: 1 });
+    resetDetailNavForTest();
   });
 
   it("맨 위에서 개수를 바꾸면 펼친 폴더가 그 개수로 다시 채보를 받는다 (기본은 20개씩)", async () => {

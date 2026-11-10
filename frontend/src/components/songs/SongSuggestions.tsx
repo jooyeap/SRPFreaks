@@ -29,7 +29,7 @@ export function SongSuggestions({ query, onPick }: { query: string; onPick: (tit
             <button
               type="button"
               onClick={() => onPick(item.title)}
-              className="rounded-full border border-chip-line px-3 py-1 text-sm text-fg hover:border-fg-sub"
+              className="rounded-full border border-ctl px-3 py-1 text-sm text-fg hover:border-fg-sub"
             >
               {item.title}
             </button>

@@ -72,7 +72,7 @@ export function TierHistorySection({ songId }: { songId: number }) {
                   <span>
                     {partLabel(row.part)} {difficultyLabel(row.difficulty)}
                   </span>
-                  {row.created ? <span className="rounded-md border border-chip-line px-1.5">{t("TierHistory.added")}</span> : null}
+                  {row.created ? <span className="rounded-md border border-ctl px-1.5">{t("TierHistory.added")}</span> : null}
                 </div>
                 <p className="text-fg">{changeTexts(row, t).join(" · ")}</p>
               </li>
@@ -83,7 +83,7 @@ export function TierHistorySection({ songId }: { songId: number }) {
               type="button"
               onClick={() => void history.fetchNextPage()}
               disabled={history.isFetchingNextPage}
-              className="min-h-9 self-start rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg disabled:opacity-60"
+              className="min-h-9 self-start rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg disabled:opacity-60"
             >
               {history.isFetchingNextPage ? t("TierHistory.loadingMore") : t("TierHistory.loadMore")}
             </button>

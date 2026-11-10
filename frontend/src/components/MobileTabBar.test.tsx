@@ -7,7 +7,8 @@ import { SONG_TAB_KEY, resetSongTabForTest } from "@/lib/song-tab";
 import { MobileTabBar } from "@/components/MobileTabBar";
 
 let pathname = "/";
-vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
+const refreshMock = vi.fn();
+vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ refresh: refreshMock }) }));
 vi.mock("@/lib/google", () => ({ loadGoogleIdentity: vi.fn(() => Promise.resolve({ disableAutoSelect: vi.fn() })) }));
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -29,6 +30,7 @@ function render(ui: ReactElement) {
 describe("MobileTabBar", () => {
   beforeEach(() => {
     pathname = "/";
+    refreshMock.mockReset();
     clearAccessToken();
     fetchMock.mockReset();
     fetchMock.mockResolvedValue(json({}, 401)); // 기본은 로그인 전
@@ -99,6 +101,103 @@ describe("MobileTabBar", () => {
     ]);
     expect(within(sheet).getByText("추천")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "더보기" })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("비로그인 시트: 이동 메뉴 사이에 테마·언어 줄이 없고, 설정 띠가 로그인 줄과 문구 사이에 있다", async () => {
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    const sheet = screen.getByRole("region", { name: "더보기" });
+    const login = await within(sheet).findByRole("link", { name: "로그인" });
+    const list = within(sheet).getByRole("list");
+    expect(within(list).queryByText("화면 테마")).toBeNull();
+    expect(within(list).queryByText("언어")).toBeNull();
+    const strip = within(sheet).getByRole("group", { name: "화면 테마" }).parentElement as HTMLElement;
+    const note = within(sheet).getByText("KONAMI와 무관", { exact: false });
+    expect(login.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(strip.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(sheet).getByRole("group", { name: "언어" })).toBeInTheDocument();
+  });
+
+  it("로그인 시트: 로그아웃 아래, 문구 위에 같은 설정 띠가 있다", async () => {
+    fetchMock.mockResolvedValueOnce(json(authAs("USER")));
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    const sheet = screen.getByRole("region", { name: "더보기" });
+    const logout = await within(sheet).findByRole("button", { name: "로그아웃" });
+    const strip = within(sheet).getByRole("group", { name: "화면 테마" }).parentElement as HTMLElement;
+    const note = within(sheet).getByText("KONAMI와 무관", { exact: false });
+    expect(logout.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(strip.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(sheet).getByRole("group", { name: "언어" })).toBeInTheDocument();
+  });
+
+  it("설정 띠의 테마 버튼을 누르면 바로 적용·저장되고 aria-pressed가 바뀐다", () => {
+    document.documentElement.setAttribute("data-theme", "dark");
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    const group = within(screen.getByRole("group", { name: "화면 테마" }));
+    expect(group.getByRole("button", { name: "다크" })).toHaveAttribute("aria-pressed", "true");
+    expect(group.getByRole("button", { name: "라이트" })).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(group.getByRole("button", { name: "라이트" }));
+
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+    expect(localStorage.getItem("srpfreaks-theme")).toBe("light");
+    expect(group.getByRole("button", { name: "라이트" })).toHaveAttribute("aria-pressed", "true");
+    expect(group.getByRole("button", { name: "다크" })).toHaveAttribute("aria-pressed", "false");
+    document.documentElement.removeAttribute("data-theme");
+  });
+
+  it("설정 띠 크기: 보이는 높이 34px · 글자 12px · 라벨 11px, 눌리는 영역은 위아래 2px씩 넓힌 38px (2026-11-04)", () => {
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    for (const name of ["화면 테마", "언어"]) {
+      const group = screen.getByRole("group", { name });
+      // 라벨 11px
+      expect(within(group).getByText(name)).toHaveClass("text-[11px]");
+      // 분할 버튼 상자 34px, 둥근 모서리가 잘리지 않도록 overflow-hidden은 쓰지 않는다
+      const box = group.querySelector("button")?.parentElement as HTMLElement;
+      expect(box).toHaveClass("h-[34px]");
+      expect(box).not.toHaveClass("overflow-hidden");
+      for (const button of within(group).getAllByRole("button")) {
+        expect(button).toHaveClass("h-full", "text-xs", "before:-inset-y-0.5"); // 12px, 34 + 2 + 2 = 38px(24px 이상)
+        expect(button).not.toHaveClass("min-h-11");
+      }
+    }
+  });
+
+  it("설정 띠 360px: 두 칸이 같은 폭으로 나뉘고 글자는 줄바꿈하지 않는다 (한국어·일본어 표기 포함)", () => {
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    const strip = screen.getByRole("group", { name: "화면 테마" }).parentElement as HTMLElement;
+    expect(strip).toHaveClass("grid-cols-2", "mt-2", "pt-2"); // 여백을 줄였고 위 구분선은 그대로
+    expect(strip).toHaveClass("border-t");
+    for (const name of ["화면 테마", "언어"]) {
+      const group = screen.getByRole("group", { name });
+      expect(group).toHaveClass("min-w-0");
+      for (const button of within(group).getAllByRole("button")) {
+        expect(button).toHaveClass("whitespace-nowrap", "flex-1");
+      }
+    }
+    // 가장 긴 표기(日本語 · 한국어)도 한 칸 160px 안의 절반(약 80px)에 12px 글자로 들어가는 길이다
+    expect(["한국어", "日本語", "라이트", "다크"].every((text) => text.length <= 3)).toBe(true);
+  });
+
+  it("설정 띠의 언어 버튼은 쿠키에 저장하고 화면을 새로 받아 온다 (현재 언어는 눌림 표시)", () => {
+    render(<MobileTabBar />);
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    const group = within(screen.getByRole("group", { name: "언어" }));
+    expect(group.getByRole("button", { name: "한국어" })).toHaveAttribute("aria-pressed", "true");
+    expect(group.getByRole("button", { name: "日本語" })).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(group.getByRole("button", { name: "한국어" }));
+    expect(document.cookie).not.toContain("srp.locale=ja");
+    expect(refreshMock).not.toHaveBeenCalled();
+
+    fireEvent.click(group.getByRole("button", { name: "日本語" }));
+    expect(document.cookie).toContain("srp.locale=ja");
+    expect(refreshMock).toHaveBeenCalledTimes(1);
+    document.cookie = "srp.locale=; Path=/; Max-Age=0";
   });
 
   it("시트는 Esc, 바깥 누르기, 링크 누르기, 더보기 다시 누르기로 닫힌다", () => {

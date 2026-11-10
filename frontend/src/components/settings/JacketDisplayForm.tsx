@@ -4,7 +4,7 @@ import { setShowJackets, useJacketsEnabled, useShowJacketsSetting } from "@/lib/
 import { useTranslations } from "next-intl";
 
 /**
- * 개인 설정 `재킷 표시`(D54, 기본 켜짐). 이 기기 브라우저에만 저장한다(한 손 모드처럼 서버에 보내지 않는다).
+ * 개인 설정 `재킷 표시`(D54, 기본 켜짐). 이 기기 브라우저에만 저장한다(서버에 보내지 않는다).
  * 운영 설정 `ui.show_song_images`가 꺼져 있으면 재킷이 아무에게도 보이지 않으므로 이 칸도 그리지 않는다.
  */
 export function JacketDisplayForm() {
@@ -30,7 +30,7 @@ export function JacketDisplayForm() {
             aria-labelledby="jacket-label"
             aria-describedby="jacket-help"
             onClick={() => setShowJackets(!checked)}
-            className={`relative h-6 w-11 shrink-0 rounded-lg border border-chip-line transition-colors ${checked ? "bg-chip-on-bg" : "bg-table-head"}`}
+            className={`relative h-6 w-11 shrink-0 rounded-lg border border-ctl transition-colors ${checked ? "bg-chip-on-bg" : "bg-table-head"}`}
           >
             <span
               aria-hidden="true"

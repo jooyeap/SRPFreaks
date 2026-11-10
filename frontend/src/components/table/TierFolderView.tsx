@@ -2,13 +2,16 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import { AverageToggle } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
 import { filterSummary, TableFilterPanel } from "@/components/table/TableFilterPanel";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableSearch } from "@/components/table/TableSearch";
+import { FolderHeader } from "@/components/table/FolderHeader";
+import { FolderNeighborBar } from "@/components/table/FolderNeighborBar";
 import { TierFolderNav } from "@/components/table/TierFolderNav";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { FolderThresholdNote } from "@/components/table/FolderThresholdNote";
@@ -16,23 +19,33 @@ import { ApiError } from "@/lib/api";
 import {
   allGroupsKey,
   decidedGroups,
-  EMPTY_FILTERS,
   fetchAllTierGroups,
   fetchDifficultyTables,
   filterTierGroup,
   findGroupByParam,
+  folderHref,
   hasFilters,
   pickRatingTable,
   tableKeys,
   type TableFilters,
 } from "@/lib/difficulty-table";
+import { chartIdOfDetailLink, rememberDetailNav } from "@/lib/detail-nav";
+import { neighborGroups, type SwipeDirection } from "@/lib/folder-nav";
+import { fetchMyPlayLevel, skillKeys } from "@/lib/rating";
 import { DEFAULT_SORT, type TableSort } from "@/lib/table-sort";
+import { averageTenth, layoutTiles } from "@/lib/table-tiles";
+import { folderStartFilters, tableReturnHref } from "@/lib/table-view-state";
+import { useMediaQuery } from "@/lib/use-media-query";
+import { useSwipeNav } from "@/lib/use-swipe-nav";
 import type { TableEntryResponse } from "@/lib/api-types";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
+
+/** 끝 난이도에서 더 쓸었을 때 살짝 튕기는 시간(ms). globals.css의 edge-bounce와 같다 */
+const BOUNCE_MS = 260;
 
 function errorMessage(error: unknown, t: Translator): string {
   return error instanceof ApiError ? error.message : t("Table.groupLoadFailed");
@@ -43,13 +56,23 @@ function errorMessage(error: unknown, t: Translator): string {
  * 곡 상세의 "같은 난이도의 곡 → 묶음 전체 보기"에서 들어온다.
  * 곡 상세와 같은 쿼리 키(allGroupsKey)를 써서, 곡 상세에서 이미 받은 서열표를 다시 받지 않고 재사용한다.
  * 서열표에서 묶음 하나만 달라는 서버 API는 따로 없어서(묶음 단위 페이지만 있다) 전체를 받아 해당 묶음만 고른다.
- * 파트·추천·속성 필터도 같은 이유로 화면에서 건다(filterTierGroup). 서열표 본문과 달리 처음에는 필터가 없고(묶음 전체), 머리의 개수·평균은 걸러진 채보 기준이다.
+ * 파트·추천·속성 필터도 같은 이유로 화면에서 건다(filterTierGroup). 머리의 개수·평균은 걸러진 채보 기준이다.
+ *
+ * 2026-11-05(PR 2) 정리:
+ *  - 머리는 `←` + 큰 난이도 숫자 + `기록 n/전체`(내 평균 난이도면 그 글자). 칩 띠는 그대로, 머리의 `‹ ›`는 없앴다.
+ *  - 이웃 난이도 이동: 화면 아래 고정 버튼 + 곡 목록 영역의 좌우 스와이프. 모두 replace(뒤로 가기 한 번이 서열표).
+ *  - n/전체 계산: 서열표 타일은 서열표의 필터(처음엔 추천 상·중)로 센 값이다. 폴더의 머리·이웃 버튼·칩 띠도 **같은 필터로** 세야 타일 숫자와 어긋나지 않는다.
+ *    그래서 서열표에서 타일을 눌러 들어오면 그때의 서열표 필터로 시작한다(folderStartFilters). 다른 길(곡 상세 등)로 오면 필터 없이(묶음 전체) 시작한다.
+ *    폴더 안에서 필터를 바꾸면 이 폴더 화면에만 적용되고(이동하면 다시 시작 필터), 서열표 필터는 바뀌지 않는다.
  */
 export function TierFolderView({ userId, param }: { userId: number; param: string }) {
   const t = useTranslations();
   const [includeZero, setIncludeZero] = useState(false);
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT);
-  const [filters, setFilters] = useState<TableFilters>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<TableFilters>(folderStartFilters); // 서열표에서 눌러 들어왔으면 그때의 필터, 아니면 없음
+  const router = useRouter();
+  const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const [bounce, setBounce] = useState<"higher" | "lower" | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false); // 모바일에서 필터 패널을 접어 둔다(서열표 본문과 같다, 2026-10-27). 데스크톱은 항상 펼침
   const [recordTarget, setRecordTarget] = useState<{ entry: TableEntryResponse; tier: number | null } | null>(null);
 
@@ -66,12 +89,53 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
     select: decidedGroups, // 미정 묶음은 서열표 화면에서 뺀다(곡 상세·홈과 캐시는 같이 쓰고 여기서만 거른다)
   });
 
+  // 내 평균 난이도(서열표 타일 화면·홈과 같은 서버 값). 비로그인은 부르지 않고, 실패하거나 늦으면 평균 글자만 없다
+  const playLevel = useQuery({
+    queryKey: skillKeys.playLevel(userId),
+    queryFn: ({ signal }) => fetchMyPlayLevel(signal),
+    enabled: isLoggedInViewer(userId),
+  });
+  const average = playLevel.data?.status === "READY" && playLevel.data.tier !== null ? averageTenth(playLevel.data.tier) : null;
+
   const rawGroup = useMemo(() => (groups.data ? findGroupByParam(groups.data, param) : null), [groups.data, param]);
   const group = useMemo(() => (rawGroup ? filterTierGroup(rawGroup, filters) : null), [rawGroup, filters]);
 
+  // 칩 띠·이웃 버튼이 쓰는 난이도 목록: 서열표 타일과 같은 규칙(같은 필터로 센 n/전체, 곡이 있는 난이도만, 미정 제외).
+  // 지금 보는 난이도는 필터로 0개가 되어도 남겨서 이동 기준이 사라지지 않게 한다
+  const filteredGroups = useMemo(
+    () => (groups.data ?? []).map((g) => filterTierGroup(g, filters)).filter((g) => g.tier !== null && (g.total > 0 || g.tier === rawGroup?.tier)),
+    [groups.data, filters, rawGroup],
+  );
+  const neighbors = useMemo(() => neighborGroups(filteredGroups, rawGroup?.tier ?? null), [filteredGroups, rawGroup]);
+  const averageTier = useMemo(
+    () =>
+      layoutTiles(
+        filteredGroups.flatMap((g) => (g.tier !== null && g.total > 0 ? [{ tier: g.tier }] : [])),
+        average,
+        "hard",
+      ).averageTier,
+    [filteredGroups, average],
+  );
+
+  // 이웃 난이도 이동(스와이프): 끝 난이도에서 더 쓸면 이동하지 않고 살짝 튕긴다(움직임 줄이기면 튕김 없이 아무 일도 없다)
+  function onSwipe(direction: SwipeDirection) {
+    const target = neighbors[direction];
+    if (target) {
+      router.replace(folderHref(target.tier));
+    } else if (!reduced) {
+      setBounce(direction);
+    }
+  }
+  const swipe = useSwipeNav({ onSwipe });
+  useEffect(() => {
+    if (!bounce) return;
+    const timer = setTimeout(() => setBounce(null), BOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [bounce]);
+
   const back = (
     <Link
-      href="/table"
+      href={tableReturnHref()}
       aria-label={t("Table.toTable")}
       title={t("Table.toTable")}
       className={BACK_BUTTON_CLASS}
@@ -107,8 +171,14 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
 
   return (
     <div className="flex flex-col gap-4">
-      {back}
-      {groups.data ? <TierFolderNav groups={groups.data} currentTier={rawGroup.tier} /> : null}
+      <FolderHeader
+        tier={rawGroup.tier}
+        recorded={group.recorded}
+        total={group.total}
+        isAverage={averageTier !== null && averageTier === rawGroup.tier}
+        backHref={tableReturnHref()}
+      />
+      <TierFolderNav groups={filteredGroups} currentTier={rawGroup.tier} />
       {/* 이 구간을 몇 % 이상 치면 내 레이팅에 반영되는지(로그인했을 때만, 홈 진행도 카드 안내와 같은 계산) */}
       {isLoggedInViewer(userId) && rawGroup.tier !== null ? <FolderThresholdNote userId={userId} tier={rawGroup.tier} entries={rawGroup.entries} /> : null}
       {/* 곡 검색: 화면 위쪽 검색창 + 결과(누르면 곡 상세로). 좌측 하단 고정 버튼은 이 검색창으로 포커스를 옮긴다 */}
@@ -136,11 +206,28 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
         <SortSelect value={sort} onChange={setSort} />
         <AverageToggle includeZero={includeZero} onChange={setIncludeZero} />
       </div>
-      {hasFilters(filters) && group.entries.length === 0 ? (
-        <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
-      ) : null}
-      <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined} />
-      <ScrollTopButton />
+      {/* 곡 목록 영역: 좌우로 쓸면 이웃 난이도로 간다(가로가 세로보다 크고 60px 이상일 때만). 세로 스크롤은 브라우저에 맡긴다(touch-pan-y).
+          입력 칸·가로로 스크롤되는 영역 위에서는 시작하지 않는다(useSwipeNav). 난이도 칩 띠는 이 영역 밖이라 칩 띠 스크롤이 그대로다 */}
+      <div
+        {...swipe}
+        // 곡 링크를 누르면 이 목록의 정렬·필터를 기억해 둔다 -> 곡 상세의 이전/다음 곡 이동이 같은 순서로 이웃을 찾는다(lib/detail-nav.ts)
+        onClick={(e) => {
+          const chartId = chartIdOfDetailLink(e.target);
+          if (chartId !== null) rememberDetailNav({ source: "table", sort, filters, current: chartId });
+        }}
+        data-testid="folder-swipe-area"
+        data-bounce={bounce ?? undefined}
+        className={`flex min-h-[40vh] touch-pan-y flex-col gap-4 ${bounce ? `edge-bounce-${bounce}` : ""}`}
+      >
+        {hasFilters(filters) && group.entries.length === 0 ? (
+          <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
+        ) : null}
+        <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined} />
+      </div>
+      {/* 아래 고정 이웃 난이도 버튼에 마지막 줄이 가려지지 않게 그 높이만큼 비운다 */}
+      <div aria-hidden="true" className="h-[67px]" />
+      <FolderNeighborBar neighbors={neighbors} tier={rawGroup.tier} recorded={group.recorded} total={group.total} />
+      <ScrollTopButton lifted />
       <RecordDialog
         chart={
           recordTarget && {

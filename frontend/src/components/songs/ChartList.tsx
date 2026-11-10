@@ -44,7 +44,7 @@ export function ChartList({
             type="button"
             disabled={loadingMore}
             onClick={onMore}
-            className="min-h-11 rounded-lg border border-chip-line px-4 py-1 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
+            className="min-h-11 rounded-lg border border-ctl px-4 py-1 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
           >
             {loadingMore ? t("Songs.loadingMore") : t("Songs.loadMore")}
           </button>

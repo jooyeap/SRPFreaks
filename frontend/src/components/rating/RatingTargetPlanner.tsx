@@ -185,7 +185,7 @@ function PlanList({
           type="button"
           aria-expanded={showAll}
           onClick={() => setShowAll((v) => !v)}
-          className="min-h-9 self-center rounded-lg border border-chip-line px-4 text-sm text-fg-sub hover:text-fg"
+          className="min-h-9 self-center rounded-lg border border-ctl px-4 text-sm text-fg-sub hover:text-fg"
         >
           {showAll ? t("Rating.nearAvgOnly") : t("Rating.showMore", { count: hidden })}
         </button>

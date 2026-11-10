@@ -88,7 +88,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
               setDraft("");
               search("");
             }}
-            className="h-10 rounded-xl border border-chip-line px-4 text-sm text-fg-sub hover:text-fg"
+            className="h-10 rounded-xl border border-ctl px-4 text-sm text-fg-sub hover:text-fg"
           >
             {t("Admin.usersSearchReset")}
           </button>
@@ -117,7 +117,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
               type="button"
               disabled={page <= 0}
               onClick={() => setPage((p) => Math.max(p - 1, 0))}
-              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               {t("Common.prev")}
             </button>
@@ -128,7 +128,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
               type="button"
               disabled={page + 1 >= data.totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-chip-line px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
+              className="rounded-lg border border-ctl px-3 py-1 enabled:hover:text-fg disabled:text-disabled"
             >
               {t("Common.next")}
             </button>
@@ -215,7 +215,7 @@ function UserRow({ user }: { user: AdminUserResponse }) {
               setConfirmingStatus(true);
             }}
             aria-label={t(blocked ? "Admin.unblockAria" : "Admin.blockAria", { name })}
-            className="h-10 rounded-xl border border-chip-line px-4 text-sm text-fg-sub hover:text-fg"
+            className="h-10 rounded-xl border border-ctl px-4 text-sm text-fg-sub hover:text-fg"
           >
             {t(blocked ? "Admin.unblock" : "Admin.block")}
           </button>

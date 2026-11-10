@@ -10,6 +10,8 @@ export function patternLabel(value: string, t: Translator): string {
       return t("Chart.patternSingle");
     case "복합":
       return t("Chart.patternCompound");
+    case "복합(단일)":
+      return t("Chart.patternCompoundSingle");
     case "이중":
       return t("Chart.patternDouble");
     case "삼중":

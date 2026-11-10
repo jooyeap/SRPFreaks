@@ -244,4 +244,44 @@ class SkillMapperTest {
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).achievedAt()).isEqualTo(java.time.LocalDateTime.of(2026, 10, 2, 0, 0));
     }
+
+    // ---- findChartRating (저장 결과 카드용 한 채보 상태)
+
+    private ChartRatingRow chartRow(User user, SongDifficulty d, Long tableId) {
+        em.flush();
+        em.clear();
+        return mapper.findChartRating(user.getId(), NoteOption.SUPER_RANDOM_PLUS.name(), tableId, d.getId());
+    }
+
+    @Test
+    void 채보_한_개의_서열표_값과_내_최고_달성률을_돌려준다() {
+        SongDifficulty d = chart("6.0", PatternType.SINGLE);
+        record(userA, d, NoteOption.SUPER_RANDOM_PLUS, "80.00", false);
+        record(userA, d, NoteOption.SUPER_RANDOM_PLUS, "95.00", false);
+        record(userA, d, NoteOption.NORMAL, "99.00", false);       // 다른 옵션은 섞이지 않는다
+        record(userB, d, NoteOption.SUPER_RANDOM_PLUS, "99.50", false);   // 다른 사용자도 섞이지 않는다
+
+        ChartRatingRow row = chartRow(userA, d, table.getId());
+
+        assertThat(row.entryId()).isNotNull();
+        assertThat(row.tier()).isEqualByComparingTo("6.0");
+        assertThat(row.pattern()).isEqualTo("단일");
+        assertThat(row.ratingEnabled()).isTrue();
+        assertThat(row.bestRate()).isEqualByComparingTo("95.00");
+    }
+
+    @Test
+    void 기록이_없으면_bestRate가_null이고_서열표에_없으면_entryId가_null이다() {
+        SongDifficulty d = chart("6.0", PatternType.SINGLE);
+        assertThat(chartRow(userA, d, table.getId()).bestRate()).isNull();
+
+        Song song = persist(Song.create("서열표 밖", null, "test", null));
+        SongDifficulty outside = persist(SongDifficulty.create(song, InstrumentPart.BASS, DifficultyType.MASTER, new BigDecimal("8.00")));
+        record(userA, outside, NoteOption.SUPER_RANDOM_PLUS, "90.00", false);
+        ChartRatingRow row = chartRow(userA, outside, table.getId());
+        assertThat(row.entryId()).isNull();
+        assertThat(row.bestRate()).isEqualByComparingTo("90.00");
+
+        assertThat(chartRow(userA, d, null).entryId()).isNull();   // 레이팅 서열표 자체가 없을 때
+    }
 }

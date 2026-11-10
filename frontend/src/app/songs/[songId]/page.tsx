@@ -34,6 +34,7 @@ function SongDetailPage() {
       origin={parseOrigin(search.get("from"))}
       userId={user?.id ?? ANONYMOUS_VIEWER_ID}
       canEditTable={user !== null && user.role !== "USER"}
+      canEditJacket={user !== null && user.role === "ROOT"}
     />
   );
 }

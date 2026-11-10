@@ -45,13 +45,13 @@ class TableEntryUpdateRequestValidationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"단일", "복합", "이중", "삼중", "레이팅 제외"})
-    void 속성은_정해진_다섯_값만_받는다(String value) {
+    @ValueSource(strings = {"단일", "복합", "이중", "삼중", "복합(단일)", "레이팅 제외"})
+    void 속성은_정해진_여섯_값만_받는다(String value) {
         assertThat(validator.validate(new TableEntryUpdateRequest(null, null, value))).isEmpty();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"단일 ", "SINGLE", "레이팅제외", ""})
+    @ValueSource(strings = {"단일 ", "SINGLE", "레이팅제외", "", "복합(단일", "복합()", "복합(단일) ", "단일(복합)"})
     void 다른_속성은_거부한다(String value) {
         assertThat(validator.validate(new TableEntryUpdateRequest(null, null, value))).isNotEmpty();
     }

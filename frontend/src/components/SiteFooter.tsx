@@ -3,6 +3,7 @@ import { useTranslations } from "next-intl";
 import { ContactLine } from "@/components/ContactLine";
 import { TableCredit } from "@/components/TableCredit";
 import { BUILD_SHA } from "@/lib/build-info";
+import { FOOTER_LINE_LINK } from "@/lib/hit-area";
 
 /**
  * 모든 화면 하단 고지 (DESIGN-UI 1장). 공식 서비스로 오해되지 않도록 항상 보이게 둔다.
@@ -23,13 +24,14 @@ export function SiteFooter() {
           <p className="font-num text-[11px]">build {BUILD_SHA}</p>
         </div>
         <div className="space-y-1 sm:text-right">
-          <TableCredit />
-          <ContactLine />
-          <p className="space-x-3">
-            <Link href="/terms" className="underline underline-offset-2 hover:text-fg">
+          {/* 줄마다 링크가 높이 44px(FOOTER_LINE_LINK)라 줄 간격이 예전보다 넓다. 푸터에서만 레이아웃이 달라진다 */}
+          <TableCredit tall />
+          <ContactLine tall />
+          <p className="flex flex-wrap items-center gap-x-3 sm:justify-end">
+            <Link href="/terms" className={`underline underline-offset-2 hover:text-fg ${FOOTER_LINE_LINK}`}>
               {t("terms")}
             </Link>
-            <Link href="/privacy" className="underline underline-offset-2 hover:text-fg">
+            <Link href="/privacy" className={`underline underline-offset-2 hover:text-fg ${FOOTER_LINE_LINK}`}>
               {t("privacy")}
             </Link>
           </p>

@@ -243,7 +243,7 @@ function ReviewItem({
             disabled={pending}
             onClick={() => onSave(status, note)}
             aria-label={t("Admin.reviewSaveAria", { title: item.title })}
-            className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+            className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
           >
             {pending ? t("Common.saving") : t("Common.save")}
           </button>
@@ -279,7 +279,7 @@ function RegisterSongFromSuggestion({ item }: { item: AdminSuggestionResponse })
           setAsked(true);
           setOpen(true);
         }}
-        className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+        className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head"
       >
         {t("Songs.create")}
       </button>
