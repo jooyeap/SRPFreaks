@@ -350,6 +350,8 @@
     "neighborTiers": "隣接難易度",
     "neighborPrevTier": "前へ 難易度 {tier}",
     "neighborNextTier": "次へ 難易度 {tier}",
+    "lastTier": "最後の難易度",
+    "releaseToMove": "離すと移動",
     "tierList": "難易度リスト",
     "groupLoadFailed": "グループを読み込めませんでした。しばらくしてからもう一度お試しください。",
     "toTable": "難易度表へ",

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TierFolderView } from "@/components/table/TierFolderView";
 import { readDetailNav, resetDetailNavForTest } from "@/lib/detail-nav";
+import { requestFolderScrollAdjust, takeFolderScrollAdjust } from "@/lib/folder-scroll";
 import { rememberTableReturn, viewStateToQuery, DEFAULT_VIEW_STATE } from "@/lib/table-view-state";
 import type { DifficultyTableResponse, PageResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 
@@ -216,12 +217,12 @@ describe("TierFolderView", () => {
       await screen.findByRole("heading", { name: /5\.8\s*2개/ });
       const prev = within(bar()).getByRole("button", { name: "이전 난이도 5.0" });
       fireEvent.click(prev);
-      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.0");
+      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.0", { scroll: false }); // 맨 위로 올리지 않는다(D68)
       fireEvent.click(within(prev).getByText("5.0"));
       expect(replaceMock).toHaveBeenCalledTimes(2);
       const next = within(bar()).getByRole("button", { name: "다음 난이도 5.9" });
       fireEvent.click(within(next).getByText("5.9"));
-      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.9");
+      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.9", { scroll: false });
     });
 
     it("가장 높은/낮은 난이도에서는 없는 쪽 구역이 숨겨지고(접근성 트리에서 빠짐) 자리는 남는다", async () => {
@@ -255,36 +256,37 @@ describe("TierFolderView", () => {
       expect(within(bar()).getByText("0/2")).toBeInTheDocument();
     });
 
-    it("곡 목록 영역을 왼쪽으로 60px 이상 쓸면 더 높은 난이도로, 오른쪽이면 더 낮은 난이도로 replace 이동한다", async () => {
+    it("곡 목록 영역을 왼쪽으로 80px 이상 쓸면 더 높은 난이도로, 오른쪽이면 더 낮은 난이도로 replace 이동한다 (맨 위로 올리지 않는다)", async () => {
       renderView("5.8");
       await screen.findByRole("heading", { name: /5\.8\s*2개/ });
       swipe(area(), -80);
-      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.9");
+      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.9", { scroll: false });
       swipe(area(), 80);
-      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.0");
+      expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.0", { scroll: false });
       expect(replaceMock).toHaveBeenCalledTimes(2);
     });
 
-    it("60px 미만이거나 세로 이동이 더 크면 이동하지 않는다", async () => {
+    it("80px 미만이거나 가로축에서 30°를 벗어나면 이동하지 않는다 (곡 상세와 같은 규칙)", async () => {
       renderView("5.8");
       await screen.findByRole("heading", { name: /5\.8\s*2개/ });
-      swipe(area(), -59);
+      swipe(area(), -79);
       swipe(area(), -80, 90);
       swipe(area(), 80, -80);
+      swipe(area(), -100, 58); // 약 30.1°
+      expect(replaceMock).not.toHaveBeenCalled();
+      swipe(area(), -100, 57); // 30° 이내
+      expect(replaceMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("화면 가장자리 24px에서 시작한 쓸기는 이동하지 않는다", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      fireEvent.touchStart(area(), { touches: [{ clientX: 23, clientY: 300 }] });
+      fireEvent.touchEnd(area(), { changedTouches: [{ clientX: 223, clientY: 300 }] });
       expect(replaceMock).not.toHaveBeenCalled();
     });
 
-    it("끝 난이도에서 더 쓸면 이동하지 않고 살짝 튕긴다", async () => {
-      renderView("5.9");
-      await screen.findByRole("heading", { name: /5\.9\s*1개/ });
-      swipe(area(), -100);
-      expect(replaceMock).not.toHaveBeenCalled();
-      expect(area()).toHaveAttribute("data-bounce", "higher");
-      await waitFor(() => expect(area()).not.toHaveAttribute("data-bounce"));
-    });
-
-    it("움직임 줄이기 설정이면 끝 난이도에서 튕기지 않는다", async () => {
-      vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("prefers-reduced-motion"), addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    it("끝 난이도에서 더 쓸면 이동하지 않는다 (예전의 튕김은 끌기 모션으로 대체됐다)", async () => {
       renderView("5.9");
       await screen.findByRole("heading", { name: /5\.9\s*1개/ });
       swipe(area(), -100);
@@ -336,6 +338,217 @@ describe("TierFolderView", () => {
       fireEvent.click(within(screen.getByRole("group", { name: "속성" })).getByRole("button", { name: "단일 외" }));
       expect(await screen.findByRole("heading", { name: /5\.8\s*1개/ })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: "서열표로" })).toHaveAttribute("href", "/table?rec=all");
+    });
+  });
+
+  describe("D68: 방향 잠금 · 끌기 모션 · 이동 후 스크롤", () => {
+    const area = () => screen.getByTestId("folder-swipe-area");
+    const slider = () => screen.getByTestId("folder-slider");
+    const bar = () => screen.getByRole("navigation", { name: "인접 난이도" });
+    const tileHint = () => document.querySelector("[data-drag-hint]");
+    const original = [...groups];
+    const start = (el: Element, x = 200, y = 300) => fireEvent.touchStart(el, { touches: [{ clientX: x, clientY: y }] });
+    const move = (el: Element, dx: number, dy = 0) => fireEvent.touchMove(el, { touches: [{ clientX: 200 + dx, clientY: 300 + dy }] });
+    const end = (el: Element, dx: number, dy = 0) => fireEvent.touchEnd(el, { changedTouches: [{ clientX: 200 + dx, clientY: 300 + dy }] });
+
+    afterEach(() => {
+      groups.splice(0, groups.length, ...original);
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      Object.defineProperty(window, "scrollY", { value: 0, configurable: true, writable: true });
+    });
+
+    it("세로로 시작한 쓸기는 중간에 가로로 휘어 80px를 넘어도 이동하지 않고, 목록도 움직이지 않는다", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), 3, 30); // 세로가 더 크다 -> 세로 잠금
+      move(area(), -120, 30); // 이후 가로로 휘어도 무시
+      expect(screen.queryByTestId("folder-neighbor-list")).not.toBeInTheDocument();
+      expect(slider().style.transform).toBe("");
+      end(area(), -120, 30);
+      expect(replaceMock).not.toHaveBeenCalled();
+    });
+
+    it("가로로 시작한 쓸기는 잠긴 뒤 목록이 이동량의 절반만큼만 따라간다 (잠기기 전 10px 이내에는 움직이지 않는다)", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), -8, 1); // 아직 10px 이내
+      expect(screen.queryByTestId("folder-neighbor-list")).not.toBeInTheDocument();
+      expect(slider().style.transform).toBe("");
+      move(area(), -30, 2); // 잠김
+      await waitFor(() => expect(slider().style.transform).toBe("translateX(-15px)"));
+      move(area(), -100, 2);
+      await waitFor(() => expect(slider().style.transform).toBe("translateX(-50px)"));
+    });
+
+    it("이웃 목록은 잠길 때만 생기고, 곡 줄 첫 8개만이며, 누를 수 없다 (aria-hidden·inert)", async () => {
+      groups[0] = group(5.9, Array.from({ length: 12 }, (_, i) => `곡${i + 1}`));
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      expect(screen.queryByTestId("folder-neighbor-list")).not.toBeInTheDocument(); // 평소에는 그리지 않는다
+      start(area());
+      move(area(), -30, 0);
+      const list = await screen.findByTestId("folder-neighbor-list");
+      expect(list).toHaveAttribute("aria-hidden", "true");
+      expect(list).toHaveAttribute("inert");
+      expect(within(list).getAllByRole("heading", { name: /5\.9\s*12개/, hidden: true })).toHaveLength(1); // 머리는 전체 개수
+      // 모바일 줄(EntryCard) 8개 + 데스크톱 표 줄(EntryRow) 8개
+      expect(list.querySelectorAll("section ul > li")).toHaveLength(16);
+      expect(within(list).queryByText("곡9")).not.toBeInTheDocument();
+      expect(within(list).queryByRole("button", { name: /기록/ })).not.toBeInTheDocument(); // 담기·입력 버튼 없음
+    });
+
+    it("끌기 방향의 이웃을 보여 준다: 오른쪽으로 끌면 더 낮은 난이도", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), 40, 0);
+      const list = await screen.findByTestId("folder-neighbor-list");
+      expect(within(list).getAllByRole("heading", { name: /5\.0\s*1개/, hidden: true })).toHaveLength(1);
+      expect(screen.getByTestId("folder-drag-pill")).toHaveTextContent("‹ 5.0");
+    });
+
+    it("80px 전에는 알약 `5.7 ›`와 흐린 타일 테두리, 넘기면 `놓으면 이동`과 진한 테두리, 스테퍼의 이웃 숫자가 선택 상태가 된다", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), -60, 0);
+      const pill = await screen.findByTestId("folder-drag-pill");
+      expect(pill).toHaveTextContent("5.9 ›");
+      expect(pill).not.toHaveTextContent("놓으면 이동");
+      expect(tileHint()).toHaveAttribute("data-drag-hint", "weak");
+      expect(tileHint()).toHaveTextContent("5.9");
+      expect(bar().querySelector("[data-selected]")).toBeNull();
+
+      move(area(), -90, 0);
+      await waitFor(() => expect(screen.getByTestId("folder-drag-pill")).toHaveTextContent("놓으면 이동"));
+      expect(screen.getByTestId("folder-drag-pill")).toHaveTextContent("5.9 ›");
+      expect(tileHint()).toHaveAttribute("data-drag-hint", "strong");
+      const selected = bar().querySelector("[data-selected]");
+      expect(selected).toHaveTextContent("5.9");
+      expect(within(bar()).getByRole("button", { name: "다음 난이도 5.9" })).toContainElement(selected as HTMLElement);
+    });
+
+    it("80px 이상 놓으면 현재 목록이 밀려 나간 뒤(약 200ms) replace로 이동한다 (scroll: false)", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), -40, 0);
+      move(area(), -100, 0);
+      end(area(), -100, 0);
+      expect(replaceMock).not.toHaveBeenCalled(); // 애니메이션이 끝난 뒤에 주소를 바꾼다
+      expect(slider().style.transition).toContain("transform");
+      expect(slider().style.transform).toMatch(/^translateX\(-\d+px\)$/); // 이웃이 들어오는 자리까지
+      expect(screen.queryByTestId("folder-drag-pill")).not.toBeInTheDocument(); // 이동 중에는 안내를 거둔다
+      await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/table/folder/5.9", { scroll: false }));
+      expect(replaceMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("80px 미만으로 놓으면 이동하지 않고 제자리로 돌아온다", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), -40, 0);
+      move(area(), -70, 0);
+      end(area(), -70, 0);
+      expect(slider().style.transform).toBe("translateX(0px)");
+      await waitFor(() => expect(slider().style.transform).toBe(""));
+      expect(screen.queryByTestId("folder-neighbor-list")).not.toBeInTheDocument();
+      expect(tileHint()).toBeNull();
+      expect(replaceMock).not.toHaveBeenCalled();
+    });
+
+    it("끝 난이도: 22px까지만 따라가고 알약은 `마지막 난이도`, 놓으면 제자리로 돌아온다", async () => {
+      renderView("5.9");
+      await screen.findByRole("heading", { name: /5\.9\s*1개/ });
+      start(area());
+      move(area(), -30, 0);
+      move(area(), -150, 0);
+      await waitFor(() => expect(slider().style.transform).toBe("translateX(-22px)"));
+      expect(screen.getByTestId("folder-drag-pill")).toHaveTextContent("마지막 난이도");
+      expect(screen.queryByTestId("folder-neighbor-list")).not.toBeInTheDocument();
+      expect(tileHint()).toBeNull();
+      end(area(), -150, 0);
+      await waitFor(() => expect(slider().style.transform).toBe(""));
+      expect(replaceMock).not.toHaveBeenCalled();
+    });
+
+    it("움직임 줄이기: 목록은 움직이지 않고 이웃 목록도 없다. 타일 테두리·스테퍼 강조·알약만 보이고, 놓으면 즉시 이동한다", async () => {
+      vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("prefers-reduced-motion"), addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), -40, 0);
+      move(area(), -100, 0);
+      expect(await screen.findByTestId("folder-drag-pill")).toHaveTextContent("놓으면 이동");
+      expect(tileHint()).toHaveAttribute("data-drag-hint", "strong");
+      expect(bar().querySelector("[data-selected]")).toHaveTextContent("5.9");
+      expect(slider().style.transform).toBe("");
+      expect(screen.queryByTestId("folder-neighbor-list")).not.toBeInTheDocument();
+      end(area(), -100, 0);
+      expect(replaceMock).toHaveBeenCalledWith("/table/folder/5.9", { scroll: false }); // 기다림 없이 즉시
+    });
+
+    it("끌던 중 페이지가 2px 이상 스크롤되면 이번 쓸기는 이동하지 않고 제자리로 돌아온다", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), -40, 0);
+      await screen.findByTestId("folder-neighbor-list");
+      Object.defineProperty(window, "scrollY", { value: 2, configurable: true, writable: true });
+      move(area(), -120, 0);
+      end(area(), -120, 0);
+      await waitFor(() => expect(slider().style.transform).toBe(""));
+      expect(replaceMock).not.toHaveBeenCalled();
+    });
+
+    it("터치가 취소(touchcancel)되면 끌던 목록이 제자리로 돌아온다", async () => {
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      start(area());
+      move(area(), -40, 0);
+      await screen.findByTestId("folder-neighbor-list");
+      fireEvent.touchCancel(area());
+      await waitFor(() => expect(screen.queryByTestId("folder-neighbor-list")).not.toBeInTheDocument());
+      expect(replaceMock).not.toHaveBeenCalled();
+    });
+
+    it("이웃 이동 직후(표시가 있을 때) 목록 머리가 화면 위로 지나가 있으면 머리가 맨 위에 오도록 즉시 올린다", async () => {
+      const scrollTo = vi.fn();
+      vi.stubGlobal("scrollTo", scrollTo);
+      vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ top: -300, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: -300, toJSON: () => ({}) });
+      requestFolderScrollAdjust();
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      expect(scrollTo).toHaveBeenCalledWith({ top: -300, behavior: "instant" });
+    });
+
+    it("목록 머리가 보이는 위치면 스크롤하지 않고, 표시가 없으면(처음 들어옴·뒤로 가기) 건드리지 않는다", async () => {
+      const scrollTo = vi.fn();
+      vi.stubGlobal("scrollTo", scrollTo);
+      const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ top: 120, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: 120, toJSON: () => ({}) });
+      requestFolderScrollAdjust();
+      const first = renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      expect(scrollTo).not.toHaveBeenCalled(); // 머리(120)가 화면 안
+      first.unmount();
+      rect.mockReturnValue({ top: -300, bottom: 0, left: 0, right: 0, width: 0, height: 0, x: 0, y: -300, toJSON: () => ({}) });
+      renderView("5.8"); // 표시 없음
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it("스와이프 이동과 아래 버튼 이동은 모두 이동 직전에 스크롤 맞춤 표시를 남긴다", async () => {
+      takeFolderScrollAdjust(); // 다른 테스트가 남긴 표시 정리
+      renderView("5.8");
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      fireEvent.click(within(bar()).getByRole("button", { name: "다음 난이도 5.9" }));
+      expect(takeFolderScrollAdjust()).toBe(true);
+      start(area());
+      end(area(), -100, 0);
+      expect(takeFolderScrollAdjust()).toBe(true);
     });
   });
 });

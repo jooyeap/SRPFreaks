@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { folderHref } from "@/lib/difficulty-table";
-import { folderProgressPercent, type FolderNeighbors } from "@/lib/folder-nav";
+import { requestFolderScrollAdjust } from "@/lib/folder-scroll";
+import { folderProgressPercent, type FolderNeighbors, type SwipeDirection } from "@/lib/folder-nav";
 import { formatTier } from "@/lib/format";
 import type { TierGroupResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
@@ -25,8 +26,11 @@ export function FolderNeighborBar({
   tier,
   recorded,
   total,
+  selectedSide = null,
 }: {
   neighbors: FolderNeighbors;
+  /** 스와이프를 80px 넘게 끌고 있을 때 놓으면 가게 될 쪽(D68). 그쪽 이웃 숫자를 선택 상태(반전)로 보인다. higher = 오른쪽 구역, lower = 왼쪽 구역 */
+  selectedSide?: SwipeDirection | null;
   /** 지금 보는 난이도(미정이면 null) */
   tier: number | null;
   recorded: number;
@@ -50,7 +54,7 @@ export function FolderNeighborBar({
           data-testid="folder-pill"
           className="mx-auto grid h-12 max-w-md grid-cols-[1fr_auto_1fr] items-stretch rounded-3xl border border-ctl bg-card p-1"
         >
-          <Zone group={neighbors.lower} direction="prev" />
+          <Zone group={neighbors.lower} direction="prev" selected={selectedSide === "lower"} />
           <div data-testid="folder-pill-center" className="pointer-events-none flex flex-col items-center justify-center px-2">
             <span className="font-num text-[15px] font-bold leading-tight text-fg">{formatTier(tier, t)}</span>
             <span aria-hidden="true" data-testid="folder-pill-bar" className="my-0.5 block h-[3px] w-16 overflow-hidden rounded-full bg-line">
@@ -64,14 +68,14 @@ export function FolderNeighborBar({
               {recorded}/{total}
             </span>
           </div>
-          <Zone group={neighbors.higher} direction="next" />
+          <Zone group={neighbors.higher} direction="next" selected={selectedSide === "higher"} />
         </div>
       </div>
     </nav>
   );
 }
 
-function Zone({ group, direction }: { group: TierGroupResponse | null; direction: "prev" | "next" }) {
+function Zone({ group, direction, selected }: { group: TierGroupResponse | null; direction: "prev" | "next"; selected: boolean }) {
   const t = useTranslations();
   const router = useRouter();
   const prev = direction === "prev";
@@ -89,13 +93,25 @@ function Zone({ group, direction }: { group: TierGroupResponse | null; direction
       </svg>
     </span>
   );
-  const number = <span className="font-num text-[13px] font-bold tabular-nums text-fg-sub">{label}</span>;
+  // 스와이프로 80px를 넘겨 끌면 이 숫자가 반전된다(놓으면 이 난이도로 간다). 숫자 글자는 그대로라 색만으로 알리지 않는다
+  const number = (
+    <span
+      data-selected={selected ? "true" : undefined}
+      className={`font-num text-[13px] font-bold tabular-nums ${selected ? "rounded-md bg-chip-on-bg px-1.5 py-0.5 text-chip-on-fg" : "text-fg-sub"}`}
+    >
+      {label}
+    </span>
+  );
   return (
     <button
       type="button"
       data-testid={`folder-pill-${direction}`}
       aria-label={t(prev ? "Table.neighborPrevTier" : "Table.neighborNextTier", { tier: label })}
-      onClick={() => router.replace(folderHref(group.tier))}
+      onClick={() => {
+        // 맨 위로 올리지 않는다(scroll: false). 이동 직후 목록 머리가 화면 위로 지나가 있으면 새 화면이 머리 위치로 맞춘다(folder-scroll)
+        requestFolderScrollAdjust();
+        router.replace(folderHref(group.tier), { scroll: false });
+      }}
       className={`folder-pill-zone flex h-full min-w-0 items-center gap-2 ${shape} ${prev ? "justify-start pl-0 pr-2" : "justify-end pl-2 pr-0"} hover:bg-table-head active:bg-table-head`}
     >
       {prev ? icon : null}

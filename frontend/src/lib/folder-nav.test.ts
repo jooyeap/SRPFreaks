@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { DETAIL_SWIPE_RULES, folderProgressPercent, judgeSwipe, neighborGroups, SWIPE_MIN_PX } from "@/lib/folder-nav";
+import {
+  DETAIL_SWIPE_RULES,
+  dragOffsetPx,
+  dragPassed,
+  FOLDER_EDGE_PULL_PX,
+  FOLDER_SWIPE_RULES,
+  folderProgressPercent,
+  judgeSwipe,
+  neighborGroups,
+  SWIPE_MIN_PX,
+} from "@/lib/folder-nav";
 import type { TierGroupResponse } from "@/lib/api-types";
 
 function group(tier: number | null): TierGroupResponse {
@@ -69,5 +79,31 @@ describe("folderProgressPercent (하단 알약 진행 막대)", () => {
     expect(folderProgressPercent(3, 0)).toBe(0);
     expect(folderProgressPercent(20, 18)).toBe(100);
     expect(folderProgressPercent(-1, 18)).toBe(0);
+  });
+});
+
+describe("D68: 서열표 폴더 스와이프 규칙과 끌기 계산", () => {
+  it("폴더 규칙은 곡 상세와 같다 (80px, 30°, 가장자리 24px)", () => {
+    expect(FOLDER_SWIPE_RULES).toEqual({ minPx: 80, maxAngleDeg: 30, edgePx: 24 });
+    expect(FOLDER_SWIPE_RULES).toEqual(DETAIL_SWIPE_RULES);
+    expect(judgeSwipe(-79, 0, FOLDER_SWIPE_RULES)).toBeNull();
+    expect(judgeSwipe(-80, 0, FOLDER_SWIPE_RULES)).toBe("higher");
+  });
+  it("끌기 중 목록은 이동량의 절반만 움직인다 (이웃이 있을 때)", () => {
+    expect(dragOffsetPx(-30, true)).toBe(-15);
+    expect(dragOffsetPx(100, true)).toBe(50);
+    expect(dragOffsetPx(0, true)).toBe(0);
+  });
+  it("끝 난이도(이웃 없음)에서는 22px까지만 따라간다", () => {
+    expect(dragOffsetPx(-30, false)).toBe(-15);
+    expect(dragOffsetPx(-44, false)).toBe(-22);
+    expect(dragOffsetPx(-300, false)).toBe(-22);
+    expect(dragOffsetPx(300, false)).toBe(22);
+    expect(FOLDER_EDGE_PULL_PX).toBe(22);
+  });
+  it("80px부터 `놓으면 이동` 구간이다", () => {
+    expect(dragPassed(-79)).toBe(false);
+    expect(dragPassed(-80)).toBe(true);
+    expect(dragPassed(120)).toBe(true);
   });
 });

@@ -350,6 +350,8 @@
     "neighborTiers": "인접 난이도",
     "neighborPrevTier": "이전 난이도 {tier}",
     "neighborNextTier": "다음 난이도 {tier}",
+    "lastTier": "마지막 난이도",
+    "releaseToMove": "놓으면 이동",
     "tierList": "난이도 목록",
     "groupLoadFailed": "묶음을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "toTable": "서열표로",

@@ -1,17 +1,41 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { createTranslator } from "use-intl/core";
 import { describe, expect, it, vi } from "vitest";
 import { FolderNeighborBar } from "@/components/table/FolderNeighborBar";
+import { takeFolderScrollAdjust } from "@/lib/folder-scroll";
 import type { TierGroupResponse } from "@/lib/api-types";
 import ja from "../../../messages/ja.json";
 import ko from "../../../messages/ko.json";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn() }) }));
+const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: replaceMock }) }));
 
 const g = (tier: number): TierGroupResponse =>
   ({ tier, total: 18, recorded: 5, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries: [] });
 
 describe("FolderNeighborBar", () => {
+  it("D68: 이웃 버튼은 맨 위로 올리지 않고(scroll: false) 이동 직전에 스크롤 맞춤 표시를 남긴다", () => {
+    takeFolderScrollAdjust();
+    replaceMock.mockReset();
+    render(<FolderNeighborBar neighbors={{ lower: g(5.7), higher: g(5.9) }} tier={5.8} recorded={0} total={3} />);
+    fireEvent.click(screen.getByTestId("folder-pill-next"));
+    expect(replaceMock).toHaveBeenCalledWith("/table/folder/5.9", { scroll: false });
+    expect(takeFolderScrollAdjust()).toBe(true);
+    fireEvent.click(screen.getByTestId("folder-pill-prev"));
+    expect(replaceMock).toHaveBeenLastCalledWith("/table/folder/5.7", { scroll: false });
+  });
+
+  it("D68: selectedSide를 주면 그쪽 이웃 숫자만 선택 상태(반전)가 되고, 숫자 글자는 그대로다", () => {
+    const { rerender } = render(<FolderNeighborBar neighbors={{ lower: g(5.7), higher: g(5.9) }} tier={5.8} recorded={0} total={3} />);
+    expect(document.querySelector("[data-selected]")).toBeNull();
+    rerender(<FolderNeighborBar neighbors={{ lower: g(5.7), higher: g(5.9) }} tier={5.8} recorded={0} total={3} selectedSide="higher" />);
+    const selected = document.querySelector("[data-selected]");
+    expect(selected).toHaveTextContent("5.9");
+    expect(screen.getByTestId("folder-pill-next")).toContainElement(selected as HTMLElement);
+    rerender(<FolderNeighborBar neighbors={{ lower: g(5.7), higher: g(5.9) }} tier={5.8} recorded={0} total={3} selectedSide="lower" />);
+    expect(screen.getByTestId("folder-pill-prev")).toContainElement(document.querySelector("[data-selected]") as HTMLElement);
+  });
+
   it("진행 막대 폭은 기록 수 ÷ 전체 × 100 이다 (5/18 = 27.778%)", () => {
     render(<FolderNeighborBar neighbors={{ lower: g(5.7), higher: g(5.9) }} tier={5.8} recorded={5} total={18} />);
     expect(screen.getByTestId("folder-pill-fill")).toHaveStyle({ width: "27.778%" });
