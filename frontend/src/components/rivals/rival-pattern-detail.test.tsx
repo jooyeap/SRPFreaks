@@ -28,7 +28,7 @@ function detailRow(id: number, diff: number, myRate = 95): RivalDetailRow {
 function response(over: Partial<RivalSummaryDetailResponse> = {}): RivalSummaryDetailResponse {
   return {
     userId: 7, nickname: "Rumi",
-    summary: { pattern: "삼중", key: "TRIPLE", wins: 4, ties: 1, losses: 6, scoreDiffSum: -42.67, closeCount: 3, sharedCount: 11 },
+    summary: { pattern: "삼중", key: "TRIPLE", wins: 4, ties: 1, losses: 6, scoreDiffSum: -42.67, closeCount: 3, sharedCount: 11, rateDiffAvg: -3.2 },
     filterCounts: { all: 11, lose: 6, close: 3, win: 4 },
     rows: { content: [detailRow(1, -4.37, 93.9), detailRow(2, 2.28, 97.84), detailRow(3, 0, 96)], page: 0, size: 20, totalElements: 3, totalPages: 1 },
     ...over,
@@ -61,15 +61,39 @@ afterEach(() => {
 });
 
 describe("라이벌 속성 상세 (D67, 6단계)", () => {
-  it("제목 `삼중 · {닉네임}와 비교`, 요약 3칸(승·무·패 / 점수 차 합계 / 접전 곡 수)을 보인다", async () => {
+  it("제목 `삼중 · {닉네임}와 비교`, 요약 3칸(승·무·패 / 평균 달성률 차 / 접전 곡 수)을 보이고 점수 차 합계는 보이지 않는다", async () => {
     show();
     expect(await screen.findByRole("heading", { name: "삼중 · Rumi와 비교" })).toBeInTheDocument();
     const summary = screen.getByRole("region", { name: "속성 요약" });
     expect(summary).toHaveTextContent("승 4 · 무 1 · 패 6");
-    expect(summary).toHaveTextContent(`${MINUS}42.67`);
+    expect(summary).toHaveTextContent("평균 달성률 차");
+    expect(summary).toHaveTextContent(`${MINUS}3.2%`);
+    expect(summary).not.toHaveTextContent(`${MINUS}42.67`); // 점수 차 합계(옛 값)는 보이지 않는다
+    expect(summary).not.toHaveTextContent("점수 차 합계");
     expect(summary).toHaveTextContent("접전 곡 수");
     expect(summary).toHaveTextContent("3");
     expect(summary).not.toHaveTextContent("※ 5곡 미만"); // 11곡
+  });
+
+  it("요약 칸의 평균 달성률 차: 앞이면 +, 같으면 ±, 공유 곡이 0이면 `–`(0.0%가 아니다)", async () => {
+    const { unmount } = show({}, response({ summary: { pattern: "삼중", key: "TRIPLE", wins: 3, ties: 0, losses: 1, scoreDiffSum: 12.5, closeCount: 0, sharedCount: 4, rateDiffAvg: 1.8 } }));
+    expect(await screen.findByRole("region", { name: "속성 요약" })).toHaveTextContent("+1.8%");
+    unmount();
+    const second = show({}, response({ summary: { pattern: "삼중", key: "TRIPLE", wins: 0, ties: 2, losses: 0, scoreDiffSum: 0, closeCount: 2, sharedCount: 2, rateDiffAvg: 0 } }));
+    expect(await screen.findByRole("region", { name: "속성 요약" })).toHaveTextContent("±0.0%");
+    second.unmount();
+    show({}, response({ summary: { pattern: "삼중", key: "TRIPLE", wins: 0, ties: 0, losses: 0, scoreDiffSum: 0, closeCount: 0, sharedCount: 0, rateDiffAvg: null }, rows: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 } }));
+    const empty = await screen.findByRole("region", { name: "속성 요약" });
+    expect(empty).toHaveTextContent("–");
+    expect(empty).not.toHaveTextContent("%");
+  });
+
+  it("옛 응답(summary.rateDiffAvg 없음)에서도 깨지지 않고 요약 칸이 `–`로 보인다", async () => {
+    show({}, response({ summary: { pattern: "삼중", key: "TRIPLE", wins: 4, ties: 1, losses: 6, scoreDiffSum: -42.67, closeCount: 3, sharedCount: 11 } }));
+    const summary = await screen.findByRole("region", { name: "속성 요약" });
+    expect(summary).toHaveTextContent("평균 달성률 차");
+    expect(summary).not.toHaveTextContent(`${MINUS}42.67`);
+    expect(summary).toHaveTextContent("–");
   });
 
   it("필터 칩은 전체·열세·접전·우세·상대만 순이고 각 곡 수가 들어 있다. 선택한 칩이 눌린 상태다", async () => {
@@ -148,7 +172,9 @@ describe("라이벌 속성 상세 (D67, 6단계)", () => {
     expect(chips.map((b) => b.textContent)).toEqual(["すべて 11", "劣勢 6", "接戦 3", "優勢 4", "相手のみ 0"]);
     const summary = screen.getByRole("region", { name: "属性サマリー" });
     expect(summary).toHaveTextContent("勝 4 · 分 1 · 敗 6");
-    expect(summary).toHaveTextContent("点差の合計");
+    expect(summary).toHaveTextContent("平均達成率差");
+    expect(summary).toHaveTextContent(`${MINUS}3.2%`);
+    expect(summary).not.toHaveTextContent("点差の合計");
     expect(summary).toHaveTextContent("接戦の曲数");
     await waitFor(() => expect(screen.getByText(/^\+は自分が上/)).toBeInTheDocument());
   });
