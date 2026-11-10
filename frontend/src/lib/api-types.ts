@@ -593,6 +593,7 @@ export interface RivalPatternSummary {
   /**
    * 레이팅 목록(단일 15 + 그 외 25) 기준 속성별 점수 차 = 내 목록 점수 합 − 상대 목록 점수 합(소수 둘째 자리, 2026-11-10).
    * 공유 곡 기준인 scoreDiffSum과 다른 값이다. 계산할 수 없거나 옛 응답이면 없음/null.
+   * 화면은 쓰지 않는다. 레이팅 목록 40칸 구성 차이라 속성 우세와 맞지 않아 표시하지 않기로 함(2026-11-10).
    */
   ratingScoreDiff?: number | null;
 }

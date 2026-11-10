@@ -185,28 +185,20 @@ export interface ConclusionData {
   strong: RivalPatternSummary | null;
   /** 열세 속성. 없으면 null. */
   weak: RivalPatternSummary | null;
-  /** 속성별 레이팅 점수 차(`ratingScoreDiff`)의 절댓값이 가장 큰 속성(둘째 줄 `총점 차 중 ○○이`). 값이 하나도 없으면 null. */
-  biggest: RivalPatternSummary | null;
   /** 열세 속성에서 (상대 기록 수 − 내 기록 수)가 0보다 크면 그 차이(`상대가 N곡 더 기록했어요`). 아니면 null이라 문장을 숨긴다. */
   moreTheirs: number | null;
 }
 
 /**
  * 결론 문장 카드의 재료(2026-11-10). 우세·열세 속성은 요약 카드와 같은 `topPattern`(평균 달성률 차)으로 고르고 다시 정렬하지 않는다.
- * `biggest`는 `ratingScoreDiff` 절댓값이 가장 큰 속성이며 같으면 서버가 준 속성 순서가 앞선 쪽이다.
  */
 export function conclusionOf(patterns: readonly RivalPatternSummary[]): ConclusionData {
   const strong = topPattern(patterns, "strong");
   const weak = topPattern(patterns, "weak");
-  let biggest: RivalPatternSummary | null = null;
-  for (const p of patterns) {
-    if (p.ratingScoreDiff === undefined || p.ratingScoreDiff === null) continue;
-    if (biggest === null || Math.abs(p.ratingScoreDiff) > Math.abs(biggest.ratingScoreDiff ?? 0)) biggest = p;
-  }
   let moreTheirs: number | null = null;
   if (weak !== null) {
     const { mine, theirs } = recordCounts(weak);
     if (theirs - mine > 0) moreTheirs = theirs - mine;
   }
-  return { strong, weak, biggest, moreTheirs };
+  return { strong, weak, moreTheirs };
 }

@@ -97,17 +97,14 @@ describe("결론 문장·기록 수 계산 (순수 함수)", () => {
     expect(recordCounts(pattern("DOUBLE", "이중", { sharedCount: 3 }))).toEqual({ mine: 3, theirs: 3 });
   });
 
-  it("우세·열세는 평균 달성률 차 기준, 점수 차는 절댓값이 가장 큰 속성, 상대가 더 기록한 곡 수는 열세 속성에서만", () => {
+  it("우세·열세는 평균 달성률 차 기준, 상대가 더 기록한 곡 수는 열세 속성에서만", () => {
     const c = conclusionOf(PATTERNS);
     expect(c.strong?.key).toBe("SINGLE");
     expect(c.weak?.key).toBe("TRIPLE");
-    expect(c.biggest?.key).toBe("TRIPLE");
     expect(c.moreTheirs).toBe(7); // 상대 13 − 나 6
     // 열세 속성에서 내가 더 많이 기록했으면 문장을 숨긴다(null)
     const mineMore = conclusionOf([pattern("TRIPLE", "삼중", { sharedCount: 5, rateDiffAvg: -1, onlyMine: 4, onlyTheirs: 1 })]);
     expect(mineMore.moreTheirs).toBeNull();
-    // 점수 차가 하나도 없으면 biggest는 null
-    expect(conclusionOf([pattern("SINGLE", "단일", { sharedCount: 3, rateDiffAvg: 1 })]).biggest).toBeNull();
   });
 
   it("점수 차 표시는 소수 첫째 자리와 부호 글자", () => {
@@ -118,28 +115,32 @@ describe("결론 문장·기록 수 계산 (순수 함수)", () => {
   });
 });
 
-describe("대시보드 결론 문장 카드와 속성 줄 기록·점수 차", () => {
-  it("첫 줄 `단일 +1.8% 우세 · 삼중 −3.2% 열세`, 둘째 줄 `총점 차 … 중 삼중이 …이에요. 삼중은 상대가 7곡 더 기록했어요.`", async () => {
+describe("대시보드 결론 문장 카드와 속성 줄 기록 수", () => {
+  it("첫 줄 `단일 +1.8% 우세 · 삼중 −3.2% 열세`, 둘째 줄 `삼중은 상대가 7곡 더 기록했어요.`(총점 차 문장은 없다)", async () => {
     showDashboard();
     const card = await screen.findByTestId("rival-conclusion");
     expect(card).toHaveTextContent(`단일 +1.8% 우세 · 삼중 ${MINUS}3.2% 열세`);
-    expect(card).toHaveTextContent(`총점 차 ${MINUS}312.1 중 삼중이 ${MINUS}222.0이에요. 삼중은 상대가 7곡 더 기록했어요.`);
+    expect(card).toHaveTextContent("삼중은 상대가 7곡 더 기록했어요.");
+    expect(card).not.toHaveTextContent("총점 차");
+    expect(card).not.toHaveTextContent("중 삼중이");
     expect(card).not.toHaveTextContent("앞서");
     expect(card).not.toHaveTextContent("뒤져");
   });
 
-  it("열세 속성에서 내 기록이 더 많으면 `상대가 N곡 더 기록했어요`만 숨긴다", async () => {
+  it("열세 속성에서 내 기록이 더 많으면 둘째 줄 자체를 숨기고 첫 줄만 보인다", async () => {
     showDashboard([
       pattern("SINGLE", "단일", { wins: 6, sharedCount: 9, rateDiffAvg: 1.8, ratingScoreDiff: 12.34 }),
       pattern("COMPOUND", "복합"), pattern("COMPOSITE_SINGLE", "복합(단일)"), pattern("DOUBLE", "이중"),
       pattern("TRIPLE", "삼중", { losses: 3, sharedCount: 5, rateDiffAvg: -3.2, onlyMine: 4, onlyTheirs: 1, ratingScoreDiff: -222.04 }),
     ]);
     const card = await screen.findByTestId("rival-conclusion");
-    expect(card).toHaveTextContent("중 삼중이");
+    expect(card).toHaveTextContent(`단일 +1.8% 우세 · 삼중 ${MINUS}3.2% 열세`);
     expect(card).not.toHaveTextContent("더 기록했어요");
+    expect(card).not.toHaveTextContent("총점 차");
+    expect(card.querySelectorAll("p")).toHaveLength(1);
   });
 
-  it("옛 응답(ratingScoreDiff·onlyX 없음)이면 둘째 줄이 없고 첫 줄만 보인다. 속성 줄에는 기록 수만 있고 점수 차 항이 없다", async () => {
+  it("옛 응답(ratingScoreDiff·onlyX 없음)이면 둘째 줄이 없고 첫 줄만 보인다. 속성 줄에는 기록 수만 있다", async () => {
     showDashboard([
       pattern("SINGLE", "단일", { wins: 6, sharedCount: 9, rateDiffAvg: 1.8 }),
       pattern("COMPOUND", "복합"), pattern("COMPOSITE_SINGLE", "복합(단일)"), pattern("DOUBLE", "이중"), pattern("TRIPLE", "삼중"),
@@ -151,12 +152,13 @@ describe("대시보드 결론 문장 카드와 속성 줄 기록·점수 차", (
     expect(screen.getByRole("link", { name: /단일/ })).not.toHaveTextContent("점수 차");
   });
 
-  it("속성 줄 아래 `기록 나 11 · 상대 23곡 · 점수 차 −222.0`(부호는 글자, 색은 토큰 클래스)", async () => {
+  it("속성 줄 아래에는 `기록 나 6 · 상대 13곡`만 나오고 점수 차는 나오지 않는다(응답에 ratingScoreDiff가 있어도)", async () => {
     showDashboard();
     fireEvent.click(await screen.findByRole("button", { name: "열세 1" }));
     const link = await screen.findByRole("link", { name: /삼중/ });
-    expect(link).toHaveTextContent(`기록 나 6 · 상대 13곡 · 점수 차 ${MINUS}222.0`);
-    expect(within(link).getByText(`점수 차 ${MINUS}222.0`)).toHaveClass("text-weak-text");
+    expect(link).toHaveTextContent("기록 나 6 · 상대 13곡");
+    expect(link).not.toHaveTextContent("점수 차");
+    expect(link).not.toHaveTextContent(`${MINUS}222.0`);
   });
 
   it("일본어는 우세·劣勢와 초안 문구로 같은 구조", async () => {
@@ -165,7 +167,8 @@ describe("대시보드 결론 문장 카드와 속성 줄 기록·점수 차", (
     const card = await screen.findByTestId("rival-conclusion");
     expect(card).toHaveTextContent(`優勢`);
     expect(card).toHaveTextContent(`劣勢`);
-    expect(card).toHaveTextContent("総合点差");
+    expect(card).toHaveTextContent("相手が7曲多く記録しています。");
+    expect(card).not.toHaveTextContent("総合点差");
   });
 });
 
