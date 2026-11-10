@@ -590,6 +590,11 @@ export interface RivalPatternSummary {
   onlyTheirs?: number;
   /** 나만 기록한 레이팅 대상 곡 수. 승·무·패·평균에 넣지 않는다(D67 개정). 옛 응답에는 없을 수 있다. */
   onlyMine?: number;
+  /**
+   * 레이팅 목록(단일 15 + 그 외 25) 기준 속성별 점수 차 = 내 목록 점수 합 − 상대 목록 점수 합(소수 둘째 자리, 2026-11-10).
+   * 공유 곡 기준인 scoreDiffSum과 다른 값이다. 계산할 수 없거나 옛 응답이면 없음/null.
+   */
+  ratingScoreDiff?: number | null;
 }
 
 /** 서열 난이도(0.1 단위) 한 줄. 공유 곡이 있는 난이도만, 높은 난이도 먼저. 화면은 아직 쓰지 않는다(타입만). */
@@ -621,7 +626,7 @@ export interface RivalSummaryResponse {
   rateDistribution?: RivalPatternDiffs[];
 }
 
-export type RivalDetailFilter = "ALL" | "LOSE" | "CLOSE" | "WIN";
+export type RivalDetailFilter = "ALL" | "LOSE" | "CLOSE" | "WIN" | "THEIRS_ONLY";
 export type RivalDetailSort = "DIFF_ASC" | "DIFF_DESC" | "CLOSE" | "TITLE";
 
 /** 속성별 곡 목록의 한 줄. rate·stage·score는 상대, myRate·myStage·myScore는 나(둘 다 기록이 있는 곡만 나온다). */
@@ -637,20 +642,34 @@ export interface RivalDetailRow {
   rate: number;
   stage: AchievementStage;
   score: number;
-  myRate: number;
-  myStage: AchievementStage;
-  myScore: number;
+  /** 나 쪽 값. 상대만 필터(THEIRS_ONLY)의 줄은 내 기록이 없어 null이다. */
+  myRate: number | null;
+  myStage: AchievementStage | null;
+  myScore: number | null;
   /** 점수 차(옛 필드). 판정·정렬에는 쓰이지 않는다. */
-  diff: number;
+  diff: number | null;
   /** 달성률 차(%p) = myRate − rate. 판정·정렬 기준(D67 개정). 옛 응답에는 없을 수 있어 없으면 myRate − rate로 계산한다. */
-  rateDiff?: number;
+  rateDiff?: number | null;
+}
+
+/** 속성 안 서열 난이도(0.1 단위) 한 줄(2026-11-10). 승·무·패·접전은 달성률 차 기준, rateDiffAvg는 공유 곡 평균 달성률 차(%p). */
+export interface RivalDetailTier {
+  tier: number;
+  wins: number;
+  ties: number;
+  losses: number;
+  closeCount: number;
+  sharedCount: number;
+  rateDiffAvg: number | null;
 }
 
 export interface RivalSummaryDetailResponse {
   userId: number;
   nickname: string;
   summary: RivalPatternSummary;
-  filterCounts: { all: number; lose: number; close: number; win: number };
+  filterCounts: { all: number; lose: number; close: number; win: number; theirsOnly?: number };
+  /** 난이도대별 집계. 옛 응답에는 없을 수 있다. */
+  tiers?: RivalDetailTier[];
   rows: PageResponse<RivalDetailRow>;
 }
 

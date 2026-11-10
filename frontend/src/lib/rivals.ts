@@ -114,6 +114,18 @@ export function formatScoreDiff(diff: number | null): { text: string; sign: "up"
 }
 
 /**
+ * 속성별 레이팅 점수 차(2026-11-10, `ratingScoreDiff`)와 결론 문장의 총점 차를 **소수 첫째 자리**로 쓴다: `+64.0` / `−222.0` / `±0.0`(진짜 마이너스 기호 U+2212).
+ * 부호는 표시하는 첫째 자리 값으로 정한다(부동소수점 찌꺼기로 `+0.0`/`−0.0`이 나오지 않게). 값이 없으면 null.
+ */
+export function formatScoreDiffTenths(diff: number | null | undefined): { text: string; sign: "up" | "down" | "even" } | null {
+  if (diff === null || diff === undefined) return null;
+  const tenths = Math.round(diff * 10);
+  if (tenths > 0) return { text: `+${(tenths / 10).toFixed(1)}`, sign: "up" };
+  if (tenths < 0) return { text: `\u2212${(-tenths / 10).toFixed(1)}`, sign: "down" };
+  return { text: "\u00b10.0", sign: "even" };
+}
+
+/**
  * 속성별 평균 달성률 차(%, D67 개정): 앞이면 `+1.8%`, 뒤면 `−0.4%`(진짜 마이너스 기호 U+2212), 같으면 `±0.0%`(단위는 `%p`가 아니라 `%`로만 쓴다, 2026-11-09).
  * 소수 첫째 자리(곡 줄 칩의 둘째 자리 달성률 차는 `formatRateGap`).
  * 부호가 글자로 보이므로 색만으로 앞뒤를 구분하지 않는다. 값이 없으면(공유 곡 0 · 옛 응답) null이라 부른 쪽이 `–`를 쓴다.

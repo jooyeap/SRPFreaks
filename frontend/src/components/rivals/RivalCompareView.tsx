@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 import { BackLink } from "@/components/BackLink";
@@ -9,15 +8,15 @@ import { Pager } from "@/components/Pager";
 import { ApiError } from "@/lib/api";
 import type { RivalChartRow, RivalRatingRow, RivalResult } from "@/lib/api-types";
 import { formatRate } from "@/lib/format";
-import { ChartBadge } from "@/components/table/Badges";
 import { ChartLine } from "@/components/table/ChartLine";
 import { useJackets } from "@/lib/jackets";
 import { CatchUpSection } from "@/components/rivals/CatchUpSection";
 import { RivalDashboard } from "@/components/rivals/RivalDashboard";
+import { RateDiffChip } from "@/components/rivals/RateDiffChip";
 import { CompareScoreAside } from "@/components/rivals/CompareScoreAside";
 import { Segment } from "@/components/rivals/Segment";
 import { DEFAULT_CHART, DEFAULT_TAB, type DashChart, type DashTab } from "@/lib/rival-dashboard";
-import { fetchCompareCharts, fetchCompareRating, formatRateGap, rivalKeys } from "@/lib/rivals";
+import { fetchCompareCharts, fetchCompareRating, rivalKeys } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 type View = "rating" | "charts";
@@ -36,9 +35,25 @@ const RESULTS: readonly { value: RivalResult; key: "resultWin" | "resultLose" | 
  * 칩은 `+2.28`(내가 앞, 초록) / `−4.37`(내가 뒤, 주황) / `±0.00`(같음) / `내 기록 없음`이고, 부호·글자가 있어서 색만으로 구분하지 않는다.
  * 점수·차이는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다). 재킷은 운영·개인 설정이 켜졌을 때만 칸을 둔다.
  */
-/** 곡별 승패 줄의 차이 칸: 둘째 자리 달성률 차에 `%`를 붙인다(`−0.08%`, 칩과 같은 표기·같은 값). 상대만 기록한 줄(내 달성률 없음)은 `–`. */
-function rateGap(row: RivalChartRow): string {
-  return formatRateGap(row.myRate, row.theirRate)?.text ?? "–";
+/**
+ * 곡별 승패 줄의 오른쪽 열(2026-11-10): 위 `나 95.00` / 가운데 `상대 94.00` 달성률(라벨 글자로 구분) / 아래 달성률 차 칩(RateDiffChip, 내 달성률 − 상대 달성률).
+ * 상대만 기록한 줄은 나 쪽이 `–`이고 칩이 `내 기록 없음`이다. 값은 서버 응답 그대로(응답 불변).
+ */
+function ChartsAside({ row, nickname }: { row: RivalChartRow; nickname: string }) {
+  const t = useTranslations("Rival");
+  return (
+    <div className="flex w-[104px] shrink-0 flex-col items-end gap-0.5">
+      <span className="font-num text-xs leading-4 tabular-nums text-fg" aria-label={t("myRateAria")}>
+        <span className="mr-1 text-[11px] text-fg-dim">{t("mineLabel")}</span>
+        {formatRate(row.myRate)}
+      </span>
+      <span className="font-num text-xs leading-4 tabular-nums text-fg-dim" aria-label={t("theirRateAria", { nickname })}>
+        <span className="mr-1 text-[11px]">{t("theirLabel")}</span>
+        {formatRate(row.theirRate)}
+      </span>
+      <RateDiffChip myRate={row.myRate} rate={row.theirRate} />
+    </div>
+  );
 }
 
 function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: ReturnType<typeof useJackets> }) {
@@ -183,6 +198,7 @@ export function RivalCompareView({
       ) : (
         <section aria-label={t("viewCharts")} className="flex flex-col gap-3">
           <Segment<RivalResult>
+            nowrap
             label={t("resultAria")}
             items={RESULTS.map((r) => ({ value: r.value, text: t(r.key, { n: counts ? counts[r.count] : "–" }) }))}
             value={result}
@@ -200,23 +216,21 @@ export function RivalCompareView({
             <p className="text-sm text-fg-sub">{t("emptyCharts")}</p>
           ) : (
             <>
-              <ul className="rounded-2xl border border-line bg-card">
+              <ul className="overflow-hidden rounded-2xl border border-line bg-card">
                 {charts.data.page.content.map((row: RivalChartRow) => (
-                  <li key={row.songDifficultyId} className="border-t border-row-line first:border-t-0">
-                    <Link href={`/songs/${row.songId}?chart=${row.songDifficultyId}`} className="grid grid-cols-[minmax(0,1fr)_auto_60px] items-center gap-2 px-3 py-2.5 hover:bg-table-head">
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13px] text-fg">{row.title}</span>
-                        <span className="mt-1 flex"><ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} /></span>
-                      </span>
-                      <span className="text-right font-num text-xs">
-                        <span className="block text-fg" aria-label={t("myRateAria")}>{formatRate(row.myRate)}</span>
-                        <span className="block text-fg-dim" aria-label={t("theirRateAria", { nickname: data.nickname })}>{formatRate(row.theirRate)}</span>
-                      </span>
-                      <span className={`whitespace-nowrap text-right font-num text-xs tabular-nums ${row.diff !== null && row.diff > 0 ? "text-done-text" : row.diff !== null && row.diff < 0 ? "text-danger" : "text-fg-dim"}`}>
-                        {rateGap(row)}
-                      </span>
-                    </Link>
-                  </li>
+                  <ChartLine
+                    key={row.songDifficultyId}
+                    className="border-t border-row-line first:border-t-0"
+                    jacket={jackets.visible ? { url: jackets.urlOf(row.songId) } : null}
+                    // compare/charts 응답에는 속성·서열 난이도가 없어 줄 위쪽의 `속성 | 난이도` 칸은 비운다(응답 불변)
+                    pattern={null}
+                    title={row.title}
+                    href={`/songs/${row.songId}?chart=${row.songDifficultyId}`}
+                    part={row.part}
+                    difficulty={row.difficulty}
+                    level={row.level}
+                    aside={<ChartsAside row={row} nickname={data.nickname} />}
+                  />
                 ))}
               </ul>
               <Pager page={page} totalPages={charts.data.page.totalPages} onChange={setPage} />

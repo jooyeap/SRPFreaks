@@ -72,11 +72,11 @@ describe("라이벌 속성 상세 (D67, 6단계)", () => {
     expect(summary).not.toHaveTextContent("※ 5곡 미만"); // 11곡
   });
 
-  it("필터 칩은 전체·열세·접전·우세 순이고 각 곡 수가 들어 있다. 선택한 칩이 눌린 상태다", async () => {
+  it("필터 칩은 전체·열세·접전·우세·상대만 순이고 각 곡 수가 들어 있다. 선택한 칩이 눌린 상태다", async () => {
     show({ filter: "LOSE" });
     await screen.findByRole("heading", { name: /Rumi/ });
     const chips = within(screen.getByRole("group", { name: "필터" })).getAllByRole("button");
-    expect(chips.map((b) => b.textContent)).toEqual(["전체 11", "열세 6", "접전 3", "우세 4"]);
+    expect(chips.map((b) => b.textContent)).toEqual(["전체 11", "열세 6", "접전 3", "우세 4", "상대만 0"]);
     expect(chips[1]).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -145,7 +145,7 @@ describe("라이벌 속성 상세 (D67, 6단계)", () => {
     show();
     expect(await screen.findByRole("heading", { name: "三色 · Rumiとの比較" })).toBeInTheDocument();
     const chips = within(screen.getByRole("group", { name: "絞り込み" })).getAllByRole("button");
-    expect(chips.map((b) => b.textContent)).toEqual(["すべて 11", "劣勢 6", "接戦 3", "優勢 4"]);
+    expect(chips.map((b) => b.textContent)).toEqual(["すべて 11", "劣勢 6", "接戦 3", "優勢 4", "相手のみ 0"]);
     const summary = screen.getByRole("region", { name: "属性サマリー" });
     expect(summary).toHaveTextContent("勝 4 · 分 1 · 敗 6");
     expect(summary).toHaveTextContent("点差の合計");

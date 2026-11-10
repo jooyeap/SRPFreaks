@@ -15,6 +15,7 @@ import { patternLabel } from "@/lib/chart-labels";
 import { formatScore } from "@/lib/format";
 import type { useJackets } from "@/lib/jackets";
 import {
+  conclusionOf,
   dashboardKeys,
   DASH_CHARTS,
   DASH_TABS,
@@ -25,10 +26,11 @@ import {
   isSmallSample,
   mergePreview,
   PREVIEW,
+  recordCounts,
   tabPatterns,
   topPattern,
 } from "@/lib/rival-dashboard";
-import { formatRateDiff, formatScoreDiff } from "@/lib/rivals";
+import { formatRateDiff, formatScoreDiff, formatScoreDiffTenths } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 /** 속성별 상세 구역의 id. 요약 카드를 누르면 이 구역으로 스크롤한다. */
@@ -76,6 +78,63 @@ function UnplayedLine({ pattern }: { pattern: RivalPatternSummary }) {
   if (theirs <= 0 && mine <= 0) return null;
   const parts = [theirs > 0 ? t("Rival.onlyTheirs", { n: theirs }) : null, mine > 0 ? t("Rival.onlyMine", { n: mine }) : null].filter((x) => x !== null);
   return <span className="block text-[11px] text-fg-dim">{parts.join(" · ")}</span>;
+}
+
+const SIGN_TONE = { up: "text-done-text", down: "text-weak-text", even: "text-fg-dim" } as const;
+
+/**
+ * 속성 줄 아래 작은 한 줄 `기록 나 11 · 상대 23곡 · 점수 차 −222.0`(2026-11-10).
+ * 기록 수는 공유 곡 + 한쪽만(있는 값으로 계산), 점수 차는 레이팅 목록 기준(`ratingScoreDiff`, 공유 곡 기준 scoreDiffSum과 다른 값).
+ * 점수 차 색은 부호에 따라 기존 토큰(초록/주황)이고 부호가 글자로 보인다. 값이 없으면(옛 응답) 점수 차 항을 뺀다.
+ */
+function RecordLine({ pattern }: { pattern: RivalPatternSummary }) {
+  const t = useTranslations();
+  const { mine, theirs } = recordCounts(pattern);
+  const diff = formatScoreDiffTenths(pattern.ratingScoreDiff);
+  return (
+    <span className="block font-num text-[11px] text-fg-dim">
+      {t("Rival.recordLine", { mine, theirs })}
+      {diff ? (
+        <>
+          {" · "}
+          <span className={SIGN_TONE[diff.sign]}>{t("Rival.recordScoreDiff", { diff: diff.text })}</span>
+        </>
+      ) : null}
+    </span>
+  );
+}
+
+/**
+ * 요약 카드 아래 결론 문장 카드(2026-11-10, 제목 없음). 첫 줄 `복합 +1.8% 우세 · 삼중 −3.7% 열세`(요약 카드와 같은 평균 달성률 차 기준),
+ * 둘째 줄 작은 글자 `총점 차 −226.7 중 삼중이 −222.0이에요. 삼중은 상대가 12곡 더 기록했어요.`
+ * 둘째 줄의 속성은 속성별 레이팅 점수 차 절댓값이 가장 큰 속성이고, 뒷문장은 열세 속성에서 상대 기록 수가 더 많을 때만 나온다.
+ * 우세·열세가 모두 없고 점수 차도 없으면 카드를 그리지 않는다.
+ */
+function ConclusionCard({ patterns, totalDiff }: { patterns: readonly RivalPatternSummary[]; totalDiff: number }) {
+  const t = useTranslations();
+  const { strong, weak, biggest, moreTheirs } = conclusionOf(patterns);
+  const first = [
+    strong ? t("Rival.conclusionStrong", { pattern: patternLabel(strong.pattern, t), diff: rateDiffText(strong) }) : null,
+    weak ? t("Rival.conclusionWeak", { pattern: patternLabel(weak.pattern, t), diff: rateDiffText(weak) }) : null,
+  ].filter((x) => x !== null);
+  const total = formatScoreDiffTenths(totalDiff);
+  const part = biggest ? formatScoreDiffTenths(biggest.ratingScoreDiff) : null;
+  const second =
+    biggest && total && part
+      ? [
+          t("Rival.conclusionTotal", { total: total.text, pattern: patternLabel(biggest.pattern, t), diff: part.text }),
+          weak && moreTheirs !== null ? t("Rival.conclusionMoreTheirs", { pattern: patternLabel(weak.pattern, t), n: moreTheirs }) : null,
+        ]
+          .filter((x) => x !== null)
+          .join(" ")
+      : null;
+  if (first.length === 0 && second === null) return null;
+  return (
+    <div data-testid="rival-conclusion" className="flex flex-col gap-1 rounded-2xl border border-line bg-card p-3">
+      {first.length > 0 ? <p className="text-sm font-bold text-fg">{first.join(" · ")}</p> : null}
+      {second !== null ? <p className="text-xs leading-4 text-fg-dim">{second}</p> : null}
+    </div>
+  );
 }
 
 /** 작은 승패 막대: 왼쪽 패(주황) · 가운데 무(회색 바탕) · 오른쪽 승(초록). 장식이고 같은 값이 `승 N · 무 N · 패 N` 글자로 있다. */
@@ -245,6 +304,8 @@ export function RivalDashboard({
         })}
       </div>
 
+      <ConclusionCard patterns={patterns} totalDiff={totalDiff} />
+
       <section aria-label={t("Rival.chartAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-3">
         <Segment<DashChart> label={t("Rival.chartAria")} items={DASH_CHARTS.map((value) => ({ value, text: t(`Rival.${CHART_LABEL_KEY[value]}`) }))} value={chart} onChange={onChartChange} />
         {chart === "bar" ? (
@@ -282,6 +343,7 @@ export function RivalDashboard({
                     <span className="block font-num text-[11px] text-fg-dim">{t("Rival.patternWlt", { wins: p.wins, ties: p.ties, losses: p.losses })}</span>
                     {isSmallSample(p) ? <span className="block text-[11px] text-fg-dim">{t("Rival.smallSample")}</span> : null}
                     <UnplayedLine pattern={p} />
+                    <RecordLine pattern={p} />
                   </span>
                   <MiniBar pattern={p} />
                   <PatternValue pattern={p} tab={tab} />
