@@ -222,14 +222,29 @@ class SongChartListServiceTest {
 
     @Test
     void 버전_목록은_빈_값을_빼고_중복_없이_정렬한다() {
-        chart("a", "v2", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
-        chart("b", "v1", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
-        chart("c", "v1", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("a", "ver-b", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("b", "ver-a", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("c", "ver-a", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
         chart("d", null, InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
         stubCharts();
         stubBests(7L);
 
-        assertThat(service.folders(7L).versions()).containsExactly("v1", "v2");
+        assertThat(service.folders(7L).versions()).containsExactly("ver-a", "ver-b");
+    }
+
+    @Test
+    void 폴더_목록의_버전_선택지는_출시일_최신순이고_표에_없는_값은_맨_아래에_이름순으로_붙는다() {
+        chart("a", "GITADORA Matixx", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("b", "zzz-신규", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("c", "GITADORA GALAXY WAVE DELTA", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("d", "XG3", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("e", "aaa-신규", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        stubCharts();
+        stubBests(7L);
+
+        // 표시 이름은 DB 값 그대로(Matixx 별칭 매칭이어도 이름을 바꾸지 않는다)
+        assertThat(service.folders(7L).versions())
+                .containsExactly("GITADORA GALAXY WAVE DELTA", "GITADORA Matixx", "XG3", "aaa-신규", "zzz-신규");
     }
 
     @Test
@@ -254,15 +269,15 @@ class SongChartListServiceTest {
 
     @Test
     void 폴더_목록의_버전_선택지는_필터를_걸어도_줄지_않는다() {
-        chart("a", "v1", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
-        chart("b", "v2", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("a", "ver-a", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
+        chart("b", "ver-b", InstrumentPart.GUITAR, DifficultyType.MASTER, "9.00");
         stubCharts();
         stubBests(7L);
 
-        ChartFolderListResponse result = service.folders(7L, null, null, null, "v2");
+        ChartFolderListResponse result = service.folders(7L, null, null, null, "ver-b");
 
         assertThat(result.totalCharts()).isEqualTo(1);
-        assertThat(result.versions()).containsExactly("v1", "v2");
+        assertThat(result.versions()).containsExactly("ver-a", "ver-b");
     }
 
     @Test
