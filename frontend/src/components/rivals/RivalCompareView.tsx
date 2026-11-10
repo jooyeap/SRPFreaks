@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
+import { BackLink } from "@/components/BackLink";
 import { Pager } from "@/components/Pager";
 import { ApiError } from "@/lib/api";
 import type { RivalChartRow, RivalRatingRow, RivalResult } from "@/lib/api-types";
@@ -106,10 +107,11 @@ export function RivalCompareView({
     placeholderData: (previous) => previous,
   });
 
+  // 뒤로: 같은 사이트 안에서 들어왔으면 들어온 화면으로(마이페이지 라이벌 탭·곡 상세·알림 등), 직접 진입이면 상대 유저 상세로(BackLink, D67 개정)
   const back = (
-    <Link href={`/players/${targetId}`} aria-label={t("backAria")} title={t("backAria")} className={BACK_BUTTON_CLASS}>
+    <BackLink fallbackHref={`/players/${targetId}`} ariaLabel={t("backAria")} className={BACK_BUTTON_CLASS}>
       <BackArrow />
-    </Link>
+    </BackLink>
   );
 
   if (rating.isPending) {
