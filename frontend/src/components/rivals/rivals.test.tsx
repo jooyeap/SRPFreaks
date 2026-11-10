@@ -151,7 +151,9 @@ describe("RivalCompareView", () => {
     renderWith(<RivalCompareView viewerId={1} targetId={7} />);
     fireEvent.click(await screen.findByRole("button", { name: "곡별 승패" }));
 
-    const row = await screen.findByRole("link", { name: /MEGALOVANIA/ });
+    const row = (await screen.findByRole("link", { name: /MEGALOVANIA/ })).closest("li") as HTMLElement;
+    expect(row).toHaveTextContent(/나\s*95\.63/);   // 달성률 자리에 `나`/`상대` 라벨(2026-11-10)
+    expect(row).toHaveTextContent(/상대\s*96\.10/);
     expect(row).toHaveTextContent("95.63");
     expect(row).toHaveTextContent("96.10");
     expect(row).toHaveTextContent("\u22120.47%");   // 차이 칸에 %가 붙고 부호는 글자(−)로 보인다

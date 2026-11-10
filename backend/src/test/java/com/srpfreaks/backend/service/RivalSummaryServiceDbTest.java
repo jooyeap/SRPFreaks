@@ -209,6 +209,56 @@ class RivalSummaryServiceDbTest {
     }
 
     @Test
+    void 속성별_점수_차는_레이팅_목록_기준이고_속성별_값을_더하면_총점_차와_같다() {
+        RivalSummaryResponse r = service.summary(me.getId(), rival.getId());
+
+        // 직접 계산(기본 설정 rating.list_single=15, list_other=25라 후보 전부가 레이팅 목록 안):
+        // 단일: 내 304.00(6.0·95%) - 상대 240.00(6.0·80%) = +64.00
+        // 삼중: 내 3곡(5.6·90% 218.6667 x3 = 656.0000: 공유 1 + 나만 2) - 상대 1곡 218.6667 = +437.3333 -> 437.33
+        // 복합: 내 176.00 - 상대 218.6667 = -42.6667 -> -42.67 / 이중: 내 317.99 - 상대 317.99 = 0.00
+        assertThat(pattern(r, "SINGLE").ratingScoreDiff()).isEqualByComparingTo("64.00");
+        assertThat(pattern(r, "TRIPLE").ratingScoreDiff()).isEqualByComparingTo("437.33");
+        assertThat(pattern(r, "COMPOUND").ratingScoreDiff()).isEqualByComparingTo("-42.67");
+        assertThat(pattern(r, "DOUBLE").ratingScoreDiff()).isEqualByComparingTo("0.00");
+        assertThat(pattern(r, "COMPOSITE_SINGLE").ratingScoreDiff()).isEqualByComparingTo("0.00");
+        // 총점 차는 반올림 전 합의 차 458.6667(내 1453.9900 - 상대 995.3233)이다. 속성별 값은 각각 둘째 자리로 반올림하므로 합(458.66)과 총점 차의 차이는 반올림 오차(최대 0.01 x 속성 수) 안이다
+        BigDecimal sum = r.patterns().stream().map(RivalSummaryResponse.PatternSummary::ratingScoreDiff)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(sum).isBetween(new BigDecimal("458.64"), new BigDecimal("458.69"));
+    }
+
+    @Test
+    void 속성_상세의_상대만_필터와_난이도대별_집계가_실제_DB_값으로_맞다() {
+        // 상대만 기록한 삼중 2곡(5.6·85%, 5.5·70%)과 나만 기록한 삼중은 build()에 이미 2곡(5.6)이 있다
+        SongDifficulty t1 = chart("5.6", PatternType.TRIPLE, true);
+        record(rival, t1, "85.00");
+        SongDifficulty t2 = chart("5.5", PatternType.TRIPLE, true);
+        record(rival, t2, "70.00");
+        em.flush();
+        em.clear();
+
+        RivalSummaryDetailResponse only = service.detail(me.getId(), rival.getId(), "TRIPLE", "THEIRS_ONLY", null, 0, 20);
+
+        assertThat(only.filterCounts().theirsOnly()).isEqualTo(2);
+        assertThat(only.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId)
+                .containsExactly(t1.getId(), t2.getId());   // 상대 달성률 높은 순
+        assertThat(only.rows().content()).allSatisfy(row -> {
+            assertThat(row.myRate()).isNull();
+            assertThat(row.rateDiff()).isNull();
+        });
+        // 난이도대별: 5.6(공유 1곡 무 + 상대만 1곡·나만 2곡은 판정 밖), 5.5(상대만 1곡이라 공유 0)
+        assertThat(only.tiers()).extracting(RivalSummaryDetailResponse.TierRow::tier).usingElementComparator(BigDecimal::compareTo)
+                .containsExactly(new BigDecimal("5.6"), new BigDecimal("5.5"));
+        assertThat(only.tiers().get(0).sharedCount()).isEqualTo(1);
+        assertThat(only.tiers().get(0).ties()).isEqualTo(1);
+        assertThat(only.tiers().get(1).sharedCount()).isZero();
+        assertThat(only.tiers().get(1).rateDiffAvg()).isNull();
+        // 같은 정의의 곡별 승패 `상대만` 개수와 같다
+        assertThat(rivalService.compareCharts(me.getId(), rival.getId(), "THEIRS_ONLY", 0, 20).counts().theirsOnly())
+                .isEqualTo(only.filterCounts().theirsOnly());
+    }
+
+    @Test
     void 방향이_뒤집히면_차이_부호가_뒤집힌다() {
         RivalSummaryResponse r = service.summary(rival.getId(), me.getId());
 

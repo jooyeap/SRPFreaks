@@ -221,4 +221,99 @@ class RivalSummaryServiceTest {
         tripleLosses(1);
         assertThat(service.detail(1L, 2L, "Triple", null, null, 0, 20).summary().sharedCount()).isEqualTo(1);
     }
+
+    // ---------- 2026-11-10: 속성별 점수 차 / 상대만 필터 / 난이도대별 ----------
+
+    @Test
+    void 요약의_속성별_점수_차는_레이팅_목록_속성별_합의_차이고_속성별_합이_총점_차와_같다() {
+        tripleLosses(1);
+        Map<PatternType, BigDecimal> mine = new java.util.EnumMap<>(PatternType.class);
+        mine.put(PatternType.SINGLE, new BigDecimal("304.00"));
+        mine.put(PatternType.TRIPLE, new BigDecimal("440.00"));
+        Map<PatternType, BigDecimal> theirs = new java.util.EnumMap<>(PatternType.class);
+        theirs.put(PatternType.SINGLE, new BigDecimal("240.00"));
+        theirs.put(PatternType.TRIPLE, new BigDecimal("662.00"));
+        Map<Long, Map<PatternType, BigDecimal>> lists = new LinkedHashMap<>();
+        lists.put(1L, mine);
+        lists.put(2L, theirs);
+        when(skillService.ratingListScoreByPattern(org.mockito.ArgumentMatchers.anyMap())).thenReturn(lists);
+
+        RivalSummaryResponse r = service.summary(1L, 2L);
+
+        assertThat(r.patterns().stream().filter(p -> p.key().equals("SINGLE")).findFirst().orElseThrow().ratingScoreDiff())
+                .isEqualByComparingTo("64.00");
+        assertThat(r.patterns().stream().filter(p -> p.key().equals("TRIPLE")).findFirst().orElseThrow().ratingScoreDiff())
+                .isEqualByComparingTo("-222.00");
+        // 총점 차 = 내 총점 744.00 - 상대 총점 902.00 = -158.00 = 64.00 + (-222.00)
+        BigDecimal sum = r.patterns().stream().map(RivalSummaryResponse.PatternSummary::ratingScoreDiff)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(sum).isEqualByComparingTo("-158.00");
+    }
+
+    @Test
+    void 속성별_점수_차를_구하지_못하는_호출에서는_null이다() {
+        tripleLosses(1);   // skillService.ratingListScoreByPattern은 mock이라 null을 돌려준다
+
+        assertThat(service.summary(1L, 2L).patterns()).allSatisfy(p -> assertThat(p.ratingScoreDiff()).isNull());
+    }
+
+    @Test
+    void 상대만_필터는_상대만_기록한_곡을_상대_달성률_높은_순으로_내_기록_없이_내려준다() {
+        // 삼중: 둘 다 기록 1곡(id 1), 상대만 2곡(id 2: 85.00, id 3: 92.00), 나만 1곡(id 4). 이중에도 상대만 1곡(속성이 다르면 섞이지 않는다)
+        charts(List.of(chart(1, PatternType.TRIPLE, "200.00", "90.00"), chart(4, PatternType.TRIPLE, "200.00", "70.00")),
+                List.of(chart(1, PatternType.TRIPLE, "200.00", "90.00"), chart(2, PatternType.TRIPLE, "200.00", "85.00"),
+                        chart(3, PatternType.TRIPLE, "200.00", "92.00"), chart(5, PatternType.DOUBLE, "200.00", "99.00")));
+
+        RivalSummaryDetailResponse r = service.detail(1L, 2L, "TRIPLE", "THEIRS_ONLY", null, 0, 20);
+
+        assertThat(r.filterCounts().theirsOnly()).isEqualTo(2);
+        assertThat(r.filterCounts().all()).isEqualTo(1);            // 공유 곡은 1곡
+        assertThat(r.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(3L, 2L);
+        assertThat(r.rows().totalElements()).isEqualTo(2);
+        RivalSummaryDetailResponse.Row first = r.rows().content().get(0);
+        assertThat(first.rate()).isEqualByComparingTo("92.00");
+        assertThat(first.myRate()).isNull();
+        assertThat(first.myScore()).isNull();
+        assertThat(first.rateDiff()).isNull();
+        // 판정·평균은 공유 곡만(미플레이는 0%로 보지 않는다)
+        assertThat(r.summary().sharedCount()).isEqualTo(1);
+        assertThat(r.summary().onlyTheirs()).isEqualTo(2);
+        assertThat(r.summary().onlyMine()).isEqualTo(1);
+    }
+
+    @Test
+    void 상대만_필터는_곡명_정렬을_고를_수_있고_페이지를_나눈다() {
+        charts(List.of(), List.of(chart(2, PatternType.TRIPLE, "200.00", "85.00"), chart(3, PatternType.TRIPLE, "200.00", "92.00"),
+                chart(4, PatternType.TRIPLE, "200.00", "80.00")));
+
+        RivalSummaryDetailResponse byTitle = service.detail(1L, 2L, "TRIPLE", "THEIRS_ONLY", "TITLE", 0, 2);
+        RivalSummaryDetailResponse page2 = service.detail(1L, 2L, "TRIPLE", "THEIRS_ONLY", null, 1, 2);
+
+        assertThat(byTitle.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(2L, 3L);
+        assertThat(byTitle.rows().totalPages()).isEqualTo(2);
+        assertThat(page2.rows().content()).extracting(RivalSummaryDetailResponse.Row::songDifficultyId).containsExactly(4L);   // 달성률 순: 92, 85 | 80
+    }
+
+    @Test
+    void 속성_상세는_난이도대별_집계를_담고_공유_곡이_없는_난이도는_빈_줄이다() {
+        charts(List.of(chart(1, PatternType.TRIPLE, "200.00", "96.00"), chart(2, PatternType.TRIPLE, "200.00", "80.00")),
+                List.of(chart(1, PatternType.TRIPLE, "200.00", "94.00"), chart(2, PatternType.TRIPLE, "200.00", "84.00"),
+                        tierChart(3, PatternType.TRIPLE, "5.5", "70.00")));
+
+        RivalSummaryDetailResponse r = service.detail(1L, 2L, "TRIPLE", null, null, 0, 20);
+
+        assertThat(r.tiers()).extracting(RivalSummaryDetailResponse.TierRow::tier).usingElementComparator(BigDecimal::compareTo)
+                .containsExactly(new BigDecimal("5.6"), new BigDecimal("5.5"));
+        assertThat(r.tiers().get(0).wins()).isEqualTo(1);
+        assertThat(r.tiers().get(0).losses()).isEqualTo(1);
+        assertThat(r.tiers().get(0).rateDiffAvg()).isEqualByComparingTo("-1.0");
+        assertThat(r.tiers().get(1).sharedCount()).isZero();
+        assertThat(r.tiers().get(1).rateDiffAvg()).isNull();
+    }
+
+    private static SkillService.ScoredChart tierChart(long id, PatternType pattern, String tier, String rate) {
+        RatingCandidate c = new RatingCandidate(id, 100 + id, "곡" + id, "GUITAR", "MASTER", new BigDecimal("9.50"),
+                new BigDecimal(tier), pattern.getLabel(), new BigDecimal(rate), false, null);
+        return new SkillService.ScoredChart(c, pattern, new BigDecimal("200.00"));
+    }
 }

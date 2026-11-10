@@ -5,7 +5,9 @@ import Link from "next/link";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 import { Pager } from "@/components/Pager";
 import { CompareScoreAside } from "@/components/rivals/CompareScoreAside";
+import { RivalTierBars } from "@/components/rivals/RivalBarChart";
 import { Segment } from "@/components/rivals/Segment";
+import { SetlistAddCell } from "@/components/rivals/SetlistAddCell";
 import { ChartLine } from "@/components/table/ChartLine";
 import { ApiError } from "@/lib/api";
 import type { RivalDetailFilter, RivalPatternKey } from "@/lib/api-types";
@@ -23,7 +25,7 @@ import {
 import { formatScoreDiff } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
-const FILTER_LABEL_KEY = { all: "filterAll", lose: "filterLose", close: "filterClose", win: "filterWin" } as const;
+const FILTER_LABEL_KEY = { all: "filterAll", lose: "filterLose", close: "filterClose", win: "filterWin", theirsOnly: "filterTheirs" } as const;
 
 /**
  * 라이벌 대시보드의 속성 상세(D67, 6단계): `/players/{id}/compare/{속성 키}`. 한 속성의 두 사람 공유 곡을 곡 줄로 보여 준다.
@@ -81,7 +83,7 @@ export function RivalPatternDetailView({
     );
   }
 
-  const { summary, filterCounts, rows } = query.data;
+  const { summary, filterCounts, rows, tiers } = query.data;
   const label = patternLabel(summary.pattern, t);
   return (
     <div className="flex flex-col gap-4">
@@ -105,9 +107,18 @@ export function RivalPatternDetailView({
         {isSmallSample(summary) ? <p className="col-span-3 text-[11px] text-fg-dim">{t("Rival.smallSample")}</p> : null}
       </section>
 
+      {tiers && tiers.length > 0 ? (
+        <section aria-label={t("Rival.tierTitle")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-3">
+          <h2 className="text-sm font-bold text-fg">{t("Rival.tierTitle")}</h2>
+          <RivalTierBars tiers={tiers} />
+          <p className="text-xs text-fg-dim">{t("Rival.barLegend")}</p>
+        </section>
+      ) : null}
+
       <Segment<RivalDetailFilter>
+        nowrap
         label={t("Rival.filterAria")}
-        items={DETAIL_FILTERS.map((f) => ({ value: f.value, text: t(`Rival.${FILTER_LABEL_KEY[f.count]}`, { n: filterCounts[f.count] }) }))}
+        items={DETAIL_FILTERS.map((f) => ({ value: f.value, text: t(`Rival.${FILTER_LABEL_KEY[f.count]}`, { n: filterCounts[f.count] ?? 0 }) }))}
         value={filter}
         onChange={onFilterChange}
       />
@@ -129,7 +140,20 @@ export function RivalPatternDetailView({
                 part={row.part}
                 difficulty={row.difficulty}
                 level={row.level}
-                aside={<CompareScoreAside score={row.score} myScore={row.myScore} myRate={row.myRate} rate={row.rate} />}
+                aside={
+                  filter === "THEIRS_ONLY" ? (
+                    // 상대만 기록한 곡: 내 기록이 없어 `내 기록 없음` 칩 + 줄별 `담기`(한꺼번에 담기는 없다, D36)
+                    // 줄 높이(68px)에 세로로 다 못 들어가므로 점수·칩 열 옆에 `담기`를 둔다
+                    <div className="flex shrink-0 items-center gap-2.5">
+                      <CompareScoreAside score={row.score} myScore={null} myRate={null} rate={row.rate} />
+                      <div className="w-[48px]">
+                        <SetlistAddCell viewerId={viewerId} songDifficultyId={row.songDifficultyId} title={row.title} />
+                      </div>
+                    </div>
+                  ) : (
+                    <CompareScoreAside score={row.score} myScore={row.myScore} myRate={row.myRate} rate={row.rate} />
+                  )
+                }
               />
             ))}
           </ul>

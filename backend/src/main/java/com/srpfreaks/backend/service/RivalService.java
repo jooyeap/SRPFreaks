@@ -238,13 +238,8 @@ public class RivalService {
 
         List<RivalChartRow> rows;
         if (wanted == Result.THEIRS_ONLY) {
-            Set<Long> myIds = mine.stream().map(m -> m.candidate().songDifficultyId()).collect(Collectors.toSet());
-            rows = theirs.stream()
-                    .filter(t -> RivalSummaryCalculator.PATTERN_ORDER.contains(t.pattern()))
-                    .filter(t -> !myIds.contains(t.candidate().songDifficultyId()))
-                    .sorted(Comparator.comparing((SkillService.ScoredChart t) -> t.candidate().bestRate(), Comparator.reverseOrder())
-                            .thenComparing((SkillService.ScoredChart t) -> t.candidate().level(), Comparator.reverseOrder())
-                            .thenComparing(t -> t.candidate().songDifficultyId()))
+            // 속성 상세의 `상대만` 필터와 같은 정의(RivalSummaryCalculator.onlyTheirsCharts)를 쓴다
+            rows = RivalSummaryCalculator.onlyTheirsCharts(mine, theirs).stream()
                     .map(t -> chartRow(t.candidate(), null, null))
                     .toList();
         } else {

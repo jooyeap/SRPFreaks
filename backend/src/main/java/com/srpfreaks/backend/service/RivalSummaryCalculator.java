@@ -43,8 +43,12 @@ public final class RivalSummaryCalculator {
     public static final List<PatternType> PATTERN_ORDER = List.of(
             PatternType.SINGLE, PatternType.COMPOUND, PatternType.COMPOSITE_SINGLE, PatternType.DOUBLE, PatternType.TRIPLE);
 
-    /** 곡 목록 필터(화이트리스트). 달성률 차 기준: LOSE = 차 < 0, CLOSE = |차| <= CLOSE_MARGIN, WIN = 차 > 0. */
-    public enum Filter { ALL, LOSE, CLOSE, WIN }
+    /**
+     * 곡 목록 필터(화이트리스트). 달성률 차 기준: LOSE = 차 < 0, CLOSE = |차| <= CLOSE_MARGIN, WIN = 차 > 0.
+     * THEIRS_ONLY(2026-11-10)는 상대만 기록한(나는 기록이 없는) 레이팅 대상 채보다. 공유 곡이 아니라서 {@link #matches}는 항상 false이고
+     * 목록은 {@link #onlyTheirsCharts}로 따로 만든다(곡별 승패 `상대만` 탭과 같은 정의).
+     */
+    public enum Filter { ALL, LOSE, CLOSE, WIN, THEIRS_ONLY }
 
     /** 곡 목록 정렬(화이트리스트). 같은 값이면 레벨 높은 순 -> 채보 id 순으로 고정한다. */
     public enum Sort { DIFF_ASC, DIFF_DESC, CLOSE, TITLE }
@@ -142,13 +146,22 @@ public final class RivalSummaryCalculator {
     }
 
     public static RivalSummaryResponse summarize(Long userId, String nickname, List<Shared> shared, Unmatched unmatched) {
+        return summarize(userId, nickname, shared, unmatched, Map.of());
+    }
+
+    /**
+     * ratingScoreDiff = 속성별 레이팅 목록 기준 점수 차(내 - 상대, 반올림하지 않은 합의 차를 둘째 자리로). 속성 키가 없으면 그 속성은 0.00이다.
+     * 레이팅 목록 계산을 못 구한 호출(빈 맵)이면 모든 속성이 null이다.
+     */
+    public static RivalSummaryResponse summarize(Long userId, String nickname, List<Shared> shared, Unmatched unmatched,
+                                                 Map<PatternType, BigDecimal> ratingScoreDiff) {
         Map<PatternType, List<Shared>> byPattern = byPattern(shared);
         List<RivalSummaryResponse.PatternSummary> patterns = new ArrayList<>();
         List<RivalSummaryResponse.PatternDiffs> distribution = new ArrayList<>();
         List<RivalSummaryResponse.PatternDiffs> rateDistribution = new ArrayList<>();
         for (PatternType pattern : PATTERN_ORDER) {
             List<Shared> rows = byPattern.getOrDefault(pattern, List.of());
-            patterns.add(patternSummary(pattern, rows, unmatched));
+            patterns.add(patternSummary(pattern, rows, unmatched, ratingScoreDiff));
             distribution.add(new RivalSummaryResponse.PatternDiffs(pattern.getLabel(), pattern.name(),
                     rows.stream().map(Shared::diff).sorted().toList()));
             rateDistribution.add(new RivalSummaryResponse.PatternDiffs(pattern.getLabel(), pattern.name(),
@@ -165,6 +178,12 @@ public final class RivalSummaryCalculator {
 
     public static RivalSummaryResponse.PatternSummary patternSummary(PatternType pattern, List<Shared> rows,
                                                                      Unmatched unmatched) {
+        return patternSummary(pattern, rows, unmatched, Map.of());
+    }
+
+    public static RivalSummaryResponse.PatternSummary patternSummary(PatternType pattern, List<Shared> rows,
+                                                                     Unmatched unmatched,
+                                                                     Map<PatternType, BigDecimal> ratingScoreDiff) {
         int wins = 0;
         int ties = 0;
         int losses = 0;
@@ -190,7 +209,84 @@ public final class RivalSummaryCalculator {
         }
         return new RivalSummaryResponse.PatternSummary(pattern.getLabel(), pattern.name(), wins, ties, losses,
                 sum.setScale(2), close, rows.size(), rateDiffAvg(rateDiffSum, rateCount), unmatched.theirs(pattern),
-                unmatched.mine(pattern));
+                unmatched.mine(pattern), ratingScoreDiff.isEmpty() ? null
+                        : RatingCalculator.display(ratingScoreDiff.getOrDefault(pattern, BigDecimal.ZERO)));
+    }
+
+    /**
+     * 속성별 레이팅 목록 점수 차(반올림 전): (내 레이팅 목록 속성별 점수 합) - (상대 레이팅 목록 속성별 점수 합).
+     * 입력은 {@code SkillService.ratingListScoreByPattern}의 두 사람 값(속성별 반올림하지 않은 합)이다. 어느 한쪽에만 있는 속성도 0으로 보고 뺀다.
+     * 속성별 값을 모두 더하면 총점 차와 같다(총점이 레이팅 목록 40채보 점수 합이라서). 입력이 하나도 없으면 빈 맵(= 계산 못 함).
+     */
+    public static Map<PatternType, BigDecimal> ratingScoreDiff(Map<PatternType, BigDecimal> mine, Map<PatternType, BigDecimal> theirs) {
+        if (mine == null || theirs == null) {
+            return Map.of();
+        }
+        Map<PatternType, BigDecimal> diff = new EnumMap<>(PatternType.class);
+        for (PatternType p : PATTERN_ORDER) {
+            diff.put(p, mine.getOrDefault(p, BigDecimal.ZERO).subtract(theirs.getOrDefault(p, BigDecimal.ZERO)));
+        }
+        return diff;
+    }
+
+    /**
+     * 상대만 기록한(나는 기록이 없는) 레이팅 대상 채보(속성 목록 안). 곡별 승패의 `상대만` 탭과 속성 상세의 `상대만` 필터가 같은 정의를 쓰도록 여기 한 곳에 둔다.
+     * 순서는 상대 달성률 높은 순 → 레벨 높은 순 → 채보 id.
+     */
+    public static List<SkillService.ScoredChart> onlyTheirsCharts(List<SkillService.ScoredChart> mine,
+                                                                 List<SkillService.ScoredChart> theirs) {
+        java.util.Set<Long> myIds = new java.util.HashSet<>();
+        for (SkillService.ScoredChart m : mine) {
+            myIds.add(m.candidate().songDifficultyId());
+        }
+        return theirs.stream()
+                .filter(t -> PATTERN_ORDER.contains(t.pattern()))
+                .filter(t -> !myIds.contains(t.candidate().songDifficultyId()))
+                .sorted(Comparator.comparing((SkillService.ScoredChart t) -> t.candidate().bestRate(), Comparator.reverseOrder())
+                        .thenComparing((SkillService.ScoredChart t) -> t.candidate().level(), Comparator.reverseOrder())
+                        .thenComparing(t -> t.candidate().songDifficultyId()))
+                .toList();
+    }
+
+    /** 나만 기록한(상대는 기록이 없는) 레이팅 대상 채보(속성 목록 안). 난이도대별 집계에서 공유 곡이 없는 난이도도 한 줄로 보이게 하는 데만 쓴다. */
+    public static List<SkillService.ScoredChart> onlyMineCharts(List<SkillService.ScoredChart> mine,
+                                                               List<SkillService.ScoredChart> theirs) {
+        return onlyTheirsCharts(theirs, mine);
+    }
+
+    /** 상대만 기록한 곡 한 줄. 내 기록 필드(myRate·myStage·myScore·diff·rateDiff)는 모두 null이다. */
+    public static RivalSummaryDetailResponse.Row toTheirsOnlyRow(SkillService.ScoredChart t) {
+        RatingCandidate c = t.candidate();
+        return new RivalSummaryDetailResponse.Row(c.songDifficultyId(), c.songId(), c.title(),
+                InstrumentPart.valueOf(c.part()), DifficultyType.valueOf(c.difficulty()), c.level(), c.tier(),
+                t.pattern().getLabel(), c.bestRate(), AchievementStage.of(c.bestRate(), c.fullCombo()),
+                RatingCalculator.display(t.score()), null, null, null, null, null);
+    }
+
+    /**
+     * 한 속성의 난이도대별(서열표 기준 난이도 0.1 단위, 높은 난이도 먼저) 집계. 두 사람 중 누구라도 그 속성에 기록한 곡이 있는 난이도마다 한 줄이고,
+     * 공유 곡이 없는 난이도는 sharedCount 0 / rateDiffAvg null이다. 승·무·패·접전은 속성 요약과 같은 달성률 차 기준이다.
+     */
+    public static List<RivalSummaryDetailResponse.TierRow> tierRows(List<Shared> shared,
+                                                                    List<SkillService.ScoredChart> onlyOne) {
+        Map<BigDecimal, List<Shared>> byTier = new TreeMap<>(Comparator.reverseOrder());
+        for (Shared s : shared) {
+            byTier.computeIfAbsent(tierKey(s.chart().tier()), k -> new ArrayList<>()).add(s);
+        }
+        for (SkillService.ScoredChart c : onlyOne) {
+            byTier.computeIfAbsent(tierKey(c.candidate().tier()), k -> new ArrayList<>());
+        }
+        List<RivalSummaryDetailResponse.TierRow> rows = new ArrayList<>();
+        byTier.forEach((tier, list) -> {
+            RivalSummaryResponse.PatternSummary p = patternSummary(PatternType.SINGLE, list);
+            rows.add(new RivalSummaryDetailResponse.TierRow(tier, p.wins(), p.ties(), p.losses(), p.closeCount(),
+                    p.sharedCount(), p.rateDiffAvg()));
+        });
+        return rows;
+    }
+
+    private static BigDecimal tierKey(BigDecimal tier) {
+        return tier.setScale(1, java.math.RoundingMode.HALF_UP);
     }
 
     /**
@@ -271,10 +367,15 @@ public final class RivalSummaryCalculator {
             case LOSE -> s.rateDiff().signum() < 0;
             case CLOSE -> s.isClose();
             case WIN -> s.rateDiff().signum() > 0;
+            case THEIRS_ONLY -> false;   // 공유 곡이 아니다. 상대만 기록한 곡은 onlyTheirsCharts로 따로 센다
         };
     }
 
     public static RivalSummaryDetailResponse.FilterCounts filterCounts(List<Shared> rows) {
+        return filterCounts(rows, 0);
+    }
+
+    public static RivalSummaryDetailResponse.FilterCounts filterCounts(List<Shared> rows, int theirsOnly) {
         int lose = 0;
         int close = 0;
         int win = 0;
@@ -283,7 +384,7 @@ public final class RivalSummaryCalculator {
             close += matches(Filter.CLOSE, s) ? 1 : 0;
             win += matches(Filter.WIN, s) ? 1 : 0;
         }
-        return new RivalSummaryDetailResponse.FilterCounts(rows.size(), lose, close, win);
+        return new RivalSummaryDetailResponse.FilterCounts(rows.size(), lose, close, win, theirsOnly);
     }
 
     /** 정렬을 안 정했을 때의 기본: 열세·전체는 많이 뒤진 순, 우세는 많이 앞선 순, 접전은 차이가 작은 순. */
@@ -292,6 +393,7 @@ public final class RivalSummaryCalculator {
             case ALL, LOSE -> Sort.DIFF_ASC;
             case WIN -> Sort.DIFF_DESC;
             case CLOSE -> Sort.CLOSE;
+            case THEIRS_ONLY -> Sort.TITLE;   // 상대만 목록은 정렬 인자를 쓰지 않는다(상대 달성률 높은 순 고정). 이 값은 자리 채움이다
         };
     }
 

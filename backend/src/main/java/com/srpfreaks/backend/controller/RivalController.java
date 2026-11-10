@@ -95,7 +95,7 @@ public class RivalController {
     }
 
     /**
-     * 속성별 곡 목록(D67). key = SINGLE·COMPOUND·COMPOSITE_SINGLE·DOUBLE·TRIPLE, filter = ALL·LOSE·CLOSE·WIN,
+     * 속성별 곡 목록(D67). key = SINGLE·COMPOUND·COMPOSITE_SINGLE·DOUBLE·TRIPLE, filter = ALL·LOSE·CLOSE·WIN·THEIRS_ONLY(상대만, 2026-11-10),
      * sort = DIFF_ASC·DIFF_DESC·CLOSE·TITLE(비우면 필터에 맞는 기본). 허용 밖의 값은 400.
      */
     @GetMapping("/players/{userId}/compare/summary/{key}")

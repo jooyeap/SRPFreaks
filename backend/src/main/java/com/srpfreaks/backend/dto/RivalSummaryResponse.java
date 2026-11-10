@@ -33,20 +33,32 @@ public record RivalSummaryResponse(Long userId, String nickname, BigDecimal clos
      * 달성률은 DB에 저장된 둘째 자리 값 그대로 뺀다(점수와 달리 95%에서 멈추지 않는다). 공유 곡이 0이면 null.
      * wins·ties·losses·closeCount는 달성률 차 기준이다(D67 개정). scoreDiffSum은 점수 차 합계로 옛 필드라 남겨 두었고 판정에 쓰지 않는다.
      * onlyTheirs = 상대만 기록한(나는 기록이 없는) 레이팅 대상 곡 수, onlyMine = 나만 기록한 곡 수. 승·무·패·평균에 넣지 않는다(0%로 보지 않는다).
+     *
+     * <p>ratingScoreDiff(2026-11-10 추가) = **레이팅 목록 기준 속성별 점수 차** = (내 레이팅 목록 40채보 중 그 속성 채보의 점수 합) -
+     * (상대 레이팅 목록 40채보 중 그 속성 채보의 점수 합)(반올림하지 않은 점수 합의 차를 둘째 자리로 한 번만 반올림). 속성별 값을 모두 더하면
+     * 두 사람의 총점 차와 같다(총점이 레이팅 목록 40채보의 점수 합이기 때문). 기존 scoreDiffSum은 "공유한 곡" 전체의 점수 차 합계(옛 필드)라 다른 값이다.
+     * 레이팅 목록 계산을 못 읽은 옛 호출처에서는 null이다.
      */
     public record PatternSummary(String pattern, String key, int wins, int ties, int losses, BigDecimal scoreDiffSum,
-                                 int closeCount, int sharedCount, BigDecimal rateDiffAvg, int onlyTheirs, int onlyMine) {
+                                 int closeCount, int sharedCount, BigDecimal rateDiffAvg, int onlyTheirs, int onlyMine,
+                                 BigDecimal ratingScoreDiff) {
+
+        /** 예전 11개 인자 생성자(레이팅 목록 기준 점수 차 없음). */
+        public PatternSummary(String pattern, String key, int wins, int ties, int losses, BigDecimal scoreDiffSum,
+                              int closeCount, int sharedCount, BigDecimal rateDiffAvg, int onlyTheirs, int onlyMine) {
+            this(pattern, key, wins, ties, losses, scoreDiffSum, closeCount, sharedCount, rateDiffAvg, onlyTheirs, onlyMine, null);
+        }
 
         /** 예전 9개 인자 생성자(미플레이 수 없음). */
         public PatternSummary(String pattern, String key, int wins, int ties, int losses, BigDecimal scoreDiffSum,
                               int closeCount, int sharedCount, BigDecimal rateDiffAvg) {
-            this(pattern, key, wins, ties, losses, scoreDiffSum, closeCount, sharedCount, rateDiffAvg, 0, 0);
+            this(pattern, key, wins, ties, losses, scoreDiffSum, closeCount, sharedCount, rateDiffAvg, 0, 0, null);
         }
 
         /** 예전 8개 인자 생성자(달성률 차 평균·미플레이 수 없음). 기존 호출처가 그대로 컴파일되게 남겨 둔다. */
         public PatternSummary(String pattern, String key, int wins, int ties, int losses, BigDecimal scoreDiffSum,
                               int closeCount, int sharedCount) {
-            this(pattern, key, wins, ties, losses, scoreDiffSum, closeCount, sharedCount, null, 0, 0);
+            this(pattern, key, wins, ties, losses, scoreDiffSum, closeCount, sharedCount, null, 0, 0, null);
         }
     }
 
