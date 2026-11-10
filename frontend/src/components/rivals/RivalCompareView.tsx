@@ -222,8 +222,9 @@ export function RivalCompareView({
                     key={row.songDifficultyId}
                     className="border-t border-row-line first:border-t-0"
                     jacket={jackets.visible ? { url: jackets.urlOf(row.songId) } : null}
-                    // compare/charts 응답에는 속성·서열 난이도가 없어 줄 위쪽의 `속성 | 난이도` 칸은 비운다(응답 불변)
-                    pattern={null}
+                    // 줄 위쪽 `속성 | 서열 난이도`: compare/charts 줄의 pattern·tier(D67 개정). 옛 응답에는 없어 그때는 `–`만 보인다
+                    pattern={row.pattern ?? null}
+                    tier={row.tier}
                     title={row.title}
                     href={`/songs/${row.songId}?chart=${row.songDifficultyId}`}
                     part={row.part}
