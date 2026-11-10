@@ -449,6 +449,27 @@ class RivalSummaryServiceDbTest {
     // ---------- 곡별 승패 보기와 대시보드의 일치(D67 개정) ----------
 
     @Test
+    void 곡별_승패_줄의_속성과_서열_난이도는_속성_상세_목록의_같은_채보와_같다() {
+        // 같은 채보가 두 응답에서 같은 속성 라벨·같은 서열 기준 난이도로 나와야 곡별 승패 줄의 윗줄이 속성 상세와 어긋나지 않는다.
+        var charts = rivalService.compareCharts(me.getId(), rival.getId(), "LOSE", 0, 50);
+        assertThat(charts.page().content()).isNotEmpty();
+        for (var row : charts.page().content()) {
+            var detail = service.detail(me.getId(), rival.getId(), keyOf(row.pattern()), "ALL", null, 0, 50);
+            var same = detail.rows().content().stream()
+                    .filter(r -> r.songDifficultyId().equals(row.songDifficultyId())).findFirst();
+            assertThat(same).as("속성 상세 목록에 같은 채보가 있다: %s", row.songDifficultyId()).isPresent();
+            assertThat(row.pattern()).isEqualTo(same.get().pattern());
+            assertThat(row.tier()).isEqualByComparingTo(same.get().tier());
+        }
+    }
+
+    /** 속성 라벨 → 상세 경로의 영문 키(요약 응답의 pattern·key 쌍으로 찾는다). */
+    private String keyOf(String patternLabel) {
+        return service.summary(me.getId(), rival.getId()).patterns().stream()
+                .filter(p -> p.pattern().equals(patternLabel)).findFirst().orElseThrow().key();
+    }
+
+    @Test
     void 곡별_승패의_탭_개수는_실제_DB에서도_대시보드_totals와_상대만_합계와_같다() {
         // 대시보드 집계와 같은 범위(레이팅 대상 채보 전체)·같은 판정(달성률 차)이어야 한다. build()가 만든 장면을 그대로 쓴다.
         RivalSummaryResponse summary = service.summary(me.getId(), rival.getId());

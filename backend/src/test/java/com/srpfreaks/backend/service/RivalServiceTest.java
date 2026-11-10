@@ -235,6 +235,24 @@ class RivalServiceTest {
     }
 
     @Test
+    void 곡별_승패_줄은_서열표_기준_난이도와_속성_라벨을_함께_준다_상대만_줄도_같다() {
+        // 곡1(단일)은 나도 상대도 기록, 곡2(삼중)는 상대만 기록. 줄의 tier·pattern은 후보의 서열 기준 난이도와 속성 라벨이다.
+        scoredCharts(List.of(scored(1, PatternType.SINGLE, "8.00", "90.00")),
+                List.of(scored(1, PatternType.SINGLE, "8.00", "91.00"), scored(2, PatternType.TRIPLE, "9.50", "96.00")));
+
+        RivalChartRow lose = service.compareCharts(ME, THEM, "lose", 0, 20).page().content().get(0);
+        assertThat(lose.songDifficultyId()).isEqualTo(1L);
+        assertThat(lose.pattern()).isEqualTo(PatternType.SINGLE.getLabel());
+        assertThat(lose.tier()).isEqualByComparingTo("5.6");
+
+        RivalChartRow only = service.compareCharts(ME, THEM, "THEIRS_ONLY", 0, 20).page().content().get(0);
+        assertThat(only.songDifficultyId()).isEqualTo(2L);
+        assertThat(only.myRate()).isNull();
+        assertThat(only.pattern()).isEqualTo(PatternType.TRIPLE.getLabel());
+        assertThat(only.tier()).isEqualByComparingTo("5.6");
+    }
+
+    @Test
     void 곡별_승패의_개수는_대시보드_집계의_totals와_상대만_합계와_항상_같다() {
         // 레이팅 대상(속성 있음) 채보만 센다. 레이팅 제외 속성(EXCLUDED)은 집계에서 빠진다.
         List<SkillService.ScoredChart> mine = List.of(

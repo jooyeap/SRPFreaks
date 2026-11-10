@@ -162,6 +162,60 @@ describe("RivalCompareView", () => {
     expect(fetchMock.mock.calls.some((c) => urlOf(c).includes("result=LOSE"))).toBe(true);
   });
 
+  it("곡별 승패 줄의 윗줄은 응답의 속성과 서열 난이도로 `속성 | 난이도`가 채워진다 (D67 개정)", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/compare/charts")) {
+        return json({
+          counts: ratingResponse.counts,
+          page: {
+            content: [{ songDifficultyId: 5, songId: 3, title: "MEGALOVANIA", part: "BASS", difficulty: "MASTER", level: 8.65,
+              myRate: 95.63, theirRate: 96.1, diff: -0.47, tier: 5.4, pattern: "복합(단일)" }],
+            page: 0, size: 20, totalElements: 1, totalPages: 1,
+          },
+        });
+      }
+      if (url.includes("/compare/summary/")) return json(emptyDetail);
+      if (url.includes("/compare/summary")) return json(summaryResponse);
+      return json(ratingResponse);
+    });
+    renderWith(<RivalCompareView viewerId={1} targetId={7} />);
+    fireEvent.click(await screen.findByRole("button", { name: "곡별 승패" }));
+
+    const row = (await screen.findByRole("link", { name: /MEGALOVANIA/ })).closest("li") as HTMLElement;
+    expect(row).toHaveTextContent("복합(단일)");
+    expect(row).toHaveTextContent("5.4");
+    // 속성 칸이 더는 `–`가 아니다
+    const top = row.querySelector("p.text-\\[10px\\]") as HTMLElement | null;
+    expect(top?.textContent ?? "").not.toMatch(/^[\s]*–/);
+  });
+
+  it("곡별 승패 줄의 속성·서열 난이도가 없는 옛 응답에서도 깨지지 않고 속성 칸은 `–`로 보인다 (D67 개정)", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/compare/charts")) {
+        return json({
+          counts: ratingResponse.counts,
+          page: {
+            content: [{ songDifficultyId: 5, songId: 3, title: "OLDSHAPE", part: "GUITAR", difficulty: "MASTER", level: 8.65,
+              myRate: 95.63, theirRate: 96.1, diff: -0.47 }],
+            page: 0, size: 20, totalElements: 1, totalPages: 1,
+          },
+        });
+      }
+      if (url.includes("/compare/summary/")) return json(emptyDetail);
+      if (url.includes("/compare/summary")) return json(summaryResponse);
+      return json(ratingResponse);
+    });
+    renderWith(<RivalCompareView viewerId={1} targetId={7} />);
+    fireEvent.click(await screen.findByRole("button", { name: "곡별 승패" }));
+
+    const row = (await screen.findByRole("link", { name: /OLDSHAPE/ })).closest("li") as HTMLElement;
+    expect(row).toHaveTextContent("OLDSHAPE");
+    expect(row).toHaveTextContent("–");
+    expect(row).toHaveTextContent("\u22120.47%");
+  });
+
   it("곡별 승패의 탭 개수는 곡별 승패 응답의 counts를 쓰고(레이팅 비교 응답의 counts가 아니다) 캡션은 상단 요약과 같은 기준이라고 말한다 (D67 개정)", async () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);

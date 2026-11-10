@@ -686,6 +686,10 @@ export interface RivalChartRow {
   myRate: number | null;
   theirRate: number;
   diff: number | null;
+  /** 서열표 기준 난이도(D67 개정). 곡별 승패 줄 윗줄 `속성 | 난이도`의 값. 옛 응답에는 없을 수 있다(없으면 `–`로 보인다). */
+  tier?: number | null;
+  /** 속성 라벨(`복합(단일)` 등, 속성 상세 목록 줄과 같은 형식). 옛 응답에는 없을 수 있다. */
+  pattern?: string | null;
 }
 
 export interface RivalCompareChartsResponse {

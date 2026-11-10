@@ -17,6 +17,7 @@ import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.Rival;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.User;
@@ -240,7 +241,7 @@ public class RivalService {
         if (wanted == Result.THEIRS_ONLY) {
             // 속성 상세의 `상대만` 필터와 같은 정의(RivalSummaryCalculator.onlyTheirsCharts)를 쓴다
             rows = RivalSummaryCalculator.onlyTheirsCharts(mine, theirs).stream()
-                    .map(t -> chartRow(t.candidate(), null, null))
+                    .map(t -> chartRow(t.candidate(), t.pattern(), null, null))
                     .toList();
         } else {
             rows = shared.stream()
@@ -251,7 +252,7 @@ public class RivalService {
                         case THEIRS_ONLY -> false;
                     })
                     .sorted(RivalSummaryCalculator.comparator(RivalSummaryCalculator.Sort.CLOSE))
-                    .map(s -> chartRow(s.chart(), s.mine().candidate().bestRate(), s.rateDiff()))
+                    .map(s -> chartRow(s.chart(), s.pattern(), s.mine().candidate().bestRate(), s.rateDiff()))
                     .toList();
         }
 
@@ -264,10 +265,14 @@ public class RivalService {
                 new PageResponse<>(rows.subList(from, to), pageIndex, pageSize, rows.size(), totalPages));
     }
 
-    /** 곡별 승패 한 줄: 후보(레이팅 대상 채보 + 상대 최고 달성률)에서 곡 정보를 그대로 옮긴다. myRate·diff는 상대만 있는 줄이면 null. */
-    private static RivalChartRow chartRow(RatingCandidate c, BigDecimal myRate, BigDecimal diff) {
+    /**
+     * 곡별 승패 한 줄: 후보(레이팅 대상 채보 + 상대 최고 달성률)에서 곡 정보를 그대로 옮긴다. myRate·diff는 상대만 있는 줄이면 null.
+     * tier는 후보의 서열표 기준 난이도, pattern은 속성 라벨(속성 상세 목록 줄과 같은 값·같은 형식)이다.
+     */
+    private static RivalChartRow chartRow(RatingCandidate c, PatternType pattern, BigDecimal myRate, BigDecimal diff) {
         return new RivalChartRow(c.songDifficultyId(), c.songId(), c.title(), InstrumentPart.valueOf(c.part()),
-                DifficultyType.valueOf(c.difficulty()), c.level(), myRate, c.bestRate(), diff);
+                DifficultyType.valueOf(c.difficulty()), c.level(), myRate, c.bestRate(), diff, c.tier(),
+                pattern == null ? null : pattern.getLabel());
     }
 
     /** 곡 상세의 라이벌 기록: 이 채보에 대한 내 라이벌(볼 수 있는 사람만, 등록 순) 기록과 내 기록과의 차이. */
