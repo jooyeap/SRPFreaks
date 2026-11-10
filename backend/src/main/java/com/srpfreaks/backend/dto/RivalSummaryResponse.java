@@ -38,6 +38,7 @@ public record RivalSummaryResponse(Long userId, String nickname, BigDecimal clos
      * (상대 레이팅 목록 40채보 중 그 속성 채보의 점수 합)(반올림하지 않은 점수 합의 차를 둘째 자리로 한 번만 반올림). 속성별 값을 모두 더하면
      * 두 사람의 총점 차와 같다(총점이 레이팅 목록 40채보의 점수 합이기 때문). 기존 scoreDiffSum은 "공유한 곡" 전체의 점수 차 합계(옛 필드)라 다른 값이다.
      * 레이팅 목록 계산을 못 읽은 옛 호출처에서는 null이다.
+     * 화면은 쓰지 않는다. 레이팅 목록 40칸 구성 차이라 속성 우세와 맞지 않아 표시하지 않기로 함(2026-11-10).
      */
     public record PatternSummary(String pattern, String key, int wins, int ties, int losses, BigDecimal scoreDiffSum,
                                  int closeCount, int sharedCount, BigDecimal rateDiffAvg, int onlyTheirs, int onlyMine,

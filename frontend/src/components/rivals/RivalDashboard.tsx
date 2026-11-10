@@ -30,7 +30,7 @@ import {
   tabPatterns,
   topPattern,
 } from "@/lib/rival-dashboard";
-import { formatRateDiff, formatScoreDiff, formatScoreDiffTenths } from "@/lib/rivals";
+import { formatRateDiff, formatScoreDiff } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 /** 속성별 상세 구역의 id. 요약 카드를 누르면 이 구역으로 스크롤한다. */
@@ -80,54 +80,31 @@ function UnplayedLine({ pattern }: { pattern: RivalPatternSummary }) {
   return <span className="block text-[11px] text-fg-dim">{parts.join(" · ")}</span>;
 }
 
-const SIGN_TONE = { up: "text-done-text", down: "text-weak-text", even: "text-fg-dim" } as const;
-
 /**
- * 속성 줄 아래 작은 한 줄 `기록 나 11 · 상대 23곡 · 점수 차 −222.0`(2026-11-10).
- * 기록 수는 공유 곡 + 한쪽만(있는 값으로 계산), 점수 차는 레이팅 목록 기준(`ratingScoreDiff`, 공유 곡 기준 scoreDiffSum과 다른 값).
- * 점수 차 색은 부호에 따라 기존 토큰(초록/주황)이고 부호가 글자로 보인다. 값이 없으면(옛 응답) 점수 차 항을 뺀다.
+ * 속성 줄 아래 작은 한 줄 `기록 나 157 · 상대 55곡`(2026-11-10).
+ * 기록 수는 공유 곡 + 한쪽만(있는 값으로 계산)이다. 예전에 붙였던 `· 점수 차 …`(`ratingScoreDiff`)는 뺐다(D67 개정):
+ * 레이팅 목록 40칸(단일 15 + 그 외 25)에 각 속성이 얼마나 들어 있는지의 차이라 속성 우세(달성률 차)와 어긋나 보이기 때문이다.
  */
 function RecordLine({ pattern }: { pattern: RivalPatternSummary }) {
   const t = useTranslations();
   const { mine, theirs } = recordCounts(pattern);
-  const diff = formatScoreDiffTenths(pattern.ratingScoreDiff);
-  return (
-    <span className="block font-num text-[11px] text-fg-dim">
-      {t("Rival.recordLine", { mine, theirs })}
-      {diff ? (
-        <>
-          {" · "}
-          <span className={SIGN_TONE[diff.sign]}>{t("Rival.recordScoreDiff", { diff: diff.text })}</span>
-        </>
-      ) : null}
-    </span>
-  );
+  return <span className="block font-num text-[11px] text-fg-dim">{t("Rival.recordLine", { mine, theirs })}</span>;
 }
 
 /**
  * 요약 카드 아래 결론 문장 카드(2026-11-10, 제목 없음). 첫 줄 `복합 +1.8% 우세 · 삼중 −3.7% 열세`(요약 카드와 같은 평균 달성률 차 기준),
- * 둘째 줄 작은 글자 `총점 차 −226.7 중 삼중이 −222.0이에요. 삼중은 상대가 12곡 더 기록했어요.`
- * 둘째 줄의 속성은 속성별 레이팅 점수 차 절댓값이 가장 큰 속성이고, 뒷문장은 열세 속성에서 상대 기록 수가 더 많을 때만 나온다.
- * 우세·열세가 모두 없고 점수 차도 없으면 카드를 그리지 않는다.
+ * 둘째 줄 작은 글자 `삼중은 상대가 12곡 더 기록했어요.` — 열세 속성에서 (상대 기록 − 내 기록) > 0일 때만 나오고, 아니면 둘째 줄 자체를 숨긴다.
+ * 우세·열세가 모두 없고 둘째 줄도 없으면 카드를 그리지 않는다.
  */
-function ConclusionCard({ patterns, totalDiff }: { patterns: readonly RivalPatternSummary[]; totalDiff: number }) {
+function ConclusionCard({ patterns }: { patterns: readonly RivalPatternSummary[] }) {
   const t = useTranslations();
-  const { strong, weak, biggest, moreTheirs } = conclusionOf(patterns);
+  const { strong, weak, moreTheirs } = conclusionOf(patterns);
   const first = [
     strong ? t("Rival.conclusionStrong", { pattern: patternLabel(strong.pattern, t), diff: rateDiffText(strong) }) : null,
     weak ? t("Rival.conclusionWeak", { pattern: patternLabel(weak.pattern, t), diff: rateDiffText(weak) }) : null,
   ].filter((x) => x !== null);
-  const total = formatScoreDiffTenths(totalDiff);
-  const part = biggest ? formatScoreDiffTenths(biggest.ratingScoreDiff) : null;
   const second =
-    biggest && total && part
-      ? [
-          t("Rival.conclusionTotal", { total: total.text, pattern: patternLabel(biggest.pattern, t), diff: part.text }),
-          weak && moreTheirs !== null ? t("Rival.conclusionMoreTheirs", { pattern: patternLabel(weak.pattern, t), n: moreTheirs }) : null,
-        ]
-          .filter((x) => x !== null)
-          .join(" ")
-      : null;
+    weak && moreTheirs !== null ? t("Rival.conclusionMoreTheirs", { pattern: patternLabel(weak.pattern, t), n: moreTheirs }) : null;
   if (first.length === 0 && second === null) return null;
   return (
     <div data-testid="rival-conclusion" className="flex flex-col gap-1 rounded-2xl border border-line bg-card p-3">
@@ -304,7 +281,7 @@ export function RivalDashboard({
         })}
       </div>
 
-      <ConclusionCard patterns={patterns} totalDiff={totalDiff} />
+      <ConclusionCard patterns={patterns} />
 
       <section aria-label={t("Rival.chartAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-3">
         <Segment<DashChart> label={t("Rival.chartAria")} items={DASH_CHARTS.map((value) => ({ value, text: t(`Rival.${CHART_LABEL_KEY[value]}`) }))} value={chart} onChange={onChartChange} />
