@@ -35,33 +35,6 @@ export function ChartBadge({
   );
 }
 
-/**
- * 난이도 알약 하나 (예: `MAS 9.65`, D64 줄 통일). 파트는 알약에 넣지 않고 옆의 PartText가 글자로 보여 준다.
- * 색은 ChartBadge의 난이도 칸과 같은 .chart-chip-diff(data-difficulty)라 EXT도 지금 쓰는 EXT 색 그대로다. 높이 18px, 글자 11px.
- */
-export function DifficultyPill({ difficulty, level }: { difficulty: DifficultyType; level: number }) {
-  return (
-    <span
-      data-difficulty={difficulty}
-      className="chart-chip-diff inline-flex shrink-0 whitespace-nowrap rounded px-1.5 font-num text-[11px] font-bold leading-[18px]"
-    >
-      {difficultyLabel(difficulty)} {formatLevel(level)}
-    </span>
-  );
-}
-
-/**
- * 파트 글자 (`Guitar` 보라 / `Bass` 청록, D64 줄 통일). 상자 없이 글자만 색을 입히고, 글자 자체가 파트 이름이라 색만으로 구분하지 않는다.
- * 색은 --part-text-guitar / --part-text-bass 토큰(다크·라이트 둘 다, 줄 배경 위 글자 대비 4.5 이상을 globals.css.test.ts가 확인한다).
- */
-export function PartText({ part }: { part: InstrumentPart }) {
-  return (
-    <span className={`shrink-0 font-num text-[11px] font-bold leading-[18px] ${part === "BASS" ? "text-part-text-bass" : "text-part-text-guitar"}`}>
-      {partLabel(part)}
-    </span>
-  );
-}
-
 /** 난이도 배지 (BAS/ADV/EXT/MAS). 색은 data-difficulty에 따라 globals.css가 정한다. */
 export function DifficultyBadge({ difficulty }: { difficulty: DifficultyType }) {
   return (
