@@ -56,7 +56,7 @@ export function TermHelp({ term, label }: { term: TermKey; label: string }) {
         <span
           aria-hidden="true"
           className={`grid h-6 w-6 place-items-center rounded-full border font-num text-[13px] font-bold ${
-            open ? "border-chip-on-bg text-fg" : "border-chip-line text-fg-dim"
+            open ? "border-chip-on-bg text-fg" : "border-ctl text-fg-dim"
           }`}
         >
           ?

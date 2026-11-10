@@ -239,7 +239,7 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
               aria-labelledby="entry-rating-label"
               aria-describedby="entry-rating-hint"
               onClick={() => setValue("ratingEnabled", !ratingEnabled, { shouldDirty: true })}
-              className={`relative h-6 w-11 shrink-0 rounded-lg border border-chip-line transition-colors ${
+              className={`relative h-6 w-11 shrink-0 rounded-lg border border-ctl transition-colors ${
                 ratingEnabled ? "bg-chip-on-bg" : "bg-table-head"
               }`}
             >
@@ -276,7 +276,7 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
         <button
           type="button"
           onClick={onDone}
-          className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+          className="h-12 w-24 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
         >
           {t("Common.cancel")}
         </button>

@@ -220,6 +220,8 @@ describe("PlayerDetailView", () => {
       await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
       const del = fetchMock.mock.calls.find((c) => c[1]?.method === "DELETE");
       expect(String(del?.[0])).toContain("/admin/players/7/charts/55/records");
+      // D29 관리자 삭제는 확인 상자를 거친 뒤 바로 보내며(5초 기다리지 않음), 되돌리기는 없다
+      expect(screen.queryByRole("button", { name: "되돌리기" })).not.toBeInTheDocument();
       const gets = fetchMock.mock.calls.filter((c) => (c[1]?.method ?? "GET") === "GET");
       expect(gets.length).toBeGreaterThanOrEqual(2); // 처음 + 삭제 뒤 다시 받기
     });

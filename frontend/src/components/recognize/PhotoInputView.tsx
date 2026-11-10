@@ -17,6 +17,7 @@ import {
   shrinkPhoto,
   type RecognizeResult,
 } from "@/lib/recognize";
+import { HIT_STANDALONE } from "@/lib/hit-area";
 import { AFFECTED_QUERY_KEYS, createRecord, seoulDateToInstant, todaySeoul } from "@/lib/records";
 import { useTranslations } from "next-intl";
 
@@ -98,7 +99,7 @@ export function PhotoInputView() {
     }
     const picked = Array.from(files).slice(0, Math.min(MAX_PHOTOS, st.remaining));
     if (files.length > picked.length) {
-      toast(t("Photo.tooMany", { count: picked.length }));
+      toast(t("Photo.tooMany", { count: picked.length }), { kind: "info" });
     }
     setProgress({ done: 0, total: picked.length });
     for (let i = 0; i < picked.length; i += 1) {
@@ -175,7 +176,7 @@ export function PhotoInputView() {
           {t.rich("Photo.remaining", { remaining: st.remaining, limit: st.weeklyLimit, b: (c) => <b className="font-num">{c}</b> })}
         </p>
         {!st.available && st.nextRefillAt ? <p className="text-sm text-fg-sub">{t("Photo.refillAt", { date: formatSeoulDateTime(st.nextRefillAt) })}</p> : null}
-        <label className={`flex min-h-11 w-fit items-center rounded-lg px-4 text-sm font-semibold ${st.available && !busy ? "cursor-pointer bg-chip-on-bg text-chip-on-fg" : "border border-chip-line text-fg-dim"}`}>
+        <label className={`flex min-h-11 w-fit items-center rounded-lg px-4 text-sm font-semibold ${st.available && !busy ? "cursor-pointer bg-chip-on-bg text-chip-on-fg" : "border border-ctl text-fg-dim"}`}>
           {t("Photo.choosePhotos", { max: Math.min(MAX_PHOTOS, st.remaining) })}
           <input
             ref={fileInput}
@@ -219,7 +220,7 @@ export function PhotoInputView() {
             )}
           </ul>
           <div className="sticky bottom-[calc(var(--tabbar-h)+0.5rem)] flex items-center justify-between gap-3 rounded-2xl border border-line bg-card/95 p-3">
-            <Link href="/me" className="text-sm text-fg-sub underline underline-offset-2">
+            <Link href="/me" className={`text-sm text-fg-sub underline underline-offset-2 ${HIT_STANDALONE}`}>
               {t("Photo.toMyPage")}
             </Link>
             <button

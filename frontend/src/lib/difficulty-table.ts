@@ -150,7 +150,7 @@ export const EMPTY_FILTERS: TableFilters = { part: null, recommend: [], pattern:
 export const DEFAULT_FILTERS: TableFilters = { part: null, recommend: ["상", "중"], pattern: [] };
 
 export const RECOMMEND_OPTIONS = ["상", "중", "하"] as const;
-export const PATTERN_OPTIONS = ["단일", "복합", "이중", "삼중"] as const;
+export const PATTERN_OPTIONS = ["단일", "복합", "이중", "삼중", "복합(단일)"] as const;
 
 /**
  * 칩을 눌렀을 때의 새 선택 목록. 이미 골랐으면 빼고, 아니면 넣는다.

@@ -140,7 +140,7 @@ function SongCreateForm({
         <div className="flex gap-2.5">
           <Link
             href={`/songs/${createdSongId}?from=songs`}
-            className="flex h-12 flex-1 items-center justify-center rounded-xl border border-chip-line text-sm font-bold text-fg hover:bg-table-head"
+            className="flex h-12 flex-1 items-center justify-center rounded-xl border border-ctl text-sm font-bold text-fg hover:bg-table-head"
           >
             {t("SongCreate.viewSong")}
           </Link>
@@ -245,7 +245,7 @@ function SongCreateForm({
                     onClick={() => remove(index)}
                     disabled={fields.length === 1}
                     aria-label={t("SongCreate.chartRemove", { n })}
-                    className="ml-auto inline-flex items-center rounded-lg border border-chip-line px-4 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
+                    className="ml-auto inline-flex items-center rounded-lg border border-ctl px-4 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
                   >
                     {t("Song.delete")}
                   </button>
@@ -314,7 +314,7 @@ function SongCreateForm({
             type="button"
             onClick={() => append(emptyChart())}
             disabled={fields.length >= MAX_CHARTS}
-            className="self-start min-h-11 rounded-lg border border-chip-line px-3 py-1.5 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
+            className="self-start min-h-11 rounded-lg border border-ctl px-3 py-1.5 text-sm text-fg-sub enabled:hover:text-fg disabled:opacity-40"
           >
             {t("SongCreate.addChart")}
           </button>
@@ -347,7 +347,7 @@ function SongCreateForm({
         <button
           type="button"
           onClick={onDone}
-          className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+          className="h-12 w-24 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
         >
           {locked ? t("SongCreate.close") : t("Common.cancel")}
         </button>

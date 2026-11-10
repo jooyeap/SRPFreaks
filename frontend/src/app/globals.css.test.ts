@@ -19,6 +19,134 @@ function varsOf(selector: string): Record<string, string> {
   return out;
 }
 
+/** WCAG 상대 휘도 기반 대비비. `#rrggbb`만 받는다. */
+function contrast(a: string, b: string): number {
+  const lum = (hex: string) => {
+    const [r, g, bl] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+describe("globals.css 컨트롤 테두리(--ctl-line)", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 카드 배경 위에서 대비 3:1 이상이다 (버튼·칩·입력칸 윤곽, 비텍스트 대비 기준)`, () => {
+      expect(vars["--ctl-line"], "--ctl-line이 없음").toBeDefined();
+      expect(vars["--card"], "--card가 없음").toBeDefined();
+      expect(contrast(vars["--ctl-line"], vars["--card"])).toBeGreaterThanOrEqual(3);
+    });
+  }
+
+  it("Tailwind 유틸리티(border-ctl)로 쓸 수 있게 @theme에 등록돼 있다", () => {
+    expect(css).toMatch(/--color-ctl:\s*var\(--ctl-line\)/);
+  });
+});
+
+describe("globals.css 포커스 링", () => {
+  it(":focus-visible 전역 규칙이 @layer base 안에 있다 (Tailwind 유틸리티의 outline-none이 이길 수 있게)", () => {
+    const layerStart = css.indexOf("@layer base {");
+    expect(layerStart).toBeGreaterThanOrEqual(0);
+    const layerEnd = css.indexOf("\n}", layerStart);
+    const layerBody = css.slice(layerStart, layerEnd);
+    expect(layerBody).toMatch(/:focus-visible\s*\{\s*outline:\s*2px solid var\(--check-line\)/);
+  });
+
+  it("포커스 링 색(--check-line)은 다크와 라이트 모두에 정의돼 있다", () => {
+    expect(varsOf(":root {")["--check-line"]).toBeDefined();
+    expect(varsOf(':root[data-theme="light"] {')["--check-line"]).toBeDefined();
+  });
+});
+
+describe("속성 칩(재킷 모서리, 2026-11-08) 색 대비", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 칩 글자(--fg)는 칩 배경(--page) 위에서 4.5:1 이상, 테두리(--ctl-line)는 3:1 이상이다`, () => {
+      expect(contrast(vars["--fg"], vars["--page"])).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(vars["--ctl-line"], vars["--page"])).toBeGreaterThanOrEqual(3);
+    });
+  }
+});
+
+describe("파트 글자색(--part-text-*, D64 서열표·세트리스트 줄)", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: Guitar(보라)·Bass(청록) 글자가 줄 배경(카드·페이지·표 머리) 위에서 대비 4.5:1 이상이다`, () => {
+      for (const key of ["--part-text-guitar", "--part-text-bass"]) {
+        expect(vars[key], `${key}가 없음`).toBeDefined();
+        for (const bg of ["--card", "--page", "--table-head"]) {
+          expect(contrast(vars[key], vars[bg]), `${key} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
+
+  it("Tailwind 유틸리티(text-part-text-guitar / text-part-text-bass)로 쓸 수 있게 @theme에 등록돼 있다", () => {
+    expect(css).toMatch(/--color-part-text-guitar:\s*var\(--part-text-guitar\)/);
+    expect(css).toMatch(/--color-part-text-bass:\s*var\(--part-text-bass\)/);
+  });
+});
+
+describe("라이벌 비교 줄 차이 칩(D65) 색 대비", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 앞(초록 --done-text)·뒤(주황 --weak-text) 칩 글자가 카드·페이지 배경 위에서 4.5:1 이상이다`, () => {
+      for (const key of ["--done-text", "--weak-text"]) {
+        for (const bg of ["--card", "--page"]) {
+          expect(contrast(vars[key], vars[bg]), `${key} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
+});
+
+describe("라이벌 막대(승·패, 2026-11-09) 색 대비", () => {
+  /** `rgb(r g b / a)` 틴트를 카드 배경 위에 얹었을 때의 색(#rrggbb) */
+  function over(tint: string, base: string): string {
+    const m = /rgb\((\d+) (\d+) (\d+) \/ ([\d.]+)\)/.exec(tint);
+    if (!m) throw new Error(`틴트 형식이 다름: ${tint}`);
+    const a = Number(m[4]);
+    const mix = [1, 2, 3].map((i, k) => Math.round(Number(m[i]) * a + parseInt(base.slice(1 + k * 2, 3 + k * 2), 16) * (1 - a)));
+    return `#${mix.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  }
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 막대 글자(--fg)는 승·패 틴트를 카드 위에 얹은 바탕에서 4.5:1 이상, 막대 윤곽(--done·--weak-line)은 카드 위에서 3:1 이상이다`, () => {
+      expect(vars["--done-tint"], "--done-tint가 없음").toBeDefined();
+      expect(contrast(vars["--fg"], over(vars["--done-tint"], vars["--card"]))).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(vars["--fg"], over(vars["--weak-tint"], vars["--card"]))).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(vars["--done"], vars["--card"])).toBeGreaterThanOrEqual(3);
+      expect(contrast(vars["--weak-line"], vars["--card"])).toBeGreaterThanOrEqual(3);
+    });
+  }
+
+  it("Tailwind 유틸리티(bg-done-tint)로 쓸 수 있게 @theme에 등록돼 있다", () => {
+    expect(css).toMatch(/--color-done-tint:\s*var\(--done-tint\)/);
+  });
+});
+
 describe("globals.css 테마 변수", () => {
   const dark = varsOf(":root {");
   const lightPicked = varsOf(':root[data-theme="light"] {');
@@ -34,5 +162,12 @@ describe("globals.css 테마 변수", () => {
       expect(lightPicked[name], `${name}: 라이트에 없음`).toBeDefined();
       expect(lightPicked[name], `${name}: 라이트가 다크와 같은 값`).not.toBe(dark[name]);
     }
+  });
+
+  it("일본어에서는 break-keep을 풀어 줄바꿈을 허용한다 (띄어쓰기 없는 문장이 360px를 넘지 않게)", () => {
+    const m = css.match(/:lang\(ja\)\s+\.break-keep\s*\{([^}]*)\}/);
+    expect(m, ":lang(ja) .break-keep 규칙이 없음").not.toBeNull();
+    expect(m?.[1]).toMatch(/word-break:\s*normal/);
+    expect(m?.[1]).toMatch(/overflow-wrap:\s*anywhere/);
   });
 });

@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { RegisteredMeSection } from "@/components/rivals/RegisteredMeSection";
+import { RivalTopSongs } from "@/components/rivals/RivalTopSongs";
 import { ApiError } from "@/lib/api";
 import type { RivalResponse } from "@/lib/api-types";
 import { formatScore } from "@/lib/format";
@@ -11,7 +13,7 @@ import { fetchRivals, rivalKeys, signed, unregisterRival } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 /**
- * 마이페이지 `라이벌` 탭(D56): 내 라이벌 카드(최대 5). 카드를 누르면 비교 화면.
+ * 마이페이지 `라이벌` 탭(D56): 내 라이벌 카드(최대 5). 카드를 누르면 비교 화면. 아래에 `나를 등록한 유저` 구역(D63).
  * 비공개가 된 상대는 흐린 카드에 안내 + `라이벌 해제`만 둔다. `서로 라이벌`은 칩 글자로 보인다.
  */
 export function RivalTab({ userId }: { userId: number }) {
@@ -55,7 +57,7 @@ export function RivalTab({ userId }: { userId: number }) {
             <span className="flex items-center gap-1.5">
               <b className="min-w-0 flex-1 truncate text-[15px] text-fg">{rival.nickname}</b>
               {rival.mutual ? (
-                <span className="shrink-0 rounded-full border border-chip-line px-1.5 text-[11px] font-semibold text-fg-sub">{t("mutualChip")}</span>
+                <span className="shrink-0 rounded-full border border-ctl px-1.5 text-[11px] font-semibold text-fg-sub">{t("mutualChip")}</span>
               ) : null}
               <span data-tier={rival.tier.key} className="tier-chip shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
                 {rival.tier.displayName}
@@ -83,6 +85,7 @@ export function RivalTab({ userId }: { userId: number }) {
                 </span>
               ))}
             </span>
+            <RivalTopSongs songs={rival.topSongs} />
           </Link>
         ) : (
           <div key={rival.userId} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4 opacity-80">
@@ -94,7 +97,7 @@ export function RivalTab({ userId }: { userId: number }) {
             <button
               type="button"
               onClick={() => setRemoving(rival)}
-              className="min-h-10 rounded-lg border border-chip-line text-sm text-fg hover:bg-table-head"
+              className="min-h-10 rounded-lg border border-ctl text-sm text-fg hover:bg-table-head"
             >
               {t("unregister")}
             </button>
@@ -109,6 +112,7 @@ export function RivalTab({ userId }: { userId: number }) {
       <p className="text-xs text-fg-dim">
         {t.rich("listHint", { a: (c) => <Link href="/players" className="underline">{c}</Link> })}
       </p>
+      <RegisteredMeSection userId={userId} />
       <ConfirmDialog
         open={removing !== null}
         title={t("unregisterTitle")}

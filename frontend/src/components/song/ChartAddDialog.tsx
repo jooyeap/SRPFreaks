@@ -238,7 +238,7 @@ function ChartAddForm({
       ) : null}
 
       <div className="flex gap-2.5">
-        <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg">
+        <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg">
           {locked ? t("SongCreate.close") : t("Common.cancel")}
         </button>
         <button

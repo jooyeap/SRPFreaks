@@ -105,7 +105,7 @@ function Footer({ pending, error, onDone }: { pending: boolean; error: unknown; 
         </div>
       ) : null}
       <div className="flex gap-2.5">
-        <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg">
+        <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg">
           {t("Common.cancel")}
         </button>
         <button type="submit" disabled={pending} className="h-12 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-60">
@@ -212,7 +212,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
         {aliases.length > 0 ? (
           <ul aria-label={t("Song.registeredKeywords")} className="flex flex-wrap gap-1.5">
             {aliases.map((alias) => (
-              <li key={alias} className="flex items-center gap-1 rounded-lg border border-chip-line py-0.5 pl-3 pr-1 text-sm text-fg">
+              <li key={alias} className="flex items-center gap-1 rounded-lg border border-ctl py-0.5 pl-3 pr-1 text-sm text-fg">
                 {alias}
                 <button
                   type="button"
@@ -246,7 +246,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
             aria-describedby="edit-alias-help"
             className={`${FIELD} min-w-0 flex-1`}
           />
-          <button type="button" onClick={commitDraft} className="rounded-[10px] border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
+          <button type="button" onClick={commitDraft} className="rounded-[10px] border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg">
             {t("Song.add")}
           </button>
         </div>

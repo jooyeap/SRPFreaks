@@ -35,7 +35,7 @@ const SHORTCUTS = [
 ] as const;
 
 /**
- * 로그인한 사용자의 홈: 내 레이팅 요약, 진행도(서열표·곡 목록 탭), 유저 목록 미리보기, 바로가기.
+ * 로그인한 사용자의 홈: 내 레이팅 요약, 진행도(서열표·곡 목록 탭), (새 공지가 있으면) 공지, 유저 목록 미리보기, 바로가기(넓은 화면만).
  * 각 칸은 따로 불러와서 한쪽이 실패(또는 서열표 없음)해도 나머지는 그대로 보여 준다.
  * 서열표 쿼리 키는 곡 상세·묶음 페이지와 같고(allGroupsKey), 곡 목록은 곡 목록 화면의 "필터 없음" 폴더 키와 같아서 캐시를 함께 쓴다.
  */
@@ -95,8 +95,6 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
 
       {showWelcome ? <WelcomeGuide /> : null}
 
-      <HomeNotices viewerId={userId} />
-
       {skill.data ? (
         <Link href="/me" className="block rounded-2xl hover:opacity-95" aria-label={t("toMyPage")}>
           <RatingSummary skill={skill.data} />
@@ -116,9 +114,13 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       {/* 시작 안내에 가져오기 카드가 이미 있으면 중복이라 뺀다 */}
       {showWelcome ? null : <ImportEntryLink />}
 
+      {/* 새 공지(최근 7일)가 있을 때만 그려진다. 예전에는 맨 위였지만 레이팅·진행도가 홈의 주인공이라 아래로 내렸다(2026-11-02) */}
+      <HomeNotices viewerId={userId} />
+
       <PlayersPreview viewerId={userId} />
 
-      <ul className="grid gap-3 md:grid-cols-3">
+      {/* 바로가기는 하단 탭바·더보기와 겹쳐서 모바일(md 미만)에서는 숨긴다. 넓은 화면에서는 그대로 둔다(2026-11-02) */}
+      <ul className="hidden gap-3 md:grid md:grid-cols-3">
         {SHORTCUTS.map((item) => (
           <li key={item.href}>
             <Link href={item.href} className="flex h-full flex-col gap-1 rounded-lg border border-line bg-card p-4 hover:bg-table-head">

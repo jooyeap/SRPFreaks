@@ -4,7 +4,7 @@ import { useEffect, useId, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { SongDeleteControl } from "@/components/song/SongDeleteControl";
 
-const ROW = "min-h-11 w-full rounded-lg border border-chip-line px-3 py-2 text-left text-sm text-fg hover:bg-table-head";
+const ROW = "min-h-11 w-full rounded-lg border border-ctl px-3 py-2 text-left text-sm text-fg hover:bg-table-head";
 
 /**
  * 곡 상세의 `관리` 창(ROOT·ADMIN 전용, 부모가 role을 보고 연다. 서버도 권한을 다시 검사한다).
@@ -20,6 +20,7 @@ export function SongManageDialog({
   onEditSong,
   onEditChart,
   onAddChart,
+  onEditJacket = null,
   songId,
   songTitle,
   chartId,
@@ -36,6 +37,8 @@ export function SongManageDialog({
   onEditChart: (() => void) | null;
   /** null이면 `채보 추가` 항목을 숨긴다(파트·난이도 8가지가 이미 모두 있을 때) */
   onAddChart: (() => void) | null;
+  /** ROOT일 때만 넘긴다(2026-11-02). 있으면 `재킷 바꾸기` 항목을 보여 준다 */
+  onEditJacket?: (() => void) | null;
   songId: number;
   songTitle: string;
   chartId: number | null;
@@ -107,6 +110,11 @@ export function SongManageDialog({
                   {t("Song.editChart")}
                 </button>
               ) : null}
+              {onEditJacket ? (
+                <button type="button" onClick={pick(onEditJacket)} className={ROW}>
+                  {t("Song.editJacket")}
+                </button>
+              ) : null}
             </section>
             <section className="flex flex-col gap-2" aria-label={t("Song.manageDeleteHeading")}>
               <h3 className="text-xs font-bold text-fg-sub">{t("Song.manageDeleteHeading")}</h3>
@@ -122,7 +130,7 @@ export function SongManageDialog({
               />
             </section>
           </div>
-          <button type="button" onClick={onClose} className="mt-4 h-12 w-full rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg">
+          <button type="button" onClick={onClose} className="mt-4 h-12 w-full rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg">
             {t("Common.close")}
           </button>
         </>

@@ -16,11 +16,12 @@ export default function TierFolderPage() {
   if (status === "loading") {
     return <p className="text-sm text-fg-sub">{t("Common.loading")}</p>;
   }
+  // key: 난이도를 옮기면 폴더 화면을 새로 만든다(이웃 이동 뒤 필터·정렬이 이전 난이도 것을 끌고 가지 않게. 필터는 "그 폴더에만" 적용)
   // 주소의 값은 사용자가 바꿀 수 있으므로 그대로 비교만 한다(숫자로 해석하지 않는다). 없는 값이면 "묶음을 찾을 수 없습니다."
   return (
     <>
       {user ? null : <LoginBanner />}
-      <TierFolderView userId={user?.id ?? ANONYMOUS_VIEWER_ID} param={decodeURIComponent(params.tier)} />
+      <TierFolderView key={params.tier} userId={user?.id ?? ANONYMOUS_VIEWER_ID} param={decodeURIComponent(params.tier)} />
     </>
   );
 }

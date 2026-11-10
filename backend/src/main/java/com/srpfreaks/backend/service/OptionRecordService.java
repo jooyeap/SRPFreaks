@@ -86,6 +86,12 @@ public class OptionRecordService {
         return RecordResponse.from(record);
     }
 
+    /** 내 기록이 가리키는 채보 id (저장 결과 카드가 저장 전 이전 최고 기록을 읽을 때 쓴다). 남의 기록·없는 기록은 404. */
+    @Transactional(readOnly = true)
+    public Long chartIdOf(Long userId, Long recordId) {
+        return findOwned(userId, recordId).getSongDifficulty().getId();
+    }
+
     @Transactional(readOnly = true)
     public RecordResponse get(Long userId, Long recordId) {
         return RecordResponse.from(findOwned(userId, recordId));

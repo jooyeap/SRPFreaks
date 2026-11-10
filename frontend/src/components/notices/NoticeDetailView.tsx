@@ -62,7 +62,7 @@ export function NoticeDetailView({ viewerId, noticeId, canWrite }: { viewerId: n
 
   return (
     <div className="flex flex-col gap-4">
-      <Link href="/notices" className="inline-flex min-h-11 w-fit items-center rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg">
+      <Link href="/notices" className="inline-flex min-h-11 w-fit items-center rounded-lg border border-ctl px-3 text-sm text-fg-sub hover:text-fg">
         {t("Notices.backToList")}
       </Link>
       {isPending ? (
@@ -167,7 +167,7 @@ export function NoticeItem({
                 type="button"
                 disabled={removePending}
                 onClick={onConfirmDelete}
-                className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
+                className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head disabled:opacity-60"
               >
                 {removePending ? t("Common.deleting") : t("Common.delete")}
               </button>
@@ -175,7 +175,7 @@ export function NoticeItem({
                 type="button"
                 disabled={removePending}
                 onClick={onCancelDelete}
-                className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
+                className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg-sub hover:text-fg"
               >
                 {t("Common.cancel")}
               </button>
@@ -192,7 +192,7 @@ export function NoticeItem({
               type="button"
               onClick={onEdit}
               aria-label={t("Notices.editAria", { title: notice.title })}
-              className="rounded-lg border border-chip-line px-3 py-1 text-xs text-fg-sub hover:text-fg"
+              className="rounded-lg border border-ctl px-3 py-1 text-xs text-fg-sub hover:text-fg"
             >
               {t("Notices.edit")}
             </button>
@@ -200,7 +200,7 @@ export function NoticeItem({
               type="button"
               onClick={onAskDelete}
               aria-label={t("Notices.deleteAria", { title: notice.title })}
-              className="rounded-lg border border-chip-line px-3 py-1 text-xs text-fg-sub hover:text-fg"
+              className="rounded-lg border border-ctl px-3 py-1 text-xs text-fg-sub hover:text-fg"
             >
               {t("Common.delete")}
             </button>

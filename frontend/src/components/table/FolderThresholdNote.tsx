@@ -7,7 +7,7 @@ import { ratingEntryThresholds } from "@/lib/rating-threshold";
 import { useTranslations } from "next-intl";
 
 const SINGLE_PATTERNS = new Set(["단일"]);
-const OTHER_PATTERNS = new Set(["복합", "이중", "삼중"]);
+const OTHER_PATTERNS = new Set(["복합", "이중", "삼중", "복합(단일)"]);
 
 /**
  * 서열표 묶음 화면 위의 한 줄: `이 구간은 단일 85% · 그 외 90% 이상이면 레이팅에 반영돼요.` (2026-10-27)

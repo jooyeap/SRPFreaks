@@ -25,7 +25,7 @@ NOTE_OPTION = "SUPER_RANDOM_PLUS"
 PARTS = {"GUITAR", "BASS"}
 DIFFS = {"BASIC", "ADVANCED", "EXTREME", "MASTER"}
 RECOMMEND = {"상", "중", "하"}
-PATTERNS = {"단일", "복합", "이중", "삼중", "레이팅 제외"}
+PATTERNS = {"단일", "복합", "복합(단일)", "이중", "삼중", "레이팅 제외"}
 BATCH = 200  # 한 INSERT에 넣을 행 수
 
 

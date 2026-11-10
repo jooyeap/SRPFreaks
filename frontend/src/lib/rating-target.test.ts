@@ -92,6 +92,12 @@ describe("planRows", () => {
     expect(rows.map((r) => r.tier)).toEqual([7.0, 6.0]);
   });
 
+  it("그 외 목록에는 복합(단일) 채보가 들어가고 단일 목록에는 들어가지 않는다", () => {
+    const entry = { ...tableEntry(5), pattern: "복합(단일)" };
+    expect(planRows([group(6.0, [entry])], "other", targets)).toHaveLength(1);
+    expect(planRows([group(6.0, [entry])], "single", targets)).toHaveLength(0);
+  });
+
   it("6.0은 300점이 가능(94.07%), 5.5는 300점이 불가능하고 200점은 가능", () => {
     const rows = planRows([group(6.0, [tableEntry(2)]), group(5.5, [tableEntry(3)])], "single", targets);
     expect(rows[0].needs[0]).not.toBeNull();
