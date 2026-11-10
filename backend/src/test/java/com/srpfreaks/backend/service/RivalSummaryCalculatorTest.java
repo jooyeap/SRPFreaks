@@ -419,4 +419,89 @@ class RivalSummaryCalculatorTest {
                 RivalSummaryCalculator.share(List.of(rated(1, PatternType.SINGLE, "100.00", "90.00")), List.of(rated(2, PatternType.SINGLE, "100.00", "90.00"))));
         assertThat(pattern(r2, "SINGLE").rateDiffAvg()).isNull();
     }
+
+    // ---------- 속성별 레이팅 목록 점수 차 / 난이도대별 / 상대만 (2026-11-10) ----------
+
+    @Test
+    void 속성별_레이팅_점수_차는_내_합_빼기_상대_합이고_속성별_합이_총점_차와_같다() {
+        java.util.Map<PatternType, BigDecimal> mine = new java.util.EnumMap<>(PatternType.class);
+        mine.put(PatternType.SINGLE, d("304.00"));
+        mine.put(PatternType.TRIPLE, d("440.00"));
+        java.util.Map<PatternType, BigDecimal> theirs = new java.util.EnumMap<>(PatternType.class);
+        theirs.put(PatternType.SINGLE, d("240.00"));
+        theirs.put(PatternType.TRIPLE, d("662.00"));
+        theirs.put(PatternType.COMPOUND, d("100.50"));
+
+        java.util.Map<PatternType, BigDecimal> diff = RivalSummaryCalculator.ratingScoreDiff(mine, theirs);
+        RivalSummaryResponse r = RivalSummaryCalculator.summarize(1L, "a", List.of(), RivalSummaryCalculator.Unmatched.NONE, diff);
+
+        assertThat(r.patterns()).extracting(RivalSummaryResponse.PatternSummary::key, RivalSummaryResponse.PatternSummary::ratingScoreDiff)
+                .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("SINGLE", d("64.00")),
+                        org.assertj.core.groups.Tuple.tuple("COMPOUND", d("-100.50")),   // 내 목록에 없으면 0으로 본다
+                        org.assertj.core.groups.Tuple.tuple("COMPOSITE_SINGLE", d("0.00")),
+                        org.assertj.core.groups.Tuple.tuple("DOUBLE", d("0.00")),
+                        org.assertj.core.groups.Tuple.tuple("TRIPLE", d("-222.00")));
+        // 총점 차: 내 총점 744.00 - 상대 총점 1002.50 = -258.50 = 64.00 - 100.50 - 222.00
+        BigDecimal sum = r.patterns().stream().map(RivalSummaryResponse.PatternSummary::ratingScoreDiff)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(sum).isEqualByComparingTo("-258.50");
+    }
+
+    @Test
+    void 레이팅_목록_계산을_못_구하면_속성별_점수_차는_null이다_0이_아니다() {
+        RivalSummaryResponse r = RivalSummaryCalculator.summarize(1L, "a", List.of());
+
+        assertThat(r.patterns()).allSatisfy(p -> assertThat(p.ratingScoreDiff()).isNull());
+        assertThat(RivalSummaryCalculator.ratingScoreDiff(null, java.util.Map.of())).isEmpty();
+    }
+
+    @Test
+    void 난이도대별_집계는_공유_곡이_없는_난이도도_한_줄로_두고_판정은_달성률_차_기준이다() {
+        // 삼중: 5.6에 공유 2곡(+2.00 승, -4.00 패), 5.5에 공유 없음(상대만 1곡), 5.8에 공유 1곡(0.00 무)
+        List<SkillService.ScoredChart> mine = List.of(rateChart(1, PatternType.TRIPLE, "5.6", "96.00"),
+                rateChart(2, PatternType.TRIPLE, "5.6", "80.00"), rateChart(3, PatternType.TRIPLE, "5.8", "90.00"));
+        List<SkillService.ScoredChart> theirs = List.of(rateChart(1, PatternType.TRIPLE, "5.6", "94.00"),
+                rateChart(2, PatternType.TRIPLE, "5.6", "84.00"), rateChart(3, PatternType.TRIPLE, "5.8", "90.00"),
+                rateChart(4, PatternType.TRIPLE, "5.5", "70.00"));
+        List<RivalSummaryCalculator.Shared> shared = RivalSummaryCalculator.share(mine, theirs);
+        List<SkillService.ScoredChart> onlyTheirs = RivalSummaryCalculator.onlyTheirsCharts(mine, theirs);
+
+        List<RivalSummaryDetailResponse.TierRow> rows = RivalSummaryCalculator.tierRows(shared, onlyTheirs);
+
+        assertThat(rows).extracting(RivalSummaryDetailResponse.TierRow::tier).usingElementComparator(BigDecimal::compareTo)
+                .containsExactly(d("5.8"), d("5.6"), d("5.5"));   // 높은 난이도 먼저
+        assertThat(rows.get(0).ties()).isEqualTo(1);
+        assertThat(rows.get(0).rateDiffAvg()).isEqualByComparingTo("0.0");
+        assertThat(rows.get(1).wins()).isEqualTo(1);
+        assertThat(rows.get(1).losses()).isEqualTo(1);
+        assertThat(rows.get(1).sharedCount()).isEqualTo(2);
+        assertThat(rows.get(1).rateDiffAvg()).isEqualByComparingTo("-1.0");   // (+2.00 - 4.00) / 2
+        assertThat(rows.get(2).sharedCount()).isZero();                       // 상대만 기록한 난이도: 한 줄은 있지만 판정·평균은 없다
+        assertThat(rows.get(2).rateDiffAvg()).isNull();
+        assertThat(rows.get(2).wins() + rows.get(2).ties() + rows.get(2).losses()).isZero();
+    }
+
+    @Test
+    void 상대만_기록한_곡은_상대_달성률_높은_순이고_나도_기록한_곡과_속성_밖은_빠진다() {
+        List<SkillService.ScoredChart> mine = List.of(rateChart(1, PatternType.SINGLE, "5.6", "90.00"));
+        List<SkillService.ScoredChart> theirs = List.of(rateChart(1, PatternType.SINGLE, "5.6", "95.00"),   // 둘 다 기록
+                rateChart(2, PatternType.TRIPLE, "5.6", "85.00"), rateChart(3, PatternType.DOUBLE, "5.6", "92.00"),
+                rateChart(4, PatternType.EXCLUDED, "5.6", "99.00"));   // 속성 목록 밖(레이팅 제외)
+
+        List<SkillService.ScoredChart> only = RivalSummaryCalculator.onlyTheirsCharts(mine, theirs);
+
+        assertThat(only).extracting(c -> c.candidate().songDifficultyId()).containsExactly(3L, 2L);
+        RivalSummaryDetailResponse.Row row = RivalSummaryCalculator.toTheirsOnlyRow(only.get(0));
+        assertThat(row.rate()).isEqualByComparingTo("92.00");
+        assertThat(row.myRate()).isNull();
+        assertThat(row.myStage()).isNull();
+        assertThat(row.myScore()).isNull();
+        assertThat(row.diff()).isNull();
+        assertThat(row.rateDiff()).isNull();
+        assertThat(RivalSummaryCalculator.onlyMineCharts(mine, theirs)).isEmpty();
+        assertThat(RivalSummaryCalculator.matches(RivalSummaryCalculator.Filter.THEIRS_ONLY,
+                RivalSummaryCalculator.share(mine, theirs).get(0))).isFalse();   // 공유 곡은 `상대만`이 아니다
+    }
 }

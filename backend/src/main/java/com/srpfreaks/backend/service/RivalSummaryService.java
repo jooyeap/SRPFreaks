@@ -11,8 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * 라이벌 대시보드 집계(D67, 5단계). 읽기 전용이고 로그인한 사용자만 부른다.
@@ -41,7 +43,18 @@ public class RivalSummaryService {
         List<SkillService.ScoredChart> mine = charts.get(userId);
         List<SkillService.ScoredChart> theirs = charts.get(targetUserId);
         return RivalSummaryCalculator.summarize(target.getId(), target.getNickname(),
-                RivalSummaryCalculator.share(mine, theirs), RivalSummaryCalculator.unmatched(mine, theirs));
+                RivalSummaryCalculator.share(mine, theirs), RivalSummaryCalculator.unmatched(mine, theirs),
+                ratingScoreDiff(userId, targetUserId, charts));
+    }
+
+    /** 속성별 레이팅 목록 기준 점수 차(내 - 상대). 이미 읽은 채보 점수에서 계산하므로 새 쿼리가 없다. 계산을 못 구하면 빈 맵(= 응답에서 null). */
+    private Map<PatternType, java.math.BigDecimal> ratingScoreDiff(Long userId, Long targetUserId,
+                                                                   Map<Long, List<SkillService.ScoredChart>> charts) {
+        Map<Long, Map<PatternType, java.math.BigDecimal>> lists = skillService.ratingListScoreByPattern(charts);
+        if (lists == null) {
+            return Map.of();
+        }
+        return RivalSummaryCalculator.ratingScoreDiff(lists.get(userId), lists.get(targetUserId));
     }
 
     /** key = 속성 키(`SINGLE` 등), filter·sort는 화이트리스트(허용 밖은 400). 페이지는 필수라 size를 1~50으로 맞춘다. */
@@ -65,21 +78,40 @@ public class RivalSummaryService {
         RivalSummaryCalculator.Unmatched unmatched = RivalSummaryCalculator.unmatched(mine, theirs);
         List<RivalSummaryCalculator.Shared> ofPattern = RivalSummaryCalculator
                 .byPattern(RivalSummaryCalculator.share(mine, theirs)).getOrDefault(pattern, List.of());
-        List<RivalSummaryCalculator.Shared> filtered = ofPattern.stream()
-                .filter(s -> RivalSummaryCalculator.matches(filter, s))
-                .sorted(RivalSummaryCalculator.comparator(sort))
-                .toList();
+        // 상대만 기록한 곡(속성 안). 곡별 승패의 `상대만` 탭과 같은 정의(RivalSummaryCalculator.onlyTheirsCharts)다.
+        List<SkillService.ScoredChart> theirsOnly = RivalSummaryCalculator.onlyTheirsCharts(mine, theirs).stream()
+                .filter(c -> c.pattern() == pattern).toList();
+
+        List<RivalSummaryDetailResponse.Row> all;
+        if (filter == RivalSummaryCalculator.Filter.THEIRS_ONLY) {
+            // 상대 달성률 높은 순(onlyTheirsCharts의 순서)이 기본이고, 정렬을 TITLE로 고르면 곡명 순이다. 그 밖의 정렬 값은 이 필터에서는 쓰지 않는다.
+            boolean byTitle = sort == RivalSummaryCalculator.Sort.TITLE && sortParam != null && !sortParam.isBlank();
+            List<SkillService.ScoredChart> ordered = byTitle
+                    ? theirsOnly.stream().sorted(Comparator
+                            .comparing((SkillService.ScoredChart c) -> c.candidate().title(), String.CASE_INSENSITIVE_ORDER)
+                            .thenComparing(c -> c.candidate().songDifficultyId())).toList()
+                    : theirsOnly;
+            all = ordered.stream().map(RivalSummaryCalculator::toTheirsOnlyRow).toList();
+        } else {
+            all = ofPattern.stream()
+                    .filter(s -> RivalSummaryCalculator.matches(filter, s))
+                    .sorted(RivalSummaryCalculator.comparator(sort))
+                    .map(RivalSummaryCalculator::toRow)
+                    .toList();
+        }
 
         int pageSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         int pageIndex = Math.max(page, 0);
-        int from = (int) Math.min((long) pageIndex * pageSize, filtered.size());
-        int to = Math.min(from + pageSize, filtered.size());
-        int totalPages = (filtered.size() + pageSize - 1) / pageSize;
-        List<RivalSummaryDetailResponse.Row> content = filtered.subList(from, to).stream()
-                .map(RivalSummaryCalculator::toRow).toList();
+        int from = (int) Math.min((long) pageIndex * pageSize, all.size());
+        int to = Math.min(from + pageSize, all.size());
+        int totalPages = (all.size() + pageSize - 1) / pageSize;
+        List<RivalSummaryDetailResponse.Row> content = all.subList(from, to);
         return new RivalSummaryDetailResponse(target.getId(), target.getNickname(),
-                RivalSummaryCalculator.patternSummary(pattern, ofPattern, unmatched), RivalSummaryCalculator.filterCounts(ofPattern),
-                new PageResponse<>(content, pageIndex, pageSize, filtered.size(), totalPages));
+                RivalSummaryCalculator.patternSummary(pattern, ofPattern, unmatched, ratingScoreDiff(userId, targetUserId, charts)),
+                RivalSummaryCalculator.filterCounts(ofPattern, theirsOnly.size()),
+                new PageResponse<>(content, pageIndex, pageSize, all.size(), totalPages),
+                RivalSummaryCalculator.tierRows(ofPattern, Stream.concat(theirsOnly.stream(),
+                        RivalSummaryCalculator.onlyMineCharts(mine, theirs).stream().filter(c -> c.pattern() == pattern)).toList()));
     }
 
 }
