@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { AverageLevelHelp } from "@/components/HelpTip";
 import { ProgressDonut } from "@/components/home/ProgressDonut";
 import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
 import type { SkillResponse } from "@/lib/api-types";
+import { HIT_HEAD } from "@/lib/hit-area";
 import { emptyHighCount, nextGoal, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
 import { ratingEntryThreshold } from "@/lib/rating-threshold";
 import { useTranslations } from "next-intl";
@@ -80,7 +82,7 @@ export function ProgressCard({
       <section aria-label={t("sectionAria", { name: tab.name })} className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-num text-[17px] font-bold text-fg">{t("sectionAria", { name: tab.name })}</h2>
-          <Link href={tab.href} className="text-xs text-fg-sub hover:text-fg">
+          <Link href={tab.href} className={`text-xs text-fg-sub hover:text-fg ${HIT_HEAD}`}>
             {tab.link}
           </Link>
         </div>
@@ -141,6 +143,7 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
           <p className="break-keep text-[13px] leading-snug text-fg">
             {t.rich("nearText", { average: average.toFixed(1), label: weak.group.label, b: (chunks) => <b className="font-num">{chunks}</b> })}
             {threshold !== null ? <> {t.rich("nearThreshold", { rate: threshold, b: (chunks) => <b className="font-num">{chunks}</b> })}</> : null}
+            <AverageLevelHelp />
           </p>
           <Link
             href={weak.group.href}

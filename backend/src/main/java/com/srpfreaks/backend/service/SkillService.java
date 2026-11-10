@@ -132,6 +132,60 @@ public class SkillService {
     public record RatedSkill(SkillResponse skill, LocalDateTime lastAchievedAt) {
     }
 
+    /**
+     * 여러 유저의 "레이팅 대상 채보 전체"와 채보 점수를 한 번에 돌려준다(라이벌 대시보드 집계, D67).
+     * 레이팅 목록(상위 단일 15 + 그 외 25)이 아니라, 기록이 있고 레이팅 후보 조건을 모두 만족하는 채보 전부다.
+     * 대상 판정과 점수 수식은 {@link #ratedAll}과 같은 코드(score)를 쓰므로 목록 계산과 어긋날 수 없다.
+     * 설정·레이팅 서열표는 요청당 한 번만 읽고, 유저마다 후보 쿼리(MyBatis) 한 번씩만 돈다(N+1 없음).
+     */
+    public Map<Long, List<ScoredChart>> scoredChartsAll(Collection<Long> userIds) {
+        Map<Long, List<ScoredChart>> result = new LinkedHashMap<>();
+        if (userIds.isEmpty()) {
+            return result;
+        }
+        RatingConfig config = RatingConfig.from(ratingSettings());
+        RatingCalculator calculator = new RatingCalculator(config);
+        Optional<DifficultyTable> table = difficultyTableRepository
+                .findFirstByNoteOptionAndStatusOrderByIdAsc(config.noteOption(), TableStatus.ACTIVE);
+        for (Long userId : userIds) {
+            List<ScoredChart> charts = table
+                    .map(t -> score(userId, config, calculator, t).stream()
+                            .map(s -> new ScoredChart(s.candidate(), s.pattern(), s.score()))
+                            .toList())
+                    .orElseGet(List::of);
+            result.put(userId, charts);
+        }
+        return result;
+    }
+
+    /**
+     * 레이팅 목록(단일 상위 N + 그 외 상위 M, 설정 rating.list_single/list_other) 40채보의 점수를 속성별로 더한 값(반올림하지 않음).
+     * 입력은 {@link #scoredChartsAll}이 이미 읽은 "레이팅 대상 채보 전체"라서 새 쿼리가 없고, 목록 선정 규칙(그룹별 V 높은 순, 같으면 채보 id 작은 쪽)은
+     * rateOne의 top()과 같다(점수 = V × 20으로 순서가 같다). 속성별 합을 모두 더하면 그 사람의 총점(레이팅 목록 합계)이다.
+     * 라이벌 대시보드의 "속성별 점수 차"(내 합 - 상대 합)가 총점 차와 맞아떨어지게 하려는 값이다(D67 개정).
+     */
+    public Map<Long, Map<PatternType, BigDecimal>> ratingListScoreByPattern(Map<Long, List<ScoredChart>> charts) {
+        RatingConfig config = RatingConfig.from(ratingSettings());
+        Map<Long, Map<PatternType, BigDecimal>> result = new LinkedHashMap<>();
+        charts.forEach((userId, list) -> {
+            Map<PatternType, BigDecimal> sums = new java.util.EnumMap<>(PatternType.class);
+            for (boolean singleGroup : new boolean[] {true, false}) {
+                list.stream()
+                        .filter(c -> (c.pattern().ratingGroup() == PatternType.RatingGroup.SINGLE) == singleGroup)
+                        .sorted(Comparator.comparing(ScoredChart::score).reversed()
+                                .thenComparing(c -> c.candidate().songDifficultyId()))
+                        .limit(singleGroup ? config.listSingle() : config.listOther())
+                        .forEach(c -> sums.merge(c.pattern(), c.score(), BigDecimal::add));
+            }
+            result.put(userId, sums);
+        });
+        return result;
+    }
+
+    /** 한 채보의 후보 정보 + 속성 + 반올림하지 않은 채보 점수(라이벌 대시보드 집계용, D67). */
+    public record ScoredChart(RatingCandidate candidate, PatternType pattern, BigDecimal score) {
+    }
+
     /** 레이팅이 쓰는 노트 옵션(설정 rating.note_option). 스냅샷 목록처럼 계산 없이 옵션만 필요할 때 쓴다. */
     public NoteOption ratingNoteOption() {
         return RatingConfig.from(ratingSettings()).noteOption();

@@ -78,6 +78,75 @@ describe("속성 칩(재킷 모서리, 2026-11-08) 색 대비", () => {
   }
 });
 
+describe("파트 글자색(--part-text-*, D64 서열표·세트리스트 줄)", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: Guitar(보라)·Bass(청록) 글자가 줄 배경(카드·페이지·표 머리) 위에서 대비 4.5:1 이상이다`, () => {
+      for (const key of ["--part-text-guitar", "--part-text-bass"]) {
+        expect(vars[key], `${key}가 없음`).toBeDefined();
+        for (const bg of ["--card", "--page", "--table-head"]) {
+          expect(contrast(vars[key], vars[bg]), `${key} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
+
+  it("Tailwind 유틸리티(text-part-text-guitar / text-part-text-bass)로 쓸 수 있게 @theme에 등록돼 있다", () => {
+    expect(css).toMatch(/--color-part-text-guitar:\s*var\(--part-text-guitar\)/);
+    expect(css).toMatch(/--color-part-text-bass:\s*var\(--part-text-bass\)/);
+  });
+});
+
+describe("라이벌 비교 줄 차이 칩(D65) 색 대비", () => {
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 앞(초록 --done-text)·뒤(주황 --weak-text) 칩 글자가 카드·페이지 배경 위에서 4.5:1 이상이다`, () => {
+      for (const key of ["--done-text", "--weak-text"]) {
+        for (const bg of ["--card", "--page"]) {
+          expect(contrast(vars[key], vars[bg]), `${key} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+        }
+      }
+    });
+  }
+});
+
+describe("라이벌 막대(승·패, 2026-11-09) 색 대비", () => {
+  /** `rgb(r g b / a)` 틴트를 카드 배경 위에 얹었을 때의 색(#rrggbb) */
+  function over(tint: string, base: string): string {
+    const m = /rgb\((\d+) (\d+) (\d+) \/ ([\d.]+)\)/.exec(tint);
+    if (!m) throw new Error(`틴트 형식이 다름: ${tint}`);
+    const a = Number(m[4]);
+    const mix = [1, 2, 3].map((i, k) => Math.round(Number(m[i]) * a + parseInt(base.slice(1 + k * 2, 3 + k * 2), 16) * (1 - a)));
+    return `#${mix.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+  }
+  const themes = {
+    다크: varsOf(":root {"),
+    "라이트(직접 선택)": varsOf(':root[data-theme="light"] {'),
+    "라이트(시스템)": varsOf(":root:not([data-theme]) {"),
+  };
+  for (const [name, vars] of Object.entries(themes)) {
+    it(`${name}: 막대 글자(--fg)는 승·패 틴트를 카드 위에 얹은 바탕에서 4.5:1 이상, 막대 윤곽(--done·--weak-line)은 카드 위에서 3:1 이상이다`, () => {
+      expect(vars["--done-tint"], "--done-tint가 없음").toBeDefined();
+      expect(contrast(vars["--fg"], over(vars["--done-tint"], vars["--card"]))).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(vars["--fg"], over(vars["--weak-tint"], vars["--card"]))).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(vars["--done"], vars["--card"])).toBeGreaterThanOrEqual(3);
+      expect(contrast(vars["--weak-line"], vars["--card"])).toBeGreaterThanOrEqual(3);
+    });
+  }
+
+  it("Tailwind 유틸리티(bg-done-tint)로 쓸 수 있게 @theme에 등록돼 있다", () => {
+    expect(css).toMatch(/--color-done-tint:\s*var\(--done-tint\)/);
+  });
+});
+
 describe("globals.css 테마 변수", () => {
   const dark = varsOf(":root {");
   const lightPicked = varsOf(':root[data-theme="light"] {');

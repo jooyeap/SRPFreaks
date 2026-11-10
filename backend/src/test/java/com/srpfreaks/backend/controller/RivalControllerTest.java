@@ -2,10 +2,13 @@ package com.srpfreaks.backend.controller;
 
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.dto.RivalRegistrantResponse;
+import com.srpfreaks.backend.dto.RivalSummaryDetailResponse;
+import com.srpfreaks.backend.dto.RivalSummaryResponse;
 import com.srpfreaks.backend.dto.SkillResponse.PlayerTierResponse;
 import com.srpfreaks.backend.entity.Role;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.RivalService;
+import com.srpfreaks.backend.service.RivalSummaryService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import tools.jackson.databind.JsonNode;
@@ -23,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RivalControllerTest {
 
     private final RivalService service = Mockito.mock(RivalService.class);
-    private final RivalController controller = new RivalController(service);
+    private final RivalController controller = new RivalController(service, Mockito.mock(RivalSummaryService.class));
 
     @Test
     void 토큰의_사용자_id로_조회한다() {
@@ -40,6 +43,29 @@ class RivalControllerTest {
 
         // 받는 값은 로그인 사용자, page, size뿐이다 (userId 같은 파라미터 없음)
         assertThat(method.getParameterTypes()).containsExactly(AuthenticatedUser.class, int.class, int.class);
+    }
+
+    @Test
+    void 대시보드_집계는_토큰의_본인_id와_경로의_상대_id로만_부른다() {
+        RivalSummaryService summaryService = Mockito.mock(RivalSummaryService.class);
+        RivalController withSummary = new RivalController(service, summaryService);
+        AuthenticatedUser me = new AuthenticatedUser(7L, Role.USER);
+
+        withSummary.compareSummary(me, 9L);
+        withSummary.compareSummaryDetail(me, 9L, "TRIPLE", "LOSE", "DIFF_ASC", 1, 20);
+
+        Mockito.verify(summaryService).summary(7L, 9L);
+        Mockito.verify(summaryService).detail(7L, 9L, "TRIPLE", "LOSE", "DIFF_ASC", 1, 20);
+    }
+
+    @Test
+    void 대시보드_응답_키에_이메일_역할_google_id가_없다() {
+        for (Class<?> type : new Class<?>[]{RivalSummaryResponse.class, RivalSummaryResponse.Totals.class,
+                RivalSummaryResponse.PatternSummary.class, RivalSummaryResponse.TierSummary.class,
+                RivalSummaryResponse.PatternDiffs.class, RivalSummaryDetailResponse.class, RivalSummaryDetailResponse.Row.class}) {
+            assertThat(Arrays.stream(type.getRecordComponents()).map(c -> c.getName().toLowerCase()).collect(Collectors.toSet()))
+                    .noneMatch(n -> n.contains("email") || n.contains("role") || n.contains("googlesub"));
+        }
     }
 
     @Test

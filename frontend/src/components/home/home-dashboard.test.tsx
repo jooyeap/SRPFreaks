@@ -200,6 +200,8 @@ describe("HomeDashboard", () => {
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
     await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간을 채워 보세요."));
+    // 평균 근처 안내 끝에 `?` 설명 버튼(서열표 첫 화면·세트리스트 추천과 같은 컴포넌트·같은 문구)
+    expect(within(progress).getByRole("button", { name: "내 평균 난이도 설명 보기" })).toBeInTheDocument();
   });
 
   it("레이팅 목록이 가득 찼으면 평균 근처 안내 뒤에 몇 % 이상이면 반영되는지 붙인다 (5.8 구간: 맨 아래 226점 → 84.22% → 85%)", async () => {

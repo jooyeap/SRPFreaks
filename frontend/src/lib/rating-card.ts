@@ -83,6 +83,13 @@ export const DIFFICULTY_COLORS: Record<DifficultyType, string> = {
   MASTER: "#c4a3ff",
 };
 
+/**
+ * 곡 타일 아랫줄 `Guitar · 복합(단일)`의 파트 글자색(2안, 2026-11-09). 카드 전용 색이라 globals.css와 맞출 필요는 없다.
+ * 타일 바탕(CARD_PANEL, 다크 고정) 위에서 글자 대비 4.5 이상이어야 하고 rating-card-draw.test.ts가 계산으로 확인한다.
+ * 색만으로 전달하지 않는다: 같은 줄에 `Guitar` / `Bass` 글자가 그대로 있다.
+ */
+export const PART_TEXT_COLORS = { GUITAR: "#c4b5fd", BASS: "#5eead4" } as const;
+
 /** 카드 바깥 테두리 두께(티어 색 그라데이션) */
 export const CARD_FRAME = 12;
 
@@ -118,7 +125,7 @@ export interface CardTileView {
   w: number;
   h: number;
   title: string;
-  /** 속성(단일/복합/이중/삼중). 속성이 없으면 빈 글자 */
+  /** 속성(단일/복합/복합(단일)/이중/삼중). 속성이 없으면 빈 글자. 아랫줄 `Guitar · 속성`에 쓴다(단일 구역도 같다) */
   patternText: string;
   partText: string;
   /** `MAS 9.45` */
@@ -126,13 +133,20 @@ export interface CardTileView {
   /** 서열표 기준 난이도 숫자(`9.4`). 알약의 세 번째 칸에 들어간다. 점수는 이 값으로 계산된다 */
   tierText: string;
   diffColor: string;
-  /** `MAX · EXC`, `98.03 · FC` */
+  /** 달성률 `MAX`, `98.03`(곡명 줄 오른쪽) */
   rateText: string;
+  /** 달성 단계 글자 `EXC`, `FC`, `SS`, `S`… 달성률 오른쪽 칩 안에 그대로 쓴다 */
+  stageText: string;
   stageColor: string;
+  /** `246.40`. 그릴 때는 아래 두 조각으로 나눠 소수부를 작게 그린다 */
   scoreText: string;
+  /** 점수 정수부 `246` */
+  scoreIntText: string;
+  /** 점수 소수부 `.40` (소수점 포함) */
+  scoreDecText: string;
   /** 곡 점수 색(점수 글자와 왼쪽 띠) */
   tier: CardTierStyle;
-  /** 재킷 칸을 그릴지(D54: 운영 설정 + 개인 `재킷 표시`). 켜져 있으면 칸 띠 오른쪽에 68×68 칸을 두고 속성 칩을 아래 줄로 내린다 */
+  /** 재킷 칸을 그릴지(D54: 운영 설정 + 개인 `재킷 표시`). 켜져 있으면 칸 띠 오른쪽에 재킷 칸을 둔다 */
   jacket: boolean;
   /** 재킷 주소(우리 사이트 같은 출처). 없거나 못 불러오면 단색 칸 */
   jacketUrl: string | null;
@@ -259,22 +273,26 @@ function tileView(
   box: { x: number; y: number; w: number; h: number },
   t: Translator,
   options: CardOptions,
-  hidePattern = false,
 ): CardTileView {
   const jacket = options.jacketUrlOf !== undefined;
+  const scoreText = formatScore(entry.score);
+  const dot = scoreText.indexOf(".");
   return {
     jacket,
     jacketUrl: jacket ? (options.jacketUrlOf?.(entry.songId) ?? null) : null,
     ...box,
     title: entry.title,
-    patternText: entry.pattern && !hidePattern ? patternLabel(entry.pattern, t) : "",
+    patternText: entry.pattern ? patternLabel(entry.pattern, t) : "",
     partText: partLabel(entry.part),
     diffText: `${difficultyLabel(entry.difficulty)} ${formatLevel(entry.level)}`,
     tierText: formatTier(entry.tier, t),
     diffColor: DIFFICULTY_COLORS[entry.difficulty],
-    rateText: `${formatRate(entry.achievementRate)} · ${entry.stage}`,
+    rateText: formatRate(entry.achievementRate),
+    stageText: entry.stage,
     stageColor: STAGE_COLORS[entry.stage],
-    scoreText: formatScore(entry.score),
+    scoreText,
+    scoreIntText: dot < 0 ? scoreText : scoreText.slice(0, dot),
+    scoreDecText: dot < 0 ? "" : scoreText.slice(dot),
     tier: songScoreStyle(entry.score),
   };
 }
@@ -322,8 +340,6 @@ export function buildCardModel(layout: CardLayout, skill: SkillResponse, t: Tran
         },
         t,
         options,
-        // 단일 구역은 제목이 `단일 15곡`이라 칸마다 `단일` 칩을 붙이지 않는다(곡명 자리를 넓힌다, 2026-11-01)
-        group.kind === "single",
       ),
     );
     const rows = Math.ceil(group.entries.length / g.cols);

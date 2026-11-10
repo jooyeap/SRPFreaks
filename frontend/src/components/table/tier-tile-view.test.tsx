@@ -83,6 +83,8 @@ describe("서열표 첫 화면 (타일 격자)", () => {
     renderView();
 
     expect(await screen.findAllByText("내 평균 난이도")).toHaveLength(2); // 맨 위 줄 + 평균 타일의 숨은 글자
+    // 맨 위 줄의 라벨 옆에 `?` 설명 버튼이 하나 있다(타일 줄·곡 줄에는 없다)
+    expect(screen.getAllByRole("button", { name: "내 평균 난이도 설명 보기" })).toHaveLength(1);
     expect(document.querySelector("p .text-3xl")).toHaveTextContent("5.8"); // 서버 평균 5.84를 0.1 단위로
     expect(screen.getByText(`기록 ${sum}곡`)).toBeInTheDocument();
     expect(screen.queryByText(/처음이라면/)).toBeNull();

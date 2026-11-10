@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
+import { AverageLevelHelp } from "@/components/HelpTip";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableCredit } from "@/components/TableCredit";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
@@ -158,6 +159,7 @@ export function DifficultyTableView({
               <>
                 <span className="font-num text-3xl font-bold leading-none text-fg">{average.toFixed(1)}</span>
                 <span>{t("Table.tilesMyAverage")}</span>
+                <AverageLevelHelp />
                 <span aria-hidden="true">·</span>
                 <span>{t("Table.tilesRecordedCount", { count: recordedTotal })}</span>
               </>
