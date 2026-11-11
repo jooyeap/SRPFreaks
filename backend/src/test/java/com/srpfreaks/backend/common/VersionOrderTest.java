@@ -85,4 +85,32 @@ class VersionOrderTest {
         assertThat(VersionOrder.releaseDate(null)).isEmpty();
         assertThat(VersionOrder.releaseDate("")).isEmpty();
     }
+
+    @Test
+    void 약칭도_같은_버전으로_맞고_GW와_GW_DELTA는_구분된다() {
+        // 운영 값이 GW DELTA 같은 약칭이어도 가장 최근작으로 맨 위에 와야 한다(2026-11-11)
+        assertThat(VersionOrder.releaseDate("GW DELTA")).contains(LocalDate.of(2025, 3, 17));
+        assertThat(VersionOrder.releaseDate("GITADORA GW DELTA")).contains(LocalDate.of(2025, 3, 17));
+        assertThat(VersionOrder.releaseDate("GW")).contains(LocalDate.of(2024, 3, 13));
+        assertThat(VersionOrder.releaseDate("GITADORA GW")).contains(LocalDate.of(2024, 3, 13));
+        assertThat(VersionOrder.sorted(Arrays.asList("GW", "XG3", "GW DELTA", "FU", "zzz-신규")))
+                .containsExactly("GW DELTA", "GW", "FU", "XG3", "zzz-신규");
+    }
+
+    @Test
+    void 델타_기호는_DELTA로_보고_GALAXY_WAVE와_구분한다() {
+        assertThat(VersionOrder.releaseDate("GALAXY WAVE Δ")).contains(LocalDate.of(2025, 3, 17));
+        assertThat(VersionOrder.releaseDate("GALAXY WAVE \u2206")).contains(LocalDate.of(2025, 3, 17));
+        assertThat(VersionOrder.releaseDate("GALAXY WAVE")).contains(LocalDate.of(2024, 3, 13));
+    }
+
+    @Test
+    void 이전_버전_약칭과_모호한_약칭() {
+        assertThat(VersionOrder.releaseDate("OD")).contains(LocalDate.of(2014, 3, 5));
+        assertThat(VersionOrder.releaseDate("TB")).contains(LocalDate.of(2015, 4, 21));
+        assertThat(VersionOrder.releaseDate("HV")).contains(LocalDate.of(2021, 4, 21));
+        // N/A 는 NEX+AGE 약칭 NA 와 같아지므로 약칭을 두지 않는다
+        assertThat(VersionOrder.releaseDate("N/A")).isEmpty();
+        assertThat(VersionOrder.releaseDate("NA")).isEmpty();
+    }
 }
