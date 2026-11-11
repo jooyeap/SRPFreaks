@@ -26,7 +26,11 @@ public final class VersionOrder {
     private record Entry(LocalDate releaseDate, String name, String... aliases) {
     }
 
-    /** 이름, 출시일, 별칭. 출시일은 일본 아케이드 기준(영문·일문 위키백과·RemyWiki). 모르는 버전에 임의 날짜를 넣지 않는다. */
+    /**
+     * 이름, 출시일, 별칭. 출시일은 일본 아케이드 기준(영문·일문 위키백과·RemyWiki). 모르는 버전에 임의 날짜를 넣지 않는다.
+     * 운영 값이 약칭일 수 있어 약칭 별칭을 둔다(2026-11-11, 예: {@code GW DELTA}).
+     * 모호한 약칭은 넣지 않는다: {@code NA}(NEX+AGE, 하지만 {@code N/A} 와 같아짐), {@code EX}, {@code GD} 등.
+     */
     private static final List<Entry> TABLE = List.of(
             new Entry(LocalDate.of(1999, 2, 16), "GuitarFreaks 1st Mix", "1st Mix", "1stMix"),
             new Entry(LocalDate.of(1999, 7, 10), "GuitarFreaks 2ndMix / DrumMania 1st Mix", "GuitarFreaks 2nd Mix", "2nd Mix", "2ndMix"),
@@ -51,17 +55,17 @@ public final class VersionOrder {
             new Entry(LocalDate.of(2011, 3, 28), "GuitarFreaks & DrumMania V8", "V8", "GuitarFreaks V8"),
             new Entry(LocalDate.of(2012, 2, 23), "GuitarFreaks XG3", "XG3", "GuitarFreaks & DrumMania XG3"),
             new Entry(LocalDate.of(2013, 2, 14), "GITADORA"),
-            new Entry(LocalDate.of(2014, 3, 5), "GITADORA OverDrive", "OverDrive"),
-            new Entry(LocalDate.of(2015, 4, 21), "GITADORA Tri-Boost", "Tri-Boost"),
-            new Entry(LocalDate.of(2016, 12, 14), "GITADORA Tri-Boost Re:EVOLVE", "Tri-Boost Re:EVOLVE", "Re:EVOLVE"),
+            new Entry(LocalDate.of(2014, 3, 5), "GITADORA OverDrive", "OverDrive", "OD"),
+            new Entry(LocalDate.of(2015, 4, 21), "GITADORA Tri-Boost", "Tri-Boost", "TB"),
+            new Entry(LocalDate.of(2016, 12, 14), "GITADORA Tri-Boost Re:EVOLVE", "Tri-Boost Re:EVOLVE", "Re:EVOLVE", "TB Re:EVOLVE"),
             new Entry(LocalDate.of(2017, 9, 6), "GITADORA Matixx", "Matixx"),
             new Entry(LocalDate.of(2018, 9, 12), "GITADORA EXCHAIN", "EXCHAIN"),
             new Entry(LocalDate.of(2019, 10, 2), "GITADORA NEX+AGE", "NEX+AGE"),
-            new Entry(LocalDate.of(2021, 4, 21), "GITADORA HIGH-VOLTAGE", "HIGH-VOLTAGE"),
-            new Entry(LocalDate.of(2022, 12, 14), "GITADORA FUZZ-UP", "FUZZ-UP"),
-            new Entry(LocalDate.of(2024, 3, 13), "GITADORA GALAXY WAVE", "GALAXY WAVE"),
+            new Entry(LocalDate.of(2021, 4, 21), "GITADORA HIGH-VOLTAGE", "HIGH-VOLTAGE", "HV"),
+            new Entry(LocalDate.of(2022, 12, 14), "GITADORA FUZZ-UP", "FUZZ-UP", "FU"),
+            new Entry(LocalDate.of(2024, 3, 13), "GITADORA GALAXY WAVE", "GALAXY WAVE", "GW", "GITADORA GW"),
             // 한국 출시는 2025-04-25 이지만 순서에는 영향이 없어 일본 기준을 쓴다.
-            new Entry(LocalDate.of(2025, 3, 17), "GITADORA GALAXY WAVE DELTA", "GALAXY WAVE DELTA"));
+            new Entry(LocalDate.of(2025, 3, 17), "GITADORA GALAXY WAVE DELTA", "GALAXY WAVE DELTA", "GW DELTA", "GITADORA GW DELTA"));
 
     /** 정규화한 이름 → 출시일. 이름과 별칭을 모두 넣는다. */
     private static final Map<String, LocalDate> DATE_BY_KEY = buildIndex();
@@ -90,7 +94,8 @@ public final class VersionOrder {
 
     /** NFKC → 글자·숫자만 남김(공백·하이픈·콜론·기호 제거) → 소문자. 예: {@code Tri-Boost Re:EVOLVE} = {@code TriBoost ReEvolve}. */
     static String normalize(String name) {
-        String nfkc = Normalizer.normalize(name, Normalizer.Form.NFKC);
+        // 그리스 문자 Δ(U+0394)·증분 기호 ∆(U+2206)는 DELTA 로 본다. 안 하면 ∆ 는 기호라 지워져 GALAXY WAVE 와 같아진다.
+        String nfkc = Normalizer.normalize(name, Normalizer.Form.NFKC).replace("Δ", "DELTA").replace("∆", "DELTA");
         StringBuilder sb = new StringBuilder(nfkc.length());
         nfkc.codePoints().filter(Character::isLetterOrDigit).forEach(sb::appendCodePoint);
         return sb.toString().toLowerCase(Locale.ROOT);
