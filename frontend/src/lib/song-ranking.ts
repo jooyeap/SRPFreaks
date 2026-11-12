@@ -50,7 +50,23 @@ export const SUMMARY_SIZE = 3;
  */
 export const songRankingKeys = {
   summary: (userId: number, chartId: number) => ["skill", userId, "song-ranking", chartId, SUMMARY_SIZE] as const,
+  /** 전체 순위 화면의 한 쪽. 앞부분이 요약과 같아서 기록을 바꾸면 쪽도 같이 무효화된다(size는 키 끝에 있어 요약 키와 다르다). */
+  page: (userId: number, chartId: number, page: number, size: number) => ["skill", userId, "song-ranking", chartId, "page", page, size] as const,
 };
+
+/** 전체 순위 화면의 한 쪽 크기. 서버 기본값(20)과 같다. 서버 상한은 50이다. */
+export const RANKING_PAGE_SIZE = 20;
+
+/**
+ * 주소의 `?page=`를 안전하게 읽는다(0부터, 비교 화면 `?page=`와 같은 규칙). 숫자가 아니거나 음수·소수·너무 큰 값은 0으로 본다.
+ * 사용자가 주소를 직접 고칠 수 있으므로 서버에 보내기 전에 거른다.
+ */
+export function parseRankingPage(value: string | null | undefined): number {
+  if (typeof value !== "string" || !/^\d{1,6}$/.test(value)) {
+    return 0;
+  }
+  return Number(value);
+}
 
 /** 한 페이지를 받는다. 로그인이 필요하다(서버가 비로그인은 401). */
 export function fetchSongRanking(chartId: number, page: number, size: number, signal?: AbortSignal): Promise<SongRankingResponse> {
