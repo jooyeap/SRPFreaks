@@ -52,6 +52,24 @@ describe("manifest", () => {
     expect(header("apple-touch-icon.png")).toEqual({ width: 180, height: 180, colorType: 2 });
   });
 
+  it("favicon.ico에는 16·32·48 크기 항목이 모두 들어 있고 PNG 이미지다", () => {
+    // ICO 머리말(ICONDIR): 예약 2B(0), 종류 2B(1 = 아이콘), 항목 수 2B. 항목(ICONDIRENTRY)은 16B씩 이어지고 앞 2B가 너비·높이(0이면 256).
+    const buf = readFileSync(join(process.cwd(), "src", "app", "favicon.ico"));
+    expect(buf.readUInt16LE(0)).toBe(0);
+    expect(buf.readUInt16LE(2)).toBe(1);
+    const count = buf.readUInt16LE(4);
+    const sizes: number[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const entry = 6 + 16 * i;
+      const width = buf[entry] === 0 ? 256 : buf[entry];
+      expect(buf[entry + 1] === 0 ? 256 : buf[entry + 1]).toBe(width);
+      const offset = buf.readUInt32LE(entry + 12);
+      expect(buf.subarray(offset, offset + 8).toString("hex")).toBe("89504e470d0a1a0a"); // 항목은 PNG로 저장돼 있다
+      sizes.push(width);
+    }
+    expect(sizes.sort((a, b) => a - b)).toEqual([16, 32, 48]);
+  });
+
   it("서비스 워커·푸시는 없다: 매니페스트에 관련 항목이 없고 서비스 워커 파일도 없다", () => {
     expect(Object.keys(m)).not.toContain("serviceworker");
     expect(existsSync(join(process.cwd(), "public", "sw.js"))).toBe(false);
