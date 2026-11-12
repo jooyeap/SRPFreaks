@@ -113,6 +113,19 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     expect(items[0].querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
 
+  it("같은 티어 값이 없어 차이가 없는 줄의 채움은 카드 배경과 구분되는 중립색(border-ctl bg-ctl)이고, 비교가 되는 줄은 의미 색(주황/초록)이다", async () => {
+    show(response());
+    const items = within(await patternList()).getAllByRole("listitem");
+    const fillOf = (li: HTMLElement) => li.querySelector('[aria-hidden="true"] > div') as HTMLElement;
+    // 단일: 같은 티어가 더 높음 → 주황, 복합: 내가 더 높음 → 초록, 삼중: 같은 티어 없음 → 중립
+    expect(fillOf(items[0]).className).toContain("bg-weak-tint");
+    expect(fillOf(items[1]).className).toContain("bg-done-tint");
+    const neutral = fillOf(items[3]);
+    expect(neutral.className).toContain("border-ctl");
+    expect(neutral.className).toContain("bg-ctl");
+    expect(neutral.className).not.toContain("bg-table-head");   // 예전 값(카드 배경과 거의 같아 보이지 않았다)
+  });
+
   it("난이도대 줄은 높은 순으로 나오고 약점에만 `약점` 글자 표지가 있다", async () => {
     show(response());
     const items = within(await bandList()).getAllByRole("listitem");

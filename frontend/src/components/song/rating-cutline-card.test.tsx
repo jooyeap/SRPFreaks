@@ -98,6 +98,27 @@ describe("RatingCutlineCard", () => {
     expect(screen.getByLabelText("목표 달성률")).toHaveValue("");
   });
 
+  it("진행 막대의 채움은 티어 색(tier-bar, 부모 data-tier가 있어야 색이 생김)이 아니라 일반 강조색 토큰을 써서 비어 보이지 않는다", async () => {
+    givenServer(
+      response({
+        status: "IN_LIST",
+        currentRate: 90,
+        currentScore: 282.67,
+        currentRank: 3,
+        cutline: { lastScore: 282.67, requiredRate: 80.01, reachable: true, rateGap: -9.99, groupFull: true },
+      }),
+    );
+    renderCard();
+    await card();
+
+    const bar = screen.getByRole("progressbar");
+    const fill = bar.firstElementChild as HTMLElement;
+    expect(fill.className).not.toContain("tier-bar");
+    expect(fill.className).toContain("bg-[var(--stage-ss-bar)]");
+    expect(bar.className).toContain("bg-line");        // 트랙은 카드 바탕과 구분되는 선 색
+    expect(fill.style.width).not.toBe("");              // 비율 계산은 그대로(폭이 들어간다)
+  });
+
   it("목록 밖이면 필요 달성률과 더 올릴 양을 보여 주고, 입력칸은 컷라인 달성률에서 시작한다", async () => {
     givenServer(
       response({
