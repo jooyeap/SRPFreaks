@@ -9,11 +9,12 @@ import { RivalTopSongs } from "@/components/rivals/RivalTopSongs";
 import { ApiError } from "@/lib/api";
 import type { RivalResponse } from "@/lib/api-types";
 import { formatScore } from "@/lib/format";
-import { fetchRivals, rivalKeys, signed, unregisterRival } from "@/lib/rivals";
+import { fetchRivals, formatScoreDiff, myScoreDiff, rivalKeys, unregisterRival } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 /**
  * 마이페이지 `라이벌` 탭(D56): 내 라이벌 카드(최대 5). 카드를 누르면 비교 화면. 아래에 `나를 등록한 유저` 구역(D63).
+ * 카드의 순서는 비교 화면과 같은 `승 · 무 · 패 · 상대만`, 총점 차는 비교 화면과 같은 `내 점수 − 상대 점수` 부호다(2026-11-12).
  * 비공개가 된 상대는 흐린 카드에 안내 + `라이벌 해제`만 둔다. `서로 라이벌`은 칩 글자로 보인다.
  */
 export function RivalTab({ userId }: { userId: number }) {
@@ -67,15 +68,15 @@ export function RivalTab({ userId }: { userId: number }) {
               {t.rich("scoreLine", {
                 n: (c) => <span className="font-num text-fg">{c}</span>,
                 total: formatScore(rival.totalScore),
-                diff: signed(rival.scoreDiff ?? 0),
+                diff: formatScoreDiff(myScoreDiff(rival.scoreDiff))?.text ?? "–",
               })}
             </span>
             <span className="grid grid-cols-4 gap-1.5 text-center">
               {(
                 [
                   ["win", rival.counts.win],
-                  ["lose", rival.counts.lose],
                   ["tie", rival.counts.tie],
+                  ["lose", rival.counts.lose],
                   ["theirsOnly", rival.counts.theirsOnly],
                 ] as const
               ).map(([key, n]) => (

@@ -505,7 +505,7 @@ export interface RivalTopSong {
 }
 
 /**
- * 내 라이벌 한 줄. available=false(상대가 비공개·차단)면 닉네임만 오고 나머지는 null. scoreDiff = 상대 총점 - 내 총점.
+ * 내 라이벌 한 줄. available=false(상대가 비공개·차단)면 닉네임만 오고 나머지는 null. scoreDiff = 상대 총점 - 내 총점(서버 값 그대로). 화면은 비교 화면과 같은 부호(내 − 상대)로 `myScoreDiff`에서 한 번만 뒤집어 쓴다.
  * topSongs = 상대 레이팅 목록의 상위 곡 최대 5곡(점수 내림차순, 곡마다 한 번). 구버전 응답에는 없다(없으면 줄을 그리지 않는다).
  */
 export interface RivalResponse {

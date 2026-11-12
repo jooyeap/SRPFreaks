@@ -6,6 +6,7 @@ import { RivalCompareView } from "@/components/rivals/RivalCompareView";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { RivalTab } from "@/components/rivals/RivalTab";
 import type { PageResponse, RivalCompareRatingResponse, RivalRegistrantResponse, RivalResponse, RivalSummaryResponse } from "@/lib/api-types";
+import { formatScoreDiff, myScoreDiff } from "@/lib/rivals";
 import ja from "../../../messages/ja.json";
 import ko from "../../../messages/ko.json";
 
@@ -323,7 +324,9 @@ describe("RivalTab", () => {
     const card = await screen.findByRole("link", { name: /Rumi/ });
     expect(card).toHaveAttribute("href", "/players/7/compare");
     expect(card).toHaveTextContent("서로 라이벌");
-    expect(card).toHaveTextContent("+312.10");
+    // 서버 scoreDiff 312.1 = 상대 − 나(상대가 높음) → 카드는 비교 화면과 같은 부호(내 − 상대)라 −312.10, "나보다" 표기는 없다.
+    expect(card).toHaveTextContent("총점 차 \u2212312.10");
+    expect(card).not.toHaveTextContent("나보다");
     expect(screen.getByText("상대가 기록을 비공개로 바꿨습니다.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "라이벌 해제" })).toBeInTheDocument();
     expect(screen.getByText("2/5")).toBeInTheDocument();
@@ -345,6 +348,61 @@ describe("RivalTab", () => {
     expect(card).toHaveTextContent("6");
     expect(card).not.toHaveTextContent("48");
     expect(card).not.toHaveTextContent("61");
+  });
+});
+
+describe("RivalTab - 순서·부호 통일 (2026-11-12)", () => {
+  const rivalWith = (scoreDiff: number): RivalResponse => ({
+    userId: 7, nickname: "Rumi", available: true, mutual: false, tier: gold, totalScore: 9000,
+    scoreDiff, counts: { win: 18, lose: 24, tie: 2, theirsOnly: 6 },
+  });
+  async function renderCard(scoreDiff: number) {
+    fetchMock.mockImplementation(async (input) =>
+      String(input).includes("/rivals/registered-me") ? json(registrantPage([])) : json([rivalWith(scoreDiff)]));
+    renderWith(<RivalTab userId={1} />);
+    return screen.findByRole("link", { name: /Rumi/ });
+  }
+
+  it("카드의 칸 순서는 비교 화면과 같은 승 · 무 · 패 · 상대만이고 글자가 함께 보인다", async () => {
+    const card = await renderCard(10);
+    const labels = ["승", "무", "패", "상대만"].map((l) => card.textContent!.indexOf(l, card.textContent!.indexOf("총점 차")));
+    expect(labels.every((i) => i >= 0)).toBe(true);
+    expect([...labels].sort((a, b) => a - b)).toEqual(labels);
+    // 숫자도 글자 바로 옆 칸 순서(18 승, 2 무, 24 패, 6 상대만)를 따른다.
+    const cells = [...card.querySelectorAll("span.grid > span")].map((c) => c.textContent);
+    expect(cells).toEqual(["18승", "2무", "24패", "6상대만"]);
+  });
+
+  it("총점 차는 항상 내 점수 − 상대 점수: 서버 값이 상대 − 나이므로 부호가 뒤집혀 보인다", async () => {
+    expect(await renderCard(930.3)).toHaveTextContent("총점 차 \u2212930.30"); // 상대가 높음 → 내가 뒤 → 마이너스
+  });
+
+  it("내가 앞이면 플러스, 같으면 ±0.00", async () => {
+    expect(await renderCard(-64.5)).toHaveTextContent("총점 차 +64.50");
+  });
+
+  it("myScoreDiff 한 곳에서만 부호를 뒤집는다(0과 null 처리)", () => {
+    expect(myScoreDiff(312.1)).toBe(-312.1);
+    expect(myScoreDiff(-5)).toBe(5);
+    expect(myScoreDiff(0)).toBe(0);
+    expect(Object.is(myScoreDiff(0), 0)).toBe(true);
+    expect(myScoreDiff(null)).toBeNull();
+    expect(formatScoreDiff(myScoreDiff(0))?.text).toBe("\u00b10.00");
+  });
+
+  it("비교 화면 대시보드의 총점 차와 같은 값·같은 표기다(두 화면 모두 formatScoreDiff)", () => {
+    // 비교 화면: myTotalScore − totalScore = 9000 − 9930.3 = −930.3 / 카드: 서버 scoreDiff(상대 − 나) = 930.3
+    const dashboard = formatScoreDiff(Math.round((9000 - 9930.3) * 100) / 100)?.text;
+    const card = formatScoreDiff(myScoreDiff(930.3))?.text;
+    expect(card).toBe(dashboard);
+    expect(card).toBe("\u2212930.30");
+  });
+
+  it("scoreLine 문구: ko는 `총점 차`, ja는 `総合点差`이고 옛 `나보다`/`自分との差`는 없다", () => {
+    expect(ko.Rival.scoreLine).toBe("총점 <n>{total}</n> · 총점 차 <n>{diff}</n>");
+    expect(ja.Rival.scoreLine).toBe("総合 <n>{total}</n> · 総合点差 <n>{diff}</n>");
+    expect(ko.Rival.scoreLine).not.toContain("나보다");
+    expect(ja.Rival.scoreLine).not.toContain("自分との差");
   });
 });
 
