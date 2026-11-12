@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotificationBell } from "@/components/NotificationBell";
+import { resetHistoryLayersForTest } from "@/lib/history-layers";
 import type { NotificationResponse } from "@/lib/api-types";
 
 const push = vi.fn();
@@ -41,7 +42,10 @@ describe("NotificationBell", () => {
       });
     });
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetHistoryLayersForTest();
+  });
 
   it("로그인하지 않았으면 그리지 않는다", () => {
     authed = false;
@@ -70,9 +74,47 @@ describe("NotificationBell", () => {
     fireEvent.click(await screen.findByRole("button", { name: "알림 12개" }));
     fireEvent.click(await screen.findByRole("button", { name: /MEGALOVANIA/ }));
 
-    expect(push).toHaveBeenCalledWith("/players/7/compare?view=charts");
+    // 창이 쌓은 history 칸을 걷어낸 뒤에 이동하므로 한 틱 뒤에 불린다(lib/history-layers.ts)
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/players/7/compare?view=charts"));
     await waitFor(() =>
       expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/notifications/1/read"))).toBe(true),
     );
+  });
+
+  it("긴 알림 문장은 줄바꿈으로 모두 보이고 가로 스크롤이 생기지 않는다", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.includes("/unread-count")) return json({ count: 1 });
+      return json({
+        content: [{ ...base, actorNickname: "A".repeat(60), title: "VERY-LONG-TITLE-".repeat(8) }],
+        page: 0, size: 20, totalElements: 1, totalPages: 1,
+      });
+    });
+    renderWith(<NotificationBell />);
+    fireEvent.click(await screen.findByRole("button", { name: "알림 1개" }));
+    const dialog = await screen.findByRole("dialog", { name: "알림" });
+    const list = dialog.querySelector("ul");
+    // 가로로 스크롤되는 클래스가 없고 가로 넘침은 숨긴다
+    expect(list?.className).not.toMatch(/overflow-x-(auto|scroll)/);
+    expect(list?.className).toContain("overflow-x-hidden");
+    // 창은 헤더 안에 있어 헤더의 nowrap을 물려받으므로 창에서 풀어 준다(2026-11-12: 문장이 한 줄로 잘리고 가로 스크롤이 생겼다)
+    expect(dialog).toHaveClass("whitespace-normal");
+    // 글자가 한 줄로 잘리는 클래스(truncate, nowrap)가 없고, 붙은 긴 글자도 어디서든 줄바꿈된다
+    const text = (await screen.findByText(/VERY-LONG-TITLE-/)).closest("span.block");
+    expect(text?.parentElement?.className).toContain("[overflow-wrap:anywhere]");
+    expect(dialog.innerHTML).not.toMatch(/truncate|whitespace-nowrap|text-ellipsis/);
+  });
+
+  it("뒤로 가기를 누르면 알림 창만 닫히고 주소는 그대로다", async () => {
+    window.history.replaceState(null, "", "/start");
+    renderWith(<NotificationBell />);
+    const before = window.history.length;
+    fireEvent.click(await screen.findByRole("button", { name: "알림 12개" }));
+    await screen.findByRole("dialog", { name: "알림" });
+    expect(window.history.length).toBe(before + 1);
+
+    window.history.back();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "알림" })).not.toBeInTheDocument());
+    expect(window.location.pathname).toBe("/start");
   });
 });

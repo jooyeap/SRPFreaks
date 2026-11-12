@@ -6,6 +6,7 @@ import ko from "../../../messages/ko.json";
 import { JacketUploadDialog } from "@/components/song/JacketUploadDialog";
 import { ToastProvider } from "@/components/Toast";
 import { jacketQualitySteps } from "@/lib/jacket-resize";
+import { resetHistoryLayersForTest } from "@/lib/history-layers";
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -77,5 +78,16 @@ describe("곡 상세 재킷 바꾸기 (ROOT)", () => {
   it("품질은 0.8부터 낮춰 가며 시도한다", () => {
     expect(jacketQualitySteps()[0]).toBe(0.8);
     expect(jacketQualitySteps()).toEqual([...jacketQualitySteps()].sort((a, b) => b - a));
+  });
+
+  it("뒤로 가기를 누르면 창만 닫힌다(onClose, 주소는 그대로)", async () => {
+    resetHistoryLayersForTest();
+    window.history.replaceState(null, "", "/prev");
+    window.history.pushState(null, "", "/here");
+    const { onClose } = renderDialog(async (file) => file);
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(window.location.pathname).toBe("/here");
+    resetHistoryLayersForTest();
   });
 });

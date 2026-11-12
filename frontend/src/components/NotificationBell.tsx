@@ -17,6 +17,8 @@ import {
   relativeMinutes,
 } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
+import { runAfterHistorySettled } from "@/lib/history-layers";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 function BellIcon() {
   return (
@@ -32,6 +34,8 @@ function BellIcon() {
  * (서버는 이때 "10분이 지난 알림"을 처리하므로 따로 주기 작업이 없다).
  * 모바일(lg 미만)은 아래에서 올라오는 시트, 데스크톱은 종 아래 펼침. Esc·바깥 누르기로 닫는다.
  * 안 읽은 줄은 배경 + 점 + `새 알림` 글자로 보인다(색만 쓰지 않는다).
+ * 창은 헤더 안에 있어서 헤더의 `whitespace-nowrap`을 물려받는다. 그대로 두면 알림 문장이 한 줄로 이어져 잘리고 가로 스크롤이 생기므로
+ * 창에 `whitespace-normal`을 두고(TermHelp와 같은 이유), 띄어쓰기 없는 긴 글자도 `overflow-wrap:anywhere`로 줄바꿈한다.
  */
 export function NotificationBell() {
   const { status, user } = useAuth();
@@ -48,6 +52,8 @@ function Bell({ viewerId }: { viewerId: number }) {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // 뒤로 가기를 누르면 알림 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, () => setOpen(false));
 
   const count = useQuery({
     queryKey: notificationKeys.count(viewerId),
@@ -95,7 +101,8 @@ function Bell({ viewerId }: { viewerId: number }) {
   const go = (item: NotificationResponse) => {
     if (!item.read) readOne.mutate(item.id);
     setOpen(false);
-    router.push(`/players/${item.actorUserId}/compare?view=charts`);
+    // 창이 쌓아 둔 history 칸을 먼저 걷어낸 뒤에 이동한다(바로 push하면 칸 정리와 겹쳐 새 화면이 걷히거나 칸이 하나 남는다. lib/history-layers.ts)
+    runAfterHistorySettled(() => router.push(`/players/${item.actorUserId}/compare?view=charts`));
   };
 
   return (
@@ -123,7 +130,7 @@ function Bell({ viewerId }: { viewerId: number }) {
             ref={panelRef}
             role="dialog"
             aria-label={t("title")}
-            className="motion-sheet fixed inset-x-0 bottom-0 z-50 flex max-h-[80svh] flex-col gap-2 rounded-t-2xl border-t border-line bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:absolute lg:inset-x-auto lg:bottom-auto lg:right-0 lg:top-full lg:mt-2 lg:max-h-[70vh] lg:w-[380px] lg:rounded-2xl lg:border lg:p-3 lg:shadow-xl"
+            className="motion-sheet fixed inset-x-0 bottom-0 z-50 flex max-h-[80svh] flex-col gap-2 whitespace-normal rounded-t-2xl border-t border-line bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:absolute lg:inset-x-auto lg:bottom-auto lg:right-0 lg:top-full lg:mt-2 lg:max-h-[70vh] lg:w-[380px] lg:rounded-2xl lg:border lg:p-3 lg:shadow-xl"
           >
             <span aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-chip-line lg:hidden" />
             <div className="flex items-center gap-2">
@@ -137,7 +144,7 @@ function Bell({ viewerId }: { viewerId: number }) {
                 {t("readAll")}
               </button>
             </div>
-            <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto">
+            <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto overflow-x-hidden">
               {list.isPending ? (
                 <li className="p-3 text-sm text-fg-sub">{t("loading")}</li>
               ) : list.isError ? (
@@ -167,10 +174,10 @@ function NotificationItem({ item, onOpen }: { item: NotificationResponse; onOpen
       <button
         type="button"
         onClick={onOpen}
-        className={`flex w-full gap-2.5 rounded-xl p-3 text-left hover:bg-table-head ${item.read ? "" : "bg-table-head"}`}
+        className={`flex w-full min-w-0 gap-2.5 rounded-xl p-3 text-left hover:bg-table-head ${item.read ? "" : "bg-table-head"}`}
       >
         <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full ${item.read ? "border border-ctl" : "bg-fg"}`} />
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
           <span className={`block text-[13px] leading-relaxed ${item.read ? "text-fg-sub" : "text-fg"}`}>
             {item.bundled && item.songCount > 1
               ? t.rich("bundled", { ...b, nickname, n: item.songCount })

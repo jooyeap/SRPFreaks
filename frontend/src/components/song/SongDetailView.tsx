@@ -29,6 +29,7 @@ import { useRecordDelete } from "@/components/RecordDeleteProvider";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { runAfterHistorySettled } from "@/lib/history-layers";
 import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
@@ -334,7 +335,8 @@ export function SongDetailView({
           chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
           onDeleted={(target) => {
             // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
-            router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
+            // 관리 창(과 삭제 확인 창)이 쌓은 history 칸을 먼저 걷어낸 뒤 replace해야 "곡 상세 칸"이 바뀐다(lib/history-layers.ts)
+            runAfterHistorySettled(() => router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`));
           }}
         />
       ) : null}

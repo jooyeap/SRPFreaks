@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { SongDeleteControl } from "@/components/song/SongDeleteControl";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 const ROW = "min-h-11 w-full rounded-lg border border-ctl px-3 py-2 text-left text-sm text-fg hover:bg-table-head";
 
@@ -47,6 +48,8 @@ export function SongManageDialog({
 }) {
   const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, onClose);
   const titleId = useId();
 
   // 다른 창들과 같은 방식: 열림 상태를 <dialog>의 showModal/close에 맞춘다

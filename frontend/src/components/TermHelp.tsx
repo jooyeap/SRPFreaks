@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { TERM_HELP, type TermKey } from "@/lib/term-help";
 import { useTranslations } from "next-intl";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /**
  * 낯선 용어 옆의 작은 `?` 버튼. 누르면 한두 줄 설명과 설명서 링크가 담긴 말풍선이 열린다.
@@ -18,6 +19,8 @@ export function TermHelp({ term, label }: { term: TermKey; label: string }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
   const help = TERM_HELP[term];
+  // 설명 상자가 열려 있을 때 뒤로 가기를 누르면 상자만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, () => setOpen(false));
 
   useEffect(() => {
     if (!open) {

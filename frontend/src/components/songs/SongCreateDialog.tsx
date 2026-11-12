@@ -24,6 +24,7 @@ import { PATTERN_CHOICES, RECOMMEND_CHOICES } from "@/lib/table-entry-admin";
 import { useTranslations } from "next-intl";
 import { TitleDuplicateNotice } from "@/components/song/TitleDuplicateNotice";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -47,6 +48,8 @@ export function SongCreateDialog({
 }) {
   const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, onClose);
   const titleId = useId();
 
   useEffect(() => {

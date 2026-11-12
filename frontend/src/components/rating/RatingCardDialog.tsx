@@ -7,6 +7,7 @@ import type { SkillResponse } from "@/lib/api-types";
 import { buildCardModel, CARD_LAYOUTS, cardFileName, type CardLayout } from "@/lib/rating-card";
 import { renderRatingCard } from "@/lib/rating-card-draw";
 import { useJackets } from "@/lib/jackets";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /**
  * 레이팅 카드 이미지 저장 (D44). 버튼을 누르면 창이 열리고, 브라우저 캔버스로 PNG를 만들어 미리 보여 준다. 서버로 아무것도 보내지 않는다.
@@ -40,6 +41,8 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
   const t = useTranslations();
   const user = useOptionalUser();
   const ref = useRef<HTMLDialogElement>(null);
+  // 이 컴포넌트는 창이 열려 있는 동안에만 그려지므로 항상 "열림"이다. 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(true, onClose);
   const [layout, setLayout] = useState<CardLayout>("landscape");
   const [showName, setShowName] = useState(true);
   // 그린 결과는 "어떤 옵션으로 그렸는지(key)"와 함께 보관한다. 옵션이 바뀌면 key가 달라져 자동으로 "만드는 중"이 된다

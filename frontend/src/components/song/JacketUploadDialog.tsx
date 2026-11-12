@@ -9,6 +9,7 @@ import { resizeToJacket } from "@/lib/jacket-resize";
 import { jacketKeys } from "@/lib/jackets";
 import { saveJackets } from "@/lib/song-jackets";
 import { songKeys } from "@/lib/songs";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /**
  * 곡 상세 `관리` → `재킷 바꾸기`(ROOT 전용, 2026-11-02). 공식 목록에 없는 곡의 재킷을 직접 넣거나 바꾸고 지운다.
@@ -76,6 +77,8 @@ export function JacketUploadDialog({
     setError(null);
     onClose();
   };
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts). 입력해 둔 이미지도 close()가 같이 비운다
+  useHistoryClose(open, close);
   const save = useMutation({
     mutationFn: (image: Blob) => saveJackets([{ songId, blob: image }]),
     onSuccess: async () => {

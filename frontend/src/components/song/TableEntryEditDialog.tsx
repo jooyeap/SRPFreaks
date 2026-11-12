@@ -20,6 +20,7 @@ import {
 } from "@/lib/table-entry-admin";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 import { useTranslations } from "next-intl";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /** 수정할 서열표 줄. entry가 null이면 표에 아직 없는 채보라서 저장하면 새 줄로 추가된다. */
 export interface TableEntryTarget {
@@ -42,6 +43,8 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 export function TableEntryEditDialog({ target, onClose }: { target: TableEntryTarget | null; onClose: () => void }) {
   const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(target !== null, onClose);
 
   useEffect(() => {
     const dialog = ref.current;

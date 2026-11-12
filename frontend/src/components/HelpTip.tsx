@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 const PANEL_MAX = 320; // 설명 상자 최대 폭(px)
 const GUTTER = 16; // 화면 좌우 여백(px)
@@ -29,6 +30,8 @@ export function HelpTip({ title, body, ariaLabel }: { title: string; body: strin
   const rootRef = useRef<HTMLSpanElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
+  // 설명 상자가 열려 있을 때 뒤로 가기를 누르면 상자만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, () => setOpen(false));
 
   // 열릴 때 `?` 의 화면 위치를 재서 상자의 왼쪽 위치·폭·화살표 위치를 정한다
   useLayoutEffect(() => {
