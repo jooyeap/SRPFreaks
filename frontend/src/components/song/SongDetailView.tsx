@@ -14,6 +14,7 @@ import { useJackets } from "@/lib/jackets";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { PeerStatsCard } from "@/components/song/PeerStatsCard";
+import { RatingCutlineCard } from "@/components/song/RatingCutlineCard";
 import { TierHistorySection } from "@/components/song/TierHistorySection";
 import { SongNavBar } from "@/components/song/SongNavBar";
 import { useDetailNav } from "@/components/song/use-detail-nav";
@@ -267,6 +268,8 @@ export function SongDetailView({
         <div className="contents md:flex md:flex-col md:gap-4">
           <div className="order-2 flex flex-col gap-4 md:order-none">
             {myRecord}
+            {/* 컷라인 · 목표 달성률 시뮬레이션(D71): 내 기록 카드 아래. 로그인했을 때만, 레이팅 대상이 아니면 카드를 숨기고 안내 한 줄만 보인다 */}
+            {chart && loggedIn ? <RatingCutlineCard chartId={chart.id} userId={userId} /> : null}
             {/* 라이벌 기록(D56): 로그인 + 라이벌이 있을 때만. 없으면 카드가 스스로 그리지 않는다 */}
             {chart && loggedIn ? <RivalRecordsCard viewerId={userId} songDifficultyId={chart.id} /> : null}
           </div>
