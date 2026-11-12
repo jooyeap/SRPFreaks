@@ -97,6 +97,32 @@ describe("푸터 링크", () => {
   });
 });
 
+describe("푸터 링크: 손가락은 44px 줄, 마우스는 글자 범위만 (2026-11-12)", () => {
+  it("FOOTER_LINE_LINK의 44px 줄 클래스는 모두 손가락 기기(pointer-coarse)에만 걸려 있어, 마우스 기기는 보통 inline 링크다", () => {
+    const set = tokens(FOOTER_LINE_LINK);
+    expect(set).toEqual(["pointer-coarse:inline-flex", "pointer-coarse:min-h-11", "pointer-coarse:items-center"]);
+    // 조건 없는 min-h-11·inline-flex가 있으면 마우스 기기에서도 44px(36px) 줄이 된다
+    expect(set.every((token) => token.startsWith("pointer-coarse:"))).toBe(true);
+  });
+
+  it("푸터의 네 링크(제공자·문의 이메일·약관·처리방침)가 모두 같은 클래스를 쓴다", () => {
+    const { container } = render(<SiteFooter />);
+    const links = Array.from(container.querySelectorAll("footer a"));
+    expect(links.length).toBeGreaterThanOrEqual(3);
+    for (const link of links) {
+      expect(link).toHaveClass("pointer-coarse:inline-flex", "pointer-coarse:min-h-11");
+      expect(link.className).not.toMatch(/(^| )min-h-11( |$)/); // 조건 없는 min-h-11이 없다(마우스 기기는 글자 범위만)
+    }
+  });
+
+  it("푸터는 아래 고정 바 높이(--bottom-bar-h)만큼 아래를 비우고, 맨 위로 버튼 자리를 위해 오른쪽 여백을 넓힌다", () => {
+    const { container } = render(<SiteFooter />);
+    const footer = container.querySelector("footer");
+    expect(footer).toHaveClass("pb-[var(--bottom-bar-h,0px)]");
+    expect(footer?.firstElementChild).toHaveClass("sm:max-[1340px]:pr-16");
+  });
+});
+
 describe("공통 방식을 쓰는 화면 목록(빠뜨림 방지)", () => {
   // 렌더에 데이터·로그인이 많이 필요한 화면은 소스에서 공통 상수를 쓰는지만 확인한다.
   const TARGETS: Array<[string, string]> = [

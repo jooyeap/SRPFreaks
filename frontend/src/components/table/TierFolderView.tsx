@@ -8,6 +8,7 @@ import { RecordDialog } from "@/components/record/RecordDialog";
 import { AverageToggle } from "@/components/table/FilterChips";
 import { SortSelect } from "@/components/table/SortSelect";
 import { filterSummary, TableFilterPanel } from "@/components/table/TableFilterPanel";
+import { LoginBanner } from "@/components/LoginBanner";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableSearch } from "@/components/table/TableSearch";
 import { FolderHeader } from "@/components/table/FolderHeader";
@@ -387,7 +388,15 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
             {hasFilters(filters) && group.entries.length === 0 ? (
               <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
             ) : null}
-            <TierGroupSection group={group} includeZero={includeZero} sort={sort} onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined} />
+            {/* 비로그인: 달성률 칸을 없애는 대신 목록 위에 한 줄로 알린다(칸이 전부 `– –`로 비어 보이던 것) */}
+            {isLoggedInViewer(userId) ? null : <LoginBanner message={t("Table.folderLoginHint")} />}
+            <TierGroupSection
+              group={group}
+              includeZero={includeZero}
+              sort={sort}
+              showRecord={isLoggedInViewer(userId)}
+              onRecord={isLoggedInViewer(userId) ? (entry, tier) => setRecordTarget({ entry, tier }) : undefined}
+            />
           </div>
           {neighborPreview && !reduced ? (
             <div
@@ -397,7 +406,7 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
               className="absolute inset-y-0 w-full overflow-hidden"
               style={drag?.side === "higher" ? { left: `calc(100% + ${NEIGHBOR_GAP_PX}px)` } : { right: `calc(100% + ${NEIGHBOR_GAP_PX}px)` }}
             >
-              <TierGroupSection group={neighborPreview} includeZero={includeZero} sort={sort} />
+              <TierGroupSection group={neighborPreview} includeZero={includeZero} sort={sort} showRecord={isLoggedInViewer(userId)} />
             </div>
           ) : null}
         </div>
