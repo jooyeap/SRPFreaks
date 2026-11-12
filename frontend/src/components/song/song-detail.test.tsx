@@ -180,6 +180,8 @@ describe("SongDetailView", () => {
       }
       if (url.includes("/difficulty-tables")) return Promise.resolve(json(tables));
       if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
+      // 곡별 순위(D74)는 이 테스트의 관심사가 아니다. 곡 응답을 순위 응답으로 읽지 않게 따로 돌려준다
+      if (url.includes("/ranking")) return Promise.resolve(json({}, 404));
       return Promise.resolve(songResponse());
     });
     renderView("table", 10);
