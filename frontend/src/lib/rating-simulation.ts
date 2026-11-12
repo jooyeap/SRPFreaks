@@ -82,12 +82,16 @@ export function fetchRatingSimulation(
   });
 }
 
-/** 빠른 칩. 입력칸 글자(소수점 없는 정수, 9500 = 95.00%)와 화면 글자. */
+/**
+ * 빠른 칩. 입력칸 글자(소수점 없는 정수, 9500 = 95.00%)와 화면 글자.
+ * 값은 달성 단계 기준과 같다: 73 = A, 80 = S, 90 = 중간 목표, 95 = SS (판정은 lib/stage.ts).
+ * MAX(100.00)는 칩이 없고 직접 입력으로 넣는다.
+ */
 export const QUICK_RATES = [
+  { input: "7300", label: "73%" },
+  { input: "8000", label: "80%" },
+  { input: "9000", label: "90%" },
   { input: "9500", label: "95%" },
-  { input: "9700", label: "97%" },
-  { input: "9900", label: "99%" },
-  { input: String(RATE_INPUT_MAX), label: "MAX" },
 ] as const;
 
 /** 입력 검사(Zod). 기록 입력(record-schema)과 같은 규칙·같은 문구를 쓴다: 소수점 없는 정수 0~10000, ÷100이 달성률. 서버(Validation)에도 같은 범위가 있다. */
