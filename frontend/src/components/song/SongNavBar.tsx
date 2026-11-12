@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import type { NavView } from "@/lib/detail-nav";
 import { dismissDetailNavHint, isDetailNavHintDismissed } from "@/lib/detail-nav-hint";
 import { formatTier } from "@/lib/format";
+import { COARSE_POINTER_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { useTranslations } from "next-intl";
 
 /** 바 높이(3.5rem). 토스트가 바 위로 올라가도록 CSS 변수로 알린다(Toast.tsx) */
@@ -14,14 +15,17 @@ const BAR_HEIGHT = "3.5rem";
  * 곡 상세 아래 고정 바: `‹ 이전 · 3/12 · 서열표 5.3 · 다음 ›`. 하단 탭바(--tabbar-h) 바로 위에 고정한다.
  * 처음/끝은 흐리게 막는다(링크 아님). 서열표에서 묶음 경계에 있으면 이름이 `이전 묶음 5.2` / `다음 묶음 5.4`로 바뀐다.
  * 곡 목록에서 들어왔으면 가운데는 `곡 목록`이다. 터치 높이 44px.
- * 안내 말풍선(좌우로 밀어도 이동)은 이 기기에서 처음 한 번만 보이고 ×로 닫는다.
+ * 안내 말풍선(좌우로 밀어도 이동)은 터치 기기에서만, 이 기기에서 처음 한 번만 보이고 ×로 닫는다.
+ * 마우스 기기(PC)는 안내 없이 이전/다음 버튼만 쓴다: 밀기는 터치로만 되고, 안내가 푸터와 겹치기도 했다.
  */
 export function SongNavBar({ view, onStep }: { view: NavView; onStep: (direction: "prev" | "next") => void }) {
   const t = useTranslations();
   // 저장소는 브라우저에서만 읽는다(서버 렌더 값은 닫힘). 닫으면 dismissed로 바로 다시 그린다
   const [dismissed, setDismissed] = useState(false);
   const stored = useSyncExternalStore(subscribeNone, () => !isDetailNavHintDismissed(), () => false);
-  const hintOpen = stored && !dismissed;
+  // 서버 렌더와 matchMedia가 없는 환경은 false라 안내를 그리지 않는다(하이드레이션 불일치 없음)
+  const touch = useMediaQuery(COARSE_POINTER_QUERY);
+  const hintOpen = touch && stored && !dismissed;
 
   useEffect(() => {
     document.documentElement.style.setProperty("--bottom-bar-h", BAR_HEIGHT);

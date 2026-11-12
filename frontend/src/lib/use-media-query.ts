@@ -21,3 +21,9 @@ export function useMediaQuery(query: string): boolean {
 
 /** 데스크톱 폭(Tailwind lg, 1024px 이상). */
 export const DESKTOP_QUERY = "(min-width: 1024px)";
+
+/**
+ * 주 입력 장치가 손가락(터치)인지. 곡 상세 스와이프 안내처럼 "밀어서 이동"은 터치 기기에서만 뜻이 있다.
+ * any-pointer 가 아니라 pointer(주 입력 장치)를 쓴다: 마우스가 주인 노트북에 터치 화면이 달려 있어도 안내가 뜨지 않게 한다.
+ */
+export const COARSE_POINTER_QUERY = "(pointer: coarse)";
