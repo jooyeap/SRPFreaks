@@ -639,7 +639,32 @@
     "tabRating": "레이팅",
     "tabStats": "통계",
     "tabSetlist": "세트리스트",
-    "tabRival": "라이벌"
+    "tabRival": "라이벌",
+    "tabAnalysis": "분석"
+  },
+  "Analysis": {
+    "loading": "분석을 불러오는 중입니다.",
+    "loadFailed": "분석을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    "noMine": "레이팅 목록에 곡이 없어서 분석할 수 없습니다. 기록을 입력하면 분석을 볼 수 있습니다.",
+    "desc": "내 레이팅 목록(단일 15 + 그 외 25곡)과 같은 티어 유저의 레이팅 목록을 같은 기준으로 비교합니다.",
+    "peerBasis": "같은 티어({tier}) 공개 유저 {users}명 기준",
+    "fewPeers": "비교 대상이 적어요",
+    "patternTitle": "속성별",
+    "bandTitle": "난이도대별 (서열표 기준)",
+    "legend": "막대는 내 평균 달성률, 세로선은 같은 티어 평균입니다.",
+    "bandNote": "서열표 기준 난이도 0.5 단위로 묶었고, 내 곡이 {n}곡 이상인 난이도대만 약점 후보입니다.",
+    "noWeak": "약점으로 볼 난이도대가 아직 없습니다.",
+    "diffLabel": "같은 티어와의 평균 달성률 차",
+    "weak": "약점",
+    "notInList": "내 레이팅 목록에 없습니다.",
+    "lineMine": "내 {mine} · {charts}곡",
+    "lineNoPeer": "내 {mine} · {charts}곡 · 비교 대상이 적어요",
+    "linePeer": "내 {mine} · 같은 티어 {peer}({users}명) · {charts}곡",
+    "easyTitle": "{range}에서 올리기 쉬운 곡",
+    "easyDesc": "같은 티어 유저의 달성률 중앙값을 목표로 한 곡입니다.",
+    "easyEmpty": "비교할 수 있는 곡이 아직 없습니다.",
+    "rateFromTo": "현재에서 목표 달성률",
+    "gain": "+{gain}점"
   },
   "Setlist": {
     "rangeSaved": "추천 범위를 저장했습니다.",
