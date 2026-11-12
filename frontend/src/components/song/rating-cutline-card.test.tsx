@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RatingCutlineCard } from "@/components/song/RatingCutlineCard";
 import type { RatingSimulationResponse, SimulationResult } from "@/lib/rating-simulation";
@@ -178,15 +178,39 @@ describe("RatingCutlineCard", () => {
     expect(region).toHaveTextContent("240.00");
   });
 
-  it("MAX 칩은 100.00으로 묻는다", async () => {
+  it("빠른 칩은 73·80·90·95 순서로 4개뿐이고 MAX 칩은 없다", async () => {
     givenServer(response());
     renderCard();
     await card();
 
-    fireEvent.click(screen.getByRole("button", { name: "MAX" }));
+    const chips = within(screen.getByRole("group", { name: "빠른 입력" })).getAllByRole("button");
+    expect(chips.map((b) => b.textContent)).toEqual(["73%", "80%", "90%", "95%"]);
+    expect(screen.queryByRole("button", { name: "MAX" })).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["73%", "73.00", "7300"],
+    ["80%", "80.00", "8000"],
+    ["90%", "90.00", "9000"],
+  ])("%s 칩은 %s로 묻는다", async (label, requested, inputText) => {
+    givenServer(response());
+    renderCard();
+    await card();
+
+    fireEvent.click(screen.getByRole("button", { name: label }));
+
+    await waitFor(() => expect(achievementsRequested()).toContain(requested));
+    expect(screen.getByLabelText("목표 달성률")).toHaveValue(inputText);
+  });
+
+  it("MAX(100.00)는 칩이 없어도 직접 입력으로 묻는다", async () => {
+    givenServer(response());
+    renderCard();
+    await card();
+
+    fireEvent.change(screen.getByLabelText("목표 달성률"), { target: { value: "10000" } });
 
     await waitFor(() => expect(achievementsRequested()).toContain("100.00"));
-    expect(screen.getByLabelText("목표 달성률")).toHaveValue("10000");
   });
 
   it("못 들어가는 달성률이면 그렇게 알리고, 내 최고 기록보다 낮으면 변화가 없다고 알린다", async () => {
@@ -194,7 +218,7 @@ describe("RatingCutlineCard", () => {
     renderCard();
     await card();
 
-    fireEvent.click(screen.getByRole("button", { name: "97%" }));
+    fireEvent.click(screen.getByRole("button", { name: "80%" }));
 
     expect(await screen.findByText("목록에 들어가지 못합니다.")).toBeInTheDocument();
     expect(screen.getByText("내 최고 기록보다 낮아 변화가 없습니다.")).toBeInTheDocument();
@@ -210,7 +234,7 @@ describe("RatingCutlineCard", () => {
     renderCard();
     await card();
 
-    fireEvent.click(screen.getByRole("button", { name: "99%" }));
+    fireEvent.click(screen.getByRole("button", { name: "90%" }));
 
     expect(await screen.findByText("단일 3위")).toBeInTheDocument();
     expect(screen.queryByText(/로 진입/)).not.toBeInTheDocument();

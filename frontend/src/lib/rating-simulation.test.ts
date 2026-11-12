@@ -61,9 +61,9 @@ describe("입력 글자 -> 서버에 보낼 달성률 (경계값 0.00, 100.00, �
     expect(achievementFromInput("")).toBeNull();
   });
 
-  it("빠른 칩은 95·97·99·MAX이고 모두 입력 규칙 안의 값이다", () => {
-    expect(QUICK_RATES.map((c) => c.label)).toEqual(["95%", "97%", "99%", "MAX"]);
-    expect(QUICK_RATES.map((c) => achievementFromInput(c.input))).toEqual([95, 97, 99, 100]);
+  it("빠른 칩은 73·80·90·95 순서이고 모두 입력 규칙 안의 값이다 (MAX 칩은 없다)", () => {
+    expect(QUICK_RATES.map((c) => c.label)).toEqual(["73%", "80%", "90%", "95%"]);
+    expect(QUICK_RATES.map((c) => achievementFromInput(c.input))).toEqual([73, 80, 90, 95]);
   });
 });
 
