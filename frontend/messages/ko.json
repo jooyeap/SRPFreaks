@@ -131,6 +131,7 @@
     "landingRatingDesc": "SRN+ 기록으로 레이팅 합계와 플레이어 티어를 계산합니다.",
     "landingInputTitle": "기록 입력",
     "landingInputDesc": "플레이 기록을 한 건씩 직접 입력합니다.",
+    "landingShortcutsTitle": "서열표 바로가기",
     "noticesAria": "공지사항",
     "noticesTitle": "공지사항",
     "noticesLoadFailed": "공지사항을 불러오지 못했습니다.",

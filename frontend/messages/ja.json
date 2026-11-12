@@ -131,6 +131,7 @@
     "landingRatingDesc": "SRN+の記録からレーティング合計とプレイヤーティアを計算します。",
     "landingInputTitle": "記録入力",
     "landingInputDesc": "プレイ記録を1件ずつ手動で入力します。",
+    "landingShortcutsTitle": "難易度表ショートカット",
     "noticesAria": "お知らせ",
     "noticesTitle": "お知らせ",
     "noticesLoadFailed": "お知らせを読み込めませんでした。",
