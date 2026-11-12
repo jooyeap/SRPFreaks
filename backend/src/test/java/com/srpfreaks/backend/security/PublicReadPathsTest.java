@@ -38,6 +38,7 @@ class PublicReadPathsTest {
                 "/api/v1/difficulty-tables/1", "/api/v1/difficulty-tables/1/entries/9",
                 "/api/v1/noticesX", "/api/v1/peer-stats",
                 "/api/v1/players/2/compare/summary", "/api/v1/players/2/compare/summary/TRIPLE",   // 라이벌 대시보드 집계(D67)는 로그인 필요
+                "/api/v1/skills/me", "/api/v1/skills/me/simulate",                                  // 내 레이팅·시뮬레이션(D71)은 로그인 필요
                 "/actuator/health", "/error"}) {
             assertThat(PublicReadPaths.matches("GET", uri)).as(uri).isFalse();
         }

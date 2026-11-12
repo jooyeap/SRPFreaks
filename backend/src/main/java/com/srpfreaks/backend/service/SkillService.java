@@ -204,26 +204,49 @@ public class SkillService {
     public ChartRating chartRating(Long userId, Long chartId) {
         RatingConfig config = RatingConfig.from(ratingSettings());
         RatingCalculator calculator = new RatingCalculator(config);
-        Long tableId = difficultyTableRepository
-                .findFirstByNoteOptionAndStatusOrderByIdAsc(config.noteOption(), TableStatus.ACTIVE)
-                .map(DifficultyTable::getId).orElse(null);
-        ChartRatingRow row = skillMapper.findChartRating(userId, config.noteOption().name(), tableId, chartId);
+        ChartRatingRow row = chartRatingRow(userId, chartId, config);
         if (row == null) {
             return new ChartRating(NotRatedReason.NOT_RATED, null, null, null);
         }
         BigDecimal score = row.tier() == null || row.bestRate() == null ? null
                 : RatingCalculator.display(calculator.score(calculator.value(calculator.constant(row.tier()), row.bestRate())));
-        PatternType pattern = parsePattern(row.pattern());
-        PatternType.RatingGroup group = PatternType.ratingGroupOf(pattern);
-        NotRatedReason reason = null;
-        if (row.entryId() == null || !Boolean.TRUE.equals(row.ratingEnabled())) {
-            reason = NotRatedReason.EXCLUDED;
-        } else if (row.tier() == null) {
-            reason = NotRatedReason.TIER_UNDECIDED;
-        } else if (group == PatternType.RatingGroup.NONE) {
-            reason = NotRatedReason.EXCLUDED;
-        }
+        PatternType.RatingGroup group = PatternType.ratingGroupOf(parsePattern(row.pattern()));
+        NotRatedReason reason = notRatedReason(row);
         return new ChartRating(reason, reason == null ? group : null, row.bestRate(), score);
+    }
+
+    /**
+     * 채보 한 개의 서열표 값 + 내 최고 달성률 한 줄 (chartRating과 레이팅 시뮬레이션이 같이 쓴다).
+     * 레이팅 서열표가 아직 없으면 tableId가 null이라 "서열표에 없는 채보"로 읽힌다. 채보 자체가 없으면 null.
+     */
+    public ChartRatingRow chartRatingRow(Long userId, Long chartId, RatingConfig config) {
+        Long tableId = difficultyTableRepository
+                .findFirstByNoteOptionAndStatusOrderByIdAsc(config.noteOption(), TableStatus.ACTIVE)
+                .map(DifficultyTable::getId).orElse(null);
+        return skillMapper.findChartRating(userId, config.noteOption().name(), tableId, chartId);
+    }
+
+    /**
+     * 레이팅 대상이 아닌 이유 (대상이면 null). 판정 기준은 후보 쿼리(findRatingCandidates)와 같다:
+     * 서열표에 없음/반영 끔 = EXCLUDED, 기준 난이도 없음 = TIER_UNDECIDED, 속성 없음·레이팅 제외 = EXCLUDED.
+     * 저장 결과 카드와 시뮬레이션이 같은 판정을 쓰도록 한 곳에 둔다.
+     */
+    public static NotRatedReason notRatedReason(ChartRatingRow row) {
+        if (row.entryId() == null || !Boolean.TRUE.equals(row.ratingEnabled())) {
+            return NotRatedReason.EXCLUDED;
+        }
+        if (row.tier() == null) {
+            return NotRatedReason.TIER_UNDECIDED;
+        }
+        if (PatternType.ratingGroupOf(parsePattern(row.pattern())) == PatternType.RatingGroup.NONE) {
+            return NotRatedReason.EXCLUDED;
+        }
+        return null;
+    }
+
+    /** 지금 설정(rating.*)으로 만든 레이팅 숫자들. 목록 개수(rating.list_single/list_other)를 읽을 때 쓴다. */
+    public RatingConfig ratingConfig() {
+        return RatingConfig.from(ratingSettings());
     }
 
     /** rating.* 설정만 맵으로 모은다(설정 테이블은 작아서 전부 읽어도 가볍다). */
