@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
+import { resetHistoryLayersForTest } from "@/lib/history-layers";
 
 vi.mock("next/link", () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a>,
@@ -157,5 +158,18 @@ describe("SongCreateButton / 곡 등록 창", () => {
     // 곡 1번 + 채보 2번(실패 후 재시도). 곡 생성(POST /songs)은 한 번뿐이다.
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(urlOf(2)).toContain("/songs/77/difficulties");
+  });
+
+  it("뒤로 가기를 누르면 곡 등록 창만 닫힌다(주소는 그대로)", async () => {
+    resetHistoryLayersForTest();
+    window.history.replaceState(null, "", "/prev");
+    window.history.pushState(null, "", "/here");
+    renderButton();
+    open();
+    expect(screen.getByLabelText("곡명")).toBeInTheDocument();
+    window.history.back();
+    await waitFor(() => expect(screen.queryByLabelText("곡명")).toBeNull());
+    expect(window.location.pathname).toBe("/here");
+    resetHistoryLayersForTest();
   });
 });

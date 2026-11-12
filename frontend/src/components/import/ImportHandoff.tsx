@@ -9,6 +9,7 @@ import { ImportProcessor, type DoneInfo } from "@/components/import/ImportProces
 import { clearHandoff, consumeFragment, isFreshArrival, useHandoff } from "@/lib/import-handoff";
 import { playKey, previewRecentPlays } from "@/lib/record-import";
 import { useTranslations } from "next-intl";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /**
  * 공식 페이지의 북마클릿이 넘긴 플레이가 있으면, 어느 화면에서든 모달로 "이어서 처리"를 안내한다 (D40).
@@ -71,12 +72,15 @@ export function ImportHandoff() {
     }
   }, [open]);
 
-  if (!open) return null;
-
+  // 건너뛰기 처리(닫기). 뒤로 가기 처리 훅이 early return 앞에서 불려야 해서 이 위치로 옮겼다
   const close = () => {
     setDismissedAt(Date.now());
     setDone(null);
   };
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, close);
+
+  if (!open) return null;
 
   return (
     <dialog

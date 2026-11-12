@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
+import { resetHistoryLayersForTest } from "@/lib/history-layers";
 
 const chart: SongChartResponse = { id: 501, songId: 77, instrumentPart: "GUITAR", difficultyType: "MASTER", level: 9.5, noteCount: 1200 };
 const song: SongDetailResponse = {
@@ -161,5 +162,16 @@ describe("SongEditDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("곡을 찾을 수 없습니다.");
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("뒤로 가기를 누르면 창만 닫힌다(onClose, 주소는 그대로)", async () => {
+    resetHistoryLayersForTest();
+    window.history.replaceState(null, "", "/prev");
+    window.history.pushState(null, "", "/here");
+    renderDialog({ kind: "song", song });
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(window.location.pathname).toBe("/here");
+    resetHistoryLayersForTest();
   });
 });

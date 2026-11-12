@@ -265,4 +265,15 @@ describe("MobileTabBar", () => {
     expect(screen.queryByRole("region", { name: "더보기" })).toBeNull();
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/auth/logout"))).toBe(true));
   });
+  it("더보기 시트가 열려 있을 때 뒤로 가기를 누르면 시트만 닫히고 주소는 그대로다", async () => {
+    window.history.replaceState(null, "", "/me");
+    render(<MobileTabBar />);
+    const nav = screen.getByRole("navigation", { name: "하단 메뉴" });
+    fireEvent.click(within(nav).getByRole("button", { name: "더보기" }));
+    expect(screen.getByRole("region", { name: "더보기" })).toBeInTheDocument();
+
+    window.history.back();
+    await waitFor(() => expect(screen.queryByRole("region", { name: "더보기" })).not.toBeInTheDocument());
+    expect(window.location.pathname).toBe("/me");
+  });
 });

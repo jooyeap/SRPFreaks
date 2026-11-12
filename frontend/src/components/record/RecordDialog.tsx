@@ -13,6 +13,7 @@ import { formatRate } from "@/lib/format";
 import { useWakeLock } from "@/lib/wake-lock";
 import { fetchRecordsOfChart, recordKeys, recordOriginText, type RecordResponse } from "@/lib/records";
 import { useTranslations } from "next-intl";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /** 달성률이 가장 높은 기록(서열표에 보이는 기록). 같으면 목록 앞(더 최근) */
 function bestOf(records: readonly RecordResponse[] | undefined): RecordResponse | null {
@@ -63,6 +64,8 @@ export function RecordDialog({
     setNextChart(null);
     onClose();
   }, [onClose]);
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(chart !== null, close);
   const handleSaved = useCallback(
     (_saved: RecordResponse, result: SaveOutcome) => {
       // 창을 닫지 않고 같은 창에서 결과를 보여 준다. 입력 중인 값은 없다(저장됨)

@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { TermHelp } from "@/components/TermHelp";
+import { resetHistoryLayersForTest } from "@/lib/history-layers";
 
 describe("TermHelp", () => {
   it("처음에는 ? 버튼만 있고, 누르면 설명과 설명서 링크가 열린다", () => {
@@ -61,5 +62,18 @@ describe("TermHelp", () => {
     fireEvent.click(screen.getByRole("button", { name: "단일 설명 보기" }));
     fireEvent.pointerDown(screen.getByText("단일이란?"));
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("뒤로 가기를 누르면 설명 상자만 닫힌다(주소는 그대로)", async () => {
+    resetHistoryLayersForTest();
+    window.history.replaceState(null, "", "/prev");
+    window.history.pushState(null, "", "/here");
+    render(<TermHelp term="single" label="단일" />);
+    fireEvent.click(screen.getByRole("button", { name: "단일 설명 보기" }));
+    expect(screen.getByRole("dialog", { name: "단일 설명" })).toBeInTheDocument();
+    window.history.back();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(window.location.pathname).toBe("/here");
+    resetHistoryLayersForTest();
   });
 });
