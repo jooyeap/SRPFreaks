@@ -120,7 +120,7 @@ describe("TierFolderView", () => {
     expect(document.getElementById("folder-filters")?.className).not.toMatch(/(^| )hidden( |$)/);
   });
 
-  it("비로그인이면 내 기록 칸(알약·점수·기록 버튼)을 그리지 않고, 목록 위에 로그인 안내 한 줄과 로그인 버튼을 둔다 (2026-11-12)", async () => {
+  it("비로그인이면 내 기록 칸(알약·점수·기록 버튼)을 그리지 않고, 목록 위에 새 안내 줄·로그인 버튼은 두지 않는다(맨 위 배너만 쓴다) (2026-11-12)", async () => {
     renderView("5.8", ANONYMOUS_VIEWER_ID);
     await screen.findByRole("heading", { name: /5\.8\s*2개/ });
     expect(screen.getAllByText("가곡").length).toBeGreaterThan(0); // 곡 목록은 그대로
@@ -128,9 +128,9 @@ describe("TierFolderView", () => {
     expect(document.body.textContent).not.toContain("––");
     expect(document.body.textContent).not.toContain("랭크 · 달성률");
     expect(screen.queryByRole("button", { name: /기록 입력/ })).toBeNull();
-    // 안내 한 줄 + 로그인 버튼(링크)
-    expect(screen.getByText("로그인하면 내 달성률이 여기에 표시돼요")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "로그인" })).toHaveAttribute("href", "/login");
+    // 새 안내 줄·로그인 버튼은 없다: 로그인 안내는 페이지 맨 위 배너(LoginBanner, page.tsx) 하나뿐이라 이 컴포넌트에는 없다
+    expect(screen.queryByText("로그인하면 내 달성률이 여기에 표시돼요")).toBeNull();
+    expect(screen.queryByRole("link", { name: "로그인" })).toBeNull();
   });
 
   it("로그인하면 안내 한 줄은 없고 내 기록 칸이 있다", async () => {
