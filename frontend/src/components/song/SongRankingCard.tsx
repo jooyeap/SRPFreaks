@@ -22,11 +22,11 @@ import type { AchievementStage } from "@/lib/types";
  *
  * 불러오는 중에는 아무것도 그리지 않는다(틀을 먼저 그리면 카드가 나타났다 사라지며 화면이 흔들린다, 컷라인·같은 티어 카드와 같은 이유).
  * 실패했을 때만 이 카드 안에서 안내와 다시 시도를 보여 준다(곡 상세의 나머지는 그대로 쓸 수 있다).
- * `전체 순위` 링크는 전체 순위 화면(구현 PR 3번)을 만들 때 함께 추가한다(대상 화면이 없는 동안 404가 되지 않게).
+ * `전체 순위` 링크는 기록한 공개 유저가 1명 이상일 때 맨 아래에 둔다(전체 순위 화면 /songs/{곡 id}/ranking?chart={채보 id}, D74 구현 PR 3번). 0명이면 보여 줄 순위가 없어서 링크도 없다.
  *
  * 개인정보: 서버가 준 값만 보인다. 닉네임은 글자로만 그리고(HTML 해석 없음) userId는 유저 상세 링크에만 쓴다. 이메일·역할은 응답에 없다.
  */
-export function SongRankingCard({ chartId, userId }: { chartId: number; userId: number }) {
+export function SongRankingCard({ songId, chartId, userId }: { songId: number; chartId: number; userId: number }) {
   const t = useTranslations("SongRanking");
   const query = useQuery({
     queryKey: songRankingKeys.summary(userId, chartId),
@@ -84,13 +84,20 @@ export function SongRankingCard({ chartId, userId }: { chartId: number; userId: 
               </Link>
             </p>
           ) : null}
+          <Link
+            href={`/songs/${songId}/ranking?chart=${chartId}`}
+            className="inline-flex min-h-11 items-center justify-center rounded-lg border border-ctl px-3 text-[13px] font-semibold text-fg hover:bg-table-head"
+          >
+            {t("all")}
+          </Link>
         </>
       )}
     </section>
   );
 }
 
-function RankRow({ item }: { item: SongRankingItem }) {
+/** 순위 한 줄. 전체 순위 화면(SongRankingView)도 같은 줄을 쓴다. */
+export function RankRow({ item }: { item: SongRankingItem }) {
   const t = useTranslations("SongRanking");
   return (
     <li
@@ -114,7 +121,7 @@ function RankRow({ item }: { item: SongRankingItem }) {
   );
 }
 
-function RateAndStage({ rate, stage }: { rate: number; stage: AchievementStage | null }) {
+export function RateAndStage({ rate, stage }: { rate: number; stage: AchievementStage | null }) {
   return (
     <span className="flex shrink-0 items-center gap-1.5">
       <span className="font-num font-bold text-fg">{rankingRateText(rate)}</span>

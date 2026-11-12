@@ -5,6 +5,7 @@ import { SongRankingCard } from "@/components/song/SongRankingCard";
 import type { SongRankingItem, SongRankingResponse } from "@/lib/song-ranking";
 
 const CHART = 12;
+const SONG = 5;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -45,7 +46,7 @@ describe("SongRankingCard", () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
       <QueryClientProvider client={client}>
-        <SongRankingCard chartId={CHART} userId={1} />
+        <SongRankingCard songId={SONG} chartId={CHART} userId={1} />
       </QueryClientProvider>,
     );
   }
@@ -185,10 +186,18 @@ describe("SongRankingCard", () => {
     await waitFor(() => expect(screen.getByText("내 순위 7위 / 기록한 공개 유저 18명")).toBeInTheDocument());
   });
 
-  it("전체 순위 화면이 아직 없어서 `전체 순위` 링크는 그리지 않는다(PR 3번에서 추가)", async () => {
+  it("기록한 공개 유저가 있으면 맨 아래에 `전체 순위` 링크가 있고 전체 순위 화면(곡 id·채보 id가 든 주소)으로 간다", async () => {
     fetchMock.mockResolvedValue(json(response()));
     renderCard();
     await screen.findByText("내 순위 7위 / 기록한 공개 유저 18명");
+
+    expect(screen.getByRole("link", { name: "전체 순위" })).toHaveAttribute("href", `/songs/${SONG}/ranking?chart=${CHART}`);
+  });
+
+  it("기록한 공개 유저가 0명이면 보여 줄 순위가 없어서 `전체 순위` 링크를 그리지 않는다", async () => {
+    fetchMock.mockResolvedValue(json(response({ players: 0, totalPages: 0, me: null, items: [] })));
+    renderCard();
+    await screen.findByText("아직 순위에 오른 기록이 없어요");
 
     expect(screen.queryByRole("link", { name: /전체 순위/ })).not.toBeInTheDocument();
   });
