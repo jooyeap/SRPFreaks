@@ -639,7 +639,32 @@
     "tabRating": "レーティング",
     "tabStats": "統計",
     "tabSetlist": "セットリスト",
-    "tabRival": "ライバル"
+    "tabRival": "ライバル",
+    "tabAnalysis": "分析"
+  },
+  "Analysis": {
+    "loading": "分析を読み込み中です。",
+    "loadFailed": "分析を読み込めませんでした。しばらくしてからもう一度お試しください。",
+    "noMine": "レーティングリストに曲がないため分析できません。記録を入力すると分析を見られます。",
+    "desc": "自分のレーティングリスト（単色15 + その他25曲）と同じティアのユーザーのレーティングリストを同じ基準で比較します。",
+    "peerBasis": "同じティア（{tier}）の公開ユーザー{users}人が基準",
+    "fewPeers": "比較対象が少ないです",
+    "patternTitle": "属性別",
+    "bandTitle": "難易度帯別（難易度表基準）",
+    "legend": "棒は自分の平均達成率、縦線は同じティアの平均です。",
+    "bandNote": "難易度表の基準難易度を0.5刻みでまとめ、自分の曲が{n}曲以上ある難易度帯だけが弱点の候補です。",
+    "noWeak": "弱点とみなせる難易度帯はまだありません。",
+    "diffLabel": "同じティアとの平均達成率差",
+    "weak": "弱点",
+    "notInList": "自分のレーティングリストにありません。",
+    "lineMine": "自分 {mine} · {charts}曲",
+    "lineNoPeer": "自分 {mine} · {charts}曲 · 比較対象が少ないです",
+    "linePeer": "自分 {mine} · 同じティア {peer}（{users}人） · {charts}曲",
+    "easyTitle": "{range}で上げやすい曲",
+    "easyDesc": "同じティアのユーザーの達成率の中央値を目標にした曲です。",
+    "easyEmpty": "比較できる曲がまだありません。",
+    "rateFromTo": "現在から目標達成率",
+    "gain": "+{gain}点"
   },
   "Setlist": {
     "rangeSaved": "おすすめ範囲を保存しました。",

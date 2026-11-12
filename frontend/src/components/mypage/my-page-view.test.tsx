@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MyPageView } from "@/components/mypage/MyPageView";
 import type { ChartFolderListResponse, RateFolderListResponse, SkillResponse } from "@/lib/api-types";
@@ -77,12 +77,12 @@ describe("MyPageView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("제목과 레이팅·통계·세트리스트·라이벌 탭을 보여 주고, 레이팅 탭에는 전체 달성 현황을 그리지 않는다", async () => {
+  it("제목과 레이팅·통계·세트리스트·라이벌·분석 탭을 보여 주고, 레이팅 탭에는 전체 달성 현황을 그리지 않는다", async () => {
     renderView("rating");
     expect(screen.getByRole("heading", { level: 1, name: "마이페이지" })).toBeInTheDocument();
 
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["레이팅", "통계", "세트리스트", "라이벌"]);
+    expect(tabs.map((t) => t.textContent)).toEqual(["레이팅", "통계", "세트리스트", "라이벌", "분석"]);
     expect(screen.getByRole("tab", { name: "레이팅" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "통계" })).toHaveAttribute("aria-selected", "false");
     expect(await screen.findByRole("region", { name: "내 레이팅" })).toBeInTheDocument();
@@ -227,6 +227,18 @@ describe("MyPageView", () => {
     const onStateChange = renderView("rating");
     fireEvent.click(screen.getByRole("tab", { name: "통계" }));
     expect(onStateChange).toHaveBeenCalledWith({ tab: "stats", axis: "level" });
+    fireEvent.click(screen.getByRole("tab", { name: "분석" }));
+    expect(onStateChange).toHaveBeenCalledWith({ tab: "analysis", axis: "level" });
+  });
+
+  it("분석 탭을 열면 약점 분석을 요청한다", async () => {
+    fetchMock.mockImplementation((input) => {
+      if (String(input).includes("/skills/me/weakness")) return Promise.resolve(json({ message: "no" }, 500));
+      return Promise.resolve(json({}, 404));
+    });
+    renderView("analysis");
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/skills/me/weakness"))).toBe(true));
+    expect(screen.getByRole("tab", { name: "분석" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("달성 현황을 못 받아도 통계 탭의 폴더 목록은 그대로 쓴다", async () => {

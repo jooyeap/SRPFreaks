@@ -14,6 +14,7 @@ describe("tabFromParam", () => {
     expect(tabFromParam("stats")).toBe("stats");
     expect(tabFromParam("rival")).toBe("rival");
     expect(tabFromParam("setlist")).toBe("setlist");
+    expect(tabFromParam("analysis")).toBe("analysis");
     expect(tabFromParam("rating")).toBe("rating");
     expect(tabFromParam(null)).toBe("rating");
     expect(tabFromParam("<script>")).toBe("rating");
@@ -28,10 +29,12 @@ describe("myPageState 주소 변환", () => {
     expect(myPageStateToQuery({ tab: "stats", axis: "level" })).toBe("tab=stats");
     expect(myPageStateToQuery({ tab: "setlist", axis: "tier" })).toBe("tab=setlist"); // 기준(axis)은 통계 탭에서만 의미가 있다
     expect(myPageStateToQuery({ tab: "stats", axis: "tier" })).toBe("tab=stats&axis=tier");
+    expect(myPageStateToQuery({ tab: "analysis", axis: "tier" })).toBe("tab=analysis");
   });
 
   it("주소에서 읽고, 알 수 없는 값은 기본값으로 본다", () => {
     expect(myPageStateFromParams(new URLSearchParams("tab=stats&axis=tier"))).toEqual({ tab: "stats", axis: "tier" });
+    expect(myPageStateFromParams(new URLSearchParams("tab=analysis"))).toEqual({ tab: "analysis", axis: "level" });
     expect(myPageStateFromParams(new URLSearchParams("tab=x&axis=y"))).toEqual({ tab: "rating", axis: "level" });
     expect(myPageStateFromParams(new URLSearchParams(""))).toEqual({ tab: "rating", axis: "level" });
   });
