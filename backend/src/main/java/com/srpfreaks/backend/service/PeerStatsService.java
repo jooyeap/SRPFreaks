@@ -66,8 +66,18 @@ public class PeerStatsService {
     private final PeerStatsMapper mapper;
 
     public PeerStatsResponse stats(Long userId, List<Long> requestedIds) {
-        List<Long> chartIds = validated(requestedIds);
+        return compute(userId, validated(requestedIds));
+    }
 
+    /**
+     * 채보 id 개수 제한(50개) 없이 같은 계산을 한다. 약점 분석(D72)이 "약한 난이도대의 모든 채보"를 한 번에 물을 때 쓴다.
+     * 호출하는 쪽이 id를 직접 만든 서버 코드일 때만 써야 한다(요청에서 온 id는 반드시 stats()로 검증한다).
+     */
+    public PeerStatsResponse statsForServerChosenCharts(Long userId, List<Long> chartIds) {
+        return compute(userId, List.copyOf(new LinkedHashSet<>(chartIds)));
+    }
+
+    private PeerStatsResponse compute(Long userId, List<Long> chartIds) {
         Map<String, String> settings = appSettingRepository.findAll().stream()
                 .collect(Collectors.toMap(AppSetting::getKey, AppSetting::getValue));
         RatingConfig ratingConfig = RatingConfig.from(settings);
@@ -78,8 +88,9 @@ public class PeerStatsService {
         if (tier == null) {
             return new PeerStatsResponse(null, 0, List.of());   // 티어 구간표가 비어 있으면 같은 티어를 정할 수 없다
         }
-        BigDecimal lo = BigDecimal.valueOf(tier.minScore());
-        BigDecimal hi = tier.nextMinScore() == null ? NO_UPPER_BOUND : BigDecimal.valueOf(tier.nextMinScore());
+        BigDecimal[] bounds = bandBounds(tier);
+        BigDecimal lo = bounds[0];
+        BigDecimal hi = bounds[1];
         String option = ratingConfig.noteOption().name();
 
         int bandUsers = mapper.countBandUsers(userId, option, lo, hi);
@@ -113,6 +124,13 @@ public class PeerStatsService {
                     own == null ? null : own.achievementRate()));
         }
         return new PeerStatsResponse(tier.displayName(), bandUsers, charts);
+    }
+
+    /** 내 티어 구간 [하한, 상한)을 총점 값으로 돌려준다(마지막 티어는 상한이 없어 큰 값). 약점 분석(D72)도 같은 구간을 쓴다. */
+    static BigDecimal[] bandBounds(PlayerTierResponse tier) {
+        BigDecimal lo = BigDecimal.valueOf(tier.minScore());
+        BigDecimal hi = tier.nextMinScore() == null ? NO_UPPER_BOUND : BigDecimal.valueOf(tier.nextMinScore());
+        return new BigDecimal[]{lo, hi};
     }
 
     private static List<Long> validated(List<Long> requestedIds) {
