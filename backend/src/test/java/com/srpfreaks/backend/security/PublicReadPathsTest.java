@@ -40,6 +40,7 @@ class PublicReadPathsTest {
                 "/api/v1/players/2/compare/summary", "/api/v1/players/2/compare/summary/TRIPLE",   // 라이벌 대시보드 집계(D67)는 로그인 필요
                 "/api/v1/skills/me", "/api/v1/skills/me/simulate",                                  // 내 레이팅·시뮬레이션(D71)은 로그인 필요
                 "/api/v1/skills/me/weakness",                                                       // 약점 분석(D72)도 로그인 필요
+                "/api/v1/difficulties/12/ranking", "/api/v1/difficulties/12", "/api/v1/difficulties/abc/ranking",   // 곡별 순위(D74)는 로그인 전용(새 공개 경로 없음)
                 "/actuator/health", "/error"}) {
             assertThat(PublicReadPaths.matches("GET", uri)).as(uri).isFalse();
         }
