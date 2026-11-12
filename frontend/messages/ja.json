@@ -1468,6 +1468,18 @@
     "notRatedTierUndecided": "難易度表の基準難易度が未定の譜面のため、レーティングに反映されません。",
     "notRatedExcluded": "この譜面はレーティングに反映されません。"
   },
+  "SongRanking": {
+    "title": "曲別ランキング",
+    "empty": "ランキングに載った記録はまだありません",
+    "summary": "自分の順位 {rank}位 / 記録した公開ユーザー {players}人",
+    "playersOnly": "記録した公開ユーザー {players}人",
+    "rank": "{rank}位",
+    "me": "自分",
+    "noRecord": "この譜面の自分の記録はまだありません",
+    "notPublic": "公開にするとランキングに参加できます",
+    "settings": "公開設定",
+    "loadFailed": "ランキングを読み込めませんでした。しばらくしてからもう一度お試しください。"
+  },
   "PeerStats": {
     "title": "同じティアのユーザー記録",
     "users": "レーティングに含まれたユーザー数",
