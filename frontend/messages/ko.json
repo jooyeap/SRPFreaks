@@ -1468,6 +1468,18 @@
     "notRatedTierUndecided": "서열표 기준 난이도가 정해지지 않은 채보라 레이팅에 반영되지 않습니다.",
     "notRatedExcluded": "이 채보는 레이팅에 반영되지 않습니다."
   },
+  "SongRanking": {
+    "title": "곡별 순위",
+    "empty": "아직 순위에 오른 기록이 없어요",
+    "summary": "내 순위 {rank}위 / 기록한 공개 유저 {players}명",
+    "playersOnly": "기록한 공개 유저 {players}명",
+    "rank": "{rank}위",
+    "me": "나",
+    "noRecord": "이 채보의 내 기록이 아직 없어요",
+    "notPublic": "공개로 바꾸면 순위에 참여할 수 있어요",
+    "settings": "공개 설정",
+    "loadFailed": "순위를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요."
+  },
   "PeerStats": {
     "title": "같은 티어 유저 기록",
     "users": "레이팅에 포함된 유저 수",

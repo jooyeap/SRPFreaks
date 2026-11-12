@@ -67,4 +67,17 @@ describe("곡 상세 (비로그인)", () => {
     expect(screen.queryByRole("button", { name: /기록 (등록|입력)/ })).toBeNull();
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/records"))).toBe(false);
   });
+
+  it("곡별 순위(로그인 전용, D74)는 부르지 않고 카드도 그리지 않는다", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <SongDetailView songId={1} chartId={10} origin="songs" userId={ANONYMOUS_VIEWER_ID} />
+      </QueryClientProvider>,
+    );
+
+    await screen.findAllByText("테스트곡");
+    expect(screen.queryByRole("region", { name: "곡별 순위" })).toBeNull();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/ranking"))).toBe(false);
+  });
 });
