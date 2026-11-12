@@ -114,6 +114,16 @@ export function formatScoreDiff(diff: number | null): { text: string; sign: "up"
 }
 
 /**
+ * 라이벌 카드(`GET /rivals`)의 총점 차를 **비교 화면의 `총점 차`와 같은 부호(내 점수 − 상대 점수)** 로 바꾼다(2026-11-12).
+ * 서버 `scoreDiff`는 상대 총점 − 내 총점(양수면 상대가 높다)이라 부호만 뒤집는다. 서버 값은 그대로 두고
+ * 이 부호 변환은 **여기 한 곳**에서만 한다(화면 여러 곳에서 뒤집지 않는다). 값이 없으면 null.
+ */
+export function myScoreDiff(scoreDiff: number | null | undefined): number | null {
+  if (scoreDiff === null || scoreDiff === undefined) return null;
+  return scoreDiff === 0 ? 0 : -scoreDiff;
+}
+
+/**
  * 속성별 레이팅 점수 차(2026-11-10, `ratingScoreDiff`)와 결론 문장의 총점 차를 **소수 첫째 자리**로 쓴다: `+64.0` / `−222.0` / `±0.0`(진짜 마이너스 기호 U+2212).
  * 부호는 표시하는 첫째 자리 값으로 정한다(부동소수점 찌꺼기로 `+0.0`/`−0.0`이 나오지 않게). 값이 없으면 null.
  */

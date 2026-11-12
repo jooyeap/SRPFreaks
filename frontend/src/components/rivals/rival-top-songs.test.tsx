@@ -134,7 +134,7 @@ describe("RivalTab의 상대 상위 곡 줄", () => {
     renderTab();
     const card = await screen.findByRole("link", { name: /Rumi/ });
     expect(screen.queryByRole("group", { name: "상대 상위 곡" })).toBeNull();
-    expect(card).toHaveTextContent("+312.10");
+    expect(card).toHaveTextContent("\u2212312.10");
   });
 
   it("topSongs 필드가 없는 구버전 응답이면 재킷이 켜져 있어도 줄이 없다", async () => {
@@ -142,7 +142,7 @@ describe("RivalTab의 상대 상위 곡 줄", () => {
     mock([{ ...base }]);
     renderTab();
     const card = await screen.findByRole("link", { name: /Rumi/ });
-    expect(card).toHaveTextContent("+312.10");
+    expect(card).toHaveTextContent("\u2212312.10");
     expect(screen.queryByRole("group", { name: "상대 상위 곡" })).toBeNull();
   });
 });
