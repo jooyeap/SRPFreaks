@@ -1598,7 +1598,10 @@
     "minute": "{n}分前",
     "hour": "{n}時間前",
     "day": "{n}日前",
-    "new": "新着"
+    "new": "新着",
+    "groupHead": "<b>{nickname}</b>さん · {n}曲",
+    "groupUnread": "新着 {n}",
+    "moreSongs": "さらに{n}曲を表示"
   },
   "RivalGuide": {
     "title": "ライバル説明書",
