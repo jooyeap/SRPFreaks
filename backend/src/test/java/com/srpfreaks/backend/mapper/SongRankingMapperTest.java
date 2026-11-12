@@ -10,6 +10,7 @@ import com.srpfreaks.backend.entity.User;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -51,6 +52,7 @@ class SongRankingMapperTest {
 
     @Autowired EntityManager em;
     @Autowired SongRankingMapper mapper;
+    @Autowired SqlSessionTemplate sqlSession;
 
     SongDifficulty chart;
     int seq = 0;
@@ -95,6 +97,10 @@ class SongRankingMapperTest {
     private List<RankingRow> page(int limit, long offset) {
         em.flush();
         em.clear();
+        // MyBatis는 한 트랜잭션(=한 SqlSession) 안에서 같은 SQL·같은 파라미터의 결과를 캐시한다(1차 캐시).
+        // 테스트는 트랜잭션 하나 안에서 데이터를 바꿔 가며 같은 쿼리를 다시 부르므로 캐시를 비워야 바뀐 값이 보인다.
+        // 운영에서는 요청마다 새 트랜잭션이라 요청 사이에 낡은 결과가 남지 않고, 한 요청 안에서는 같은 쿼리 사이에 쓰기가 없다.
+        sqlSession.clearCache();
         return mapper.findPage(chart.getId(), SRN_PLUS, limit, offset);
     }
 
