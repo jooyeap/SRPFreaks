@@ -6,6 +6,8 @@
  *
  * 지킬 점:
  *  - 줄 전체를 하나의 링크로 바꾸지 않는다. 링크 구조(href, 접근성 이름)는 그대로다.
+ *    (예외: 데스크톱 서열표 표의 한 줄 `EntryRow`는 마우스 기기에서 줄 전체가 눌린다. 곡명 링크의 `::after`를 줄 전체로 펼치는 방식이라 링크는 여전히 하나이고,
+ *     안쪽 버튼은 줄보다 위에 둔다. 2026-11-12, 서열표 폴더 PC 개선. 모바일 줄(EntryCard)은 이 원칙 그대로다.)
  *  - 옆의 다른 링크·버튼과 누르는 영역이 겹치면 안 된다. 겹칠 것 같으면 그 방향 확장 폭을 줄여 맞닿는 곳에서 멈춘다
  *    (44px보다 작아져도 겹치는 것보다 낫다). 그래서 상수가 쓰임새별로 나뉘어 있다.
  *  - `truncate`(overflow: hidden)가 걸린 요소에는 `::after`가 잘리므로 바깥 링크에 상수를 주고 안쪽 `<span className="block truncate">`에 말줄임을 건다.
@@ -36,5 +38,11 @@ export const HIT_STANDALONE = `${HIT_BASE} after:-inset-x-2 after:-inset-y-3`;
 /** 접힘 줄(`<summary>`, 높이 20px, 카드 안쪽 여백 12px): 위 12px, 아래 12px(닫혀 있을 때) / 8px(열렸을 때 아래 목록과 닿기 전에 멈춤), 좌우는 카드 안쪽 여백만큼 */
 export const HIT_SUMMARY = `${HIT_BASE} after:-inset-x-4 after:-top-3 after:-bottom-3 [details[open]>&]:after:-bottom-2`;
 
-/** 푸터의 줄 링크: 줄 간격이 좁아 ::after를 펼치면 서로 겹치므로, 링크 자체가 높이 44px 줄이 된다(푸터에서만 레이아웃이 달라지는 부분) */
-export const FOOTER_LINE_LINK = "inline-flex min-h-11 items-center";
+/**
+ * 푸터의 줄 링크: 줄 간격이 좁아 ::after를 펼치면 서로 겹치므로, 링크 자체가 높이 44px 줄이 된다(푸터에서만 레이아웃이 달라지는 부분).
+ * 44px 줄은 손가락 기기(pointer: coarse)에서만 만든다(2026-11-12). 마우스 기기는 글자 부분만 눌리는 보통 inline 링크다:
+ * 예전에는 모든 기기에서 44px 줄이라 마우스에서 글자 위아래 빈 곳까지 눌려 범위가 너무 넓었다.
+ * `pointer-fine:inline`으로 되돌리는 방식은 쓰지 않는다: 줄을 flex로 묶은 곳(약관·처리방침)에서는 inline이 block으로 바뀌고,
+ * globals.css의 마우스용 `.min-h-11 { min-height: 36px }` 규칙(레이어 밖이라 유틸리티보다 우선)이 걸려 36px 높이가 남는다. 처음부터 coarse에만 클래스를 준다.
+ */
+export const FOOTER_LINE_LINK = "pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center";

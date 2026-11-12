@@ -348,6 +348,7 @@
     "searchResults": "검색 결과",
     "searchTooMany": "결과가 많아 일부만 보입니다. 검색어를 더 자세히 입력해 주세요.",
     "neighborTiers": "인접 난이도",
+    "folderLoginHint": "로그인하면 내 달성률이 여기에 표시돼요",
     "neighborPrevTier": "이전 난이도 {tier}",
     "neighborNextTier": "다음 난이도 {tier}",
     "lastTier": "마지막 난이도",

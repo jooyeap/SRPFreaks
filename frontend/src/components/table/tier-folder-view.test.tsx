@@ -5,6 +5,7 @@ import { TierFolderView } from "@/components/table/TierFolderView";
 import { readDetailNav, resetDetailNavForTest } from "@/lib/detail-nav";
 import { requestFolderScrollAdjust, takeFolderScrollAdjust } from "@/lib/folder-scroll";
 import { rememberTableReturn, viewStateToQuery, DEFAULT_VIEW_STATE } from "@/lib/table-view-state";
+import { ANONYMOUS_VIEWER_ID } from "@/lib/viewer";
 import type { DifficultyTableResponse, PageResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 
 // 이웃 이동은 router.replace로 한다(뒤로 가기 한 번이 서열표). 호출만 확인한다
@@ -66,12 +67,12 @@ describe("TierFolderView", () => {
   function json(body: unknown): Response {
     return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
   }
-  function renderView(param: string) {
+  function renderView(param: string, userId = 1) {
     replaceMock.mockReset();
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
       <QueryClientProvider client={client}>
-        <TierFolderView userId={1} param={param} />
+        <TierFolderView userId={userId} param={param} />
       </QueryClientProvider>,
     );
   }
@@ -117,6 +118,27 @@ describe("TierFolderView", () => {
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(document.getElementById("folder-filters")?.className).not.toMatch(/(^| )hidden( |$)/);
+  });
+
+  it("비로그인이면 내 기록 칸(알약·점수·기록 버튼)을 그리지 않고, 목록 위에 로그인 안내 한 줄과 로그인 버튼을 둔다 (2026-11-12)", async () => {
+    renderView("5.8", ANONYMOUS_VIEWER_ID);
+    await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+    expect(screen.getAllByText("가곡").length).toBeGreaterThan(0); // 곡 목록은 그대로
+    // 달성률 칸 없음: `[– | –]` 알약이 없고, 머리 행에 `랭크 · 달성률`·`점수` 칸이 없으며, 기록 입력 버튼도 없다
+    expect(document.body.textContent).not.toContain("––");
+    expect(document.body.textContent).not.toContain("랭크 · 달성률");
+    expect(screen.queryByRole("button", { name: /기록 입력/ })).toBeNull();
+    // 안내 한 줄 + 로그인 버튼(링크)
+    expect(screen.getByText("로그인하면 내 달성률이 여기에 표시돼요")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "로그인" })).toHaveAttribute("href", "/login");
+  });
+
+  it("로그인하면 안내 한 줄은 없고 내 기록 칸이 있다", async () => {
+    renderView("5.8");
+    await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+    expect(screen.queryByText("로그인하면 내 달성률이 여기에 표시돼요")).toBeNull();
+    expect(document.body.textContent).toContain("랭크 · 달성률");
+    expect(screen.getAllByRole("button", { name: /기록 입력/ }).length).toBeGreaterThan(0);
   });
 
   it("undecided(미정) 주소는 서열표 화면에서 뺐으므로 찾을 수 없다", async () => {

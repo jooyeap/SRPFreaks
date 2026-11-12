@@ -14,11 +14,14 @@ export function EntryCard({
   entry,
   tier = null,
   onRecord,
+  showRecord = true,
 }: {
   entry: TableEntryResponse;
   /** 묶음의 레이팅 상수 난이도. 기록이 있을 때 레이팅 점수를 계산하는 데 쓴다(미정이면 null) */
   tier?: number | null;
   onRecord?: (entry: TableEntryResponse) => void;
+  /** false면 오른쪽의 내 기록 칸(알약·점수)과 `+` 버튼을 그리지 않는다(비로그인 서열표 폴더) */
+  showRecord?: boolean;
 }) {
   const jackets = useJackets();
   return (
@@ -26,6 +29,7 @@ export function EntryCard({
       entry={entry}
       tier={tier}
       onRecord={onRecord}
+      showRecord={showRecord}
       jacket={jackets.visible ? { url: jackets.urlOf(entry.songId) } : null}
     />
   );
@@ -42,11 +46,13 @@ function EntryLine({
   entry,
   tier,
   onRecord,
+  showRecord,
   jacket,
 }: {
   entry: TableEntryResponse;
   tier: number | null;
   onRecord?: (entry: TableEntryResponse) => void;
+  showRecord: boolean;
   /** 재킷을 보일 때만 값이 있다(url이 없으면 같은 크기의 단색 칸). 재킷을 끄면 null이고 칸이 없다 */
   jacket: { url: string | null } | null;
 }) {
@@ -65,12 +71,14 @@ function EntryLine({
       difficulty={entry.difficulty}
       level={entry.level}
       aside={
-        <div className="flex w-[72px] shrink-0 flex-col items-end gap-1">
-          <StageRatePill stage={stage} rate={entry.mine?.rate} />
-          <span className="flex h-[18px]">{stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} smallDecimal /> : null}</span>
-        </div>
+        showRecord ? (
+          <div className="flex w-[72px] shrink-0 flex-col items-end gap-1">
+            <StageRatePill stage={stage} rate={entry.mine?.rate} />
+            <span className="flex h-[18px]">{stage ? <RatedScore entry={entry} tier={tier} onRecord={onRecord} smallDecimal /> : null}</span>
+          </div>
+        ) : null
       }
-      action={onRecord ? <RecordButton entry={entry} onRecord={onRecord} /> : null}
+      action={showRecord && onRecord ? <RecordButton entry={entry} onRecord={onRecord} /> : null}
     />
   );
 }
