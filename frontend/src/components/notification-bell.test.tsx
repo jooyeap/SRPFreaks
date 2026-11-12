@@ -37,7 +37,7 @@ describe("NotificationBell", () => {
       if (url.includes("/unread-count")) return json({ count: 12 });
       if (url.includes("/notifications/")) return new Response(null, { status: 204 });
       return json({
-        content: [base, { ...base, id: 2, actorNickname: "ASTRA", bundled: true, songCount: 3, title: "KAISER PHOENIX", read: true }],
+        content: [base, { ...base, id: 2, actorUserId: 8, actorNickname: "ASTRA", bundled: true, songCount: 3, title: "KAISER PHOENIX", read: true }],
         page: 0, size: 20, totalElements: 2, totalPages: 1,
       });
     });
@@ -116,5 +116,94 @@ describe("NotificationBell", () => {
     window.history.back();
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "알림" })).not.toBeInTheDocument());
     expect(window.location.pathname).toBe("/start");
+  });
+  describe("같은 사람의 연속된 알림 묶음", () => {
+    const mk = (id: number, extra: Partial<NotificationResponse> = {}): NotificationResponse => ({
+      ...base, id, title: `SONG-${id}`, ...extra,
+    });
+    function listOf(content: NotificationResponse[]) {
+      fetchMock.mockImplementation(async (input) => {
+        const url = String(input);
+        if (url.includes("/unread-count")) return json({ count: content.filter((c) => !c.read).length });
+        if (url.includes("/notifications/")) return new Response(null, { status: 204 });
+        return json({ content, page: 0, size: 20, totalElements: content.length, totalPages: 1 });
+      });
+    }
+    async function openPanel(name = "알림 1개") {
+      renderWith(<NotificationBell />);
+      fireEvent.click(await screen.findByRole("button", { name }));
+      return screen.findByRole("dialog", { name: "알림" });
+    }
+
+    it("안 읽은 줄이 있는 묶음은 펼쳐서 시작하고 처음 3줄만 보이며, 나머지는 `N곡 더 보기`로 펼친다", async () => {
+      listOf([5, 4, 3, 2, 1].map((id) => mk(id)));
+      const dialog = await openPanel("알림 5개");
+      const head = await screen.findByRole("button", { name: /Rumi님 · 5곡/ });
+      expect(head).toHaveAttribute("aria-expanded", "true");
+      expect(dialog).toHaveTextContent("새 알림 5");
+      expect(dialog).toHaveTextContent("SONG-5");
+      expect(dialog).toHaveTextContent("SONG-3");
+      expect(dialog).not.toHaveTextContent("SONG-2");
+      fireEvent.click(screen.getByRole("button", { name: "2곡 더 보기" }));
+      expect(dialog).toHaveTextContent("SONG-2");
+      expect(dialog).toHaveTextContent("SONG-1");
+      expect(screen.queryByRole("button", { name: /곡 더 보기/ })).not.toBeInTheDocument();
+    });
+
+    it("3줄 이하면 `더 보기` 버튼이 없다", async () => {
+      listOf([3, 2, 1].map((id) => mk(id)));
+      await openPanel("알림 3개");
+      await screen.findByRole("button", { name: /Rumi님 · 3곡/ });
+      expect(screen.queryByRole("button", { name: /곡 더 보기/ })).not.toBeInTheDocument();
+    });
+
+    it("모두 읽은 묶음은 접어서 시작하고, 머리 줄을 누르면 펼친다", async () => {
+      listOf([3, 2, 1].map((id) => mk(id, { read: true })));
+      const dialog = await openPanel("알림");
+      const head = await screen.findByRole("button", { name: /Rumi님 · 3곡/ });
+      expect(head).toHaveAttribute("aria-expanded", "false");
+      expect(dialog).not.toHaveTextContent("SONG-3");
+      expect(dialog).not.toHaveTextContent("새 알림");
+      fireEvent.click(head);
+      expect(head).toHaveAttribute("aria-expanded", "true");
+      expect(dialog).toHaveTextContent("SONG-3");
+      fireEvent.click(head);
+      expect(head).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("서버가 묶은 줄은 songCount곡으로 세고, 사이에 다른 사람이 끼면 따로 묶는다", async () => {
+      listOf([
+        mk(4, { bundled: true, songCount: 4, read: true }),
+        mk(3, { read: true }),
+        mk(2, { actorUserId: 9, actorNickname: "Mira", read: true }),
+        mk(1, { read: true }),
+      ]);
+      await openPanel("알림");
+      expect(await screen.findByRole("button", { name: /Rumi님 · 5곡/ })).toBeInTheDocument();
+      // 한 줄짜리 묶음(Mira, 뒤쪽 Rumi)은 묶지 않고 예전 모양 그대로 보인다
+      expect(screen.getByRole("button", { name: /Mira님이 SONG-2/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Rumi님이 SONG-1/ })).toBeInTheDocument();
+    });
+
+    it("묶음 안의 줄을 누르면 기존과 똑같이 읽음 처리하고 그 사람과의 곡별 승패로 간다", async () => {
+      listOf([3, 2, 1].map((id) => mk(id)));
+      await openPanel("알림 3개");
+      fireEvent.click(await screen.findByRole("button", { name: /SONG-2/ }));
+      await waitFor(() => expect(push).toHaveBeenCalledWith("/players/7/compare?view=charts"));
+      await waitFor(() =>
+        expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/notifications/2/read"))).toBe(true),
+      );
+      // 묶기는 화면에서만 한다: 읽음 API는 줄 하나에 한 번만 불린다
+      const reads = fetchMock.mock.calls.filter((c) => String(c[0]).includes("/read"));
+      expect(reads).toHaveLength(1);
+    });
+
+    it("머리 줄을 눌러도 읽음 처리나 이동은 일어나지 않는다", async () => {
+      listOf([3, 2, 1].map((id) => mk(id, { read: true })));
+      await openPanel("알림");
+      fireEvent.click(await screen.findByRole("button", { name: /Rumi님 · 3곡/ }));
+      expect(push).not.toHaveBeenCalled();
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/read"))).toBe(false);
+    });
   });
 });

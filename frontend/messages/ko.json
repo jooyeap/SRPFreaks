@@ -1598,7 +1598,10 @@
     "minute": "{n}분 전",
     "hour": "{n}시간 전",
     "day": "{n}일 전",
-    "new": "새 알림"
+    "new": "새 알림",
+    "groupHead": "<b>{nickname}</b>님 · {n}곡",
+    "groupUnread": "새 알림 {n}",
+    "moreSongs": "{n}곡 더 보기"
   },
   "RivalGuide": {
     "title": "라이벌 설명서",
