@@ -34,6 +34,7 @@ function Layer({ name, onNavigate }: { name: string; onNavigate?: () => void }) 
 function pushPage(path: string) {
   window.history.pushState(null, "", path);
 }
+const layerKey = () => (typeof window.history.state === "object" && window.history.state !== null ? ((window.history.state as Record<string, unknown>).__srpLayer ?? null) : null);
 const hasKey = () => typeof window.history.state === "object" && window.history.state !== null && "__srpLayer" in window.history.state;
 
 describe("useHistoryClose (창·시트 뒤로 가기)", () => {
@@ -116,13 +117,19 @@ describe("useHistoryClose (창·시트 뒤로 가기)", () => {
       </>,
     );
     fireEvent.click(screen.getByText("가 열기"));
+    const firstKey = layerKey();
     // 같은 동작 안에서 닫고 연다
     act(() => {
       fireEvent.click(screen.getByText("가 닫기"));
       fireEvent.click(screen.getByText("나 열기"));
     });
     expect(screen.getByRole("region", { name: "나 창" })).toBeInTheDocument();
-    await waitFor(() => expect(hasKey()).toBe(true));
+    // 가 창의 칸을 걷어내는 back()이 끝나고 나 창의 칸이 쌓일 때까지 기다린다. 걷어내는 중에는 아직 가 창의 칸(firstKey)이
+    // 현재 칸이라서 "키가 있다"만 보면 너무 일찍 통과하고(느린 환경에서 CI 실패), 그러면 아래 back()이 걷어내는 back()과 겹친다.
+    await waitFor(() => {
+      expect(layerKey()).not.toBeNull();
+      expect(layerKey()).not.toBe(firstKey);
+    });
     window.history.back();
     await waitFor(() => expect(screen.queryByRole("region", { name: "나 창" })).not.toBeInTheDocument());
     expect(window.location.pathname).toBe("/b");
