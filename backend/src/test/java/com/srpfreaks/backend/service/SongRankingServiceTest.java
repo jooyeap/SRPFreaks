@@ -61,7 +61,7 @@ class SongRankingServiceTest {
     }
 
     private static RankingRow row(long userId, String rate, boolean fc) {
-        return new RankingRow(userId, "닉" + userId, new BigDecimal(rate), fc, AT);
+        return new RankingRow(userId, "nick" + userId, new BigDecimal(rate), fc, AT);
     }
 
     private User viewer(boolean publicProfile) {

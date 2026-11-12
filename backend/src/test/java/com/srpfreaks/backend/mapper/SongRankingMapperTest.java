@@ -72,7 +72,7 @@ class SongRankingMapperTest {
 
     private User user(boolean publicProfile) {
         int n = ++seq;
-        User u = User.create("sub-u" + n, "u" + n + "@example.com", "닉" + n);
+        User u = User.create("sub-u" + n, "u" + n + "@example.com", "nick" + n);
         if (publicProfile) {
             u.changeProfilePublic(true);
         }
