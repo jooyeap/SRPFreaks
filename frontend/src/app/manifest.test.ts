@@ -39,6 +39,19 @@ describe("manifest", () => {
     expect(row?.toLowerCase()).toBe(PWA_BACKGROUND_COLOR.toLowerCase());
   });
 
+  it("아이콘 파일 4개는 PNG이고 크기가 맞으며 apple-touch-icon은 투명 없는 RGB다", () => {
+    // PNG 머리말: 8바이트 서명 다음 IHDR(너비 4B, 높이 4B, 비트 깊이 1B, 색 종류 1B). 2 = RGB(투명 없음), 6 = RGBA.
+    const header = (name: string) => {
+      const buf = readFileSync(join(process.cwd(), "public", "icons", name));
+      expect(buf.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+      return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20), colorType: buf[25] };
+    };
+    expect(header("icon-192.png")).toMatchObject({ width: 192, height: 192 });
+    expect(header("icon-512.png")).toMatchObject({ width: 512, height: 512 });
+    expect(header("icon-maskable-512.png")).toMatchObject({ width: 512, height: 512 });
+    expect(header("apple-touch-icon.png")).toEqual({ width: 180, height: 180, colorType: 2 });
+  });
+
   it("서비스 워커·푸시는 없다: 매니페스트에 관련 항목이 없고 서비스 워커 파일도 없다", () => {
     expect(Object.keys(m)).not.toContain("serviceworker");
     expect(existsSync(join(process.cwd(), "public", "sw.js"))).toBe(false);
