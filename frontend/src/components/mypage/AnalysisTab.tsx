@@ -141,14 +141,14 @@ function CompareList({ rows, peerAvailable, ariaLabel }: { rows: readonly Compar
 }
 
 /**
- * 한 줄: `라벨 | 막대 | 차이`. 막대는 내 평균 달성률만큼 채우고 같은 티어 평균 위치에 세로선을 긋는다. 내 평균보다 같은 티어가 높으면 주황, 아니면 초록(글자 `−`/`+`가 같이 있다).
+ * 한 줄: `라벨 | 막대 | 차이`. 막대는 내 평균 달성률만큼 채우고 같은 티어 평균 위치에 세로선을 긋는다. 내 평균보다 같은 티어가 높으면 주황, 아니면 초록(글자 `−`/`+`가 같이 있다). 같은 티어 값이 없어 차이가 없으면 의미 없는 중립색(`ctl`)이다(예전 `table-head`는 카드 배경과 거의 같아 채움이 안 보였다).
  * 도형은 장식이고(aria-hidden) 값은 아래 글자 줄이 모두 담는다.
  */
 function CompareRow({ row, peerAvailable }: { row: CompareRowData; peerAvailable: boolean }) {
   const t = useTranslations();
   const diff = formatAvgDiff(row.diff);
   const fillTone =
-    diff?.sign === "down" ? "border-weak bg-weak-tint" : diff ? "border-done bg-done-tint" : "border-chip-line bg-table-head";
+    diff?.sign === "down" ? "border-weak bg-weak-tint" : diff ? "border-done bg-done-tint" : "border-ctl bg-ctl";
   return (
     <li data-key={row.key} data-weak={row.weak ? "true" : undefined}>
       <div className="flex items-center gap-2">

@@ -119,9 +119,10 @@ function CutlineSummary({ data }: { data: RatingSimulationResponse }) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={Math.round(progress * 100)}
-        className="h-2 overflow-hidden rounded-full bg-table-head"
+        className="h-2 overflow-hidden rounded-full bg-line"
       >
-        <div className="tier-bar h-full rounded-full" style={{ width: `${progress * 100}%` }} />
+        {/* 채움은 티어 색(tier-bar)이 아니라 일반 강조색이다. tier-bar는 부모의 data-tier가 있어야 색이 생겨서 이 카드에서는 비어 보였다. 하단 이웃 난이도 막대(FolderNeighborBar)와 같은 토큰을 쓴다 */}
+        <div className="h-full rounded-full bg-[var(--stage-ss-bar)]" style={{ width: `${progress * 100}%` }} />
       </div>
 
       {/* 필요 달성률 한 줄: 글자로 말하므로 색에 기대지 않는다 */}
