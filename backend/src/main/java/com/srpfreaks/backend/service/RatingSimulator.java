@@ -67,7 +67,10 @@ public class RatingSimulator {
         BigDecimal currentScore = target.bestRate() == null ? null : display(scoreAt(target, target.bestRate()));
 
         boolean groupFull = before.size() >= limit;
-        BigDecimal lastScore = groupFull && !before.isEmpty() ? display(before.get(before.size() - 1).score()) : null;
+        // 컷라인 점수와 필요 달성률은 같은 기준이다: 둘 다 "이 채보를 뺀 나머지(others)"로 계산한다.
+        // (D71, 컷라인 숫자 기준 통일) 이미 목록 안인 채보까지 넣어 세면 컷라인 점수가 필요 달성률의 점수와 어긋난다.
+        // 목록 밖·기록 없음일 때는 이 채보가 others 안에 없으므로 값이 예전과 같다.
+        BigDecimal lastScore = cutlineScore(others, limit);
         BigDecimal required = requiredRate(others, target, limit);
         BigDecimal gap = required == null || target.bestRate() == null ? null : required.subtract(target.bestRate());
         Cutline cutline = new Cutline(lastScore, required, required != null, gap, groupFull);
@@ -75,6 +78,15 @@ public class RatingSimulator {
         Simulation simulation = achievement == null ? null : simulation(all, others, before, target, limit, achievement);
         return new RatingSimulationResponse(status, null, target.group(), limit, before.size(),
                 target.bestRate(), currentScore, rank, cutline, simulation);
+    }
+
+    /**
+     * 컷라인 점수 = 이 채보를 뺀 나머지(others) 중 limit번째(단일 15번째 / 그 외 25번째) 곡의 점수.
+     * others가 limit개에 못 미치면 null(= 이 채보는 기록만 있으면 들어간다, 필요 달성률 0.00과 같은 기준).
+     */
+    private static BigDecimal cutlineScore(List<Item> others, int limit) {
+        List<Item> top = top(others, limit);
+        return limit > 0 && top.size() >= limit ? display(top.get(limit - 1).score()) : null;
     }
 
     private Simulation simulation(List<Item> all, List<Item> others, List<Item> before, Target target, int limit,

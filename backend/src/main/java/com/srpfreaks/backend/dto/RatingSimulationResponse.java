@@ -28,7 +28,8 @@ public record RatingSimulationResponse(
 
     /**
      * 컷라인.
-     * lastScore = 그룹 마지막(단일 15번째 / 그 외 25번째) 곡의 점수. 그룹이 덜 찼으면 null(= 기록만 있으면 들어간다).
+     * lastScore = 이 채보를 뺀 나머지 곡들 중 limit번째(단일 15번째 / 그 외 25번째) 곡의 점수. requiredRate와 같은 기준이다.
+     *   나머지가 limit개에 못 미치면 null(= 기록만 있으면 들어간다). 목록 밖·기록 없음일 때는 예전 정의(목록의 마지막 곡 점수)와 값이 같다.
      * requiredRate = "내 기록 말고 다른 곡들 기준으로, 이 채보가 목록에 들어가는 가장 낮은 달성률"(소수 둘째 자리, 올림 기준).
      *   100.00으로도 못 들어가면 null이고 reachable=false다.
      * rateGap = requiredRate - currentRate. 양수면 그만큼 더 올려야 하고, 0 이하면 이미 안이라 그만큼 여유가 있다. 기록이 없으면 null.

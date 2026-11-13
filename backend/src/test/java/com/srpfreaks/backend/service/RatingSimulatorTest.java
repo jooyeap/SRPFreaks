@@ -96,6 +96,61 @@ class RatingSimulatorTest {
         // 다른 곡 기준 필요 달성률 80.01, 내 기록이 90.00이니 9.99만큼 여유(음수)
         assertThat(r.cutline().requiredRate()).isEqualByComparingTo("80.01");
         assertThat(r.cutline().rateGap()).isEqualByComparingTo("-9.99");
+        // 컷라인 점수도 같은 기준(이 채보를 뺀 나머지 3번째 = 240)이다. 예전에는 이 채보를 넣은 목록의 마지막(282.67)이었다.
+        assertThat(r.cutline().lastScore()).isEqualByComparingTo("240.00");
+    }
+
+    /** 이 달성률일 때 기준 난이도 6.0 채보의 점수(반올림 전). 테스트에서 컷라인 점수와 필요 달성률을 서로 맞춰 보는 데 쓴다. */
+    private static BigDecimal scoreAt(String rate) {
+        RatingConfig config = config(3, 2);
+        RatingCalculator calculator = new RatingCalculator(config);
+        return calculator.score(calculator.value(calculator.constant(bd("6.0")), bd(rate)));
+    }
+
+    @Test
+    void 컷라인_점수와_필요_달성률이_같은_기준이라_점수가_맞는다_이미_목록_안() {
+        // 나머지(others): 304, 304, 240 (id 1~3). 이 채보(id 10)는 90.00으로 목록 안(3위).
+        List<ScoredChart> list = new java.util.ArrayList<>(singleGroup());
+        list.add(rated(10, PatternType.SINGLE, "282.6666666667"));
+
+        RatingSimulationResponse r = simulator(3, 2).simulate(list, target(10, "6.0", "90.00"), null);
+
+        BigDecimal lastScore = r.cutline().lastScore();
+        BigDecimal required = r.cutline().requiredRate();
+        assertThat(lastScore).isEqualByComparingTo("240.00");
+        // 필요 달성률 80.01의 점수는 컷라인 점수를 넘고, 0.01 낮은 80.00의 점수는 컷라인 점수와 같아서(동점, id가 큰 쪽이 밀림) 못 들어간다.
+        assertThat(scoreAt(required.toPlainString())).isGreaterThan(lastScore);
+        assertThat(scoreAt(required.subtract(bd("0.01")).toPlainString())).isEqualByComparingTo(lastScore);
+        assertThat(required).isEqualByComparingTo("80.01");
+    }
+
+    @Test
+    void 컷라인_점수와_필요_달성률이_같은_기준이라_점수가_맞는다_id가_작으면_동점도_들어간다() {
+        // 나머지의 id가 모두 크므로(5~7) 점수가 같으면(240) 이 채보(id 1)가 먼저 -> 80.00부터 들어간다. 점수와 달성률이 정확히 맞는다.
+        List<ScoredChart> list = List.of(rated(5, PatternType.SINGLE, "304"), rated(6, PatternType.SINGLE, "304"),
+                rated(7, PatternType.SINGLE, "240"), rated(1, PatternType.SINGLE, "282.6666666667"));
+
+        RatingSimulationResponse r = simulator(3, 2).simulate(list, target(1, "6.0", "90.00"), null);
+
+        assertThat(r.status()).isEqualTo(Status.IN_LIST);
+        assertThat(r.cutline().lastScore()).isEqualByComparingTo("240.00");
+        assertThat(r.cutline().requiredRate()).isEqualByComparingTo("80.00");
+        assertThat(scoreAt(r.cutline().requiredRate().toPlainString())).isEqualByComparingTo(r.cutline().lastScore());
+    }
+
+    @Test
+    void 이미_목록_안이어도_나머지가_모자라면_컷라인_점수가_없고_필요_달성률이_0_00이다() {
+        // 단일 그룹에 이 채보 포함 딱 3개(= 목록 개수). 이 채보를 빼면 2개뿐이라 이 채보는 기록만 있으면 들어간다.
+        List<ScoredChart> list = List.of(rated(1, PatternType.SINGLE, "304"), rated(2, PatternType.SINGLE, "240"),
+                rated(10, PatternType.SINGLE, "210"));
+
+        RatingSimulationResponse r = simulator(3, 2).simulate(list, target(10, "6.0", "70.00"), null);
+
+        assertThat(r.status()).isEqualTo(Status.IN_LIST);
+        assertThat(r.currentRank()).isEqualTo(3);
+        assertThat(r.cutline().groupFull()).isTrue();   // 그룹(목록) 자체는 가득 찼다
+        assertThat(r.cutline().lastScore()).isNull();
+        assertThat(r.cutline().requiredRate()).isEqualByComparingTo("0.00");
     }
 
     @Test
@@ -107,6 +162,8 @@ class RatingSimulatorTest {
 
         assertThat(r.status()).isEqualTo(Status.OUT_OF_LIST);
         assertThat(r.currentRank()).isNull();
+        // 목록 밖이면 이 채보가 목록에 없으므로 컷라인 점수는 예전과 같다(목록 3번째 = 240).
+        assertThat(r.cutline().lastScore()).isEqualByComparingTo("240.00");
         assertThat(r.cutline().requiredRate()).isEqualByComparingTo("80.01");
         assertThat(r.cutline().rateGap()).isEqualByComparingTo("10.01");
     }
