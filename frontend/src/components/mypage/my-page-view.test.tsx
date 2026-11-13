@@ -266,6 +266,18 @@ describe("MyPageView", () => {
     expect(await screen.findByRole("region", { name: "내 레이팅" })).toBeInTheDocument();
   });
 
+  it("하위 전환 줄은 글자 버튼의 안쪽 여백만큼 왼쪽으로 당겨서 첫 글자가 아래 줄과 같은 왼쪽 끝에 선다", () => {
+    // 글자 버튼은 px-1.5(6px)를 두므로 줄에 같은 값의 음수 여백(-ml-1.5)이 없으면 첫 글자가 6px 들어가 보인다(360~412px 폰에서 보인 어긋남).
+    renderView("rating");
+    const group = screen.getByRole("group", { name: "레이팅" });
+    const pad = /(?:^|\s)px-(\d+(?:\.\d+)?)(?:\s|$)/.exec(within(group).getAllByRole("button")[0].className)?.[1];
+    const offset = /(?:^|\s)-ml-(\d+(?:\.\d+)?)(?:\s|$)/.exec(group.className)?.[1];
+    expect(pad).toBeDefined();
+    expect(offset).toBe(pad);
+    // 줄 자체에는 왼쪽 안쪽 여백(pl-/px-)이나 양의 왼쪽 바깥 여백(ml-)이 더 붙지 않는다
+    expect(group.className).not.toMatch(/(?:^|\s)(?:pl|px|ml)-\d/);
+  });
+
   it("하위 전환 `분석`을 누르면 view=analysis로 바꿔 달라고 알리고, `내 레이팅`은 기본(view=null)으로 돌아간다", () => {
     const onStateChange = renderView("rating");
     fireEvent.click(screen.getByRole("button", { name: "분석" }));
