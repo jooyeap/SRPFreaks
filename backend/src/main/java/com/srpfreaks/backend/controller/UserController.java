@@ -5,6 +5,7 @@ import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.NicknameUpdateRequest;
 import com.srpfreaks.backend.dto.ProfileVisibilityRequest;
 import com.srpfreaks.backend.dto.RivalNotifyRequest;
+import com.srpfreaks.backend.dto.TierNotifyRequest;
 import com.srpfreaks.backend.dto.UserResponse;
 import com.srpfreaks.backend.repository.UserRepository;
 import com.srpfreaks.backend.security.AuthenticatedUser;
@@ -58,6 +59,13 @@ public class UserController {
     public UserResponse updateMyRivalNotify(@AuthenticationPrincipal AuthenticatedUser principal,
                                             @Valid @RequestBody RivalNotifyRequest request) {
         return userProfileService.updateRivalNotify(principal.id(), request.enabled());
+    }
+
+    /** `서열표 변경 알림 받기` 켜기/끄기(D61). 사용자 ID는 토큰에서만 정한다. */
+    @PatchMapping("/me/tier-notify")
+    public UserResponse updateMyTierNotify(@AuthenticationPrincipal AuthenticatedUser principal,
+                                           @Valid @RequestBody TierNotifyRequest request) {
+        return userProfileService.updateTierNotify(principal.id(), request.enabled());
     }
 
     /**

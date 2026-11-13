@@ -6,7 +6,8 @@ export const NOTIFICATION_GROUP_PREVIEW = 3;
 export interface NotificationGroup {
   /** 묶음의 열쇠: 첫 줄의 알림 id (목록이 다시 와도 같은 묶음이 같은 열쇠를 가진다) */
   key: number;
-  actorUserId: number;
+  /** 서열표 알림(D61)은 상대가 없어 null. 이 묶음은 늘 한 줄이다 */
+  actorUserId: number | null;
   actorNickname: string | null;
   items: NotificationResponse[];
   /** 안 읽은 줄 수 */
@@ -26,12 +27,15 @@ export function songsOf(item: NotificationResponse): number {
  * 왜 "연달아"인가: 목록은 보인 시각 최신 순이라 같은 사람의 알림이 한꺼번에 도착하면 이어서 나온다.
  * 사이에 다른 사람의 알림이 끼면 시간 순서를 깨지 않으려고 따로 묶는다(같은 사람을 목록 전체에서 모아 올리면
  * 최신 순서가 섞여 보이기 때문). 목록 순서는 바꾸지 않는다.
+ *
+ * 서열표 알림(D61, `kind: "TIER"`)은 상대가 없으므로 묶지 않고 늘 혼자 한 묶음(한 줄)이 된다.
+ * 라이벌 알림 사이에 끼면 "연달아"가 끊긴다(위와 같은 이유: 시간 순서를 깨지 않는다).
  */
 export function groupNotifications(items: readonly NotificationResponse[]): NotificationGroup[] {
   const groups: NotificationGroup[] = [];
   for (const item of items) {
     const last = groups[groups.length - 1];
-    if (last && last.actorUserId === item.actorUserId) {
+    if (item.kind === "RIVAL" && last && last.actorUserId === item.actorUserId) {
       last.items.push(item);
       last.unreadCount += item.read ? 0 : 1;
       last.songTotal += songsOf(item);
@@ -40,8 +44,8 @@ export function groupNotifications(items: readonly NotificationResponse[]): Noti
     } else {
       groups.push({
         key: item.id,
-        actorUserId: item.actorUserId,
-        actorNickname: item.actorNickname,
+        actorUserId: item.kind === "RIVAL" ? item.actorUserId : null,
+        actorNickname: item.kind === "RIVAL" ? item.actorNickname : null,
         items: [item],
         unreadCount: item.read ? 0 : 1,
         songTotal: songsOf(item),

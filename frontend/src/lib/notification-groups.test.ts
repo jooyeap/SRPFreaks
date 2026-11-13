@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { NotificationResponse } from "@/lib/api-types";
+import type { RivalNotificationResponse, TierNotificationResponse } from "@/lib/api-types";
 import { NOTIFICATION_GROUP_PREVIEW, groupNotifications, hiddenSongCount, songsOf } from "@/lib/notification-groups";
 
-function n(id: number, actor: number, extra: Partial<NotificationResponse> = {}): NotificationResponse {
+function n(id: number, actor: number, extra: Partial<RivalNotificationResponse> = {}): RivalNotificationResponse {
   return {
-    id, actorUserId: actor, actorNickname: `U${actor}`, songId: id, songDifficultyId: id, title: `T${id}`, part: "GUITAR",
+    kind: "RIVAL", id, actorUserId: actor, actorNickname: `U${actor}`, songId: id, songDifficultyId: id, title: `T${id}`, part: "GUITAR",
     difficulty: "MASTER", level: 8, actorRate: 95, myRate: 94, bundled: false, songCount: 1,
     visibleAt: "2026-11-12T00:00:00Z", read: false, ...extra,
   };
@@ -64,5 +64,16 @@ describe("hiddenSongCount", () => {
     expect(hiddenSongCount(five)).toBe(2);
     const bundledTail = groupNotifications([n(4, 7), n(3, 7), n(2, 7), n(1, 7, { bundled: true, songCount: 4 })])[0];
     expect(hiddenSongCount(bundledTail)).toBe(4);
+  });
+
+  it("서열표 알림(상대 없음)은 묶지 않고, 같은 사람의 라이벌 알림 사이에 끼면 연달아가 끊긴다", () => {
+    const t = (id: number): TierNotificationResponse => ({
+      kind: "TIER", id, songId: id, songDifficultyId: id, title: `X${id}`, part: "GUITAR", difficulty: "MASTER", level: 8,
+      myRate: 90, beforeTier: 6.5, afterTier: 7, beforeScore: 1, afterScore: 2, scoreDiff: 1, bundled: false, songCount: 1,
+      visibleAt: "2026-11-12T00:00:00Z", read: false,
+    });
+    const g = groupNotifications([n(1, 7), n(2, 7), t(1), t(2), n(3, 7)]);
+    expect(g.map((x) => x.items.length)).toEqual([2, 1, 1, 1]);
+    expect(g[1].actorUserId).toBeNull();
   });
 });
