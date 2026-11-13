@@ -5,6 +5,7 @@ import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.UserResponse;
 import com.srpfreaks.backend.entity.AuditLog;
 import com.srpfreaks.backend.entity.User;
+import com.srpfreaks.backend.mapper.TierAlertMapper;
 import com.srpfreaks.backend.repository.AuditLogRepository;
 import com.srpfreaks.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class UserProfileService {
 
     private final UserRepository userRepository;
     private final AuditLogRepository auditLogRepository;
+    private final TierAlertMapper tierAlertMapper;
 
     /**
      * 본인 닉네임을 바꾼다. 대상은 토큰에서 나온 userId뿐이다(다른 사용자의 닉네임은 바꿀 수 없다).
@@ -65,6 +67,17 @@ public class UserProfileService {
     public UserResponse updateRivalNotify(Long userId, boolean enabled) {
         User user = userRepository.findById(userId).orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
         user.changeRivalNotify(enabled);
+        return UserResponse.from(user);
+    }
+
+    /**
+     * `서열표 변경 알림 받기`(D61). 꺼져 있다가 켜면 커서를 지금의 끝으로 옮겨, 꺼 둔 동안의 변경은 알리지 않는다.
+     * 사용자 행을 잠가서 읽는다: 알림을 만드는 요청(TierAlertService.deliver)과 겹쳐도 커서가 엇갈리지 않게.
+     */
+    @Transactional
+    public UserResponse updateTierNotify(Long userId, boolean enabled) {
+        User user = userRepository.findByIdForUpdate(userId).orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
+        user.changeTierNotify(enabled, tierAlertMapper.maxAuditLogId());
         return UserResponse.from(user);
     }
 

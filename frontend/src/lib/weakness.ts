@@ -55,6 +55,8 @@ export interface WeaknessAnalysisResponse {
   bandUsers: number;
   /** false면 같은 티어 값이 모두 비어 있다 -> `비교 대상이 적어요` */
   peerAvailable: boolean;
+  /** 같은 티어 최소 인원(설정 peer.min_band_users). 집계 메타 정보. 옛 응답에는 없을 수 있다 */
+  minBandUsers?: number;
   minChartsPerBand: number;
   bandWidth: number;
   patterns: WeaknessPatternRow[];
@@ -100,10 +102,19 @@ export function formatAvgDiff(diff: number | null | undefined): { text: string; 
   return { text: "±0.00%", sign: "even" };
 }
 
-/** 막대 길이(%) = 평균 달성률. 0~100 밖은 잘라서 쓴다. */
-export function avgPercent(avg: number | null): number {
+/** 분석 막대의 눈금 범위. 80 미만은 막대 길이 0(잘림)이고 눈금 숫자는 5 간격이다. */
+export const SCALE_MIN = 80;
+export const SCALE_MAX = 100;
+export const SCALE_TICKS: readonly number[] = [80, 85, 90, 95, 100];
+
+/**
+ * 막대 길이(%) = (평균 달성률 − 80) / (100 − 80). 눈금이 0~100이 아니라 80~100이라 80 미만은 0, 100 이상은 100으로 자른다.
+ * 값이 없으면(null) 0. 막대는 장식이고 정확한 값은 막대 오른쪽 글자가 담는다.
+ */
+export function scalePercent(avg: number | null): number {
   if (avg === null || !Number.isFinite(avg)) return 0;
-  return Math.min(100, Math.max(0, avg));
+  const ratio = ((avg - SCALE_MIN) / (SCALE_MAX - SCALE_MIN)) * 100;
+  return Math.min(100, Math.max(0, ratio));
 }
 
 /** 난이도대 라벨: `5.5~5.9`. */

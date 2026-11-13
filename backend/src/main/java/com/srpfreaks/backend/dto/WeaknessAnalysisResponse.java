@@ -12,6 +12,7 @@ import java.util.List;
  *
  * - tierName / bandUsers : 내 티어 이름, 같은 티어 집계에 쓰인 공개 유저 수. peerAvailable = bandUsers가 peer.min_band_users 이상.
  *   false면 모든 peerAvg/diff가 null이고 화면은 "비교 대상이 적어요"를 보여 준다(내 값은 그대로 온다).
+ * - minBandUsers : 설정 peer.min_band_users 값(같은 티어 최소 인원). bandUsers와 같은 종류의 집계 메타 정보라 개인 정보가 아니며, 화면의 계산 설명 문구에 쓴다.
  * - minChartsPerBand / bandWidth : 약점 후보가 되려면 내 목록 안 채보가 이만큼 있어야 하는 최소 수, 난이도대 폭(0.5).
  * - patterns : 단일 / 복합(복합(단일) 포함) / 이중 / 삼중 순서로 항상 4줄.
  * - bands    : 내 목록에 채보가 있는 난이도대만, 기준 난이도 높은 순.
@@ -20,7 +21,7 @@ import java.util.List;
  *
  * 평균은 소수 둘째 자리(HALF_UP). 차이(diff)는 표시된 두 평균의 차(내 평균 - 같은 티어 평균)라 화면 숫자와 어긋나지 않는다.
  */
-public record WeaknessAnalysisResponse(String tierName, int bandUsers, boolean peerAvailable, int minChartsPerBand,
+public record WeaknessAnalysisResponse(String tierName, int bandUsers, int minBandUsers, boolean peerAvailable, int minChartsPerBand,
                                        BigDecimal bandWidth, List<PatternRow> patterns, List<BandRow> bands,
                                        BigDecimal weakBandFrom, List<EasyChart> easyCharts) {
 

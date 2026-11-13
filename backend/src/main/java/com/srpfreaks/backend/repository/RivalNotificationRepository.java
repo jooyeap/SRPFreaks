@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,6 +44,11 @@ public interface RivalNotificationRepository extends JpaRepository<RivalNotifica
     /** 보이는 알림 목록. 역전한 사람·채보·곡을 함께 읽는다(줄마다 따로 읽으면 N+1). to-one만이라 페이징과 함께 써도 안전하다. */
     @EntityGraph(attributePaths = {"actor", "songDifficulty", "songDifficulty.song"})
     Page<RivalNotification> findByRecipient_IdAndStatus(Long recipientId, RivalNotificationStatus status, Pageable pageable);
+
+    /** 섞은 알림 목록(D61)의 한 쪽에 든 라이벌 알림을 id로 읽는다. 보이는(SHOWN) 본인 것만, 연관을 함께 읽는다. */
+    @EntityGraph(attributePaths = {"actor", "songDifficulty", "songDifficulty.song"})
+    List<RivalNotification> findByRecipient_IdAndStatusAndIdIn(Long recipientId, RivalNotificationStatus status,
+                                                               Collection<Long> ids);
 
     Optional<RivalNotification> findByIdAndRecipient_IdAndStatus(Long id, Long recipientId, RivalNotificationStatus status);
 

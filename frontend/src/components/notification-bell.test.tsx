@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotificationBell } from "@/components/NotificationBell";
 import { resetHistoryLayersForTest } from "@/lib/history-layers";
-import type { NotificationResponse } from "@/lib/api-types";
+import type { NotificationResponse, RivalNotificationResponse, TierNotificationResponse } from "@/lib/api-types";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -19,10 +19,15 @@ function renderWith(ui: React.ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
 }
-const base: NotificationResponse = {
-  id: 1, actorUserId: 7, actorNickname: "Rumi", songId: 3, songDifficultyId: 5, title: "MEGALOVANIA", part: "BASS",
+const base: RivalNotificationResponse = {
+  kind: "RIVAL", id: 1, actorUserId: 7, actorNickname: "Rumi", songId: 3, songDifficultyId: 5, title: "MEGALOVANIA", part: "BASS",
   difficulty: "MASTER", level: 8.65, actorRate: 96.4, myRate: 96.1, bundled: false, songCount: 1,
   visibleAt: new Date().toISOString(), read: false,
+};
+const tier: TierNotificationResponse = {
+  kind: "TIER", id: 1, songId: 9, songDifficultyId: 11, title: "Cosmic Cat", part: "GUITAR", difficulty: "EXTREME", level: 8.2,
+  myRate: 90, beforeTier: 6.5, afterTier: 7.0, beforeScore: 322.67, afterScore: 362.67, scoreDiff: 40, bundled: false,
+  songCount: 1, visibleAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(), read: false,
 };
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -37,8 +42,14 @@ describe("NotificationBell", () => {
       if (url.includes("/unread-count")) return json({ count: 12 });
       if (url.includes("/notifications/")) return new Response(null, { status: 204 });
       return json({
-        content: [base, { ...base, id: 2, actorUserId: 8, actorNickname: "ASTRA", bundled: true, songCount: 3, title: "KAISER PHOENIX", read: true }],
-        page: 0, size: 20, totalElements: 2, totalPages: 1,
+        content: [
+          base,
+          tier,
+          { ...base, id: 2, actorUserId: 8, actorNickname: "ASTRA", bundled: true, songCount: 3, title: "KAISER PHOENIX", read: true },
+          { ...tier, id: 2, title: "Bundle Song", bundled: true, songCount: 6, read: true },
+          { ...tier, id: 3, title: "Undecided Song", beforeTier: null, beforeScore: null, scoreDiff: null, read: true },
+        ],
+        page: 0, size: 20, totalElements: 5, totalPages: 1,
       });
     });
   });
@@ -81,6 +92,38 @@ describe("NotificationBell", () => {
     );
   });
 
+  it("서열표 변경 알림은 칩·바뀐 값·내 점수 전후(차이)를 보이고, 미정·묶음도 글자로 보인다", async () => {
+    renderWith(<NotificationBell />);
+    fireEvent.click(await screen.findByRole("button", { name: "알림 12개" }));
+    const dialog = await screen.findByRole("dialog", { name: "알림" });
+    const tierRow = await screen.findByRole("button", { name: /Cosmic Cat/ });
+
+    expect(tierRow).toHaveTextContent("서열표");
+    expect(tierRow).toHaveTextContent("Cosmic Cat (Guitar EXT) 기준 난이도 6.5 → 7.0");
+    expect(tierRow).toHaveTextContent("내 점수 322.67 → 362.67 (+40.00)");
+    expect(dialog).toHaveTextContent("라이벌");
+    expect(dialog).toHaveTextContent("6채보의 기준 난이도가 바뀌었습니다.");
+    expect(dialog).toHaveTextContent("Bundle Song 외 5채보");
+    expect(dialog).toHaveTextContent("Undecided Song (Guitar EXT) 기준 난이도 미정 → 7.0");
+    expect(dialog).toHaveTextContent("내 점수 미정 → 362.67");
+  });
+
+  it("서열표 알림을 누르면 서열표용 경로로 읽음 처리하고 곡 상세로, 묶음은 서열표 변경 탭으로 간다", async () => {
+    renderWith(<NotificationBell />);
+    fireEvent.click(await screen.findByRole("button", { name: "알림 12개" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Cosmic Cat/ }));
+
+    // 창이 쌓은 history 칸을 걷어낸 뒤에 이동하므로 한 틱 뒤에 불린다(lib/history-layers.ts)
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/songs/9"));
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/notifications/tier/1/read"))).toBe(true),
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "알림 12개" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Bundle Song/ }));
+    await waitFor(() => expect(push).toHaveBeenLastCalledWith("/notices#tier-changes"));
+  });
+
   it("긴 알림 문장은 줄바꿈으로 모두 보이고 가로 스크롤이 생기지 않는다", async () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
@@ -118,7 +161,7 @@ describe("NotificationBell", () => {
     expect(window.location.pathname).toBe("/start");
   });
   describe("같은 사람의 연속된 알림 묶음", () => {
-    const mk = (id: number, extra: Partial<NotificationResponse> = {}): NotificationResponse => ({
+    const mk = (id: number, extra: Partial<RivalNotificationResponse> = {}): RivalNotificationResponse => ({
       ...base, id, title: `SONG-${id}`, ...extra,
     });
     function listOf(content: NotificationResponse[]) {
@@ -183,6 +226,25 @@ describe("NotificationBell", () => {
       // 한 줄짜리 묶음(Mira, 뒤쪽 Rumi)은 묶지 않고 예전 모양 그대로 보인다
       expect(screen.getByRole("button", { name: /Mira님이 SONG-2/ })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Rumi님이 SONG-1/ })).toBeInTheDocument();
+    });
+
+    it("서열표 알림은 묶지 않고, 같은 사람의 라이벌 알림 사이에 끼면 연달아가 끊겨 따로 묶는다", async () => {
+      listOf([
+        mk(5, { read: true }),
+        mk(4, { read: true }),
+        { ...tier, id: 1, title: "TIER-SONG", read: true },
+        mk(3, { read: true }),
+        mk(2, { read: true }),
+        { ...tier, id: 2, title: "TIER-SONG-2", read: true },
+      ]);
+      const dialog = await openPanel("알림");
+      // 서열표 앞쪽 라이벌 2줄, 뒤쪽 라이벌 2줄이 각각 묶인다(같은 사람이어도 서열표 알림이 사이에 있으면 합치지 않는다)
+      expect(await screen.findAllByRole("button", { name: /Rumi님 · 2곡/ })).toHaveLength(2);
+      // 서열표 알림은 머리 줄 없이 한 줄씩 칩(서열표)과 함께 보이고, 상대 닉네임 없이도 깨지지 않는다
+      const tierRows = screen.getAllByRole("button", { name: /TIER-SONG/ });
+      expect(tierRows).toHaveLength(2);
+      for (const row of tierRows) expect(row).toHaveTextContent("서열표");
+      expect(dialog).not.toHaveTextContent("알 수 없음");
     });
 
     it("묶음 안의 줄을 누르면 기존과 똑같이 읽음 처리하고 그 사람과의 곡별 승패로 간다", async () => {

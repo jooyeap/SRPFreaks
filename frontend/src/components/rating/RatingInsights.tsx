@@ -82,7 +82,7 @@ export function RatingInsights({ userId }: { userId: number }) {
   }
 
   return (
-    <section aria-label={t("Rating.statusAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-3">
+    <section aria-label={t("Rating.statusAria")} className="flex flex-col gap-1.5 rounded-2xl border border-line bg-card px-3 py-2">
       <div className="flex items-center gap-3">
         {hasDetail ? (
           <button
@@ -111,6 +111,9 @@ export function RatingInsights({ userId }: { userId: number }) {
           </button>
         ) : null}
       </div>
+      {/* 기록 제안 설명(사용자 문구, 고치지 않는다): 합치기 전 배너의 설명 줄을 요약 카드 안 숫자 줄 아래에 작은 글자로 되살렸다(2026-11-13).
+          기록을 권하는 상태(canRecord)에서만 보인다. 오늘 이미 기록했으면 권하지 않으므로 설명도 없다. 좁으면 2줄로 줄바꿈한다. */}
+      {canRecord ? <p className="text-xs leading-snug text-fg-sub">{t("Rating.snapshotHint")}</p> : null}
       {record.isError ? (
         <p role="alert" className="text-xs text-fg">
           {record.error instanceof ApiError ? record.error.message : t("Rating.snapshotFailed")}

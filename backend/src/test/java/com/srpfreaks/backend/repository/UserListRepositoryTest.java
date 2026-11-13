@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 내 리스트(D76) 스키마와 쿼리를 실제 MySQL(Flyway V20)에서 확인한다. Docker가 필요하다(CI에서만 돈다).
+ * 내 리스트(D76) 스키마와 쿼리를 실제 MySQL(Flyway V21)에서 확인한다. Docker가 필요하다(CI에서만 돈다).
  * 내 것만 보임, 삭제된 곡의 채보는 곡 수·목록에서 제외, UNIQUE(리스트+채보, 사용자+이름은 대소문자 무시), 이름 CHECK,
  * 리스트 삭제·채보 삭제·탈퇴(users 행 삭제) 때 ON DELETE CASCADE로 항목이 완전히 지워지는지.
  * 테스트 사용자는 닉네임이 없는 계정이다(공개 여부와 무관한 개인 데이터라 닉네임이 필요 없다).

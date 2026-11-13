@@ -141,8 +141,9 @@ export function RatingView({ userId }: { userId: number }) {
     );
   }
 
+  // gap-3: 요약·현황 카드·도구 칩·목록 머리 사이를 gap-5에서 줄였다(첫 화면에 단일 목록이 더 올라오게, 2026-11-13). 내 레이팅 화면 전용이다.
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3">
       <RatingBody
         skill={data}
         afterSummary={
