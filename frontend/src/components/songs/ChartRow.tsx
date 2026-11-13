@@ -6,6 +6,7 @@ import { formatRate } from "@/lib/format";
 import type { ChartRowResponse } from "@/lib/api-types";
 import { songListDetailHref } from "@/lib/song-list";
 import { SongJacket } from "@/components/SongJacket";
+import { STAGE_EDGE_CLIP, StageEdgeBar } from "@/components/StageEdgeBar";
 import { useJackets } from "@/lib/jackets";
 
 /**
@@ -34,11 +35,11 @@ export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-3 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:h-14 md:min-h-0 md:py-0 ${ROW_GRID} ${
+      className={`relative ${STAGE_EDGE_CLIP} flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-3 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:h-14 md:min-h-0 md:py-0 ${ROW_GRID} ${
         stage ? "stage-tint" : ""
       }`}
     >
-      {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      {stage ? <StageEdgeBar /> : null}
       {/* 재킷(D54): 모바일은 줄 가운데 44px 둥근 썸네일, 데스크톱은 곡명 앞 40px 둥근 칸(서열표 표와 같다) */}
       {jackets.visible ? <SongJacket url={jacketUrl} title={row.title} className="size-11 rounded-lg md:hidden" /> : null}
       <div className="min-w-0 flex-1 md:contents">

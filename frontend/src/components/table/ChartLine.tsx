@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SongJacket } from "@/components/SongJacket";
+import { STAGE_EDGE_CLIP, StageEdgeBar } from "@/components/StageEdgeBar";
 import { ChartBadge } from "@/components/table/Badges";
 import { patternLabel, recommendLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK, formatTier } from "@/lib/format";
@@ -76,9 +77,9 @@ export function ChartLine({
     <li
       data-stage={stage ?? undefined}
       data-done={done === undefined ? undefined : done ? "true" : "false"}
-      className={`relative flex h-[68px] items-center gap-2.5 ${jacket ? "pl-3" : "pl-4"} pr-3 ${stage ? "stage-tint" : ""} ${className}`}
+      className={`relative ${STAGE_EDGE_CLIP} flex h-[68px] items-center gap-2.5 ${jacket ? "pl-3" : "pl-4"} pr-3 ${stage ? "stage-tint" : ""} ${className}`}
     >
-      {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      {stage ? <StageEdgeBar /> : null}
       {lead}
       {jacket ? <SongJacket url={jacket.url} title={title} className="size-12 shrink-0 rounded-lg max-[359px]:size-10" /> : null}
       <div className="min-w-0 flex-1">
