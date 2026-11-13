@@ -50,6 +50,12 @@ describe("RatingInsights", () => {
     expect(await within(card).findByText(/마지막 기록\(2026-10-10\) 대비/)).toBeInTheDocument();
     expect(card.textContent?.match(/\+33\.92/g)).toHaveLength(1);
     expect(screen.queryByRole("region", { name: "레이팅 기록 제안" })).toBeNull();
+    // 기록 제안 설명 줄(사용자 문구 그대로)은 같은 카드 안, 숫자 줄 아래에 있다
+    const hint = within(card).getByText("지금 점수를 기록으로 남겨 두면 나중에 얼마나 올랐는지 비교할 수 있습니다.");
+    expect(hint).toBeInTheDocument();
+    expect(card.textContent?.match(/나중에 얼마나 올랐는지/g)).toHaveLength(1);
+    const summary = within(card).getByText(/마지막 기록\(2026-10-10\) 대비/);
+    expect(summary.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(within(card).getByRole("button", { name: "지금 레이팅 기록하기" }));
     await waitFor(() => expect(fetchMock.mock.calls.some((c) => c[1]?.method === "POST")).toBe(true));
   });
@@ -59,6 +65,7 @@ describe("RatingInsights", () => {
     renderInsights();
     await screen.findByText(/새로 들어온 곡/); // 요약은 보인다
     expect(screen.queryByRole("button", { name: "지금 레이팅 기록하기" })).toBeNull();
+    expect(screen.queryByText("지금 점수를 기록으로 남겨 두면 나중에 얼마나 올랐는지 비교할 수 있습니다.")).toBeNull(); // 기록을 권하지 않으면 설명도 없다
   });
 
   it("오늘 이미 기록했으면 갱신할 수 있어도 제안을 다시 띄우지 않는다(저장할 때마다 뜨지 않게)", async () => {
@@ -76,6 +83,14 @@ describe("RatingInsights", () => {
     expect(screen.getByRole("button", { name: "지금 레이팅 기록하기" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /대비/ })).toBeNull();
     expect(screen.queryByText(/[▲▼±]/)).toBeNull();
+  });
+
+  it("기록 없음 상태에서도 안내 아래에 설명 줄이 한 번 보인다(같은 말을 되풀이하지 않는다)", async () => {
+    compare = { ...compareOk, available: false, reason: "NO_SNAPSHOT", totalChange: null as unknown as number };
+    renderInsights();
+    const card = await screen.findByRole("region", { name: "레이팅 현황" });
+    await within(card).findByText("아직 기록한 레이팅이 없습니다.");
+    expect(card.textContent?.match(/나중에 얼마나 올랐는지/g)).toHaveLength(1);
   });
 
   it("기록 버튼과 요약(펼침) 버튼은 터치 영역이 44px 이상이다", async () => {
