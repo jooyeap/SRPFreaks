@@ -52,11 +52,11 @@ describe("MyPageView", () => {
   function json(body: unknown, status = 200): Response {
     return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
   }
-  function renderView(tab: MyPageState["tab"], axis: MyPageState["axis"] = "level", onStateChange = vi.fn()) {
+  function renderView(tab: MyPageState["tab"], axis: MyPageState["axis"] = "level", onStateChange = vi.fn(), view: MyPageState["view"] = null) {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={client}>
-        <MyPageView userId={1} state={{ tab, axis }} onStateChange={onStateChange} />
+        <MyPageView userId={1} state={{ tab, axis, view }} onStateChange={onStateChange} />
       </QueryClientProvider>,
     );
     return onStateChange;
@@ -77,12 +77,13 @@ describe("MyPageView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("제목과 레이팅·통계·세트리스트·라이벌·분석 탭을 보여 주고, 레이팅 탭에는 전체 달성 현황을 그리지 않는다", async () => {
+  it("제목과 레이팅·통계·리스트·라이벌 탭 네 개를 보여 주고, 레이팅 탭에는 전체 달성 현황을 그리지 않는다", async () => {
     renderView("rating");
     expect(screen.getByRole("heading", { level: 1, name: "마이페이지" })).toBeInTheDocument();
 
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["레이팅", "통계", "세트리스트", "라이벌", "분석"]);
+    expect(tabs.map((t) => t.textContent)).toEqual(["레이팅", "통계", "리스트", "라이벌"]);
+    expect(tabs).toHaveLength(4);
     expect(screen.getByRole("tab", { name: "레이팅" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "통계" })).toHaveAttribute("aria-selected", "false");
     expect(await screen.findByRole("region", { name: "내 레이팅" })).toBeInTheDocument();
@@ -184,7 +185,7 @@ describe("MyPageView", () => {
   it("서열표 난이도 기준을 누르면 바꿔 달라고 알린다", async () => {
     const onStateChange = renderView("stats");
     fireEvent.click(await screen.findByRole("tab", { name: "서열표 난이도" }));
-    expect(onStateChange).toHaveBeenCalledWith({ tab: "stats", axis: "tier" });
+    expect(onStateChange).toHaveBeenCalledWith({ tab: "stats", axis: "tier", view: null });
   });
 
   it("서열표 난이도 기준이면 서열표를 찾아 난이도별 통계를 보여 준다", async () => {
@@ -223,22 +224,80 @@ describe("MyPageView", () => {
     expect(card).toHaveTextContent("전부 SS 이상");
   });
 
-  it("탭을 누르면 바꿔 달라고 부모에게 알린다", async () => {
-    const onStateChange = renderView("rating");
+  it("탭을 누르면 바꿔 달라고 부모에게 알린다(탭을 바꾸면 하위 전환은 기본으로 돌아간다)", async () => {
+    const onStateChange = renderView("rating", "level", vi.fn(), "analysis");
     fireEvent.click(screen.getByRole("tab", { name: "통계" }));
-    expect(onStateChange).toHaveBeenCalledWith({ tab: "stats", axis: "level" });
-    fireEvent.click(screen.getByRole("tab", { name: "분석" }));
-    expect(onStateChange).toHaveBeenCalledWith({ tab: "analysis", axis: "level" });
+    expect(onStateChange).toHaveBeenCalledWith({ tab: "stats", axis: "level", view: null });
+    fireEvent.click(screen.getByRole("tab", { name: "리스트" }));
+    expect(onStateChange).toHaveBeenCalledWith({ tab: "list", axis: "level", view: null });
+    fireEvent.click(screen.getByRole("tab", { name: "라이벌" }));
+    expect(onStateChange).toHaveBeenCalledWith({ tab: "rival", axis: "level", view: null });
   });
 
-  it("분석 탭을 열면 약점 분석을 요청한다", async () => {
+  it("선택된 탭은 글자가 굵고 아래 밑줄이 두꺼워서 색만으로 구분하지 않는다", () => {
+    renderView("stats");
+    const selected = screen.getByRole("tab", { name: "통계" });
+    const other = screen.getByRole("tab", { name: "레이팅" });
+    expect(selected).toHaveAttribute("aria-selected", "true");
+    expect(selected.className).toContain("font-bold");
+    expect(selected.className).toContain("border-b-2");
+    expect(selected.className).not.toContain("border-transparent");
+    expect(other).toHaveAttribute("aria-selected", "false");
+    expect(other.className).not.toContain("font-bold");
+    expect(other.className).toContain("border-transparent");
+    // 누르는 영역 44px 이상, 네 개가 한 줄(줄바꿈·가로 스크롤 없음)
+    expect(selected.className).toContain("min-h-11");
+    expect(screen.getByRole("tablist", { name: "마이페이지 탭" }).className).not.toContain("overflow-x-auto");
+    expect(selected.className).toContain("whitespace-nowrap");
+  });
+
+  it("레이팅 탭에는 `내 레이팅 · 분석` 하위 전환이 있고, 선택된 글자는 굵게 밑줄이 그어진다(알약이 아니다)", async () => {
+    renderView("rating");
+    const group = screen.getByRole("group", { name: "레이팅" });
+    const buttons = within(group).getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual(["내 레이팅", "분석"]);
+    expect(group).toHaveTextContent("내 레이팅·분석");
+    expect(buttons[0]).toHaveAttribute("aria-current", "true");
+    expect(buttons[0].className).toContain("underline");
+    expect(buttons[0].className).toContain("font-bold");
+    expect(buttons[1]).not.toHaveAttribute("aria-current");
+    expect(buttons[1].className).not.toContain("underline");
+    expect(buttons[0].className).not.toContain("rounded"); // 칩(알약) 모양이 아니다
+    expect(await screen.findByRole("region", { name: "내 레이팅" })).toBeInTheDocument();
+  });
+
+  it("하위 전환 `분석`을 누르면 view=analysis로 바꿔 달라고 알리고, `내 레이팅`은 기본(view=null)으로 돌아간다", () => {
+    const onStateChange = renderView("rating");
+    fireEvent.click(screen.getByRole("button", { name: "분석" }));
+    expect(onStateChange).toHaveBeenCalledWith({ tab: "rating", axis: "level", view: "analysis" });
+  });
+
+  it("view=analysis이면 분석(약점 분석)을 열고 `분석`이 선택 표시된다", async () => {
     fetchMock.mockImplementation((input) => {
       if (String(input).includes("/skills/me/weakness")) return Promise.resolve(json({ message: "no" }, 500));
       return Promise.resolve(json({}, 404));
     });
-    renderView("analysis");
+    const onStateChange = renderView("rating", "level", vi.fn(), "analysis");
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/skills/me/weakness"))).toBe(true));
-    expect(screen.getByRole("tab", { name: "분석" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "레이팅" })).toHaveAttribute("aria-selected", "true"); // 분석은 레이팅 탭 안
+    expect(screen.getByRole("button", { name: "분석" })).toHaveAttribute("aria-current", "true");
+    expect(screen.queryByRole("region", { name: "내 레이팅" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "내 레이팅" }));
+    expect(onStateChange).toHaveBeenCalledWith({ tab: "rating", axis: "level", view: null });
+  });
+
+  it("리스트 탭은 세트리스트 하나뿐이라 하위 전환을 그리지 않는다", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(json({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 })));
+    renderView("list");
+    expect(screen.getByRole("tab", { name: "리스트" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("group", { name: "리스트" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "세트리스트" })).toBeNull(); // 하위 전환 버튼이 없다
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/setlist"))).toBe(true));
+  });
+
+  it("통계·라이벌 탭에도 하위 전환이 없다", async () => {
+    renderView("stats");
+    expect(screen.queryByRole("group", { name: "통계" })).toBeNull();
   });
 
   it("달성 현황을 못 받아도 통계 탭의 폴더 목록은 그대로 쓴다", async () => {
