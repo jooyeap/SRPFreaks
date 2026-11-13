@@ -53,7 +53,9 @@ export function MyPageView({ userId, state, onStateChange }: { userId: number; s
 
         {hasSubViews(subViews) ? (
           // 하위 전환은 알약이 아니라 점(·)으로 나눈 글자다. 선택된 글자는 굵게 + 밑줄.
-          <div role="group" aria-label={t(tabLabelKey)} className="flex flex-wrap items-center gap-x-1 text-sm">
+          // 글자 버튼은 누르는 칸을 넓히려고 안쪽 여백(px-1.5 = 6px)을 둔다. 그대로 두면 첫 글자가 아래 줄(‹ 리스트 목록, 제목, 카드)보다 6px 들어가 보여서,
+          // 줄 전체를 같은 만큼(-ml-1.5) 왼쪽으로 당겨 첫 글자가 다른 줄과 같은 왼쪽 끝에 서게 한다. 눌리는 칸은 그대로고 바깥 여백(16px) 안에서만 6px 넓어진다.
+          <div role="group" aria-label={t(tabLabelKey)} className="-ml-1.5 flex flex-wrap items-center gap-x-1 text-sm">
             {subViews.map((item, index) => {
               const selected = (state.view ?? null) === item.value;
               return (
