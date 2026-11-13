@@ -2,6 +2,7 @@ package com.srpfreaks.backend.service;
 
 import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.common.error.ErrorCode;
+import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.dto.SongRankingResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.NoteOption;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -129,6 +132,59 @@ class SongRankingServiceTest {
         SongRankingResponse res = service.ranking(ME, CHART, 0, 20);
 
         assertThat(res.items()).extracting(SongRankingResponse.Item::isMe).containsExactly(true, false);
+    }
+
+    // ------------------------------------------------------------ 닉네임 글자색용 티어
+
+    private static SkillService.RatedSkill rated(String tierKey, String tierName) {
+        SkillResponse.PlayerTierResponse tier = tierKey == null ? null
+                : new SkillResponse.PlayerTierResponse(tierKey, tierName, 0, null, null);
+        SkillResponse skill = new SkillResponse(NoteOption.SUPER_RANDOM_PLUS, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                tier, 15, 25, List.of(), List.of());
+        return new SkillService.RatedSkill(skill, null);
+    }
+
+    @Test
+    void 줄마다_그_유저의_티어_key와_이름이_붙는다() {
+        when(userRepository.findById(ME)).thenReturn(Optional.of(viewer(false)));
+        when(mapper.countPlayers(CHART, SRN_PLUS)).thenReturn(2L);
+        when(mapper.findPage(CHART, SRN_PLUS, 20, 0L)).thenReturn(List.of(row(1, "99.00", false), row(2, "80.00", false)));
+        when(skillService.ratedAll(List.of(1L, 2L))).thenReturn(Map.of(1L, rated("GOLD", "Gold"), 2L, rated("BRONZE", "Bronze")));
+
+        SongRankingResponse res = service.ranking(ME, CHART, 0, 20);
+
+        assertThat(res.items()).extracting(i -> i.tier().key()).containsExactly("GOLD", "BRONZE");
+        assertThat(res.items()).extracting(i -> i.tier().displayName()).containsExactly("Gold", "Bronze");
+    }
+
+    @Test
+    void 티어를_정할_수_없는_유저는_tier가_null이다() {
+        // 계산 결과에 그 유저가 없거나(맵에 없음) 티어 구간표가 비어 있으면 null -> 화면은 기본 글자색
+        when(userRepository.findById(ME)).thenReturn(Optional.of(viewer(false)));
+        when(mapper.countPlayers(CHART, SRN_PLUS)).thenReturn(2L);
+        when(mapper.findPage(CHART, SRN_PLUS, 20, 0L)).thenReturn(List.of(row(1, "99.00", false), row(2, "80.00", false)));
+        when(skillService.ratedAll(List.of(1L, 2L))).thenReturn(Map.of(1L, rated(null, null)));
+
+        SongRankingResponse res = service.ranking(ME, CHART, 0, 20);
+
+        assertThat(res.items()).extracting(SongRankingResponse.Item::tier).containsExactly(null, null);
+    }
+
+    @Test
+    void 티어는_페이지에_나온_유저를_한_번에_계산하고_유저마다_따로_부르지_않는다() {
+        // N+1 방지: 인원이 늘어도 ratedAll은 한 번이다(안에서 설정·서열표·티어표를 한 번만 읽는다). 유저 한 명씩 rated()/mySkill()을 부르지 않는다
+        when(userRepository.findById(ME)).thenReturn(Optional.of(viewer(false)));
+        when(mapper.countPlayers(CHART, SRN_PLUS)).thenReturn(5L);
+        when(mapper.findPage(CHART, SRN_PLUS, 20, 0L)).thenReturn(List.of(
+                row(1, "99.00", false), row(2, "98.00", false), row(3, "97.00", false), row(4, "96.00", false), row(5, "95.00", false)));
+        when(skillService.ratedAll(List.of(1L, 2L, 3L, 4L, 5L))).thenReturn(Map.of());
+
+        service.ranking(ME, CHART, 0, 20);
+
+        verify(skillService, times(1)).ratedAll(any());
+        verify(skillService).ratedAll(List.of(1L, 2L, 3L, 4L, 5L));
+        verify(skillService, never()).rated(anyLong());
+        verify(skillService, never()).mySkill(anyLong());
     }
 
     @Test
