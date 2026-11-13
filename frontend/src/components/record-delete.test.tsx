@@ -223,7 +223,7 @@ describe("본인 기록 삭제 되돌리기", () => {
     fireEvent.click(screen.getByRole("button", { name: "삭제 7" }));
     await advance(UNDO_WINDOW_MS + 100);
     expect(await screen.findByText("91.25")).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("기록을 삭제하지 못했어요");
+    expect(screen.getByRole("alert")).toHaveTextContent("기록을 삭제하지 못했습니다");
     deleteStatus = 204;
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(screen.queryByText("91.25")).toBeNull();
