@@ -10,7 +10,6 @@ import { ChartBadge } from "@/components/table/Badges";
 import { formatScore, rateFromInput } from "@/lib/format";
 import {
   achievementFromInput,
-  cutlineProgress,
   fetchRatingSimulation,
   gapWithUnit,
   initialInput,
@@ -89,12 +88,11 @@ function CutlineSummary({ data }: { data: RatingSimulationResponse }) {
   const t = useTranslations("Cutline");
   const groupLabel = useGroupLabel();
   const cutline = data.cutline;
-  const progress = cutlineProgress(data);
   const required = cutline?.requiredRate ?? null;
   const gap = cutline?.rateGap ?? null;
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-1.5">
       <dl className="flex flex-col gap-1.5 text-[13px]">
         <Row label={t("group")} value={`${groupLabel(data.group)} · ${t("groupCount", { size: data.groupSize, limit: data.groupLimit })}`} />
         <Row
@@ -113,19 +111,7 @@ function CutlineSummary({ data }: { data: RatingSimulationResponse }) {
         />
       </dl>
 
-      <div
-        role="progressbar"
-        aria-label={t("progressAria")}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(progress * 100)}
-        className="h-2 overflow-hidden rounded-full bg-line"
-      >
-        {/* 채움은 티어 색(tier-bar)이 아니라 일반 강조색이다. tier-bar는 부모의 data-tier가 있어야 색이 생겨서 이 카드에서는 비어 보였다. 하단 이웃 난이도 막대(FolderNeighborBar)와 같은 토큰을 쓴다 */}
-        <div className="h-full rounded-full bg-[var(--stage-ss-bar)]" style={{ width: `${progress * 100}%` }} />
-      </div>
-
-      {/* 필요 달성률 한 줄: 글자로 말하므로 색에 기대지 않는다 */}
+      {/* 필요 달성률 한 줄: 글자로 말하므로 색에 기대지 않는다. (진행 막대는 항상 거의 가득 차 뜻을 알 수 없다는 피드백으로 삭제했다) */}
       <p className="text-sm font-semibold text-fg">
         {cutline === null || required === null
           ? t("unreachable")
