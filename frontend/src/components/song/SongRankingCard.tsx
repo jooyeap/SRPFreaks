@@ -109,9 +109,12 @@ export function RankRow({ item }: { item: SongRankingItem }) {
       <span className="flex min-w-0 flex-1 items-center gap-1.5">
         <Link
           href={`/players/${item.userId}`}
-          className="inline-flex min-h-11 min-w-0 items-center truncate font-bold text-fg underline-offset-2 hover:underline"
+          className="inline-flex min-h-11 min-w-0 items-center font-bold text-fg underline-offset-2 hover:underline"
         >
-          <span className="truncate">{item.nickname}</span>
+          {/* 말줄임(truncate)은 안쪽 글자 칸에만 둔다: 링크에 overflow:hidden이 있으면 높은 티어의 빛(drop-shadow)이 링크 상자에서 잘려 네모난 얼룩이 된다.
+              티어가 있으면 닉네임 글자에 티어 색(globals.css의 data-tier + tier-score, 유저 목록의 총점 글자와 같은 방식). 없으면 기본 글자색.
+              색은 장식이다: 순위·달성률·단계가 글자로 있고 티어 이름은 이 줄에 따로 보이지 않으므로 색만으로 전달되는 정보는 없다 */}
+          <span data-tier={item.tier?.key} className={item.tier ? "tier-score truncate" : "truncate"}>{item.nickname}</span>
         </Link>
         {/* 내 줄은 색만이 아니라 글자로도 알린다 */}
         {item.isMe ? <span className="shrink-0 rounded-full border border-line px-1.5 text-[11px] font-bold text-fg-sub">{t("me")}</span> : null}

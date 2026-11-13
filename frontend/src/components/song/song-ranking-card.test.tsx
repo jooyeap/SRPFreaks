@@ -66,6 +66,50 @@ describe("SongRankingCard", () => {
     expect(within(rows[2]).getByRole("link", { name: "nick47" })).toHaveAttribute("href", "/players/47");
   });
 
+  describe("닉네임 티어 색", () => {
+    it("티어가 있는 줄은 닉네임에 티어 색 클래스와 data-tier가 붙고, 없는 줄은 기본 글자색이다", async () => {
+      fetchMock.mockResolvedValue(json(response({
+        items: [
+          item({ rank: 1, userId: 45, tier: { key: "GOLD", displayName: "Gold" } }),
+          item({ rank: 2, userId: 46, tier: { key: "BRONZE", displayName: "Bronze" } }),
+          item({ rank: 3, userId: 47, tier: null }),
+        ],
+      })));
+      renderCard();
+
+      const gold = await screen.findByText("nick45");
+      expect(gold).toHaveClass("tier-score");
+      expect(gold).toHaveAttribute("data-tier", "GOLD");
+      expect(screen.getByText("nick46")).toHaveAttribute("data-tier", "BRONZE");
+      const plain = screen.getByText("nick47");
+      expect(plain).not.toHaveClass("tier-score");
+      expect(plain).not.toHaveAttribute("data-tier");
+    });
+
+    it("서버가 아직 tier를 주지 않아도(필드 없음) 기본 글자색으로 깨지지 않는다", async () => {
+      fetchMock.mockResolvedValue(json(response()));   // 기본 item()에는 tier가 없다
+      renderCard();
+
+      const name = await screen.findByText("nick45");
+      expect(name).not.toHaveClass("tier-score");
+      expect(name).not.toHaveAttribute("data-tier");
+    });
+
+    it("내 줄은 티어 색과 상관없이 배경 강조와 '나' 글자로 구분된다", async () => {
+      fetchMock.mockResolvedValue(json(response({
+        items: [item({ rank: 1, userId: 1, isMe: true, tier: { key: "RAINBOW", displayName: "Rainbow" } })],
+      })));
+      renderCard();
+
+      const name = await screen.findByText("nick1");
+      expect(name).toHaveClass("tier-score");
+      const row = name.closest("li");
+      expect(row).toHaveAttribute("data-me", "true");
+      expect(row).toHaveAttribute("aria-current", "true");
+      expect(within(row as HTMLElement).getByText("나")).toBeInTheDocument();
+    });
+  });
+
   it("상위 3개만 요청한다(size=3, 첫 페이지)", async () => {
     fetchMock.mockResolvedValue(json(response()));
     renderCard();

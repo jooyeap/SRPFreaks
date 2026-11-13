@@ -118,6 +118,23 @@ describe("SongRankingView", () => {
     expect(screen.getAllByRole("listitem")[0]).not.toHaveAttribute("aria-current");
   });
 
+  it("전체 순위 화면도 닉네임에 티어 색을 입히고, 티어가 없으면 기본 글자색이다", async () => {
+    serve(() => json(response({
+      items: [
+        item({ rank: 1, userId: 45, nickname: "gold!", tier: { key: "GOLD", displayName: "Gold" } }),
+        item({ rank: 2, userId: 46, nickname: "plain!", tier: null }),
+      ],
+    })));
+    renderView();
+
+    const gold = await screen.findByText("gold!");
+    expect(gold).toHaveClass("tier-score");
+    expect(gold).toHaveAttribute("data-tier", "GOLD");
+    const plain = screen.getByText("plain!");
+    expect(plain).not.toHaveClass("tier-score");
+    expect(plain).not.toHaveAttribute("data-tier");
+  });
+
   it("다음/이전 버튼은 쪽을 바꾸는 콜백을 부르고, 첫 쪽에서는 `이전`이 막혀 있다", async () => {
     serve(() => json(response()));
     renderView({ page: 0 });
