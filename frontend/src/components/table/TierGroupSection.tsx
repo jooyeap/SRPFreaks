@@ -84,8 +84,11 @@ export function TierGroupSection({
   open: controlledOpen,
   onOpenChange,
   recentChanges = 0,
+  showRecord = true,
 }: {
   group: TierGroupResponse;
+  /** false면 줄의 내 기록 칸(랭크·달성률 알약, 점수, 기록 버튼)을 그리지 않는다. 로그인하지 않은 서열표 폴더에서 쓴다(칸이 전부 `– –`로 비어 보이던 것) */
+  showRecord?: boolean;
   /**
    * true면 머리의 제목 줄을 눌러 채보 목록을 펼치고 접는다(처음에는 접힘, 곡 목록의 레벨 폴더와 같다).
    * 서열표 본문처럼 묶음이 여럿 이어지는 화면에서 쓴다. 묶음 하나만 보는 묶음 화면은 false(항상 펼침).
@@ -146,7 +149,7 @@ export function TierGroupSection({
             </button>
           ) : (
             <>
-              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{group.total}개</span>
+              {title} <span className="ml-1 text-sm font-normal text-fg-sub">{t("Chart.groupTotal", { count: group.total })}</span>
             </>
           )}
         </h2>
@@ -165,7 +168,7 @@ export function TierGroupSection({
             <li
               key={chip.key}
               data-stage={chip.stage ?? undefined}
-              className={`rounded-lg border border-chip-line px-2 py-0.5 text-xs ${
+              className={`rounded-lg border border-ctl px-2 py-0.5 text-xs ${
                 chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
               }`}
             >
@@ -186,14 +189,14 @@ export function TierGroupSection({
       {expanded ? (
         // 펼칠 때만 살짝 내려오며 나타난다(D57). 접을 수 없는 묶음(항상 펼침)은 처음부터 있으므로 움직이지 않는다
         <div id={bodyId} className={collapsible ? "motion-reveal" : undefined}>
-          <TableHeadRow />
+          <TableHeadRow showRecord={showRecord} />
           {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
           <ul>
             {entries.map((entry) => (
-              <EntryCard key={`card-${entry.entryId}`} entry={entry} tier={group.tier} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
+              <EntryCard key={`card-${entry.entryId}`} entry={entry} tier={group.tier} showRecord={showRecord} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
             ))}
             {entries.map((entry) => (
-              <EntryRow key={`row-${entry.entryId}`} entry={entry} tier={group.tier} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
+              <EntryRow key={`row-${entry.entryId}`} entry={entry} tier={group.tier} showRecord={showRecord} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
             ))}
           </ul>
         </div>

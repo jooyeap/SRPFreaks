@@ -10,10 +10,14 @@ import type {
   TierGroupResponse,
 } from "@/lib/api-types";
 import { clearAccessToken } from "@/lib/auth-token";
+import { rememberDetailNav, resetDetailNavForTest } from "@/lib/detail-nav";
+import { resetDetailNavHintForTest } from "@/lib/detail-nav-hint";
+import { EMPTY_FILTERS } from "@/lib/difficulty-table";
 import type { SongDetailOrigin } from "@/lib/songs";
 
 const back = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ back, push: vi.fn(), replace: vi.fn() }) }));
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ back, push: vi.fn(), replace }) }));
 // 링크가 기록을 쌓는지(push) 바꿔치는지(replace) 확인할 수 있게, 진짜 Link 대신 replace 여부를 표시하는 a 태그를 쓴다
 vi.mock("next/link", () => ({
   default: ({ href, replace, children, ...rest }: { href: string; replace?: boolean; children: React.ReactNode }) => (
@@ -125,6 +129,10 @@ describe("SongDetailView", () => {
   beforeEach(() => {
     clearAccessToken();
     back.mockReset();
+    replace.mockReset();
+    resetDetailNavForTest();
+    resetDetailNavHintForTest();
+    window.scrollTo = vi.fn();
     fetchMock.mockReset();
     tables = [table];
     songResponse = () => json(song);
@@ -172,11 +180,45 @@ describe("SongDetailView", () => {
       }
       if (url.includes("/difficulty-tables")) return Promise.resolve(json(tables));
       if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
+      // 곡별 순위(D74)는 이 테스트의 관심사가 아니다. 곡 응답을 순위 응답으로 읽지 않게 따로 돌려준다
+      if (url.includes("/ranking")) return Promise.resolve(json({}, 404));
       return Promise.resolve(songResponse());
     });
     renderView("table", 10);
     const neighbors = await screen.findByRole("region", { name: "같은 난이도의 곡" });
     expect(within(neighbors).queryByRole("link", { name: "묶음 전체 보기" })).not.toBeInTheDocument();
+  });
+
+  it("목록 맥락이 없으면(주소로 직접 들어오거나 새로고침) 이전/다음 바가 없다", async () => {
+    renderView("table", 10);
+    await screen.findByRole("region", { name: "서열표 정보" });
+    expect(screen.queryByRole("navigation", { name: "이전·다음 곡" })).not.toBeInTheDocument();
+  });
+
+  it("다른 채보의 맥락이 남아 있어도 지금 채보와 다르면 바가 없다 (다른 길로 들어온 경우)", async () => {
+    rememberDetailNav({ source: "table", sort: "level", filters: EMPTY_FILTERS, current: 91 });
+    renderView("table", 10);
+    await screen.findByRole("region", { name: "서열표 정보" });
+    expect(screen.queryByRole("navigation", { name: "이전·다음 곡" })).not.toBeInTheDocument();
+  });
+
+  it("서열표 폴더에서 들어왔으면 아래 바에 위치와 이전/다음이 보이고, 누르면 replace로 이동한다", async () => {
+    rememberDetailNav({ source: "table", sort: "level", filters: EMPTY_FILTERS, current: 10 });
+    renderView("table", 10);
+    const nav = await screen.findByRole("navigation", { name: "이전·다음 곡" });
+    expect(nav).toHaveTextContent("2/3");
+    expect(nav).toHaveTextContent("서열표 5.8");
+    fireEvent.click(within(nav).getByRole("button", { name: "다음" }));
+    expect(replace).toHaveBeenCalledWith("/songs/8?from=table&chart=91");
+  });
+
+  it("묶음의 끝에서 다음이 없으면 막힌 칸이고, 이전은 그대로 이동한다", async () => {
+    rememberDetailNav({ source: "table", sort: "level", filters: EMPTY_FILTERS, current: 91 });
+    renderView("table", 91);
+    const nav = await screen.findByRole("navigation", { name: "이전·다음 곡" });
+    expect(within(nav).queryByRole("button", { name: "다음" })).not.toBeInTheDocument();
+    fireEvent.click(within(nav).getByRole("button", { name: "이전" }));
+    expect(replace).toHaveBeenCalledWith("/songs/1?from=table&chart=10");
   });
 
   it("세트리스트 담기는 곡명 오른쪽(관리 버튼 자리)에 있고 내 기록 카드 안에는 없다", async () => {

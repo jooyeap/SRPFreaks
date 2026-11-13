@@ -5,6 +5,7 @@ import {
   type CardTierStyle,
   type CardTileView,
   fitTitle,
+  PART_TEXT_COLORS,
   truncateText,
 } from "@/lib/rating-card";
 
@@ -14,16 +15,13 @@ import {
  */
 
 const BG = "#0f1218";
-const PANEL = "#171c26";
+/** 곡 타일 바탕(다크 고정). 타일 안 글자색 대비는 이 값 기준이다 */
+export const CARD_PANEL = "#171c26";
 const LINE = "#2a3142";
 const TEXT = "#eef0f6";
 const TEXT_SUB = "#c5cbda";
 const TEXT_MUTED = "#a0a9bc";
-const PART_BG = "#2a1a24";
-const PART_GUITAR = "#f9a8d4";
-const PART_BASS = "#5eead4";
 const DIFF_TEXT = "#12151c";
-const TIER_SEG_BG = "#262d3d";
 
 export interface CardFonts {
   sans: string;
@@ -55,6 +53,7 @@ export async function loadCardFonts(model: CardModel, fonts: CardFonts): Promise
     for (const tile of section.tiles) {
       texts.add(tile.title);
       texts.add(tile.patternText);
+      texts.add(tile.partText);
     }
   }
   const sample = Array.from(texts).join(" ");
@@ -62,8 +61,8 @@ export async function loadCardFonts(model: CardModel, fonts: CardFonts): Promise
     await Promise.all([
       document.fonts.load(`500 20px ${fonts.sans}`, sample),
       document.fonts.load(`700 20px ${fonts.sans}`, sample),
-      document.fonts.load(`700 20px ${fonts.num}`, "0123456789.·MAXEFCSG"),
-      document.fonts.load(`600 20px ${fonts.num}`, "0123456789.·MAXEFCSG"),
+      document.fonts.load(`700 20px ${fonts.num}`, "0123456789.·MAXEFCSGBA"),
+      document.fonts.load(`600 20px ${fonts.num}`, "0123456789.·MAXEFCSGBA"),
     ]);
   } catch {
     // 글꼴을 못 받아도 기본 글꼴로 그린다
@@ -212,7 +211,7 @@ export async function loadCardJackets(model: CardModel): Promise<Map<string, HTM
 function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean, images: Map<string, HTMLImageElement>): void {
   const { x, y, w, h } = tile;
   roundRect(ctx, x, y, w, h, 10);
-  ctx.fillStyle = PANEL;
+  ctx.fillStyle = CARD_PANEL;
   ctx.fill();
 
   // 왼쪽 띠: 곡 레이팅 티어 색 (위→아래 그라데이션)
@@ -247,68 +246,31 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean, 
   const left = tile.jacket ? x + 8 + 8 + jSize + 12 : x + 24;
   const right = x + w - 16;
 
-  // 알약(파트 | 난이도 | 서열 난이도) 크기. 좁은 타일은 글자·여백을 줄인다
-  const pillFont = compact ? 12 : 13;
-  const pillPad = compact ? 10 : 14;
-  const pillY = y + h - 34;
-  const pillH = 22;
-  ctx.font = `700 ${pillFont}px ${f.num}`;
-  const partW = ctx.measureText(tile.partText).width + pillPad;
-  const diffW = ctx.measureText(tile.diffText).width + pillPad;
-  const tierW = ctx.measureText(tile.tierText).width + pillPad;
-  const pillEnd = left + partW + diffW + tierW;
+  // ── 2안(2026-11-09) 배치. 타일 350×84 기준이고 폭만 달라지는 세로(2열)도 같은 구조다 ──
+  // 곡명 줄: [곡명 …………… 달성률 단계칩]  (속성은 곡명 줄에 두지 않는다)
+  // 왼쪽 아래: 윗줄 난이도 알약 / 아랫줄 `Guitar · 속성` 글자   오른쪽(오른쪽 정렬): 서열표 난이도 숫자 / 점수(소수부는 작게)
+  const titleBase = y + 27;
 
-  // 오른쪽 덩어리: 위에 `rate · stage`, 아래에 점수. 점수는 알약과 10px 이상 떨어지도록 32px(좁으면 30px)에서 22px까지 줄인다
-  // (2026-11-01: 가로 5열에서 점수가 알약의 서열 난이도 칸을 덮던 문제)
-  let scoreSize = compact ? 30 : 32;
-  ctx.font = `700 ${scoreSize}px ${f.num}`;
-  let scoreW = ctx.measureText(tile.scoreText).width;
-  while (scoreSize > 22 && pillEnd + 10 > right - scoreW) {
-    scoreSize -= 1;
-    ctx.font = `700 ${scoreSize}px ${f.num}`;
-    scoreW = ctx.measureText(tile.scoreText).width;
-  }
-  const scoreBase = y + h - 14;
-  text(ctx, tile.scoreText, right, scoreBase, `700 ${scoreSize}px ${f.num}`, gradient(ctx, tile.tier, right - scoreW, scoreBase, right, scoreBase), "right");
+  // 달성률 + 단계 칩. 칩 안에 단계 글자를 그대로 쓰고 색은 단계 색 표를 따른다(색만으로 전달하지 않는다)
+  ctx.font = `700 11px ${f.num}`;
+  const chipW = ctx.measureText(tile.stageText).width + 12;
+  const chipH = 17;
+  const chipX = right - chipW;
+  const chipY = titleBase - 13;
+  ctx.save();
+  roundRect(ctx, chipX, chipY, chipW, chipH, 4);
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = tile.stageColor;
+  ctx.fill();
+  ctx.restore();
+  text(ctx, tile.stageText, chipX + chipW / 2, chipY + 12.5, `700 11px ${f.num}`, tile.stageColor, "center");
   ctx.font = `600 17px ${f.num}`;
   const rateW = ctx.measureText(tile.rateText).width;
-  text(ctx, tile.rateText, right, y + 28, `600 17px ${f.num}`, tile.stageColor, "right");
+  text(ctx, tile.rateText, chipX - 8, titleBase, `600 17px ${f.num}`, tile.stageColor, "right");
 
-  let chipBelow = false;
-  if (tile.jacket && tile.patternText) {
-    ctx.font = `700 12px ${f.sans}`;
-    const w0 = ctx.measureText(tile.patternText).width + 16;
-    // 아래 줄에 자리가 있을 때만 내린다(가로 5열처럼 좁으면 예전처럼 곡명 줄에 둔다)
-    chipBelow = pillEnd + 8 + w0 <= right - scoreW - 12;
-  }
-
-  // 속성 칩: 곡명 줄의 오른쪽(`rate · stage` 왼쪽). 재킷이 있고 자리가 있으면 아래 줄 알약 옆.
-  let chipW = 0;
-  if (tile.patternText && chipBelow) {
-    ctx.font = `700 12px ${f.sans}`;
-    const cw = ctx.measureText(tile.patternText).width + 16;
-    const chipX = left + partW + diffW + tierW + 8;
-    roundRect(ctx, chipX, pillY + 1, cw, 20, 10);
-    ctx.strokeStyle = "#3a4258";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    text(ctx, tile.patternText, chipX + cw / 2, pillY + 16, `700 12px ${f.sans}`, TEXT_SUB, "center");
-  } else if (tile.patternText) {
-    ctx.font = `700 12px ${f.sans}`;
-    chipW = ctx.measureText(tile.patternText).width + 16;
-    const chipX = right - rateW - 12 - chipW;
-    roundRect(ctx, chipX, y + 13, chipW, 20, 10);
-    ctx.strokeStyle = "#3a4258";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    text(ctx, tile.patternText, chipX + chipW / 2, y + 28, `700 12px ${f.sans}`, TEXT_SUB, "center");
-    chipW += 12;
-  }
-  const textMax = right - left - rateW - chipW - 12;
-
-  // 곡명: 칸마다 글자 크기가 들쭉날쭉하지 않게 고정 크기(세로 22px, 가로 5열 20px)로 쓰고, 넘으면 `…`로 줄인다(2026-11-01.
-  // 예전에는 24px에서 18px까지 줄여 짧은 곡명만 커 보였다)
+  // 곡명: 칸마다 글자 크기가 들쭉날쭉하지 않게 고정 크기(세로 22px, 가로 5열 20px)로 쓰고, 넘으면 `…`로 줄인다. 오른쪽 달성률+칩 폭만 비운다
   const titleSize = compact ? 20 : 22;
+  const textMax = chipX - 8 - rateW - 8 - left;
   const fit = fitTitle(
     tile.title,
     textMax,
@@ -318,23 +280,57 @@ function drawTile(ctx: Ctx, tile: CardTileView, f: CardFonts, compact: boolean, 
     },
     { max: titleSize, min: titleSize },
   );
-  text(ctx, fit.text, left, y + 33, `500 ${fit.size}px ${f.sans}`, TEXT);
+  text(ctx, fit.text, left, titleBase, `500 ${fit.size}px ${f.sans}`, TEXT);
 
-  // 파트 | 난이도 | 서열 기준 난이도 (한 덩어리 알약. 세 번째 칸은 숫자만)
-  ctx.save();
-  roundRect(ctx, left, pillY, partW + diffW + tierW, pillH, 5);
-  ctx.clip();
-  ctx.fillStyle = PART_BG;
-  ctx.fillRect(left, pillY, partW, pillH);
+  // 윗줄: 난이도 알약 하나(`MAS 9.50`, 파트는 넣지 않는다). 높이 18, 글자 12
+  const pillH = 18;
+  const pillY = y + h - 42;
+  const pillPad = 16;
+  ctx.font = `700 12px ${f.num}`;
+  const diffW = ctx.measureText(tile.diffText).width + pillPad;
+  roundRect(ctx, left, pillY, diffW, pillH, 5);
   ctx.fillStyle = tile.diffColor;
-  ctx.fillRect(left + partW, pillY, diffW, pillH);
-  ctx.fillStyle = TIER_SEG_BG;
-  ctx.fillRect(left + partW + diffW, pillY, tierW, pillH);
-  ctx.restore();
-  const pf = `700 ${pillFont}px ${f.num}`;
-  text(ctx, tile.partText, left + pillPad / 2, pillY + 16, pf, tile.partText === "Bass" ? PART_BASS : PART_GUITAR);
-  text(ctx, tile.diffText, left + partW + pillPad / 2, pillY + 16, pf, DIFF_TEXT);
-  text(ctx, tile.tierText, left + partW + diffW + pillPad / 2, pillY + 16, pf, TEXT);
+  ctx.fill();
+  text(ctx, tile.diffText, left + pillPad / 2, pillY + 13.5, `700 12px ${f.num}`, DIFF_TEXT);
+
+  // 아랫줄: 상자 없는 글자 `Guitar · 복합(단일)`. 파트 글자만 파트 색, 가운데점과 속성은 보조 글자색. 12px
+  const lineBase = y + h - 11;
+  const partColor = tile.partText === "Bass" ? PART_TEXT_COLORS.BASS : PART_TEXT_COLORS.GUITAR;
+  ctx.font = `700 12px ${f.num}`;
+  const partW = ctx.measureText(tile.partText).width;
+  text(ctx, tile.partText, left, lineBase, `700 12px ${f.num}`, partColor);
+  let lineEnd = left + partW;
+  if (tile.patternText) {
+    const rest = ` · ${tile.patternText}`;
+    ctx.font = `500 12px ${f.sans}`;
+    const restW = ctx.measureText(rest).width;
+    text(ctx, rest, left + partW, lineBase, `500 12px ${f.sans}`, TEXT_SUB);
+    lineEnd = left + partW + restW;
+  }
+  const leftEnd = Math.max(left + diffW, lineEnd);
+
+  // 오른쪽 열: 위에 서열표 난이도 숫자(라벨 없음, 12px), 아래에 점수. 점수는 정수부 크게 + 소수부 60%를 같은 기준선에 붙인다.
+  // 점수가 왼쪽 열(알약·아랫줄)과 10px 이상 떨어지도록 32px(좁으면 30px)에서 22px까지만 줄인다. 왼쪽 글자는 줄이지 않는다.
+  text(ctx, tile.tierText, right, y + 47, `600 12px ${f.num}`, TEXT_MUTED, "right");
+  const scoreBase = y + h - 13;
+  let scoreSize = compact ? 30 : 32;
+  let decSize = Math.round(scoreSize * 0.6);
+  const measureScore = () => {
+    ctx.font = `700 ${scoreSize}px ${f.num}`;
+    const iw = ctx.measureText(tile.scoreIntText).width;
+    ctx.font = `700 ${decSize}px ${f.num}`;
+    const dw = ctx.measureText(tile.scoreDecText).width;
+    return { iw, dw };
+  };
+  let { iw, dw } = measureScore();
+  while (scoreSize > 22 && leftEnd + 10 > right - iw - dw) {
+    scoreSize -= 1;
+    decSize = Math.round(scoreSize * 0.6);
+    ({ iw, dw } = measureScore());
+  }
+  const scoreFill = gradient(ctx, tile.tier, right - iw - dw, scoreBase, right, scoreBase);
+  text(ctx, tile.scoreDecText, right, scoreBase, `700 ${decSize}px ${f.num}`, scoreFill, "right");
+  text(ctx, tile.scoreIntText, right - dw, scoreBase, `700 ${scoreSize}px ${f.num}`, scoreFill, "right");
 }
 
 /** 카드 전체를 그린다. 캔버스 크기는 호출하는 쪽이 model.width × model.height로 맞춰 둔다. */

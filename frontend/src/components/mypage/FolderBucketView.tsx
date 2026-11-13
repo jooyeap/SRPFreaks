@@ -69,7 +69,7 @@ export function FolderBucketView({
 
   const rows = pages.data?.pages.flatMap((p) => p.content) ?? [];
   const total = pages.data?.pages[0]?.totalElements ?? 0;
-  const backHref = `/me?${myPageStateToQuery({ tab: "stats", axis: state.axis })}`;
+  const backHref = `/me?${myPageStateToQuery({ tab: "stats", axis: state.axis, view: null })}`;
   const title = folderLabel(state.axis, state.key, t);
 
   return (
@@ -99,7 +99,7 @@ export function FolderBucketView({
           <select
             value={state.sort}
             onChange={(e) => onStateChange({ ...state, sort: e.target.value as FolderChartSort })}
-            className="rounded-lg border border-chip-line bg-card px-3 py-1 text-sm text-fg"
+            className="rounded-lg border border-ctl bg-card px-3 py-1 text-sm text-fg"
           >
             {FOLDER_SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>

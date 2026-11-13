@@ -17,6 +17,7 @@ import {
   type SongListFilters,
   songListKeys,
 } from "@/lib/song-list";
+import { chartIdOfDetailLink, rememberDetailNav } from "@/lib/detail-nav";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { usePageSize } from "@/lib/page-size";
 import { useTranslations } from "next-intl";
@@ -96,7 +97,7 @@ export function FolderSection({
               <span
                 key={chip.key}
                 data-stage={chip.stage ?? undefined}
-                className={`rounded-lg border border-chip-line px-2 py-0.5 text-xs ${
+                className={`rounded-lg border border-ctl px-2 py-0.5 text-xs ${
                   chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"
                 }`}
               >
@@ -132,6 +133,13 @@ export function FolderSection({
         ) : !pages.data ? (
           <p className="p-3 text-sm text-fg-sub">{t("Common.loading")}</p>
         ) : (
+          // 곡 링크를 누르면 이 폴더의 조건을 기억해 둔다 -> 곡 상세의 이전/다음 곡 이동이 같은 목록을 쓴다(lib/detail-nav.ts)
+          <div
+            onClick={(e) => {
+              const chartId = chartIdOfDetailLink(e.target);
+              if (chartId !== null) rememberDetailNav({ source: "songs", userId, lo: folder.lo, step, filters, size, current: chartId });
+            }}
+          >
           <ChartList
             label={t("Songs.chartsAria", { title })}
             rows={pages.data.pages.flatMap((p) => p.content)}
@@ -139,6 +147,7 @@ export function FolderSection({
             loadingMore={pages.isFetchingNextPage}
             onMore={() => void pages.fetchNextPage()}
           />
+          </div>
         )}
       </div>
     </section>

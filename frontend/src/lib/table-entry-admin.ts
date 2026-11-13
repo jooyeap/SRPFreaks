@@ -11,7 +11,7 @@ import type { Translator } from "@/i18n/translator";
 
 export const RECOMMEND_CHOICES = ["상", "중", "하"] as const;
 /** 수정 화면에서는 필터와 달리 `레이팅 제외`도 고를 수 있다 (D18). */
-export const PATTERN_CHOICES = ["단일", "복합", "이중", "삼중", "레이팅 제외"] as const;
+export const PATTERN_CHOICES = ["단일", "복합", "이중", "삼중", "복합(단일)", "레이팅 제외"] as const;
 
 /** 정수부 1~2자리 + 선택적 소수 한 자리. 음수, 지수 표기, 공백은 모두 거른다. */
 const TIER_FORMAT = /^\d{1,2}(\.\d)?$/;

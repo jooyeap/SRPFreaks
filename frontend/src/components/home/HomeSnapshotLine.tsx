@@ -61,7 +61,7 @@ export function HomeSnapshotLine({ userId }: { userId: number }) {
           disabled={record.isPending}
           onClick={() => record.mutate()}
           className={`min-h-11 rounded-full px-4 text-[13px] font-bold disabled:opacity-60 ${
-            status.data.replacesToday ? "border border-chip-line text-fg hover:bg-table-head" : "bg-chip-on-bg text-chip-on-fg hover:opacity-90"
+            status.data.replacesToday ? "border border-ctl text-fg hover:bg-table-head" : "bg-chip-on-bg text-chip-on-fg hover:opacity-90"
           }`}
         >
           {record.isPending ? t("Rating.snapshotSaving") : buttonText.label}

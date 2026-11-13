@@ -45,7 +45,7 @@ export function SearchFocusButton({ targetId }: { targetId: string }) {
               aria-label={t("Songs.searchAria")}
               title={t("Songs.searchAria")}
               data-header-search=""
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-chip-line text-fg hover:bg-table-head"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-ctl text-fg hover:bg-table-head"
             >
               {icon}
             </button>,

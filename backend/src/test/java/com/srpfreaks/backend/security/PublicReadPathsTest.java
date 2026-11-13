@@ -36,7 +36,12 @@ class PublicReadPathsTest {
                 "/api/v1/users/me", "/api/v1/records", "/api/v1/skill", "/api/v1/setlist", "/api/v1/suggestions",
                 "/api/v1/notices/abc", "/api/v1/players/me", "/api/v1/songs/", "/api/v1/songs/5/",
                 "/api/v1/difficulty-tables/1", "/api/v1/difficulty-tables/1/entries/9",
-                "/api/v1/noticesX", "/api/v1/peer-stats", "/actuator/health", "/error"}) {
+                "/api/v1/noticesX", "/api/v1/peer-stats",
+                "/api/v1/players/2/compare/summary", "/api/v1/players/2/compare/summary/TRIPLE",   // 라이벌 대시보드 집계(D67)는 로그인 필요
+                "/api/v1/skills/me", "/api/v1/skills/me/simulate",                                  // 내 레이팅·시뮬레이션(D71)은 로그인 필요
+                "/api/v1/skills/me/weakness",                                                       // 약점 분석(D72)도 로그인 필요
+                "/api/v1/difficulties/12/ranking", "/api/v1/difficulties/12", "/api/v1/difficulties/abc/ranking",   // 곡별 순위(D74)는 로그인 전용(새 공개 경로 없음)
+                "/actuator/health", "/error"}) {
             assertThat(PublicReadPaths.matches("GET", uri)).as(uri).isFalse();
         }
     }

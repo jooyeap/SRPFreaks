@@ -40,7 +40,8 @@ public class RecordController {
     public ResponseEntity<RecordResponse> create(@AuthenticationPrincipal AuthenticatedUser user,
                                                  @Valid @RequestBody RecordRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
-                ratingChangeService.withChange(user.id(), () -> optionRecordService.create(user.id(), request)));
+                ratingChangeService.withChange(user.id(), request.songDifficultyId(),
+                        () -> optionRecordService.create(user.id(), request)));
     }
 
     @GetMapping
@@ -63,7 +64,8 @@ public class RecordController {
     public RecordResponse update(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long recordId,
                                  @Valid @RequestBody RecordRequest request) {
         // 저장 응답에는 "레이팅이 어떻게 바뀌었는지"를 같이 담는다(저장 직후 안내용)
-        return ratingChangeService.withChange(user.id(), () -> optionRecordService.update(user.id(), recordId, request));
+        Long chartId = optionRecordService.chartIdOf(user.id(), recordId);
+        return ratingChangeService.withChange(user.id(), chartId, () -> optionRecordService.update(user.id(), recordId, request));
     }
 
     @DeleteMapping("/{recordId}")

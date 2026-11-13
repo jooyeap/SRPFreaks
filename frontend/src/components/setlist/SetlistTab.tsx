@@ -1,9 +1,7 @@
 "use client";
 
-import { SongJacket } from "@/components/SongJacket";
 import { useJackets } from "@/lib/jackets";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { Pager, usePaged } from "@/components/Pager";
 import { useToast } from "@/components/Toast";
@@ -11,13 +9,10 @@ import { SetlistRecommend } from "@/components/setlist/SetlistRecommend";
 import { SetlistSearch } from "@/components/setlist/SetlistSearch";
 import { RecordDialog } from "@/components/record/RecordDialog";
 import type { RecordChart } from "@/components/record/RecordForm";
-import { PatternMark } from "@/components/setlist/PatternMark";
-import { ChartBadge } from "@/components/table/Badges";
-import { StageBadge } from "@/components/table/StageBadge";
+import { ChartLine } from "@/components/table/ChartLine";
+import { StageRatePill } from "@/components/table/StageRatePill";
 import { ApiError } from "@/lib/api";
 import type { SetlistItemResponse } from "@/lib/api-types";
-import { EMPTY_MARK, formatRate, formatTier } from "@/lib/format";
-import { useOneHandMode } from "@/lib/one-hand";
 import {
   clearDoneSetlist,
   doneCount,
@@ -58,7 +53,6 @@ export function SetlistTab({ userId }: { userId: number }) {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [recording, setRecording] = useState<RecordChart | null>(null);
-  const oneHand = useOneHandMode();
 
   const list = useQuery({ queryKey: setlistKeys.list(userId), queryFn: ({ signal }) => fetchSetlist(signal) });
   const items = list.data?.content ?? [];
@@ -67,14 +61,11 @@ export function SetlistTab({ userId }: { userId: number }) {
   const refresh = () => queryClient.invalidateQueries({ queryKey: setlistKeys.all });
 
   /**
-   * 한 손 모드에서 기록을 저장하면 창을 닫지 않고 세트리스트의 다음 곡으로 넘어간다(게임장에서 곡마다 창을 다시 여는 수고를 줄인다).
+   * 세트리스트에서 기록을 저장하면 결과 카드에 `다음 곡 ›` 버튼이 생기고, 누르면 창을 닫지 않고 세트리스트의 다음 곡 입력으로 넘어간다(게임장에서 곡마다 창을 다시 여는 수고를 줄인다).
    * 지금 곡 뒤쪽에서 아직 완료하지 않은 첫 줄, 없으면 앞쪽의 첫 미완료 줄이다. 방금 저장한 곡은 서버의 완료 표시가 아직 안 바뀌었을 수 있어 직접 뺀다.
-   * 더 입력할 곡이 없으면 null을 돌려줘서 창이 평소처럼 닫힌다. 한 손 모드가 꺼져 있으면 항상 null이다(기존 동작 그대로).
+   * 더 입력할 곡이 없으면 null을 돌려줘서 창이 평소처럼 닫힌다. 
    */
   const nextChartAfterSave = (saved: RecordChart): RecordChart | null => {
-    if (!oneHand) {
-      return null;
-    }
     const index = items.findIndex((item) => item.songDifficultyId === saved.songDifficultyId);
     const order = [...items.slice(index + 1), ...items.slice(0, Math.max(index, 0))];
     const next = order.find((item) => !item.done && item.songDifficultyId !== saved.songDifficultyId);
@@ -86,7 +77,7 @@ export function SetlistTab({ userId }: { userId: number }) {
       toast(t("Setlist.removed"));
       await refresh();
     },
-    onError: (error) => toast(errorText(error, t)),
+    onError: (error) => toast(errorText(error, t), { kind: "error" }),
   });
   const clear = useMutation({
     mutationFn: () => clearDoneSetlist(),
@@ -94,7 +85,7 @@ export function SetlistTab({ userId }: { userId: number }) {
       toast(t("Setlist.clearedToast", { count: result.removed }));
       await refresh();
     },
-    onError: (error) => toast(errorText(error, t)),
+    onError: (error) => toast(errorText(error, t), { kind: "error" }),
   });
 
   if (list.isPending) {
@@ -129,7 +120,7 @@ export function SetlistTab({ userId }: { userId: number }) {
             type="button"
             disabled={done === 0 || clear.isPending}
             onClick={() => clear.mutate()}
-            className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
+            className="min-h-9 rounded-lg border border-ctl px-3 text-sm text-fg-sub enabled:hover:text-fg disabled:text-disabled"
           >
             {clear.isPending ? t("Setlist.clearing") : t("Setlist.clearDone")}
           </button>
@@ -162,6 +153,12 @@ export function SetlistTab({ userId }: { userId: number }) {
   );
 }
 
+/**
+ * 세트리스트 담긴 목록 한 줄. 서열표 줄과 같은 공통 줄(ChartLine, D64)이다(높이 68px, 재킷은 있을 때만 48px).
+ * 왼쪽 = `속성 | 5.6`(서열 난이도 숫자, 라벨 없음, 완료하면 `✓ 완료`가 윗줄 끝에 붙는다) / 곡명 / 난이도 알약 `MAS 9.45` + 파트 글자.
+ * 오른쪽 88px = 랭크·달성률 알약 위, `[입력] [빼기]`(완료하면 `[수정] [빼기]`) 아래.
+ * 완료는 계산된 값(item.done)이다. 초록 테두리와 `✓ 완료` 글자를 같이 써서 색만으로 구분하지 않는다.
+ */
 function SetlistRow({
   item,
   removing,
@@ -176,60 +173,55 @@ function SetlistRow({
   const t = useTranslations();
   const stage = item.mine?.stage ?? null;
   const jackets = useJackets();
+  // 버튼: 보이는 높이 26px, ::after로 눌리는 영역만 사방 6px 넓힌다(38px). 옆 버튼과 겹치지 않게 gap-2 (8px > 6+6 의 절반씩)
+  const buttonBase =
+    "relative flex h-[26px] flex-1 items-center justify-center rounded-md border border-ctl px-1 text-xs after:absolute after:-inset-1.5 after:content-['']";
   return (
-    <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
-      <div className="flex items-start justify-between gap-3">
-        {/* 재킷(D54): 카드 안 왼쪽 48px. 보일 때는 곡명을 13px 한 줄로 줄인다 */}
-        {jackets.visible ? <SongJacket url={jackets.urlOf(item.songId)} title={item.title} className="size-12 rounded-lg" /> : null}
-        <div className="min-w-0 flex-1">
-          <Link href={`/songs/${item.songId}?chart=${item.songDifficultyId}`} className={`block truncate ${jackets.visible ? "text-[13px]" : "text-sm"} font-bold text-fg hover:underline`}>
-            {item.title}
-          </Link>
-          <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-            <ChartBadge part={item.part} difficulty={item.difficulty} level={item.level} />
-            <span className="text-xs text-fg-dim">
-              {t.rich("Setlist.tierLabel", { n: (c) => <span className="font-num">{c}</span>, tier: formatTier(item.tier, t) })}
-            </span>
-            {item.pattern ? <PatternMark pattern={item.pattern} /> : null}
-          </p>
-        </div>
-        <div className="shrink-0 text-right">
-          {stage ? <StageBadge stage={stage} /> : <span className="text-xs text-fg-faint">{EMPTY_MARK}</span>}
-          <span className="mt-0.5 block font-num text-xs text-fg-sub">{formatRate(item.mine?.rate)}</span>
-        </div>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        {/* 완료는 색이 아니라 글자와 체크 아이콘으로 보인다 */}
-        {item.done ? (
-          <span className="flex items-center gap-1 text-sm font-bold text-fg">
-            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <ChartLine
+      className={`rounded-2xl border bg-card ${item.done ? "border-done" : "border-line"}`}
+      done={item.done}
+      jacket={jackets.visible ? { url: jackets.urlOf(item.songId) } : null}
+      pattern={item.pattern}
+      tier={item.tier}
+      topExtra={
+        item.done ? (
+          <span className="flex shrink-0 items-center gap-0.5 text-[10px] font-bold text-done-text">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12l5 5 9-10" />
             </svg>
             {t("Setlist.doneMark")}
           </span>
-        ) : (
-          <span className="text-sm text-fg-dim">{t("Setlist.notDone")}</span>
-        )}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onRecord}
-            aria-label={t("Setlist.recordAria", { title: item.title })}
-            className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg hover:bg-table-head"
-          >
-            {t("Setlist.enterRecord")}
-          </button>
-          <button
-            type="button"
-            disabled={removing}
-            onClick={onRemove}
-            aria-label={t("Setlist.removeAria", { title: item.title })}
-            className="min-h-9 rounded-lg border border-chip-line px-3 text-sm text-fg-sub hover:text-fg disabled:opacity-60"
-          >
-            {t("Setlist.removeBtn")}
-          </button>
+        ) : null
+      }
+      title={item.title}
+      href={`/songs/${item.songId}?chart=${item.songDifficultyId}`}
+      part={item.part}
+      difficulty={item.difficulty}
+      level={item.level}
+      aside={
+        <div className="flex w-[88px] shrink-0 flex-col items-end gap-1.5">
+          <StageRatePill stage={stage} rate={item.mine?.rate} />
+          <div className="flex w-full gap-2">
+            <button
+              type="button"
+              onClick={onRecord}
+              aria-label={t(item.done ? "Setlist.editAria" : "Setlist.recordAria", { title: item.title })}
+              className={`${buttonBase} text-fg hover:bg-table-head`}
+            >
+              {item.done ? t("Record.edit") : t("Setlist.inputBtn")}
+            </button>
+            <button
+              type="button"
+              disabled={removing}
+              onClick={onRemove}
+              aria-label={t("Setlist.removeAria", { title: item.title })}
+              className={`${buttonBase} text-fg-sub hover:text-fg disabled:opacity-60`}
+            >
+              {t("Setlist.removeBtn")}
+            </button>
+          </div>
         </div>
-      </div>
-    </li>
+      }
+    />
   );
 }

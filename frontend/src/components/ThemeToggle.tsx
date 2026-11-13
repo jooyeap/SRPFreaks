@@ -4,7 +4,7 @@ import { oppositeTheme, parseTheme, THEME_STORAGE_KEY, type Theme } from "@/lib/
 import { useTranslations } from "next-intl";
 
 /** 지금 화면에 적용된 테마. data-theme이 없으면 브라우저(시스템) 설정을 따른다. */
-function currentTheme(): Theme {
+export function currentTheme(): Theme {
   const fromAttribute = parseTheme(document.documentElement.getAttribute("data-theme"));
   if (fromAttribute) {
     return fromAttribute;
@@ -12,6 +12,16 @@ function currentTheme(): Theme {
   const prefersLight =
     typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: light)").matches;
   return prefersLight ? "light" : "dark";
+}
+
+/** 테마를 화면(<html data-theme>)에 적용하고 선택을 저장한다. 헤더 스위치와 더보기 시트의 설정 띠가 같이 쓴다. */
+export function applyTheme(next: Theme): void {
+  document.documentElement.setAttribute("data-theme", next);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, next);
+  } catch {
+    // 저장소를 못 쓰는 환경이어도 이번 화면에서는 바뀐다 (새로고침하면 시스템 설정으로 돌아감)
+  }
 }
 
 /**
@@ -24,13 +34,7 @@ function currentTheme(): Theme {
 export function ThemeToggle() {
   const t = useTranslations("Common");
   function toggle() {
-    const next = oppositeTheme(currentTheme());
-    document.documentElement.setAttribute("data-theme", next);
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, next);
-    } catch {
-      // 저장소를 못 쓰는 환경이어도 이번 화면에서는 바뀐다 (새로고침하면 시스템 설정으로 돌아감)
-    }
+    applyTheme(oppositeTheme(currentTheme()));
   }
 
   return (
@@ -39,7 +43,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={t("themeToggle")}
       title={t("themeToggle")}
-      className="theme-switch relative grid h-7 w-14 shrink-0 grid-cols-2 items-center rounded-lg border border-chip-line bg-table-head"
+      className="theme-switch relative grid h-7 w-14 shrink-0 grid-cols-2 items-center rounded-lg border border-ctl bg-table-head"
     >
       <span className="theme-thumb absolute left-0.5 top-0.5 h-5 w-6 rounded-full bg-chip-on-bg" aria-hidden="true" />
       <svg className="theme-sun relative mx-auto h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">

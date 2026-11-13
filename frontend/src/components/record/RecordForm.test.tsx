@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RecordForm, type RecordChart } from "@/components/record/RecordForm";
 
@@ -106,6 +106,15 @@ describe("RecordForm", () => {
     expect(screen.getByText("달성률 MAX(으)로 저장됩니다")).toBeInTheDocument();
   });
 
+  it("한 손 모드 토글이 없고 달성률 칸은 항상 직접 입력할 수 있다", () => {
+    renderForm();
+    expect(screen.queryByRole("button", { name: /한 손/ })).toBeNull();
+    expect(screen.queryByRole("group", { name: /한 손/ })).toBeNull();
+    expect(rateInput()).not.toHaveAttribute("readonly");
+    expect(rateInput()).toHaveAttribute("inputmode", "numeric");
+    expect(screen.getByLabelText("플레이 날짜")).toBeVisible();
+  });
+
   it("세 자리를 치면 끝에 0이 붙은 달성률로 안내한다 (965 → 96.50, 100 → MAX, 0965 → 9.65)", () => {
     renderForm();
     fireEvent.change(rateInput(), { target: { value: "965" } });
@@ -173,6 +182,78 @@ describe("RecordForm", () => {
     fireEvent.change(rateInput(), { target: { value: "90" } });
     fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
     expect(await screen.findByText("찾을 수 없습니다.")).toBeInTheDocument();
+  });
+
+  it("저장이 실패하면 입력값은 그대로이고, 빨강 ! 와 [다시 시도]가 나오며 누르면 같은 값으로 다시 보낸다", async () => {
+    fetchMock.mockResolvedValueOnce(json({ code: "INTERNAL", message: "일시적인 오류입니다.", timestamp: "t" }, 500));
+    fetchMock.mockResolvedValueOnce(json({ id: 1, stage: "SS" }, 201));
+    renderForm();
+    fireEvent.change(rateInput(), { target: { value: "9650" } });
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("일시적인 오류입니다.");
+    expect(alert).toHaveTextContent("!");
+    expect(rateInput()).toHaveValue("9650"); // 입력값을 지우지 않는다
+    expect(onSaved).not.toHaveBeenCalled();
+
+    fireEvent.click(within(alert).getByRole("button", { name: "다시 시도" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual(JSON.parse(String(fetchMock.mock.calls[0][1]?.body)));
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+
+  it("칸별 서버 오류(값을 고쳐야 하는 오류)에는 [다시 시도]를 주지 않는다", async () => {
+    fetchMock.mockResolvedValueOnce(
+      json({ code: "VALIDATION_ERROR", message: "입력값을 확인해 주세요.", timestamp: "t", fieldErrors: { achievementRate: "서버: 달성률을 확인해 주세요." } }, 400),
+    );
+    renderForm();
+    fireEvent.change(rateInput(), { target: { value: "9650" } });
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
+    await screen.findByText("서버: 달성률을 확인해 주세요.");
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+
+  it("레이팅 설정 개수와 속성으로 정한 그룹(단일 2 / 그 외)을 결과 값에 담는다", async () => {
+    const entryOf = (id: number, score: number) => ({ rank: 1, songDifficultyId: id, songId: id, title: "x", score, pattern: "단일", tier: 6 });
+    fetchMock.mockImplementation((_input, init) =>
+      Promise.resolve(
+        init?.method === "POST"
+          ? json({ id: 1, stage: "SS", ratingChange: { totalBefore: 500, totalAfter: 604, change: 104, entered: true, inList: true } }, 201)
+          : json({ single: [entryOf(1, 300), entryOf(2, 200)], other: [], singleLimit: 2, otherLimit: 3, totalScore: 500, singleScore: 500, otherScore: 0, tier: {}, noteOption: "SUPER_RANDOM_PLUS" }),
+      ),
+    );
+    const view = render(
+      <QueryClientProvider client={client}>
+        <RecordForm chart={{ ...chart, tier: 6.0, pattern: "단일" }} userId={1} onSaved={onSaved} onCancel={onCancel} />
+      </QueryClientProvider>,
+    );
+    fireEvent.change(rateInput(), { target: { value: "9500" } });
+    await screen.findByText("예상 레이팅 +104.00 · NEW"); // 내 레이팅 목록이 캐시에 들어온 뒤
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(onSaved.mock.calls[0][1]).toMatchObject({ entry: { group: "single", limit: 2 } });
+    view.unmount();
+
+    onSaved.mockReset();
+    render(
+      <QueryClientProvider client={client}>
+        <RecordForm chart={{ ...chart, tier: 6.0, pattern: "복합" }} userId={1} onSaved={onSaved} onCancel={onCancel} />
+      </QueryClientProvider>,
+    );
+    fireEvent.change(rateInput(), { target: { value: "9500" } });
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(onSaved.mock.calls[0][1]).toMatchObject({ entry: { group: "other", limit: 3 } });
+  });
+
+  it("속성을 모르면 그룹을 정하지 못해 entry는 null이다", async () => {
+    fetchMock.mockResolvedValueOnce(json({ id: 1, stage: "SS" }, 201));
+    renderForm();
+    fireEvent.change(rateInput(), { target: { value: "9500" } });
+    fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(onSaved.mock.calls[0][1].entry).toBeNull();
   });
 
   it("취소를 누르면 onCancel을 부른다", () => {

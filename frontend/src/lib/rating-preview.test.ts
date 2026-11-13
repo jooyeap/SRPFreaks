@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { koT as t } from "@/i18n/ko-translator";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
-import { previewRatingChange, ratingPreviewText } from "@/lib/rating-preview";
+import { entryGroupOf, previewRatingChange, ratingPreviewText } from "@/lib/rating-preview";
 
 function entry(id: number, score: number, pattern = "단일"): SkillEntryResponse {
   return { rank: 1, songDifficultyId: id, songId: id, title: `곡${id}`, score, pattern, tier: 6 } as SkillEntryResponse;
@@ -54,5 +54,19 @@ describe("ratingPreviewText", () => {
   it("변화가 없으면 이유를 알려 준다", () => {
     expect(ratingPreviewText({ change: 0, inList: true, entered: false }, t)).toBe("레이팅 변화 없음");
     expect(ratingPreviewText({ change: 0, inList: false, entered: false }, t)).toBe("레이팅 변화 없음 · 아직 레이팅 목록에는 들지 못합니다");
+  });
+});
+
+describe("entryGroupOf", () => {
+  const limits = { singleLimit: 15, otherLimit: 25 };
+  it("단일은 단일 개수, 그 외 속성은 그 외 개수를 돌려준다", () => {
+    expect(entryGroupOf(limits, "단일")).toEqual({ group: "single", limit: 15 });
+    expect(entryGroupOf(limits, "복합")).toEqual({ group: "other", limit: 25 });
+  });
+  it("속성이 없거나 레이팅 제외이거나 개수를 모르면 null", () => {
+    expect(entryGroupOf(limits, null)).toBeNull();
+    expect(entryGroupOf(limits, undefined)).toBeNull();
+    expect(entryGroupOf(limits, "레이팅 제외")).toBeNull();
+    expect(entryGroupOf(undefined, "단일")).toBeNull();
   });
 });

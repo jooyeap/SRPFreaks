@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RatingCardButton } from "@/components/rating/RatingCardDialog";
 import type { SkillResponse } from "@/lib/api-types";
 import ko from "../../../messages/ko.json";
+import { resetHistoryLayersForTest } from "@/lib/history-layers";
 
 const render2d = vi.fn();
 vi.mock("@/lib/rating-card-draw", () => ({
@@ -64,5 +65,18 @@ describe("RatingCardButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "카드 이미지 저장" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("이미지를 만들지 못했습니다");
     expect(screen.getByRole("button", { name: "PNG 저장" })).toBeDisabled();
+  });
+
+  it("뒤로 가기를 누르면 카드 창만 닫힌다(주소는 그대로)", async () => {
+    resetHistoryLayersForTest();
+    window.history.replaceState(null, "", "/prev");
+    window.history.pushState(null, "", "/here");
+    ui(skill);
+    fireEvent.click(screen.getByRole("button", { name: "카드 이미지 저장" }));
+    await screen.findByAltText("레이팅 카드 미리보기");
+    window.history.back();
+    await waitFor(() => expect(screen.queryByAltText("레이팅 카드 미리보기")).not.toBeInTheDocument());
+    expect(window.location.pathname).toBe("/here");
+    resetHistoryLayersForTest();
   });
 });

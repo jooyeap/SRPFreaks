@@ -7,6 +7,7 @@ import type { SkillResponse } from "@/lib/api-types";
 import { buildCardModel, CARD_LAYOUTS, cardFileName, type CardLayout } from "@/lib/rating-card";
 import { renderRatingCard } from "@/lib/rating-card-draw";
 import { useJackets } from "@/lib/jackets";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /**
  * 레이팅 카드 이미지 저장 (D44). 버튼을 누르면 창이 열리고, 브라우저 캔버스로 PNG를 만들어 미리 보여 준다. 서버로 아무것도 보내지 않는다.
@@ -14,7 +15,7 @@ import { useJackets } from "@/lib/jackets";
  * 미리보기는 `toDataURL`(data: 주소)로 보인다 — CSP가 `img-src 'self' data:`라 blob: 주소는 막히기 때문이다.
  * 저장은 `toBlob` + 임시 <a download> 클릭이다. iOS Safari처럼 download가 안 먹는 브라우저를 위해 "이미지를 길게 눌러 저장" 안내를 둔다.
  */
-export function RatingCardButton({ skill }: { skill: SkillResponse }) {
+export function RatingCardButton({ skill, className }: { skill: SkillResponse; className?: string }) {
   const t = useTranslations("RatingCard");
   const [open, setOpen] = useState(false);
   if (skill.single.length + skill.other.length === 0) {
@@ -25,7 +26,7 @@ export function RatingCardButton({ skill }: { skill: SkillResponse }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="h-11 self-start rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg"
+        className={className ?? "h-11 self-start rounded-xl border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg"}
       >
         {t("open")}
       </button>
@@ -40,6 +41,8 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
   const t = useTranslations();
   const user = useOptionalUser();
   const ref = useRef<HTMLDialogElement>(null);
+  // 이 컴포넌트는 창이 열려 있는 동안에만 그려지므로 항상 "열림"이다. 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(true, onClose);
   const [layout, setLayout] = useState<CardLayout>("landscape");
   const [showName, setShowName] = useState(true);
   // 그린 결과는 "어떤 옵션으로 그렸는지(key)"와 함께 보관한다. 옵션이 바뀌면 key가 달라져 자동으로 "만드는 중"이 된다
@@ -129,7 +132,7 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
               aria-checked={layout === value}
               onClick={() => setLayout(value)}
               className={`h-10 rounded-xl border px-4 text-sm font-bold ${
-                layout === value ? "border-fg text-fg" : "border-chip-line text-fg-sub hover:text-fg"
+                layout === value ? "border-fg text-fg" : "border-ctl text-fg-sub hover:text-fg"
               }`}
             >
               {value === "landscape" ? t("RatingCard.layoutLandscape") : t("RatingCard.layoutPortrait")}
@@ -165,7 +168,7 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
         <button
           type="button"
           onClick={onClose}
-          className="h-11 flex-1 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg"
+          className="h-11 flex-1 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg"
         >
           {t("RatingCard.close")}
         </button>

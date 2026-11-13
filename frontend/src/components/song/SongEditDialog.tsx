@@ -23,6 +23,7 @@ import {
 } from "@/lib/song-admin";
 import { useTranslations } from "next-intl";
 import { TitleDuplicateNotice } from "@/components/song/TitleDuplicateNotice";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -39,6 +40,8 @@ export function SongEditDialog({ target, onClose }: { target: SongEditTarget | n
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const open = target !== null;
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, onClose);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -105,7 +108,7 @@ function Footer({ pending, error, onDone }: { pending: boolean; error: unknown; 
         </div>
       ) : null}
       <div className="flex gap-2.5">
-        <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg">
+        <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg">
           {t("Common.cancel")}
         </button>
         <button type="submit" disabled={pending} className="h-12 flex-1 rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg disabled:opacity-60">
@@ -212,7 +215,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
         {aliases.length > 0 ? (
           <ul aria-label={t("Song.registeredKeywords")} className="flex flex-wrap gap-1.5">
             {aliases.map((alias) => (
-              <li key={alias} className="flex items-center gap-1 rounded-lg border border-chip-line py-0.5 pl-3 pr-1 text-sm text-fg">
+              <li key={alias} className="flex items-center gap-1 rounded-lg border border-ctl py-0.5 pl-3 pr-1 text-sm text-fg">
                 {alias}
                 <button
                   type="button"
@@ -246,7 +249,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
             aria-describedby="edit-alias-help"
             className={`${FIELD} min-w-0 flex-1`}
           />
-          <button type="button" onClick={commitDraft} className="rounded-[10px] border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
+          <button type="button" onClick={commitDraft} className="rounded-[10px] border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg">
             {t("Song.add")}
           </button>
         </div>

@@ -75,7 +75,7 @@ export interface TableEntryResponse {
   /** 시트와 같은 한글 값: 상 / 중 / 하 (없으면 null) */
   recommend: string | null;
   recommendUncertain: boolean;
-  /** 단일 / 복합 / 이중 / 삼중 / 레이팅 제외 (없으면 null) */
+  /** 단일 / 복합 / 이중 / 삼중 / 복합(단일) / 레이팅 제외 (없으면 null) */
   pattern: string | null;
   patternUncertain: boolean;
   /** 레이팅 반영 스위치(D28). 꺼져 있으면 기준 난이도·속성이 있어도 레이팅에서 빠진다. */
@@ -406,7 +406,7 @@ export interface SetlistItemResponse {
   difficulty: DifficultyType;
   level: number;
   tier: number | null;
-  /** 서열표의 속성 글자(단일 / 복합 / 이중 / 삼중 / 레이팅 제외). 서열표에 없으면 null. */
+  /** 서열표의 속성 글자(단일 / 복합 / 이중 / 삼중 / 복합(단일) / 레이팅 제외). 서열표에 없으면 null. */
   pattern: string | null;
   mine: MyRecord | null;
   done: boolean;
@@ -496,9 +496,20 @@ export interface RivalCounts {
   lose: number;
   tie: number;
   theirsOnly: number;
+  /** 나만 기록한 레이팅 대상 곡 수(곡별 승패 응답에만, 승패에 세지 않는다. 옛 응답에는 없을 수 있다). */
+  onlyMine?: number;
 }
 
-/** 내 라이벌 한 줄. available=false(상대가 비공개·차단)면 닉네임만 오고 나머지는 null. scoreDiff = 상대 총점 - 내 총점. */
+/** 라이벌 카드의 "상대 상위 곡" 한 칸(3단계, D65): 재킷을 찾을 곡 id와 그 곡의 화면 점수(둘째 자리). */
+export interface RivalTopSong {
+  songId: number;
+  score: number;
+}
+
+/**
+ * 내 라이벌 한 줄. available=false(상대가 비공개·차단)면 닉네임만 오고 나머지는 null. scoreDiff = 상대 총점 - 내 총점(서버 값 그대로). 화면은 비교 화면과 같은 부호(내 − 상대)로 `myScoreDiff`에서 한 번만 뒤집어 쓴다.
+ * topSongs = 상대 레이팅 목록의 상위 곡 최대 5곡(점수 내림차순, 곡마다 한 번). 구버전 응답에는 없다(없으면 줄을 그리지 않는다).
+ */
 export interface RivalResponse {
   userId: number;
   nickname: string | null;
@@ -508,6 +519,15 @@ export interface RivalResponse {
   totalScore: number | null;
   scoreDiff: number | null;
   counts: RivalCounts | null;
+  topSongs?: RivalTopSong[] | null;
+}
+
+/** 나를 라이벌로 등록한 공개 유저 한 줄(D63). mutual = 내가 그 사람도 등록함(서로 라이벌). 이메일·역할은 오지 않는다. */
+export interface RivalRegistrantResponse {
+  userId: number;
+  nickname: string;
+  tier: PlayerTierResponse;
+  mutual: boolean;
 }
 
 export interface RivalStatusResponse {
@@ -527,6 +547,8 @@ export interface RivalRatingRow {
   difficulty: DifficultyType;
   level: number;
   tier: number;
+  /** 속성(`단일` 등, 없으면 null). 줄 윗줄의 `속성 | 서열 난이도`에 쓴다(D65) */
+  pattern: string | null;
   rate: number;
   stage: AchievementStage;
   score: number;
@@ -547,6 +569,113 @@ export interface RivalCompareRatingResponse {
   other: RivalRatingRow[];
 }
 
+/** 라이벌 대시보드(D67)의 속성 키. 속성 한 줄의 `key`이자 카테고리 상세 주소의 마지막 조각이다. */
+export type RivalPatternKey = "SINGLE" | "COMPOUND" | "COMPOSITE_SINGLE" | "DOUBLE" | "TRIPLE";
+
+/**
+ * 속성 한 줄(D67). pattern은 화면 라벨(`복합(단일)` 등).
+ * wins·ties·losses·closeCount는 **달성률 차 기준**(D67 개정, 2026-11-09): diff = 내 달성률 − 상대 달성률(%p), 승 > 0 · 패 < 0 · 무 = 0 · 접전 |diff| ≤ 1.00.
+ * scoreDiffSum(점수 차 합계)은 옛 필드로 남겨 두었고 판정·정렬에는 쓰지 않는다.
+ */
+export interface RivalPatternSummary {
+  pattern: string;
+  key: RivalPatternKey;
+  wins: number;
+  ties: number;
+  losses: number;
+  scoreDiffSum: number;
+  closeCount: number;
+  sharedCount: number;
+  /** 공유 곡마다 (내 달성률 − 상대 달성률)의 평균(%, 소수 첫째 자리). 공유 곡이 없으면 null. 화면에 보이는 값이고 우세·열세를 고르는 기준이다(D67 개정). 옛 응답에는 없을 수 있다. */
+  rateDiffAvg?: number | null;
+  /** 상대만 기록한(나는 기록이 없는) 레이팅 대상 곡 수. 승·무·패·평균에 넣지 않는다(D67 개정). 옛 응답에는 없을 수 있다. */
+  onlyTheirs?: number;
+  /** 나만 기록한 레이팅 대상 곡 수. 승·무·패·평균에 넣지 않는다(D67 개정). 옛 응답에는 없을 수 있다. */
+  onlyMine?: number;
+  /**
+   * 레이팅 목록(단일 15 + 그 외 25) 기준 속성별 점수 차 = 내 목록 점수 합 − 상대 목록 점수 합(소수 둘째 자리, 2026-11-10).
+   * 공유 곡 기준인 scoreDiffSum과 다른 값이다. 계산할 수 없거나 옛 응답이면 없음/null.
+   * 화면은 쓰지 않는다. 레이팅 목록 40칸 구성 차이라 속성 우세와 맞지 않아 표시하지 않기로 함(2026-11-10).
+   */
+  ratingScoreDiff?: number | null;
+}
+
+/** 서열 난이도(0.1 단위) 한 줄. 공유 곡이 있는 난이도만, 높은 난이도 먼저. 화면은 아직 쓰지 않는다(타입만). */
+export interface RivalTierSummary {
+  tier: number;
+  wins: number;
+  ties: number;
+  losses: number;
+}
+
+/** 점 분포 차트용: 속성별 곡마다의 차이(곡 id 없음), 작은 값부터. `distribution`은 점수 차(옛 필드), `rateDistribution`은 달성률 차(%p). */
+export interface RivalPatternDiffs {
+  pattern: string;
+  key: RivalPatternKey;
+  diffs: number[];
+}
+
+/** GET /players/{id}/compare/summary. 속성 다섯 줄은 공유 곡이 없어도 항상 같은 순서로 온다. 서열 난이도별(`tiers`)은 화면이 아직 쓰지 않는다. */
+export interface RivalSummaryResponse {
+  userId: number;
+  nickname: string;
+  closeMargin: number;
+  totals: { wins: number; ties: number; losses: number; closeCount: number; sharedCount: number; scoreDiffSum: number };
+  patterns: RivalPatternSummary[];
+  tiers: RivalTierSummary[];
+  /** 점수 차 분포(옛 필드, 화면은 쓰지 않는다). */
+  distribution: RivalPatternDiffs[];
+  /** 달성률 차(%p) 분포. 점 분포 차트가 쓴다. 옛 응답에는 없을 수 있다(그 경우 점 분포는 `–`로 비어 보인다). */
+  rateDistribution?: RivalPatternDiffs[];
+}
+
+export type RivalDetailFilter = "ALL" | "LOSE" | "CLOSE" | "WIN" | "THEIRS_ONLY";
+export type RivalDetailSort = "DIFF_ASC" | "DIFF_DESC" | "CLOSE" | "TITLE";
+
+/** 속성별 곡 목록의 한 줄. rate·stage·score는 상대, myRate·myStage·myScore는 나(둘 다 기록이 있는 곡만 나온다). */
+export interface RivalDetailRow {
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  tier: number | null;
+  pattern: string | null;
+  rate: number;
+  stage: AchievementStage;
+  score: number;
+  /** 나 쪽 값. 상대만 필터(THEIRS_ONLY)의 줄은 내 기록이 없어 null이다. */
+  myRate: number | null;
+  myStage: AchievementStage | null;
+  myScore: number | null;
+  /** 점수 차(옛 필드). 판정·정렬에는 쓰이지 않는다. */
+  diff: number | null;
+  /** 달성률 차(%p) = myRate − rate. 판정·정렬 기준(D67 개정). 옛 응답에는 없을 수 있어 없으면 myRate − rate로 계산한다. */
+  rateDiff?: number | null;
+}
+
+/** 속성 안 서열 난이도(0.1 단위) 한 줄(2026-11-10). 승·무·패·접전은 달성률 차 기준, rateDiffAvg는 공유 곡 평균 달성률 차(%p). */
+export interface RivalDetailTier {
+  tier: number;
+  wins: number;
+  ties: number;
+  losses: number;
+  closeCount: number;
+  sharedCount: number;
+  rateDiffAvg: number | null;
+}
+
+export interface RivalSummaryDetailResponse {
+  userId: number;
+  nickname: string;
+  summary: RivalPatternSummary;
+  filterCounts: { all: number; lose: number; close: number; win: number; theirsOnly?: number };
+  /** 난이도대별 집계. 옛 응답에는 없을 수 있다. */
+  tiers?: RivalDetailTier[];
+  rows: PageResponse<RivalDetailRow>;
+}
+
 export type RivalResult = "WIN" | "LOSE" | "TIE" | "THEIRS_ONLY";
 
 /** 곡별 승패 한 줄. myRate는 상대만 기록 있는 줄이면 null. diff = 내 달성률 - 상대 달성률. */
@@ -560,6 +689,10 @@ export interface RivalChartRow {
   myRate: number | null;
   theirRate: number;
   diff: number | null;
+  /** 서열표 기준 난이도(D67 개정). 곡별 승패 줄 윗줄 `속성 | 난이도`의 값. 옛 응답에는 없을 수 있다(없으면 `–`로 보인다). */
+  tier?: number | null;
+  /** 속성 라벨(`복합(단일)` 등, 속성 상세 목록 줄과 같은 형식). 옛 응답에는 없을 수 있다. */
+  pattern?: string | null;
 }
 
 export interface RivalCompareChartsResponse {
@@ -567,12 +700,13 @@ export interface RivalCompareChartsResponse {
   page: PageResponse<RivalChartRow>;
 }
 
-/** 곡 상세의 라이벌 기록 한 줄. rate = 상대 기록(없으면 null), diff = 내 기록 - 상대 기록. */
+/** 곡 상세의 라이벌 기록 한 줄. rate = 상대 기록(없으면 null), diff = 내 기록 - 상대 기록, stage = 상대 기록의 달성 단계(D65, 기록이 없으면 null). */
 export interface RivalRecordResponse {
   userId: number;
   nickname: string;
   rate: number | null;
   diff: number | null;
+  stage?: AchievementStage | null;
 }
 
 /** 알림 종류(D61). 화면은 줄 앞 칩(`라이벌` / `서열표`)으로 구분한다. */

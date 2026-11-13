@@ -42,7 +42,7 @@ export function RecommendRangeForm({ current, onDone }: { current: Current; onDo
     mode: "onTouched",
   });
 
-  const onError = (error: unknown) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed"));
+  const onError = (error: unknown) => toast(error instanceof ApiError ? error.message : t("Common.actionFailed"), { kind: "error" });
   const afterChange = async (message: string) => {
     toast(message);
     await queryClient.invalidateQueries({ queryKey: setlistKeys.all });
@@ -71,7 +71,7 @@ export function RecommendRangeForm({ current, onDone }: { current: Current; onDo
           type="button"
           disabled={busy || !current.customRange}
           onClick={() => reset.mutate()}
-          className="flex min-h-9 items-center rounded-lg border border-chip-line px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
+          className="flex min-h-9 items-center rounded-lg border border-ctl px-3 text-sm text-fg enabled:hover:bg-table-head disabled:text-disabled"
         >
           {t("Setlist.toDefault")}
         </button>

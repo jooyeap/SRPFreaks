@@ -46,3 +46,6 @@ scripts/seed/out/
 # 배포 후 화면 확인이 만드는 사진·결과 (CI에서만 생김)
 /screens/
 /node_modules/
+
+# 작업자 임시 작업 폴더
+.claude/worktrees/

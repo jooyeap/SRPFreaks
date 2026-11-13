@@ -5,6 +5,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { MobileTabBar } from "@/components/MobileTabBar";
 import { ImportHandoff } from "@/components/import/ImportHandoff";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { NicknameNotice } from "@/components/NicknameNotice";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -73,6 +74,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <SiteHeader />
           <OfflineBanner />
           <NicknameNotice />
+          <InstallPrompt />
           <ImportHandoff />
           <main className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-6">{children}</main>
           <SiteFooter />

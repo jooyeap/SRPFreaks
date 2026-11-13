@@ -14,7 +14,7 @@ export function AuthControls() {
   }
   if (status === "anonymous" || !user) {
     return (
-      <Link href="/login" className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg">
+      <Link href="/login" className="rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg">
         {t("login")}
       </Link>
     );
@@ -29,7 +29,7 @@ export function AuthControls() {
       <button
         type="button"
         onClick={() => void logout()}
-        className="rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+        className="rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg"
       >
         {t("logout")}
       </button>

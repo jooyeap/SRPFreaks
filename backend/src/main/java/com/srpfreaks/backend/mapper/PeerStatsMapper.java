@@ -101,4 +101,82 @@ public interface PeerStatsMapper {
     List<PeerChartMeta> findChartMeta(@Param("tableId") Long tableId,
                                       @Param("excludedPattern") String excludedPattern,
                                       @Param("chartIds") Collection<Long> chartIds);
+
+    /**
+     * 약점 분석(D72)용: 고른 스냅샷들의 레이팅 목록을 속성별로 묶은 집계. 복합(단일)은 복합과 같은 묶음으로 센다.
+     * 돌려주는 것은 묶음별 유저 수(스냅샷은 유저당 1개라 서로 다른 스냅샷 수 = 유저 수) · 줄 수 · 평균 달성률뿐이다.
+     * user_id·개별 달성률은 select 하지 않는다(개인이 드러나지 않는 집계값만, D53). 최소 인원 검사는 서비스가 한다.
+     * 안쪽 쿼리(t)에서 묶음 값을 먼저 만든 뒤 바깥에서 GROUP BY 하는 이유: SELECT와 GROUP BY에 같은 CASE 식을 따로 쓰면
+     * 바인딩 값(#{})이 달라 보여 ONLY_FULL_GROUP_BY 오류가 날 수 있다. 서열표 값(속성)은 채보 마스터에서 읽는다(레이팅 대상 조건은 findChartMeta와 같다).
+     */
+    @Select("""
+            SELECT agg.pattern_group AS pattern,
+                   COUNT(DISTINCT agg.snapshot_id) AS users,
+                   COUNT(*) AS entries,
+                   AVG(agg.rate) AS avgRate
+            FROM (
+                SELECT x.skill_snapshot_id AS snapshot_id,
+                       x.achievement_rate  AS rate,
+                       CASE WHEN e.pattern_type = #{compositeSingle} THEN #{compound} ELSE e.pattern_type END AS pattern_group
+                FROM skill_snapshot_entries x
+                JOIN difficulty_table_entries e ON e.song_difficulty_id = x.song_difficulty_id
+                                               AND e.difficulty_table_id = #{tableId}
+                JOIN song_difficulties d ON d.song_difficulty_id = x.song_difficulty_id
+                JOIN songs s ON s.song_id = d.song_id
+                WHERE x.skill_snapshot_id IN (""" + CHOSEN_SNAPSHOTS + """
+                )
+                  AND d.is_deleted = FALSE
+                  AND s.is_deleted = FALSE
+                  AND e.rating_enabled = TRUE
+                  AND e.tier_label IS NOT NULL
+                  AND e.pattern_type IS NOT NULL
+                  AND e.pattern_type != #{excludedPattern}
+            ) agg
+            GROUP BY agg.pattern_group
+            """)
+    List<PeerGroupAverage> findPatternAverages(@Param("userId") Long userId,
+                                               @Param("noteOption") String noteOption,
+                                               @Param("lo") BigDecimal lo,
+                                               @Param("hi") BigDecimal hi,
+                                               @Param("tableId") Long tableId,
+                                               @Param("excludedPattern") String excludedPattern,
+                                               @Param("compositeSingle") String compositeSingle,
+                                               @Param("compound") String compound);
+
+    /**
+     * 약점 분석(D72)용: 서열표 기준 난이도 묶음(bandWidth 단위, 예 0.5 -> 5.5~5.9)별 집계. 묶음 값 = FLOOR(기준 난이도 / 폭) x 폭.
+     * 나머지 규칙은 findPatternAverages와 같다. 폭은 서버 상수가 #{}로 들어오고 요청에서 오지 않는다.
+     */
+    @Select("""
+            SELECT agg.band AS band,
+                   COUNT(DISTINCT agg.snapshot_id) AS users,
+                   COUNT(*) AS entries,
+                   AVG(agg.rate) AS avgRate
+            FROM (
+                SELECT x.skill_snapshot_id AS snapshot_id,
+                       x.achievement_rate  AS rate,
+                       FLOOR(e.tier_label / #{bandWidth}) * #{bandWidth} AS band
+                FROM skill_snapshot_entries x
+                JOIN difficulty_table_entries e ON e.song_difficulty_id = x.song_difficulty_id
+                                               AND e.difficulty_table_id = #{tableId}
+                JOIN song_difficulties d ON d.song_difficulty_id = x.song_difficulty_id
+                JOIN songs s ON s.song_id = d.song_id
+                WHERE x.skill_snapshot_id IN (""" + CHOSEN_SNAPSHOTS + """
+                )
+                  AND d.is_deleted = FALSE
+                  AND s.is_deleted = FALSE
+                  AND e.rating_enabled = TRUE
+                  AND e.tier_label IS NOT NULL
+                  AND e.pattern_type IS NOT NULL
+                  AND e.pattern_type != #{excludedPattern}
+            ) agg
+            GROUP BY agg.band
+            """)
+    List<PeerBandAverage> findBandAverages(@Param("userId") Long userId,
+                                           @Param("noteOption") String noteOption,
+                                           @Param("lo") BigDecimal lo,
+                                           @Param("hi") BigDecimal hi,
+                                           @Param("tableId") Long tableId,
+                                           @Param("excludedPattern") String excludedPattern,
+                                           @Param("bandWidth") BigDecimal bandWidth);
 }

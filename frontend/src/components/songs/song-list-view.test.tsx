@@ -4,6 +4,7 @@ import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SongListView } from "@/components/songs/SongListView";
 import type { ChartFolderListResponse, ChartFolderResponse, ChartRowResponse, PageResponse } from "@/lib/api-types";
+import { readDetailNav, resetDetailNavForTest } from "@/lib/detail-nav";
 import { resetPageSizeForTest } from "@/lib/page-size";
 import { EMPTY_SONG_FILTERS, type SongListFilters } from "@/lib/song-list";
 
@@ -181,6 +182,17 @@ describe("SongListView", () => {
     expect(screen.getByText("두번째곡")).toBeInTheDocument();
   });
 
+  it("채보 링크를 누르면 그 폴더의 조건과 채보를 곡 상세의 이전/다음 이동용으로 기억한다", async () => {
+    resetDetailNavForTest();
+    renderView();
+    fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
+    const link = await screen.findByRole("link", { name: "첫번째곡" });
+    link.addEventListener("click", (e) => e.preventDefault());
+    fireEvent.click(link);
+    expect(readDetailNav()).toMatchObject({ source: "songs", userId: 1, lo: 9.5, step: "0.50", size: 20, current: 1 });
+    resetDetailNavForTest();
+  });
+
   it("맨 위에서 개수를 바꾸면 펼친 폴더가 그 개수로 다시 채보를 받는다 (기본은 20개씩)", async () => {
     renderView();
     fireEvent.click(await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ }));
@@ -330,6 +342,24 @@ describe("SongListView", () => {
     for (const name of ["ADV", "EXT", "MAS"]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
+  });
+
+  it("버전 선택지는 서버가 준 순서(출시일 최신순) 그대로 나온다(프론트에서 다시 정렬하지 않는다)", async () => {
+    const base = fetchMock.getMockImplementation();
+    fetchMock.mockImplementation((input, init) => {
+      if (String(input).includes("/songs/chart-folders")) {
+        // 문자 순이 아닌 순서로 내려보내도 그대로 보여야 한다
+        return Promise.resolve(json({ ...folders, versions: ["GITADORA Matixx", "XG3", "V8", "미정 신규"] }));
+      }
+      return base!(input, init);
+    });
+    renderView();
+    await screen.findByRole("button", { name: /9\.50 ~ 9\.99/ });
+
+    const versionSelect = screen.getAllByRole("combobox").find((el) => el.getAttribute("aria-label") !== "한 번에 보이는 개수") as HTMLElement;
+    const options = Array.from(versionSelect.querySelectorAll("option")).map((o) => o.textContent);
+    // 첫 칸은 전체 선택지, 그 뒤는 서버 순서
+    expect(options.slice(1)).toEqual(["GITADORA Matixx", "XG3", "V8", "미정 신규"]);
   });
 
   it("버전을 고르면 그 버전으로 거르고, 초기화하면 조건 없는 폴더 목록으로 돌아온다", async () => {

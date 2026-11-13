@@ -83,7 +83,7 @@ const EPS = 0.005;
 type Kind = "single" | "other";
 
 /** 목록 종류별로 해당하는 속성. 단일 목록에는 단일 채보만, 그 외 목록에는 복합·이중·삼중 채보만 들어간다. */
-const PATTERN_KIND: Record<string, Kind> = { 단일: "single", 복합: "other", 이중: "other", 삼중: "other" };
+const PATTERN_KIND: Record<string, Kind> = { 단일: "single", 복합: "other", 이중: "other", 삼중: "other", "복합(단일)": "other" };
 
 /** 계산에 쓰는 채보 한 곡. member = 지금 내 레이팅 목록 안에 있는가 */
 interface Chart {

@@ -15,7 +15,11 @@ import { useJackets } from "@/lib/jackets";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
 import { PeerStatsCard } from "@/components/song/PeerStatsCard";
+import { RatingCutlineCard } from "@/components/song/RatingCutlineCard";
+import { SongRankingCard } from "@/components/song/SongRankingCard";
 import { TierHistorySection } from "@/components/song/TierHistorySection";
+import { SongNavBar } from "@/components/song/SongNavBar";
+import { useDetailNav } from "@/components/song/use-detail-nav";
 import { SongHeader } from "@/components/song/SongHeader";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
 import { InfoCards, LevelTable } from "@/components/song/SongInfo";
@@ -24,9 +28,11 @@ import { ApiError } from "@/lib/api";
 import { allGroupsKey, fetchAllTierGroups, fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
 import { difficultyLabel, formatTier, partLabel } from "@/lib/format";
 import { availableCombos } from "@/lib/song-admin";
+import { useRecordDelete } from "@/components/RecordDeleteProvider";
 import { fetchBestRecord, recordKeys } from "@/lib/records";
 import { entriesOfSong, fetchSongDetail, findChart, resolveChart, songKeys, type SongDetailOrigin } from "@/lib/songs";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { runAfterHistorySettled } from "@/lib/history-layers";
 import { isLoggedInViewer } from "@/lib/viewer";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
@@ -106,6 +112,17 @@ export function SongDetailView({
   });
   const groups = groupsQuery.data ?? null;
 
+  // 이전/다음 곡 이동: 열린 창이 있으면 스와이프를 끈다. 바는 목록에서 들어온 기억이 지금 채보와 맞을 때만 보인다(use-detail-nav)
+  const dialogOpen = recordOpen || editTarget !== null || songEdit !== null || manageOpen || chartAddOpen || jacketOpen;
+  const nav = useDetailNav({ origin, chartId, userId, groups, swipeEnabled: !dialogOpen });
+  const navBar = nav.view ? (
+    <>
+      {/* 아래 고정 바에 마지막 줄이 가려지지 않게 그 높이만큼 비운다 */}
+      <div aria-hidden="true" className="h-14" />
+      <SongNavBar view={nav.view} onStep={(direction) => void nav.go(direction)} />
+    </>
+  ) : null;
+
   const chart = song.data ? resolveChart(song.data.difficulties, chartId) : null;
   const found = chart && groups ? findChart(groups, chart.id) : null;
 
@@ -115,6 +132,10 @@ export function SongDetailView({
     queryFn: ({ signal }) => fetchBestRecord(chart?.id ?? 0, signal),
     enabled: chart !== null && loggedIn, // 비로그인(D43)은 내 기록이 없으므로 /records를 부르지 않는다(401 방지)
   });
+
+  // 삭제 대기 중인 기록이 그 채보의 최고 기록이면 "내 기록"에서 바로 뺀다(RecordDeleteProvider). 확정되면 쿼리가 새로 받아진다
+  const { hiddenIds: hiddenRecordIds } = useRecordDelete();
+  const bestRecord = best.data && !hiddenRecordIds.has(best.data.id) ? best.data : null;
 
   // 서열표를 받은 뒤에만 수정할 수 있다 (표 id와 현재 값이 필요하다). 표에 없는 채보는 "추가"가 된다.
   const openTableEdit = () => {
@@ -148,7 +169,7 @@ export function SongDetailView({
       </button>
       <span className="text-sm font-semibold text-fg">{t("Songs.detailTitle")}</span>
       {origin === "table" && found ? (
-        <span className="rounded-lg border border-chip-line px-2 py-0.5 text-xs text-fg-sub">
+        <span className="rounded-lg border border-ctl px-2 py-0.5 text-xs text-fg-sub">
           {t.rich("Song.tableHeading", { tier: formatTier(found.group.tier, t), num: (chunks) => <span className="font-num">{chunks}</span> })}
         </span>
       ) : (
@@ -162,6 +183,7 @@ export function SongDetailView({
       <div className="flex flex-col gap-4">
         {backBar}
         <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
+        {navBar}
       </div>
     );
   }
@@ -172,6 +194,7 @@ export function SongDetailView({
         <ErrorRetry onRetry={() => void song.refetch()} retrying={song.isFetching}>
           {errorMessage(song.error, t)}
         </ErrorRetry>
+        {navBar}
       </div>
     );
   }
@@ -182,7 +205,7 @@ export function SongDetailView({
   const myRecord = loggedIn ? (
     <MyRecordCard
       mine={found?.entry.mine ?? null}
-      best={best.data ?? null}
+      best={bestRecord}
       chart={chart ? { part: chart.instrumentPart, difficulty: chart.difficultyType, level: chart.level } : null}
       emphasizeSrn={isTable}
       arrival={arrival}
@@ -193,14 +216,15 @@ export function SongDetailView({
     <section aria-label={t("Song.myRecord")} className="flex flex-col items-start gap-3 rounded-lg border border-line bg-card p-4">
       <h2 className="text-sm font-semibold text-fg-sub">{t("Song.myRecord")}</h2>
       <p className="text-sm text-fg-sub">{t("Songs.loginToRecord")}</p>
-      <Link href="/login" className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg hover:bg-table-head">
+      <Link href="/login" className="min-h-9 rounded-lg border border-ctl px-3 py-1 text-sm text-fg hover:bg-table-head">
         {t("Nav.login")}
       </Link>
     </section>
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    // 좌우 스와이프: 세로 스크롤은 브라우저에 맡기고(pan-y) 확대(pinch-zoom)도 막지 않는다. 가로 스크롤 표·입력 칸·열린 창에서는 시작하지 않는다(useSwipeNav)
+    <div {...nav.swipe} className={`flex flex-col gap-4 ${nav.view ? "touch-pan-y touch-pinch-zoom" : ""}`}>
       {backBar}
       {/*
         모바일(한 열)은 곡 정보 → 내 기록(기록 등록 버튼) → 나머지 정보 → 같은 난이도의 곡 순서로 보인다.
@@ -223,7 +247,7 @@ export function SongDetailView({
                     <button
                       type="button"
                       onClick={() => setManageOpen(true)}
-                      className="min-h-9 rounded-lg border border-chip-line px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                      className="min-h-9 rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg"
                     >
                       {t("Song.manage")}
                     </button>
@@ -262,6 +286,10 @@ export function SongDetailView({
         <div className="contents md:flex md:flex-col md:gap-4">
           <div className="order-2 flex flex-col gap-4 md:order-none">
             {myRecord}
+            {/* 곡별 순위 요약(D74): 내 기록 카드 아래. 로그인했을 때만(서버도 비로그인은 401이라 부르지 않는다). 카드 맨 아래 `전체 순위` 링크가 전체 순위 화면(D74 구현 PR 3번)으로 간다 */}
+            {chart && loggedIn ? <SongRankingCard songId={songId} chartId={chart.id} userId={userId} /> : null}
+            {/* 컷라인 · 목표 달성률 시뮬레이션(D71): 내 기록 카드 아래. 로그인했을 때만, 레이팅 대상이 아니면 카드를 숨기고 안내 한 줄만 보인다 */}
+            {chart && loggedIn ? <RatingCutlineCard chartId={chart.id} userId={userId} /> : null}
             {/* 라이벌 기록(D56): 로그인 + 라이벌이 있을 때만. 없으면 카드가 스스로 그리지 않는다 */}
             {chart && loggedIn ? <RivalRecordsCard viewerId={userId} songDifficultyId={chart.id} /> : null}
           </div>
@@ -330,10 +358,12 @@ export function SongDetailView({
           chartLabel={chart ? `${partLabel(chart.instrumentPart)} ${difficultyLabel(chart.difficultyType)}` : null}
           onDeleted={(target) => {
             // 곡을 지웠으면 곡 상세는 더 볼 수 없으므로 목록으로, 채보만 지웠으면 같은 곡의 남은 채보로 (기록을 쌓지 않게 replace)
-            router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`);
+            // 관리 창(과 삭제 확인 창)이 쌓은 history 칸을 먼저 걷어낸 뒤 replace해야 "곡 상세 칸"이 바뀐다(lib/history-layers.ts)
+            runAfterHistorySettled(() => router.replace(target === "song" ? (isTable ? "/table" : "/songs") : `/songs/${data.id}?from=${origin}`));
           }}
         />
       ) : null}
+      {navBar}
     </div>
   );
 }

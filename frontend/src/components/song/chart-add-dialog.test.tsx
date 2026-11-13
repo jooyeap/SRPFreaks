@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import type { SongChartResponse } from "@/lib/api-types";
 import { availableCombos } from "@/lib/song-admin";
+import { resetHistoryLayersForTest } from "@/lib/history-layers";
 
 // 이 곡에는 Guitar MASTER / Guitar EXTREME / Bass MASTER가 이미 있다
 const existing: SongChartResponse[] = [
@@ -152,5 +153,16 @@ describe("ChartAddDialog", () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes("/songs/77/difficulties"))).toHaveLength(1);
+  });
+
+  it("뒤로 가기를 누르면 창만 닫힌다(onClose, 주소는 그대로)", async () => {
+    resetHistoryLayersForTest();
+    window.history.replaceState(null, "", "/prev");
+    window.history.pushState(null, "", "/here");
+    renderDialog(null);
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(window.location.pathname).toBe("/here");
+    resetHistoryLayersForTest();
   });
 });
