@@ -42,7 +42,7 @@ describe("서열표 묶음 화면의 레이팅 반영 기준", () => {
 
   it("두 목록이 모두 계산되면 단일과 그 외를 나눠 보여 준다", async () => {
     renderNote([entry("단일"), entry("복합")]);
-    expect(await screen.findByText(/이 구간은 단일/)).toHaveTextContent("이 구간은 단일 85% · 그 외 95% 이상이면 레이팅에 반영돼요.");
+    expect(await screen.findByText(/이 구간은 단일/)).toHaveTextContent("이 구간은 단일 85% · 그 외 95% 이상이면 레이팅에 반영됩니다.");
   });
 
   it("복합(단일) 채보는 그 외 쪽으로 센다", async () => {
