@@ -57,7 +57,7 @@ export function RatingGoalPlanner({ userId, skill }: { userId: number; skill: Sk
   );
 }
 
-function GoalBody({ userId, skill }: { userId: number; skill: SkillResponse }) {
+export function GoalBody({ userId, skill }: { userId: number; skill: SkillResponse }) {
   const t = useTranslations();
   const inputId = useId();
   const tables = useQuery({
