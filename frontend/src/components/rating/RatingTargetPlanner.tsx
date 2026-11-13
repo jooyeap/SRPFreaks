@@ -53,7 +53,7 @@ export function RatingTargetPlanner({ userId, skill }: { userId: number; skill: 
   );
 }
 
-function PlannerBody({ userId, skill }: { userId: number; skill: SkillResponse }) {
+export function PlannerBody({ userId, skill }: { userId: number; skill: SkillResponse }) {
   const t = useTranslations();
   const tables = useQuery({
     queryKey: tableKeys.list,

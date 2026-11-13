@@ -5,14 +5,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/Skeleton";
 import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
-import { RatingCardButton } from "@/components/rating/RatingCardDialog";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
 import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TermHelp } from "@/components/TermHelp";
 import { RatingInsights } from "@/components/rating/RatingInsights";
-import { RatingGoalPlanner } from "@/components/rating/RatingGoalPlanner";
-import { RatingTargetPlanner } from "@/components/rating/RatingTargetPlanner";
+import { RatingToolChips } from "@/components/rating/RatingToolChips";
 import { ApiError } from "@/lib/api";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 import { formatScore } from "@/lib/format";
@@ -149,10 +147,8 @@ export function RatingView({ userId }: { userId: number }) {
         skill={data}
         afterSummary={
           <>
-            <RatingCardButton skill={data} />
             <RatingInsights userId={userId} />
-            <RatingGoalPlanner userId={userId} skill={data} />
-            <RatingTargetPlanner userId={userId} skill={data} />
+            <RatingToolChips userId={userId} skill={data} />
           </>
         }
         footer={<SkillSnapshotPanel userId={userId} />}

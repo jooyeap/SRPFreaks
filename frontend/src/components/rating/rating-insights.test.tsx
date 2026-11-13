@@ -43,11 +43,14 @@ describe("RatingInsights", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("오늘 기록할 수 있으면 변화량과 함께 기록 제안을 눈에 띄게 보여 주고, 누르면 기록한다", async () => {
+  it("오늘 기록할 수 있으면 카드 한 장에 변화량(한 번만)과 기록 버튼이 함께 있고, 누르면 기록한다", async () => {
     renderInsights();
-    const banner = await screen.findByRole("region", { name: "레이팅 기록 제안" });
-    expect(await within(banner).findByText(/마지막 기록\(2026-10-10\) 이후 레이팅이 ▲ \+33\.92 달라졌습니다\./)).toBeInTheDocument();
-    fireEvent.click(within(banner).getByRole("button", { name: "지금 레이팅 기록하기" }));
+    const card = await screen.findByRole("region", { name: "레이팅 현황" });
+    // 변화량은 카드 안에 한 번만 나온다(예전에는 기록 제안 배너와 대비 줄이 각각 적어서 두 번 보였다)
+    expect(await within(card).findByText(/마지막 기록\(2026-10-10\) 대비/)).toBeInTheDocument();
+    expect(card.textContent?.match(/\+33\.92/g)).toHaveLength(1);
+    expect(screen.queryByRole("region", { name: "레이팅 기록 제안" })).toBeNull();
+    fireEvent.click(within(card).getByRole("button", { name: "지금 레이팅 기록하기" }));
     await waitFor(() => expect(fetchMock.mock.calls.some((c) => c[1]?.method === "POST")).toBe(true));
   });
 
@@ -55,20 +58,31 @@ describe("RatingInsights", () => {
     status = { available: false, reason: "NO_CHANGE", replacesToday: false };
     renderInsights();
     await screen.findByText(/새로 들어온 곡/); // 요약은 보인다
-    expect(screen.queryByRole("region", { name: "레이팅 기록 제안" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "지금 레이팅 기록하기" })).toBeNull();
   });
 
   it("오늘 이미 기록했으면 갱신할 수 있어도 제안을 다시 띄우지 않는다(저장할 때마다 뜨지 않게)", async () => {
     status = { available: true, reason: null, replacesToday: true };
     renderInsights();
     await screen.findByText(/새로 들어온 곡/); // 요약은 보인다
-    expect(screen.queryByRole("region", { name: "레이팅 기록 제안" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "지금 레이팅 기록하기" })).toBeNull();
   });
 
   it("처음이면(기록 없음) 첫 기록을 권한다", async () => {
     compare = { ...compareOk, available: false, reason: "NO_SNAPSHOT", totalChange: null as unknown as number };
     renderInsights();
     expect(await screen.findByText("아직 기록한 레이팅이 없습니다.")).toBeInTheDocument();
+    // 숫자 없이 안내와 기록 버튼만 있고, 펼칠 요약은 없다
+    expect(screen.getByRole("button", { name: "지금 레이팅 기록하기" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /대비/ })).toBeNull();
+    expect(screen.queryByText(/[▲▼±]/)).toBeNull();
+  });
+
+  it("기록 버튼과 요약(펼침) 버튼은 터치 영역이 44px 이상이다", async () => {
+    renderInsights();
+    const summary = await screen.findByRole("button", { name: /마지막 기록\(2026-10-10\) 대비/ });
+    expect(summary.className).toContain("min-h-11");
+    expect(screen.getByRole("button", { name: "지금 레이팅 기록하기" }).className).toContain("min-h-11");
   });
 
   it("요약 한 줄은 변화량과 새로 들어온 곡 수를 보이고, 누르면 곡별 비교를 펼친다", async () => {

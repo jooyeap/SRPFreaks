@@ -15,7 +15,7 @@ import { useHistoryClose } from "@/lib/use-history-close";
  * 미리보기는 `toDataURL`(data: 주소)로 보인다 — CSP가 `img-src 'self' data:`라 blob: 주소는 막히기 때문이다.
  * 저장은 `toBlob` + 임시 <a download> 클릭이다. iOS Safari처럼 download가 안 먹는 브라우저를 위해 "이미지를 길게 눌러 저장" 안내를 둔다.
  */
-export function RatingCardButton({ skill }: { skill: SkillResponse }) {
+export function RatingCardButton({ skill, className }: { skill: SkillResponse; className?: string }) {
   const t = useTranslations("RatingCard");
   const [open, setOpen] = useState(false);
   if (skill.single.length + skill.other.length === 0) {
@@ -26,7 +26,7 @@ export function RatingCardButton({ skill }: { skill: SkillResponse }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="h-11 self-start rounded-xl border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg"
+        className={className ?? "h-11 self-start rounded-xl border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg"}
       >
         {t("open")}
       </button>
