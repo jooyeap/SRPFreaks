@@ -41,6 +41,7 @@ class PublicReadPathsTest {
                 "/api/v1/skills/me", "/api/v1/skills/me/simulate",                                  // 내 레이팅·시뮬레이션(D71)은 로그인 필요
                 "/api/v1/skills/me/weakness",                                                       // 약점 분석(D72)도 로그인 필요
                 "/api/v1/difficulties/12/ranking", "/api/v1/difficulties/12", "/api/v1/difficulties/abc/ranking",   // 곡별 순위(D74)는 로그인 전용(새 공개 경로 없음)
+                "/api/v1/me/lists", "/api/v1/me/lists/3", "/api/v1/me/lists/3/items", "/api/v1/me/lists/abc",   // 내 리스트(D76)는 로그인 전용(공유 링크·공개 경로 없음)
                 "/actuator/health", "/error"}) {
             assertThat(PublicReadPaths.matches("GET", uri)).as(uri).isFalse();
         }
