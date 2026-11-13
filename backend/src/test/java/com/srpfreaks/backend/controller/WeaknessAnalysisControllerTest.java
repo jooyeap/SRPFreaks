@@ -58,7 +58,7 @@ class WeaknessAnalysisControllerTest {
 
     @Test
     void 토큰의_본인_id로만_분석하고_응답에_유저_식별_정보가_없다() throws Exception {
-        when(service.analyze(USER)).thenReturn(new WeaknessAnalysisResponse("SS 3", 6, true, 3, new BigDecimal("0.5"),
+        when(service.analyze(USER)).thenReturn(new WeaknessAnalysisResponse("SS 3", 6, 5, true, 3, new BigDecimal("0.5"),
                 List.of(), List.of(), null, List.of()));
 
         // 다른 사람 id를 쿼리로 보내도 무시된다(파라미터가 없다)
