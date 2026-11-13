@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
  *  - peer.* 키: 같은 티어 유저 기록의 표시 기준(정수, 1 이상). PeerStatsConfig로 만들어 본다.
  *  - rival.* 키: 라이벌 등록 수·알림 지연·하루 개수·보관 일수(정수, 1 이상). RivalConfig로 만들어 본다.
  *  - tier.notify_* 키: 서열표 변경 알림 보관 일수·묶음 기준(정수, 1 이상). TierNotifyConfig로 만들어 본다.
+ *  - list.* 키: 내 리스트의 리스트 수·리스트당 곡 수 상한(정수, 1 이상). UserListConfig로 만들어 본다.
  *  - ui.show_song_images: true / false 만.
  *  - 그 밖의 키: 비어 있지 않은 글자.
  * 모든 변경은 audit_logs에 변경 전/후 값과 함께 남긴다.
@@ -142,6 +143,18 @@ public class SettingAdminService {
             all.put(key, value);
             try {
                 TierNotifyConfig.from(all);
+            } catch (IllegalStateException e) {
+                throw new ApiException(ErrorCode.VALIDATION_ERROR);
+            }
+            return;
+        }
+        if (key.startsWith(UserListConfig.KEY_PREFIX)) {
+            // 내 리스트(D76): 리스트 수·리스트당 곡 수 상한. 모두 1 이상 정수
+            Map<String, String> all = appSettingRepository.findAll().stream()
+                    .collect(Collectors.toMap(AppSetting::getKey, AppSetting::getValue));
+            all.put(key, value);
+            try {
+                UserListConfig.from(all);
             } catch (IllegalStateException e) {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR);
             }

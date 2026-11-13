@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { TierArrival } from "@/lib/tier-arrival";
 import { RecordDialog } from "@/components/record/RecordDialog";
-import { SetlistAddButton } from "@/components/setlist/SetlistAddButton";
+import { ListAddButton } from "@/components/mylists/ListAddButton";
 import { ChartAddDialog } from "@/components/song/ChartAddDialog";
 import { SongEditDialog, type SongEditTarget } from "@/components/song/SongEditDialog";
 import { SongManageDialog } from "@/components/song/SongManageDialog";
@@ -240,9 +240,9 @@ export function SongDetailView({
               chart={chart}
               pattern={isTable ? (found?.entry.pattern ?? null) : null}
               action={
-                // 세트리스트 담기(로그인했을 때만 그려진다)와 ROOT·ADMIN의 `관리`가 곡명 오른쪽에 나란히 놓인다
+                // 리스트에 추가(로그인했을 때만 그려진다, D76)와 ROOT·ADMIN의 `관리`가 곡명 오른쪽에 나란히 놓인다
                 <div className="flex items-center gap-2">
-                  {chart ? <SetlistAddButton songDifficultyId={chart.id} title={data.title} /> : null}
+                  {chart ? <ListAddButton songDifficultyId={chart.id} title={data.title} /> : null}
                   {canEditTable ? (
                     <button
                       type="button"

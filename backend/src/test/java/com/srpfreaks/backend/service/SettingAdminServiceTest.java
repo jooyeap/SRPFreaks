@@ -57,7 +57,8 @@ class SettingAdminServiceTest {
                 setting("setlist.recommend_starter_tier", "5.2"),
                 setting("peer.min_band_users", "5"), setting("peer.min_chart_users", "5"),
                 setting("recognize.enabled", "false"), setting("recognize.min_role", "ADMIN"),
-                setting("recognize.weekly_limit", "30"), setting("recognize.daily_total_limit", "300")));
+                setting("recognize.weekly_limit", "30"), setting("recognize.daily_total_limit", "300"),
+                setting("list.max_lists", "10"), setting("list.max_items", "50")));
         lenient().when(appSettingRepository.findAll()).thenReturn(settings);
         lenient().when(appSettingRepository.findAllWithUpdatedBy()).thenReturn(settings);
         lenient().when(appSettingRepository.findById(any(String.class))).thenAnswer(invocation ->
@@ -83,9 +84,9 @@ class SettingAdminServiceTest {
         assertThat(first.content()).hasSize(5);
         assertThat(first.content()).extracting(SettingResponse::key).isSorted();
         assertThat(first.content().get(0).key()).isEqualTo("contact.takedown_email");
-        assertThat(first.totalElements()).isEqualTo(27);
+        assertThat(first.totalElements()).isEqualTo(29);
         assertThat(first.totalPages()).isEqualTo(6);
-        assertThat(last.content()).hasSize(2); // 27개 중 26~27번째 (사진 입력 설정 4개 추가, 2026-10-28)
+        assertThat(last.content()).hasSize(4); // 29개 중 26~29번째 (사진 입력 설정 4개 추가 2026-10-28, 내 리스트 설정 2개 추가 D76)
         assertThat(service.list(9, 5).content()).isEmpty();
         assertThat(service.list(-1, 0).content()).hasSize(1); // 범위 밖 값은 허용 범위로 맞춘다
     }
@@ -125,6 +126,20 @@ class SettingAdminServiceTest {
         assertRejected("rating.cap_rate", "95");
         assertThat(settings.stream().filter(s -> s.getKey().equals("rating.max_rate")).findFirst().orElseThrow().getValue())
                 .isEqualTo("95"); // 거절된 값은 저장되지 않았다
+    }
+
+    @Test
+    void 내_리스트_상한은_1_이상_정수만_받는다() {
+        assertRejected("list.max_lists", "0");
+        assertRejected("list.max_items", "abc");
+        assertRejected("list.max_items", "1.5");
+        assertRejected("list.max_lists", "-3");
+    }
+
+    @Test
+    void 내_리스트_상한을_바꾸면_저장한다() {
+        service.update(1L, "list.max_items", "80");
+        assertThat(settings.stream().filter(s -> s.getKey().equals("list.max_items")).findFirst().orElseThrow().getValue()).isEqualTo("80");
     }
 
     @Test

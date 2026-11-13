@@ -25,6 +25,14 @@ public enum ErrorCode {
     SUGGESTION_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "오늘은 건의를 더 보낼 수 없습니다. 내일 다시 보내 주세요."),
     RIVAL_LIMIT(HttpStatus.CONFLICT, "라이벌은 5명까지 등록할 수 있습니다."),
     SETLIST_FULL(HttpStatus.CONFLICT, "세트리스트에는 30곡까지 담을 수 있습니다."),
+    /** 내 리스트(D76): 이름이 비었거나(공백만) 20자를 넘을 때. */
+    LIST_NAME_INVALID(HttpStatus.BAD_REQUEST, "리스트 이름은 1자 이상 20자 이하로 입력해 주세요."),
+    /** 내 리스트(D76): 같은 이름(대소문자 구분 없이)의 리스트가 이미 있을 때. */
+    LIST_NAME_DUPLICATE(HttpStatus.BAD_REQUEST, "같은 이름의 리스트가 이미 있습니다. 다른 이름을 입력해 주세요."),
+    /** 내 리스트(D76): 리스트 수 상한(설정 list.max_lists)에 도달했을 때. */
+    LIST_LIMIT(HttpStatus.BAD_REQUEST, "더 이상 리스트를 만들 수 없습니다. 쓰지 않는 리스트를 지운 뒤 다시 시도해 주세요."),
+    /** 내 리스트(D76): 리스트 하나에 담을 수 있는 곡 수 상한(설정 list.max_items)에 도달했을 때. */
+    LIST_ITEMS_LIMIT(HttpStatus.BAD_REQUEST, "이 리스트에는 더 이상 곡을 담을 수 없습니다. 담긴 곡을 뺀 뒤 다시 시도해 주세요."),
     RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."),
     /** 사진 입력(D55): 이번 주(최근 7일) 한도 또는 오늘 전체 한도를 다 썼을 때. 상태 API가 언제 풀리는지 알려 준다. */
     RECOGNIZE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "사진 인식 한도를 모두 사용했습니다. 나중에 다시 시도해 주세요."),

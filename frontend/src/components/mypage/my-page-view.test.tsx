@@ -286,13 +286,30 @@ describe("MyPageView", () => {
     expect(onStateChange).toHaveBeenCalledWith({ tab: "rating", axis: "level", view: null });
   });
 
-  it("리스트 탭은 세트리스트 하나뿐이라 하위 전환을 그리지 않는다", async () => {
+  it("리스트 탭은 `세트리스트 · 내 리스트` 하위 전환을 그리고, 기본은 세트리스트다", async () => {
     fetchMock.mockImplementation(() => Promise.resolve(json({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 })));
     renderView("list");
     expect(screen.getByRole("tab", { name: "리스트" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.queryByRole("group", { name: "리스트" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "세트리스트" })).toBeNull(); // 하위 전환 버튼이 없다
+    const group = screen.getByRole("group", { name: "리스트" });
+    expect(within(group).getByRole("button", { name: "세트리스트" })).toHaveAttribute("aria-current", "true");
+    expect(within(group).getByRole("button", { name: "내 리스트" })).not.toHaveAttribute("aria-current");
     await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/setlist"))).toBe(true));
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/me/lists"))).toBe(false);
+  });
+
+  it("「내 리스트」를 누르면 view=mine으로 바꿔 달라고 요청하고, 그 화면은 /me/lists를 부른다", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(json({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 })));
+    const onStateChange = renderView("list");
+    fireEvent.click(screen.getByRole("button", { name: "내 리스트" }));
+    expect(onStateChange).toHaveBeenCalledWith({ tab: "list", axis: "level", view: "mine" });
+  });
+
+  it("view=mine이면 내 리스트 화면(빈 상태 안내 + 새 리스트 만들기)을 그린다", async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(json({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 })));
+    renderView("list", "level", vi.fn(), "mine");
+    expect(await screen.findByText(/만든 리스트가 없습니다/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /새 리스트 만들기/ })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/setlist"))).toBe(false);
   });
 
   it("통계·라이벌 탭에도 하위 전환이 없다", async () => {

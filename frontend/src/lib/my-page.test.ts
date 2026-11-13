@@ -89,9 +89,9 @@ describe("isLegacyMyPageQuery", () => {
 });
 
 describe("하위 전환 표시 조건", () => {
-  it("항목이 2개 이상일 때만 그린다: 레이팅 탭(내 레이팅 · 분석)은 그리고 리스트 탭(세트리스트 하나)은 그리지 않는다", () => {
+  it("항목이 2개 이상일 때만 그린다: 레이팅 탭(내 레이팅 · 분석)과 리스트 탭(세트리스트 · 내 리스트)은 그리고 통계·라이벌은 그리지 않는다", () => {
     expect(hasSubViews(MY_PAGE_SUB_VIEWS.rating)).toBe(true);
-    expect(hasSubViews(MY_PAGE_SUB_VIEWS.list)).toBe(false);
+    expect(hasSubViews(MY_PAGE_SUB_VIEWS.list)).toBe(true);
     expect(hasSubViews(MY_PAGE_SUB_VIEWS.stats)).toBe(false);
     expect(hasSubViews(MY_PAGE_SUB_VIEWS.rival)).toBe(false);
   });
