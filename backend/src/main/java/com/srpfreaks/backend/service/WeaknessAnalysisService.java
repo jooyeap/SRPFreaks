@@ -121,8 +121,8 @@ public class WeaknessAnalysisService {
         List<EasyChart> easy = weakFrom == null || table.isEmpty() ? List.of()
                 : easyCharts(userId, ratingConfig, table.get().getId(), weakFrom);
 
-        return new WeaknessAnalysisResponse(tier == null ? null : tier.displayName(), bandUsers, peerAvailable,
-                MIN_MY_CHARTS, BAND_WIDTH, patterns, bands, weakFrom, easy);
+        return new WeaknessAnalysisResponse(tier == null ? null : tier.displayName(), bandUsers, peerConfig.minBandUsers(),
+                peerAvailable, MIN_MY_CHARTS, BAND_WIDTH, patterns, bands, weakFrom, easy);
     }
 
     // ---- 순수 계산(테스트에서 직접 부른다) ----

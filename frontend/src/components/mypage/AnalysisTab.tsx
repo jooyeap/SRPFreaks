@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { AnalysisHelpSheet } from "@/components/mypage/AnalysisHelpSheet";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { SetlistAddCell } from "@/components/rivals/SetlistAddCell";
 import { Skeleton } from "@/components/Skeleton";
@@ -98,7 +99,10 @@ function AnalysisBody({ userId, data }: { userId: number; data: WeaknessAnalysis
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <p className="text-xs text-fg-dim">{t("Analysis.desc")}</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-xs text-fg-dim">{t("Analysis.desc")}</p>
+          <AnalysisHelpSheet minCharts={data.minChartsPerBand} minBandUsers={data.minBandUsers} />
+        </div>
         {data.peerAvailable ? (
           <p className="mt-1 text-xs text-fg-sub">
             {t("Analysis.peerBasis", { tier: data.tierName ?? "", users: data.bandUsers })}
