@@ -115,6 +115,27 @@ class WeaknessAnalysisServiceTest {
         return new PeerBandAverage(new BigDecimal(band), users, users * 3, new BigDecimal(avg));
     }
 
+    @Test
+    void 응답에_같은_티어_최소_인원_설정값이_담기고_설정을_바꾸면_따라_바뀐다() {
+        givenMine(List.of(entry(1, "7.0", "단일", "90.00")), List.of());
+        givenPeers(2, List.of(), List.of());
+
+        WeaknessAnalysisResponse first = service.analyze(ME);
+        assertThat(first.minBandUsers()).isEqualTo(5);
+        assertThat(first.peerAvailable()).isFalse();
+
+        when(appSettingRepository.findAll()).thenReturn(List.of(
+                setting("rating.pivot", "6.0"), setting("rating.high_slope", "5"), setting("rating.high_offset", "15"),
+                setting("rating.low_slope", "10"), setting("rating.low_offset", "45"),
+                setting("rating.cap_rate", "80"), setting("rating.max_rate", "95"), setting("rating.bonus", "3.2"),
+                setting("rating.score_multiplier", "20"), setting("rating.list_single", "15"),
+                setting("rating.list_other", "25"), setting("rating.note_option", "SUPER_RANDOM_PLUS"),
+                setting("peer.min_band_users", "2"), setting("peer.min_chart_users", "5")));
+        WeaknessAnalysisResponse changed = service.analyze(ME);
+        assertThat(changed.minBandUsers()).isEqualTo(2);
+        assertThat(changed.peerAvailable()).isTrue();
+    }
+
     // ------------------------------------------------------------ 묶음 계산(순수)
 
     @Test
