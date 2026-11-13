@@ -85,7 +85,7 @@ describe("RatingCutlineCard", () => {
         currentRate: 90,
         currentScore: 282.67,
         currentRank: 3,
-        cutline: { lastScore: 282.67, requiredRate: 80.01, reachable: true, rateGap: -9.99, groupFull: true },
+        cutline: { lastScore: 240, requiredRate: 80.01, reachable: true, rateGap: -9.99, groupFull: true },
       }),
     );
     renderCard();
@@ -94,6 +94,11 @@ describe("RatingCutlineCard", () => {
     expect(el).toHaveTextContent("단일 · 15/15곡");
     expect(el).toHaveTextContent("90.00% · 282.67 · 3위");
     expect(el).toHaveTextContent("컷라인 80.01%까지 9.99% 여유가 있습니다.");
+    // 컷라인 점수는 필요 달성률(80.01%)과 같은 기준이다: 이 채보를 뺀 나머지 중 마지막 곡의 점수(240.00 = 달성률 80.00%의 점수). 내 점수(282.67)가 아니다
+    expect(el).toHaveTextContent("컷라인 점수240.00");
+    expect(el).not.toHaveTextContent("컷라인 점수282.67");
+    // 이미 목록 안이면 진행 막대는 가득 찬다(의도한 표시: 컷라인을 넘었다는 뜻)
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100");
     expect(el).not.toHaveTextContent("목록에 들어가려면");
     expect(screen.getByLabelText("목표 달성률")).toHaveValue("");
   });
@@ -105,7 +110,7 @@ describe("RatingCutlineCard", () => {
         currentRate: 90,
         currentScore: 282.67,
         currentRank: 3,
-        cutline: { lastScore: 282.67, requiredRate: 80.01, reachable: true, rateGap: -9.99, groupFull: true },
+        cutline: { lastScore: 240, requiredRate: 80.01, reachable: true, rateGap: -9.99, groupFull: true },
       }),
     );
     renderCard();
@@ -249,7 +254,7 @@ describe("RatingCutlineCard", () => {
 
   it("이미 목록 안인 채보를 시뮬레이션하면 '진입'이 아니라 순위만 말한다", async () => {
     givenServer(
-      response({ status: "IN_LIST", currentRate: 90, currentScore: 282.67, currentRank: 3, cutline: { lastScore: 282.67, requiredRate: 80.01, reachable: true, rateGap: -9.99, groupFull: true } }),
+      response({ status: "IN_LIST", currentRate: 90, currentScore: 282.67, currentRank: 3, cutline: { lastScore: 240, requiredRate: 80.01, reachable: true, rateGap: -9.99, groupFull: true } }),
       result({ pushedOut: null }),
     );
     renderCard();
