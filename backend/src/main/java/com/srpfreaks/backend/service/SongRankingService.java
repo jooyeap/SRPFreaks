@@ -5,6 +5,8 @@ import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.SongRankingResponse;
 import com.srpfreaks.backend.dto.SongRankingResponse.Item;
 import com.srpfreaks.backend.dto.SongRankingResponse.Me;
+import com.srpfreaks.backend.dto.SongRankingResponse.Tier;
+import com.srpfreaks.backend.dto.SkillResponse.PlayerTierResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.User;
 import com.srpfreaks.backend.mapper.RankingRow;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 곡별 순위 (D74). 채보 하나의 공개 유저 순위를 돌려준다. 읽기 전용이고 아무것도 저장하지 않는다(순위·인원은 요청 때 계산한다, D3).
@@ -56,12 +59,16 @@ public class SongRankingService {
         long players = rankingMapper.countPlayers(songDifficultyId, option);
         List<RankingRow> rows = rankingMapper.findPage(songDifficultyId, option, pageSize, offset);
 
+        // 닉네임 글자색용 티어. 이 페이지에 나온 유저(공개 + ACTIVE)만 한 번에 계산한다: ratedAll은 설정·서열표·티어 구간표를 요청당 한 번만 읽고
+        // 유저마다 후보 쿼리 한 번씩만 돈다(유저 목록 PlayerService와 같은 코드라 숫자가 어긋날 수 없다). 페이지 크기 상한이 50이라 많아야 50명이다.
+        Map<Long, SkillService.RatedSkill> rated = skillService.ratedAll(rows.stream().map(RankingRow::userId).toList());
+
         List<Item> items = new ArrayList<>();
         for (int i = 0; i < rows.size(); i++) {
             RankingRow row = rows.get(i);
             // 순위 = 정렬된 전체 목록에서의 위치(1부터). 2페이지의 첫 줄은 pageSize + 1위다. 비공개 유저는 목록에 없으므로 번호가 건너뛰지 않는다.
             items.add(new Item((int) offset + i + 1, row.userId(), row.nickname(), row.bestRate(),
-                    AchievementStage.of(row.bestRate(), row.fullCombo()), row.userId().equals(viewerId)));
+                    AchievementStage.of(row.bestRate(), row.fullCombo()), row.userId().equals(viewerId), tierOf(rated.get(row.userId()))));
         }
         int totalPages = (int) ((players + pageSize - 1) / pageSize);
         return new SongRankingResponse(songDifficultyId, players, pageIndex, pageSize, totalPages,
@@ -84,5 +91,14 @@ public class SongRankingService {
         }
         long ahead = rankingMapper.countAhead(songDifficultyId, option, mine.bestRate(), mine.achievedAt(), viewerId);
         return Me.of((int) ahead + 1, mine.bestRate(), AchievementStage.of(mine.bestRate(), mine.fullCombo()));
+    }
+
+    /** 티어를 정할 수 없으면(계산 결과가 없거나 티어 구간표가 비어 있을 때) null. 화면은 null이면 기본 글자색을 쓴다. */
+    private static Tier tierOf(SkillService.RatedSkill rated) {
+        if (rated == null || rated.skill() == null) {
+            return null;
+        }
+        PlayerTierResponse tier = rated.skill().tier();
+        return tier == null ? null : new Tier(tier.key(), tier.displayName());
     }
 }

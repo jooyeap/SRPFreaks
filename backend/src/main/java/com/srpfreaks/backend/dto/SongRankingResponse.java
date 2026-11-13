@@ -10,7 +10,8 @@ import java.util.List;
  * 곡별 순위 응답 (D74). 채보 하나(곡 + 난이도 + 파트)의 공개 유저 순위다.
  *
  * 개인정보: 이메일·역할·Google ID 필드는 없다. userId는 유저 상세 링크용이고(D26이 이미 공개 유저의 id를 URL로 쓴다), 닉네임은 공개를 선택한 유저만 나온다.
- * 플레이어 티어·총점은 넣지 않는다(공개 유저마다 40곡을 계산해야 해서 비용이 크다, D74 결정 6).
+ * 줄마다 그 유저의 플레이어 티어(key·displayName)만 담는다(닉네임 글자색용, D74 개정). 티어는 유저 목록(/players)이 이미 공개하는 값이고
+ * 순위에 나온 유저는 공개 + ACTIVE뿐이라 새로 드러나는 개인 정보가 없다. 총점·다음 티어 기준점은 넣지 않는다(티어 이름 두 개만).
  * players는 "이 채보에 기록이 있는 공개 유저 수"이고 비공개 유저는 세지 않는다 -> 순위 번호와 인원으로 비공개 유저가 역산되지 않는다.
  * 인원 기준이 없어서 숨김 상태도 없다. 공개 유저가 0명이면 items는 빈 배열이고 players는 0이다.
  *
@@ -25,7 +26,11 @@ public record SongRankingResponse(Long songDifficultyId, long players, int page,
 
     /** isMe는 JSON 이름이 그대로 isMe가 되도록 명시한다(레코드의 boolean isMe는 기본적으로 isMe로 직렬화되지만 이름을 고정해 둔다). */
     public record Item(int rank, Long userId, String nickname, BigDecimal achievementRate, AchievementStage stage,
-                       @JsonProperty("isMe") boolean isMe) {
+                       @JsonProperty("isMe") boolean isMe, Tier tier) {
+    }
+
+    /** 유저의 플레이어 티어. 화면은 key로 티어 색(data-tier)을 고른다. 티어를 정할 수 없으면 Item.tier는 null이고 화면은 기본 글자색을 쓴다. */
+    public record Tier(String key, String displayName) {
     }
 
     public record Me(boolean inRanking, Integer rank, BigDecimal achievementRate, AchievementStage stage) {

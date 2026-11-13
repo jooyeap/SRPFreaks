@@ -5,7 +5,8 @@ import type { AchievementStage } from "@/lib/types";
 /**
  * 곡별 순위 (D74, 서버 SongRankingResponse와 같은 모양). 채보 하나의 공개 유저 순위다.
  * 서버가 공개(profile_public) + ACTIVE 유저만으로 계산해서 주고, 화면은 받은 값만 보인다.
- * 이메일·역할·Google ID·티어·총점은 오지 않는다. userId는 닉네임을 유저 상세로 연결할 때만 쓴다(D74 (6)).
+ * 이메일·역할·Google ID·총점은 오지 않는다. userId는 닉네임을 유저 상세로 연결할 때만 쓴다(D74 (6)).
+ * 줄마다 티어(key·displayName)만 온다(D74 개정): 닉네임 글자색(data-tier)을 고르는 데만 쓰고, 티어 이름 글자를 따로 보이지는 않는다.
  */
 export interface SongRankingItem {
   rank: number;
@@ -15,6 +16,16 @@ export interface SongRankingItem {
   stage: AchievementStage;
   /** 이 줄이 나인가 */
   isMe: boolean;
+  /**
+   * 이 유저의 플레이어 티어. 티어를 정할 수 없으면 null이고, 서버가 아직 이 필드를 주지 않는 때(배포 순서)는 없다(undefined).
+   * 둘 다 기본 글자색으로 보이게 한다.
+   */
+  tier?: SongRankingTier | null;
+}
+
+export interface SongRankingTier {
+  key: string;
+  displayName: string;
 }
 
 /**

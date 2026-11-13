@@ -6,6 +6,7 @@ import com.srpfreaks.backend.common.error.GlobalExceptionHandler;
 import com.srpfreaks.backend.dto.SongRankingResponse;
 import com.srpfreaks.backend.dto.SongRankingResponse.Item;
 import com.srpfreaks.backend.dto.SongRankingResponse.Me;
+import com.srpfreaks.backend.dto.SongRankingResponse.Tier;
 import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.Role;
 import com.srpfreaks.backend.security.AuthenticatedUser;
@@ -70,8 +71,8 @@ class SongRankingControllerTest {
     void 토큰의_본인_id와_기본_페이지로_부르고_응답_필드를_확인한다() throws Exception {
         when(service.ranking(USER, 12L, 0, 20)).thenReturn(new SongRankingResponse(12L, 18, 0, 20, 1,
                 Me.of(7, new BigDecimal("96.12"), AchievementStage.SS),
-                List.of(new Item(1, 45L, "예시닉", new BigDecimal("100.00"), AchievementStage.EXC, false),
-                        new Item(7, USER, "나", new BigDecimal("96.12"), AchievementStage.SS, true))));
+                List.of(new Item(1, 45L, "예시닉", new BigDecimal("100.00"), AchievementStage.EXC, false, new Tier("GOLD", "Gold")),
+                        new Item(7, USER, "나", new BigDecimal("96.12"), AchievementStage.SS, true, null))));
 
         // 다른 사람 id를 쿼리로 보내도 무시된다(받는 파라미터가 없다)
         mvc.perform(get("/api/v1/difficulties/12/ranking").param("userId", "99"))
@@ -83,22 +84,29 @@ class SongRankingControllerTest {
                 .andExpect(jsonPath("$.items[0].rank").value(1))
                 .andExpect(jsonPath("$.items[0].userId").value(45))
                 .andExpect(jsonPath("$.items[0].isMe").value(false))
-                .andExpect(jsonPath("$.items[1].isMe").value(true));
+                .andExpect(jsonPath("$.items[1].isMe").value(true))
+                // 티어는 key와 이름만 나온다(닉네임 글자색용). 티어를 정할 수 없는 줄은 null이다
+                .andExpect(jsonPath("$.items[0].tier.key").value("GOLD"))
+                .andExpect(jsonPath("$.items[0].tier.displayName").value("Gold"))
+                .andExpect(jsonPath("$.items[1].tier").value(org.hamcrest.Matchers.nullValue()));
 
         verify(service).ranking(USER, 12L, 0, 20);
     }
 
     @Test
-    void 응답_어디에도_이메일_역할_구글_아이디_티어_총점_필드가_없다() throws Exception {
+    void 응답_어디에도_이메일_역할_구글_아이디_총점_기준점_필드가_없고_티어는_key와_이름뿐이다() throws Exception {
         when(service.ranking(USER, 12L, 0, 20)).thenReturn(new SongRankingResponse(12L, 1, 0, 20, 1, Me.notInRanking(),
-                List.of(new Item(1, 45L, "예시닉", new BigDecimal("100.00"), AchievementStage.EXC, false))));
+                List.of(new Item(1, 45L, "예시닉", new BigDecimal("100.00"), AchievementStage.EXC, false, new Tier("GOLD", "Gold")))));
 
         MvcResult result = mvc.perform(get("/api/v1/difficulties/12/ranking")).andExpect(status().isOk()).andReturn();
         String body = result.getResponse().getContentAsString().toLowerCase();
 
-        for (String forbidden : new String[] {"email", "role", "googlesub", "google", "tier", "totalscore", "password", "token"}) {
+        for (String forbidden : new String[] {"email", "role", "googlesub", "google", "totalscore", "minscore", "nextdisplayname", "nextminscore", "password", "token"}) {
             assertThat(body).as("응답에 '%s'가 들어 있으면 안 된다", forbidden).doesNotContain(forbidden);
         }
+        // 티어 객체는 키가 정확히 두 개(key, displayName)다
+        mvc.perform(get("/api/v1/difficulties/12/ranking"))
+                .andExpect(jsonPath("$.items[0].tier.length()").value(2));
     }
 
     @Test
