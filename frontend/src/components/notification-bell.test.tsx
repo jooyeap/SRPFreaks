@@ -114,7 +114,7 @@ describe("NotificationBell", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Cosmic Cat/ }));
 
     // 창이 쌓은 history 칸을 걷어낸 뒤에 이동하므로 한 틱 뒤에 불린다(lib/history-layers.ts)
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/songs/9"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/songs/9?chart=11&from=tier-noti&bt=6.5&at=7&bs=322.67&as=362.67"));
     await waitFor(() =>
       expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/notifications/tier/1/read"))).toBe(true),
     );
