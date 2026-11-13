@@ -411,6 +411,44 @@ export interface SetlistItemResponse {
   createdAt: string;
 }
 
+// ---- 내 리스트 (D76, 백엔드 UserList*Response) -----------------------------------------------------------
+
+/** 리스트 한 줄. itemCount는 삭제된 채보를 뺀 곡 수, contains는 `songDifficultyId`로 물었을 때만 그 채보가 담겼는지(아니면 false). */
+export interface UserListSummaryResponse {
+  id: number;
+  name: string;
+  itemCount: number;
+  contains: boolean;
+}
+
+/** 리스트 안의 한 곡. 세트리스트 줄(SetlistItemResponse)에서 완료 표시(done)만 없다. */
+export interface UserListItemResponse {
+  id: number;
+  songDifficultyId: number;
+  songId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  level: number;
+  tier: number | null;
+  pattern: string | null;
+  mine: MyRecord | null;
+  createdAt: string;
+}
+
+export interface UserListDetailResponse {
+  id: number;
+  name: string;
+  itemCount: number;
+  items: PageResponse<UserListItemResponse>;
+}
+
+/** 이미 담겨 있던 곡을 다시 담아도 오류가 아니다: alreadyContained가 true로 온다(HTTP 200). */
+export interface UserListAddItemResponse {
+  alreadyContained: boolean;
+  itemCount: number;
+}
+
 // ---- 세트리스트 추천 (D37, 백엔드 SetlistRecommendationResponse) ---------------------------------------
 
 /** 추천 한 줄. mine은 내 SRN+ 최고 기록(없으면 null). */

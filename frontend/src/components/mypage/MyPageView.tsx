@@ -2,6 +2,7 @@
 
 import { ImportEntryLink } from "@/components/import/ImportEntryLink";
 import { RatingView } from "@/components/rating/RatingView";
+import { MyListsTab } from "@/components/mylists/MyListsTab";
 import { SetlistTab } from "@/components/setlist/SetlistTab";
 import { AnalysisTab } from "@/components/mypage/AnalysisTab";
 import { StatsTab } from "@/components/mypage/StatsTab";
@@ -11,7 +12,7 @@ import { useTranslations } from "next-intl";
 
 /**
  * 마이페이지: 제목과 `레이팅 | 통계 | 리스트 | 라이벌` 밑줄 탭(D75). 전체 달성 현황은 통계 탭 안(StatsTab)에서 보인다.
- * 탭 안에 하위 항목이 2개 이상이면 글자로 된 하위 전환(`내 레이팅 · 분석`)을 그린다. 지금은 레이팅 탭만 해당한다(리스트 탭은 세트리스트 하나라 그리지 않는다).
+ * 탭 안에 하위 항목이 2개 이상이면 글자로 된 하위 전환(`내 레이팅 · 분석`)을 그린다. 레이팅 탭(내 레이팅 · 분석)과 리스트 탭(세트리스트 · 내 리스트)이 해당한다.
  * 선택한 탭·하위 전환·통계 기준은 부모(주소 쿼리)가 들고 있고 여기서는 바꿔 달라고 요청만 한다(table 화면과 같은 방식).
  */
 export function MyPageView({ userId, state, onStateChange }: { userId: number; state: MyPageState; onStateChange: (state: MyPageState) => void }) {
@@ -85,7 +86,11 @@ export function MyPageView({ userId, state, onStateChange }: { userId: number; s
             <RatingView userId={userId} />
           )
         ) : tab === "list" ? (
-          <SetlistTab userId={userId} />
+          state.view === "mine" ? (
+            <MyListsTab userId={userId} />
+          ) : (
+            <SetlistTab userId={userId} />
+          )
         ) : tab === "rival" ? (
           <RivalTab userId={userId} />
         ) : (

@@ -12,9 +12,9 @@ export type MyPageTab = "rating" | "stats" | "list" | "rival";
 
 /**
  * 하위 전환 값. 주소의 `view`에 쓴다. 각 탭의 첫 항목(기본)은 `null`이라 주소에 쓰지 않는다(`?tab=rating`이 「내 레이팅」, `?tab=rating&view=analysis`가 「분석」).
- * 「내 리스트」가 생기면 여기에 값을 더하고 `MY_PAGE_SUB_VIEWS.list`에 항목을 추가하면 리스트 탭에 하위 전환이 저절로 나타난다.
+ * 리스트 탭은 `세트리스트`(기본) · `내 리스트`(`?tab=list&view=mine`, D76) 두 항목이라 하위 전환이 나타난다.
  */
-export type MyPageSubView = "analysis";
+export type MyPageSubView = "analysis" | "mine";
 
 export const MY_PAGE_TABS: readonly { value: MyPageTab; labelKey: MessageKey }[] = [
   { value: "rating", labelKey: "MyPage.tabRating" },
@@ -30,8 +30,8 @@ export interface MyPageSubViewItem {
 }
 
 /**
- * 탭별 하위 전환 항목. **항목이 2개 이상인 탭에만** 하위 전환을 그린다(`hasSubViews`). 지금은 레이팅 탭(내 레이팅 · 분석)만 해당하고,
- * 리스트 탭은 세트리스트 하나뿐이라 그리지 않는다.
+ * 탭별 하위 전환 항목. **항목이 2개 이상인 탭에만** 하위 전환을 그린다(`hasSubViews`). 레이팅 탭(내 레이팅 · 분석)과
+ * 리스트 탭(세트리스트 · 내 리스트)이 해당한다.
  */
 export const MY_PAGE_SUB_VIEWS: Record<MyPageTab, readonly MyPageSubViewItem[]> = {
   rating: [
@@ -39,7 +39,10 @@ export const MY_PAGE_SUB_VIEWS: Record<MyPageTab, readonly MyPageSubViewItem[]> 
     { value: "analysis", labelKey: "MyPage.tabAnalysis" },
   ],
   stats: [],
-  list: [{ value: null, labelKey: "MyPage.tabSetlist" }],
+  list: [
+    { value: null, labelKey: "MyPage.tabSetlist" },
+    { value: "mine", labelKey: "MyPage.tabMyLists" },
+  ],
   rival: [],
 };
 

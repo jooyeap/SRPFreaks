@@ -147,6 +147,8 @@ describe("SongDetailView", () => {
       if (url.endsWith("/difficulty-tables")) return Promise.resolve(json(tables));
       if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
       if (url.includes("/peer-stats")) return Promise.resolve(json(peerStats));
+      // 내 리스트(D76): 기본은 리스트가 하나도 없는 사용자
+      if (url.includes("/me/lists")) return Promise.resolve(json({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 }));
       if (url.includes("/songs/")) return Promise.resolve(songResponse());
       if (url.includes("/records?")) {
         return Promise.resolve(
@@ -221,14 +223,14 @@ describe("SongDetailView", () => {
     expect(replace).toHaveBeenCalledWith("/songs/1?from=table&chart=10");
   });
 
-  it("세트리스트 담기는 곡명 오른쪽(관리 버튼 자리)에 있고 내 기록 카드 안에는 없다", async () => {
-    renderView("table", 10, true); // 담기는 로그인 상태(AuthProvider)에서만 그려진다
+  it("리스트에 추가는 곡명 오른쪽(관리 버튼 자리)에 있고 내 기록 카드 안에는 없다", async () => {
+    renderView("table", 10, true); // 리스트에 추가는 로그인 상태(AuthProvider)에서만 그려진다
     const title = await screen.findByRole("heading", { name: "테스트곡" });
     const header = title.closest("section");
-    const button = await within(header as HTMLElement).findByRole("button", { name: "테스트곡 세트리스트에 담기" });
-    expect(button).toHaveTextContent("담기");
+    const button = await within(header as HTMLElement).findByRole("button", { name: "테스트곡 리스트에 추가" });
+    expect(button).toHaveTextContent("리스트에 추가");
     const mine = await screen.findByRole("region", { name: "내 기록" });
-    expect(within(mine).queryByRole("button", { name: /세트리스트/ })).not.toBeInTheDocument();
+    expect(within(mine).queryByRole("button", { name: /리스트/ })).not.toBeInTheDocument();
   });
 
   it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 난이도의 곡 목록, 다른 채보를 보여 준다", async () => {
