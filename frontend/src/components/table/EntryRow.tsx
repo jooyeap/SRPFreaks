@@ -3,6 +3,7 @@ import { ChartBadge, RecommendBadge } from "@/components/table/Badges";
 import { RatedScore } from "@/components/table/RatedScore";
 import { StageRatePill } from "@/components/table/StageRatePill";
 import { SongJacket } from "@/components/SongJacket";
+import { STAGE_EDGE_CLIP, StageEdgeBar } from "@/components/StageEdgeBar";
 import { useJackets } from "@/lib/jackets";
 import { tableDetailHref } from "@/components/song/TableContext";
 import { patternLabel } from "@/lib/chart-labels";
@@ -77,9 +78,9 @@ export function EntryRow({
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative hidden h-14 border-t border-row-line px-4 text-sm hover:bg-table-head md:grid ${showRecord ? ROW_GRID : ROW_GRID_PLAIN} ${stage ? "stage-tint" : ""}`}
+      className={`relative ${STAGE_EDGE_CLIP} hidden h-14 border-t border-row-line px-4 text-sm hover:bg-table-head md:grid ${showRecord ? ROW_GRID : ROW_GRID_PLAIN} ${stage ? "stage-tint" : ""}`}
     >
-      {stage ? <span className="stage-bar absolute inset-y-0 left-0 w-1" aria-hidden="true" /> : null}
+      {stage ? <StageEdgeBar /> : null}
       <span className="flex min-w-0 items-center gap-2.5">
         {/* 재킷(D54): 데스크톱 표는 곡명 앞 40px 둥근 칸 */}
         {jackets.visible ? <SongJacket url={jackets.urlOf(entry.songId)} title={entry.title} className="size-10 rounded-lg" /> : null}
