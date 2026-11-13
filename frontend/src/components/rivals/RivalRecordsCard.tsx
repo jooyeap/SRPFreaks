@@ -2,6 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { HIT_ROW } from "@/lib/hit-area";
+import { StageBadge } from "@/components/table/StageBadge";
 import { formatRate } from "@/lib/format";
 import { fetchRivalRecords, rivalKeys, signed } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
@@ -9,6 +11,7 @@ import { useTranslations } from "next-intl";
 /**
  * 곡 상세의 `라이벌 기록` (D56): 이 채보의 내 라이벌 기록과 내 기록과의 차이. 로그인했을 때만 부모가 그리고,
  * 라이벌이 없으면(빈 목록) 아무것도 그리지 않는다. `승/패/무`은 글자로도 보인다(색만 쓰지 않는다).
+ * 상대 달성률 옆에 달성 단계 글자 칩(S/SS/FC/EXC…, D65)이 붙는다. 단계는 서버가 계산해 준 값(stage)이고, 기록이 없거나 구버전 응답이면 칩이 없다.
  */
 export function RivalRecordsCard({ viewerId, songDifficultyId }: { viewerId: number; songDifficultyId: number }) {
   const t = useTranslations("Rival");
@@ -30,14 +33,15 @@ export function RivalRecordsCard({ viewerId, songDifficultyId }: { viewerId: num
           const tone = state === "win" ? "text-done-text" : state === "lose" ? "text-danger" : "text-fg-dim";
           return (
             <li key={r.userId} className="flex items-center gap-2 border-t border-row-line py-2 text-[13px] first:border-t-0">
-              <Link href={`/players/${r.userId}/compare`} className="min-w-0 flex-1 truncate text-fg hover:underline">
-                {r.nickname}
+              <Link href={`/players/${r.userId}/compare`} className={`min-w-0 flex-1 text-fg hover:underline ${HIT_ROW}`}>
+                <span className="block truncate">{r.nickname}</span>
               </Link>
               {r.rate === null ? (
                 <span className="text-xs text-fg-dim">{t("noRecord")}</span>
               ) : (
                 <>
                   <span className="font-num text-fg-sub">{formatRate(r.rate)}</span>
+                  {r.stage ? <StageBadge stage={r.stage} /> : null}
                   <span className={`w-14 text-right font-num ${tone}`}>{r.diff === null ? "" : signed(r.diff)}</span>
                   <span className={`w-8 text-[11px] ${tone}`}>{state ? t(state) : ""}</span>
                 </>

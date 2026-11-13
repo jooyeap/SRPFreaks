@@ -132,16 +132,16 @@ public class DifficultyTableEntry extends BaseTimeEntity {
      * 하나라도 아니면 레이팅 목록에서 빼고 기록만 남긴다(D18).
      */
     public boolean isRatable() {
-        return ratingEnabled && tierLabel != null && patternType != null && patternType != PatternType.EXCLUDED;
+        return ratingEnabled && tierLabel != null && PatternType.ratingGroupOf(patternType) != PatternType.RatingGroup.NONE;
     }
 
     /** 단일 15 그룹에 들어가는가. */
     public boolean isSingleGroup() {
-        return isRatable() && patternType == PatternType.SINGLE;
+        return isRatable() && PatternType.ratingGroupOf(patternType) == PatternType.RatingGroup.SINGLE;
     }
 
-    /** 그 외 25 그룹(복합·이중·삼중)에 들어가는가. */
+    /** 그 외 25 그룹에 들어가는가. */
     public boolean isOtherGroup() {
-        return isRatable() && patternType != PatternType.SINGLE;
+        return isRatable() && PatternType.ratingGroupOf(patternType) == PatternType.RatingGroup.OTHER;
     }
 }

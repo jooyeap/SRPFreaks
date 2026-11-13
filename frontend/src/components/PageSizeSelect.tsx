@@ -23,7 +23,7 @@ export function PageSizeSelect({
       value={value}
       aria-label={t("pageSizeAria")}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="min-h-10 rounded-[10px] border border-chip-line bg-card px-3 text-sm text-fg"
+      className="min-h-10 rounded-[10px] border border-ctl bg-card px-3 text-sm text-fg"
     >
       {options.map((n) => (
         <option key={n} value={n}>

@@ -7,9 +7,11 @@ import { useEffect, useState } from "react";
 import { AdminNavLink } from "@/components/AdminNavLink";
 import { useAuth } from "@/components/AuthProvider";
 import { isActivePath } from "@/components/DesktopNav";
+import { MoreSettingsStrip } from "@/components/MoreSettingsStrip";
 import { NavIcon } from "@/components/NavIcon";
 import { MORE_ITEMS, SONG_PATHS, TAB_ITEMS } from "@/lib/nav";
 import { useSongHomeHref } from "@/lib/song-tab";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 const TAB_CLASS = "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[11px]";
 
@@ -28,6 +30,8 @@ export function MobileTabBar() {
   const songHref = useSongHomeHref();
   const { status, user, logout } = useAuth();
   const [moreOpen, setMoreOpen] = useState(false);
+  // 더보기 시트가 열려 있을 때 뒤로 가기를 누르면 시트만 닫힌다. 시트 안·탭바 링크로 이동할 때는 링크 클릭을 감지해 history를 되돌리지 않는다(lib/history-layers.ts)
+  useHistoryClose(moreOpen, () => setMoreOpen(false));
 
   // Esc로 닫는다. 화면을 이동하면(pathname 변경) 시트 안 링크 클릭 핸들러가 닫아 준다.
   useEffect(() => {
@@ -95,6 +99,8 @@ export function MobileTabBar() {
                 </Link>
               ) : null}
             </div>
+            {/* 화면 테마·언어 설정 띠: 이동 메뉴와 섞이지 않게 맨 아래(문구 바로 위)에 둔다. 로그인 전에도 쓴다 */}
+            <MoreSettingsStrip />
             <p className="mt-2 text-center text-[11px] text-fg-dim">
               <strong>{tc("unofficial")}</strong> · {t("notKonami")}
             </p>

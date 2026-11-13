@@ -1,5 +1,6 @@
 package com.srpfreaks.backend.service;
 
+import com.srpfreaks.backend.common.VersionOrder;
 import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.ChartFolderListResponse;
@@ -98,12 +99,10 @@ public class SongChartListService {
 
         Set<Long> songIds = new HashSet<>();
         charts.forEach(d -> songIds.add(d.getSong().getId()));
-        List<String> versions = all.stream()
+        // 출시일 최신순(표에 없는 이름은 맨 아래 이름 순). 프론트는 받은 순서 그대로 보여 준다.
+        List<String> versions = VersionOrder.sorted(all.stream()
                 .map(d -> d.getSong().getAddedVersion())
-                .filter(v -> v != null && !v.isBlank())
-                .distinct()
-                .sorted()
-                .toList();
+                .toList());
         return new ChartFolderListResponse(songIds.size(), charts.size(), versions, folders);
     }
 

@@ -5,6 +5,9 @@ import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { QueryCacheCleaner } from "@/components/QueryCacheCleaner";
 import { setAuthLostHandler } from "@/lib/api";
 import { clearAccessToken } from "@/lib/auth-token";
+import { readDetailNav, rememberDetailNav } from "@/lib/detail-nav";
+import { EMPTY_FILTERS } from "@/lib/difficulty-table";
+import { DEFAULT_SORT } from "@/lib/table-sort";
 import TablePage from "@/app/table/page";
 
 // 서열표 페이지가 주소 쿼리(useSearchParams 등)를 읽으므로 라우터 훅을 가짜로 대신한다
@@ -57,6 +60,24 @@ describe("QueryCacheCleaner", () => {
     await waitFor(() => expect(client.getQueryData(["secret"])).toBeDefined()); // 로그인 중에는 유지
     fireEvent.click(screen.getByText("logout"));
     await waitFor(() => expect(client.getQueryData(["secret"])).toBeUndefined());
+  });
+
+  it("로그아웃하면 곡 상세 이전/다음이 쓰는 목록 조건 기억도 지운다", async () => {
+    fetchMock.mockResolvedValueOnce(json(AUTH)); // 시작 복구
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 })); // 로그아웃
+    rememberDetailNav({ source: "table", sort: DEFAULT_SORT, filters: EMPTY_FILTERS, current: 1 });
+    const client = new QueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <AuthProvider>
+          <QueryCacheCleaner />
+          <LogoutButton />
+        </AuthProvider>
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(readDetailNav()).not.toBeNull()); // 로그인 중에는 유지
+    fireEvent.click(screen.getByText("logout"));
+    await waitFor(() => expect(readDetailNav()).toBeNull());
   });
 });
 

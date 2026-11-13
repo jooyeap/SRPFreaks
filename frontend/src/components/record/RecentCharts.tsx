@@ -37,7 +37,7 @@ export function RecentCharts({ currentChartId, onPick }: { currentChartId: numbe
               onClick={() =>
                 onPick({ songDifficultyId: r.songDifficultyId, songId: r.songId, title: r.title, part: r.part, difficulty: r.difficulty, level: r.level })
               }
-              className="flex min-h-11 max-w-44 flex-col items-start justify-center rounded-lg border border-chip-line px-3 py-1 text-left hover:bg-chip-on-bg"
+              className="flex min-h-11 max-w-44 flex-col items-start justify-center rounded-lg border border-ctl px-3 py-1 text-left hover:bg-chip-on-bg"
             >
               <span className="w-full truncate text-sm text-fg">{r.title}</span>
               <span className="text-xs text-fg-dim">

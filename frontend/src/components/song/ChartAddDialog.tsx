@@ -20,6 +20,7 @@ import {
   type ChartValues,
 } from "@/lib/song-admin";
 import { PATTERN_CHOICES, RECOMMEND_CHOICES } from "@/lib/table-entry-admin";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -44,6 +45,8 @@ export function ChartAddDialog({
 }) {
   const t = useTranslations();
   const ref = useRef<HTMLDialogElement>(null);
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, onClose);
   const titleId = useId();
 
   useEffect(() => {
@@ -238,7 +241,7 @@ function ChartAddForm({
       ) : null}
 
       <div className="flex gap-2.5">
-        <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg">
+        <button type="button" onClick={onDone} className="h-12 w-24 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg">
           {locked ? t("SongCreate.close") : t("Common.cancel")}
         </button>
         <button

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /**
  * 확인 창 (삭제처럼 되돌릴 수 없는 동작 앞에 둔다). 브라우저 기본 <dialog>(showModal)를 쓴다:
@@ -30,6 +31,8 @@ export function ConfirmDialog({
   const t = useTranslations("Common");
   const ref = useRef<HTMLDialogElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  // 뒤로 가기를 누르면 이 확인 창만 닫힌다(바깥 창 위에 겹쳐 열려 있으면 이 창부터 닫힌다)
+  useHistoryClose(open, onCancel);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -71,7 +74,7 @@ export function ConfirmDialog({
           type="button"
           onClick={onCancel}
           disabled={pending}
-          className="h-11 flex-1 rounded-xl border border-chip-line text-sm font-bold text-fg-sub hover:text-fg disabled:opacity-60"
+          className="h-11 flex-1 rounded-xl border border-ctl text-sm font-bold text-fg-sub hover:text-fg disabled:opacity-60"
         >
           {t("cancel")}
         </button>

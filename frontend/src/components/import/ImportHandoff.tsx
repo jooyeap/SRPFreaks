@@ -9,6 +9,7 @@ import { ImportProcessor, type DoneInfo } from "@/components/import/ImportProces
 import { clearHandoff, consumeFragment, isFreshArrival, useHandoff } from "@/lib/import-handoff";
 import { playKey, previewRecentPlays } from "@/lib/record-import";
 import { useTranslations } from "next-intl";
+import { useHistoryClose } from "@/lib/use-history-close";
 
 /**
  * 공식 페이지의 북마클릿이 넘긴 플레이가 있으면, 어느 화면에서든 모달로 "이어서 처리"를 안내한다 (D40).
@@ -71,12 +72,15 @@ export function ImportHandoff() {
     }
   }, [open]);
 
-  if (!open) return null;
-
+  // 건너뛰기 처리(닫기). 뒤로 가기 처리 훅이 early return 앞에서 불려야 해서 이 위치로 옮겼다
   const close = () => {
     setDismissedAt(Date.now());
     setDone(null);
   };
+  // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, close);
+
+  if (!open) return null;
 
   return (
     <dialog
@@ -94,7 +98,7 @@ export function ImportHandoff() {
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-fg-sub">{t("Import.handoffBody", { count: handoff.pending.length })}</p>
           <div className="mt-5 flex gap-2.5">
-            <button type="button" onClick={close} className="h-11 rounded-xl border border-chip-line px-4 text-sm font-bold text-fg-sub hover:text-fg">
+            <button type="button" onClick={close} className="h-11 rounded-xl border border-ctl px-4 text-sm font-bold text-fg-sub hover:text-fg">
               {t("Import.later")}
             </button>
             <Link href="/login" onClick={close} className="flex h-11 flex-1 items-center justify-center rounded-xl bg-chip-on-bg text-sm font-extrabold text-chip-on-fg">

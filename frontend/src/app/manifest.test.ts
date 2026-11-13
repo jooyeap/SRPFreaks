@@ -1,7 +1,8 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import manifest from "@/app/manifest";
+import { PWA_BACKGROUND_COLOR, PWA_THEME_COLOR } from "@/lib/pwa";
 
 describe("manifest", () => {
   const m = manifest();
@@ -25,5 +26,52 @@ describe("manifest", () => {
       expect(icon.src.startsWith("/icons/")).toBe(true);
       expect(existsSync(join(process.cwd(), "public", icon.src))).toBe(true); // 실제 파일이 있다
     }
+  });
+
+  it("색 상수(lib/pwa.ts)는 globals.css의 다크 --page와 docs/DESIGN-UI.md 4장의 다크 페이지 배경과 같은 값이다", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    // 첫 `--page:`가 기본(다크) 테마다. 라이트 값은 그 뒤에 나온다.
+    const darkPage = /--page:\s*(#[0-9a-fA-F]{6});/.exec(css)?.[1];
+    expect(darkPage?.toLowerCase()).toBe(PWA_BACKGROUND_COLOR.toLowerCase());
+    expect(PWA_THEME_COLOR).toBe(PWA_BACKGROUND_COLOR);
+    const doc = readFileSync(join(process.cwd(), "..", "docs", "DESIGN-UI.md"), "utf8");
+    const row = /\| 페이지 배경 \| `(#[0-9A-Fa-f]{6})` \|/.exec(doc)?.[1];
+    expect(row?.toLowerCase()).toBe(PWA_BACKGROUND_COLOR.toLowerCase());
+  });
+
+  it("아이콘 파일 4개는 PNG이고 크기가 맞으며 apple-touch-icon은 투명 없는 RGB다", () => {
+    // PNG 머리말: 8바이트 서명 다음 IHDR(너비 4B, 높이 4B, 비트 깊이 1B, 색 종류 1B). 2 = RGB(투명 없음), 6 = RGBA.
+    const header = (name: string) => {
+      const buf = readFileSync(join(process.cwd(), "public", "icons", name));
+      expect(buf.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+      return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20), colorType: buf[25] };
+    };
+    expect(header("icon-192.png")).toMatchObject({ width: 192, height: 192 });
+    expect(header("icon-512.png")).toMatchObject({ width: 512, height: 512 });
+    expect(header("icon-maskable-512.png")).toMatchObject({ width: 512, height: 512 });
+    expect(header("apple-touch-icon.png")).toEqual({ width: 180, height: 180, colorType: 2 });
+  });
+
+  it("favicon.ico에는 16·32·48 크기 항목이 모두 들어 있고 PNG 이미지다", () => {
+    // ICO 머리말(ICONDIR): 예약 2B(0), 종류 2B(1 = 아이콘), 항목 수 2B. 항목(ICONDIRENTRY)은 16B씩 이어지고 앞 2B가 너비·높이(0이면 256).
+    const buf = readFileSync(join(process.cwd(), "src", "app", "favicon.ico"));
+    expect(buf.readUInt16LE(0)).toBe(0);
+    expect(buf.readUInt16LE(2)).toBe(1);
+    const count = buf.readUInt16LE(4);
+    const sizes: number[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const entry = 6 + 16 * i;
+      const width = buf[entry] === 0 ? 256 : buf[entry];
+      expect(buf[entry + 1] === 0 ? 256 : buf[entry + 1]).toBe(width);
+      const offset = buf.readUInt32LE(entry + 12);
+      expect(buf.subarray(offset, offset + 8).toString("hex")).toBe("89504e470d0a1a0a"); // 항목은 PNG로 저장돼 있다
+      sizes.push(width);
+    }
+    expect(sizes.sort((a, b) => a - b)).toEqual([16, 32, 48]);
+  });
+
+  it("서비스 워커·푸시는 없다: 매니페스트에 관련 항목이 없고 서비스 워커 파일도 없다", () => {
+    expect(Object.keys(m)).not.toContain("serviceworker");
+    expect(existsSync(join(process.cwd(), "public", "sw.js"))).toBe(false);
   });
 });

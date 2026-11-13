@@ -66,3 +66,20 @@ export function ratingPreviewText(preview: RatingPreview, t: Translator): string
   }
   return preview.inList ? t("RatingPreview.noChange") : t("RatingPreview.noChangeOutside");
 }
+
+/** 저장 결과 카드의 진입 안내용: 이 채보가 들어가는 레이팅 그룹과 그 그룹의 개수(설정 `rating.list_single`/`list_other`). */
+export interface EntryGroup {
+  group: "single" | "other";
+  limit: number;
+}
+
+/**
+ * 속성(pattern)과 설정 개수(`GET /skills/me`의 singleLimit/otherLimit)로 그룹을 정한다. 서버가 그룹을 따로 주지 않아 프론트가 판정한다
+ * (서버 필드는 후속 PR). 속성을 모르거나 `레이팅 제외`이면 판정할 수 없어 null이고, 카드는 기존 `새로 들어갔습니다` 문구를 쓴다.
+ */
+export function entryGroupOf(skill: Pick<SkillResponse, "singleLimit" | "otherLimit"> | undefined, pattern: string | null | undefined): EntryGroup | null {
+  if (!skill || !pattern || pattern === "레이팅 제외") {
+    return null;
+  }
+  return pattern === "단일" ? { group: "single", limit: skill.singleLimit } : { group: "other", limit: skill.otherLimit };
+}

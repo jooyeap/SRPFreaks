@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { WithdrawForm } from "@/components/settings/WithdrawForm";
+import { HIT_STANDALONE } from "@/lib/hit-area";
 import { useTranslations } from "next-intl";
 
 /** 회원 탈퇴 확인 화면. 내 계정을 지우는 화면이므로 로그인이 필요하다. */
@@ -18,7 +19,7 @@ export default function WithdrawPage() {
       <section className="flex min-h-[40svh] flex-col items-start justify-center gap-3">
         <h1 className="text-xl font-semibold text-fg">{t("Pages.withdrawTitle")}</h1>
         <p className="text-sm text-fg-sub">{t("Pages.withdrawLead")}</p>
-        <Link href="/login" className="min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head">
+        <Link href="/login" className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           {t("Nav.login")}
         </Link>
       </section>
@@ -27,7 +28,7 @@ export default function WithdrawPage() {
   return (
     <section className="mx-auto flex w-full max-w-md flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Link href="/settings" className="text-sm text-fg-sub hover:text-fg">
+        <Link href="/settings" className={`text-sm text-fg-sub hover:text-fg ${HIT_STANDALONE}`}>
           &#9666; {t("Nav.settings")}
         </Link>
         <h1 className="text-xl font-semibold text-fg">{t("Pages.withdrawTitle")}</h1>

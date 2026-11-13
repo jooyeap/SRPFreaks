@@ -98,7 +98,45 @@ describe("세트리스트", () => {
       expect(rows[0]).toHaveTextContent("곡01");
       expect(rows[0]).toHaveTextContent("완료");
       expect(rows[0]).toHaveTextContent("96.50");
-      expect(rows[1]).toHaveTextContent("미완료");
+      // 미완료 줄에는 `미완료` 글자 대신 `입력` 버튼이, 완료 줄에는 `수정` 버튼이 있다 (A안, 2026-11-05)
+      expect(rows[0]).not.toHaveTextContent("미완료");
+      expect(within(rows[0]).getByRole("button", { name: "곡01 기록 수정" })).toHaveTextContent("수정");
+      expect(within(rows[1]).getByRole("button", { name: "곡02 기록 입력" })).toHaveTextContent("입력");
+    });
+
+    it("공통 줄(D64): `속성 | 서열 난이도` 작은 줄, 난이도 미정, 속성 없음, 완료 표시와 버튼 구성, 높이 고정", async () => {
+      listed = [
+        item(1, { pattern: "복합", tier: 5.6 }),
+        item(2, { pattern: "단일", tier: null, done: true, mine: { rate: 100, fullCombo: true, stage: "EXC" } }),
+        item(3, { pattern: null, tier: null, title: "아주 아주 긴 곡 이름 아주 아주 긴 곡 이름 아주 아주 긴 곡 이름" }),
+      ];
+      renderWith(<SetlistTab userId={1} />);
+      const rows = within(await screen.findByRole("list", { name: "세트리스트" })).getAllByRole("listitem");
+
+      expect(rows[0]).toHaveTextContent("속성 복합|기준 5.6");
+      expect(rows[0]).not.toHaveTextContent("상수");
+      expect(rows[1]).toHaveTextContent("속성 단일|기준 미정");
+      expect(rows[2]).toHaveTextContent("속성 –|기준 미정");
+
+      // 미완료: [입력][빼기], 완료 글자 없음. 완료: [수정][빼기], `완료` 글자와 초록 테두리
+      expect(within(rows[0]).getAllByRole("button").map((b) => b.textContent)).toEqual(["입력", "빼기"]);
+      expect(within(rows[0]).queryByText("완료")).not.toBeInTheDocument();
+      expect(rows[0]).toHaveClass("border-line");
+      expect(within(rows[1]).getAllByRole("button").map((b) => b.textContent)).toEqual(["수정", "빼기"]);
+      expect(within(rows[1]).getByText("완료")).toBeInTheDocument();
+      expect(rows[1]).toHaveClass("border-done");
+
+      // 기록 없음 `– | –`, 있으면 랭크·달성률
+      expect(rows[0]).toHaveTextContent("––");
+      expect(rows[1]).toHaveTextContent("EXC");
+      expect(rows[1]).toHaveTextContent("MAX");
+
+      // 높이는 곡명 길이·기록 유무와 상관없이 같고, 곡명은 한 줄 말줄임, 눌리는 영역을 넓힌 버튼
+      for (const row of rows) expect(row).toHaveClass("h-[68px]");
+      expect(within(rows[2]).getByRole("link").querySelector("span")).toHaveClass("truncate");
+      for (const b of within(rows[0]).getAllByRole("button")) {
+        expect(b).toHaveClass("h-[26px]", "after:-inset-1.5");
+      }
     });
 
     it("줄마다 서열표의 속성 글자를 보여 주고, 서열표에 없는 채보는 속성을 비운다", async () => {
@@ -133,6 +171,7 @@ describe("세트리스트", () => {
       renderWith(<SetlistTab userId={1} />);
       expect(await screen.findByText(/담은 곡이 없습니다/)).toBeInTheDocument();
       expect(screen.getByText(/위 검색창에서/)).toBeInTheDocument();
+      expect(screen.getByText("담은 곡이 없습니다. 위 검색창에서 오늘 플레이할 곡을 찾아 담아 보세요.")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "완료한 곡 비우기" })).toBeDisabled();
     });
 
@@ -174,6 +213,25 @@ describe("세트리스트", () => {
 
       expect(await screen.findByRole("heading", { name: "기록 등록" })).toBeInTheDocument();
       await waitFor(() => expect(screen.getByLabelText("달성률")).toBeInTheDocument());
+    });
+
+    it("저장하면 결과 카드에 `다음 곡 ›`이 나오고, 누르면 창을 닫지 않고 다음 미완료 곡의 입력으로 넘어간다 (모드 설정 없이)", async () => {
+      listed = [item(1), item(2)];
+      const base = fetchMock.getMockImplementation()!;
+      fetchMock.mockImplementation((input, init) => {
+        if (String(input).endsWith("/records") && init?.method === "POST") return Promise.resolve(json({ id: 1, stage: "SS" }, 201));
+        // 예상 레이팅 줄은 이 테스트의 관심사가 아니라서 스킬 조회는 실패시켜 숨긴다
+        if (String(input).includes("/skill")) return Promise.resolve(json({ code: "ERROR", message: "x" }, 500));
+        return base(input, init);
+      });
+      renderWith(<SetlistTab userId={1} />);
+      fireEvent.click(await screen.findByRole("button", { name: "곡01 기록 입력" }));
+      fireEvent.change(await screen.findByLabelText("달성률"), { target: { value: "9650" } });
+      fireEvent.click(screen.getByRole("button", { name: "새 기록 등록" }));
+
+      fireEvent.click(await screen.findByRole("button", { name: "다음 곡 ›" }));
+      expect(await screen.findByText("곡02")).toBeInTheDocument();
+      expect(await screen.findByLabelText("달성률")).toHaveValue("");
     });
   });
   describe("곡 검색해서 담기", () => {
@@ -246,12 +304,15 @@ describe("세트리스트", () => {
       renderWith(<SetlistTab userId={1} />);
 
       const section = await screen.findByRole("region", { name: "내 실력대 추천" });
-      expect(await within(section).findByText(/내 평균 난이도/)).toHaveTextContent("6.2");
+      expect(await within(section).findByText(/내 평균 난이도 .*기준입니다/)).toHaveTextContent("6.2");
+      // 문장 끝에 `?` 설명 버튼(서열표 첫 화면·홈 진행도 카드와 같은 컴포넌트·같은 문구)
+      expect(within(section).getByRole("button", { name: "내 평균 난이도 설명 보기" })).toBeInTheDocument();
       expect(within(section).getByRole("heading", { name: /SS 기준/ })).toHaveTextContent("평균 \u22120.6 ~ \u22120.1");
       expect(within(section).getByRole("heading", { name: /^S 기준/ })).toHaveTextContent("평균 \u22120.1 ~ +0.4");
       const ss = within(within(section).getByRole("list", { name: "SS 기준 추천" })).getAllByRole("listitem");
       expect(ss[0]).toHaveTextContent("추천곡1");
-      expect(ss[0]).toHaveTextContent("기록 없음");
+      expect(ss[0]).toHaveTextContent("––"); // 기록이 없으면 `[– | –]` 알약(`기록 없음` 글자는 쓰지 않는다)
+      expect(ss[0]).not.toHaveTextContent("기록 없음");
       expect(ss[1]).toHaveTextContent("90.50");
       expect(ss[1]).toHaveTextContent("S");
       const s = within(within(section).getByRole("list", { name: "S 기준 추천" })).getAllByRole("listitem");
@@ -264,6 +325,27 @@ describe("세트리스트", () => {
 
       const ss = await screen.findByRole("list", { name: /SS 기준/ });
       expect(within(ss).getAllByRole("listitem")[0]).toHaveTextContent("이중");
+    });
+
+    it("추천 줄도 공통 줄(D64): 68px, `속성 | 서열 난이도`, 기록 없음은 `[– | –]`, `담기`/`담김`(담김은 초록 테두리·글자)", async () => {
+      listed = [item(1, { songDifficultyId: 1 })]; // 추천 1번 채보는 세트리스트에 담겨 있다
+      recommended = based({ ssChallenge: [rec(1, { pattern: "복합", tier: 5.4 }), rec(2)], sFill: [] });
+      renderWith(<SetlistTab userId={1} />);
+
+      const ss = await screen.findByRole("list", { name: /SS 기준/ });
+      const rows = within(ss).getAllByRole("listitem");
+      for (const row of rows) expect(row).toHaveClass("h-[68px]");
+      expect(rows[0]).toHaveTextContent("속성 복합|기준 5.4");
+      expect(rows[0]).not.toHaveTextContent("기록 없음");
+      expect(rows[0]).toHaveTextContent("––");
+      const added = within(rows[0]).getByRole("button");
+      expect(added).toHaveTextContent("담김");
+      expect(added).toBeDisabled();
+      expect(added).toHaveClass("border-done", "text-done-text");
+      const add = within(rows[1]).getByRole("button");
+      expect(add).toHaveTextContent("담기");
+      expect(add).toHaveClass("border-ctl");
+      expect(add).toHaveClass("h-[26px]", "after:-inset-1.5");
     });
 
     it("추천 곡명을 누르면 그 채보의 곡 상세로 간다", async () => {

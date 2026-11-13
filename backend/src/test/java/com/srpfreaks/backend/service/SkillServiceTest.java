@@ -1,5 +1,6 @@
 package com.srpfreaks.backend.service;
 
+import com.srpfreaks.backend.dto.NotRatedReason;
 import com.srpfreaks.backend.dto.SkillEntryResponse;
 import com.srpfreaks.backend.dto.SkillResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
@@ -9,6 +10,7 @@ import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.PlayerTier;
 import com.srpfreaks.backend.entity.TableStatus;
+import com.srpfreaks.backend.mapper.ChartRatingRow;
 import com.srpfreaks.backend.mapper.RatingCandidate;
 import com.srpfreaks.backend.mapper.SkillMapper;
 import com.srpfreaks.backend.repository.AppSettingRepository;
@@ -138,6 +140,27 @@ class SkillServiceTest {
         assertThat(response.totalScore()).isEqualByComparingTo("1576.00");
         assertThat(response.singleLimit()).isEqualTo(2);
         assertThat(response.otherLimit()).isEqualTo(3);
+    }
+
+    @Test
+    void 복합단일은_그_외_그룹에_들어가고_단일_15에는_들어가지_않으며_레이팅_제외는_어느_그룹에도_없다() {
+        settings(2, 2);
+        tableExists();
+        tiers(0);
+        candidates(
+                cand(1, 10, PatternType.SINGLE, "6.0", "95.00"),            // 15.2 -> 304.00 (단일)
+                cand(2, 11, PatternType.COMPOSITE_SINGLE, "7.0", "80.00"),  // R=20, V=16.0 -> 320.00 (그 외, 단일 아님)
+                cand(3, 12, PatternType.COMPOUND, "6.0", "95.00"),          // 304.00 (그 외)
+                cand(4, 13, PatternType.COMPOSITE_SINGLE, "5.0", "100.00"), // 144.00 (그 외, 2개 제한으로 탈락)
+                cand(5, 14, PatternType.EXCLUDED, "9.0", "100.00"));        // 어느 그룹에도 없다
+
+        SkillResponse response = service.mySkill(USER);
+
+        assertThat(response.single()).extracting(SkillEntryResponse::songDifficultyId).containsExactly(1L);
+        assertThat(response.other()).extracting(SkillEntryResponse::songDifficultyId).containsExactly(2L, 3L);
+        assertThat(response.singleScore()).isEqualByComparingTo("304.00");
+        assertThat(response.otherScore()).isEqualByComparingTo("624.00");      // 320 + 304
+        assertThat(response.totalScore()).isEqualByComparingTo("928.00");
     }
 
     @Test
@@ -393,5 +416,79 @@ class SkillServiceTest {
         assertThat(service.ratedAll(List.of())).isEmpty();
 
         org.mockito.Mockito.verifyNoInteractions(settingRepository, tableRepository, tierRepository, skillMapper);
+    }
+
+    // ---- chartRating (저장 결과 카드용 한 채보 상태)
+
+    private ChartRating chartRating(ChartRatingRow row) {
+        settings(15, 25);
+        tableExists();
+        when(skillMapper.findChartRating(USER, "SUPER_RANDOM_PLUS", TABLE_ID, 5L)).thenReturn(row);
+        return service.chartRating(USER, 5L);
+    }
+
+    @Test
+    void chartRating_기준_난이도_6_0과_달성률_95는_점수_304_00이고_80은_240_00이다() {
+        ChartRating at95 = chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), "단일", true, new BigDecimal("95.00")));
+        assertThat(at95.notRatedReason()).isNull();
+        assertThat(at95.group()).isEqualTo(PatternType.RatingGroup.SINGLE);
+        assertThat(at95.score()).isEqualByComparingTo("304.00");
+    }
+
+    @Test
+    void chartRating_달성률_80은_240_00이고_복합단일은_그_외_그룹이다() {
+        ChartRating at80 = chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), "복합(단일)", true, new BigDecimal("80.00")));
+        assertThat(at80.score()).isEqualByComparingTo("240.00");
+        assertThat(at80.group()).isEqualTo(PatternType.RatingGroup.OTHER);
+    }
+
+    @Test
+    void chartRating_기준_난이도_없으면_TIER_UNDECIDED_속성_제외나_서열표_없음이면_EXCLUDED이다() {
+        assertThat(chartRating(new ChartRatingRow(5L, 1L, null, "단일", true, new BigDecimal("95.00"))).notRatedReason())
+                .isEqualTo(NotRatedReason.TIER_UNDECIDED);
+        assertThat(chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), "레이팅 제외", true, null)).notRatedReason())
+                .isEqualTo(NotRatedReason.EXCLUDED);
+        assertThat(chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), null, true, null)).notRatedReason())
+                .isEqualTo(NotRatedReason.EXCLUDED);
+        assertThat(chartRating(new ChartRatingRow(5L, 1L, new BigDecimal("6.0"), "단일", false, null)).notRatedReason())
+                .isEqualTo(NotRatedReason.EXCLUDED);
+        assertThat(chartRating(new ChartRatingRow(5L, null, null, null, null, new BigDecimal("90.00"))).notRatedReason())
+                .isEqualTo(NotRatedReason.EXCLUDED);
+    }
+
+    // ---- 레이팅 목록 40채보의 속성별 점수 합(라이벌 속성별 점수 차용, 2026-11-10)
+
+    private static SkillService.ScoredChart sc(long id, PatternType pattern, String score) {
+        return new SkillService.ScoredChart(cand(id, 100 + id, pattern, "5.6", "90.00"), pattern, new BigDecimal(score));
+    }
+
+    @Test
+    void 레이팅_목록_속성별_점수_합은_그룹별_상위_N개만_속성마다_더한다() {
+        settings(2, 2);   // 단일 2 + 그 외 2
+        List<SkillService.ScoredChart> list = List.of(
+                sc(1, PatternType.SINGLE, "300.00"), sc(2, PatternType.SINGLE, "250.00"), sc(3, PatternType.SINGLE, "200.00"),   // 단일: 300+250
+                sc(4, PatternType.COMPOUND, "240.00"), sc(5, PatternType.TRIPLE, "230.00"), sc(6, PatternType.COMPOUND, "220.00"),   // 그 외: 240+230
+                sc(7, PatternType.COMPOSITE_SINGLE, "225.00"));   // 복합(단일)은 그 외 그룹이라 상위 2에 못 들었다
+
+        java.util.Map<PatternType, BigDecimal> sums = service.ratingListScoreByPattern(java.util.Map.of(USER, list)).get(USER);
+
+        assertThat(sums.get(PatternType.SINGLE)).isEqualByComparingTo("550.00");
+        assertThat(sums.get(PatternType.COMPOUND)).isEqualByComparingTo("240.00");
+        assertThat(sums.get(PatternType.TRIPLE)).isEqualByComparingTo("230.00");
+        assertThat(sums).doesNotContainKeys(PatternType.COMPOSITE_SINGLE, PatternType.DOUBLE);
+        // 속성별 합을 모두 더하면 레이팅 목록 합계(총점)와 같다
+        assertThat(sums.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo("1020.00");
+    }
+
+    @Test
+    void 레이팅_목록_속성별_점수_합에서_점수가_같으면_채보_id가_작은_쪽이_먼저_들어간다() {
+        settings(1, 1);
+        List<SkillService.ScoredChart> list = List.of(
+                sc(9, PatternType.DOUBLE, "230.00"), sc(3, PatternType.TRIPLE, "230.00"));   // 그 외 1자리: 동점이라 id 3(삼중)
+
+        java.util.Map<PatternType, BigDecimal> sums = service.ratingListScoreByPattern(java.util.Map.of(USER, list)).get(USER);
+
+        assertThat(sums.get(PatternType.TRIPLE)).isEqualByComparingTo("230.00");
+        assertThat(sums).doesNotContainKey(PatternType.DOUBLE);
     }
 }

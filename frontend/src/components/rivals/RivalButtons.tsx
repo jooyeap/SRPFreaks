@@ -67,13 +67,13 @@ export function RivalButtons({ viewerId, targetId, nickname }: { viewerId: numbe
             aria-pressed="false"
             disabled={data === undefined || full || register.isPending}
             onClick={() => register.mutate()}
-            className={`${base} flex-1 border-chip-line text-fg enabled:hover:bg-table-head`}
+            className={`${base} flex-1 border-ctl text-fg enabled:hover:bg-table-head`}
           >
             <span aria-hidden="true">+</span>
             {t("register")}
           </button>
         )}
-        <Link href={`/players/${targetId}/compare`} className={`${base} border-chip-line text-fg hover:bg-table-head`}>
+        <Link href={`/players/${targetId}/compare`} className={`${base} border-ctl text-fg hover:bg-table-head`}>
           {t("compare")}
         </Link>
       </div>

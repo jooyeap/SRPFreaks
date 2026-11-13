@@ -42,6 +42,8 @@ export interface ApiRequestOptions {
   /** false이면 토큰을 붙이지 않고 401이어도 재발급을 시도하지 않는다 (로그인 요청용) */
   auth?: boolean;
   signal?: AbortSignal;
+  /** true이면 화면이 닫혀도 브라우저가 요청을 끝까지 보내 준다(fetch keepalive). 앱을 닫기 직전에 보내는 요청용이다 */
+  keepalive?: boolean;
 }
 
 // ---- 재발급 -------------------------------------------------------------------------------
@@ -199,6 +201,7 @@ async function send(path: string, options: ApiRequestOptions): Promise<Response>
       body,
       signal,
       credentials: "same-origin",
+      keepalive: options.keepalive,
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {

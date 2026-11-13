@@ -4,7 +4,7 @@
  * 버튼·링크 어느 쪽에도 쓸 수 있게 클래스와 아이콘만 내보낸다. 뜻은 각 화면의 aria-label이 전한다.
  */
 export const BACK_BUTTON_CLASS =
-  "inline-flex size-11 shrink-0 items-center justify-center self-start rounded-lg border border-chip-line text-fg-sub hover:text-fg compact:size-9";
+  "inline-flex size-11 shrink-0 items-center justify-center self-start rounded-lg border border-ctl text-fg-sub hover:text-fg compact:size-9";
 
 export function BackArrow() {
   return (

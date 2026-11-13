@@ -1,61 +1,76 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
+import { BackLink } from "@/components/BackLink";
 import { Pager } from "@/components/Pager";
 import { ApiError } from "@/lib/api";
-import type { PlayerTierResponse, RivalChartRow, RivalCounts, RivalResult } from "@/lib/api-types";
-import { formatRate, formatScore } from "@/lib/format";
-import { ChartBadge } from "@/components/table/Badges";
-import { StageBadge } from "@/components/table/StageBadge";
-import { chartTierAttrs } from "@/lib/chart-tier";
-import { fetchCompareCharts, fetchCompareRating, formatDiff, rivalKeys, signed } from "@/lib/rivals";
+import type { RivalChartRow, RivalRatingRow, RivalResult } from "@/lib/api-types";
+import { formatRate } from "@/lib/format";
+import { ChartLine } from "@/components/table/ChartLine";
+import { useJackets } from "@/lib/jackets";
+import { CatchUpSection } from "@/components/rivals/CatchUpSection";
+import { RivalDashboard } from "@/components/rivals/RivalDashboard";
+import { RateDiffChip } from "@/components/rivals/RateDiffChip";
+import { CompareScoreAside } from "@/components/rivals/CompareScoreAside";
+import { Segment } from "@/components/rivals/Segment";
+import { DEFAULT_CHART, DEFAULT_TAB, type DashChart, type DashTab } from "@/lib/rival-dashboard";
+import { fetchCompareCharts, fetchCompareRating, rivalKeys } from "@/lib/rivals";
 import { useTranslations } from "next-intl";
 
 type View = "rating" | "charts";
 type Group = "single" | "other";
 
-const RESULTS: readonly { value: RivalResult; key: "resultWin" | "resultLose" | "resultTie" | "resultTheirs"; count: keyof RivalCounts }[] = [
+const RESULTS: readonly { value: RivalResult; key: "resultWin" | "resultLose" | "resultTie" | "resultTheirs"; count: "win" | "lose" | "tie" | "theirsOnly" }[] = [
   { value: "WIN", key: "resultWin", count: "win" },
   { value: "LOSE", key: "resultLose", count: "lose" },
   { value: "TIE", key: "resultTie", count: "tie" },
   { value: "THEIRS_ONLY", key: "resultTheirs", count: "theirsOnly" },
 ];
 
-/** 둘 중 하나만 고르는 작은 전환(레이팅 목록 / 곡별 승패 같은). 선택은 굵은 글씨·테두리로도 보인다. */
-function Segment<T extends string>({ label, items, value, onChange }: {
-  label: string;
-  items: readonly { value: T; text: string }[];
-  value: T;
-  onChange: (value: T) => void;
-}) {
+/**
+ * 레이팅 비교 목록의 한 줄(D65). 서열표·세트리스트와 같은 공통 줄(ChartLine, D64)에 왼쪽 순번과 재킷을 끼운다.
+ * 오른쪽 열은 위에서부터 상대 점수(티어 색, 소수는 작게) / `나 238.10`(내 점수) / 차이 칩(내 점수 - 상대 점수).
+ * 칩은 `+2.28`(내가 앞, 초록) / `−4.37`(내가 뒤, 주황) / `±0.00`(같음) / `내 기록 없음`이고, 부호·글자가 있어서 색만으로 구분하지 않는다.
+ * 점수·차이는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다). 재킷은 운영·개인 설정이 켜졌을 때만 칸을 둔다.
+ */
+/**
+ * 곡별 승패 줄의 오른쪽 열(2026-11-10): 위 `나 95.00` / 가운데 `상대 94.00` 달성률(라벨 글자로 구분) / 아래 달성률 차 칩(RateDiffChip, 내 달성률 − 상대 달성률).
+ * 상대만 기록한 줄은 나 쪽이 `–`이고 칩이 `내 기록 없음`이다. 값은 서버 응답 그대로(응답 불변).
+ */
+function ChartsAside({ row, nickname }: { row: RivalChartRow; nickname: string }) {
+  const t = useTranslations("Rival");
   return (
-    <div role="group" aria-label={label} className="flex gap-1 rounded-xl border border-line bg-table-head p-1">
-      {items.map((item) => {
-        const on = item.value === value;
-        return (
-          <button
-            key={item.value}
-            type="button"
-            aria-pressed={on}
-            onClick={() => onChange(item.value)}
-            className={`min-h-10 flex-1 rounded-lg px-2 text-sm ${on ? "bg-card font-bold text-fg shadow-sm ring-1 ring-chip-line" : "text-fg-sub hover:text-fg"}`}
-          >
-            {item.text}
-          </button>
-        );
-      })}
+    <div className="flex w-[104px] shrink-0 flex-col items-end gap-0.5">
+      <span className="font-num text-xs leading-4 tabular-nums text-fg" aria-label={t("myRateAria")}>
+        <span className="mr-1 text-[11px] text-fg-dim">{t("mineLabel")}</span>
+        {formatRate(row.myRate)}
+      </span>
+      <span className="font-num text-xs leading-4 tabular-nums text-fg-dim" aria-label={t("theirRateAria", { nickname })}>
+        <span className="mr-1 text-[11px]">{t("theirLabel")}</span>
+        {formatRate(row.theirRate)}
+      </span>
+      <RateDiffChip myRate={row.myRate} rate={row.theirRate} />
     </div>
   );
 }
 
-function TierChip({ tier }: { tier: PlayerTierResponse }) {
+function RatingCompareLine({ row, jackets }: { row: RivalRatingRow; jackets: ReturnType<typeof useJackets> }) {
   return (
-    <span data-tier={tier.key} className="tier-chip inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-      {tier.displayName}
-    </span>
+    <ChartLine
+      className="border-t border-row-line first:border-t-0"
+      lead={<span className="w-5 shrink-0 text-center font-num text-xs text-fg-dim">{row.rank}</span>}
+      jacket={jackets.visible ? { url: jackets.urlOf(row.songId) } : null}
+      pattern={row.pattern}
+      tier={row.tier}
+      title={row.title}
+      href={`/songs/${row.songId}?chart=${row.songDifficultyId}`}
+      part={row.part}
+      difficulty={row.difficulty}
+      level={row.level}
+      aside={<CompareScoreAside score={row.score} myScore={row.myScore} myRate={row.myRate} rate={row.rate} />}
+    />
   );
 }
 
@@ -63,13 +78,35 @@ function TierChip({ tier }: { tier: PlayerTierResponse }) {
  * 라이벌 비교 화면(D56). 머리: 나 총점 · 승·패·무 · 상대 총점. 보기: 상대 레이팅 목록에 내 점수 나란히 / 곡별 승패.
  * 승패·점수는 서버가 계산한 값을 그대로 쓴다(화면에서 다시 계산하지 않는다).
  */
-export function RivalCompareView({ viewerId, targetId, initialView = "rating" }: { viewerId: number; targetId: number; initialView?: View }) {
+export function RivalCompareView({
+  viewerId,
+  targetId,
+  initialView = "rating",
+  tab: tabProp,
+  onTabChange,
+  chart: chartProp,
+  onChartChange,
+}: {
+  viewerId: number;
+  targetId: number;
+  initialView?: View;
+  /** 대시보드의 탭·차트. 주소(`?tab=&chart=`)가 쥐는 값이다. 주지 않으면 이 화면이 스스로 갖는다(처음은 우세·막대) */
+  tab?: DashTab;
+  onTabChange?: (tab: DashTab) => void;
+  chart?: DashChart;
+  onChartChange?: (chart: DashChart) => void;
+}) {
   const t = useTranslations("Rival");
   const tc = useTranslations();
   const [view, setView] = useState<View>(initialView);
   const [group, setGroup] = useState<Group>("single");
   const [result, setResult] = useState<RivalResult>("LOSE");
   const [page, setPage] = useState(0);
+  const [localTab, setLocalTab] = useState<DashTab>(DEFAULT_TAB);
+  const [localChart, setLocalChart] = useState<DashChart>(DEFAULT_CHART);
+  const tab = tabProp ?? localTab;
+  const chart = chartProp ?? localChart;
+  const jackets = useJackets();
 
   const rating = useQuery({
     queryKey: rivalKeys.rating(viewerId, targetId),
@@ -81,12 +118,15 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
     queryFn: ({ signal }) => fetchCompareCharts(targetId, result, page, signal),
     enabled: view === "charts" && rating.isSuccess,
     retry: false,
+    // 탭을 바꾸거나 쪽을 넘기는 동안에도 탭 개수는 이전 응답 값을 유지한다(목록만 불러오는 중으로 보인다).
+    placeholderData: (previous) => previous,
   });
 
+  // 뒤로: 같은 사이트 안에서 들어왔으면 들어온 화면으로(마이페이지 라이벌 탭·곡 상세·알림 등), 직접 진입이면 상대 유저 상세로(BackLink, D67 개정)
   const back = (
-    <Link href={`/players/${targetId}`} aria-label={t("backAria")} title={t("backAria")} className={BACK_BUTTON_CLASS}>
+    <BackLink fallbackHref={`/players/${targetId}`} ariaLabel={t("backAria")} className={BACK_BUTTON_CLASS}>
       <BackArrow />
-    </Link>
+    </BackLink>
   );
 
   if (rating.isPending) {
@@ -104,7 +144,10 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
     );
   }
   const data = rating.data;
-  const counts = data.counts;
+  // 곡별 승패 탭 개수는 곡별 승패 응답(`compare/charts`)의 counts를 쓴다. 대시보드 요약과 같은 범위·같은 판정이라
+  // 승·무·패는 요약 totals와, 상대만은 속성별 `상대만` 합과 항상 같다(D67 개정). 아직 못 받았으면 `–`.
+  const counts = charts.data?.counts ?? null;
+  const chartsLoading = charts.isPending || charts.isPlaceholderData;
   const rows = group === "single" ? data.single : data.other;
 
   return (
@@ -114,25 +157,16 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
         <h1 className="min-w-0 truncate text-xl font-semibold text-fg">{t("vsTitle", { nickname: data.nickname })}</h1>
       </div>
 
-      <section aria-label={t("summaryAria")} className="grid grid-cols-3 gap-2 rounded-2xl border border-line bg-card p-4 text-center">
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-fg-dim">{t("me")}</span>
-          <span data-tier={data.myTier.key} className="tier-score font-num text-lg font-bold">{formatScore(data.myTotalScore)}</span>
-          <TierChip tier={data.myTier} />
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-fg-dim">{t("wlt")}</span>
-          <span className="font-num text-lg font-bold text-fg">
-            {counts.win} · {counts.lose} · {counts.tie}
-          </span>
-          <span className="text-xs text-fg-dim">{t("theirsOnlyLine", { n: counts.theirsOnly })}</span>
-        </div>
-        <div className="flex min-w-0 flex-col items-center gap-1">
-          <span className="max-w-full truncate text-xs text-fg-dim">{data.nickname}</span>
-          <span data-tier={data.tier.key} className="tier-score font-num text-lg font-bold">{formatScore(data.totalScore)}</span>
-          <TierChip tier={data.tier} />
-        </div>
-      </section>
+      <RivalDashboard
+        viewerId={viewerId}
+        targetId={targetId}
+        rating={data}
+        tab={tab}
+        onTabChange={(next) => (onTabChange ? onTabChange(next) : setLocalTab(next))}
+        chart={chart}
+        onChartChange={(next) => (onChartChange ? onChartChange(next) : setLocalChart(next))}
+        jackets={jackets}
+      />
 
       <Segment<View>
         label={t("viewAria")}
@@ -143,6 +177,7 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
 
       {view === "rating" ? (
         <section aria-label={t("viewRating")} className="flex flex-col gap-3">
+          <CatchUpSection viewerId={viewerId} rows={[...data.single, ...data.other]} jackets={jackets} />
           <Segment<Group>
             label={t("groupAria")}
             items={[{ value: "single", text: t("groupSingle") }, { value: "other", text: t("groupOther") }]}
@@ -152,45 +187,28 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
           {rows.length === 0 ? (
             <p className="text-sm text-fg-sub">{t("emptyRating")}</p>
           ) : (
-            <ol className="rounded-2xl border border-line bg-card">
-              {rows.map((row) => {
-                const diff = formatDiff(row.diff);
-                return (
-                  <li key={row.songDifficultyId} className="border-t border-row-line first:border-t-0">
-                    <Link href={`/songs/${row.songId}?chart=${row.songDifficultyId}`} className="grid grid-cols-[24px_minmax(0,1fr)_auto_56px] items-center gap-2 px-3 py-2.5 hover:bg-table-head">
-                      <span className="font-num text-xs text-fg-dim">{row.rank}</span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13px] text-fg">{row.title}</span>
-                        <span className="mt-1 flex flex-wrap items-center gap-1.5"><ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} /><StageBadge stage={row.stage} /></span>
-                      </span>
-                      <span className="text-right">
-                        <span {...chartTierAttrs(row.score)} className="tier-score block font-num text-[13px] font-semibold">{formatScore(row.score)}</span>
-                        <span className="block font-num text-[11px] text-fg-dim">{formatRate(row.rate)}%</span>
-                      </span>
-                      <span className={`text-right font-num text-xs ${diff?.sign === "up" ? "text-done-text" : diff?.sign === "down" ? "text-danger" : "text-fg-dim"}`}>
-                        {diff ? diff.text : t("noRecord")}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
+            <ol className="overflow-hidden rounded-2xl border border-line bg-card">
+              {rows.map((row) => (
+                <RatingCompareLine key={row.songDifficultyId} row={row} jackets={jackets} />
+              ))}
             </ol>
           )}
-          <p className="text-xs text-fg-dim">{t("ratingLegend", { nickname: data.nickname })}</p>
+          <p className="text-xs text-fg-dim">{t("ratingLegend")}</p>
         </section>
       ) : (
         <section aria-label={t("viewCharts")} className="flex flex-col gap-3">
           <Segment<RivalResult>
+            nowrap
             label={t("resultAria")}
-            items={RESULTS.map((r) => ({ value: r.value, text: t(r.key, { n: counts[r.count] }) }))}
+            items={RESULTS.map((r) => ({ value: r.value, text: t(r.key, { n: counts ? counts[r.count] : "–" }) }))}
             value={result}
             onChange={(next) => {
               setResult(next);
               setPage(0);
             }}
           />
-          <p className="text-xs text-fg-dim">{t("chartsOrder")}</p>
-          {charts.isPending ? (
+          <p className="text-xs text-fg-dim">{t(result === "THEIRS_ONLY" ? "chartsBasisTheirs" : "chartsBasis")}</p>
+          {chartsLoading && !charts.isError ? (
             <p className="text-sm text-fg-sub">{tc("Common.loading")}</p>
           ) : charts.isError ? (
             <p role="alert" className="text-sm text-fg">{charts.error instanceof ApiError ? charts.error.message : t("loadFailed")}</p>
@@ -198,23 +216,22 @@ export function RivalCompareView({ viewerId, targetId, initialView = "rating" }:
             <p className="text-sm text-fg-sub">{t("emptyCharts")}</p>
           ) : (
             <>
-              <ul className="rounded-2xl border border-line bg-card">
+              <ul className="overflow-hidden rounded-2xl border border-line bg-card">
                 {charts.data.page.content.map((row: RivalChartRow) => (
-                  <li key={row.songDifficultyId} className="border-t border-row-line first:border-t-0">
-                    <Link href={`/songs/${row.songId}?chart=${row.songDifficultyId}`} className="grid grid-cols-[minmax(0,1fr)_auto_56px] items-center gap-2 px-3 py-2.5 hover:bg-table-head">
-                      <span className="min-w-0">
-                        <span className="block truncate text-[13px] text-fg">{row.title}</span>
-                        <span className="mt-1 flex"><ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} /></span>
-                      </span>
-                      <span className="text-right font-num text-xs">
-                        <span className="block text-fg" aria-label={t("myRateAria")}>{formatRate(row.myRate)}</span>
-                        <span className="block text-fg-dim" aria-label={t("theirRateAria", { nickname: data.nickname })}>{formatRate(row.theirRate)}</span>
-                      </span>
-                      <span className={`text-right font-num text-xs ${row.diff !== null && row.diff > 0 ? "text-done-text" : row.diff !== null && row.diff < 0 ? "text-danger" : "text-fg-dim"}`}>
-                        {row.diff === null ? "–" : signed(row.diff)}
-                      </span>
-                    </Link>
-                  </li>
+                  <ChartLine
+                    key={row.songDifficultyId}
+                    className="border-t border-row-line first:border-t-0"
+                    jacket={jackets.visible ? { url: jackets.urlOf(row.songId) } : null}
+                    // 줄 위쪽 `속성 | 서열 난이도`: compare/charts 줄의 pattern·tier(D67 개정). 옛 응답에는 없어 그때는 `–`만 보인다
+                    pattern={row.pattern ?? null}
+                    tier={row.tier}
+                    title={row.title}
+                    href={`/songs/${row.songId}?chart=${row.songDifficultyId}`}
+                    part={row.part}
+                    difficulty={row.difficulty}
+                    level={row.level}
+                    aside={<ChartsAside row={row} nickname={data.nickname} />}
+                  />
                 ))}
               </ul>
               <Pager page={page} totalPages={charts.data.page.totalPages} onChange={setPage} />

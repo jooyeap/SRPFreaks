@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { LandingNotices } from "@/components/home/LandingNotices";
+import { LandingPlayers } from "@/components/home/LandingPlayers";
+import { LandingTierShortcuts } from "@/components/home/LandingTierShortcuts";
 import { useTranslations } from "next-intl";
 
 /**
@@ -31,7 +34,7 @@ export default function Home() {
         <p className="mt-2 text-xs text-fg-dim">{t("landingNote")}</p>
         <Link
           href="/login"
-          className="mt-3 inline-block min-h-11 rounded-lg border border-chip-line px-4 py-1.5 text-sm text-fg hover:bg-table-head"
+          className="mt-3 inline-block min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head"
         >
           {tn("login")}
         </Link>
@@ -51,6 +54,11 @@ export default function Home() {
           <p className="mt-1 text-sm text-fg-sub">{t("landingInputDesc")}</p>
         </li>
       </ul>
+
+      {/* 로그인 전 보강(E2): 공개 읽기 API만 쓴다. 데이터가 없으면 각 카드가 스스로 숨는다. 로그인 홈(HomeDashboard)은 위에서 이미 갈라져 영향이 없다 */}
+      <LandingTierShortcuts />
+      <LandingPlayers />
+      <LandingNotices />
     </div>
   );
 }

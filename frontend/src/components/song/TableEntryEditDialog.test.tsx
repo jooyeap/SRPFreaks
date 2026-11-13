@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TableEntryEditDialog, type TableEntryTarget } from "@/components/song/TableEntryEditDialog";
 import type { TableEntryResponse } from "@/lib/api-types";
+import { resetHistoryLayersForTest } from "@/lib/history-layers";
 
 const entry: TableEntryResponse = {
   entryId: 1,
@@ -215,5 +216,16 @@ describe("TableEntryEditDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "취소" }));
     expect(onClose).toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("뒤로 가기를 누르면 창만 닫힌다(onClose, 주소는 그대로)", async () => {
+    resetHistoryLayersForTest();
+    window.history.replaceState(null, "", "/prev");
+    window.history.pushState(null, "", "/here");
+    renderDialog(existing);
+    window.history.back();
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(window.location.pathname).toBe("/here");
+    resetHistoryLayersForTest();
   });
 });

@@ -44,9 +44,9 @@ describe("tableEntrySchema", () => {
     expect(result.error?.issues[0]?.message).toBe("레이팅 상수 난이도는 소수 첫째 자리까지만 입력할 수 있습니다.");
   });
 
-  it("추천도는 상/중/하, 속성은 단일/복합/이중/삼중/레이팅 제외만 받는다", () => {
+  it("추천도는 상/중/하, 속성은 단일/복합/이중/삼중/복합(단일)/레이팅 제외만 받는다", () => {
     for (const recommend of ["", "상", "중", "하"]) expect(check("5.8", recommend).success, recommend).toBe(true);
-    for (const pattern of ["", "단일", "복합", "이중", "삼중", "레이팅 제외"]) {
+    for (const pattern of ["", "단일", "복합", "이중", "삼중", "복합(단일)", "레이팅 제외"]) {
       expect(check("5.8", "", pattern).success, pattern).toBe(true);
     }
     expect(check("5.8", "최상").success).toBe(false);
