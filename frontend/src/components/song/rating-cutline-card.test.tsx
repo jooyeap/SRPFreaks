@@ -97,31 +97,26 @@ describe("RatingCutlineCard", () => {
     // 컷라인 점수는 필요 달성률(80.01%)과 같은 기준이다: 이 채보를 뺀 나머지 중 마지막 곡의 점수(240.00 = 달성률 80.00%의 점수). 내 점수(282.67)가 아니다
     expect(el).toHaveTextContent("컷라인 점수240.00");
     expect(el).not.toHaveTextContent("컷라인 점수282.67");
-    // 이미 목록 안이면 진행 막대는 가득 찬다(의도한 표시: 컷라인을 넘었다는 뜻)
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "100");
+    // 진행 막대는 없다(항상 거의 가득 차 뜻을 알 수 없다는 피드백으로 삭제)
+    expect(screen.queryByRole("progressbar")).toBeNull();
     expect(el).not.toHaveTextContent("목록에 들어가려면");
     expect(screen.getByLabelText("목표 달성률")).toHaveValue("");
   });
 
-  it("진행 막대의 채움은 티어 색(tier-bar, 부모 data-tier가 있어야 색이 생김)이 아니라 일반 강조색 토큰을 써서 비어 보이지 않는다", async () => {
+  it("어느 상태에서도 진행 막대(progressbar)를 그리지 않고, 필요 달성률 문장은 그대로 나온다", async () => {
     givenServer(
       response({
-        status: "IN_LIST",
-        currentRate: 90,
-        currentScore: 282.67,
-        currentRank: 3,
-        cutline: { lastScore: 240, requiredRate: 80.01, reachable: true, rateGap: -9.99, groupFull: true },
+        status: "OUT_OF_LIST",
+        currentRate: 70,
+        currentScore: 210,
+        cutline: { lastScore: 240, requiredRate: 80.01, reachable: true, rateGap: 10.01, groupFull: true },
       }),
     );
     renderCard();
-    await card();
+    const el = await card();
 
-    const bar = screen.getByRole("progressbar");
-    const fill = bar.firstElementChild as HTMLElement;
-    expect(fill.className).not.toContain("tier-bar");
-    expect(fill.className).toContain("bg-[var(--stage-ss-bar)]");
-    expect(bar.className).toContain("bg-line");        // 트랙은 카드 바탕과 구분되는 선 색
-    expect(fill.style.width).not.toBe("");              // 비율 계산은 그대로(폭이 들어간다)
+    expect(screen.queryByRole("progressbar")).toBeNull();
+    expect(el).toHaveTextContent("목록에 들어가려면");
   });
 
   it("목록 밖이면 필요 달성률과 더 올릴 양을 보여 주고, 입력칸은 컷라인 달성률에서 시작한다", async () => {

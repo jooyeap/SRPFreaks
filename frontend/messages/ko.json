@@ -1524,7 +1524,6 @@
     "noRecord": "기록 없음",
     "rankInList": "{rank}위",
     "outOfList": "목록 밖",
-    "progressAria": "컷라인 달성률까지의 진행",
     "requiredOut": "목록에 들어가려면 {rate} 이상({gap})",
     "requiredNo": "목록에 들어가려면 {rate} 이상",
     "freeSlot": "목록에 자리가 남아 있어 기록만 남기면 들어갑니다.",

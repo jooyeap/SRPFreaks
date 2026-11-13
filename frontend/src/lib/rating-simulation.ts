@@ -143,15 +143,3 @@ export function initialInput(data: RatingSimulationResponse): string {
   }
   return "";
 }
-
-/** 진행 막대 비율(0~1): 내 달성률이 컷라인 달성률의 몇 %인가. 이미 안이거나 컷라인이 0이면 1, 기록이 없으면 0. */
-export function cutlineProgress(data: RatingSimulationResponse): number {
-  const required = data.cutline?.requiredRate ?? null;
-  if (data.status === "IN_LIST" || required === 0) {
-    return 1;
-  }
-  if (required === null || data.currentRate === null) {
-    return 0;
-  }
-  return Math.min(Math.max(data.currentRate / required, 0), 1);
-}

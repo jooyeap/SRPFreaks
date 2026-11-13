@@ -1524,7 +1524,6 @@
     "noRecord": "記録なし",
     "rankInList": "{rank}位",
     "outOfList": "リスト外",
-    "progressAria": "カットライン達成率までの進み具合",
     "requiredOut": "リストに入るには{rate}以上（{gap}）",
     "requiredNo": "リストに入るには{rate}以上",
     "freeSlot": "リストに空きがあるため、記録を残すだけで入ります。",

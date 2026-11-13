@@ -3,7 +3,6 @@ import { createTranslator } from "use-intl/core";
 import koMessages from "../../messages/ko.json";
 import {
   achievementFromInput,
-  cutlineProgress,
   gapWithUnit,
   initialInput,
   makeSimulationSchema,
@@ -81,18 +80,11 @@ describe("표시", () => {
   });
 });
 
-describe("입력칸 처음 값과 진행 막대", () => {
+describe("입력칸 처음 값", () => {
   it("기록 없음·목록 밖은 컷라인 달성률에서 시작하고, 이미 안이거나 도달 불가면 비운다", () => {
     expect(initialInput(data())).toBe("8001");
     expect(initialInput(data({ status: "OUT_OF_LIST" }))).toBe("8001");
     expect(initialInput(data({ status: "IN_LIST" }))).toBe("");
     expect(initialInput(data({ cutline: { lastScore: 384, requiredRate: null, reachable: false, rateGap: null, groupFull: true } }))).toBe("");
-  });
-
-  it("진행 막대: 기록 없음 0, 목록 밖은 컷라인 대비 비율, 이미 안이면 가득", () => {
-    expect(cutlineProgress(data())).toBe(0);
-    expect(cutlineProgress(data({ status: "OUT_OF_LIST", currentRate: 40.005 }))).toBeCloseTo(0.5, 2);
-    expect(cutlineProgress(data({ status: "IN_LIST", currentRate: 90 }))).toBe(1);
-    expect(cutlineProgress(data({ cutline: { lastScore: null, requiredRate: 0, reachable: true, rateGap: null, groupFull: false } }))).toBe(1);
   });
 });
