@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { NotificationResponse, RivalNotificationResponse, TierNotificationResponse } from "@/lib/api-types";
+import type { RivalNotificationResponse, TierNotificationResponse } from "@/lib/api-types";
 import { NOTIFICATION_GROUP_PREVIEW, groupNotifications, hiddenSongCount, songsOf } from "@/lib/notification-groups";
 
 function n(id: number, actor: number, extra: Partial<RivalNotificationResponse> = {}): RivalNotificationResponse {
