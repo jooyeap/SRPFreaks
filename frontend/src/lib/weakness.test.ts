@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avgPercent, bandLabel, formatAvgDiff, hasNoMine, patternValue, type WeaknessAnalysisResponse } from "@/lib/weakness";
+import { SCALE_TICKS, bandLabel, formatAvgDiff, hasNoMine, patternValue, scalePercent, type WeaknessAnalysisResponse } from "@/lib/weakness";
 
 describe("formatAvgDiff", () => {
   it("앞서면 +, 뒤지면 진짜 마이너스(U+2212), 같으면 ±, 둘째 자리까지", () => {
@@ -23,11 +23,22 @@ describe("formatAvgDiff", () => {
 });
 
 describe("막대·라벨 보조 함수", () => {
-  it("막대 길이는 0~100으로 자른다", () => {
-    expect(avgPercent(87.12)).toBe(87.12);
-    expect(avgPercent(null)).toBe(0);
-    expect(avgPercent(120)).toBe(100);
-    expect(avgPercent(-3)).toBe(0);
+  it("막대 길이는 눈금 80~100 기준이다: 80 → 0%, 90 → 50%, 100 → 100%, 80 미만 → 0%, 100 초과 → 100%", () => {
+    expect(scalePercent(80)).toBe(0);
+    expect(scalePercent(90)).toBe(50);
+    expect(scalePercent(100)).toBe(100);
+    expect(scalePercent(95)).toBe(75);
+    expect(scalePercent(79.99)).toBe(0);
+    expect(scalePercent(0)).toBe(0);
+    expect(scalePercent(-3)).toBe(0);
+    expect(scalePercent(120)).toBe(100);
+    expect(scalePercent(87.12)).toBeCloseTo(35.6, 5);
+    expect(scalePercent(null)).toBe(0);
+    expect(scalePercent(Number.NaN)).toBe(0);
+  });
+
+  it("눈금 숫자는 80 / 85 / 90 / 95 / 100", () => {
+    expect(SCALE_TICKS).toEqual([80, 85, 90, 95, 100]);
   });
 
   it("난이도대 라벨은 0.1 단위 두 값으로 `5.5~5.9`, 속성 키는 화면 라벨 값으로 바뀐다", () => {

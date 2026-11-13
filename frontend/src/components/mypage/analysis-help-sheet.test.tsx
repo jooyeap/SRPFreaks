@@ -103,13 +103,31 @@ describe("분석 탭 계산 설명 시트", () => {
     expect(lines.filter((l) => l.startsWith("· "))).toHaveLength(3);
   });
 
-  it("항목 2에는 그림(막대 끝·흰 선·예시 계산)이 있다", () => {
+  it("항목 2 본문은 확정 문구 그대로(줄바꿈 포함)이고 옛 흰 선·마이너스/플러스 설명은 없다", () => {
     render(<AnalysisHelpSheet minCharts={3} minBandUsers={5} />);
     openSheet();
     fireEvent.click(item(2));
-    expect(screen.getByText("막대 끝 = 내 평균")).toBeTruthy();
-    expect(screen.getByText("흰 선 = 같은 티어 평균")).toBeTruthy();
-    expect(screen.getByText("내 87.12% − 같은 티어 89.47% = −2.35%")).toBeTruthy();
+    const p = screen.getByText(/초록 막대는 내 평균 달성률/);
+    expect(p.textContent).toBe(
+      "초록 막대는 내 평균 달성률, 회색 막대는 같은 티어 평균 달성률입니다.\n막대가 길수록 평균 달성률이 높고, 두 막대의 차이가 오른쪽 위 차이값입니다.",
+    );
+    expect(p.textContent).toBe(ko.AnalysisHelp.i2Body);
+    expect(p.className).toContain("whitespace-pre-line");
+    expect(screen.queryByText(/흰 선|마이너스|플러스/)).toBeNull();
+  });
+
+  it("항목 2 그림은 분석 탭과 같은 두 줄 막대(나 초록 / 같은 티어 회색)이고 흰 선·예시 계산은 없다", () => {
+    render(<AnalysisHelpSheet minCharts={3} minBandUsers={5} />);
+    openSheet();
+    fireEvent.click(item(2));
+    const me = document.querySelector('[data-fig-bar="me"]') as HTMLElement;
+    const peer = document.querySelector('[data-fig-bar="peer"]') as HTMLElement;
+    expect(me).toHaveTextContent("나");
+    expect(peer).toHaveTextContent("같은 티어");
+    expect((me.querySelector('[aria-hidden="true"] > div') as HTMLElement).className).toContain("bg-done");
+    expect((peer.querySelector('[aria-hidden="true"] > div') as HTMLElement).className).toContain("bg-ctl");
+    expect(document.querySelector(".bg-fg")).toBeNull();
+    expect(screen.queryByText(/−2\.35%|막대 끝/)).toBeNull();
   });
 
   it("뒤로 가기를 누르면 시트만 닫힌다", async () => {

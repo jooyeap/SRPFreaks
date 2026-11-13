@@ -102,28 +102,69 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     expect(items).toHaveLength(4);
     expect(items[0]).toHaveTextContent("단일");
     expect(items[0]).toHaveTextContent(`${MINUS}2.35%`);
-    expect(items[0]).toHaveTextContent("내 87.12 · 같은 티어 89.47(6명) · 8곡");
+    expect(items[0]).toHaveTextContent("같은 티어 6명 · 8곡");
     expect(items[1]).toHaveTextContent("+1.00%");
     // 내 목록에 없는 속성: 차이 대신 `–`, 안내 한 줄
     expect(items[2]).toHaveTextContent("내 레이팅 목록에 없습니다.");
-    expect(within(items[2]).getByText("–")).toBeInTheDocument();
+    expect(within(items[2]).getAllByText("–")).toHaveLength(3);   // 차이 · 내 막대 · 같은 티어 막대 값
     // 이 묶음만 같은 티어 인원이 모자란 경우: 차이는 `–`, `비교 대상이 적어요`
-    expect(items[3]).toHaveTextContent("내 70.00 · 2곡 · 비교 대상이 적어요");
+    expect(items[3]).toHaveTextContent("2곡 · 비교 대상이 적어요");
     // 막대는 장식(aria-hidden)이고 값은 글자 줄이 담는다
     expect(items[0].querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
 
-  it("같은 티어 값이 없어 차이가 없는 줄의 채움은 카드 배경과 구분되는 중립색(border-ctl bg-ctl)이고, 비교가 되는 줄은 의미 색(주황/초록)이다", async () => {
+  it("줄마다 막대가 두 개: `나`(초록)와 `같은 티어`(회색), 각 막대 오른쪽에 둘째 자리 숫자가 글자로 있다", async () => {
     show(response());
     const items = within(await patternList()).getAllByRole("listitem");
-    const fillOf = (li: HTMLElement) => li.querySelector('[aria-hidden="true"] > div') as HTMLElement;
-    // 단일: 같은 티어가 더 높음 → 주황, 복합: 내가 더 높음 → 초록, 삼중: 같은 티어 없음 → 중립
-    expect(fillOf(items[0]).className).toContain("bg-weak-tint");
-    expect(fillOf(items[1]).className).toContain("bg-done-tint");
-    const neutral = fillOf(items[3]);
-    expect(neutral.className).toContain("border-ctl");
-    expect(neutral.className).toContain("bg-ctl");
-    expect(neutral.className).not.toContain("bg-table-head");   // 예전 값(카드 배경과 거의 같아 보이지 않았다)
+    const bar = (li: HTMLElement, kind: string) => li.querySelector(`[data-bar="${kind}"]`) as HTMLElement;
+    const fill = (el: HTMLElement) => el.querySelector('[aria-hidden="true"] > div') as HTMLElement;
+
+    // 단일: 내 87.12 / 같은 티어 89.47
+    expect(bar(items[0], "me")).toHaveTextContent("나");
+    expect(bar(items[0], "me")).toHaveTextContent("87.12");
+    expect(bar(items[0], "peer")).toHaveTextContent("같은 티어");
+    expect(bar(items[0], "peer")).toHaveTextContent("89.47");
+    // 색은 토큰 클래스(초록 = 나, 회색 = 같은 티어)이고 막대 끝 테두리(border-r)는 없다
+    expect(fill(bar(items[0], "me")).className).toContain("bg-done");
+    expect(fill(bar(items[0], "peer")).className).toContain("bg-ctl");
+    expect(fill(bar(items[0], "me")).className).not.toContain("border-r");
+    // 눈금 80~100: 87.12 → 35.6%, 89.47 → 47.35%
+    expect(fill(bar(items[0], "me")).style.width).toBe("35.6%");
+    expect(fill(bar(items[0], "peer")).style.width).toBe("47.35%");
+  });
+
+  it("같은 티어 값이 없으면 같은 티어 막대는 길이 0과 `–`이고, 흰 세로선(bg-fg)은 어디에도 없다", async () => {
+    show(response());
+    const items = within(await patternList()).getAllByRole("listitem");
+    const peer = items[3].querySelector('[data-bar="peer"]') as HTMLElement;
+    expect(peer).toHaveTextContent("같은 티어");
+    expect(peer).toHaveTextContent("–");
+    expect((peer.querySelector('[aria-hidden="true"] > div') as HTMLElement).style.width).toBe("0%");
+    expect(items[3].querySelector('[data-bar="me"]')).toHaveTextContent("70.00");
+    expect((items[3].querySelector('[data-bar="me"] [aria-hidden="true"] > div') as HTMLElement).style.width).toBe("0%");   // 80 미만은 잘림
+    for (const li of items) expect(li.querySelector(".bg-fg")).toBeNull();
+  });
+
+  it("차이 글자는 낮으면 주황(weak-text), 높으면 초록(done-text) 토큰이고 부호가 글자로 같이 있다", async () => {
+    show(response());
+    const items = within(await patternList()).getAllByRole("listitem");
+    expect(within(items[0]).getByText(`${MINUS}2.35%`).className).toContain("text-weak-text");
+    expect(within(items[1]).getByText("+1.00%").className).toContain("text-done-text");
+  });
+
+  it("맨 위 범례(나 / 같은 티어)와 목록 아래 눈금 80·85·90·95·100, 눈금 안내가 있고 옛 하단 설명 문장은 없다", async () => {
+    show(response());
+    await patternList();
+    const legendMe = screen.getAllByText("나")[0];
+    expect(legendMe).toBeInTheDocument();
+    expect(screen.getAllByText("눈금은 80~100입니다(80 미만은 잘림).")).toHaveLength(1);   // 탭에서 한 번만(난이도대별 목록 아래)
+    for (const tick of ["80", "85", "90", "95", "100"]) expect(screen.getAllByText(tick).length).toBeGreaterThanOrEqual(2);
+    // 안내는 난이도대별 목록 아래에 있고 속성별 목록 아래에는 없다
+    const note = screen.getByText("눈금은 80~100입니다(80 미만은 잘림).");
+    const bandSection = screen.getByRole("region", { name: "난이도대별 (서열표 기준)" });
+    expect(bandSection.contains(note)).toBe(true);
+    expect(screen.getByRole("region", { name: "속성별" }).contains(note)).toBe(false);
+    expect(screen.queryByText("막대는 내 평균 달성률, 세로선은 같은 티어 평균입니다.")).toBeNull();
   });
 
   it("난이도대 줄은 높은 순으로 나오고 약점에만 `약점` 글자 표지가 있다", async () => {
@@ -179,7 +220,7 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     );
     expect(await screen.findByRole("status")).toHaveTextContent("비교 대상이 적어요");
     const items = within(await patternList()).getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("내 87.12 · 8곡");
+    expect(items[0]).toHaveTextContent("8곡");
     expect(items[0].textContent).not.toMatch(/[+−]\d/);
     expect(items[0].querySelector(".bg-fg")).toBeNull();   // 같은 티어 세로선이 없다
     expect(screen.queryByText("약점")).toBeNull();
@@ -222,7 +263,7 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     state.locale = "ja";
     show(response());
     const list = await screen.findByRole("list", { name: "属性別" });
-    expect(within(list).getAllByRole("listitem")[0]).toHaveTextContent("自分 87.12 · 同じティア 89.47（6人） · 8曲");
+    expect(within(list).getAllByRole("listitem")[0]).toHaveTextContent("同じティア6人 · 8曲");
     expect(screen.getByText("弱点")).toBeInTheDocument();
     expect(await screen.findByRole("region", { name: "6.0~6.4で上げやすい曲" })).toBeInTheDocument();
     expect(screen.getAllByText("+50.00点").length).toBeGreaterThan(0);
