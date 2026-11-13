@@ -124,6 +124,8 @@ function AnalysisBody({ userId, data }: { userId: number; data: WeaknessAnalysis
       <section aria-label={t("Analysis.bandTitle")} className="flex flex-col gap-2">
         <h2 className="text-sm font-bold text-fg">{t("Analysis.bandTitle")}</h2>
         <CompareList rows={bandRows} peerAvailable={data.peerAvailable} ariaLabel={t("Analysis.bandTitle")} />
+        {/* 눈금 안내는 탭에서 한 번만, 난이도대별 목록(눈금 숫자) 바로 아래에 둔다 */}
+        <p className="text-[11px] text-fg-dim">{t("Analysis.scaleNote")}</p>
         <p className="text-[11px] text-fg-dim">{t("Analysis.bandNote", { n: data.minChartsPerBand })}</p>
         {data.peerAvailable && weak === null ? <p className="text-xs text-fg-sub">{t("Analysis.noWeak")}</p> : null}
       </section>
@@ -157,7 +159,6 @@ function BarLegend() {
 }
 
 function CompareList({ rows, peerAvailable, ariaLabel }: { rows: readonly CompareRowData[]; peerAvailable: boolean; ariaLabel: string }) {
-  const t = useTranslations();
   return (
     <>
       <ul aria-label={ariaLabel} className="flex flex-col gap-3">
@@ -166,7 +167,6 @@ function CompareList({ rows, peerAvailable, ariaLabel }: { rows: readonly Compar
         ))}
       </ul>
       <ScaleTicks />
-      <p className="text-[11px] text-fg-dim">{t("Analysis.scaleNote")}</p>
     </>
   );
 }
@@ -241,18 +241,16 @@ function BarLine({ kind, name, avg, fillClass }: { kind: "me" | "peer"; name: st
   );
 }
 
+/** 줄 아래 글자 줄: 인원과 곡 수만 남긴다(`같은 티어 4명 · 8곡`). 내 값·같은 티어 값 숫자는 막대 옆 글자가 담는다. */
 function lineText(row: CompareRowData, peerAvailable: boolean, t: Translator): string {
   if (row.myAvg === null) {
     return t("Analysis.notInList");
   }
-  const mine = formatRate(row.myAvg);
   if (row.peerAvg === null || row.peerUsers === null) {
     // 같은 티어 인원이 전체로는 충분한데 이 묶음만 모자란 경우도 같은 안내를 쓴다
-    return peerAvailable
-      ? t("Analysis.lineNoPeer", { mine, charts: row.charts })
-      : t("Analysis.lineMine", { mine, charts: row.charts });
+    return peerAvailable ? t("Analysis.lineNoPeer", { charts: row.charts }) : t("Analysis.lineMine", { charts: row.charts });
   }
-  return t("Analysis.linePeer", { mine, peer: formatRate(row.peerAvg), users: row.peerUsers, charts: row.charts });
+  return t("Analysis.linePeer", { users: row.peerUsers, charts: row.charts });
 }
 
 function EasySection({ userId, data, range }: { userId: number; data: WeaknessAnalysisResponse; range: string }) {

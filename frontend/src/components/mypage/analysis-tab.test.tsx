@@ -102,13 +102,13 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     expect(items).toHaveLength(4);
     expect(items[0]).toHaveTextContent("단일");
     expect(items[0]).toHaveTextContent(`${MINUS}2.35%`);
-    expect(items[0]).toHaveTextContent("내 87.12 · 같은 티어 89.47(6명) · 8곡");
+    expect(items[0]).toHaveTextContent("같은 티어 6명 · 8곡");
     expect(items[1]).toHaveTextContent("+1.00%");
     // 내 목록에 없는 속성: 차이 대신 `–`, 안내 한 줄
     expect(items[2]).toHaveTextContent("내 레이팅 목록에 없습니다.");
     expect(within(items[2]).getAllByText("–")).toHaveLength(3);   // 차이 · 내 막대 · 같은 티어 막대 값
     // 이 묶음만 같은 티어 인원이 모자란 경우: 차이는 `–`, `비교 대상이 적어요`
-    expect(items[3]).toHaveTextContent("내 70.00 · 2곡 · 비교 대상이 적어요");
+    expect(items[3]).toHaveTextContent("2곡 · 비교 대상이 적어요");
     // 막대는 장식(aria-hidden)이고 값은 글자 줄이 담는다
     expect(items[0].querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
@@ -157,8 +157,13 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     await patternList();
     const legendMe = screen.getAllByText("나")[0];
     expect(legendMe).toBeInTheDocument();
-    expect(screen.getAllByText("눈금은 80~100입니다(80 미만은 잘림).")).toHaveLength(2);   // 속성별 · 난이도대별 목록 아래 각각
+    expect(screen.getAllByText("눈금은 80~100입니다(80 미만은 잘림).")).toHaveLength(1);   // 탭에서 한 번만(난이도대별 목록 아래)
     for (const tick of ["80", "85", "90", "95", "100"]) expect(screen.getAllByText(tick).length).toBeGreaterThanOrEqual(2);
+    // 안내는 난이도대별 목록 아래에 있고 속성별 목록 아래에는 없다
+    const note = screen.getByText("눈금은 80~100입니다(80 미만은 잘림).");
+    const bandSection = screen.getByRole("region", { name: "난이도대별 (서열표 기준)" });
+    expect(bandSection.contains(note)).toBe(true);
+    expect(screen.getByRole("region", { name: "속성별" }).contains(note)).toBe(false);
     expect(screen.queryByText("막대는 내 평균 달성률, 세로선은 같은 티어 평균입니다.")).toBeNull();
   });
 
@@ -215,7 +220,7 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     );
     expect(await screen.findByRole("status")).toHaveTextContent("비교 대상이 적어요");
     const items = within(await patternList()).getAllByRole("listitem");
-    expect(items[0]).toHaveTextContent("내 87.12 · 8곡");
+    expect(items[0]).toHaveTextContent("8곡");
     expect(items[0].textContent).not.toMatch(/[+−]\d/);
     expect(items[0].querySelector(".bg-fg")).toBeNull();   // 같은 티어 세로선이 없다
     expect(screen.queryByText("약점")).toBeNull();
@@ -258,7 +263,7 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     state.locale = "ja";
     show(response());
     const list = await screen.findByRole("list", { name: "属性別" });
-    expect(within(list).getAllByRole("listitem")[0]).toHaveTextContent("自分 87.12 · 同じティア 89.47（6人） · 8曲");
+    expect(within(list).getAllByRole("listitem")[0]).toHaveTextContent("同じティア6人 · 8曲");
     expect(screen.getByText("弱点")).toBeInTheDocument();
     expect(await screen.findByRole("region", { name: "6.0~6.4で上げやすい曲" })).toBeInTheDocument();
     expect(screen.getAllByText("+50.00点").length).toBeGreaterThan(0);

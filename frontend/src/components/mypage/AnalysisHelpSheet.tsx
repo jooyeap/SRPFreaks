@@ -3,9 +3,14 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { RATED_CHART_COUNT } from "@/lib/chart-tier";
+import { scalePercent } from "@/lib/weakness";
 import { useHistoryClose } from "@/lib/use-history-close";
 
 /** 항목 번호 1~8. 제목·본문 키는 `AnalysisHelp.i{번호}Title` / `i{번호}Body`. */
+/** 항목 2 그림의 표본 평균(설명용, 실제 값이 아니다). */
+const SAMPLE_MINE = 87.12;
+const SAMPLE_PEER = 89.47;
+
 const ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 type ItemNo = (typeof ITEMS)[number];
 
@@ -142,18 +147,26 @@ export function AnalysisHelpSheet({ minCharts, minBandUsers }: { minCharts: numb
   );
 }
 
-/** 항목 2의 작은 그림. 막대 끝 = 내 평균, 흰 선 = 같은 티어 평균. 도형은 장식(aria-hidden)이고 뜻은 아래 글자가 모두 담는다. */
+/**
+ * 항목 2의 작은 그림: 분석 탭과 같은 두 줄 막대(`나` 초록 / `같은 티어` 회색, 눈금 80~100). 길이는 설명용 표본이다.
+ * 도형은 장식(aria-hidden)이고 뜻은 위 본문과 막대 옆 글자(`나`/`같은 티어`)가 담는다.
+ */
 function BarFigure() {
-  const t = useTranslations("AnalysisHelp");
+  const t = useTranslations("Analysis");
+  const rows = [
+    { kind: "me", name: t("barMe"), pct: scalePercent(SAMPLE_MINE), fill: "bg-done" },
+    { kind: "peer", name: t("barPeer"), pct: scalePercent(SAMPLE_PEER), fill: "bg-ctl" },
+  ] as const;
   return (
-    <div className="mt-2 rounded-xl border border-line bg-table-head p-3">
-      <div aria-hidden="true" className="relative h-6 overflow-hidden rounded border border-line bg-card">
-        <div style={{ width: "87%" }} className="h-full border-r border-weak bg-weak-tint" />
-        <span style={{ left: "89.5%" }} className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-fg" />
-      </div>
-      <p className="mt-2 text-xs leading-[1.75] text-fg-sub">{t("figEnd")}</p>
-      <p className="text-xs leading-[1.75] text-fg-sub">{t("figLine")}</p>
-      <p className="mt-1 whitespace-pre-line break-keep font-num text-xs font-bold leading-[1.75] text-fg">{t("figExample")}</p>
+    <div className="mt-2 flex flex-col gap-1 rounded-xl border border-line bg-table-head p-3">
+      {rows.map((r) => (
+        <div key={r.kind} data-fig-bar={r.kind} className="flex items-center gap-2">
+          <span className="w-[60px] shrink-0 whitespace-nowrap text-[11px] text-fg-sub">{r.name}</span>
+          <div aria-hidden="true" className="h-3.5 min-w-0 flex-1 overflow-hidden rounded border border-line bg-card">
+            <div style={{ width: `${Number(r.pct.toFixed(2))}%` }} className={`h-full ${r.fill}`} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
