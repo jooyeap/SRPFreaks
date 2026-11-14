@@ -11,6 +11,7 @@ GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로
 - 요구사항이 모호하면 추측해서 만들지 말고 **먼저 질문**한다.
 - 요청하지 않은 리팩터링, 의존성 추가, 파일 삭제를 하지 않는다. 필요하면 제안만 한다. 기존 코드는 요청 없이 스타일을 바꾸지 않는다.
 - 막히면 에러 로그를 그대로 보여주고 원인 후보를 좁혀 설명한다.
+- 되묻지 않고 진행할 것과 멈추고 물을 것의 구분은 `docs/OPS-NOTES.md`의 「작업 규칙」을 따른다.
 
 ## 기술 스택
 - 백엔드: Java 17, Spring Boot 4.1.1 (**Gradle**), Spring Web MVC, Spring Security + JJWT, Spring Validation, Spring Data JPA, Flyway, Lombok
