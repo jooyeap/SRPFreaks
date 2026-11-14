@@ -132,6 +132,66 @@ export function fetchReceivedCount(signal?: AbortSignal): Promise<{ received: nu
   return apiFetch<{ received: number }>("/admin/suggestions/received-count", { signal });
 }
 
+/**
+ * 건의 관리의 상태 칩(D79). 칩은 세 개(접수 / 처리 완료 / 전체)지만 실제 상태는 네 개라서 묶는다:
+ *  - OPEN(접수 칩)   = 아직 처리가 끝나지 않은 상태 = RECEIVED + REVIEWING
+ *  - CLOSED(처리 완료 칩) = 끝난 상태 = DONE + REJECTED
+ *  - ALL(전체 칩)    = 상태 조건 없음
+ * 카드 안의 상태 태그는 실제 상태 이름(접수 / 확인 중 / 처리 완료 / 반려)을 그대로 보인다.
+ * 접수 대기 배지·제목 아래 `접수 대기 N건`(GET /admin/suggestions/received-count)은 RECEIVED만 센다(기존 그대로).
+ */
+export type StatusChipKey = "OPEN" | "CLOSED" | "ALL";
+export const STATUS_CHIPS: readonly { key: StatusChipKey; statuses: readonly SuggestionStatus[] }[] = [
+  { key: "OPEN", statuses: ["RECEIVED", "REVIEWING"] },
+  { key: "CLOSED", statuses: ["DONE", "REJECTED"] },
+  { key: "ALL", statuses: [] },
+];
+
+export function chipStatuses(key: StatusChipKey): readonly SuggestionStatus[] {
+  return STATUS_CHIPS.find((chip) => chip.key === key)?.statuses ?? [];
+}
+
+/** 서버(SuggestionService.MAX_PAGE_SIZE)가 받는 가장 큰 쪽 크기. 묶음을 한꺼번에 받을 때 쓴다. */
+export const SUGGESTION_FETCH_PAGE_SIZE = 50;
+
+/** 서버 정렬과 같다: 작성 시각 최신순, 같으면 id가 큰 것이 위. */
+export function sortNewestFirst(rows: readonly AdminSuggestionResponse[]): AdminSuggestionResponse[] {
+  return [...rows].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id - a.id);
+}
+
+/**
+ * 묶인 상태(여러 개)의 건의를 모두 받아 한 목록으로 합친다. 기존 목록 API만 쓴다(새 API 없음).
+ * 상태 하나씩 끝 쪽까지 받는다. 서버 페이지네이션을 두 상태에 걸쳐 합치면 쪽 경계가 어긋나서,
+ * 한꺼번에 받아 같은 정렬로 합친 뒤 화면에서 쪽을 나눈다(건의는 하루 사용자당 5건 제한이라 양이 작다).
+ */
+export async function fetchAdminSuggestionsByStatuses(
+  category: SuggestionCategory | "",
+  statuses: readonly SuggestionStatus[],
+  signal?: AbortSignal,
+): Promise<AdminSuggestionResponse[]> {
+  const perStatus = await Promise.all(
+    statuses.map(async (status) => {
+      const rows: AdminSuggestionResponse[] = [];
+      for (let page = 0; ; page += 1) {
+        const res = await fetchAdminSuggestions({ category, status }, page, SUGGESTION_FETCH_PAGE_SIZE, signal);
+        rows.push(...res.content);
+        if (page + 1 >= res.totalPages) {
+          break;
+        }
+      }
+      return rows;
+    }),
+  );
+  return sortNewestFirst(perStatus.flat());
+}
+
+/** 이미 받은 목록을 화면에서 쪽으로 나눈다. 쪽 번호가 범위를 넘으면 마지막 쪽으로 맞춘다(저장 뒤 건수가 줄었을 때). */
+export function pageOfRows<T>(rows: readonly T[], page: number, size: number): PageResponse<T> {
+  const totalPages = Math.ceil(rows.length / size);
+  const index = Math.min(Math.max(page, 0), Math.max(totalPages - 1, 0));
+  return { content: rows.slice(index * size, index * size + size), page: index, size, totalElements: rows.length, totalPages };
+}
+
 export function reviewSuggestion(
   id: number,
   body: { status: SuggestionStatus; adminNote: string },
