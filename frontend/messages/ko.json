@@ -1400,6 +1400,9 @@
     "groupContent": "콘텐츠",
     "groupOps": "운영",
     "groupSystem": "시스템",
+    "usersColJoined": "가입일",
+    "usersColManage": "관리",
+    "userRootLocked": "변경 불가",
     "actionSongOfficialImport": "공식 곡 목록 갱신",
     "detailKey": {
       "title": "제목",
