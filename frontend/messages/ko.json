@@ -1397,6 +1397,9 @@
     "menuSongImportDesc": "공식 곡 목록에서 아티스트·레벨을 가져옵니다.",
     "menuChartStats": "서열표 분석",
     "menuChartStatsDesc": "공개 유저의 기록을 곡별로 집계해 숫자로 보여 줍니다.",
+    "groupContent": "콘텐츠",
+    "groupOps": "운영",
+    "groupSystem": "시스템",
     "actionSongOfficialImport": "공식 곡 목록 갱신",
     "detailKey": {
       "title": "제목",

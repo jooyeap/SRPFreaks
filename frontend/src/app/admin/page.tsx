@@ -8,6 +8,6 @@ import { AdminMenu } from "@/components/admin/AdminMenu";
 export default function AdminPage() {
   const t = useTranslations();
   return <AdminGate title={t("Admin.title")} minRole="ADMIN">
-      {(_viewerId, role) => <AdminMenu role={role} />}
+      {(viewerId, role) => <AdminMenu role={role} viewerId={viewerId} />}
     </AdminGate>;
 }

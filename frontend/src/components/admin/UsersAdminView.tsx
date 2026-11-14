@@ -3,7 +3,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useToast } from "@/components/Toast";
-import Link from "next/link";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import type { AdminUserResponse, Role } from "@/lib/api-types";
@@ -13,7 +12,7 @@ import { PageSizeSelect } from "@/components/PageSizeSelect";
 import { usePageSize } from "@/lib/page-size";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { useTranslations } from "next-intl";
-import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -45,9 +44,7 @@ export function UsersAdminView({ viewerId }: { viewerId: number }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className={BACK_BUTTON_CLASS}>
-          <BackArrow />
-        </Link>
+        <AdminBackLink />
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-fg">{t("Admin.usersTitle")}</h1>
           <PageSizeSelect

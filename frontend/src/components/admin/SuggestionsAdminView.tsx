@@ -1,7 +1,6 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { Pager } from "@/components/Pager";
 import { useToast } from "@/components/Toast";
@@ -29,7 +28,7 @@ import { usePageSize } from "@/lib/page-size";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { useTranslations } from "next-intl";
 import type { Translator } from "@/i18n/translator";
-import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-sm text-fg";
 
@@ -83,9 +82,7 @@ export function SuggestionsAdminView({ viewerId }: { viewerId: number }) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         {/* 다른 관리 화면과 같은 뒤로 버튼(2026-10-27) */}
-        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className={BACK_BUTTON_CLASS}>
-          <BackArrow />
-        </Link>
+        <AdminBackLink />
         <div>
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-fg">{t("Admin.suggestionsTitle")}</h1>

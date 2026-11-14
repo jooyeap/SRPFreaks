@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
 import { AdminGate } from "@/components/admin/AdminGate";
 import { AdminMenu } from "@/components/admin/AdminMenu";
 import { AdminNavLink } from "@/components/AdminNavLink";
 import { AuthProvider } from "@/components/AuthProvider";
-import { ADMIN_MENU_ITEMS, canSeeAdminMenu, hasRoleAtLeast } from "@/lib/admin";
+import { ADMIN_MENU_GROUPS, ADMIN_MENU_ITEMS, canSeeAdminMenu, hasRoleAtLeast, visibleAdminMenuGroups } from "@/lib/admin";
 import { clearAccessToken } from "@/lib/auth-token";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), back: vi.fn() }), usePathname: () => "/admin" }));
@@ -44,25 +45,123 @@ describe("역할 조건", () => {
   });
 });
 
-describe("AdminMenu 항목", () => {
-  it("ADMIN에게는 곡·서열표 관리만, ROOT에게는 사용자·설정·감사 로그까지 보인다", () => {
-    const { unmount } = render(<AdminMenu role="ADMIN" />);
+describe("AdminMenu 묶음·항목 (D78)", () => {
+  const menuFetch = vi.fn<typeof fetch>();
+  beforeEach(() => {
+    menuFetch.mockReset();
+    vi.stubGlobal("fetch", menuFetch);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const withReceived = (received: number) =>
+    menuFetch.mockImplementation((input) =>
+      String(input).includes("/received-count") ? Promise.resolve(json({ received })) : Promise.resolve(json({}, 404)),
+    );
+  const renderMenu = (role: "ADMIN" | "ROOT") =>
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <AdminMenu role={role} viewerId={9} />
+      </QueryClientProvider>,
+    );
+  const group = (name: string) => within(screen.getByRole("region", { name }));
+
+  it("메뉴는 콘텐츠 · 운영 · 시스템 세 묶음이고 항목이 알맞은 묶음에 있다 (ROOT)", async () => {
+    withReceived(0);
+    renderMenu("ROOT");
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["콘텐츠", "운영", "시스템ROOT"]);
+
+    const content = group("콘텐츠");
+    expect(content.getByRole("link", { name: /곡 관리/ })).toHaveAttribute("href", "/songs");
+    expect(content.getByRole("link", { name: /서열표 관리/ })).toHaveAttribute("href", "/table");
+    expect(content.getByRole("link", { name: /서열표 분석/ })).toHaveAttribute("href", "/admin/chart-stats");
+    expect(content.getByRole("link", { name: /공식 곡 목록 갱신/ })).toHaveAttribute("href", "/admin/song-import");
+    expect(content.getAllByRole("link")).toHaveLength(4);
+
+    const ops = group("운영");
+    expect(ops.getByRole("link", { name: /건의 관리/ })).toHaveAttribute("href", "/admin/suggestions");
+    expect(ops.getByRole("link", { name: /사용자/ })).toHaveAttribute("href", "/admin/users");
+    expect(ops.getAllByRole("link")).toHaveLength(2);
+
+    const system = group("시스템ROOT");
+    expect(system.getByRole("link", { name: /^설정/ })).toHaveAttribute("href", "/admin/settings");
+    expect(system.getByRole("link", { name: /감사 로그/ })).toHaveAttribute("href", "/admin/audit-logs");
+    expect(system.getAllByRole("link")).toHaveLength(2);
+    // 시스템 묶음 제목 옆의 ROOT 칩은 글자로 보인다
+    expect(system.getByText("ROOT")).toBeInTheDocument();
+  });
+
+  it("ADMIN에게는 ROOT 전용 항목이 숨겨지고 시스템 묶음이 통째로 없다", async () => {
+    withReceived(0);
+    renderMenu("ADMIN");
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["콘텐츠", "운영"]);
     expect(screen.getByRole("link", { name: /곡 관리/ })).toHaveAttribute("href", "/songs");
     expect(screen.getByRole("link", { name: /서열표 관리/ })).toHaveAttribute("href", "/table");
-    expect(screen.getByRole("link", { name: /건의 관리/ })).toHaveAttribute("href", "/admin/suggestions");
-    // 서열표 분석(D77)은 ADMIN에게도 보인다
     expect(screen.getByRole("link", { name: /서열표 분석/ })).toHaveAttribute("href", "/admin/chart-stats");
+    expect(screen.getByRole("link", { name: /건의 관리/ })).toHaveAttribute("href", "/admin/suggestions");
+    expect(screen.queryByRole("link", { name: /공식 곡 목록 갱신/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /사용자/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /감사 로그/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /^설정/ })).toBeNull();
+    expect(screen.queryByText("ROOT")).toBeNull();
+    expect(screen.queryByRole("region", { name: /시스템/ })).toBeNull();
+  });
+
+  it("USER에게 보이는 묶음·항목은 하나도 없다", () => {
+    expect(visibleAdminMenuGroups("USER")).toEqual([]);
+    expect(visibleAdminMenuGroups(null)).toEqual([]);
+    expect(visibleAdminMenuGroups("ADMIN").flatMap((g) => g.items).every((i) => i.minRole === "ADMIN")).toBe(true);
+    // 묶음을 펼친 항목 목록과 같은 항목이다(빠진 항목·중복 없음)
+    const hrefs = ADMIN_MENU_GROUPS.flatMap((g) => g.items.map((i) => i.href));
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(ADMIN_MENU_ITEMS.map((i) => i.href).sort()).toEqual([...hrefs].sort());
+  });
+
+  it("새 건의(접수 대기)가 있으면 건의 관리 줄에 개수 배지가 붙고 글자로도 읽힌다", async () => {
+    withReceived(3);
+    renderMenu("ADMIN");
+    const link = await screen.findByRole("link", { name: /건의 관리.*접수 대기 3건/ });
+    expect(within(link).getByText("3")).toBeInTheDocument();
+    // 다른 항목에는 배지가 없다
+    expect(screen.getByRole("link", { name: /서열표 관리/ }).textContent).not.toMatch(/접수 대기/);
+  });
+
+  it("접수 대기가 없으면 배지가 없고, 99건을 넘으면 99+로 줄여 보인다", async () => {
+    withReceived(0);
+    const { unmount } = renderMenu("ADMIN");
+    await vi.waitFor(() => expect(menuFetch).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.getByRole("link", { name: /건의 관리/ }).textContent).not.toMatch(/접수 대기/);
     unmount();
 
-    render(<AdminMenu role="ROOT" />);
-    expect(screen.getByRole("link", { name: /곡 관리/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /서열표 분석/ })).toHaveAttribute("href", "/admin/chart-stats");
-    expect(screen.getByRole("link", { name: /사용자/ })).toHaveAttribute("href", "/admin/users");
-    expect(screen.getByRole("link", { name: /^설정/ })).toHaveAttribute("href", "/admin/settings");
-    expect(screen.getByRole("link", { name: /감사 로그/ })).toHaveAttribute("href", "/admin/audit-logs");
+    withReceived(120);
+    renderMenu("ADMIN");
+    const link = await screen.findByRole("link", { name: /건의 관리.*접수 대기 120건/ });
+    expect(within(link).getByText("99+")).toBeInTheDocument();
+  });
+
+  it("개수를 받지 못해도 메뉴는 그대로 보인다(배지만 없다)", async () => {
+    menuFetch.mockResolvedValue(json({ code: "FORBIDDEN", message: "x" }, 403));
+    renderMenu("ADMIN");
+    expect(screen.getByRole("link", { name: /건의 관리/ })).toHaveAttribute("href", "/admin/suggestions");
+    await vi.waitFor(() => expect(menuFetch).toHaveBeenCalled());
+    expect(screen.getByRole("link", { name: /건의 관리/ }).textContent).not.toMatch(/접수 대기/);
+  });
+
+  it("설명은 한 줄(말줄임)이고 전체 글은 title로 볼 수 있다", () => {
+    withReceived(0);
+    renderMenu("ROOT");
+    const desc = screen.getByText("레이팅 계수, 재킷 표시, 연락처를 바꿉니다.");
+    expect(desc).toHaveClass("truncate");
+    expect(desc).toHaveAttribute("title", "레이팅 계수, 재킷 표시, 연락처를 바꿉니다.");
+  });
+});
+
+describe("AdminBackLink (D78)", () => {
+  it("‹ 관리 모양이고 관리 메뉴(/admin)로 돌아간다", () => {
+    render(<AdminBackLink />);
+    const link = screen.getByRole("link", { name: "관리로" });
+    expect(link).toHaveAttribute("href", "/admin");
+    expect(link).toHaveTextContent("관리");
   });
 });
 
