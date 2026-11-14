@@ -28,18 +28,21 @@ export function SiteFooter() {
           {/* 배포가 반영됐는지 화면에서 바로 확인하는 용도. 언어와 무관한 값이라 번역하지 않는다 */}
           <p className="font-num text-[11px]">build {BUILD_SHA}</p>
         </div>
-        <div className="space-y-1 sm:text-right">
-          {/* 줄마다 링크가 높이 44px(FOOTER_LINE_LINK)라 줄 간격이 예전보다 넓다. 푸터에서만 레이아웃이 달라진다 */}
+        {/* 모바일: 제공자 줄 + 링크 묶음 한 덩어리(간격 12px = 제공자 링크 터치 영역 아래쪽 12px 자리). sm 이상은 예전처럼 줄마다 따로 쌓고 오른쪽 정렬(간격 4px) */}
+        <div className="flex flex-col gap-3 sm:block sm:space-y-1 sm:text-right">
           <TableCredit tall />
-          <ContactLine tall />
-          <p className="flex flex-wrap items-center gap-x-3 sm:justify-end">
-            <Link href="/terms" className={`underline underline-offset-2 hover:text-fg ${FOOTER_LINE_LINK}`}>
-              {t("terms")}
-            </Link>
-            <Link href="/privacy" className={`underline underline-offset-2 hover:text-fg ${FOOTER_LINE_LINK}`}>
-              {t("privacy")}
-            </Link>
-          </p>
+          {/* 모바일에서는 이메일·약관·처리방침을 한 묶음으로 모은다(자리가 모자라면 줄바꿈). 링크는 높이 40px 상자(FOOTER_LINE_LINK)라 서로 겹치지 않는다 */}
+          <div className="flex flex-wrap items-center gap-x-3 sm:block sm:space-y-1">
+            <ContactLine tall />
+            <p className="flex flex-wrap items-center gap-x-3 sm:justify-end">
+              <Link href="/terms" className={`underline underline-offset-2 hover:text-fg ${FOOTER_LINE_LINK}`}>
+                {t("terms")}
+              </Link>
+              <Link href="/privacy" className={`underline underline-offset-2 hover:text-fg ${FOOTER_LINE_LINK}`}>
+                {t("privacy")}
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </footer>

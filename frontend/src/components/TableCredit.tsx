@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 import { TABLE_CREDIT } from "@/lib/credit";
-import { FOOTER_LINE_LINK } from "@/lib/hit-area";
+import { FOOTER_CREDIT_LINK } from "@/lib/hit-area";
 
 /**
  * 서열표 정보 제공자 표기 한 줄. 외부 링크(X)는 새 탭으로 열고, 이쪽 창의 정보가 새 탭에 넘어가지 않도록 noopener를 붙인다.
@@ -15,7 +15,7 @@ export function TableCredit({ className, tall = false }: { className?: string; t
         href={TABLE_CREDIT.url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`break-words underline underline-offset-2 hover:text-fg ${tall ? FOOTER_LINE_LINK : ""}`}
+        className={`break-words underline underline-offset-2 hover:text-fg ${tall ? FOOTER_CREDIT_LINK : ""}`}
       >
         {TABLE_CREDIT.name} ({TABLE_CREDIT.handle})
       </a>

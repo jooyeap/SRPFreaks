@@ -39,10 +39,21 @@ export const HIT_STANDALONE = `${HIT_BASE} after:-inset-x-2 after:-inset-y-3`;
 export const HIT_SUMMARY = `${HIT_BASE} after:-inset-x-4 after:-top-3 after:-bottom-3 [details[open]>&]:after:-bottom-2`;
 
 /**
- * 푸터의 줄 링크: 줄 간격이 좁아 ::after를 펼치면 서로 겹치므로, 링크 자체가 높이 44px 줄이 된다(푸터에서만 레이아웃이 달라지는 부분).
- * 44px 줄은 손가락 기기(pointer: coarse)에서만 만든다(2026-11-12). 마우스 기기는 글자 부분만 눌리는 보통 inline 링크다:
+ * 푸터의 줄 링크: 나란한 링크끼리 ::after가 겹치지 않도록, 링크 자체가 높이 40px 상자가 된다(푸터에서만 레이아웃이 달라지는 부분).
+ * 40px 상자는 손가락 기기(pointer: coarse)에서만 만든다(2026-11-12). 마우스 기기는 글자 부분만 눌리는 보통 inline 링크다:
  * 예전에는 모든 기기에서 44px 줄이라 마우스에서 글자 위아래 빈 곳까지 눌려 범위가 너무 넓었다.
  * `pointer-fine:inline`으로 되돌리는 방식은 쓰지 않는다: 줄을 flex로 묶은 곳(약관·처리방침)에서는 inline이 block으로 바뀌고,
- * globals.css의 마우스용 `.min-h-11 { min-height: 36px }` 규칙(레이어 밖이라 유틸리티보다 우선)이 걸려 36px 높이가 남는다. 처음부터 coarse에만 클래스를 준다.
+ * globals.css의 마우스용 `.min-h-10 { min-height: 36px }` 규칙(레이어 밖이라 유틸리티보다 우선)이 걸려 36px 높이가 남는다. 처음부터 coarse에만 클래스를 준다.
+ * 44px → 40px (2026-11-14): 푸터가 길어 보인다는 지적. 모바일 푸터에서는 이 상자 링크들(이메일·약관·처리방침)을 한 묶음으로 모아 줄 수도 줄였다.
  */
-export const FOOTER_LINE_LINK = "pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center";
+export const FOOTER_LINE_LINK = "pointer-coarse:inline-flex pointer-coarse:min-h-10 pointer-coarse:items-center";
+
+/**
+ * 푸터의 서열표 정보 제공자 링크(글 속에서 이어지는 긴 문장 끝의 링크): 줄 높이는 글자 그대로 두고 터치 영역만 ::after로 위아래 12px씩 넓힌다(16 + 24 = 40px).
+ * 상자(min-h)로 만들면 문장 줄과 링크 줄이 갈라져 56px이 되기 때문이다(2026-11-14). 위는 왼쪽 묶음과의 간격(16px) 안, 아래는 푸터 안 간격(12px, gap-3)에서 멈춘다.
+ * 손가락 기기(pointer: coarse)에서만 건다. 마우스 기기는 글자 범위만 눌리는 보통 링크다.
+ * `whitespace-nowrap`이 꼭 필요하다: 링크 글자가 두 줄로 쪼개지면 브라우저가 ::after의 기준 상자를 "첫 조각의 왼쪽 ~ 마지막 조각의 오른쪽"으로 잡는데
+ * 마지막 조각이 첫 조각보다 왼쪽이라 폭이 0이 되어 터치 영역이 사라진다(측정으로 확인, 8px). 링크가 한 줄에 통째로 놓이면 정상이다.
+ */
+export const FOOTER_CREDIT_LINK =
+  "pointer-coarse:relative pointer-coarse:whitespace-nowrap pointer-coarse:after:absolute pointer-coarse:after:content-[''] pointer-coarse:after:-inset-x-1 pointer-coarse:after:-inset-y-3";
