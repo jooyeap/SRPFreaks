@@ -143,6 +143,8 @@ describe("설정 화면", () => {
     expect(l.getByText("한 사람이 만들 수 있는 내 리스트의 최대 개수입니다.")).toBeInTheDocument();
     expect(l.getByLabelText("서열표 변경 알림 보관 일수")).toHaveValue("30");
     expect(l.getByLabelText("추천 SS 범위 최소")).toHaveValue("-0.6");
+    // 이 값은 난이도대가 아니라 내 티어 구간의 공개 유저 수 하한이라 이름이 「티어 전체」다(사용자 승인)
+    expect(l.getByLabelText("같은 티어 비교 최소 인원 (티어 전체)")).toHaveValue("5");
     expect(l.getByLabelText("future.new_key")).toHaveValue("x");
   });
 

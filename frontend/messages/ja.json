@@ -1446,7 +1446,7 @@
     "settingListMaxListsDesc": "1人が作れるマイリストの最大数です。",
     "settingListMaxItems": "リストの曲数の上限",
     "settingListMaxItemsDesc": "1つのリストに入れられる曲の最大数です。",
-    "settingPeerMinBand": "同じティア比較の最小人数(難易度帯)",
+    "settingPeerMinBand": "同じティア比較の最小人数(ティア全体)",
     "settingPeerMinBandDesc": "自分と同じティアの公開ユーザーがこの人数以上のときだけ、同じティアの比較(分析・曲別記録)を表示します。これより少ないとすべて隠します。",
     "settingPeerMinChart": "同じティア比較の最小人数(曲)",
     "settingPeerMinChartDesc": "曲別の同じティア比較を表示するのに必要な最小人数です。これより少ないと隠します。",

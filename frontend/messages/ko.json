@@ -1447,7 +1447,7 @@
     "settingListMaxListsDesc": "한 사람이 만들 수 있는 내 리스트의 최대 개수입니다.",
     "settingListMaxItems": "리스트 곡 수 상한",
     "settingListMaxItemsDesc": "리스트 하나에 담을 수 있는 곡의 최대 개수입니다.",
-    "settingPeerMinBand": "같은 티어 비교 최소 인원 (난이도대)",
+    "settingPeerMinBand": "같은 티어 비교 최소 인원 (티어 전체)",
     "settingPeerMinBandDesc": "내 티어와 같은 티어의 공개 유저가 이 인원 이상일 때만 같은 티어 비교(분석·곡별 기록)를 보여 줍니다. 이보다 적으면 모두 숨깁니다.",
     "settingPeerMinChart": "같은 티어 비교 최소 인원 (곡)",
     "settingPeerMinChartDesc": "곡별 같은 티어 비교를 보여 주는 데 필요한 최소 인원입니다. 이보다 적으면 숨깁니다.",
