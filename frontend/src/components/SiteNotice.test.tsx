@@ -41,7 +41,8 @@ describe("고지 문구", () => {
   it("하단은 왼쪽(고지)과 오른쪽(출처·문의·처리방침) 두 묶음으로 나뉜다", () => {
     render(<SiteFooter />);
     const left = screen.getByText("비공식 팬 프로젝트").parentElement as HTMLElement;
-    const right = screen.getByRole("link", { name: "개인정보 처리방침" }).closest("div") as HTMLElement;
+    // 오른쪽 묶음 안에 모바일용 안쪽 묶음(이메일·약관·처리방침)이 하나 더 있으므로 `sm:text-right`가 붙은 바깥 묶음을 찾는다
+    const right = screen.getByRole("link", { name: "개인정보 처리방침" }).closest("div[class*='sm:text-right']") as HTMLElement;
 
     expect(left).not.toBe(right);
     expect(left).toHaveTextContent(/KONAMI와 무관/);

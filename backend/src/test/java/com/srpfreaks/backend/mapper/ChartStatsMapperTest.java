@@ -347,6 +347,20 @@ class ChartStatsMapperTest {
     }
 
     @Test
+    void 공개_유저가_한_명도_기록하지_않은_채보는_유저_줄이_비어_있고_집계에도_나오지_않는다() {
+        SongDifficulty chart = chart("6.0", PatternType.SINGLE);
+        record(user(false), chart, "95.00");           // 비공개 유저의 기록만 있다
+        em.flush();
+        em.clear();
+        sqlSession.clearCache();
+
+        assertThat(mapper.findPlayerRows(SRN_PLUS, chart.getId(), SINCE)).isEmpty();
+        assertThat(aggregates()).extracting(ChartAggregateRow::songDifficultyId).doesNotContain(chart.getId());
+        // 채보 정보는 기록과 따로 읽혀서(요약이 0명으로 나오도록) 그대로 있다
+        assertThat(mapper.findChartInfo(chart.getId(), table.getId())).isNotNull();
+    }
+
+    @Test
     void 폴더별_채보_수는_기록이_없는_채보도_세고_미정과_삭제된_채보는_세지_않는다() {
         chart("6.0", PatternType.SINGLE);
         chart("6.0", PatternType.TRIPLE);

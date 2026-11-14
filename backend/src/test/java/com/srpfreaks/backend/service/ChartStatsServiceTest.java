@@ -529,6 +529,24 @@ class ChartStatsServiceTest {
     }
 
     @Test
+    void 공개_유저가_한_명도_없는_채보는_빈_결과로_나오고_총점_계산을_부르지_않는다() {
+        chartInfo(1, "6.0");
+        aggregates();
+        when(statsMapper.findPlayerRows(eq(SRN_PLUS), eq(1L), any())).thenReturn(List.of());
+
+        for (String sort : new String[] {null, "rate", "plays", "score"}) {
+            Page<PlayerRow> page = service.players(ADMIN, 1L, sort, 0, 20);
+
+            assertThat(page.content()).as("sort=" + sort).isEmpty();
+            assertThat(page.totalElements()).isZero();
+            assertThat(page.totalPages()).isZero();
+        }
+        // 빈 유저 목록이 후보 쿼리(IN 목록)로 가지 않는다
+        verify(skillService, never()).ratedBatch(anyCollection());
+        verify(skillService, never()).ratedAll(anyCollection());
+    }
+
+    @Test
     void 총점을_계산할_수_없는_유저는_0점으로_나온다() {
         chartInfo(1, "6.0");
         aggregates();

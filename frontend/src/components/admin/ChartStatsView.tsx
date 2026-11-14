@@ -33,7 +33,7 @@ import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 const DEFAULT_META: ChartStatsMeta = { publicUsers: 0, minPlayers: 3, minFolderCharts: 3, recentDays: 7 };
 
 // 1024px 이상의 표 형태: 열 크기. 모바일에서는 줄이 곡 이름 아래에 숫자가 이어지는 두 줄 카드다.
-const DEVIATION_COLUMNS = "lg:grid-cols-[minmax(0,1fr)_80px_88px_104px_104px_160px]";
+const DEVIATION_COLUMNS = "lg:grid-cols-[minmax(0,1fr)_72px_84px_176px_96px_144px]";
 const POPULARITY_COLUMNS = "lg:grid-cols-[minmax(0,1fr)_88px_88px_104px_160px]";
 const FOLDER_COLUMNS = "lg:grid-cols-[96px_minmax(0,1fr)_120px_140px]";
 const UNDECIDED_COLUMNS = "lg:grid-cols-[minmax(0,1fr)_96px_96px]";
