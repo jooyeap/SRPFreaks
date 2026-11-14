@@ -71,6 +71,104 @@ export function actionLabel(action: string, t: Translator): string {
 }
 
 /**
+ * 감사 로그 종류 칩(곡·채보 / 서열표 / 사용자 / 설정). 서버의 작업 종류(action) 하나가 아니라 여러 종류를 묶은 화면 분류다.
+ * 서버 API는 action 하나만 거를 수 있어서(기능·API는 바꾸지 않는다), 종류 칩은 받아 온 한 쪽 안에서 화면이 거른다.
+ * 공지·건의 처리처럼 어느 칩에도 맞지 않는 작업은 `null`이라 "전체"에서만 보인다.
+ */
+export type AuditKind = "songs" | "table" | "users" | "settings";
+export const AUDIT_KINDS: readonly AuditKind[] = ["songs", "table", "users", "settings"];
+
+const ACTION_KINDS: Record<string, AuditKind> = {
+  SONG_CREATE: "songs",
+  SONG_UPDATE: "songs",
+  SONG_DELETE: "songs",
+  DIFFICULTY_CREATE: "songs",
+  DIFFICULTY_UPDATE: "songs",
+  DIFFICULTY_DELETE: "songs",
+  SONG_OFFICIAL_IMPORT: "songs",
+  SONG_JACKET_IMPORT: "songs",
+  SONG_JACKET_DELETE: "songs",
+  TABLE_ENTRY_CREATE: "table",
+  TABLE_ENTRY_UPDATE: "table",
+  DIFFICULTY_TABLE_CREATE: "table",
+  USER_ROLE_CHANGE: "users",
+  USER_BLOCK: "users",
+  USER_UNBLOCK: "users",
+  NICKNAME_CHANGE: "users",
+  RECORD_ADMIN_DELETE: "users",
+  SETTING_UPDATE: "settings",
+};
+
+/** 작업 종류가 속한 칩. 어느 칩에도 맞지 않으면 null. */
+export function actionKind(action: string): AuditKind | null {
+  return ACTION_KINDS[action] ?? null;
+}
+
+/** 연속한 같은 사람의 작업을 한 묶음으로 접는 최소 개수. 1건은 묶지 않고 그대로 보여 준다. */
+export const AUDIT_GROUP_MIN = 2;
+
+/** 감사 로그를 보여 줄 한 칸: 단독 항목이거나, 같은 사람의 연속 작업 묶음. */
+export type AuditEntry =
+  | { type: "single"; log: AuditLogResponse }
+  | { type: "group"; key: string; actorId: number; logs: AuditLogResponse[]; kinds: (AuditKind | "other")[] };
+
+/** 날짜(서울 달력)별 칸 모음. */
+export interface AuditDay {
+  date: string;
+  entries: AuditEntry[];
+}
+
+const seoulDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** UTC 시각을 Asia/Seoul 달력의 `2026-10-27`로. 올바르지 않으면 빈 글자. */
+export function seoulDateKey(iso: string): string {
+  const time = new Date(iso);
+  return Number.isNaN(time.getTime()) ? "" : seoulDate.format(time);
+}
+
+/**
+ * 감사 로그(최근 순)를 날짜별로 나누고, 같은 날 안에서 같은 사람(actorId)의 연속 작업을 묶는다.
+ * 작업한 사람이 탈퇴해 actorId가 비어 있으면 누구인지 알 수 없어 묶지 않는다. 항목의 내용은 건드리지 않는다.
+ */
+export function groupAuditLogs(logs: readonly AuditLogResponse[]): AuditDay[] {
+  const days: AuditDay[] = [];
+  for (const log of logs) {
+    const date = seoulDateKey(log.createdAt);
+    let day = days[days.length - 1];
+    if (!day || day.date !== date) {
+      day = { date, entries: [] };
+      days.push(day);
+    }
+    day.entries.push({ type: "single", log });
+  }
+  for (const day of days) {
+    const merged: AuditEntry[] = [];
+    let run: AuditLogResponse[] = [];
+    const flush = () => {
+      if (run.length >= AUDIT_GROUP_MIN && run[0].actorId !== null) {
+        const kinds: (AuditKind | "other")[] = [];
+        for (const log of run) {
+          const kind = actionKind(log.action) ?? "other";
+          if (!kinds.includes(kind)) kinds.push(kind);
+        }
+        merged.push({ type: "group", key: `${run[0].id}-${run[run.length - 1].id}`, actorId: run[0].actorId, logs: run, kinds });
+      } else {
+        for (const log of run) merged.push({ type: "single", log });
+      }
+      run = [];
+    };
+    for (const entry of day.entries) {
+      if (entry.type !== "single") continue;
+      if (run.length > 0 && (run[0].actorId === null || entry.log.actorId !== run[0].actorId)) flush();
+      run.push(entry.log);
+    }
+    flush();
+    day.entries = merged;
+  }
+  return days;
+}
+
+/**
  * 감사 로그의 detail(JSON)을 한 줄 글자로 줄인다. 값이 길면 자르고, 객체는 JSON으로 보여 준다.
  * 화면에서 해석하지 않고 서버가 남긴 그대로 보여 주는 이유: 작업마다 모양이 다르고, 기록은 있는 그대로 읽는 것이 맞다.
  */
