@@ -5,7 +5,7 @@ import { TableCredit } from "@/components/TableCredit";
 import { SiteFooter } from "@/components/SiteFooter";
 import { RatedScore } from "@/components/table/RatedScore";
 import { ChartLine } from "@/components/table/ChartLine";
-import { FOOTER_LINE_LINK, HIT_BASE, HIT_CHIP, HIT_HEAD, HIT_ROW, HIT_STANDALONE, HIT_SUMMARY, HIT_TITLE } from "@/lib/hit-area";
+import { FOOTER_CREDIT_LINK, FOOTER_LINE_LINK, HIT_BASE, HIT_CHIP, HIT_HEAD, HIT_ROW, HIT_STANDALONE, HIT_SUMMARY, HIT_TITLE } from "@/lib/hit-area";
 import type { TableEntryResponse } from "@/lib/api-types";
 
 /** 상수의 클래스 글자를 낱개로 나눈 목록(toHaveClass에 그대로 넘긴다) */
@@ -66,7 +66,7 @@ describe("누르는 영역이 대상 링크에 적용됨", () => {
 });
 
 describe("푸터 링크", () => {
-  it("이용약관·개인정보 처리방침 링크는 높이 44px 줄이고 href는 그대로다", () => {
+  it("이용약관·개인정보 처리방침 링크는 높이 40px 상자이고 href는 그대로다", () => {
     render(<SiteFooter />);
     for (const [name, href] of [["이용약관", "/terms"], ["개인정보 처리방침", "/privacy"]] as const) {
       const link = screen.getByRole("link", { name });
@@ -75,19 +75,20 @@ describe("푸터 링크", () => {
     }
   });
 
-  it("서열표 제공자 링크는 `tall`일 때만 44px 줄이다", () => {
+  it("서열표 제공자 링크는 `tall`일 때만 터치 영역을 ::after로 넓힌다(줄 높이는 글자 그대로)", () => {
     const { rerender } = render(<TableCredit />);
     const link = screen.getByRole("link");
-    expect(link.className).not.toContain("min-h-11");
+    expect(link.className).not.toContain("after:");
     rerender(<TableCredit tall />);
-    expect(screen.getByRole("link")).toHaveClass(...tokens(FOOTER_LINE_LINK));
+    expect(screen.getByRole("link")).toHaveClass(...tokens(FOOTER_CREDIT_LINK));
+    expect(screen.getByRole("link").className).not.toContain("min-h-");
   });
 
-  it("문의 이메일 링크는 `tall`일 때만 44px 줄이다(처리방침 본문의 글 속 링크는 그대로)", () => {
+  it("문의 이메일 링크는 `tall`일 때만 40px 상자다(처리방침 본문의 글 속 링크는 그대로)", () => {
     const { rerender, container } = render(<ContactLine />);
     const first = container.querySelector("a");
     if (first) {
-      expect(first.className).not.toContain("min-h-11");
+      expect(first.className).not.toContain("min-h-10");
       rerender(<ContactLine tall />);
       expect(container.querySelector("a")).toHaveClass(...tokens(FOOTER_LINE_LINK));
     } else {
@@ -97,22 +98,41 @@ describe("푸터 링크", () => {
   });
 });
 
-describe("푸터 링크: 손가락은 44px 줄, 마우스는 글자 범위만 (2026-11-12)", () => {
-  it("FOOTER_LINE_LINK의 44px 줄 클래스는 모두 손가락 기기(pointer-coarse)에만 걸려 있어, 마우스 기기는 보통 inline 링크다", () => {
+describe("푸터 링크: 손가락은 40px 이상, 마우스는 글자 범위만 (2026-11-12, 40px로 축소 2026-11-14)", () => {
+  it("FOOTER_LINE_LINK의 40px 상자 클래스는 모두 손가락 기기(pointer-coarse)에만 걸려 있어, 마우스 기기는 보통 inline 링크다", () => {
     const set = tokens(FOOTER_LINE_LINK);
-    expect(set).toEqual(["pointer-coarse:inline-flex", "pointer-coarse:min-h-11", "pointer-coarse:items-center"]);
-    // 조건 없는 min-h-11·inline-flex가 있으면 마우스 기기에서도 44px(36px) 줄이 된다
+    expect(set).toEqual(["pointer-coarse:inline-flex", "pointer-coarse:min-h-10", "pointer-coarse:items-center"]);
+    // 조건 없는 min-h-10·inline-flex가 있으면 마우스 기기에서도 상자(36px)가 된다
     expect(set.every((token) => token.startsWith("pointer-coarse:"))).toBe(true);
   });
 
-  it("푸터의 네 링크(제공자·문의 이메일·약관·처리방침)가 모두 같은 클래스를 쓴다", () => {
+  it("FOOTER_CREDIT_LINK(제공자 링크의 ::after 터치 영역)도 모두 손가락 기기에만 걸려 있고, 위아래 12px씩이라 16 + 24 = 40px이다", () => {
+    const set = tokens(FOOTER_CREDIT_LINK);
+    expect(set.every((token) => token.startsWith("pointer-coarse:"))).toBe(true);
+    expect(set).toContain("pointer-coarse:after:-inset-y-3");
+  });
+
+  it("푸터의 링크는 모두 눈에 보이는 이름이 있고(이름 있는 링크), 터치 영역 클래스가 있으며 조건 없는 min-h가 없다", () => {
     const { container } = render(<SiteFooter />);
     const links = Array.from(container.querySelectorAll("footer a"));
     expect(links.length).toBeGreaterThanOrEqual(3);
     for (const link of links) {
-      expect(link).toHaveClass("pointer-coarse:inline-flex", "pointer-coarse:min-h-11");
-      expect(link.className).not.toMatch(/(^| )min-h-11( |$)/); // 조건 없는 min-h-11이 없다(마우스 기기는 글자 범위만)
+      expect((link.textContent ?? "").trim().length).toBeGreaterThan(0); // 접근 가능한 이름(글자)이 있다
+      // 제공자 링크는 ::after, 나머지는 40px 상자
+      const hasHitArea =
+        link.classList.contains("pointer-coarse:min-h-10") || link.classList.contains("pointer-coarse:after:absolute");
+      expect(hasHitArea).toBe(true);
+      expect(link.className).not.toMatch(/(^| )min-h-1[01]( |$)/); // 조건 없는 min-h가 없다(마우스 기기는 글자 범위만)
     }
+  });
+
+  it("모바일은 이메일·약관·처리방침을 한 묶음(flex-wrap)으로 모으고, sm 이상은 예전처럼 줄마다 쌓는다", () => {
+    const { container } = render(<SiteFooter />);
+    const group = container.querySelector("footer div.flex.flex-wrap");
+    expect(group).not.toBeNull();
+    expect(group).toHaveClass("flex-wrap", "gap-x-3", "sm:block", "sm:space-y-1");
+    // 제공자 줄과 묶음 사이는 12px(gap-3): 제공자 링크의 ::after 아래쪽 12px 자리
+    expect(group?.parentElement).toHaveClass("flex", "flex-col", "gap-3", "sm:block", "sm:space-y-1");
   });
 
   it("푸터는 아래 고정 바 높이(--bottom-bar-h)만큼 아래를 비우고, 맨 위로 버튼 자리를 위해 오른쪽 여백을 넓힌다", () => {
