@@ -303,23 +303,68 @@ export function canSeeAdminMenu(role: Role | null | undefined): boolean {
   return hasRoleAtLeast(role, "ADMIN");
 }
 
+/** 관리 메뉴 줄 아이콘 이름. 그림은 AdminMenuIcon이 그린다. */
+export type AdminMenuIconName = "songs" | "table" | "chartStats" | "songImport" | "suggestions" | "users" | "settings" | "auditLogs";
+
 export interface AdminMenuItem {
   href: string;
   titleKey: MessageKey;
   descriptionKey: MessageKey;
   /** 이 항목을 보여 줄 최소 역할 */
   minRole: Role;
+  icon: AdminMenuIconName;
 }
 
-/** 관리 메뉴 항목. 새 관리 화면이 생기면 여기에 한 줄 추가한다. */
-export const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
-  { href: "/songs", titleKey: "Admin.menuSongs", descriptionKey: "Admin.menuSongsDesc", minRole: "ADMIN" },
-  { href: "/table", titleKey: "Admin.menuTable", descriptionKey: "Admin.menuTableDesc", minRole: "ADMIN" },
-  { href: "/admin/suggestions", titleKey: "Admin.menuSuggestions", descriptionKey: "Admin.menuSuggestionsDesc", minRole: "ADMIN" },
-  // 서열표 분석(D77): 공개 유저 기록을 곡별 숫자로 보여 주는 읽기 전용 도구. 콘텐츠 관리(곡·서열표) 항목들과 같은 ADMIN 이상
-  { href: "/admin/chart-stats", titleKey: "Admin.menuChartStats", descriptionKey: "Admin.menuChartStatsDesc", minRole: "ADMIN" },
-  { href: "/admin/song-import", titleKey: "Admin.menuSongImport", descriptionKey: "Admin.menuSongImportDesc", minRole: "ROOT" },
-  { href: "/admin/users", titleKey: "Admin.menuUsers", descriptionKey: "Admin.menuUsersDesc", minRole: "ROOT" },
-  { href: "/admin/settings", titleKey: "Admin.menuSettings", descriptionKey: "Admin.menuSettingsDesc", minRole: "ROOT" },
-  { href: "/admin/audit-logs", titleKey: "Admin.menuAuditLogs", descriptionKey: "Admin.menuAuditLogsDesc", minRole: "ROOT" },
+/** 관리 메뉴 묶음. 콘텐츠 / 운영 / 시스템 세 묶음이다(D78). */
+export interface AdminMenuGroup {
+  id: "content" | "ops" | "system";
+  titleKey: MessageKey;
+  /** true면 묶음 제목 옆에 ROOT 칩을 둔다(이 묶음은 ROOT 전용 항목으로만 이루어져 있다는 표시) */
+  rootChip?: boolean;
+  items: readonly AdminMenuItem[];
+}
+
+/**
+ * 관리 메뉴 묶음과 항목(D78). 새 관리 화면이 생기면 알맞은 묶음에 한 줄 추가한다.
+ * 항목마다 minRole이 있고 권한별 노출은 예전과 같다(ADMIN: 곡·서열표 관리, 서열표 분석, 건의 관리 / ROOT: 거기에 공식 곡 목록 갱신, 사용자, 설정, 감사 로그).
+ */
+export const ADMIN_MENU_GROUPS: readonly AdminMenuGroup[] = [
+  {
+    id: "content",
+    titleKey: "Admin.groupContent",
+    items: [
+      { href: "/songs", titleKey: "Admin.menuSongs", descriptionKey: "Admin.menuSongsDesc", minRole: "ADMIN", icon: "songs" },
+      { href: "/table", titleKey: "Admin.menuTable", descriptionKey: "Admin.menuTableDesc", minRole: "ADMIN", icon: "table" },
+      // 서열표 분석(D77): 공개 유저 기록을 곡별 숫자로 보여 주는 읽기 전용 도구. 곡·서열표 관리와 같은 ADMIN 이상
+      { href: "/admin/chart-stats", titleKey: "Admin.menuChartStats", descriptionKey: "Admin.menuChartStatsDesc", minRole: "ADMIN", icon: "chartStats" },
+      { href: "/admin/song-import", titleKey: "Admin.menuSongImport", descriptionKey: "Admin.menuSongImportDesc", minRole: "ROOT", icon: "songImport" },
+    ],
+  },
+  {
+    id: "ops",
+    titleKey: "Admin.groupOps",
+    items: [
+      { href: "/admin/suggestions", titleKey: "Admin.menuSuggestions", descriptionKey: "Admin.menuSuggestionsDesc", minRole: "ADMIN", icon: "suggestions" },
+      { href: "/admin/users", titleKey: "Admin.menuUsers", descriptionKey: "Admin.menuUsersDesc", minRole: "ROOT", icon: "users" },
+    ],
+  },
+  {
+    id: "system",
+    titleKey: "Admin.groupSystem",
+    rootChip: true,
+    items: [
+      { href: "/admin/settings", titleKey: "Admin.menuSettings", descriptionKey: "Admin.menuSettingsDesc", minRole: "ROOT", icon: "settings" },
+      { href: "/admin/audit-logs", titleKey: "Admin.menuAuditLogs", descriptionKey: "Admin.menuAuditLogsDesc", minRole: "ROOT", icon: "auditLogs" },
+    ],
+  },
 ];
+
+/** 묶음 순서를 펼친 항목 목록(테스트와 다른 화면이 항목을 찾을 때 쓴다). */
+export const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = ADMIN_MENU_GROUPS.flatMap((group) => group.items);
+
+/** 역할에 보이는 항목만 남긴 묶음 목록. 보일 항목이 없는 묶음은 빠진다(ADMIN에게는 시스템 묶음이 통째로 없다). */
+export function visibleAdminMenuGroups(role: Role | null | undefined): AdminMenuGroup[] {
+  return ADMIN_MENU_GROUPS.map((group) => ({ ...group, items: group.items.filter((item) => hasRoleAtLeast(role, item.minRole)) })).filter(
+    (group) => group.items.length > 0,
+  );
+}
