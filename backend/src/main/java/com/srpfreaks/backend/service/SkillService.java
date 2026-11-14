@@ -15,6 +15,7 @@ import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.PlayerTier;
 import com.srpfreaks.backend.entity.TableStatus;
 import com.srpfreaks.backend.mapper.ChartRatingRow;
+import com.srpfreaks.backend.mapper.PublicRatingCandidate;
 import com.srpfreaks.backend.mapper.RatingCandidate;
 import com.srpfreaks.backend.mapper.SkillMapper;
 import com.srpfreaks.backend.repository.AppSettingRepository;
@@ -100,12 +101,46 @@ public class SkillService {
         return result;
     }
 
+    /**
+     * 공개 유저 여러 명의 레이팅을 후보 쿼리 한 번으로 계산한다(서열표 분석의 유저별 총점·티어, D77).
+     * {@link #ratedAll}은 유저마다 후보 쿼리를 한 번씩 돌지만, 여기서는 설정·서열표·티어 구간표와 후보 쿼리를 합쳐 요청당 고정된 횟수만 읽는다
+     * (유저 수와 상관없이 쿼리 수가 같다). 점수 계산과 목록 선정은 {@link #ratedAll}과 같은 코드(scoreCandidates, rateScored)라 숫자가 어긋날 수 없다.
+     * 후보 쿼리가 공개 + ACTIVE 유저만 돌려주므로 비공개 유저 id가 섞여 들어와도 그 유저의 결과는 빈 목록(총점 0)이다 -> 호출하는 쪽이 공개 유저만 넘긴다.
+     */
+    public Map<Long, RatedSkill> ratedBatch(Collection<Long> userIds) {
+        Map<Long, RatedSkill> result = new LinkedHashMap<>();
+        if (userIds.isEmpty()) {
+            return result;
+        }
+        RatingConfig config = RatingConfig.from(ratingSettings());
+        RatingCalculator calculator = new RatingCalculator(config);
+        Optional<DifficultyTable> table = difficultyTableRepository
+                .findFirstByNoteOptionAndStatusOrderByIdAsc(config.noteOption(), TableStatus.ACTIVE);
+        List<PlayerTier> tiers = playerTierRepository.findAllByOrderBySortOrderAsc().stream()
+                .sorted(Comparator.comparingInt(PlayerTier::getMinScore))
+                .toList();
+        Map<Long, List<RatingCandidate>> byUser = table
+                .map(t -> skillMapper.findRatingCandidatesForPublicUsers(
+                                userIds, config.noteOption().name(), t.getId(), PatternType.EXCLUDED.getLabel()).stream()
+                        .collect(Collectors.groupingBy(PublicRatingCandidate::userId,
+                                Collectors.mapping(PublicRatingCandidate::toCandidate, Collectors.toList()))))
+                .orElseGet(Map::of);
+        for (Long userId : userIds) {
+            result.put(userId, rateScored(scoreCandidates(byUser.getOrDefault(userId, List.of()), calculator), config, tiers));
+        }
+        return result;
+    }
+
     private RatedSkill rateOne(Long userId, RatingConfig config, RatingCalculator calculator,
                                Optional<DifficultyTable> table, List<PlayerTier> tiers) {
         List<Scored> scored = table
                 .map(t -> score(userId, config, calculator, t))
                 .orElseGet(List::of);   // 레이팅 서열표가 아직 없으면 빈 목록
+        return rateScored(scored, config, tiers);
+    }
 
+    /** 점수가 매겨진 후보에서 단일 상위 N + 그 외 상위 M을 뽑아 합계와 티어를 낸다(rateOne과 ratedBatch가 함께 쓴다). */
+    private RatedSkill rateScored(List<Scored> scored, RatingConfig config, List<PlayerTier> tiers) {
         List<Scored> single = top(scored, true, config.listSingle());
         List<Scored> other = top(scored, false, config.listOther());
         // 합계는 반올림하지 않은 점수로 더하고(D20), 화면에 내보낼 때만 둘째 자리로 반올림한다.
@@ -257,8 +292,12 @@ public class SkillService {
     }
 
     private List<Scored> score(Long userId, RatingConfig config, RatingCalculator calc, DifficultyTable table) {
-        List<RatingCandidate> candidates = skillMapper.findRatingCandidates(
-                userId, config.noteOption().name(), table.getId(), PatternType.EXCLUDED.getLabel());
+        return scoreCandidates(skillMapper.findRatingCandidates(
+                userId, config.noteOption().name(), table.getId(), PatternType.EXCLUDED.getLabel()), calc);
+    }
+
+    /** 후보 채보마다 R, V, 점수를 계산한다(대상이 아닌 값은 한 번 더 거른다). 한 명의 후보 목록이든 여러 명 중 한 명의 것이든 같은 코드다. */
+    private List<Scored> scoreCandidates(List<RatingCandidate> candidates, RatingCalculator calc) {
         List<Scored> result = new ArrayList<>();
         for (RatingCandidate c : candidates) {
             PatternType pattern = parsePattern(c.pattern());

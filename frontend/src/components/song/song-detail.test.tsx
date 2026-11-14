@@ -125,6 +125,18 @@ describe("SongDetailView", () => {
   let songResponse: () => Response;
   // 같은 티어 유저 기록(D53): 기본은 기준 인원에 못 미쳐 채보가 비어 있다(카드가 안 나옴)
   let peerStats: { tierName: string | null; bandUsers: number; charts: unknown[] };
+  // 서열표 분석(D77) 채보 요약(공개 유저 6명, 평균 87.12%, 폴더 평균 89.47% → 편차 -2.35)
+  const chartStatsSummary = {
+    chart: { songDifficultyId: 10, songId: 1, title: "테스트곡", part: "GUITAR", difficulty: "MASTER", level: 9.8, tier: 5.8 },
+    players: 6,
+    records: 14,
+    avgRate: 87.12,
+    medianRate: 88,
+    folderAvgRate: 89.47,
+    deviation: -2.35,
+    folderSampleCharts: 5,
+    meta: { publicUsers: 12, minPlayers: 3, minFolderCharts: 3, recentDays: 7 },
+  };
 
   beforeEach(() => {
     clearAccessToken();
@@ -147,6 +159,8 @@ describe("SongDetailView", () => {
       if (url.endsWith("/difficulty-tables")) return Promise.resolve(json(tables));
       if (url.includes("/tier-history")) return Promise.resolve(json({ content: [], page: 0, size: 10, totalElements: 0, totalPages: 0 }));
       if (url.includes("/peer-stats")) return Promise.resolve(json(peerStats));
+      // 서열표 분석(D77) 채보 요약: ROOT·ADMIN(canEditTable)의 곡 상세에서만 부른다
+      if (url.includes("/admin/chart-stats/")) return Promise.resolve(json(chartStatsSummary));
       // 내 리스트(D76): 기본은 리스트가 하나도 없는 사용자
       if (url.includes("/me/lists")) return Promise.resolve(json({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 }));
       if (url.includes("/songs/")) return Promise.resolve(songResponse());
@@ -378,6 +392,25 @@ describe("SongDetailView", () => {
     expect(screen.getByLabelText("레이팅 상수 난이도")).toHaveValue("5.8");
     expect(screen.getByLabelText("추천도")).toHaveValue("상");
     expect(screen.getByLabelText("속성")).toHaveValue("복합");
+  });
+
+  it("ROOT·ADMIN(canEditTable)의 곡 상세에는 플레이어 통계 카드(인원·평균·편차)가 보인다 (D77)", async () => {
+    renderView("table", 10, false, true);
+
+    const card = await screen.findByRole("region", { name: "플레이어 통계" });
+    expect(card).toHaveTextContent("6명");
+    expect(card).toHaveTextContent("87.12%");
+    expect(card).toHaveTextContent("−2.35%p");
+    expect(within(card).getByRole("link", { name: "유저별 상세 보기" })).toHaveAttribute("href", "/admin/chart-stats/10");
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/admin/chart-stats/charts/10/summary"))).toBe(true);
+  });
+
+  it("일반 사용자·비로그인(canEditTable 아님)에게는 플레이어 통계 카드가 없고 그 API도 부르지 않는다 (D77)", async () => {
+    renderView("table", 10, false, false);
+    await screen.findByRole("region", { name: "서열표 정보" });
+
+    expect(screen.queryByRole("region", { name: "플레이어 통계" })).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/admin/chart-stats/"))).toBe(false);
   });
 
   it("ROOT·ADMIN이면 곡 목록에서 들어온 곡 상세에서도 수정 버튼이 보인다", async () => {
