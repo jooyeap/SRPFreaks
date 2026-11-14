@@ -11,6 +11,7 @@ import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.PlayerTier;
 import com.srpfreaks.backend.entity.TableStatus;
 import com.srpfreaks.backend.mapper.ChartRatingRow;
+import com.srpfreaks.backend.mapper.PublicRatingCandidate;
 import com.srpfreaks.backend.mapper.RatingCandidate;
 import com.srpfreaks.backend.mapper.SkillMapper;
 import com.srpfreaks.backend.repository.AppSettingRepository;
@@ -454,6 +455,69 @@ class SkillServiceTest {
                 .isEqualTo(NotRatedReason.EXCLUDED);
         assertThat(chartRating(new ChartRatingRow(5L, null, null, null, null, new BigDecimal("90.00"))).notRatedReason())
                 .isEqualTo(NotRatedReason.EXCLUDED);
+    }
+
+    // ---- 공개 유저 여러 명을 후보 쿼리 한 번으로 (서열표 분석 D77)
+
+    private static PublicRatingCandidate pub(long userId, long id, long songId, PatternType pattern, String tier, String rate) {
+        RatingCandidate c = cand(id, songId, pattern, tier, rate);
+        return new PublicRatingCandidate(userId, c.songDifficultyId(), c.songId(), c.title(), c.part(), c.difficulty(), c.level(), c.tier(),
+                c.pattern(), c.bestRate(), c.fullCombo(), c.achievedAt());
+    }
+
+    @Test
+    void ratedBatch는_유저가_여러_명이어도_후보_쿼리를_한_번만_돌고_ratedAll과_같은_점수를_낸다() {
+        settings(2, 3);
+        tableExists();
+        tiers(0, 500, 1000);
+        when(skillMapper.findRatingCandidatesForPublicUsers(any(), any(), any(), any())).thenReturn(List.of(
+                pub(7, 1, 10, PatternType.SINGLE, "6.0", "95.00"),     // 304.00
+                pub(7, 2, 11, PatternType.SINGLE, "7.0", "80.00"),     // 320.00
+                pub(8, 3, 10, PatternType.SINGLE, "6.0", "95.00"),     // 304.00
+                pub(8, 4, 12, PatternType.COMPOUND, "6.5", "100.00"))); // 344.00
+
+        java.util.Map<Long, SkillService.RatedSkill> result = service.ratedBatch(List.of(7L, 8L, 9L));
+
+        // 유저 7: 단일 320 + 304 = 624, 유저 8: 단일 304 + 그 외 344 = 648, 후보가 없는 유저 9: 0점
+        assertThat(result.get(7L).skill().totalScore()).isEqualByComparingTo("624.00");
+        assertThat(result.get(8L).skill().totalScore()).isEqualByComparingTo("648.00");
+        assertThat(result.get(9L).skill().totalScore()).isEqualByComparingTo("0");
+        assertThat(result.get(7L).skill().tier().key()).isEqualTo("T500");
+        // 한 번에 가져온다: 유저마다 부르는 후보 쿼리는 쓰지 않고, 설정·서열표·티어표도 한 번씩만 읽는다
+        verify(skillMapper, org.mockito.Mockito.times(1)).findRatingCandidatesForPublicUsers(any(), any(), any(), any());
+        verify(skillMapper, never()).findRatingCandidates(any(), any(), any(), any());
+        verify(settingRepository, org.mockito.Mockito.times(1)).findAll();
+        verify(tableRepository, org.mockito.Mockito.times(1)).findFirstByNoteOptionAndStatusOrderByIdAsc(any(), any());
+        verify(tierRepository, org.mockito.Mockito.times(1)).findAllByOrderBySortOrderAsc();
+    }
+
+    @Test
+    void ratedBatch의_점수는_같은_후보를_ratedAll로_계산한_점수와_같다() {
+        settings(2, 3);
+        tableExists();
+        tiers(0, 500, 1000);
+        RatingCandidate a = cand(1, 10, PatternType.SINGLE, "6.0", "95.00");
+        RatingCandidate b = cand(2, 11, PatternType.TRIPLE, "7.0", "88.50");
+        candidates(a, b);
+        BigDecimal viaRatedAll = service.ratedAll(List.of(7L)).get(7L).skill().totalScore();
+
+        when(skillMapper.findRatingCandidatesForPublicUsers(any(), any(), any(), any())).thenReturn(List.of(
+                pub(7, 1, 10, PatternType.SINGLE, "6.0", "95.00"), pub(7, 2, 11, PatternType.TRIPLE, "7.0", "88.50")));
+        BigDecimal viaBatch = service.ratedBatch(List.of(7L)).get(7L).skill().totalScore();
+
+        assertThat(viaBatch).isEqualByComparingTo(viaRatedAll);
+    }
+
+    @Test
+    void ratedBatch는_유저가_없으면_아무것도_조회하지_않고_서열표가_없으면_후보_쿼리를_부르지_않는다() {
+        assertThat(service.ratedBatch(List.of())).isEmpty();
+        verify(skillMapper, never()).findRatingCandidatesForPublicUsers(any(), any(), any(), any());
+
+        settings(2, 3);
+        when(tableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(any(), any())).thenReturn(Optional.empty());
+        tiers(0, 500);
+        assertThat(service.ratedBatch(List.of(7L)).get(7L).skill().totalScore()).isEqualByComparingTo("0");
+        verify(skillMapper, never()).findRatingCandidatesForPublicUsers(any(), any(), any(), any());
     }
 
     // ---- 레이팅 목록 40채보의 속성별 점수 합(라이벌 속성별 점수 차용, 2026-11-10)

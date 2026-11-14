@@ -14,6 +14,7 @@ import { JacketUploadDialog } from "@/components/song/JacketUploadDialog";
 import { useJackets } from "@/lib/jackets";
 import { MyRecordCard } from "@/components/song/MyRecordCard";
 import { RivalRecordsCard } from "@/components/rivals/RivalRecordsCard";
+import { ChartStatsCard } from "@/components/song/ChartStatsCard";
 import { PeerStatsCard } from "@/components/song/PeerStatsCard";
 import { RatingCutlineCard } from "@/components/song/RatingCutlineCard";
 import { SongRankingCard } from "@/components/song/SongRankingCard";
@@ -264,6 +265,8 @@ export function SongDetailView({
                     <TableInfoCard group={found.group} entry={found.entry} arrival={arrival} />
                     {/* 같은 티어 유저 기록(D53): 로그인했을 때만. 기준 인원에 못 미치면 카드가 스스로 사라진다 */}
                     {chart && loggedIn ? <PeerStatsCard chartId={chart.id} userId={userId} /> : null}
+                    {/* 플레이어 통계(D77): ROOT·ADMIN에게만. 공개 유저 기록의 인원·평균·폴더 대비를 숫자로만 보여 준다(서버도 ADMIN 미만은 403) */}
+                    {chart && canEditTable ? <ChartStatsCard chartId={chart.id} viewerId={userId} /> : null}
                   </>
                 ) : (
                   <p className="rounded-lg border border-line bg-card p-4 text-sm text-fg-sub">
@@ -279,6 +282,7 @@ export function SongDetailView({
                 <InfoCards song={data} />
                 <LevelTable song={data} selectedId={chart?.id ?? null} groups={groups} />
                 {chart && loggedIn ? <PeerStatsCard chartId={chart.id} userId={userId} /> : null}
+                {chart && canEditTable ? <ChartStatsCard chartId={chart.id} viewerId={userId} /> : null}
               </>
             )}
           </div>

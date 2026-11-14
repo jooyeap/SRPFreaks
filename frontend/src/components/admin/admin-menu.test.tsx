@@ -5,7 +5,7 @@ import { AdminGate } from "@/components/admin/AdminGate";
 import { AdminMenu } from "@/components/admin/AdminMenu";
 import { AdminNavLink } from "@/components/AdminNavLink";
 import { AuthProvider } from "@/components/AuthProvider";
-import { canSeeAdminMenu, hasRoleAtLeast } from "@/lib/admin";
+import { ADMIN_MENU_ITEMS, canSeeAdminMenu, hasRoleAtLeast } from "@/lib/admin";
 import { clearAccessToken } from "@/lib/auth-token";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), back: vi.fn() }), usePathname: () => "/admin" }));
@@ -25,6 +25,17 @@ describe("역할 조건", () => {
     expect(hasRoleAtLeast(undefined, "USER")).toBe(false);
   });
 
+  it("서열표 분석(D77) 메뉴는 ADMIN 이상에게만 보이고 USER·비로그인에게는 보이지 않는다", () => {
+    const item = ADMIN_MENU_ITEMS.find((i) => i.href === "/admin/chart-stats");
+    expect(item?.minRole).toBe("ADMIN");
+    expect(hasRoleAtLeast("USER", item!.minRole)).toBe(false);
+    expect(hasRoleAtLeast(null, item!.minRole)).toBe(false);
+    expect(hasRoleAtLeast("ADMIN", item!.minRole)).toBe(true);
+    expect(hasRoleAtLeast("ROOT", item!.minRole)).toBe(true);
+    // USER가 볼 수 있는 관리 메뉴 항목은 하나도 없다
+    expect(ADMIN_MENU_ITEMS.filter((i) => hasRoleAtLeast("USER", i.minRole))).toEqual([]);
+  });
+
   it("관리 메뉴는 ADMIN과 ROOT만 볼 수 있다", () => {
     expect(canSeeAdminMenu("ROOT")).toBe(true);
     expect(canSeeAdminMenu("ADMIN")).toBe(true);
@@ -39,6 +50,8 @@ describe("AdminMenu 항목", () => {
     expect(screen.getByRole("link", { name: /곡 관리/ })).toHaveAttribute("href", "/songs");
     expect(screen.getByRole("link", { name: /서열표 관리/ })).toHaveAttribute("href", "/table");
     expect(screen.getByRole("link", { name: /건의 관리/ })).toHaveAttribute("href", "/admin/suggestions");
+    // 서열표 분석(D77)은 ADMIN에게도 보인다
+    expect(screen.getByRole("link", { name: /서열표 분석/ })).toHaveAttribute("href", "/admin/chart-stats");
     expect(screen.queryByRole("link", { name: /사용자/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /감사 로그/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /^설정/ })).toBeNull();
@@ -46,6 +59,7 @@ describe("AdminMenu 항목", () => {
 
     render(<AdminMenu role="ROOT" />);
     expect(screen.getByRole("link", { name: /곡 관리/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /서열표 분석/ })).toHaveAttribute("href", "/admin/chart-stats");
     expect(screen.getByRole("link", { name: /사용자/ })).toHaveAttribute("href", "/admin/users");
     expect(screen.getByRole("link", { name: /^설정/ })).toHaveAttribute("href", "/admin/settings");
     expect(screen.getByRole("link", { name: /감사 로그/ })).toHaveAttribute("href", "/admin/audit-logs");
