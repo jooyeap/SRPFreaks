@@ -91,6 +91,7 @@ class ChartStatsMapperTest {
         DifficultyTableEntry e = DifficultyTableEntry.create(table, d);
         e.changeTier(tier == null ? null : new BigDecimal(tier), false, null);
         e.changePattern(pattern, false);
+        e.changeRatingEnabled(true);   // 새 줄은 꺼짐으로 시작하므로, 레이팅 후보 쿼리(rating_enabled = TRUE)에 잡히려면 켠다(SkillMapperTest와 같은 준비)
         persist(e);
         return d;
     }
