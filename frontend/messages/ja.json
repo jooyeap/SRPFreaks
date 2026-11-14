@@ -1400,6 +1400,9 @@
     "groupContent": "コンテンツ",
     "groupOps": "運営",
     "groupSystem": "システム",
+    "usersColJoined": "登録日",
+    "usersColManage": "管理",
+    "userRootLocked": "変更不可",
     "actionSongOfficialImport": "公式曲リストの更新",
     "detailKey": {
       "title": "タイトル",

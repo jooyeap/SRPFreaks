@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SuggestionsAdminView } from "@/components/admin/SuggestionsAdminView";
 import { SongRequestLink } from "@/components/songs/SongRequestLink";
 import { SuggestionsView } from "@/components/suggestions/SuggestionsView";
 import type { AdminSuggestionResponse, SuggestionResponse } from "@/lib/api-types";
+import { DESKTOP_QUERY } from "@/lib/use-media-query";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -189,14 +190,37 @@ describe("SuggestionsAdminView", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  /** 칩의 개수는 목록 API를 한 건씩(size=1) 요청해 센다. 접수 3 · 처리 완료 5 · 전체 8로 돌려준다. */
+  const isChipCount = (url: string) => /[?&]size=1(&|$)/.test(url);
+
   function routes(patched?: AdminSuggestionResponse) {
     fetchMock.mockImplementation((input, init) => {
       const url = String(input);
       if (url.includes("/received-count")) return Promise.resolve(json({ received: 3 }));
       if (init?.method === "PATCH") return Promise.resolve(json(patched ?? item(1)));
       if (url.endsWith("/difficulty-tables")) return Promise.resolve(json([]));
+      if (isChipCount(url)) {
+        const total = url.includes("status=RECEIVED") ? 3 : url.includes("status=DONE") ? 5 : 8;
+        return Promise.resolve(json({ content: [], page: 0, size: 1, totalElements: total, totalPages: total }));
+      }
       return Promise.resolve(json(pageOf([item(1), item(2, { category: "BUG", authorNickname: "other" })])));
     });
+  }
+
+  /** 압축 카드의 머리 버튼(제목이 들어 있다). 폰에서는 aria-expanded, 데스크톱에서는 aria-current를 가진다. */
+  const cardHead = (title: string) =>
+    screen.getAllByRole("button").find((b) => (b.hasAttribute("aria-expanded") || b.hasAttribute("aria-current")) && (b.textContent ?? "").startsWith(title)) as HTMLElement;
+
+  function stubDesktop() {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({
+        matches: query === DESKTOP_QUERY,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
   }
 
   it("건의를 닉네임과 함께 보여 주고 접수 대기 건수를 보여 준다", async () => {
@@ -212,27 +236,105 @@ describe("SuggestionsAdminView", () => {
     expect(screen.getByRole("link", { name: "관리로" })).toHaveAttribute("href", "/admin");
   });
 
-  it("처음에는 접수 대기가 있으면 `접수 대기`만, 없으면 `전체`를 보여 주고, 직접 고르면 그 값을 쓴다", async () => {
+  it("처음에는 접수 대기가 있으면 `접수` 칩만, 없으면 `전체`를 보여 주고, 직접 고르면 그 값을 쓴다", async () => {
     routes();
     const { unmount } = wrap(<SuggestionsAdminView viewerId={9} />);
     await screen.findByRole("list", { name: "건의 목록" });
-    const listCalls = () => fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("/admin/suggestions?"));
+    // 칩의 개수 요청(size=1)은 빼고 센다
+    const listCalls = () =>
+      fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.includes("/admin/suggestions?") && !isChipCount(u));
     expect(listCalls()).toHaveLength(1); // 건수를 받은 뒤 한 번만 요청한다
     expect(listCalls()[0]).toContain("status=RECEIVED");
-    expect(screen.getAllByLabelText("상태", { exact: true })[0]).toHaveValue("RECEIVED");
-    fireEvent.change(screen.getAllByLabelText("상태", { exact: true })[0], { target: { value: "" } });
+    const group = screen.getByRole("group", { name: "상태" });
+    expect(within(group).getByRole("button", { name: /^접수\s*3$/ })).toHaveAttribute("aria-pressed", "true");
+    expect(within(group).getByRole("button", { name: /^전체\s*8$/ })).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(within(group).getByRole("button", { name: /^전체/ }));
     await waitFor(() => expect(listCalls().some((u) => !u.includes("status="))).toBe(true));
+    expect(within(group).getByRole("button", { name: /^전체/ })).toHaveAttribute("aria-pressed", "true");
     unmount();
 
     fetchMock.mockReset();
     fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes("/received-count")) return Promise.resolve(json({ received: 0 }));
+      if (isChipCount(url)) return Promise.resolve(json({ content: [], page: 0, size: 1, totalElements: 0, totalPages: 0 }));
       return Promise.resolve(json(pageOf([item(1)])));
     });
     wrap(<SuggestionsAdminView viewerId={9} />);
     await screen.findByRole("list", { name: "건의 목록" });
     expect(listCalls()[0]).not.toContain("status=");
+    expect(within(screen.getByRole("group", { name: "상태" })).getByRole("button", { name: /^전체/ })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("상태 칩은 접수 / 처리 완료 / 전체와 개수를 보여 주고, 고르면 그 상태로 다시 요청한다", async () => {
+    routes();
+    wrap(<SuggestionsAdminView viewerId={9} />);
+    await screen.findByRole("list", { name: "건의 목록" });
+    const group = screen.getByRole("group", { name: "상태" });
+    await waitFor(() => {
+      const names = within(group).getAllByRole("button").map((b) => b.textContent);
+      expect(names).toEqual(["접수3", "처리 완료5", "전체8"]);
+    });
+
+    fireEvent.click(within(group).getByRole("button", { name: /^처리 완료/ }));
+    await waitFor(() =>
+      expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/admin/suggestions?") && !isChipCount(String(input)) && String(input).includes("status=DONE"))).toBe(true),
+    );
+    expect(within(group).getByRole("button", { name: /^처리 완료/ })).toHaveAttribute("aria-pressed", "true");
+    expect(within(group).getByRole("button", { name: /^접수/ })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("압축 카드는 제목·종류·상태·보낸 사람·한 줄 미리보기만 보이고, 누르면 펼쳐 상태·답변·저장이 나온다", async () => {
+    routes();
+    wrap(<SuggestionsAdminView viewerId={9} />);
+    await screen.findByRole("list", { name: "건의 목록" });
+    expect(screen.getByRole("list", { name: "건의 목록" })).toHaveTextContent("줄1 줄2"); // 줄바꿈은 한 줄 미리보기로
+    expect(screen.queryByLabelText("건의 1 상태")).toBeNull();
+    expect(cardHead("건의 1")).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(cardHead("건의 1"));
+    expect(cardHead("건의 1")).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByLabelText("건의 1 상태")).toBeInTheDocument();
+    expect(screen.getByLabelText("건의 1 답변")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "건의 1 처리 저장" })).toBeInTheDocument();
+  });
+
+  it("한 번에 하나만 펼쳐지고, 다시 누르면 접힌다", async () => {
+    routes();
+    wrap(<SuggestionsAdminView viewerId={9} />);
+    await screen.findByRole("list", { name: "건의 목록" });
+
+    fireEvent.click(cardHead("건의 1"));
+    fireEvent.click(cardHead("건의 2"));
+    expect(cardHead("건의 2")).toHaveAttribute("aria-expanded", "true");
+    expect(cardHead("건의 1")).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("건의 1 상태")).toBeNull();
+    expect(screen.getByLabelText("건의 2 상태")).toBeInTheDocument();
+
+    fireEvent.click(cardHead("건의 2"));
+    expect(cardHead("건의 2")).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByLabelText("건의 2 상태")).toBeNull();
+  });
+
+  it("데스크톱(1024px 이상)에서는 왼쪽 목록 + 오른쪽 상세이고, 펼침 대신 선택한다(처음에는 첫 건)", async () => {
+    stubDesktop();
+    routes();
+    wrap(<SuggestionsAdminView viewerId={9} />);
+    await screen.findByRole("list", { name: "건의 목록" });
+
+    // 고르기 전에도 오른쪽 칸이 비지 않게 첫 건이 선택돼 있다
+    expect(cardHead("건의 1")).toHaveAttribute("aria-current", "true");
+    expect(cardHead("건의 2")).toHaveAttribute("aria-current", "false");
+    expect(screen.getByRole("region", { name: "건의 1" })).toBeInTheDocument();
+    expect(screen.getByLabelText("건의 1 상태")).toBeInTheDocument();
+    // 목록 안에서 펼치지 않는다(입력칸이 한 번만 있다)
+    expect(screen.getAllByLabelText("건의 1 상태")).toHaveLength(1);
+
+    fireEvent.click(cardHead("건의 2"));
+    expect(cardHead("건의 2")).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("region", { name: "건의 2" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("건의 1 상태")).toBeNull();
+    expect(screen.getByLabelText("건의 2 상태")).toBeInTheDocument();
   });
 
   it("곡 추가 건의에서 곡 등록 창을 곡명과 요청 채보로 채워 연다", async () => {
@@ -248,6 +350,7 @@ describe("SuggestionsAdminView", () => {
     const list = await screen.findByRole("list", { name: "건의 목록" });
     expect(list).toHaveTextContent("Bass | EXT");
 
+    fireEvent.click(cardHead("새 곡")); // 카드를 펼쳐야 곡 등록 버튼이 보인다
     fireEvent.click(screen.getByRole("button", { name: "새 곡 건의로 곡 등록" }));
 
     expect(await screen.findByLabelText("곡명")).toHaveValue("새 곡");
@@ -262,7 +365,9 @@ describe("SuggestionsAdminView", () => {
     wrap(<SuggestionsAdminView viewerId={9} />);
     await screen.findByRole("list", { name: "건의 목록" });
 
+    fireEvent.click(cardHead("건의 1"));
     expect(screen.getByRole("button", { name: "건의 1 건의로 곡 등록" })).toBeInTheDocument();
+    fireEvent.click(cardHead("건의 2")); // 버그 건의라 곡 등록 버튼이 없다
     expect(screen.queryByRole("button", { name: "건의 2 건의로 곡 등록" })).not.toBeInTheDocument();
   });
 
@@ -283,6 +388,7 @@ describe("SuggestionsAdminView", () => {
     wrap(<SuggestionsAdminView viewerId={9} />);
     await screen.findByRole("list", { name: "건의 목록" });
 
+    fireEvent.click(cardHead("건의 1"));
     fireEvent.change(screen.getByLabelText("건의 1 상태"), { target: { value: "DONE" } });
     fireEvent.change(screen.getByLabelText("건의 1 답변"), { target: { value: "등록했습니다." } });
     fireEvent.click(screen.getByRole("button", { name: "건의 1 처리 저장" }));
