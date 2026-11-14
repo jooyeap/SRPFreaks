@@ -1397,6 +1397,9 @@
     "menuSongImportDesc": "公式の曲リストからアーティスト・レベルを取り込みます。",
     "menuChartStats": "難易度表の分析",
     "menuChartStatsDesc": "公開ユーザーの記録を曲ごとに集計して数字で表示します。",
+    "groupContent": "コンテンツ",
+    "groupOps": "運営",
+    "groupSystem": "システム",
     "actionSongOfficialImport": "公式曲リストの更新",
     "detailKey": {
       "title": "タイトル",

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/components/Toast";
@@ -17,7 +16,7 @@ import {
   type SongImportCommitResult,
   type SongImportPreview,
 } from "@/lib/song-import";
-import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
 
 const CARD = "flex flex-col gap-3 rounded-2xl border border-line bg-card p-4";
 const BUTTON = "min-h-11 rounded-xl border border-ctl px-4 text-sm font-bold text-fg hover:bg-table-head disabled:opacity-50";
@@ -96,9 +95,7 @@ export function SongImportAdminView() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-1">
         {/* 다른 관리 화면과 같은 뒤로 버튼(2026-10-27) */}
-        <Link href="/admin" aria-label={t("Admin.backAria")} title={t("Admin.backAria")} className={BACK_BUTTON_CLASS}>
-          <BackArrow />
-        </Link>
+        <AdminBackLink />
         <h1 className="text-xl font-semibold text-fg">{t("SongImport.title")}</h1>
         <p className="text-sm text-fg-sub">{t("SongImport.lead")}</p>
       </header>

@@ -1,10 +1,9 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
 import { HelpTip } from "@/components/HelpTip";
 import { Pager } from "@/components/Pager";
 import { ChartCell, DeviationBar, ListState, StatCell, TableHead } from "@/components/admin/ChartStatsParts";
@@ -50,7 +49,6 @@ const STATS_WRAP = "flex flex-wrap items-center gap-x-3 gap-y-0.5 lg:contents";
  */
 export function ChartStatsView({ viewerId }: { viewerId: number }) {
   const t = useTranslations("ChartStats");
-  const tAdmin = useTranslations("Admin");
   const [tab, setTab] = useState<ChartStatsTab>("deviation");
   // 머리의 안내는 폴더 목록의 집계 기준(meta)을 쓴다. 폴더 탭과 같은 조회라서 요청이 한 번뿐이다.
   const folders = useQuery({
@@ -69,9 +67,7 @@ export function ChartStatsView({ viewerId }: { viewerId: number }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Link href="/admin" aria-label={tAdmin("backAria")} title={tAdmin("backAria")} className={BACK_BUTTON_CLASS}>
-          <BackArrow />
-        </Link>
+        <AdminBackLink />
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-fg">{t("title")}</h1>
           <HelpTip
