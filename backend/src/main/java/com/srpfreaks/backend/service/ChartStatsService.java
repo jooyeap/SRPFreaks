@@ -222,7 +222,7 @@ public class ChartStatsService {
         Comparator<ChartPlayerRow> byUser = Comparator.comparing(ChartPlayerRow::userId);
         Map<Long, SkillService.RatedSkill> rated = new HashMap<>();
         if (key.equals("score")) {
-            rated.putAll(skillService.ratedBatch(all.stream().map(ChartPlayerRow::userId).toList()));
+            rated.putAll(ratedFor(all.stream().map(ChartPlayerRow::userId).toList()));
             all.sort(Comparator.comparing((ChartPlayerRow r) -> totalOf(rated.get(r.userId()))).reversed().thenComparing(byUser));
         } else if (key.equals("plays")) {
             all.sort(Comparator.comparingLong(ChartPlayerRow::playCount).reversed().thenComparing(byUser));
@@ -232,7 +232,7 @@ public class ChartStatsService {
         int from = (int) Math.min((long) pageIndex * pageSize, all.size());
         List<ChartPlayerRow> pageRows = all.subList(from, Math.min(from + pageSize, all.size()));
         if (!key.equals("score")) {
-            rated.putAll(skillService.ratedBatch(pageRows.stream().map(ChartPlayerRow::userId).toList()));
+            rated.putAll(ratedFor(pageRows.stream().map(ChartPlayerRow::userId).toList()));
         }
         List<PlayerRow> content = pageRows.stream().map(r -> {
             SkillService.RatedSkill skill = rated.get(r.userId());
@@ -277,6 +277,14 @@ public class ChartStatsService {
     LocalDateTime sinceUtc() {
         LocalDate todaySeoul = LocalDate.now(clock.withZone(SEOUL));
         return todaySeoul.minusDays(RECENT_DAYS - 1L).atStartOfDay(SEOUL).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+    }
+
+    /**
+     * 유저별 총점·티어를 후보 쿼리 한 번으로 구한다. 유저가 한 명도 없으면(공개 유저가 기록한 적 없는 채보) 아무것도 부르지 않고 빈 결과를 돌려준다.
+     * (SkillService.ratedBatch도 빈 목록이면 쿼리 없이 돌려주지만, IN () 같은 빈 목록 SQL이 나갈 길을 여기서도 한 번 더 막는다.)
+     */
+    private Map<Long, SkillService.RatedSkill> ratedFor(List<Long> userIds) {
+        return userIds.isEmpty() ? Map.of() : skillService.ratedBatch(userIds);
     }
 
     /** DB의 현재 역할·상태로 ADMIN 이상인지 확인한다. 아니면 403. */
