@@ -4,6 +4,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -72,6 +73,64 @@ public interface SkillMapper {
                                                @Param("noteOption") String noteOption,
                                                @Param("tableId") Long tableId,
                                                @Param("excludedPattern") String excludedPattern);
+
+    /**
+     * 공개 유저 여러 명의 레이팅 후보를 한 번에(서열표 분석의 유저별 총점·티어용, D77). {@link #findRatingCandidates}와 같은 조건·같은 열이고
+     * 유저 id가 붙어서 나온다. 유저마다 쿼리를 한 번씩 돌리지 않으려는 것이다(N+1 방지).
+     *
+     * 개인정보: 안쪽에서 users를 조인해 공개(profile_public) + ACTIVE 유저만 남긴다. 그래서 호출하는 쪽이 실수로 비공개 유저 id를 넘겨도
+     * 그 유저의 기록은 한 줄도 나오지 않는다. XML 스크립트라서 '<' 문자를 쓰지 않는다(다른 값은 != 로 비교).
+     */
+    @Select("""
+            <script>
+            SELECT b.user_id            AS userId,
+                   d.song_difficulty_id AS songDifficultyId,
+                   s.song_id            AS songId,
+                   s.title              AS title,
+                   d.instrument_part    AS part,
+                   d.difficulty_type    AS difficulty,
+                   d.level              AS level,
+                   e.tier_label         AS tier,
+                   e.pattern_type       AS pattern,
+                   b.best_rate          AS bestRate,
+                   b.full_combo         AS fullCombo,
+                   (SELECT MIN(r2.played_at)
+                      FROM option_records r2
+                     WHERE r2.user_id = b.user_id
+                       AND r2.note_option = #{noteOption}
+                       AND r2.song_difficulty_id = b.song_difficulty_id
+                       AND r2.achievement_rate = b.best_rate) AS achievedAt
+            FROM (
+                SELECT r.user_id,
+                       r.song_difficulty_id,
+                       MAX(r.achievement_rate) AS best_rate,
+                       MAX(r.is_full_combo)    AS full_combo
+                FROM option_records r
+                JOIN users u ON u.user_id = r.user_id
+                WHERE u.profile_public = TRUE
+                  AND u.status = 'ACTIVE'
+                  AND r.note_option = #{noteOption}
+                  AND r.user_id IN
+                  <foreach collection="userIds" item="userId" open="(" separator="," close=")">#{userId}</foreach>
+                GROUP BY r.user_id, r.song_difficulty_id
+            ) b
+            JOIN song_difficulties d ON d.song_difficulty_id = b.song_difficulty_id
+            JOIN songs s ON s.song_id = d.song_id
+            JOIN difficulty_table_entries e
+                 ON e.song_difficulty_id = d.song_difficulty_id
+                AND e.difficulty_table_id = #{tableId}
+            WHERE d.is_deleted = FALSE
+              AND s.is_deleted = FALSE
+              AND e.rating_enabled = TRUE
+              AND e.tier_label IS NOT NULL
+              AND e.pattern_type IS NOT NULL
+              AND e.pattern_type != #{excludedPattern}
+            </script>
+            """)
+    List<PublicRatingCandidate> findRatingCandidatesForPublicUsers(@Param("userIds") Collection<Long> userIds,
+                                                                   @Param("noteOption") String noteOption,
+                                                                   @Param("tableId") Long tableId,
+                                                                   @Param("excludedPattern") String excludedPattern);
 
     /**
      * 채보 한 개의 레이팅 상태 (저장 결과 카드용): 서열표 값 + 내 최고 달성률.

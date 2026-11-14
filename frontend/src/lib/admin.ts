@@ -316,6 +316,8 @@ export const ADMIN_MENU_ITEMS: readonly AdminMenuItem[] = [
   { href: "/songs", titleKey: "Admin.menuSongs", descriptionKey: "Admin.menuSongsDesc", minRole: "ADMIN" },
   { href: "/table", titleKey: "Admin.menuTable", descriptionKey: "Admin.menuTableDesc", minRole: "ADMIN" },
   { href: "/admin/suggestions", titleKey: "Admin.menuSuggestions", descriptionKey: "Admin.menuSuggestionsDesc", minRole: "ADMIN" },
+  // 서열표 분석(D77): 공개 유저 기록을 곡별 숫자로 보여 주는 읽기 전용 도구. 콘텐츠 관리(곡·서열표) 항목들과 같은 ADMIN 이상
+  { href: "/admin/chart-stats", titleKey: "Admin.menuChartStats", descriptionKey: "Admin.menuChartStatsDesc", minRole: "ADMIN" },
   { href: "/admin/song-import", titleKey: "Admin.menuSongImport", descriptionKey: "Admin.menuSongImportDesc", minRole: "ROOT" },
   { href: "/admin/users", titleKey: "Admin.menuUsers", descriptionKey: "Admin.menuUsersDesc", minRole: "ROOT" },
   { href: "/admin/settings", titleKey: "Admin.menuSettings", descriptionKey: "Admin.menuSettingsDesc", minRole: "ROOT" },
