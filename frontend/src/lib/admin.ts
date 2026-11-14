@@ -322,7 +322,45 @@ export const SETTING_META: Record<string, SettingMeta> = {
   "recognize.min_role": { label: "Admin.settingRecognizeMinRole", description: "Admin.settingRecognizeMinRoleDesc", kind: "choice", choices: ["ADMIN", "USER"] },
   "recognize.weekly_limit": { label: "Admin.settingRecognizeWeekly", description: "Admin.settingRecognizeWeeklyDesc", kind: "integer" },
   "recognize.daily_total_limit": { label: "Admin.settingRecognizeDaily", description: "Admin.settingRecognizeDailyDesc", kind: "integer" },
+  // 내 리스트(D76)
+  "list.max_lists": { label: "Admin.settingListMaxLists", description: "Admin.settingListMaxListsDesc", kind: "integer" },
+  "list.max_items": { label: "Admin.settingListMaxItems", description: "Admin.settingListMaxItemsDesc", kind: "integer" },
+  // 같은 티어 유저 기록(D53)의 표시 기준 인원
+  "peer.min_band_users": { label: "Admin.settingPeerMinBand", description: "Admin.settingPeerMinBandDesc", kind: "integer" },
+  "peer.min_chart_users": { label: "Admin.settingPeerMinChart", description: "Admin.settingPeerMinChartDesc", kind: "integer" },
+  // 라이벌(D56)
+  "rival.max_count": { label: "Admin.settingRivalMaxCount", description: "Admin.settingRivalMaxCountDesc", kind: "integer" },
+  "rival.notify_delay_minutes": { label: "Admin.settingRivalDelay", description: "Admin.settingRivalDelayDesc", kind: "integer" },
+  "rival.notify_daily_per_rival": { label: "Admin.settingRivalDaily", description: "Admin.settingRivalDailyDesc", kind: "integer" },
+  "rival.notify_keep_days": { label: "Admin.settingRivalKeep", description: "Admin.settingRivalKeepDesc", kind: "integer" },
+  // 세트리스트 추천(D37). 범위는 내 평균 난이도와의 차이라서 음수도 받는다(number)
+  "setlist.recommend_ss_min": { label: "Admin.settingSetlistSsMin", description: "Admin.settingSetlistSsMinDesc", kind: "number" },
+  "setlist.recommend_ss_max": { label: "Admin.settingSetlistSsMax", description: "Admin.settingSetlistSsMaxDesc", kind: "number" },
+  "setlist.recommend_s_min": { label: "Admin.settingSetlistSMin", description: "Admin.settingSetlistSMinDesc", kind: "number" },
+  "setlist.recommend_s_max": { label: "Admin.settingSetlistSMax", description: "Admin.settingSetlistSMaxDesc", kind: "number" },
+  "setlist.recommend_min_single": { label: "Admin.settingSetlistMinSingle", description: "Admin.settingSetlistMinSingleDesc", kind: "integer" },
+  "setlist.recommend_min_other": { label: "Admin.settingSetlistMinOther", description: "Admin.settingSetlistMinOtherDesc", kind: "integer" },
+  "setlist.recommend_starter_tier": { label: "Admin.settingSetlistStarter", description: "Admin.settingSetlistStarterDesc", kind: "number" },
+  // 서열표 변경 알림(D61)
+  "tier.notify_bundle_over": { label: "Admin.settingTierBundle", description: "Admin.settingTierBundleDesc", kind: "integer" },
+  "tier.notify_keep_days": { label: "Admin.settingTierKeep", description: "Admin.settingTierKeepDesc", kind: "integer" },
 };
+
+/**
+ * 설정 화면의 묶음 칩. 키 이름으로 묶음을 정한다(서버에 묶음 정보는 없다). 알 수 없는(새) 키는 `other`라서 화면에서 사라지지 않는다.
+ * - rating: rating.*(목록 곡 수 둘은 제외) / list: rating.list_single·list_other와 list.* / peer: peer.*
+ * - setlistRival: setlist.*, rival.* / other: recognize.*, ui.*, contact.*, tier.*와 그 밖의 모든 키
+ */
+export type SettingGroup = "rating" | "list" | "peer" | "setlistRival" | "other";
+export const SETTING_GROUPS: readonly SettingGroup[] = ["rating", "list", "peer", "setlistRival", "other"];
+
+export function settingGroup(key: string): SettingGroup {
+  if (key === "rating.list_single" || key === "rating.list_other" || key.startsWith("list.")) return "list";
+  if (key.startsWith("rating.")) return "rating";
+  if (key.startsWith("peer.")) return "peer";
+  if (key.startsWith("setlist.") || key.startsWith("rival.")) return "setlistRival";
+  return "other";
+}
 
 export function settingMeta(key: string): SettingMeta {
   return SETTING_META[key] ?? { label: null, description: null, kind: "text" };
