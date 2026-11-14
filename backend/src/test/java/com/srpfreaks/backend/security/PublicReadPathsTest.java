@@ -44,6 +44,7 @@ class PublicReadPathsTest {
                 "/api/v1/me/lists", "/api/v1/me/lists/3", "/api/v1/me/lists/3/items", "/api/v1/me/lists/abc",   // 내 리스트(D76)는 로그인 전용(공유 링크·공개 경로 없음)
                 "/api/v1/admin/chart-stats/deviation", "/api/v1/admin/chart-stats/popularity", "/api/v1/admin/chart-stats/folders",      // 서열표 분석(D77)은 ADMIN 이상만(새 공개 경로 없음)
                 "/api/v1/admin/chart-stats/undecided", "/api/v1/admin/chart-stats/charts/12/summary", "/api/v1/admin/chart-stats/charts/12/players",
+                "/api/v1/admin/dashboard", "/api/v1/admin/dashboard?days=30",                                                              // 관리자 대시보드(D80)는 ROOT만(새 공개 경로 없음)
                 "/actuator/health", "/error"}) {
             assertThat(PublicReadPaths.matches("GET", uri)).as(uri).isFalse();
         }
