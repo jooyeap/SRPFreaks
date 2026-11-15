@@ -264,7 +264,13 @@ class RivalAlertServiceTest {
 
         assertThat(bundle.getSongCount()).isEqualTo(2);
         assertThat(bundle.getReadAt()).isNull();
-        verify(notificationRepository).delete(n);
+        // 지우지 않고 BUNDLED로 남긴다(D86): 묶음의 곡 목록에 곡·달성률을 보여 주려고. 목록·개수에는 SHOWN만 센다.
+        verify(notificationRepository, never()).delete(n);
+        assertThat(n.getStatus()).isEqualTo(RivalNotificationStatus.BUNDLED);
+        assertThat(n.isBundled()).isFalse();
+        assertThat(n.getAlertDate()).isEqualTo(LocalDate.of(2026, 10, 31));
+        assertThat(n.getActorRate()).isEqualByComparingTo("99.00");
+        assertThat(n.getRecipientRate()).isEqualByComparingTo("96.10");
     }
 
     @Test

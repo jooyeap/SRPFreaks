@@ -778,6 +778,13 @@ export interface RivalNotificationResponse extends NotificationBase {
   actorNickname: string | null;
   actorRate: number;
   myRate: number;
+  /**
+   * 묶음 줄의 곡명 미리보기(D86): 묶음 줄 자신의 곡 + 합쳐진 처음 몇 곡, 최대 3개. 따로 보이는 줄은 빈 목록.
+   * 배포 순서가 어긋난 옛 응답에는 없을 수 있어 선택으로 둔다.
+   */
+  previewTitles?: string[];
+  /** 곡 목록이 남아 있지 않은 곡 수(D86): 줄을 지우던 때 묶인 옛 묶음만 0보다 크다. */
+  missingCount?: number;
 }
 
 /**
@@ -799,3 +806,22 @@ export interface TierNotificationResponse extends NotificationBase {
  * TypeScript가 item을 TierNotificationResponse로 좁혀 주므로 beforeTier 같은 값을 바로 쓸 수 있다.
  */
 export type NotificationResponse = RivalNotificationResponse | TierNotificationResponse;
+
+/** 라이벌 묶음 알림 곡 목록의 한 줄(D86). 두 달성률은 알림을 보인 시점 값이다. 차이(내 − 상대)는 화면에서 계산한다. */
+export interface RivalBundleSongResponse {
+  songDifficultyId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  actorRate: number;
+  myRate: number;
+}
+
+/** 라이벌 묶음 알림 상세(D86). missingCount > 0이면 예전에 묶여 곡 목록이 없는 곡이 있다는 뜻이다. */
+export interface RivalBundleSongsResponse {
+  actorUserId: number;
+  actorNickname: string | null;
+  songCount: number;
+  missingCount: number;
+  songs: PageResponse<RivalBundleSongResponse>;
+}
