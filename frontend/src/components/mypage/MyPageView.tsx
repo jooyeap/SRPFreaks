@@ -29,7 +29,7 @@ export function MyPageView({ userId, state, onStateChange }: { userId: number; s
 
       <div className="flex flex-col gap-3">
         {/* 상위 탭 네 개는 360px(일본어 포함)에서도 한 줄에 들어간다. 선택은 색만이 아니라 굵은 글씨와 아래 밑줄(두께)로도 보인다. */}
-        <div role="tablist" aria-label={t("MyPage.tabsAria")} className="flex border-b border-line">
+        <div role="tablist" aria-label={t("MyPage.tabsAria")} className="relative flex border-b border-line">
           {MY_PAGE_TABS.map((item) => {
             const selected = tab === item.value;
             return (
@@ -42,13 +42,20 @@ export function MyPageView({ userId, state, onStateChange }: { userId: number; s
                 aria-controls="mypage-panel"
                 onClick={() => onStateChange({ ...state, tab: item.value, view: null })}
                 className={`-mb-px min-h-11 flex-1 whitespace-nowrap border-b-2 px-1 text-sm ${
-                  selected ? "border-[var(--stage-ss-bar)] font-bold text-fg" : "border-transparent text-fg-sub hover:text-fg"
+                  selected ? "border-transparent font-bold text-fg" : "border-transparent text-fg-sub hover:text-fg"
                 }`}
               >
                 {t(item.labelKey)}
               </button>
             );
           })}
+          {/* 선택 밑줄(D82, 모션 PR 2): 탭마다 밑줄을 두지 않고 막대 하나가 칸 폭(탭은 모두 flex-1)만큼 translateX로 미끄러진다. 위치·두께(2px)는 전의 border-b-2와 같다 */}
+          <span
+            aria-hidden="true"
+            data-testid="mypage-tab-indicator"
+            className="motion-indicator pointer-events-none absolute -bottom-px left-0 h-0.5 bg-[var(--stage-ss-bar)]"
+            style={{ width: `${100 / MY_PAGE_TABS.length}%`, transform: `translateX(${Math.max(MY_PAGE_TABS.findIndex((item) => item.value === tab), 0) * 100}%)` }}
+          />
         </div>
 
         {hasSubViews(subViews) ? (
@@ -80,7 +87,8 @@ export function MyPageView({ userId, state, onStateChange }: { userId: number; s
         ) : null}
       </div>
 
-      <div role="tabpanel" id="mypage-panel" aria-labelledby={`mypage-tab-${tab}`}>
+      {/* key: 탭·하위 전환이 바뀌면 내용 영역을 새로 그려 motion-swap(페이드)이 다시 재생된다. 안쪽 화면은 전환 때 어차피 바뀌는 것들이다(통계 기준 axis 변경은 key에 넣지 않는다) */}
+      <div role="tabpanel" id="mypage-panel" key={`${tab}:${state.view ?? ""}`} aria-labelledby={`mypage-tab-${tab}`} className="motion-swap">
         {tab === "rating" ? (
           state.view === "analysis" ? (
             <AnalysisTab userId={userId} />

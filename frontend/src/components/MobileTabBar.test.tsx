@@ -51,6 +51,25 @@ describe("MobileTabBar", () => {
     expect(within(nav).getByRole("button", { name: "더보기" })).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("선택 지시선은 현재 칸(폭 1/4)으로 translateX 이동하고, 선택이 없으면 투명하다 (D82)", () => {
+    pathname = "/me";
+    const { rerender } = render(<MobileTabBar />);
+    const bar = screen.getByTestId("tabbar-indicator");
+    expect(bar).toHaveAttribute("aria-hidden", "true");
+    expect(bar).toHaveClass("motion-indicator", "pointer-events-none");
+    expect(bar.style.width).toBe("25%");
+    expect(bar.style.transform).toBe("translateX(200%)");
+    expect(bar.style.opacity).toBe("1");
+    pathname = "/songs";
+    rerender(<AuthProvider><MobileTabBar /></AuthProvider>);
+    expect(screen.getByTestId("tabbar-indicator").style.transform).toBe("translateX(100%)");
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    expect(screen.getByTestId("tabbar-indicator").style.transform).toBe("translateX(300%)");
+    pathname = "/notices";
+    fireEvent.click(screen.getByRole("button", { name: "더보기" }));
+    expect(screen.getByTestId("tabbar-indicator").style.opacity).toBe("0");
+  });
+
   it("lg 이상에서는 숨기고(lg:hidden) 화면 아래에 고정된다", () => {
     render(<MobileTabBar />);
     const nav = screen.getByRole("navigation", { name: "하단 메뉴" });
