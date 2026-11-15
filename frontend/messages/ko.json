@@ -192,7 +192,13 @@
     "mergedHigh": "{tier} 이상",
     "tileEmpty": "아직 기록이 없습니다",
     "foldClosed": "{from} ~ {to} · 기록 없는 구간 {count}개",
-    "foldOpen": "기록 없는 높은 구간 접기"
+    "foldOpen": "기록 없는 높은 구간 접기",
+    "songsUnit": "곡",
+    "patternAria": "속성 필터",
+    "patternAll": "전체",
+    "patternEmpty": "이 속성의 채보가 없습니다.",
+    "allAtLeast": "모든 채보가 {stage} 이상입니다.",
+    "allExc": "모든 채보가 EXC입니다."
   },
   "Songs": {
     "loadFailed": "곡 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",

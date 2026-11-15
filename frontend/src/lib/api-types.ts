@@ -275,6 +275,8 @@ export interface ChartFolderListResponse {
   totalCharts: number;
   versions: string[];
   folders: ChartFolderResponse[];
+  /** 속성별 채보 수(키: 단일/복합/이중/삼중). 홈 진행도 속성 칩의 숫자이고, 속성 필터를 걸어도 걸기 전 기준이다(D85) */
+  patternCounts: Record<string, number>;
 }
 
 /** 곡 목록의 채보 한 줄. 전체 곡 목록에는 속성을 보이지 않으므로 서열표 값은 없다. */

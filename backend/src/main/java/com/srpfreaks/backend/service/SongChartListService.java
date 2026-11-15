@@ -13,9 +13,13 @@ import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.PatternType;
+import com.srpfreaks.backend.entity.TableStatus;
 import com.srpfreaks.backend.entity.RateBucket;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
+import com.srpfreaks.backend.repository.DifficultyTableEntryRepository;
+import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.OptionRecordRepository;
 import com.srpfreaks.backend.repository.RecordBest;
 import com.srpfreaks.backend.repository.SongDifficultyRepository;
@@ -31,6 +35,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,10 +70,18 @@ public class SongChartListService {
     private final SongDifficultyRepository songDifficultyRepository;
     private final OptionRecordRepository optionRecordRepository;
     private final SongRepository songRepository;
+    private final DifficultyTableRepository difficultyTableRepository;
+    private final DifficultyTableEntryRepository difficultyTableEntryRepository;
 
     /** 레벨 폴더 목록(필터 없음). */
     public ChartFolderListResponse folders(Long userId) {
-        return folders(userId, null, null, null, null);
+        return folders(userId, null, null, null, null, null);
+    }
+
+    /** 속성 필터 없는 버전(곡 목록 화면). */
+    public ChartFolderListResponse folders(Long userId, String q, InstrumentPart part,
+                                           Collection<DifficultyType> difficulties, String version) {
+        return folders(userId, q, part, difficulties, version, null);
     }
 
     /**
@@ -78,14 +91,22 @@ public class SongChartListService {
      * 버전 목록(versions)은 선택지이므로 필터와 상관없이 전체 채보 기준이다.
      */
     public ChartFolderListResponse folders(Long userId, String q, InstrumentPart part,
-                                           Collection<DifficultyType> difficulties, String version) {
+                                           Collection<DifficultyType> difficulties, String version, String pattern) {
         List<SongDifficulty> all = songDifficultyRepository.findAllActiveWithSong();
         String keyword = validKeyword(q);
         String versionFilter = validVersion(version);
+        PatternType patternFilter = validPattern(pattern);
         Set<Long> matchingSongIds = matchingSongIds(keyword);
-        List<SongDifficulty> charts = all.stream()
+        List<SongDifficulty> matched = all.stream()
                 .filter(d -> matchesFilters(d, matchingSongIds, part, difficulties, versionFilter))
                 .toList();
+        // 속성은 서열표(SRN+ 활성 표)의 항목에 있다. 서열표에 없거나 속성이 비어 있는 채보는 속성 필터를 걸면 빠지고 전체에만 남는다.
+        // 칩 개수는 속성 필터를 걸기 전(matched) 기준이라 칩을 눌러도 숫자가 바뀌지 않는다.
+        Map<Long, PatternType> patterns = patternsOf();
+        Map<String, Integer> patternCounts = patternCounts(matched, patterns);
+        List<SongDifficulty> charts = patternFilter == null
+                ? matched
+                : matched.stream().filter(d -> patterns.get(d.getId()) == patternFilter).toList();
         Map<Long, RecordBest> bests = bestsOf(userId);
 
         // 레벨이 높은 폴더가 위
@@ -103,7 +124,7 @@ public class SongChartListService {
         List<String> versions = VersionOrder.sorted(all.stream()
                 .map(d -> d.getSong().getAddedVersion())
                 .toList());
-        return new ChartFolderListResponse(songIds.size(), charts.size(), versions, folders);
+        return new ChartFolderListResponse(songIds.size(), charts.size(), versions, folders, patternCounts);
     }
 
     /**
@@ -177,6 +198,47 @@ public class SongChartListService {
                 .map(d -> ChartRowResponse.of(d, myRecord(bests.get(d.getId()))))
                 .toList();
         return new PageResponse<>(rows, pageIndex, pageSize, filtered.size(), totalPages);
+    }
+
+    /**
+     * 속성 필터 값 검증(화이트리스트). 홈 진행도 칩과 같은 네 가지(단일/복합/이중/삼중)만 받고, 그 밖의 값은
+     * `레이팅 제외`나 `복합(단일)`이라도 400이다. 비어 있으면 필터 없음(전체).
+     */
+    static PatternType validPattern(String pattern) {
+        if (pattern == null || pattern.isBlank()) {
+            return null;
+        }
+        for (PatternType type : CHIP_PATTERNS) {
+            if (type.getLabel().equals(pattern.strip())) {
+                return type;
+            }
+        }
+        throw new ApiException(ErrorCode.BAD_REQUEST);
+    }
+
+    /** 홈 진행도 속성 칩에 쓰는 속성(표시 순서). */
+    private static final List<PatternType> CHIP_PATTERNS = List.of(PatternType.SINGLE, PatternType.COMPOUND, PatternType.DOUBLE, PatternType.TRIPLE);
+
+    /** 레이팅이 쓰는 서열표(SRN+ 활성 표 중 id가 가장 작은 것)의 채보별 속성. 표가 없으면 빈 맵. */
+    private Map<Long, PatternType> patternsOf() {
+        Map<Long, PatternType> result = new HashMap<>();
+        difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(RECORD_OPTION, TableStatus.ACTIVE)
+                .ifPresent(table -> difficultyTableEntryRepository.findChartPatterns(table.getId()).stream()
+                        .filter(row -> row.patternType() != null)
+                        .forEach(row -> result.put(row.songDifficultyId(), row.patternType())));
+        return result;
+    }
+
+    private static Map<String, Integer> patternCounts(List<SongDifficulty> charts, Map<Long, PatternType> patterns) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        CHIP_PATTERNS.forEach(type -> counts.put(type.getLabel(), 0));
+        for (SongDifficulty d : charts) {
+            PatternType type = patterns.get(d.getId());
+            if (type != null && CHIP_PATTERNS.contains(type)) {
+                counts.merge(type.getLabel(), 1, Integer::sum);
+            }
+        }
+        return counts;
     }
 
     private static String validKeyword(String q) {

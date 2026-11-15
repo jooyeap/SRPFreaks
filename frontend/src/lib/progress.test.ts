@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ChartFolderResponse } from "@/lib/api-types";
 import type { ProgressGroup } from "@/lib/difficulty-table";
-import { emptyHighCount, folderProgress, nextGoal, percentOf, tileTint, weakestGroup, weakestGroupNear } from "@/lib/progress";
+import { emptyHighCount, folderProgress, lowestFullStage, nextGoal, percentOf, tileTint, weakestGroup, weakestGroupNear } from "@/lib/progress";
 
 function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
   return { lo: 9.5, hi: 9.99, total: 10, recorded: 6, exc: 1, fc: 1, ss: 1, sPlus: 0, s: 2, belowS: 1, averageRecorded: 90, averageWithZero: 54, subFolders: [], ...over };
@@ -141,5 +141,27 @@ describe("emptyHighCount (맨 위의 기록 없는 먼 높은 구간 접기)", (
   it("2개 미만이면 접지 않는다", () => {
     expect(emptyHighCount(groups, 6.25)).toBe(0); // 6.5 이상·6.4·6.3 중 6.45 초과는 6.5 이상 하나뿐
     expect(emptyHighCount([], 5.0)).toBe(0);
+  });
+});
+
+describe("lowestFullStage (전곡 완료 난이도 색)", () => {
+  const g = (over: Partial<ProgressGroup>) => pg({ total: 4, recorded: 4, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, ...over });
+  it("모든 채보에 기록이 있으면 가장 낮은 단계를 돌려준다", () => {
+    expect(lowestFullStage(g({ exc: 1, fc: 1, ss: 1, sPlus: 1 }))).toBe("S+");
+    expect(lowestFullStage(g({ exc: 2, fc: 1, ss: 1 }))).toBe("SS");
+    expect(lowestFullStage(g({ exc: 3, fc: 1 }))).toBe("FC");
+    expect(lowestFullStage(g({ exc: 4 }))).toBe("EXC");
+    expect(lowestFullStage(g({ ss: 2, sPlus: 1, s: 1 }))).toBe("S");
+  });
+  it("기록 없는 채보가 하나라도 있으면 색이 없다", () => {
+    expect(lowestFullStage(g({ recorded: 3, exc: 3 }))).toBeNull();
+    expect(lowestFullStage(g({ recorded: 0 }))).toBeNull();
+  });
+  it("S 미만(A/B/C)이 하나라도 있으면 색이 없다", () => {
+    expect(lowestFullStage(g({ exc: 3, belowS: 1 }))).toBeNull();
+  });
+  it("채보가 없거나 단계별 개수의 합이 전체와 다르면 색이 없다", () => {
+    expect(lowestFullStage(g({ total: 0, recorded: 0 }))).toBeNull();
+    expect(lowestFullStage(g({ exc: 2 }))).toBeNull();
   });
 });

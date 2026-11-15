@@ -23,6 +23,7 @@ import java.util.List;
  * 전체 곡 목록 화면용 API. 로그인 없이도 읽을 수 있다(D43). 로그인했으면 내 기록을 함께 보여 주고(사용자는 토큰에서만 정한다), 비로그인이면 user가 null이라 기록 없이 곡 정보만 내려간다.
  * 경로가 /songs/{songId}와 겹쳐 보이지만 /chart-folders, /charts는 고정 경로라 그쪽이 먼저 맞는다.
  * 잘못된 enum 값(part, difficulty, rateBucket, sort)은 스프링이 400으로 응답한다.
+ * pattern(홈 진행도의 속성 필터, 단일/복합/이중/삼중)은 서비스가 화이트리스트로 검증하고 그 밖의 값은 400이다. chart-folders에서만 받는다.
  */
 @RestController
 @RequestMapping("/api/v1/songs")
@@ -37,8 +38,9 @@ public class SongChartListController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) InstrumentPart part,
             @RequestParam(required = false) List<DifficultyType> difficulty,
-            @RequestParam(required = false) String version) {
-        return songChartListService.folders(user == null ? null : user.id(), q, part, difficulty, version);
+            @RequestParam(required = false) String version,
+            @RequestParam(required = false) String pattern) {
+        return songChartListService.folders(user == null ? null : user.id(), q, part, difficulty, version, pattern);
     }
 
     @GetMapping("/charts")
