@@ -1,5 +1,4 @@
-import { useId, type CSSProperties } from "react";
-import { StageBadge } from "@/components/table/StageBadge";
+import { useId, type CSSProperties, type ReactNode } from "react";
 import { ValueSwap } from "@/components/ValueSwap";
 import { useFirstAppearance } from "@/lib/use-first-appearance";
 import { percentOf, type ProgressSummary } from "@/lib/progress";
@@ -24,7 +23,7 @@ interface Arc {
  * 그 원의 stroke-dashoffset만 움직인다(`motion-donut-draw`). 그려진 호 자체와 가운데 글자·범례는 처음부터 최종 값이다. 이미 본 도넛(탭을 오가거나 다시 방문)·움직임 줄이기에서는 마스크를 쓰지 않는다.
  * 호 하나는 stroke-dasharray로 "내 길이만 그리고 나머지는 비움", stroke-dashoffset으로 "앞 호들이 차지한 길이만큼 뒤로 밀기"를 해서 이어 붙인다.
  */
-export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
+export function ProgressDonut({ progress, heading }: { progress: ProgressSummary; heading?: ReactNode }) {
   const t = useTranslations("Progress");
   const uid = useId().replace(/:/g, ""); // url(#id)에 콜론이 들어가면 곤란해서 뺀다
   // 기록이 하나도 없으면 그릴 호가 없으니 모션도 없다(없는 값을 그리는 것처럼 보이지 않게)
@@ -44,6 +43,7 @@ export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
     consumed += length;
     return { ...arc, length, offset };
   });
+  // 범례는 5개 단계만 점+글자+개수로 한 덩어리(시안 Home4). 도넛의 회색(S 미만)·바탕(기록 없음)은 아래 보조 줄에 개수를 적는다
   const legend = [
     { stage: "EXC", count: progress.exc },
     { stage: "FC", count: progress.fc },
@@ -53,8 +53,9 @@ export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
   ] as const;
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="relative size-[132px] shrink-0">
+    <div className="flex items-center gap-3">
+      {/* 64px 링(시안 Home4). viewBox 100 기준 선 두께 12는 64px에서 약 8px이다 */}
+      <div className="relative size-16 shrink-0">
         <svg viewBox="0 0 100 100" className="size-full" aria-hidden="true" data-donut="">
           <defs>
             <linearGradient id={`${uid}-exc`} x1="0" y1="0" x2="1" y2="1">
@@ -107,35 +108,40 @@ export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
             </g>
           </g>
         </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-num text-[28px] font-bold leading-none text-fg">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="font-num text-sm font-bold leading-none text-fg">
             <ValueSwap value={percentOf(progress.recorded, progress.total)}>{percentOf(progress.recorded, progress.total)}</ValueSwap>
-            <span className="text-[13px] font-medium">%</span>
-          </span>
-          <span className="mt-1 font-num text-xs text-fg-dim">
-            <span className="sr-only">{t("record")}</span>
-            {progress.recorded}/{progress.total}
+            <span className="text-[9px] font-medium">%</span>
           </span>
         </div>
       </div>
 
-      <ul className="flex min-w-0 flex-1 flex-col gap-1.5" aria-label={t("overallAria")}>
-        {legend.map((l) => (
-          <li key={l.stage} className={`flex items-center justify-between gap-2 ${l.count === 0 ? "opacity-60" : ""}`}>
-            {/* 단계 배지는 글자가 같이 있으므로 색만으로 구분하지 않는다 */}
-            <StageBadge stage={l.stage} />
-            <span className="font-num text-sm text-fg">{l.count}</span>
+      <div className="min-w-0 flex-1">
+        {heading}
+        <p className="mb-1.5 mt-0.5 font-num text-[10px] text-fg-dim">
+          {t("record")}
+          <b className="font-bold text-fg">{progress.recorded}</b> / {progress.total}
+          <span className="font-sans">{t("songsUnit")}</span>
+        </p>
+        <ul className="flex flex-wrap gap-x-[7px] gap-y-1" aria-label={t("overallAria")}>
+          {legend.map((l) => (
+            // 점(단계 색) + 단계 글자 + 개수. 글자가 같이 있어 색만으로 구분하지 않는다
+            <li key={l.stage} data-stage={l.stage} className={`stage-text flex items-center gap-1 font-num text-[10px] font-bold ${l.count === 0 ? "opacity-60" : ""}`}>
+              <i aria-hidden="true" className="stage-bar block size-[7px] rounded-sm" />
+              <span>{l.stage}</span>
+              <span className="text-fg">{l.count}</span>
+            </li>
+          ))}
+          <li className="flex items-center gap-1 text-[10px] text-fg-dim">
+            <span>{t("belowS")}</span>
+            <span className="font-num font-bold text-fg-sub">{progress.belowS}</span>
           </li>
-        ))}
-        <li className="flex items-center justify-between gap-2 text-xs text-fg-dim">
-          <span>{t("belowS")}</span>
-          <span className="font-num text-sm text-fg-sub">{progress.belowS}</span>
-        </li>
-        <li className="flex items-center justify-between gap-2 text-xs text-fg-dim">
-          <span>{t("noRecord")}</span>
-          <span className="font-num text-sm text-fg-sub">{progress.total - progress.recorded}</span>
-        </li>
-      </ul>
+          <li className="flex items-center gap-1 text-[10px] text-fg-dim">
+            <span>{t("noRecord")}</span>
+            <span className="font-num font-bold text-fg-sub">{progress.total - progress.recorded}</span>
+          </li>
+        </ul>
+      </div>
     </div>
   );
 }

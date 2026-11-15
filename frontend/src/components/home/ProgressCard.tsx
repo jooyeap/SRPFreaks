@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { AverageLevelHelp } from "@/components/HelpTip";
 import { PatternChips } from "@/components/home/PatternChips";
 import { ProgressDonut } from "@/components/home/ProgressDonut";
@@ -9,6 +9,7 @@ import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
 import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import type { SkillResponse } from "@/lib/api-types";
+import { patternLabel } from "@/lib/chart-labels";
 import { HIT_HEAD } from "@/lib/hit-area";
 import { emptyHighCount, nextGoal, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
 import type { PatternCounts, ProgressPattern } from "@/lib/progress-pattern";
@@ -68,10 +69,26 @@ export function ProgressCard({
   patternCounts?: { table: PatternCounts | null; songs: PatternCounts | null };
 }) {
   const t = useTranslations("Progress");
+  const tRoot = useTranslations();
   const [active, setActive] = useState<TabKey>("table");
   const base = TABS.find((candidate) => candidate.key === active) ?? TABS[0];
   const tab: TabText = { href: base.href, name: t(base.name), link: t(base.link), mapLabel: t(base.mapLabel), mapTitle: t(base.mapTitle) };
   const panel = active === "table" ? table : songs;
+  // 카드 머리(시안 Home4): `진행도` 제목 + 고른 속성 + 오른쪽 `보기` 링크. 불러오는 중·실패 때도 같은 머리가 위에 있고, 준비되면 도넛 오른쪽 칸 맨 위로 들어간다
+  const heading = (
+    <div className="flex items-baseline justify-between gap-2">
+      <h2 className="min-w-0 text-[15px] font-bold text-fg">
+        {t("sectionAria", { name: tab.name })}
+        {onPatternChange && pattern !== "all" ? <span className="ml-1 text-[11px] font-semibold text-fg-sub">{patternLabel(pattern, tRoot)}</span> : null}
+      </h2>
+      <Link href={tab.href} className={`shrink-0 text-xs text-fg-sub hover:text-fg ${HIT_HEAD}`}>
+        {tab.link}
+      </Link>
+    </div>
+  );
+  // 속성 칩: 도넛 바로 아래(시안 Home4). 아직 숫자를 못 받은 탭은 칩이 없다
+  const chips =
+    onPatternChange && patternCounts?.[active] ? <PatternChips value={pattern} counts={patternCounts[active]} onChange={onPatternChange} /> : null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -91,43 +108,72 @@ export function ProgressCard({
         ))}
       </div>
 
-      <section aria-label={t("sectionAria", { name: tab.name })} className="flex flex-col gap-4 rounded-2xl border border-line bg-card p-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-num text-[17px] font-bold text-fg">{t("sectionAria", { name: tab.name })}</h2>
-          <Link href={tab.href} className={`text-xs text-fg-sub hover:text-fg ${HIT_HEAD}`}>
-            {tab.link}
-          </Link>
-        </div>
-        {onPatternChange && patternCounts?.[active] ? (
-          <PatternChips value={pattern} counts={patternCounts[active]} onChange={onPatternChange} />
-        ) : null}
-        <PanelBody panel={panel} tab={tab} filtered={onPatternChange !== undefined && pattern !== "all"} average={active === "table" ? average : null} skill={skill} showWeak={active === "table"} />
+      <section aria-label={t("sectionAria", { name: tab.name })} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-3">
+        <PanelBody
+          panel={panel}
+          tab={tab}
+          heading={heading}
+          chips={chips}
+          filtered={onPatternChange !== undefined && pattern !== "all"}
+          average={active === "table" ? average : null}
+          skill={skill}
+          showWeak={active === "table"}
+        />
       </section>
     </div>
   );
 }
 
-function PanelBody({ panel, tab, average, skill, showWeak, filtered }: { panel: ProgressPanel; tab: TabText; average: number | null; skill: SkillResponse | null; showWeak: boolean; filtered: boolean }) {
+function PanelBody({
+  panel,
+  tab,
+  heading,
+  chips,
+  average,
+  skill,
+  showWeak,
+  filtered,
+}: {
+  panel: ProgressPanel;
+  tab: TabText;
+  heading: ReactNode;
+  chips: ReactNode;
+  average: number | null;
+  skill: SkillResponse | null;
+  showWeak: boolean;
+  filtered: boolean;
+}) {
   const t = useTranslations("Progress");
   const fade = useSkeletonFade(panel.kind === "loading");
-  if (panel.kind === "loading") {
-    return <Skeleton label={t("loading", { name: tab.name })} className="h-48" />;
-  }
-  if (panel.kind === "error") {
-    return (
-      <p role="alert" className="text-sm text-fg">
-        {t("loadFailed", { name: tab.name })}
-      </p>
+  // 칩은 상태가 바뀌어도(불러오는 중 ↔ 준비됨) 같은 자리·같은 부모에 있어야 한다: 칩을 누르면 새 속성을 받는 동안 카드가 잠깐 불러오는 상태가 되는데,
+  // 그때 칩이 다시 만들어지면 키보드 초점이 사라진다. 그래서 아래 세 곳 모두 `머리/도넛 → 칩 → 나머지` 순서의 같은 상자 하나로 돌려준다.
+  const shell = (first: ReactNode, rest: ReactNode, withFade = false) => (
+    <div className={`flex flex-col gap-3 ${withFade ? fade : ""}`}>
+      {first}
+      {chips}
+      {rest}
+    </div>
+  );
+  // 준비되지 않은 상태: 머리(제목·링크)와 칩은 그대로 두고 아래만 바뀐다
+  if (panel.kind !== "ready") {
+    return shell(
+      heading,
+      panel.kind === "loading" ? (
+        <Skeleton label={t("loading", { name: tab.name })} className="h-48" />
+      ) : panel.kind === "error" ? (
+        <p role="alert" className="text-sm text-fg">
+          {t("loadFailed", { name: tab.name })}
+        </p>
+      ) : (
+        <p className="text-sm text-fg-sub">{panel.message}</p>
+      ),
     );
-  }
-  if (panel.kind === "empty") {
-    return <p className="text-sm text-fg-sub">{panel.message}</p>;
   }
 
   const { progress } = panel;
   // 속성을 골랐는데 그 속성의 채보가 이 탭에 하나도 없을 때(칩 숫자 0): 빈 도넛 대신 한 줄 안내. 전체(속성 없음)가 0이면 예전처럼 0% 도넛이다
   if (filtered && progress.total === 0) {
-    return <p className="text-sm text-fg-sub">{t("patternEmpty")}</p>;
+    return shell(heading, <p className="text-sm text-fg-sub">{t("patternEmpty")}</p>);
   }
   const goal = nextGoal(progress);
   // 가장 비어 있는 구간 안내는 서열표 탭에서만 보여 준다(곡 목록 탭은 레벨 폴더 기준이라 뺐다).
@@ -136,27 +182,24 @@ function PanelBody({ panel, tab, average, skill, showWeak, filtered }: { panel: 
   // 서열표 탭에서 평균을 알면, 맨 위의 기록 없는 먼 높은 구간을 접어 둔다(2026-10-27). 곡 목록 탭은 단위가 레벨 폴더라 접지 않는다
   const foldCount = showWeak && average !== null ? emptyHighCount(progress.groups, average) : 0;
   const threshold = weak && average !== null && skill ? ratingEntryThreshold(skill, weak.group.key) : null;
-  return (
-    // 섹션(gap-4)의 직접 자식이던 조각들을 같은 간격의 상자 하나로 묶어 스켈레톤→본문 페이드를 건다(배치는 그대로)
-    <div className={`flex flex-col gap-4 ${fade}`}>
-      <ProgressDonut progress={progress} />
-
-      {goal ? (
-        <div className="flex items-center gap-2.5 rounded-[10px] border border-line bg-table-head px-3 py-2.5">
-          <span className="shrink-0 rounded-md bg-chip-on-bg px-2 py-0.5 text-[11px] font-bold text-chip-on-fg">{t("nextGoal")}</span>
-          <p className="break-keep text-[13px] leading-snug text-fg">
-            {t.rich("goalText", { current: goal.current, target: goal.target, left: goal.left, b: (chunks) => <b className="font-num">{chunks}</b> })}
-          </p>
+  // 흐름은 시안 Home4: 링(+머리·범례) → 속성 칩 → 난이도 표. 시안에 없는 `다음 목표`·`가장 비어 있는 구간`은 표 아래에 그대로 둔다
+  return shell(
+    <ProgressDonut progress={progress} heading={heading} />,
+    <>
+      {progress.groups.length > 0 ? (
+        <div className="flex flex-col gap-1">
+          <h3 className="px-0.5 text-[11px] font-bold text-fg-dim">{tab.mapTitle}</h3>
+          <ProgressTiles groups={progress.groups} label={tab.mapLabel} foldCount={foldCount} />
         </div>
       ) : null}
 
-      {progress.groups.length > 0 ? (
-        <>
-          <div className="border-t border-row-line pt-3">
-            <h3 className="text-[13px] font-bold text-fg-sub">{tab.mapTitle}</h3>
-          </div>
-          <ProgressTiles groups={progress.groups} label={tab.mapLabel} foldCount={foldCount} />
-        </>
+      {goal ? (
+        <div className="flex items-center gap-2.5 rounded-[10px] border border-line bg-table-head px-3 py-2">
+          <span className="shrink-0 rounded-md bg-chip-on-bg px-2 py-0.5 text-[11px] font-bold text-chip-on-fg">{t("nextGoal")}</span>
+          <p className="break-keep text-xs leading-snug text-fg">
+            {t.rich("goalText", { current: goal.current, target: goal.target, left: goal.left, b: (chunks) => <b className="font-num">{chunks}</b> })}
+          </p>
+        </div>
       ) : null}
 
       {weak && average !== null ? (
@@ -174,6 +217,7 @@ function PanelBody({ panel, tab, average, skill, showWeak, filtered }: { panel: 
           </Link>
         </div>
       ) : null}
-    </div>
+    </>,
+    true,
   );
 }

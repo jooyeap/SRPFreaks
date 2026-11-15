@@ -124,7 +124,7 @@ describe("ProgressDonut 그리기 모션", () => {
     expect(document.querySelector("[data-donut-draw]")).not.toBeNull();
     expect(document.querySelector("mask")).not.toBeNull();
     expect(document.querySelectorAll("[data-donut] [data-arc]").length).toBe(6);
-    expect(screen.getByText("40/100")).toBeInTheDocument();
+    expect(screen.getByText((_, el) => el?.tagName === "P" && el.textContent === "기록 40 / 100곡")).toBeInTheDocument();
   });
 
   it("같은 도넛이 다시 마운트되면 마스크 없이 바로 그려진다", () => {

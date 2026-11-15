@@ -32,8 +32,11 @@ function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
 const allFolders: ChartFolderListResponse = { totalSongs: 30, totalCharts: 30, versions: [], folders: [folder({ total: 30 })], patternCounts: { 단일: 12, 복합: 10, 이중: 5, 삼중: 1 } };
 const singleFolders: ChartFolderListResponse = { ...allFolders, totalCharts: 12, folders: [folder({ total: 12, recorded: 2, exc: 2, fc: 0, ss: 0, s: 0, belowS: 0 })] };
 
-/** 도넛 가운데 `기록 3/5`(앞의 `기록`은 읽는 글자). 숫자가 여러 노드로 나뉘어 있어 글자 전체로 찾는다 */
-const donutRecord = (text: string) => screen.findByText((_, el) => el?.tagName === "SPAN" && el.textContent === `기록 ${text}`);
+/** 도넛 오른쪽 `기록 4 / 5곡`. 숫자가 여러 노드로 나뉘어 있어 글자 전체로 찾는다 */
+const donutRecord = (text: string) => {
+  const [recorded, total] = text.split("/");
+  return screen.findByText((_, el) => el?.tagName === "P" && el.textContent === `기록 ${recorded} / ${total}곡`);
+};
 
 describe("홈 진행도 속성 필터", () => {
   const fetchMock = vi.fn<typeof fetch>();
@@ -142,9 +145,12 @@ describe("홈 진행도 속성 필터", () => {
     // 처음에는 속성 없이 받는다
     expect(folderUrls.every((u) => !u.includes("pattern="))).toBe(true);
 
-    fireEvent.click(bar.getByRole("button", { name: "단일 12" }));
+    const singleChip = bar.getByRole("button", { name: "단일 12" });
+    fireEvent.click(singleChip);
     await waitFor(() => expect(folderUrls.some((u) => u.includes("pattern=%EB%8B%A8%EC%9D%BC"))).toBe(true));
     expect(await donutRecord("2/12")).toBeInTheDocument(); // 서버가 거른 폴더 합계
+    // 새 속성을 받는 동안 카드가 불러오는 상태를 거쳐도 칩은 다시 만들어지지 않는다(키보드 초점 유지)
+    expect(singleChip).toBeInTheDocument();
     expect(bar.getByRole("button", { name: "전체 30" })).toBeInTheDocument(); // 칩 숫자는 흔들리지 않는다
   });
 
@@ -173,6 +179,17 @@ describe("진행도 칸 지도의 난이도 색 (전곡 완료)", () => {
     expect(row.querySelector("span.stage-text[data-stage='S+'].font-bold")).toHaveTextContent("6.0");
   });
 
+  it("모바일 표형 줄(시안 Home4): 값이 있는 칸은 단계 색 칩, 없는 칸은 `-`이고, 줄 아래에 단계 비율 막대가 있다", () => {
+    render(<ProgressTiles label="칸" groups={[group({ total: 25, recorded: 25, exc: 20, fc: 5 })]} />);
+    const row = link(/6\.0/);
+    const chips = Array.from(row.querySelectorAll("span.rounded-\\[7px\\]"));
+    expect(chips.map((el) => el.textContent?.replace(/^.* /, ""))).toEqual(["20", "5", "-", "-", "-", "-"]);
+    expect(chips[0]).toHaveAttribute("data-stage", "EXC");
+    expect(chips[0].getAttribute("style")).toContain("color-mix");
+    expect(chips[2].getAttribute("data-stage")).toBeNull();
+    expect(row.querySelectorAll("[data-stage-bar]").length).toBeGreaterThan(0);
+  });
+
   it("가장 낮은 단계가 EXC면 금 그라데이션 글자, FC면 하늘 그라데이션 글자다", () => {
     render(
       <ProgressTiles
@@ -182,6 +199,7 @@ describe("진행도 칸 지도의 난이도 색 (전곡 완료)", () => {
     );
     expect(link(/7\.0/).querySelector(".stage-grad-text[data-stage='EXC']")).toHaveTextContent("7.0");
     expect(link(/7\.0/)).toHaveTextContent("모든 채보가 EXC입니다.");
+    expect(link(/7\.0/)).toHaveTextContent("EXC↑"); // 시안 Home4: EXC도 화살표가 붙는다
     expect(link(/6\.8/).querySelector(".stage-grad-text[data-stage='FC']")).toHaveTextContent("6.8");
     expect(link(/6\.8/)).toHaveTextContent("FC↑");
   });

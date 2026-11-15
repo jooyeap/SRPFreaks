@@ -193,6 +193,7 @@
     "tileEmpty": "아직 기록이 없습니다",
     "foldClosed": "{from} ~ {to} · 기록 없는 구간 {count}개",
     "foldOpen": "기록 없는 높은 구간 접기",
+    "songsUnit": "곡",
     "patternAria": "속성 필터",
     "patternAll": "전체",
     "patternEmpty": "이 속성의 채보가 없습니다.",
