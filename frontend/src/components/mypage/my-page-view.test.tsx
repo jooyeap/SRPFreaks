@@ -43,7 +43,7 @@ const folders: ChartFolderListResponse = {
   totalCharts: 20,
   versions: [],
   folders: [
-    { lo: 9, hi: 9.5, total: 20, recorded: 10, exc: 1, fc: 2, ss: 3, s: 2, belowS: 2, averageRecorded: null, averageWithZero: 0, subFolders: [] },
+    { lo: 9, hi: 9.5, total: 20, recorded: 10, exc: 1, fc: 2, ss: 3, sPlus: 0, s: 2, belowS: 2, averageRecorded: null, averageWithZero: 0, subFolders: [] },
   ],
 };
 

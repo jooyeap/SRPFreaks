@@ -13,7 +13,7 @@ import {
 import type { TierGroupResponse } from "@/lib/api-types";
 
 function group(tier: number | null): TierGroupResponse {
-  return { tier, total: 1, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries: [] };
+  return { tier, total: 1, recorded: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries: [] };
 }
 // 서버 순서: 높은 난이도 먼저
 const groups = [group(5.9), group(5.8), group(5.7)];

@@ -85,7 +85,7 @@ export interface TableEntryResponse {
 
 /**
  * 기준 난이도 묶음. tier가 null이면 "미정" 묶음.
- * exc+fc+ss+s+belowS == recorded (기록 없는 채보는 어느 칩에도 세지 않는다, D24).
+ * exc+fc+ss+sPlus+s+belowS == recorded (기록 없는 채보는 어느 칩에도 세지 않는다, D24).
  */
 export interface TierGroupResponse {
   tier: number | null;
@@ -94,6 +94,8 @@ export interface TierGroupResponse {
   exc: number;
   fc: number;
   ss: number;
+  /** S+(87.50 이상 95.00 미만, FC 제외). 이 사이트가 따로 정한 단계다(D83) */
+  sPlus: number;
   s: number;
   belowS: number;
   /** 기록 있는 채보만의 평균. 기록이 없으면 null */
@@ -246,7 +248,7 @@ export interface PlayerDetailResponse {
 
 /**
  * 레벨 폴더 하나(0.5 단위, 또는 그 안의 0.05 단위 하위 폴더). 칩 개수와 평균은 서열표 묶음과 같은 규칙이다(D24):
- * exc+fc+ss+s+belowS == recorded, 기록 없는 채보는 어느 칩에도 세지 않는다.
+ * exc+fc+ss+sPlus+s+belowS == recorded, 기록 없는 채보는 어느 칩에도 세지 않는다.
  */
 export interface ChartFolderResponse {
   lo: number;
@@ -256,6 +258,8 @@ export interface ChartFolderResponse {
   exc: number;
   fc: number;
   ss: number;
+  /** S+(87.50 이상 95.00 미만, FC 제외). 이 사이트가 따로 정한 단계다(D83) */
+  sPlus: number;
   s: number;
   belowS: number;
   /** 기록 있는 채보만의 평균. 기록이 없으면 null */

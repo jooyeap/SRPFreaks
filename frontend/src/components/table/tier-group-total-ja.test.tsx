@@ -16,7 +16,7 @@ vi.mock("next-intl", () => ({
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import type { TierGroupResponse } from "@/lib/api-types";
 
-const group: TierGroupResponse = { tier: 5.8, total: 50, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, recorded: 0, averageRecorded: null, averageWithZero: 0, entries: [] };
+const group: TierGroupResponse = { tier: 5.8, total: 50, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, recorded: 0, averageRecorded: null, averageWithZero: 0, entries: [] };
 
 describe("묶음 머리의 곡 수", () => {
   it("접히지 않는 묶음(폴더 화면)도 일본어에서는 번역된 문구로 보인다", () => {

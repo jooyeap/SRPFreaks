@@ -4,7 +4,7 @@ import { TierFolderNav } from "@/components/table/TierFolderNav";
 import type { TierGroupResponse } from "@/lib/api-types";
 
 function group(over: Partial<TierGroupResponse>): TierGroupResponse {
-  return { tier: 5.8, total: 10, recorded: 4, exc: 0, fc: 0, ss: 0, s: 0, belowS: 4, averageRecorded: 80, averageWithZero: 32, entries: [], ...over };
+  return { tier: 5.8, total: 10, recorded: 4, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 4, averageRecorded: 80, averageWithZero: 32, entries: [], ...over };
 }
 
 // 서버 순서: 높은 난이도 먼저

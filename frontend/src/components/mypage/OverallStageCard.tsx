@@ -8,7 +8,7 @@ function percent(part: number, whole: number): number {
 }
 
 /**
- * 전체 달성 현황: 전체 채보 중 내 기록이 EXC / FC / SS / S / S 미만으로 얼마나 있는지 한 줄 막대와 개수로 보여 준다.
+ * 전체 달성 현황: 전체 채보 중 내 기록이 EXC / FC / SS / S+ / S / S 미만으로 얼마나 있는지 한 줄 막대와 개수로 보여 준다.
  * 홈의 서열표 진행도와 같은 막대·색을 쓴다(색 값은 globals.css). 막대는 장식이고 같은 숫자가 글자로 있다.
  */
 export function OverallStageCard({ stages }: { stages: OverallStages }) {
@@ -17,6 +17,7 @@ export function OverallStageCard({ stages }: { stages: OverallStages }) {
     { stage: "EXC", count: stages.exc },
     { stage: "FC", count: stages.fc },
     { stage: "SS", count: stages.ss },
+    { stage: "S+", count: stages.sPlus },
     { stage: "S", count: stages.s },
   ] as const;
   return (

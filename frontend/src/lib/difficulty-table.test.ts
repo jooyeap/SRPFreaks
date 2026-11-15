@@ -191,9 +191,9 @@ describe("filterTierGroup", () => {
       tierUncertain: false, recommend: "상", recommendUncertain: false, pattern: "단일", patternUncertain: false, ratingEnabled: true, mine: null, ...over,
     };
   }
-  const mine = (rate: number, stage: "EXC" | "FC" | "SS" | "S" | "A" | "B" | "C") => ({ rate, fullCombo: stage === "FC" || stage === "EXC", stage });
+  const mine = (rate: number, stage: "EXC" | "FC" | "SS" | "S+" | "S" | "A" | "B" | "C") => ({ rate, fullCombo: stage === "FC" || stage === "EXC", stage });
   const base: TierGroupResponse = {
-    tier: 5.8, total: 5, recorded: 4, exc: 1, fc: 0, ss: 1, s: 1, belowS: 1, averageRecorded: 0, averageWithZero: 0,
+    tier: 5.8, total: 5, recorded: 4, exc: 1, fc: 0, ss: 1, sPlus: 0, s: 1, belowS: 1, averageRecorded: 0, averageWithZero: 0,
     entries: [
       entry(1, { mine: mine(100, "EXC") }),
       entry(2, { part: "BASS", mine: mine(96, "SS") }),
@@ -210,7 +210,7 @@ describe("filterTierGroup", () => {
   it("파트로 거르고 개수·단계·평균을 남은 채보로 다시 계산한다", () => {
     const g = filterTierGroup(base, { ...EMPTY_FILTERS, part: "BASS" });
     expect(g.entries.map((e) => e.entryId)).toEqual([2, 5]);
-    expect(g).toMatchObject({ total: 2, recorded: 1, exc: 0, fc: 0, ss: 1, s: 0, belowS: 0 });
+    expect(g).toMatchObject({ total: 2, recorded: 1, exc: 0, fc: 0, ss: 1, sPlus: 0, s: 0, belowS: 0 });
     expect(g.averageRecorded).toBe(96);
     expect(g.averageWithZero).toBe(48); // 기록 없는 채보를 0%로 넣은 평균
   });
@@ -228,6 +228,23 @@ describe("filterTierGroup", () => {
 
   it("S 미만은 기록이 있으면서 EXC·FC·SS·S가 아닌 채보다", () => {
     const g = filterTierGroup(base, { ...EMPTY_FILTERS, recommend: ["상", "중", "하"] });
-    expect(g).toMatchObject({ total: 4, recorded: 3, exc: 1, ss: 1, s: 1, belowS: 0 });
+    expect(g).toMatchObject({ total: 4, recorded: 3, exc: 1, ss: 1, sPlus: 0, s: 1, belowS: 0 });
+  });
+
+  it("S+는 S와 따로 세고 칩 합계가 기록 수와 같다 (87.49는 S, 87.50은 S+, 95는 SS, 기록 없음은 어느 칩에도 안 센다)", () => {
+    const withSPlus: TierGroupResponse = {
+      ...base,
+      entries: [
+        entry(1, { mine: mine(87.49, "S") }),
+        entry(2, { mine: mine(87.5, "S+") }),
+        entry(3, { mine: mine(94.99, "S+") }),
+        entry(4, { mine: mine(95, "SS") }),
+        entry(5, { mine: mine(60, "C") }),
+        entry(6),
+      ],
+    };
+    const g = filterTierGroup(withSPlus, { ...EMPTY_FILTERS, recommend: ["상"] });
+    expect(g).toMatchObject({ total: 6, recorded: 5, exc: 0, fc: 0, ss: 1, sPlus: 2, s: 1, belowS: 1 });
+    expect(g.exc + g.fc + g.ss + g.sPlus + g.s + g.belowS).toBe(g.recorded);
   });
 });

@@ -34,7 +34,7 @@ function tier(value: number | null, recorded: number, total: number, recommend =
   const entries = Array.from({ length: total }, (_, i) =>
     entry(Math.round((value ?? 0) * 100) + i, { recommend, mine: i < recorded ? { rate: 90, fullCombo: false, stage: "S" } : null }),
   );
-  return { tier: value, total, recorded, exc: 0, fc: 0, ss: 0, s: recorded, belowS: 0, averageRecorded: null, averageWithZero: 0, entries };
+  return { tier: value, total, recorded, exc: 0, fc: 0, ss: 0, sPlus: 0, s: recorded, belowS: 0, averageRecorded: null, averageWithZero: 0, entries };
 }
 
 function json(body: unknown, status = 200): Response {

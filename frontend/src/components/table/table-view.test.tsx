@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ROW_GRID } from "@/components/table/EntryRow";
 import { StageBadge } from "@/components/table/StageBadge";
-import { TierGroupSection, groupStage } from "@/components/table/TierGroupSection";
+import { TierGroupSection, chipsOf, groupStage } from "@/components/table/TierGroupSection";
 import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 
 function entry(over: Partial<TableEntryResponse> = {}): TableEntryResponse {
@@ -34,6 +34,7 @@ function group(over: Partial<TierGroupResponse> = {}): TierGroupResponse {
     exc: 1,
     fc: 0,
     ss: 1,
+    sPlus: 0,
     s: 0,
     belowS: 1,
     averageRecorded: 90,
@@ -50,8 +51,16 @@ describe("StageBadge", () => {
   });
 });
 
+describe("chipsOf (달성 현황 칩 6개, D83)", () => {
+  it("EXC / FC / SS / S+ / S / S 미만 순서이고 S+는 S와 따로 센다", () => {
+    const chips = chipsOf({ total: 10, exc: 1, fc: 2, ss: 3, sPlus: 4, s: 5, belowS: 6 });
+    expect(chips.map((c) => [c.label, c.count])).toEqual([["EXC", 1], ["FC", 2], ["SS", 3], ["S+", 4], ["S", 5], ["S 미만", 6]]);
+    expect(chips.map((c) => c.stage)).toEqual(["EXC", "FC", "SS", "S+", "S", null]);
+  });
+});
+
 describe("groupStage (묶음 전체 달성 단계)", () => {
-  const all = (over: Partial<TierGroupResponse>) => group({ total: 4, recorded: 4, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, ...over });
+  const all = (over: Partial<TierGroupResponse>) => group({ total: 4, recorded: 4, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, ...over });
 
   it("모든 곡이 EXC면 EXC", () => {
     expect(groupStage(all({ exc: 4 }))).toBe("EXC");
@@ -59,7 +68,9 @@ describe("groupStage (묶음 전체 달성 단계)", () => {
   it("모든 곡이 같은 단계 '이상'이면 가장 낮은 그 단계 (EXC 1 + FC 1 + SS 2 → SS)", () => {
     expect(groupStage(all({ exc: 1, fc: 1, ss: 2 }))).toBe("SS");
     expect(groupStage(all({ exc: 1, fc: 3 }))).toBe("FC");
-    expect(groupStage(all({ ss: 1, s: 3 }))).toBe("S");
+    expect(groupStage(all({ ss: 1, sPlus: 0, s: 3 }))).toBe("S");
+    expect(groupStage(all({ ss: 1, sPlus: 3 }))).toBe("S+");
+    expect(groupStage(all({ ss: 1, sPlus: 2, s: 1 }))).toBe("S");
   });
   it("한 곡이라도 S 미만이거나 기록이 없으면 없음", () => {
     expect(groupStage(all({ exc: 3, belowS: 1 }))).toBeNull();
@@ -81,7 +92,7 @@ describe("TierGroupSection", () => {
 
   it("묶음 전체가 한 단계 이상이면 머리에 단계 효과(막대)가 붙고, 아니면 붙지 않는다", () => {
     const { container, rerender } = render(
-      <TierGroupSection group={group({ total: 4, recorded: 4, exc: 1, fc: 0, ss: 3, s: 0, belowS: 0 })} includeZero={false} />,
+      <TierGroupSection group={group({ total: 4, recorded: 4, exc: 1, fc: 0, ss: 3, sPlus: 0, s: 0, belowS: 0 })} includeZero={false} />,
     );
     expect(container.querySelector("header[data-group-stage='SS']")).not.toBeNull();
     expect(container.querySelector("header .stage-bar")).not.toBeNull();

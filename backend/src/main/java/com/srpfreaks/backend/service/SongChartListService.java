@@ -258,7 +258,7 @@ public class SongChartListService {
 
     private static ChartFolderResponse toFolder(BigDecimal lo, BigDecimal step, List<SongDifficulty> list,
                                                 Map<Long, RecordBest> bests, List<ChartFolderResponse> subFolders) {
-        int exc = 0, fc = 0, ss = 0, s = 0, belowS = 0, recorded = 0;
+        int exc = 0, fc = 0, ss = 0, sPlus = 0, s = 0, belowS = 0, recorded = 0;
         BigDecimal sum = BigDecimal.ZERO;
         for (SongDifficulty d : list) {
             RecordBest best = bests.get(d.getId());
@@ -273,14 +273,15 @@ public class SongChartListService {
                 case EXC -> exc++;
                 case FC -> fc++;
                 case SS -> ss++;
-                case S, S_PLUS -> s++;   // S+는 이번 PR에서 S 칩에 합친다(칩 구성 변경은 후속 PR). 칩 개수는 PR 전과 같다
+                case S_PLUS -> sPlus++;
+                case S -> s++;
                 case A, B, C -> belowS++;
             }
         }
         int total = list.size();
         BigDecimal avgRecorded = recorded == 0 ? null : sum.divide(BigDecimal.valueOf(recorded), 2, RoundingMode.HALF_UP);
         BigDecimal avgWithZero = sum.divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
-        return new ChartFolderResponse(lo, lo.add(step).subtract(LEVEL_UNIT), total, recorded, exc, fc, ss, s, belowS,
+        return new ChartFolderResponse(lo, lo.add(step).subtract(LEVEL_UNIT), total, recorded, exc, fc, ss, sPlus, s, belowS,
                 avgRecorded, avgWithZero, subFolders);
     }
 }

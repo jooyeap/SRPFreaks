@@ -46,6 +46,7 @@ function group(over: Partial<TierGroupResponse>): TierGroupResponse {
     exc: 1,
     fc: 0,
     ss: 1,
+    sPlus: 0,
     s: 1,
     belowS: 1,
     averageRecorded: 90,
@@ -69,32 +70,32 @@ const noticesPage: PageResponse<{ id: number; title: string; content: string; cr
 const playersPage: PageResponse<PlayerSummaryResponse> = { content: players, page: 0, size: 5, totalElements: 1, totalPages: 1 };
 
 function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
-  return { lo: 9.5, hi: 9.99, total: 10, recorded: 6, exc: 1, fc: 1, ss: 1, s: 2, belowS: 1, averageRecorded: 90, averageWithZero: 54, subFolders: [], ...over };
+  return { lo: 9.5, hi: 9.99, total: 10, recorded: 6, exc: 1, fc: 1, ss: 1, sPlus: 0, s: 2, belowS: 1, averageRecorded: 90, averageWithZero: 54, subFolders: [], ...over };
 }
 const foldersBody: ChartFolderListResponse = {
   totalSongs: 30,
   totalCharts: 30,
   versions: [],
-  folders: [folder({ lo: 9.5, hi: 9.99 }), folder({ lo: 9, hi: 9.49, total: 20, recorded: 4, exc: 0, fc: 0, ss: 1, s: 1, belowS: 2 })],
+  folders: [folder({ lo: 9.5, hi: 9.99 }), folder({ lo: 9, hi: 9.49, total: 20, recorded: 4, exc: 0, fc: 0, ss: 1, sPlus: 0, s: 1, belowS: 2 })],
 };
 
-const groups = [group({ tier: 5.8 }), group({ tier: 5.0, total: 20, recorded: 20, exc: 20, ss: 0, s: 0, belowS: 0 }), group({ tier: null, total: 2, recorded: 0, exc: 0, ss: 0, s: 0, belowS: 0 })];
+const groups = [group({ tier: 5.8 }), group({ tier: 5.0, total: 20, recorded: 20, exc: 20, ss: 0, sPlus: 0, s: 0, belowS: 0 }), group({ tier: null, total: 2, recorded: 0, exc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0 })];
 
 describe("tableProgress", () => {
   it("묶음별 개수를 합치고 묶음 순서를 유지한다", () => {
     const p = tableProgress(groups, koT);
-    expect(p).toMatchObject({ total: 32, recorded: 24, exc: 21, fc: 0, ss: 1, s: 1, belowS: 1 });
+    expect(p).toMatchObject({ total: 32, recorded: 24, exc: 21, fc: 0, ss: 1, sPlus: 0, s: 1, belowS: 1 });
     expect(p.groups.map((g) => g.label)).toEqual(["5.8", "5.0", "미정"]);
   });
   it("6.5 이상 묶음은 숫자를 더해 한 줄로 합치고 맨 위에 둔다 (6.4는 그대로)", () => {
     const p = tableProgress([
-      group({ tier: 6.8, total: 3, recorded: 2, exc: 1, fc: 0, ss: 0, s: 1, belowS: 0 }),
-      group({ tier: 6.5, total: 5, recorded: 4, exc: 0, fc: 1, ss: 1, s: 1, belowS: 1 }),
-      group({ tier: 6.4, total: 7, recorded: 1, exc: 0, fc: 0, ss: 0, s: 0, belowS: 1 }),
-      group({ tier: null, total: 2, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 }),
+      group({ tier: 6.8, total: 3, recorded: 2, exc: 1, fc: 0, ss: 0, sPlus: 0, s: 1, belowS: 0 }),
+      group({ tier: 6.5, total: 5, recorded: 4, exc: 0, fc: 1, ss: 1, sPlus: 0, s: 1, belowS: 1 }),
+      group({ tier: 6.4, total: 7, recorded: 1, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 1 }),
+      group({ tier: null, total: 2, recorded: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0 }),
     ], koT);
     expect(p.groups.map((g) => g.label)).toEqual(["6.5 이상", "6.4", "미정"]);
-    expect(p.groups[0]).toMatchObject({ key: "merged-high", href: "/table", total: 8, recorded: 6, exc: 1, fc: 1, ss: 1, s: 2, belowS: 1 });
+    expect(p.groups[0]).toMatchObject({ key: "merged-high", href: "/table", total: 8, recorded: 6, exc: 1, fc: 1, ss: 1, sPlus: 0, s: 2, belowS: 1 });
     expect(p.groups[1].href).toBe("/table/folder/6.4");
     // 합쳐도 전체 합계는 그대로다
     expect(p).toMatchObject({ total: 17, recorded: 7 });
@@ -412,7 +413,7 @@ describe("ProgressCard 도넛", () => {
   const CIRCUMFERENCE = 2 * Math.PI * 40;
 
   it("EXC/FC/SS/S/S 미만을 개수 비율대로 높은 단계부터 이어 붙인다 (개수 0인 호는 만들지 않는다)", () => {
-    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })], koT))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, sPlus: 0, s: 2, belowS: 1 })], koT))} songs={loading} />);
     const arcs = arcsOf(screen.getByRole("region", { name: "서열표 진행도" }));
     expect(arcs.map((a) => a.stage)).toEqual(["EXC", "FC", "S", "A"]);
     expect(arcs[0].length).toBeCloseTo(0.1 * CIRCUMFERENCE, 3);
@@ -424,7 +425,7 @@ describe("ProgressCard 도넛", () => {
   });
 
   it("가운데에 기록 퍼센트와 기록/전체를 글자로 보여 주고, 범례에 기록 없음 개수가 있다", () => {
-    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, s: 2, belowS: 1 })], koT))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, sPlus: 0, s: 2, belowS: 1 })], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     expect(card).toHaveTextContent("60%");
     expect(card).toHaveTextContent("기록 6/10");
@@ -450,8 +451,8 @@ describe("ProgressCard 칸 지도", () => {
       <ProgressCard
         table={ready(
           tableProgress([
-            group({ tier: 6.6, total: 4, recorded: 4, exc: 2, fc: 0, ss: 0, s: 0, belowS: 2 }),
-            group({ tier: 6.5, total: 4, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 }),
+            group({ tier: 6.6, total: 4, recorded: 4, exc: 2, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 2 }),
+            group({ tier: 6.5, total: 4, recorded: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0 }),
           ], koT),
         )}
         songs={loading}
@@ -468,7 +469,7 @@ describe("ProgressCard 칸 지도", () => {
   });
 
   it("기록이 모두 채워진 칸에만 완료 색이 붙고 `완료` 글자는 쓰지 않는다", () => {
-    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, s: 0, belowS: 0 })], koT))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, sPlus: 0, s: 0, belowS: 0 })], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     // 완료한 칸은 하나이고, 그 칸의 막대(모바일 줄용·카드용 두 배치)가 모두 완료 색을 쓴다
     const doneTiles = card.querySelectorAll('li[data-done="true"]');
@@ -483,7 +484,7 @@ describe("ProgressCard 칸 지도", () => {
 
 describe("ProgressCard 모바일 표형 줄", () => {
   it("줄마다 구간·달성 %·단계별 개수(0은 -)가 있고, 단계 이름은 머리글과 숨은 글자로 함께 전한다", () => {
-    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.6, total: 55, recorded: 16, exc: 0, fc: 0, ss: 2, s: 14, belowS: 0 })], koT))} songs={loading} />);
+    render(<ProgressCard table={ready(tableProgress([group({ tier: 5.6, total: 55, recorded: 16, exc: 0, fc: 0, ss: 2, sPlus: 0, s: 14, belowS: 0 })], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     const row = within(card).getByRole("list", { name: "묶음별 진행" }).querySelector("li a")!;
     const mobile = row.querySelector("span.sm\\:hidden")!;

@@ -301,6 +301,7 @@ class SongChartListServiceTest {
         SongDifficulty ss = guitar("ss", "9.20");
         SongDifficulty s = guitar("s", "9.30");
         SongDifficulty a = guitar("a", "9.40");
+        SongDifficulty sPlus = guitar("splus", "9.42");
         guitar("none", "9.45");
         stubCharts();
         stubBests(7L,
@@ -308,20 +309,23 @@ class SongChartListServiceTest {
                 new RecordBest(fc.getId(), new BigDecimal("97.00"), true),
                 new RecordBest(ss.getId(), new BigDecimal("96.00"), false),
                 new RecordBest(s.getId(), new BigDecimal("85.00"), false),
-                new RecordBest(a.getId(), new BigDecimal("75.00"), false));
+                new RecordBest(a.getId(), new BigDecimal("75.00"), false),
+                new RecordBest(sPlus.getId(), new BigDecimal("87.50"), false));
 
         ChartFolderResponse f = service.folders(7L).folders().get(0);
 
-        assertThat(f.total()).isEqualTo(6);
-        assertThat(f.recorded()).isEqualTo(5);
+        assertThat(f.total()).isEqualTo(7);
+        assertThat(f.recorded()).isEqualTo(6);
         assertThat(f.exc()).isEqualTo(1);
         assertThat(f.fc()).isEqualTo(1);
         assertThat(f.ss()).isEqualTo(1);
+        assertThat(f.sPlus()).isEqualTo(1);   // 87.50은 S+ (D83)
         assertThat(f.s()).isEqualTo(1);
         assertThat(f.belowS()).isEqualTo(1);
-        // (100 + 97 + 96 + 85 + 75) / 5 = 90.60, 기록 없는 채보를 0으로 넣으면 453 / 6 = 75.50
-        assertThat(f.averageRecorded()).isEqualByComparingTo("90.60");
-        assertThat(f.averageWithZero()).isEqualByComparingTo("75.50");
+        assertThat(f.exc() + f.fc() + f.ss() + f.sPlus() + f.s() + f.belowS()).isEqualTo(f.recorded());
+        // (100 + 97 + 96 + 85 + 75 + 87.5) / 6 = 90.08, 기록 없는 채보를 0으로 넣으면 540.5 / 7 = 77.21
+        assertThat(f.averageRecorded()).isEqualByComparingTo("90.08");
+        assertThat(f.averageWithZero()).isEqualByComparingTo("77.21");
     }
 
     @Test

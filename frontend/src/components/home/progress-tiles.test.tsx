@@ -4,7 +4,7 @@ import { ProgressTiles } from "@/components/home/ProgressTiles";
 import type { ProgressGroup } from "@/lib/difficulty-table";
 
 function group(over: Partial<ProgressGroup>): ProgressGroup {
-  return { key: "6.0", label: "6.0", href: "/table/folder/6.0", total: 10, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, ...over };
+  return { key: "6.0", label: "6.0", href: "/table/folder/6.0", total: 10, recorded: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, ...over };
 }
 
 /** 넓은 화면(sm 이상) 카드의 단계 칩만 고른다. 모바일 표형 줄의 칸에는 테두리 칩 모양(rounded-md)이 없다 */
@@ -14,7 +14,7 @@ function cardChips(link: HTMLElement): string[] {
 
 describe("진행도 칸 지도의 단계 칩 (넓은 화면 카드)", () => {
   it("0이 아닌 단계만 칩으로 보이고, 순서는 그대로다", () => {
-    render(<ProgressTiles label="칸" groups={[group({ key: "7.0", label: "7.0", href: "/a", total: 12, recorded: 3, ss: 1, s: 2 })]} />);
+    render(<ProgressTiles label="칸" groups={[group({ key: "7.0", label: "7.0", href: "/a", total: 12, recorded: 3, ss: 1, sPlus: 0, s: 2 })]} />);
     const link = screen.getByRole("link", { name: /7\.0/ });
     expect(cardChips(link)).toEqual(["SS 1", "S 2"]);
     expect(link).not.toHaveTextContent("아직 기록이 없습니다");

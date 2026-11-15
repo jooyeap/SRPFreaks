@@ -143,7 +143,7 @@ describe("RatingGoalPlanner", () => {
       mine: { rate: 70, fullCombo: false, stage: "C" },
     };
     const folder = (tier: number, entries: TableEntryResponse[]): TierGroupResponse => ({
-      tier, total: entries.length, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries,
+      tier, total: entries.length, recorded: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries,
     });
 
     it("목록 밖 곡이 들어오면 `목록 진입`과 밀려나는 곡을 보여 준다 (+30: 70.00% → 78.17%, 에스원이 밀려남)", async () => {

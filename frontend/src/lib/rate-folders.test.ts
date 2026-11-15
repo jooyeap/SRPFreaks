@@ -37,11 +37,11 @@ describe("folderStageCounts", () => {
       11,
     );
     // EXC 2, FC 3(95구간 1 + 90구간 1 + 73구간 1), SS 2, S 1(90구간 2-1 + 80구간 1 = 2), S 미만 1(73구간 0 + 하위 2)
-    expect(folderStageCounts(f)).toEqual({ exc: 2, fc: 3, ss: 2, s: 2, belowS: 2, total: 14 });
+    expect(folderStageCounts(f)).toEqual({ exc: 2, fc: 3, ss: 2, sPlus: 0, s: 2, belowS: 2, total: 14 });
   });
 
   it("미플레이는 어느 단계에도 세지 않는다", () => {
-    expect(folderStageCounts(folder({ UNPLAYED: [4, 0, 0] }, 4, 0))).toEqual({ exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, total: 4 });
+    expect(folderStageCounts(folder({ UNPLAYED: [4, 0, 0] }, 4, 0))).toEqual({ exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, total: 4 });
   });
 });
 

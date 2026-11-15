@@ -47,6 +47,7 @@ export interface TableProgress {
   exc: number;
   fc: number;
   ss: number;
+  sPlus: number;
   s: number;
   belowS: number;
   /** 묶음별 (서열표 순서 그대로: 높은 기준 난이도 먼저, 미정 맨 뒤). 6.5 이상은 한 줄로 합친다 */
@@ -66,6 +67,7 @@ export interface ProgressGroup {
   exc: number;
   fc: number;
   ss: number;
+  sPlus: number;
   s: number;
   belowS: number;
 }
@@ -81,6 +83,7 @@ export function tableProgress(groups: readonly TierGroupResponse[], t: Translato
     exc: sum((g) => g.exc),
     fc: sum((g) => g.fc),
     ss: sum((g) => g.ss),
+    sPlus: sum((g) => g.sPlus),
     s: sum((g) => g.s),
     belowS: sum((g) => g.belowS),
     groups: progressGroups(groups, t),
@@ -107,6 +110,7 @@ function progressGroups(groups: readonly TierGroupResponse[], t: Translator): Pr
       exc: sum((g) => g.exc),
       fc: sum((g) => g.fc),
       ss: sum((g) => g.ss),
+      sPlus: sum((g) => g.sPlus),
       s: sum((g) => g.s),
       belowS: sum((g) => g.belowS),
     });
@@ -124,6 +128,7 @@ function progressGroups(groups: readonly TierGroupResponse[], t: Translator): Pr
       exc: g.exc,
       fc: g.fc,
       ss: g.ss,
+      sPlus: g.sPlus,
       s: g.s,
       belowS: g.belowS,
     });
@@ -237,7 +242,7 @@ export function hasFilters(filters: TableFilters): boolean {
 /**
  * 묶음 하나를 필터로 거른 새 묶음. 한 필터 안의 값은 OR, 필터끼리는 AND이고(서버의 서열표 필터와 같은 규칙),
  * 추천·속성 값이 없는 채보는 그 필터가 걸리면 빠진다. 머리에 보이는 개수·단계·평균도 남은 채보로 다시 계산한다
- * (단계는 서버가 채보마다 준 mine.stage를 쓴다. S 미만 = 기록이 있으면서 SS·S+·S도 아닌 것).
+ * (단계는 서버가 채보마다 준 mine.stage를 쓴다. S 미만 = 기록이 있으면서 SS·S+·S도 아닌 것(S+는 S와 따로 센다, D83)).
  * 묶음 한 장만 보는 화면에서 쓴다 — 서열표 본문은 서버가 거른 묶음을 받는다.
  */
 export function filterTierGroup(group: TierGroupResponse, filters: TableFilters): TierGroupResponse {
@@ -255,7 +260,8 @@ export function filterTierGroup(group: TierGroupResponse, filters: TableFilters)
   const exc = count("EXC");
   const fc = count("FC");
   const ss = count("SS");
-  const s = count("S") + count("S+"); // S+는 S 칩에 합친다(칩 구성 변경은 후속 PR)
+  const sPlus = count("S+");
+  const s = count("S");
   const rateSum = recorded.reduce((acc, e) => acc + (e.mine?.rate ?? 0), 0);
   return {
     ...group,
@@ -264,8 +270,9 @@ export function filterTierGroup(group: TierGroupResponse, filters: TableFilters)
     exc,
     fc,
     ss,
+    sPlus,
     s,
-    belowS: recorded.length - exc - fc - ss - s,
+    belowS: recorded.length - exc - fc - ss - sPlus - s,
     averageRecorded: recorded.length > 0 ? rateSum / recorded.length : null,
     averageWithZero: entries.length > 0 ? rateSum / entries.length : 0,
     entries,

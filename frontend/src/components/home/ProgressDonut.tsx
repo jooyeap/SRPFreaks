@@ -11,12 +11,12 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
  * <linearGradient>의 끝점 색을 CSS 변수(--ring-*)로 받는다. 나머지 단계는 단계 막대와 같은 색(--st-bar)이다.
  */
 interface Arc {
-  stage: "EXC" | "FC" | "SS" | "S" | "A";
+  stage: "EXC" | "FC" | "SS" | "S+" | "S" | "A";
   count: number;
 }
 
 /**
- * 진행도 도넛: 전체 채보 중 EXC/FC/SS/S/S 미만이 차지하는 비율을 호로 보여 주고(남은 부분 = 기록 없음 = 바탕색),
+ * 진행도 도넛: 전체 채보 중 EXC/FC/SS/S+/S/S 미만이 차지하는 비율을 호로 보여 주고(남은 부분 = 기록 없음 = 바탕색),
  * 가운데에 기록 퍼센트와 `기록/전체`를 글자로 둔다. 호는 장식(aria-hidden)이고 같은 숫자가 글자 범례로 따로 있다 (색만으로 전달하지 않는다).
  * 호 하나는 stroke-dasharray로 "내 길이만 그리고 나머지는 비움", stroke-dashoffset으로 "앞 호들이 차지한 길이만큼 뒤로 밀기"를 해서 이어 붙인다.
  */
@@ -27,6 +27,7 @@ export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
     { stage: "EXC", count: progress.exc },
     { stage: "FC", count: progress.fc },
     { stage: "SS", count: progress.ss },
+    { stage: "S+", count: progress.sPlus },
     { stage: "S", count: progress.s },
     { stage: "A", count: progress.belowS }, // S 미만(A/B/C 합)은 A 색
   ];
@@ -41,6 +42,7 @@ export function ProgressDonut({ progress }: { progress: ProgressSummary }) {
     { stage: "EXC", count: progress.exc },
     { stage: "FC", count: progress.fc },
     { stage: "SS", count: progress.ss },
+    { stage: "S+", count: progress.sPlus },
     { stage: "S", count: progress.s },
   ] as const;
 

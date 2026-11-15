@@ -110,14 +110,15 @@ export interface OverallStages extends StageCounts {
 
 /**
  * 전체 곡 목록 폴더(서버가 계산한 칩 개수)를 모두 합쳐 전체 달성 현황을 만든다.
- * 서버가 이미 단계(EXC/FC/SS/S/S 미만)로 나눈 값이라 화면에서 다시 판정하지 않고 더하기만 한다.
+ * 서버가 이미 단계(EXC/FC/SS/S+/S/S 미만)로 나눈 값이라 화면에서 다시 판정하지 않고 더하기만 한다.
  */
 export function overallStages(list: ChartFolderListResponse): OverallStages {
-  const sum: OverallStages = { exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, total: 0, recorded: 0 };
+  const sum: OverallStages = { exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, total: 0, recorded: 0 };
   for (const f of list.folders) {
     sum.exc += f.exc;
     sum.fc += f.fc;
     sum.ss += f.ss;
+    sum.sPlus += f.sPlus;
     sum.s += f.s;
     sum.belowS += f.belowS;
     sum.total += f.total;

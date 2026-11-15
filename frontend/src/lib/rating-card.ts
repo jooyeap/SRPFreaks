@@ -191,13 +191,12 @@ export interface CardModel {
   footerRight: string;
 }
 
-/** 단계별 곡 수 (머리글 오른쪽에 EXC / FC / SS / S로 보인다). 레이팅 목록 40곡 전체가 대상이다. */
+/** 단계별 곡 수 (머리글 오른쪽에 EXC / FC / SS / S+ / S로 보인다). 레이팅 목록 40곡 전체가 대상이다. */
 export function stageCounts(skill: SkillResponse): CardCountView[] {
   const entries = [...skill.single, ...skill.other];
-  return (["EXC", "FC", "SS", "S"] as const).map((stage) => ({
+  return (["EXC", "FC", "SS", "S+", "S"] as const).map((stage) => ({
     label: stage,
-    // S+는 이번 PR에서 S 칸에 합친다(칩 구성 변경은 후속 PR)
-    count: entries.filter((entry) => entry.stage === stage || (stage === "S" && entry.stage === "S+")).length,
+    count: entries.filter((entry) => entry.stage === stage).length,
     color: STAGE_COLORS[stage],
   }));
 }

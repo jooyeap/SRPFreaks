@@ -17,6 +17,7 @@ function folder(lo: number, over: Partial<ChartFolderResponse> = {}): ChartFolde
     exc: 0,
     fc: 1,
     ss: 0,
+    sPlus: 0,
     s: 0,
     belowS: 1,
     averageRecorded: 90.5,
@@ -149,8 +150,8 @@ describe("SongListView", () => {
     const all: ChartFolderListResponse = {
       ...folders,
       folders: [
-        folder(9.5, { total: 3, recorded: 3, exc: 1, fc: 0, ss: 2, s: 0, belowS: 0 }),
-        folder(9.0, { total: 4, recorded: 3, exc: 1, fc: 0, ss: 2, s: 0, belowS: 0 }),
+        folder(9.5, { total: 3, recorded: 3, exc: 1, fc: 0, ss: 2, sPlus: 0, s: 0, belowS: 0 }),
+        folder(9.0, { total: 4, recorded: 3, exc: 1, fc: 0, ss: 2, sPlus: 0, s: 0, belowS: 0 }),
       ],
     };
     fetchMock.mockImplementation((input) =>
