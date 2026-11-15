@@ -440,7 +440,7 @@ export function canSeeAdminMenu(role: Role | null | undefined): boolean {
 }
 
 /** 관리 메뉴 줄 아이콘 이름. 그림은 AdminMenuIcon이 그린다. */
-export type AdminMenuIconName = "songs" | "table" | "chartStats" | "songImport" | "suggestions" | "users" | "settings" | "auditLogs";
+export type AdminMenuIconName = "songs" | "table" | "chartStats" | "songImport" | "suggestions" | "users" | "settings" | "auditLogs" | "dashboard";
 
 export interface AdminMenuItem {
   href: string;
@@ -462,7 +462,7 @@ export interface AdminMenuGroup {
 
 /**
  * 관리 메뉴 묶음과 항목(D78). 새 관리 화면이 생기면 알맞은 묶음에 한 줄 추가한다.
- * 항목마다 minRole이 있고 권한별 노출은 예전과 같다(ADMIN: 곡·서열표 관리, 서열표 분석, 건의 관리 / ROOT: 거기에 공식 곡 목록 갱신, 사용자, 설정, 감사 로그).
+ * 항목마다 minRole이 있고 권한별 노출은 예전과 같다(ADMIN: 곡·서열표 관리, 서열표 분석, 건의 관리 / ROOT: 거기에 공식 곡 목록 갱신, 사용자, 대시보드, 설정, 감사 로그).
  */
 export const ADMIN_MENU_GROUPS: readonly AdminMenuGroup[] = [
   {
@@ -489,6 +489,8 @@ export const ADMIN_MENU_GROUPS: readonly AdminMenuGroup[] = [
     titleKey: "Admin.groupSystem",
     rootChip: true,
     items: [
+      // 대시보드(D80): 가입자·기록·티어·건의 현황을 숫자로만 보여 주는 읽기 전용 화면. 시스템 묶음의 맨 위, ROOT 전용
+      { href: "/admin/dashboard", titleKey: "Admin.menuDashboard", descriptionKey: "Admin.menuDashboardDesc", minRole: "ROOT", icon: "dashboard" },
       { href: "/admin/settings", titleKey: "Admin.menuSettings", descriptionKey: "Admin.menuSettingsDesc", minRole: "ROOT", icon: "settings" },
       { href: "/admin/audit-logs", titleKey: "Admin.menuAuditLogs", descriptionKey: "Admin.menuAuditLogsDesc", minRole: "ROOT", icon: "auditLogs" },
     ],

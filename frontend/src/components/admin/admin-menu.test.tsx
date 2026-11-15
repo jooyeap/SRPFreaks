@@ -85,7 +85,11 @@ describe("AdminMenu 묶음·항목 (D78)", () => {
     const system = group("시스템ROOT");
     expect(system.getByRole("link", { name: /^설정/ })).toHaveAttribute("href", "/admin/settings");
     expect(system.getByRole("link", { name: /감사 로그/ })).toHaveAttribute("href", "/admin/audit-logs");
-    expect(system.getAllByRole("link")).toHaveLength(2);
+    expect(system.getAllByRole("link")).toHaveLength(3);
+    // 대시보드(D80)는 시스템 묶음의 맨 위다
+    const first = system.getAllByRole("link")[0];
+    expect(first).toHaveAttribute("href", "/admin/dashboard");
+    expect(first).toHaveTextContent("대시보드");
     // 시스템 묶음 제목 옆의 ROOT 칩은 글자로 보인다
     expect(system.getByText("ROOT")).toBeInTheDocument();
   });
@@ -102,6 +106,7 @@ describe("AdminMenu 묶음·항목 (D78)", () => {
     expect(screen.queryByRole("link", { name: /사용자/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /감사 로그/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /^설정/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /대시보드/ })).toBeNull();   // 대시보드(D80)는 ROOT 전용: ADMIN에게는 메뉴에서 안 보인다
     expect(screen.queryByText("ROOT")).toBeNull();
     expect(screen.queryByRole("region", { name: /시스템/ })).toBeNull();
   });

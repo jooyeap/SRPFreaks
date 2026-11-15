@@ -103,6 +103,8 @@ public class SecurityConfig {
                         .hasRole("ROOT")
                 // 관리 API는 주소 단계에서도 ADMIN 이상으로 막는다(방어를 한 겹 더). 컨트롤러의 @PreAuthorize를 깜빡해도 일반 사용자에게 열리지 않는다.
                 // 더 높은 권한(ROOT 전용)이 필요한 곳은 각 메서드의 @PreAuthorize가 계속 맡는다.
+                // 관리자 대시보드(D80)는 ROOT 전용이라 일반 관리 규칙(ADMIN 이상)보다 먼저 ROOT로 막는다(규칙은 위에서부터 첫 일치가 적용된다).
+                .requestMatchers("/api/v1/admin/dashboard", "/api/v1/admin/dashboard/**").hasRole("ROOT")
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/**").authenticated()
                 // 그 밖의 모든 경로(/error, 문서 경로 포함)는 막는다
