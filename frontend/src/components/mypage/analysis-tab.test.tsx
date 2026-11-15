@@ -107,8 +107,8 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     // 내 목록에 없는 속성: 차이 대신 `–`, 안내 한 줄
     expect(items[2]).toHaveTextContent("내 레이팅 목록에 없습니다.");
     expect(within(items[2]).getAllByText("–")).toHaveLength(3);   // 차이 · 내 막대 · 같은 티어 막대 값
-    // 이 묶음만 같은 티어 인원이 모자란 경우: 차이는 `–`, `비교 대상이 적어요`
-    expect(items[3]).toHaveTextContent("2곡 · 비교 대상이 적어요");
+    // 이 묶음만 같은 티어 인원이 모자란 경우: 차이는 `–`, `비교 대상이 적습니다`
+    expect(items[3]).toHaveTextContent("2곡 · 비교 대상이 적습니다");
     // 막대는 장식(aria-hidden)이고 값은 글자 줄이 담는다
     expect(items[0].querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
@@ -208,7 +208,7 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
     });
   });
 
-  it("같은 티어 인원이 모자라면 `비교 대상이 적어요`를 보이고 비교선·차이·약점·추천 곡은 없다(내 값은 그대로)", async () => {
+  it("같은 티어 인원이 모자라면 `비교 대상이 적습니다`를 보이고 비교선·차이·약점·추천 곡은 없다(내 값은 그대로)", async () => {
     show(
       response({
         peerAvailable: false, bandUsers: 3, weakBandFrom: null, easyCharts: [],
@@ -218,7 +218,7 @@ describe("분석 탭 · 약점 분석 (D72)", () => {
         bands: [band(6, { peerAvg: null, peerUsers: null, diff: null, myAvg: 80 })],
       }),
     );
-    expect(await screen.findByRole("status")).toHaveTextContent("비교 대상이 적어요");
+    expect(await screen.findByRole("status")).toHaveTextContent("비교 대상이 적습니다");
     const items = within(await patternList()).getAllByRole("listitem");
     expect(items[0]).toHaveTextContent("8곡");
     expect(items[0].textContent).not.toMatch(/[+−]\d/);

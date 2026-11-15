@@ -116,11 +116,11 @@ describe("결론 문장·기록 수 계산 (순수 함수)", () => {
 });
 
 describe("대시보드 결론 문장 카드와 속성 줄 기록 수", () => {
-  it("첫 줄 `단일 +1.8% 우세 · 삼중 −3.2% 열세`, 둘째 줄 `삼중은 상대가 7곡 더 기록했어요.`(총점 차 문장은 없다)", async () => {
+  it("첫 줄 `단일 +1.8% 우세 · 삼중 −3.2% 열세`, 둘째 줄 `삼중은 상대가 7곡 더 기록했습니다.`(총점 차 문장은 없다)", async () => {
     showDashboard();
     const card = await screen.findByTestId("rival-conclusion");
     expect(card).toHaveTextContent(`단일 +1.8% 우세 · 삼중 ${MINUS}3.2% 열세`);
-    expect(card).toHaveTextContent("삼중은 상대가 7곡 더 기록했어요.");
+    expect(card).toHaveTextContent("삼중은 상대가 7곡 더 기록했습니다.");
     expect(card).not.toHaveTextContent("총점 차");
     expect(card).not.toHaveTextContent("중 삼중이");
     expect(card).not.toHaveTextContent("앞서");
@@ -135,7 +135,7 @@ describe("대시보드 결론 문장 카드와 속성 줄 기록 수", () => {
     ]);
     const card = await screen.findByTestId("rival-conclusion");
     expect(card).toHaveTextContent(`단일 +1.8% 우세 · 삼중 ${MINUS}3.2% 열세`);
-    expect(card).not.toHaveTextContent("더 기록했어요");
+    expect(card).not.toHaveTextContent("더 기록했습니다");
     expect(card).not.toHaveTextContent("총점 차");
     expect(card.querySelectorAll("p")).toHaveLength(1);
   });

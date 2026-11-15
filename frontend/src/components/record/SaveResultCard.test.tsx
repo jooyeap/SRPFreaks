@@ -68,19 +68,19 @@ describe("SaveResultCard", () => {
     expect(within(card).queryByText("레이팅 목록")).toBeNull();
   });
 
-  it("제목은 `저장했어요`이고 ✓는 장식으로 따로 둔다", () => {
+  it("제목은 `저장했습니다`이고 ✓는 장식으로 따로 둔다", () => {
     const { card } = renderCard();
-    expect(within(card).getByRole("heading", { name: "저장했어요" })).toBeInTheDocument();
+    expect(within(card).getByRole("heading", { name: "저장했습니다" })).toBeInTheDocument();
     expect(within(card).getByText("✓")).toHaveAttribute("aria-hidden", "true");
   });
 
-  it("진입 안내: 단일이면 `단일 15 안으로 들어왔어요`, 그 외면 `그 외 25 안으로 들어왔어요`", () => {
+  it("진입 안내: 단일이면 `단일 15 안으로 들어왔습니다`, 그 외면 `그 외 25 안으로 들어왔습니다`", () => {
     const single = renderCard({ ...base, entry: { group: "single", limit: 15 } });
-    expect(within(single.card).getByText("단일 15 안으로 들어왔어요")).toBeInTheDocument();
+    expect(within(single.card).getByText("단일 15 안으로 들어왔습니다")).toBeInTheDocument();
     expect(within(single.card).queryByText("새로 들어갔습니다")).toBeNull();
     cleanup();
     const other = renderCard({ ...base, entry: { group: "other", limit: 25 } });
-    expect(within(other.card).getByText("그 외 25 안으로 들어왔어요")).toBeInTheDocument();
+    expect(within(other.card).getByText("그 외 25 안으로 들어왔습니다")).toBeInTheDocument();
   });
 
   it("그룹을 판정할 수 없으면(entry 없음) 기존 `새로 들어갔습니다` 문구를 쓴다", () => {
@@ -94,7 +94,7 @@ describe("SaveResultCard", () => {
       entry: { group: "single", limit: 15 },
       ratingChange: { totalBefore: 100, totalAfter: 110, change: 10, entered: false, inList: true },
     });
-    expect(within(card).queryByText(/안으로 들어왔어요/)).toBeNull();
+    expect(within(card).queryByText(/안으로 들어왔습니다/)).toBeNull();
     expect(within(card).getByText("목록에 있습니다")).toBeInTheDocument();
   });
 
@@ -143,10 +143,10 @@ describe("SaveResultCard", () => {
         ratingChange: server({ group: "SINGLE", groupLimit: 15, rank: null, pointsToList: 64, scoreAfter: 240, scoreBefore: null, newBest: true, previousBestRate: null }),
       });
       expect(within(card).getByText("아직 레이팅 목록에는 들지 못했습니다.")).toBeInTheDocument();
-      expect(within(card).getByText("레이팅 보더까지 64.00점 남았어요")).toBeInTheDocument();
+      expect(within(card).getByText("레이팅 보더까지 64.00점 남았습니다")).toBeInTheDocument();
       cleanup();
       const other = renderCard({ ...base, ratingChange: server({ group: "OTHER", groupLimit: 25, pointsToList: 1.5, scoreAfter: 240 }) });
-      expect(within(other.card).getByText("레이팅 보더까지 1.50점 남았어요")).toBeInTheDocument();
+      expect(within(other.card).getByText("레이팅 보더까지 1.50점 남았습니다")).toBeInTheDocument();
     });
 
     it("그룹이 덜 차서 남은 점수가 없으면(null) 남은 점수 줄은 없다", () => {
@@ -208,7 +208,7 @@ describe("SaveResultCard", () => {
         entry: { group: "single", limit: 15 },
         ratingChange: server({ inList: true, entered: true, change: 5, group: "OTHER", groupLimit: 25, scoreAfter: 240 }),
       });
-      expect(within(card).getByText("그 외 25 안으로 들어왔어요")).toBeInTheDocument();
+      expect(within(card).getByText("그 외 25 안으로 들어왔습니다")).toBeInTheDocument();
     });
 
     it("새 필드가 없는 구버전 응답에서도 1단계 동작 그대로다", () => {

@@ -260,7 +260,7 @@ describe("기록 수정 / 삭제", () => {
     expect(within(confirm).getByRole("button", { name: "취소" })).toBeInTheDocument();
     expect(within(confirm).getByRole("button", { name: "삭제" })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.queryByText("기록을 삭제했어요")).toBeNull(); // 되돌리기 토스트 없음
+    expect(screen.queryByText("기록을 삭제했습니다")).toBeNull(); // 되돌리기 토스트 없음
     expect(callsOf("DELETE")).toHaveLength(0);
   });
 
@@ -273,7 +273,7 @@ describe("기록 수정 / 삭제", () => {
     expect(screen.getByLabelText("달성률")).toHaveValue("9125");
     expect(screen.getByRole("button", { name: "이 기록 삭제" })).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.queryByText("기록을 삭제했어요")).toBeNull();
+    expect(screen.queryByText("기록을 삭제했습니다")).toBeNull();
     expect(callsOf("DELETE")).toHaveLength(0);
   });
 
@@ -284,7 +284,7 @@ describe("기록 수정 / 삭제", () => {
     fireEvent.click(within(screen.getByRole("dialog", { name: "기록 삭제" })).getByRole("button", { name: "삭제" }));
     expect(screen.queryByRole("dialog", { name: "기록 삭제" })).toBeNull();
     expect(onClose).toHaveBeenCalled();
-    expect(screen.getByRole("status")).toHaveTextContent("기록을 삭제했어요");
+    expect(screen.getByRole("status")).toHaveTextContent("기록을 삭제했습니다");
     expect(screen.getByRole("button", { name: "되돌리기" })).toBeInTheDocument();
     expect(callsOf("DELETE")).toHaveLength(0); // 5초 전에는 서버 요청이 없다
     await waitFor(() => expect(callsOf("DELETE")).toHaveLength(1), { timeout: 7000 });

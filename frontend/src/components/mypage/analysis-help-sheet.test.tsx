@@ -44,7 +44,7 @@ describe("분석 탭 계산 설명 시트", () => {
   it("항목 8개가 제목만 접힌 채 보인다", () => {
     render(<AnalysisHelpSheet minCharts={3} minBandUsers={5} />);
     openSheet();
-    const titles = ["무엇과 비교하나요?", "막대와 오른쪽 숫자", "속성별", "난이도대별", "「약점」 표시", "올리기 쉬운 곡 3개", "「비교 대상이 적어요」", "알아 둘 점"];
+    const titles = ["무엇과 비교하나요?", "막대와 오른쪽 숫자", "속성별", "난이도대별", "「약점」 표시", "올리기 쉬운 곡 3개", "「비교 대상이 적습니다」", "알아 둘 점"];
     titles.forEach((title) => expect(screen.getByText(title), title).toBeTruthy());
     expect(screen.getAllByRole("button", { expanded: false })).toHaveLength(8);
   });

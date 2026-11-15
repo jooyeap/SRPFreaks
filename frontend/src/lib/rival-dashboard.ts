@@ -185,7 +185,7 @@ export interface ConclusionData {
   strong: RivalPatternSummary | null;
   /** 열세 속성. 없으면 null. */
   weak: RivalPatternSummary | null;
-  /** 열세 속성에서 (상대 기록 수 − 내 기록 수)가 0보다 크면 그 차이(`상대가 N곡 더 기록했어요`). 아니면 null이라 문장을 숨긴다. */
+  /** 열세 속성에서 (상대 기록 수 − 내 기록 수)가 0보다 크면 그 차이(`상대가 N곡 더 기록했습니다`). 아니면 null이라 문장을 숨긴다. */
   moreTheirs: number | null;
 }
 

@@ -195,7 +195,7 @@ describe("SongRankingView", () => {
     serve(() => json(response({ players: 0, totalPages: 0, me: null, items: [] })));
     renderView();
 
-    expect(await screen.findByText("아직 순위에 오른 기록이 없어요")).toBeInTheDocument();
+    expect(await screen.findByText("아직 순위에 오른 기록이 없습니다")).toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "페이지 이동" })).not.toBeInTheDocument();
   });
 
@@ -212,7 +212,7 @@ describe("SongRankingView", () => {
     renderView();
 
     expect(await screen.findByText("nick45")).toBeInTheDocument();
-    expect(screen.getByText(/공개로 바꾸면 순위에 참여할 수 있어요/)).toBeInTheDocument();
+    expect(screen.getByText(/공개로 바꾸면 순위에 참여할 수 있습니다/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "공개 설정" })).toHaveAttribute("href", "/settings");
     expect(screen.queryByRole("button", { name: "내 순위로 이동" })).not.toBeInTheDocument();
   });
@@ -221,7 +221,7 @@ describe("SongRankingView", () => {
     serve(() => json(response({ me: null })));
     renderView();
 
-    expect(await screen.findByText("이 채보의 내 기록이 아직 없어요")).toBeInTheDocument();
+    expect(await screen.findByText("이 채보의 내 기록이 아직 없습니다")).toBeInTheDocument();
   });
 
   it("순위를 불러오지 못하면 안내와 `다시 시도`가 보이고, 다시 시도하면 목록이 나온다", async () => {

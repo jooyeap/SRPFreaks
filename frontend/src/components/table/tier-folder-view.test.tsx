@@ -130,14 +130,14 @@ describe("TierFolderView", () => {
     expect(document.body.textContent).not.toContain("랭크 · 달성률");
     expect(screen.queryByRole("button", { name: /기록 입력/ })).toBeNull();
     // 새 안내 줄·로그인 버튼은 없다: 로그인 안내는 페이지 맨 위 배너(LoginBanner, page.tsx) 하나뿐이라 이 컴포넌트에는 없다
-    expect(screen.queryByText("로그인하면 내 달성률이 여기에 표시돼요")).toBeNull();
+    expect(screen.queryByText("로그인하면 내 달성률이 여기에 표시됩니다")).toBeNull();
     expect(screen.queryByRole("link", { name: "로그인" })).toBeNull();
   });
 
   it("로그인하면 안내 한 줄은 없고 내 기록 칸이 있다", async () => {
     renderView("5.8");
     await screen.findByRole("heading", { name: /5\.8\s*2개/ });
-    expect(screen.queryByText("로그인하면 내 달성률이 여기에 표시돼요")).toBeNull();
+    expect(screen.queryByText("로그인하면 내 달성률이 여기에 표시됩니다")).toBeNull();
     expect(document.body.textContent).toContain("랭크 · 달성률");
     expect(screen.getAllByRole("button", { name: /기록 입력/ }).length).toBeGreaterThan(0);
   });

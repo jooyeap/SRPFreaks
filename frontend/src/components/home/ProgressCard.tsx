@@ -52,7 +52,7 @@ export function ProgressCard({
   songs: ProgressPanel;
   /** 내 평균 난이도(서열표 기준). 있으면 서열표 탭의 `가장 비어 있는 구간`을 이 값 ±0.1 안으로 좁힌다. 곡 목록 탭은 단위(레벨 폴더)가 달라 그대로다 */
   average?: number | null;
-  /** 내 레이팅 목록. 있으면 평균 근처 안내 뒤에 `N% 이상이면 레이팅에 반영돼요`를 붙인다(목록이 덜 찼으면 붙이지 않는다) */
+  /** 내 레이팅 목록. 있으면 평균 근처 안내 뒤에 `N% 이상이면 레이팅에 반영됩니다`를 붙인다(목록이 덜 찼으면 붙이지 않는다) */
   skill?: SkillResponse | null;
 }) {
   const t = useTranslations("Progress");
