@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { NavIcon } from "@/components/NavIcon";
 import { Skeleton } from "@/components/Skeleton";
+import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import { ImportEntryLink } from "@/components/import/ImportEntryLink";
 import { WelcomeGuide } from "@/components/home/WelcomeGuide";
 import { HomeNotices } from "@/components/home/HomeNotices";
@@ -47,6 +48,8 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
     queryKey: skillKeys.me(userId),
     queryFn: ({ signal }) => fetchMySkill(signal),
   });
+  // 레이팅 요약이 스켈레톤을 거쳐 나타날 때만 서서히 나타난다(모션 PR 6)
+  const ratingFade = useSkeletonFade(skill.isPending);
   // 내 평균 난이도: 진행도 카드의 `가장 비어 있는 구간`을 평균 ±0.1로 좁힌다. 못 받거나 READY가 아니면 예전처럼 전체에서 고른다
   const playLevel = useQuery({
     queryKey: skillKeys.playLevel(userId),
@@ -96,7 +99,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       {showWelcome ? <WelcomeGuide /> : null}
 
       {skill.data ? (
-        <Link href="/me" className="block rounded-2xl hover:opacity-95" aria-label={t("toMyPage")}>
+        <Link href="/me" className={`block rounded-2xl hover:opacity-95 ${ratingFade}`} aria-label={t("toMyPage")}>
           <RatingSummary skill={skill.data} />
         </Link>
       ) : skill.isError ? (

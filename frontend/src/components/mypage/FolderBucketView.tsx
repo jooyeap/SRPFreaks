@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChartList } from "@/components/songs/ChartList";
 import { FilterChips } from "@/components/table/FilterChips";
 import { Skeleton } from "@/components/Skeleton";
+import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import { tableDetailHref } from "@/components/song/TableContext";
 import { ApiError } from "@/lib/api";
 import { fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
@@ -66,6 +67,8 @@ export function FolderBucketView({
     getNextPageParam: (last) => (last.page + 1 < last.totalPages ? last.page + 1 : undefined),
     enabled: ready,
   });
+  // 목록이 스켈레톤을 거쳐 나타날 때만 서서히 나타난다(모션 PR 6). 정렬·필터로 키가 바뀌어 다시 불러올 때도 같은 규칙이다
+  const listFade = useSkeletonFade(!pages.data);
 
   const rows = pages.data?.pages.flatMap((p) => p.content) ?? [];
   const total = pages.data?.pages[0]?.totalElements ?? 0;
@@ -124,7 +127,7 @@ export function FolderBucketView({
       ) : rows.length === 0 ? (
         <p className="text-sm text-fg-sub">{t("MyPage.noMatch")}</p>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-line bg-card">
+        <div className={`overflow-hidden rounded-2xl border border-line bg-card ${listFade}`}>
           <ChartList
             label={t("MyPage.bucketChartsLabel", { title, bucket: bucketLabel(state.bucket, t) })}
             rows={rows}
