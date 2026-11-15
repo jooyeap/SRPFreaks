@@ -25,7 +25,7 @@ export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAx
     <div className="grid grid-cols-[18rem_minmax(0,1fr)] items-start gap-4">
       <div className="flex flex-col gap-2">
         <ul aria-label={t("MyPage.folderListAria")} className="flex flex-col gap-1.5">
-          {pageItems.map((folder) => {
+          {pageItems.map((folder, folderIndex) => {
             const counts = folderStageCounts(folder);
             const reached = groupStage(counts);
             const isSelected = folder.key === selectedKey;
@@ -51,7 +51,7 @@ export function RateFolderMaster({ axis, folders, includeZero }: { axis: StatsAx
                     </span>
                   </span>
                   <span className="flex items-center gap-2">
-                    <StageBar counts={counts} total={folder.total} className="h-1.5 min-w-0 flex-1" />
+                    <StageBar counts={counts} total={folder.total} className="h-1.5 min-w-0 flex-1" motionKey={`master:${axis}:${folder.key}`} motionIndex={folderIndex} />
                     <span className="shrink-0 whitespace-nowrap text-xs text-fg-dim">
                       {t("MyPage.recordedCount", { recorded: folder.recorded, total: folder.total })}
                     </span>
@@ -95,7 +95,7 @@ function FolderDetail({ axis, folder, includeZero }: { axis: StatsAxis; folder: 
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <StageBar counts={counts} total={folder.total} className="h-2 min-w-24 flex-1" />
+        <StageBar counts={counts} total={folder.total} className="h-2 min-w-24 flex-1" motionKey={`master-detail:${axis}:${folder.key}`} />
         <ul aria-label={t("MyPage.stageDistAria")} className="ml-auto flex flex-wrap items-center gap-1.5">
           {visibleChipsOf(counts).map((chip) => (
             <li

@@ -17,7 +17,7 @@ describe("움직임 규칙 (D57)", () => {
     expect(reduced).toMatch(/button:not\(:disabled\):active \{ scale: none; \}/);
   });
 
-  it("길이는 120ms · 180ms · 240ms 세 가지뿐이고 위치·투명도만 움직인다", () => {
+  it("길이는 120ms · 180ms · 240ms 세 가지뿐이고 위치·투명도만 움직인다(예외: 막대 채움의 clip-path, 도넛 그리기의 stroke-dashoffset. 모션 PR 5)", () => {
     expect(block).toContain("--motion-fast: 120ms;");
     expect(block).toContain("--motion-base: 180ms;");
     expect(block).toContain("--motion-slow: 240ms;");
@@ -25,7 +25,7 @@ describe("움직임 규칙 (D57)", () => {
     expect(keyframes.length).toBeGreaterThan(0);
     for (const k of keyframes) {
       const props = [...k.matchAll(/([a-z-]+):/g)].map((m) => m[1]);
-      expect(props.every((p) => p === "opacity" || p === "transform")).toBe(true);
+      expect(props.every((p) => p === "opacity" || p === "transform" || p === "clip-path" || p === "stroke-dashoffset")).toBe(true);
     }
   });
 });
@@ -175,5 +175,41 @@ describe("목록 등장과 접기/펼치기 (D82, 모션 PR 3)", () => {
     const group = read("components/table/TierGroupSection.tsx");
     expect(group).toContain("index={animate ? i : undefined}");
     expect(group).toContain("renderBody(false)");
+  });
+});
+
+// 숫자·막대·도넛·증감 (D82, 모션 PR 5)
+describe("숫자·막대·도넛·증감 (D82, 모션 PR 5)", () => {
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    expect(at).toBeGreaterThanOrEqual(0);
+    return css.slice(at, css.indexOf("}", at));
+  };
+  const reducedBlock = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce) {\n  .motion-fade"));
+
+  it("막대는 clip-path로 열리고(width 안 씀) slow 토큰·backwards를 쓴다", () => {
+    const keyframes = css.slice(css.indexOf("@keyframes motion-bar-in {"), css.indexOf("@keyframes motion-donut-draw"));
+    expect(keyframes).toContain("clip-path: inset(0 100% 0 0)");
+    expect(keyframes).toContain("clip-path: inset(0 0 0 100%)");
+    expect(keyframes).not.toMatch(/\bwidth\b|scale/);
+    const body = rule(".motion-bar-fill");
+    expect(body).toContain("motion-bar-in var(--motion-slow) var(--ease-out) backwards");
+    expect(body).toContain("var(--bar-i, 0) * var(--motion-stagger)");
+    expect(body).not.toMatch(/forwards|both/);
+  });
+
+  it("도넛은 stroke-dashoffset만, 숫자·증감은 base 토큰의 투명도·위치 이동이며 모두 backwards", () => {
+    expect(rule(".motion-donut-draw")).toContain("motion-donut-draw var(--motion-slow) var(--ease-out) backwards");
+    expect(rule(".motion-value-swap")).toContain("motion-value-in var(--motion-base) var(--ease-out) backwards");
+    expect(rule(".motion-delta")).toContain("motion-value-in var(--motion-base) var(--ease-out) backwards");
+    expect(rule(".motion-delta")).toContain("animation-delay: var(--motion-fast)");
+  });
+
+  it("새 클래스는 모두 움직임 줄이기에서 꺼진다", () => {
+    expect(reducedBlock).toMatch(/\.motion-bar-fill, \.motion-donut-draw, \.motion-value-swap, \.motion-delta \{ animation: none; \}/);
+  });
+
+  it("카운트업은 쓰지 않는다(숫자는 바뀐 값이 페이드·슬라이드로 바뀐다)", () => {
+    expect(css).not.toMatch(/@property|counter-reset: *n|--n:/);
   });
 });

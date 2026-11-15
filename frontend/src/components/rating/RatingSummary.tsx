@@ -1,3 +1,5 @@
+import { BarFill } from "@/components/BarFill";
+import { ValueSwap } from "@/components/ValueSwap";
 import { formatScore } from "@/lib/format";
 import type { SkillResponse } from "@/lib/api-types";
 import { tierProgress } from "@/lib/rating";
@@ -20,7 +22,9 @@ export function RatingSummary({ skill }: { skill: SkillResponse }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs text-fg-dim">{t("Rating.summaryTitle")}</p>
-          <p className="tier-score font-num text-3xl font-bold">{formatScore(skill.totalScore)}</p>
+          <ValueSwap as="div" value={skill.totalScore}>
+            <p className="tier-score font-num text-3xl font-bold">{formatScore(skill.totalScore)}</p>
+          </ValueSwap>
         </div>
         <span className="tier-chip rounded-full px-3 py-1 text-sm font-bold" aria-label={t("Rating.tierAria", { name: skill.tier.displayName })}>
           {skill.tier.displayName}
@@ -46,7 +50,7 @@ export function RatingSummary({ skill }: { skill: SkillResponse }) {
             aria-valuenow={Math.round(progress.ratio * 100)}
             className="h-2 overflow-hidden rounded-full bg-table-head"
           >
-            <div className="tier-bar h-full rounded-full" style={{ width: `${progress.ratio * 100}%` }} />
+            <BarFill as="div" motionKey="rating-tier-bar" className="tier-bar h-full rounded-full" style={{ width: `${progress.ratio * 100}%` }} />
           </div>
           <p className="text-xs text-fg-sub">
             {t.rich("Rating.untilText", { n: (c) => <span className="font-num text-fg">{c}</span>, name: progress.nextDisplayName, score: formatScore(progress.remaining) })}

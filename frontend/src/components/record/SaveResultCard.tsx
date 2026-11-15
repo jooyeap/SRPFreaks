@@ -114,7 +114,7 @@ export function SaveResultCard({ outcome, onClose, onNext }: { outcome: SaveOutc
                 {formatScore(afterScore)}
               </span>
               {scoreDiff !== null && scoreDiff !== 0 ? (
-                <span className="text-xs text-done-text">
+                <span className="motion-delta text-xs text-done-text">
                   {scoreDiff > 0 ? "+" : "-"}
                   {formatScore(Math.abs(scoreDiff))}
                 </span>
@@ -126,7 +126,7 @@ export function SaveResultCard({ outcome, onClose, onNext }: { outcome: SaveOutc
           <div className={ROW}>
             <dt className="text-[13px] text-fg-sub">{t("Record.ratingTotal")}</dt>
             <dd className="flex flex-col items-end gap-0.5 font-num">
-              <span className="text-base font-bold text-fg">
+              <span className="motion-delta text-base font-bold text-fg">
                 {total.change === 0 ? t("Record.noChange") : `${total.change > 0 ? "+" : "-"}${formatScore(Math.abs(total.change))}`}
               </span>
               <span className="text-xs text-fg-dim">

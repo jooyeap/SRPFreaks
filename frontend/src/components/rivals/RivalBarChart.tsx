@@ -1,4 +1,5 @@
 import type { RivalDetailTier, RivalPatternSummary } from "@/lib/api-types";
+import { BarFill } from "@/components/BarFill";
 import { patternLabel } from "@/lib/chart-labels";
 import { barPercent, isSmallSample } from "@/lib/rival-dashboard";
 import { formatRateDiff } from "@/lib/rivals";
@@ -31,7 +32,7 @@ function BarList({ rows, ariaLabel }: { rows: readonly BarRow[]; ariaLabel: stri
   const max = rows.reduce((m, r) => Math.max(m, r.wins, r.losses), 0);
   return (
     <ul aria-label={ariaLabel} className="flex flex-col gap-2.5">
-      {rows.map((p) => {
+      {rows.map((p, rowIndex) => {
         const lose = barPercent(p.losses, max);
         const win = barPercent(p.wins, max);
         return (
@@ -41,23 +42,28 @@ function BarList({ rows, ariaLabel }: { rows: readonly BarRow[]; ariaLabel: stri
               <div className="relative flex h-6 min-w-0 flex-1 items-center">
                 <div className="flex h-full w-1/2 justify-end">
                   {p.losses > 0 ? (
-                    <span
+                    <BarFill
+                      motionKey={`rival-bar:${ariaLabel}:${p.key}:lose`}
+                      index={rowIndex}
+                      rtl
                       style={{ width: `${lose}%` }}
                       className="flex h-full min-w-[38px] items-center justify-end whitespace-nowrap rounded-l border border-weak bg-weak-tint px-1.5 font-num text-[11px] font-bold text-fg"
                     >
                       {t("Rival.barLose", { n: p.losses })}
-                    </span>
+                    </BarFill>
                   ) : null}
                 </div>
                 <span className="h-full w-px shrink-0 bg-chip-line" aria-hidden="true" />
                 <div className="flex h-full w-1/2 justify-start">
                   {p.wins > 0 ? (
-                    <span
+                    <BarFill
+                      motionKey={`rival-bar:${ariaLabel}:${p.key}:win`}
+                      index={rowIndex}
                       style={{ width: `${win}%` }}
                       className="flex h-full min-w-[38px] items-center justify-start whitespace-nowrap rounded-r border border-done bg-done-tint px-1.5 font-num text-[11px] font-bold text-fg"
                     >
                       {t("Rival.barWin", { n: p.wins })}
-                    </span>
+                    </BarFill>
                   ) : null}
                 </div>
               </div>

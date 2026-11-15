@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { BarFill } from "@/components/BarFill";
 import { RATED_CHART_COUNT } from "@/lib/chart-tier";
 import { scalePercent } from "@/lib/weakness";
 import { useHistoryClose } from "@/lib/use-history-close";
@@ -167,7 +168,7 @@ function BarFigure() {
         <div key={r.kind} data-fig-bar={r.kind} className="flex items-center gap-2">
           <span className="w-[60px] shrink-0 whitespace-nowrap text-[11px] text-fg-sub">{r.name}</span>
           <div aria-hidden="true" className="h-3.5 min-w-0 flex-1 overflow-hidden rounded border border-line bg-card">
-            <div style={{ width: `${Number(r.pct.toFixed(2))}%` }} className={`h-full ${r.fill}`} />
+            <BarFill as="div" motionKey={`analysis-help:${r.kind}`} style={{ width: `${Number(r.pct.toFixed(2))}%` }} className={`h-full ${r.fill}`} />
           </div>
         </div>
       ))}

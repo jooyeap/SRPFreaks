@@ -508,6 +508,31 @@ dialog[open][data-closing="true"]::backdrop { animation: motion-fade-out var(--m
 @media (min-width: 64rem) {
   .motion-sheet[data-closing="true"] { animation: motion-drop-out var(--motion-base) var(--ease-out) forwards; }
 }
+/* 숫자·막대·도넛·증감(모션 PR 5, D82). 숫자는 카운트업 없이 바뀐 값이 아래에서 올라오며 나타나고(.motion-value-swap), 막대는 왼쪽에서 오른쪽으로 clip-path가 열리며(이어진 막대도 한 덩어리로),
+   도넛은 12시에서 시계 방향으로 호가 그려지고(마스크 원의 stroke-dashoffset), 증감 글자(+/-)는 살짝 늦게 올라오며 나타난다. 모두 처음 나타날 때·값이 바뀔 때 한 번만(lib/use-first-appearance.ts, lib/use-value-change.ts)이고
+   fill-mode는 backwards라 끝난 뒤 clip-path·transform이 남지 않는다. 글자는 처음부터 최종 값이다. */
+@keyframes motion-bar-in {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes motion-bar-in-rtl {
+  from { clip-path: inset(0 0 0 100%); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes motion-donut-draw {
+  from { stroke-dashoffset: var(--donut-c); }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes motion-value-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.motion-bar-fill { animation: motion-bar-in var(--motion-slow) var(--ease-out) backwards; animation-delay: calc(var(--bar-i, 0) * var(--motion-stagger)); }
+.motion-bar-fill.motion-bar-fill-rtl { animation-name: motion-bar-in-rtl; }
+.motion-donut-draw { animation: motion-donut-draw var(--motion-slow) var(--ease-out) backwards; }
+.motion-value-swap { display: inline-block; animation: motion-value-in var(--motion-base) var(--ease-out) backwards; }
+div.motion-value-swap { display: block; }
+.motion-delta { display: inline-block; animation: motion-value-in var(--motion-base) var(--ease-out) backwards; animation-delay: var(--motion-fast); }
 /* 눌림(모션 PR 4, D82): 누를 수 있는 카드·줄에 .motion-press를 붙인다. 누르는 동안 살짝(98.5%) 줄고 조금 흐려졌다가 fast 길이로 돌아온다.
    scale·opacity 속성만 쓴다(transform을 쓰지 않아 다른 transform과 겹치지 않고, 안쪽 fixed 요소의 기준이 되지 않는다). 색은 바꾸지 않는다.
    버튼은 아래 기본 규칙(98%)이 이미 있고, 여기에 같은 길이의 전환만 더한다. */
@@ -543,6 +568,7 @@ dialog[open][data-closing="true"]::backdrop { animation: motion-fade-out var(--m
   .motion-press:active { scale: none; opacity: 1; }
   .motion-indicator { transition: none; }
   .motion-stagger { animation: none; }
+  .motion-bar-fill, .motion-donut-draw, .motion-value-swap, .motion-delta { animation: none; }
   .motion-collapse { transition: none; }
   .tile-glow::after { animation: none; }
   .folder-pill-zone { transition: none; }

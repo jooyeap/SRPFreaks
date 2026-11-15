@@ -157,8 +157,8 @@ function MobileFolders({ axis, folders, includeZero }: { axis: StatsAxis; folder
   return (
     <>
       <div className="flex flex-col gap-2.5">
-        {pageItems.map((folder) => (
-          <RateFolderCard key={folder.key} axis={axis} folder={folder} includeZero={includeZero} />
+        {pageItems.map((folder, i) => (
+          <RateFolderCard key={folder.key} axis={axis} folder={folder} includeZero={includeZero} index={i} />
         ))}
       </div>
       <Pager page={page} totalPages={totalPages} onChange={setPage} />
