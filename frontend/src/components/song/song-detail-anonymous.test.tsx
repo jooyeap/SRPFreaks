@@ -68,6 +68,21 @@ describe("곡 상세 (비로그인)", () => {
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/records"))).toBe(false);
   });
 
+  it("버튼 줄(리스트에 추가·관리)은 줄 자체를 그리지 않는다 (2026-11-14)", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <SongDetailView songId={1} chartId={10} origin="songs" userId={ANONYMOUS_VIEWER_ID} />
+      </QueryClientProvider>,
+    );
+
+    const title = await screen.findByRole("heading", { name: "테스트곡" });
+    const header = title.closest("section") as HTMLElement;
+    expect(header.nextElementSibling).toBeNull();
+    expect(screen.queryByRole("button", { name: /리스트에 추가/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "관리" })).toBeNull();
+  });
+
   it("곡별 순위(로그인 전용, D74)는 부르지 않고 카드도 그리지 않는다", async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
