@@ -5,12 +5,42 @@ import { useToast } from "@/components/Toast";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import type { SettingResponse } from "@/lib/api-types";
-import { adminKeys, fetchSettings, SETTING_AFFECTED_KEYS, settingMeta, updateSetting, validateSettingValue } from "@/lib/admin";
+import {
+  adminKeys,
+  fetchSettings,
+  SETTING_AFFECTED_KEYS,
+  SETTING_GROUPS,
+  settingGroup,
+  settingMeta,
+  updateSetting,
+  validateSettingValue,
+  type SettingGroup,
+} from "@/lib/admin";
+import type { Translator } from "@/i18n/translator";
 import { formatPlayedDate } from "@/lib/format";
 import { useTranslations } from "next-intl";
 import { AdminBackLink } from "@/components/admin/AdminBackLink";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
+const CHIP = "min-h-11 rounded-full border px-4 text-sm font-bold";
+const CHIP_ON = "border-transparent bg-chip-on-bg text-chip-on-fg";
+const CHIP_OFF = "border-ctl text-fg-sub hover:text-fg";
+
+/** 묶음 칩의 화면 이름. */
+function groupLabel(group: SettingGroup, t: Translator): string {
+  switch (group) {
+    case "rating":
+      return t("Admin.settingsGroupRating");
+    case "list":
+      return t("Admin.settingsGroupList");
+    case "peer":
+      return t("Admin.settingsGroupPeer");
+    case "setlistRival":
+      return t("Admin.settingsGroupSetlistRival");
+    default:
+      return t("Admin.settingsGroupOther");
+  }
+}
 
 /**
  * 운영 설정 (ROOT 전용). 레이팅 계수, 재킷 표시, 연락처를 바꾼다.
@@ -19,6 +49,8 @@ const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
  */
 export function SettingsAdminView({ viewerId }: { viewerId: number }) {
   const t = useTranslations();
+  // 묶음 칩은 받아 온 설정을 화면에서 거르기만 한다(서버 요청은 그대로). ""는 전체.
+  const [group, setGroup] = useState<SettingGroup | "">("");
   const { data, isPending, isError, error } = useQuery({
     queryKey: adminKeys.settings(viewerId),
     queryFn: ({ signal }) => fetchSettings(signal),
@@ -34,6 +66,17 @@ export function SettingsAdminView({ viewerId }: { viewerId: number }) {
         </p>
       </div>
 
+      <div role="group" aria-label={t("Admin.settingsGroupAria")} className="flex flex-wrap gap-2">
+        <button type="button" aria-pressed={group === ""} onClick={() => setGroup("")} className={`${CHIP} ${group === "" ? CHIP_ON : CHIP_OFF}`}>
+          {t("Admin.settingsGroupAll")}
+        </button>
+        {SETTING_GROUPS.map((g) => (
+          <button key={g} type="button" aria-pressed={group === g} onClick={() => setGroup(g)} className={`${CHIP} ${group === g ? CHIP_ON : CHIP_OFF}`}>
+            {groupLabel(g, t)}
+          </button>
+        ))}
+      </div>
+
       {isPending ? (
         <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
       ) : isError ? (
@@ -42,9 +85,11 @@ export function SettingsAdminView({ viewerId }: { viewerId: number }) {
         </p>
       ) : (
         <ul aria-label={t("Admin.settingsListAria")} className="flex flex-col gap-3">
-          {data.content.map((setting) => (
-            <SettingRow key={setting.key} setting={setting} />
-          ))}
+          {data.content
+            .filter((setting) => group === "" || settingGroup(setting.key) === group)
+            .map((setting) => (
+              <SettingRow key={setting.key} setting={setting} />
+            ))}
         </ul>
       )}
     </div>
@@ -88,7 +133,7 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
   };
 
   return (
-    <li className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
+    <li className={`flex flex-col gap-2 rounded-2xl border p-4 ${changed ? "border-chip-on-bg bg-table-head" : "border-line bg-card"}`}>
       <div className="flex flex-col gap-0.5">
         <label htmlFor={inputId} className="text-sm font-bold text-fg">
           {label}
@@ -96,6 +141,12 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
         <p className="font-num text-xs text-fg-dim">{setting.key}</p>
         {description ? <p className="text-xs text-fg-sub">{description}</p> : null}
       </div>
+      {/* 값을 바꾸는 중이면 그 카드만 강조하고 이전 값 → 새 값을 글자로 보여 준다(색만으로 알리지 않는다). 저장하면 사라진다 */}
+      {changed ? (
+        <p className="font-num text-xs font-bold text-fg">
+          {t("Admin.settingChanging", { from: displayValue(setting.value, meta.kind, t), to: displayValue(value.trim(), meta.kind, t) })}
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         {meta.kind === "boolean" ? (
           <select id={inputId} value={value} onChange={(e) => setValue(e.target.value)} className={FIELD}>
@@ -151,4 +202,13 @@ function SettingRow({ setting }: { setting: SettingResponse }) {
       </p>
     </li>
   );
+}
+
+/** 변경 표시에 보여 줄 값. 켬/끔 설정은 true/false 대신 화면 이름(켬/끔)으로 보여 준다. */
+function displayValue(value: string, kind: string, t: Translator): string {
+  if (kind === "boolean") {
+    if (value === "true") return t("Admin.on");
+    if (value === "false") return t("Admin.off");
+  }
+  return value;
 }
