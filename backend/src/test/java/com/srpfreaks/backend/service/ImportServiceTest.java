@@ -429,7 +429,7 @@ class ImportServiceTest {
                 playAt("Alpha", "gf_mst", 9000, NOW.plusSeconds(3 * 86400).toEpochMilli()),   // 미래 시각
                 play("Alpha", "gf_bass_x", 9000, 1, 1));                              // 모르는 난이도
 
-        verify(playCountRecorder, never()).recordImported(any(), any());
+        assertThat(counted()).isEmpty(); // 채보에 연결된 플레이가 없으면 빈 목록(recorder는 빈 목록이면 아무것도 하지 않는다)
     }
 
     @Test
