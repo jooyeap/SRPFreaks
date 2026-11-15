@@ -83,3 +83,38 @@ describe("시간 통일 (D82)", () => {
     expect(src).toContain("const RETURN_MS = 120;");
   });
 });
+
+// 화면·탭 전환과 선택 지시선 (D82, 모션 PR 2)
+describe("화면·탭 전환과 지시선 (D82, 모션 PR 2)", () => {
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    expect(at).toBeGreaterThanOrEqual(0);
+    return css.slice(at, css.indexOf("}", at));
+  };
+  const reducedBlock = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce) {\n  .motion-fade"));
+
+  it("motion-page·motion-swap은 투명도만 180ms 토큰으로 나타나고 움직임 줄이기에서 꺼진다", () => {
+    const at = css.indexOf(".motion-page, .motion-swap {");
+    expect(at).toBeGreaterThanOrEqual(0);
+    const body = css.slice(at, css.indexOf("}", at));
+    expect(body).toContain("motion-fade-in var(--motion-base) var(--ease-out)");
+    expect(reducedBlock).toMatch(/\.motion-page, \.motion-swap/);
+  });
+
+  it("motion-indicator는 transform·opacity만 120/180/240 토큰 길이로 전환하고 움직임 줄이기에서 꺼진다", () => {
+    const body = rule(".motion-indicator");
+    expect(body).toContain("transform var(--motion-base) var(--ease-out)");
+    expect(body).toContain("opacity var(--motion-base) var(--ease-out)");
+    expect(body).not.toMatch(/left|width|margin/);
+    expect(reducedBlock).toMatch(/\.motion-indicator \{ transition: none; \}/);
+  });
+
+  it("template.tsx가 화면마다 motion-page로 감싸고, 탭 내용·지시선이 새 클래스를 쓴다", () => {
+    const read = (file: string) => readFileSync(join(__dirname, "..", file), "utf8");
+    expect(read("app/template.tsx")).toContain('className="motion-page"');
+    expect(read("components/mypage/MyPageView.tsx")).toMatch(/key=\{`\$\{tab\}:[^`]*`\}[^>]*className="motion-swap"/);
+    expect(read("components/mypage/MyPageView.tsx")).toContain("motion-indicator");
+    expect(read("components/guide/GuideTabs.tsx")).toContain('className="motion-swap"');
+    expect(read("components/MobileTabBar.tsx")).toContain("motion-indicator");
+  });
+});

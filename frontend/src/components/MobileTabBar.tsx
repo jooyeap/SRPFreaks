@@ -47,6 +47,10 @@ export function MobileTabBar() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [moreOpen]);
 
+  // 선택 지시선 자리: 탭 칸은 모두 같은 폭(flex-1)이라 칸 번호만 알면 translateX(번호 × 100%)로 옮길 수 있다. 더보기가 열려 있으면 마지막 칸, 선택이 없으면 -1(투명).
+  const itemCount = TAB_ITEMS.length + 1;
+  const activeIndex = moreOpen ? TAB_ITEMS.length : TAB_ITEMS.findIndex((item) => isActivePath(pathname, item.href, item.match));
+
   return (
     <>
       {moreOpen ? (
@@ -111,6 +115,15 @@ export function MobileTabBar() {
         aria-label={t("bottom")}
         className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-card pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
+        {/* 선택 지시선(D82, 모션 PR 2): 굵은 글자·aria-current가 있으므로 색 외 표시는 그대로고, 이 막대는 이동을 보여 주는 보조다. 눌림을 가로채지 않게 pointer-events-none */}
+        <span
+          aria-hidden="true"
+          data-testid="tabbar-indicator"
+          className="motion-indicator pointer-events-none absolute left-0 top-0 flex h-0.5 justify-center px-5"
+          style={{ width: `${100 / itemCount}%`, transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`, opacity: activeIndex >= 0 ? 1 : 0 }}
+        >
+          <span className="h-full w-full rounded-full bg-fg" />
+        </span>
         {TAB_ITEMS.map((item) => {
           const active = !moreOpen && isActivePath(pathname, item.href, item.match);
           return (

@@ -431,6 +431,13 @@ body {
   .edge-bounce-higher, .edge-bounce-lower { animation: none; }
 }
 .motion-reveal { animation: motion-drop-in var(--motion-base) var(--ease-out); }
+/* 화면·탭 전환(모션 PR 2, D82). 둘 다 투명도만 180ms로 나타난다. 일부러 위치(translate)는 쓰지 않는다: 위치 애니메이션이 걸린 요소는 안쪽 `fixed` 요소(맨 위로 버튼 등)의 기준이 되어
+   움직이는 동안 그 요소가 튀기 때문이다. 투명도는 그런 부작용이 없고 스크롤 위치·클릭에도 영향이 없다.
+   motion-page: app/template.tsx가 화면(주소)이 바뀔 때마다 새로 그려 나타낸다. motion-swap: 탭 내용 영역이 key로 새로 그려질 때 나타낸다. */
+.motion-page, .motion-swap { animation: motion-fade-in var(--motion-base) var(--ease-out); }
+/* 선택 지시선(하단 탭바·마이페이지 상단 탭): 하나뿐인 막대가 translateX로 다음 칸 자리로 미끄러진다. 크기는 칸 하나 폭(%)으로 고정이라 배치가 변하지 않는다.
+   선택된 칸이 없을 때(더보기가 닫혀 있고 다른 화면)는 투명해진다. */
+.motion-indicator { transition: transform var(--motion-base) var(--ease-out), opacity var(--motion-base) var(--ease-out); }
 /* 서열표 첫 화면 평균 타일의 첫 진입 빛남(2026-11-05): 1.1초씩 3번. 타일 위에 겹친 장식 막(::after)의 투명도만 움직인다(크기·배치는 그대로).
    빛남이 끝나면 막은 투명으로 돌아가고 주황 윤곽(--weak-line)만 남는다. 움직임 줄이기에서는 막을 쓰지 않는다(컴포넌트도 클래스를 붙이지 않는다). */
 @keyframes tile-glow-pulse {
@@ -475,7 +482,8 @@ dialog[open]::backdrop { animation: motion-fade-in var(--motion-base) var(--ease
 }
 .folder-pill-zone:focus-visible { outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) {
-  .motion-fade, .motion-sheet, .motion-reveal, dialog[open], dialog[open]::backdrop { animation: none; }
+  .motion-fade, .motion-sheet, .motion-reveal, .motion-page, .motion-swap, dialog[open], dialog[open]::backdrop { animation: none; }
+  .motion-indicator { transition: none; }
   .tile-glow::after { animation: none; }
   .folder-pill-zone { transition: none; }
   .motion-switch-track, .motion-switch-thumb { transition: none; }

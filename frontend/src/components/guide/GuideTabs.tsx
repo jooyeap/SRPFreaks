@@ -58,7 +58,7 @@ export function GuideTabs({ rating, rival }: { rating: ReactNode; rival: ReactNo
           );
         })}
       </div>
-      <div role="tabpanel" id="guide-panel" aria-labelledby={`guide-tab-${tab}`}>
+      <div role="tabpanel" id="guide-panel" key={tab} className="motion-swap" aria-labelledby={`guide-tab-${tab}`}>
         {tab === "rating" ? rating : rival}
       </div>
     </div>

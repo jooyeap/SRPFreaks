@@ -241,10 +241,15 @@ describe("MyPageView", () => {
     expect(selected).toHaveAttribute("aria-selected", "true");
     expect(selected.className).toContain("font-bold");
     expect(selected.className).toContain("border-b-2");
-    expect(selected.className).not.toContain("border-transparent");
+    // 밑줄은 탭마다가 아니라 미끄러지는 막대 하나(D82, 모션 PR 2)다. 선택 탭은 자리(border-b-2)만 같고 색은 막대가 낸다
+    const bar = screen.getByTestId("mypage-tab-indicator");
+    expect(bar).toHaveClass("motion-indicator", "h-0.5");
+    expect(bar.style.width).toBe("25%");
+    expect(bar.style.transform).toBe("translateX(100%)");
     expect(other).toHaveAttribute("aria-selected", "false");
     expect(other.className).not.toContain("font-bold");
     expect(other.className).toContain("border-transparent");
+    expect(screen.getByRole("tabpanel")).toHaveClass("motion-swap");
     // 누르는 영역 44px 이상, 네 개가 한 줄(줄바꿈·가로 스크롤 없음)
     expect(selected.className).toContain("min-h-11");
     expect(screen.getByRole("tablist", { name: "마이페이지 탭" }).className).not.toContain("overflow-x-auto");
