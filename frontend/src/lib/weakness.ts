@@ -53,7 +53,7 @@ export interface WeaknessEasyChart {
 export interface WeaknessAnalysisResponse {
   tierName: string | null;
   bandUsers: number;
-  /** false면 같은 티어 값이 모두 비어 있다 -> `비교 대상이 적어요` */
+  /** false면 같은 티어 값이 모두 비어 있다 -> `비교 대상이 적습니다` */
   peerAvailable: boolean;
   /** 같은 티어 최소 인원(설정 peer.min_band_users). 집계 메타 정보. 옛 응답에는 없을 수 있다 */
   minBandUsers?: number;

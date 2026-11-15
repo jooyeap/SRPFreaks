@@ -47,24 +47,24 @@ describe("서열표 묶음 화면의 레이팅 반영 기준", () => {
 
   it("복합(단일) 채보는 그 외 쪽으로 센다", async () => {
     renderNote([entry("복합(단일)")]);
-    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 그 외 95% 이상이면 레이팅에 반영돼요.");
+    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 그 외 95% 이상이면 레이팅에 반영됩니다.");
   });
 
   it("두 기준이 같으면 숫자를 한 번만 쓴다", async () => {
     skill = { single: list(15, 258), other: list(25, 258), singleLimit: 15, otherLimit: 25 };
     renderNote([entry("단일"), entry("복합")]);
-    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 85% 이상이면 레이팅에 반영돼요.");
+    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 85% 이상이면 레이팅에 반영됩니다.");
   });
 
   it("묶음에 그 속성의 채보가 없으면 그쪽은 쓰지 않는다", async () => {
     renderNote([entry("이중")]);
-    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 그 외 95% 이상이면 레이팅에 반영돼요.");
+    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 그 외 95% 이상이면 레이팅에 반영됩니다.");
   });
 
   it("목록이 덜 찬 쪽은 쓰지 않는다", async () => {
     skill = { single: list(15, 258), other: list(10, 300), singleLimit: 15, otherLimit: 25 };
     renderNote([entry("단일"), entry("복합")]);
-    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 단일 85% 이상이면 레이팅에 반영돼요.");
+    expect(await screen.findByText(/이 구간은/)).toHaveTextContent("이 구간은 단일 85% 이상이면 레이팅에 반영됩니다.");
   });
 
   it("계산되는 쪽이 없으면 아무것도 그리지 않는다", async () => {

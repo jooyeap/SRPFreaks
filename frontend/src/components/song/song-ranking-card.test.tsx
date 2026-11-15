@@ -170,7 +170,7 @@ describe("SongRankingCard", () => {
     fetchMock.mockResolvedValue(json(response({ players: 0, totalPages: 0, me: null, items: [] })));
     renderCard();
 
-    expect(await screen.findByText("아직 순위에 오른 기록이 없어요")).toBeInTheDocument();
+    expect(await screen.findByText("아직 순위에 오른 기록이 없습니다")).toBeInTheDocument();
     expect(screen.queryByRole("listitem")).not.toBeInTheDocument();
   });
 
@@ -178,7 +178,7 @@ describe("SongRankingCard", () => {
     fetchMock.mockResolvedValue(json(response({ me: null })));
     renderCard();
 
-    expect(await screen.findByText("이 채보의 내 기록이 아직 없어요")).toBeInTheDocument();
+    expect(await screen.findByText("이 채보의 내 기록이 아직 없습니다")).toBeInTheDocument();
     expect(screen.getByText("기록한 공개 유저 18명")).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
     expect(screen.queryByTestId("my-ranking-row")).not.toBeInTheDocument();
@@ -188,7 +188,7 @@ describe("SongRankingCard", () => {
     fetchMock.mockResolvedValue(json(response({ me: { inRanking: false } })));
     renderCard();
 
-    expect(await screen.findByText(/공개로 바꾸면 순위에 참여할 수 있어요/)).toBeInTheDocument();
+    expect(await screen.findByText(/공개로 바꾸면 순위에 참여할 수 있습니다/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "공개 설정" })).toHaveAttribute("href", "/settings");
     expect(screen.queryByTestId("my-ranking-row")).not.toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
@@ -241,7 +241,7 @@ describe("SongRankingCard", () => {
   it("기록한 공개 유저가 0명이면 보여 줄 순위가 없어서 `전체 순위` 링크를 그리지 않는다", async () => {
     fetchMock.mockResolvedValue(json(response({ players: 0, totalPages: 0, me: null, items: [] })));
     renderCard();
-    await screen.findByText("아직 순위에 오른 기록이 없어요");
+    await screen.findByText("아직 순위에 오른 기록이 없습니다");
 
     expect(screen.queryByRole("link", { name: /전체 순위/ })).not.toBeInTheDocument();
   });

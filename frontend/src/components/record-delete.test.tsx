@@ -123,7 +123,7 @@ describe("본인 기록 삭제 되돌리기", () => {
     fireEvent.click(screen.getByRole("button", { name: "삭제 7" }));
     expect(screen.queryByText("91.25")).toBeNull();
     expect(screen.getByText("80.00")).toBeInTheDocument(); // 다른 기록은 그대로
-    expect(screen.getByRole("status")).toHaveTextContent("기록을 삭제했어요");
+    expect(screen.getByRole("status")).toHaveTextContent("기록을 삭제했습니다");
     expect(screen.getByRole("button", { name: "되돌리기" })).toBeInTheDocument();
     await advance(UNDO_WINDOW_MS - 100);
     expect(deletes()).toHaveLength(0);

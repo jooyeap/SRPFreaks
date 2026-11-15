@@ -211,7 +211,7 @@ describe("HomeDashboard", () => {
     mockWithPlayLevel({ status: "READY", tier: 5.7 }, { ...skill, single } as unknown as SkillResponse);
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간을 채워 보세요. 85% 이상이면 레이팅에 반영돼요."));
+    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간을 채워 보세요. 85% 이상이면 레이팅에 반영됩니다."));
   });
 
   it("범위(±0.1) 안에 비어 있는 구간이 없으면 안내를 그리지 않는다 (평균 5.0 → 5.0 구간은 모두 채움)", async () => {
