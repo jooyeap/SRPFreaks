@@ -53,7 +53,7 @@ export function RivalTab({ userId }: { userId: number }) {
           <Link
             key={rival.userId}
             href={`/players/${rival.userId}/compare`}
-            className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4 hover:bg-table-head"
+            className="motion-press flex flex-col gap-2 rounded-2xl border border-line bg-card p-4 hover:bg-table-head"
           >
             <span className="flex items-center gap-1.5">
               <b className="min-w-0 flex-1 truncate text-[15px] text-fg">{rival.nickname}</b>

@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { EXIT_FAST_MS, prefersReducedMotion } from "@/lib/use-exit-presence";
 
 const SHOW_MS = 2800;
 
@@ -34,7 +35,7 @@ export function useToast(): ShowToast {
   return useContext(ToastContext);
 }
 
-type Current = { id: number; message: string; kind: ToastKind; action?: ToastOptions["action"]; countdownMs?: number };
+type Current = { id: number; message: string; kind: ToastKind; action?: ToastOptions["action"]; countdownMs?: number; /** 사라지는 모션 중(D82, 모션 PR 4). 이미 닫는 중이라 동작 버튼과 다시 닫기를 받지 않는다 */ closing?: boolean };
 
 /** 종류별 아이콘 글자와 색. 색은 globals.css의 변수(--done, --danger, --check)를 쓰는 유틸리티만 쓴다. */
 const KIND_STYLE: Record<ToastKind, { icon: string; border: string; iconText: string }> = {
@@ -58,14 +59,36 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const currentId = useRef<number | null>(null);
   const nextId = useRef(0);
 
-  const remove = useCallback((id: number) => {
-    const timer = timers.current.get(id);
-    if (timer) clearTimeout(timer);
-    timers.current.delete(id);
-    if (currentId.current === id) currentId.current = null;
+  // 사라지는 모션 동안 기다리는 타이머(토스트 id별). 모션 끝에 화면에서 지운다
+  const exitTimers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+
+  const finalize = useCallback((id: number) => {
+    exitTimers.current.delete(id);
     setCurrent((now) => (now?.id === id ? null : now));
     setStack((now) => now.filter((item) => item.id !== id));
   }, []);
+
+  /**
+   * 토스트를 닫는다. `animate`이면 120ms 동안 reveal의 반대로 사라진 뒤 지우고(D82, 모션 PR 4), 아니면(새 안내가 이전 것을 대체하거나 움직임 줄이기) 바로 지운다.
+   * 이미 사라지는 중인 토스트를 다시 닫아도 아무 일도 없다(두 번 닫기 방지).
+   */
+  const remove = useCallback(
+    (id: number, animate = true) => {
+      if (exitTimers.current.has(id)) return;
+      const timer = timers.current.get(id);
+      if (timer) clearTimeout(timer);
+      timers.current.delete(id);
+      if (currentId.current === id) currentId.current = null;
+      if (!animate || prefersReducedMotion()) {
+        finalize(id);
+        return;
+      }
+      setCurrent((now) => (now?.id === id ? { ...now, closing: true } : now));
+      setStack((now) => now.map((item) => (item.id === id ? { ...item, closing: true } : item)));
+      exitTimers.current.set(id, setTimeout(() => finalize(id), EXIT_FAST_MS + 20));
+    },
+    [finalize],
+  );
 
   const show = useCallback<ShowToast>(
     (message, options) => {
@@ -80,7 +103,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       if (options?.countdown) {
         setStack((now) => [...now, item]);
       } else {
-        if (currentId.current !== null) remove(currentId.current);
+        if (currentId.current !== null) remove(currentId.current, false);
         currentId.current = id;
         setCurrent(item);
       }
@@ -92,14 +115,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const map = timers.current;
+    const exitMap = exitTimers.current;
     return () => {
       for (const timer of map.values()) clearTimeout(timer);
       map.clear();
+      for (const timer of exitMap.values()) clearTimeout(timer);
+      exitMap.clear();
     };
   }, []);
 
   // 동작 버튼: 그 토스트만 닫고 동작을 부른다
   const actionOf = (item: Current) => () => {
+    if (item.closing) return;
     remove(item.id);
     item.action?.onAction();
   };
@@ -138,7 +165,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 function ToastCard({ current, onAction }: { current: Current; onAction: () => void }) {
   const style = KIND_STYLE[current.kind];
   return (
-    <div className={`motion-reveal relative flex max-w-full items-center gap-2 overflow-hidden rounded-2xl border bg-card px-4 py-2.5 text-sm shadow-lg ${style.border}`}>
+    <div data-closing={current.closing ? "true" : undefined} className={`motion-reveal relative flex max-w-full items-center gap-2 overflow-hidden rounded-2xl border bg-card px-4 py-2.5 text-sm shadow-lg ${style.border}`}>
       {/* 아이콘은 장식이고(뜻은 문구가 전한다) 종류마다 글자가 다르다: ✓ / ! / i */}
       <span aria-hidden="true" className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border border-current text-xs font-bold ${style.iconText}`}>
         {style.icon}

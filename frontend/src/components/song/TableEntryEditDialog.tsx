@@ -21,6 +21,7 @@ import {
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 import { useTranslations } from "next-intl";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence, useHeldWhileOpen } from "@/lib/use-exit-presence";
 
 /** 수정할 서열표 줄. entry가 null이면 표에 아직 없는 채보라서 저장하면 새 줄로 추가된다. */
 export interface TableEntryTarget {
@@ -45,33 +46,37 @@ export function TableEntryEditDialog({ target, onClose }: { target: TableEntryTa
   const ref = useRef<HTMLDialogElement>(null);
   // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
   useHistoryClose(target !== null, onClose);
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 창을 남긴다. history·포커스 판단은 계속 open 기준이다
+  const exit = useExitPresence(target !== null, { onRequestClose: onClose });
+  const shown = useHeldWhileOpen(target !== null, { target }).target;
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) {
       return;
     }
-    if (target && !dialog.open) {
+    if (exit.present && !dialog.open) {
       // 일부 환경(테스트용 가짜 브라우저)에는 showModal이 없어서 open 속성으로 대신한다
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
       } else {
         dialog.setAttribute("open", "");
       }
-    } else if (!target && dialog.open) {
+    } else if (!exit.present && dialog.open) {
       if (typeof dialog.close === "function") {
         dialog.close();
       } else {
         dialog.removeAttribute("open");
       }
     }
-  }, [target]);
+  }, [exit.present]);
 
   return (
     <dialog
       ref={ref}
       aria-labelledby="table-entry-dialog-title"
       onClose={onClose}
+      {...exit.dialogProps}
       // 창 바깥(::backdrop)을 눌렀을 때만 닫는다. 창 안쪽 여백을 눌러도 target이 dialog 자신이라서 좌표로 구분한다
       // (입력 중에 여백을 잘못 눌러 내용이 사라지지 않게).
       onClick={(event) => {
@@ -87,14 +92,14 @@ export function TableEntryEditDialog({ target, onClose }: { target: TableEntryTa
       }}
       className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-[20px] border border-line bg-card px-5 pb-5 pt-2.5 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
     >
-      {target ? (
+      {exit.present && shown ? (
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
           <h2 id="table-entry-dialog-title" className="mb-3 text-lg font-extrabold">
-            {target.entry ? t("Song.editTableEntry") : t("Song.addToTable")}
+            {shown.entry ? t("Song.editTableEntry") : t("Song.addToTable")}
           </h2>
           {/* key: 다른 채보로 열면 폼을 새로 만들어 초기값이 맞게 한다 */}
-          <TableEntryForm key={target.songDifficultyId} target={target} onDone={onClose} />
+          <TableEntryForm key={shown.songDifficultyId} target={shown} onDone={onClose} />
         </>
       ) : null}
     </dialog>

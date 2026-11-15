@@ -401,17 +401,16 @@ function UserTableRow({ user }: { user: AdminUserResponse }) {
             </div>
           )}
           {/* <dialog>는 <tbody> 바로 아래에 둘 수 없어서 관리 칸 안에 둔다(열리면 화면 맨 위 층에 뜬다) */}
-          {roleOpen ? (
-            <RoleChangeDialog
-              open
-              name={name}
-              current={user.role}
-              pending={mutation.isPending}
-              error={error}
-              onSave={(next) => mutation.mutate(next, { onSuccess: () => setRoleOpen(false) })}
-              onCancel={() => setRoleOpen(false)}
-            />
-          ) : null}
+          {/* 닫힘 모션(D82)을 위해 늘 그려 두고 open으로 연다(닫힌 동안 RoleChangeDialog는 null) */}
+          <RoleChangeDialog
+            open={roleOpen}
+            name={name}
+            current={user.role}
+            pending={mutation.isPending}
+            error={error}
+            onSave={(next) => mutation.mutate(next, { onSuccess: () => setRoleOpen(false) })}
+            onCancel={() => setRoleOpen(false)}
+          />
           <BlockConfirm actions={actions} />
         </td>
       </tr>

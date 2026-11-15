@@ -3,6 +3,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { EXIT_FAST_MS, useExitPresence } from "@/lib/use-exit-presence";
 
 const PANEL_MAX = 320; // 설명 상자 최대 폭(px)
 const GUTTER = 16; // 화면 좌우 여백(px)
@@ -32,6 +33,8 @@ export function HelpTip({ title, body, ariaLabel }: { title: string; body: strin
   const panelId = useId();
   // 설명 상자가 열려 있을 때 뒤로 가기를 누르면 상자만 닫힌다(lib/history-layers.ts)
   useHistoryClose(open, () => setOpen(false));
+  // 나타날 때 motion-reveal, 닫힐 때는 반대로 사라진다(D82, 모션 PR 4). 닫는 동안(120ms)만 남기고 그동안은 눌림을 받지 않는다
+  const exit = useExitPresence(open, { ms: EXIT_FAST_MS });
 
   // 열릴 때 `?` 의 화면 위치를 재서 상자의 왼쪽 위치·폭·화살표 위치를 정한다
   useLayoutEffect(() => {
@@ -88,13 +91,14 @@ export function HelpTip({ title, body, ariaLabel }: { title: string; body: strin
           ?
         </span>
       </button>
-      {open ? (
+      {exit.present ? (
         <span
           id={panelId}
+          data-closing={exit.closing ? "true" : undefined}
           role="dialog"
           aria-label={title}
           style={place ? { left: place.left, width: place.width } : { left: 0, width: PANEL_MAX, visibility: "hidden" }}
-          className="absolute top-full z-30 mt-3 flex max-w-[calc(100vw-2rem)] flex-col gap-2 whitespace-normal rounded-xl border border-chip-on-bg bg-table-head p-3 text-left font-sans font-normal shadow-lg"
+          className="motion-reveal absolute top-full z-30 mt-3 flex max-w-[calc(100vw-2rem)] flex-col gap-2 whitespace-normal rounded-xl border border-chip-on-bg bg-table-head p-3 text-left font-sans font-normal shadow-lg"
         >
           {/* 위쪽 화살표: 상자와 같은 배경·윤곽을 가진 45° 정사각형의 위·왼쪽 변만 보인다 */}
           <span

@@ -10,6 +10,7 @@ import { jacketKeys } from "@/lib/jackets";
 import { saveJackets } from "@/lib/song-jackets";
 import { songKeys } from "@/lib/songs";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence } from "@/lib/use-exit-presence";
 
 /**
  * 곡 상세 `관리` → `재킷 바꾸기`(ROOT 전용, 2026-11-02). 공식 목록에 없는 곡의 재킷을 직접 넣거나 바꾸고 지운다.
@@ -39,26 +40,28 @@ export function JacketUploadDialog({
   const [blob, setBlob] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 창을 남긴다. history·포커스 판단은 계속 open 기준이다
+  const exit = useExitPresence(open, { onRequestClose: () => close() });
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) {
       return;
     }
-    if (open && !dialog.open) {
+    if (exit.present && !dialog.open) {
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
       } else {
         dialog.setAttribute("open", "");
       }
-    } else if (!open && dialog.open) {
+    } else if (!exit.present && dialog.open) {
       if (typeof dialog.close === "function") {
         dialog.close();
       } else {
         dialog.removeAttribute("open");
       }
     }
-  }, [open]);
+  }, [exit.present]);
 
   // 미리보기 주소는 다 쓰면 풀어 준다(메모리)
   useEffect(() => () => {
@@ -102,9 +105,10 @@ export function JacketUploadDialog({
       ref={ref}
       aria-labelledby={titleId}
       onClose={close}
+      {...exit.dialogProps}
       className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-[20px] border border-line bg-card px-5 pb-5 pt-2.5 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
     >
-      {open ? (
+      {exit.present ? (
         <div className="flex flex-col gap-4">
           <div className="mx-auto h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
           <h2 id={titleId} className="text-lg font-extrabold">

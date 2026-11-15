@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence, useHeldWhileOpen } from "@/lib/use-exit-presence";
 
 /**
  * 확인 창 (삭제처럼 되돌릴 수 없는 동작 앞에 둔다). 브라우저 기본 <dialog>(showModal)를 쓴다:
@@ -33,10 +34,13 @@ export function ConfirmDialog({
   const cancelRef = useRef<HTMLButtonElement>(null);
   // 뒤로 가기를 누르면 이 확인 창만 닫힌다(바깥 창 위에 겹쳐 열려 있으면 이 창부터 닫힌다)
   useHistoryClose(open, onCancel);
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 창을 남긴다. 부모가 닫으면서 문구를 비워도 나가는 동안은 열려 있던 문구 그대로 둔다
+  const exit = useExitPresence(open, { onRequestClose: onCancel });
+  const shown = useHeldWhileOpen(open, { title, message, confirmLabel });
 
   useEffect(() => {
     const dialog = ref.current;
-    if (!open || !dialog) {
+    if (!exit.present || !dialog) {
       return;
     }
     // 일부 환경(테스트용 가짜 브라우저)에는 showModal이 없어서 open 속성으로 대신한다
@@ -46,9 +50,9 @@ export function ConfirmDialog({
       dialog.setAttribute("open", "");
     }
     cancelRef.current?.focus();
-  }, [open]);
+  }, [exit.present]);
 
-  if (!open) {
+  if (!exit.present) {
     return null;
   }
   return (
@@ -56,6 +60,7 @@ export function ConfirmDialog({
       ref={ref}
       aria-labelledby="confirm-dialog-title"
       onClose={onCancel}
+      {...exit.dialogProps}
       onClick={(event) => {
         // 창 바깥(::backdrop) 클릭은 dialog 자신이 target이 된다. 처리 중에는 닫지 않는다
         if (event.target === ref.current && !pending) {
@@ -65,9 +70,9 @@ export function ConfirmDialog({
       className="m-auto w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-5 text-fg backdrop:bg-black/60"
     >
       <h2 id="confirm-dialog-title" className="text-lg font-extrabold">
-        {title}
+        {shown.title}
       </h2>
-      <p className="mt-2 text-sm text-fg-sub">{message}</p>
+      <p className="mt-2 text-sm text-fg-sub">{shown.message}</p>
       <div className="mt-5 flex gap-2.5">
         <button
           ref={cancelRef}
@@ -84,7 +89,7 @@ export function ConfirmDialog({
           disabled={pending}
           className="h-11 flex-1 rounded-xl border border-danger text-sm font-bold text-danger disabled:opacity-60"
         >
-          {pending ? t("pendingLabel", { label: confirmLabel }) : confirmLabel}
+          {pending ? t("pendingLabel", { label: shown.confirmLabel }) : shown.confirmLabel}
         </button>
       </div>
     </dialog>

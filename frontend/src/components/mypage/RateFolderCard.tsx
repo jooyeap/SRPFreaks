@@ -136,7 +136,7 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
           <li key={key} style={s.style} className={`rounded-lg border border-row-line bg-table-head/40 ${s.className}`}>
             <Link
               href={bucketListHref(axis, folder.key, key)}
-              className="flex flex-col gap-1.5 px-3 py-2 hover:bg-table-head"
+              className="motion-press flex flex-col gap-1.5 px-3 py-2 hover:bg-table-head"
               aria-label={t("MyPage.bucketOpenAria", { label: bucketLabel(key, t), count })}
             >
               <span className="flex items-center gap-2">

@@ -23,7 +23,7 @@ export function PhotoEntryLink({ onNavigate }: { onNavigate?: () => void }) {
     return null;
   }
   return (
-    <Link href="/records/photo" onClick={onNavigate} className="flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 text-sm font-semibold text-fg hover:bg-table-head">
+    <Link href="/records/photo" onClick={onNavigate} className="motion-press flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 text-sm font-semibold text-fg hover:bg-table-head">
       <span>{t("Photo.entryLink")}</span>
       <span aria-hidden="true">›</span>
     </Link>

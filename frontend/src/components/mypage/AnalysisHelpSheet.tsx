@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { RATED_CHART_COUNT } from "@/lib/chart-tier";
 import { scalePercent } from "@/lib/weakness";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence } from "@/lib/use-exit-presence";
 
 /** 항목 번호 1~8. 제목·본문 키는 `AnalysisHelp.i{번호}Title` / `i{번호}Body`. */
 /** 항목 2 그림의 표본 평균(설명용, 실제 값이 아니다). */
@@ -31,26 +32,28 @@ export function AnalysisHelpSheet({ minCharts, minBandUsers }: { minCharts: numb
   const buttonRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   useHistoryClose(open, () => setOpen(false));
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 창을 남긴다. history·포커스 판단은 계속 open 기준이다
+  const exit = useExitPresence(open, { onRequestClose: () => close() });
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) {
       return;
     }
-    if (open && !dialog.open) {
+    if (exit.present && !dialog.open) {
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
       } else {
         dialog.setAttribute("open", "");
       }
-    } else if (!open && dialog.open) {
+    } else if (!exit.present && dialog.open) {
       if (typeof dialog.close === "function") {
         dialog.close();
       } else {
         dialog.removeAttribute("open");
       }
     }
-  }, [open]);
+  }, [exit.present]);
 
   function close() {
     setOpen(false);
@@ -96,9 +99,10 @@ export function AnalysisHelpSheet({ minCharts, minBandUsers }: { minCharts: numb
         ref={ref}
         aria-labelledby={titleId}
         onClose={() => setOpen(false)}
+        {...exit.dialogProps}
         className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-[20px] border border-line bg-card px-5 pb-5 pt-2.5 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
       >
-        {open ? (
+        {exit.present ? (
           <>
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
             <h2 id={titleId} className="mb-3 text-lg font-extrabold">

@@ -26,6 +26,7 @@ import {
   type NotificationGroup,
 } from "@/lib/notification-groups";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { EXIT_SHEET_MS, useExitPresence } from "@/lib/use-exit-presence";
 
 function BellIcon() {
   return (
@@ -61,6 +62,9 @@ function Bell({ viewerId }: { viewerId: number }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   // 뒤로 가기를 누르면 알림 창만 닫힌다(lib/history-layers.ts)
   useHistoryClose(open, () => setOpen(false));
+  // 닫힘 모션(D82, 모션 PR 4): 시트(모바일)는 내려가고 펼침(데스크톱)은 위로 사라진다. open이 false가 된 뒤에도 그 시간만 남기고, 그동안은 눌림을 받지 않는다
+  const exit = useExitPresence(open, { ms: EXIT_SHEET_MS });
+  const closingAttr = exit.closing ? "true" : undefined;
 
   const count = useQuery({
     queryKey: notificationKeys.count(viewerId),
@@ -133,13 +137,14 @@ function Bell({ viewerId }: { viewerId: number }) {
           </span>
         ) : null}
       </button>
-      {open ? (
+      {exit.present ? (
         <>
-          <div aria-hidden="true" className="motion-fade fixed inset-0 z-40 bg-black/60 lg:hidden" />
+          <div aria-hidden="true" data-closing={closingAttr} className="motion-fade fixed inset-0 z-40 bg-black/60 lg:hidden" />
           <div
             ref={panelRef}
             role="dialog"
             aria-label={t("title")}
+            data-closing={closingAttr}
             className="motion-sheet fixed inset-x-0 bottom-0 z-50 flex max-h-[80svh] flex-col gap-2 whitespace-normal rounded-t-2xl border-t border-line bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:absolute lg:inset-x-auto lg:bottom-auto lg:right-0 lg:top-full lg:mt-2 lg:max-h-[70vh] lg:w-[380px] lg:rounded-2xl lg:border lg:p-3 lg:shadow-xl"
           >
             <span aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-chip-line lg:hidden" />

@@ -313,7 +313,7 @@ export function RivalDashboard({
               <li key={p.key} className="border-t border-row-line first:border-t-0">
                 <Link
                   href={`/players/${targetId}/compare/${p.key}?from=${tab}`}
-                  className="flex min-h-14 items-center gap-2 px-3 py-2 hover:bg-table-head"
+                  className="motion-press flex min-h-14 items-center gap-2 px-3 py-2 hover:bg-table-head"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-bold text-fg">{patternLabel(p.pattern, t)}</span>

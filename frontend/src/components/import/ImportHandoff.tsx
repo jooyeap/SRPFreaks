@@ -10,6 +10,7 @@ import { clearHandoff, consumeFragment, isFreshArrival, useHandoff } from "@/lib
 import { playKey, previewRecentPlays } from "@/lib/record-import";
 import { useTranslations } from "next-intl";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence, useHeldWhileOpen } from "@/lib/use-exit-presence";
 
 /**
  * 공식 페이지의 북마클릿이 넘긴 플레이가 있으면, 어느 화면에서든 모달로 "이어서 처리"를 안내한다 (D40).
@@ -61,16 +62,21 @@ export function ImportHandoff() {
   const waitingPeek = peekEnabled && !peek.isError && (peek.isPending || nothingToSave);
   const open = eligible && status !== "loading" && ((pendingOpen && !waitingPeek) || (loggedIn && done !== null));
 
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 창을 남긴다. history 판단은 계속 open 기준이다
+  const exit = useExitPresence(open, { onRequestClose: () => close() });
+  // close()가 done을 비워도 나가는 동안은 닫히기 직전 내용(결과 화면)을 그대로 둔다
+  const shownDone = useHeldWhileOpen(open, { done }).done;
+
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (!open || !dialog) return;
+    if (!exit.present || !dialog) return;
     // 일부 환경(테스트용 가짜 브라우저)에는 showModal이 없어서 open 속성으로 대신한다
     if (typeof dialog.showModal === "function") {
       if (!dialog.open) dialog.showModal();
     } else {
       dialog.setAttribute("open", "");
     }
-  }, [open]);
+  }, [exit.present]);
 
   // 건너뛰기 처리(닫기). 뒤로 가기 처리 훅이 early return 앞에서 불려야 해서 이 위치로 옮겼다
   const close = () => {
@@ -80,17 +86,18 @@ export function ImportHandoff() {
   // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
   useHistoryClose(open, close);
 
-  if (!open) return null;
+  if (!exit.present) return null;
 
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby="import-handoff-title"
       onClose={close}
+      {...exit.dialogProps}
       className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-2xl border border-line bg-card p-5 text-fg backdrop:bg-black/60"
     >
       {loggedIn && user ? (
-        <ImportProcessor userId={user.id} done={done} onDone={setDone} onClose={close} />
+        <ImportProcessor userId={user.id} done={shownDone} onDone={setDone} onClose={close} />
       ) : (
         <>
           <h2 id="import-handoff-title" className="text-lg font-extrabold">

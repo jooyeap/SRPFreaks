@@ -11,6 +11,7 @@ import type { Translator } from "@/i18n/translator";
 import { ApiError } from "@/lib/api";
 import { addToSetlist, fetchSetlist, removeFromSetlist, SETLIST_LIMIT, setlistKeys } from "@/lib/setlist";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence } from "@/lib/use-exit-presence";
 import { addToList, createList, fetchLists, listKeys, removeFromList } from "@/lib/user-lists";
 
 function errorText(error: unknown, t: Translator): string {
@@ -138,10 +139,12 @@ function ListAddSheet({
   const ref = useRef<HTMLDialogElement>(null);
   const [creating, setCreating] = useState(false);
   useHistoryClose(open, onClose);
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 시트를 남긴다. history 판단은 계속 open 기준이다
+  const exit = useExitPresence(open, { onRequestClose: onClose });
 
   useEffect(() => {
     const dialog = ref.current;
-    if (!open || !dialog) {
+    if (!exit.present || !dialog) {
       return;
     }
     if (typeof dialog.showModal === "function") {
@@ -149,7 +152,7 @@ function ListAddSheet({
     } else {
       dialog.setAttribute("open", "");
     }
-  }, [open]);
+  }, [exit.present]);
 
   const refreshAll = async () => {
     await Promise.all([
@@ -203,7 +206,7 @@ function ListAddSheet({
     },
   });
 
-  if (!open) {
+  if (!exit.present) {
     return null;
   }
 
@@ -228,6 +231,7 @@ function ListAddSheet({
       ref={ref}
       aria-labelledby="list-add-sheet-title"
       onClose={onClose}
+      {...exit.dialogProps}
       onClick={(event) => {
         // 창 바깥(::backdrop)을 누르면 dialog 자신이 target이 된다
         if (event.target === ref.current) onClose();
