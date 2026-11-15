@@ -49,6 +49,7 @@ class OptionRecordServiceTest {
     @Mock SongDifficultyRepository difficultyRepository;
     @Mock UserRepository userRepository;
     @Mock RivalAlertTrigger rivalAlertTrigger;
+    @Mock PlayCountRecorder playCountRecorder;
 
     OptionRecordService service;
     User me;
@@ -56,7 +57,7 @@ class OptionRecordServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OptionRecordService(recordRepository, difficultyRepository, userRepository, rivalAlertTrigger);
+        service = new OptionRecordService(recordRepository, difficultyRepository, userRepository, rivalAlertTrigger, playCountRecorder);
         me = User.create("sub-me", "me@example.com", "me");
         ReflectionTestUtils.setField(me, "id", ME);
         Song song = Song.create("곡", null, "test", null);
@@ -264,5 +265,36 @@ class OptionRecordServiceTest {
     void 허용되지_않은_정렬_값은_400이다() {
         assertThatThrownBy(() -> service.list(ME, null, null, 0, 20, "password; drop table"))
                 .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.BAD_REQUEST));
+    }
+
+    // ---- 플레이 횟수 집계 (D84) ----
+
+    @Test
+    void 기록을_새로_만들면_그_채보의_횟수를_센다() {
+        when(difficultyRepository.findByIdAndDeletedFalse(200L)).thenReturn(Optional.of(chart));
+        Instant playedAt = Instant.parse("2026-10-01T00:00:00Z");
+
+        service.create(ME, new RecordRequest(200L, NoteOption.SUPER_RANDOM_PLUS, new BigDecimal("90.00"), false, playedAt, null, null));
+
+        verify(playCountRecorder).recordCreated(ME, 200L, playedAt);
+    }
+
+    @Test
+    void 저장에_실패하면_횟수를_세지_않는다() {
+        when(difficultyRepository.findByIdAndDeletedFalse(200L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(ME, req("90.00", false))).isInstanceOf(ApiException.class);
+
+        verify(playCountRecorder, never()).recordCreated(any(), any(), any());
+    }
+
+    @Test
+    void 수정은_횟수를_세지_않는다() {
+        when(recordRepository.findDetailByIdAndUserId(1L, ME)).thenReturn(Optional.of(record("90.00")));
+
+        service.update(ME, 1L, req("99.00", true));
+
+        verify(playCountRecorder, never()).recordCreated(any(), any(), any());
+        verify(playCountRecorder, never()).recordImported(any(), any());
     }
 }
