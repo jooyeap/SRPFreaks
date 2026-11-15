@@ -9,6 +9,7 @@ import {
   accentColor,
   buildCardModel,
   CARD_FRAME,
+  STAGE_COLORS,
   cardDateLabel,
   cardFileName,
   fitTitle,
@@ -75,6 +76,23 @@ describe("rating-card 색 표", () => {
       expect(colors, key).toEqual([...style.stops]);
       expect(line!.includes("--tier-glow"), key).toBe(style.glow !== null);
     }
+  });
+
+  it("S+ 단계 색(빨강, D83)은 globals.css와 같고 다크·라이트 바탕에서 글자 대비 4.5:1 이상이다", () => {
+    const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
+    const lum = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const ratio = (a: string, b: string) => {
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    const texts = [...css.matchAll(/--stage-sp-text:\s*(#[0-9a-f]{6})/g)].map((m) => m[1]);
+    expect(texts).toEqual(["#fca5a5", "#b91c1c", "#b91c1c"]); // 다크, 라이트, 라이트(시스템 설정)
+    expect(STAGE_COLORS["S+"]).toBe(texts[0]);
+    expect(ratio(texts[0], "#181d27")).toBeGreaterThanOrEqual(4.5);
+    expect(ratio(texts[1], "#ffffff")).toBeGreaterThanOrEqual(4.5);
   });
 
   it("알 수 없는 티어는 White로 그린다", () => {

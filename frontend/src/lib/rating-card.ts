@@ -69,7 +69,7 @@ export const STAGE_COLORS: Record<AchievementStage, string> = {
   EXC: "#ffd84d",
   FC: "#67e8f9",
   SS: "#b3c9ff",
-  "S+": "#5eead4",
+  "S+": "#fca5a5",
   S: "#86efac",
   A: "#c5cbda",
   B: "#a0a9bc",
