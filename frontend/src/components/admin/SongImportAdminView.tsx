@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { useToast } from "@/components/Toast";
 import { adminKeys } from "@/lib/admin";
@@ -185,26 +185,46 @@ function BookmarkGuide() {
   return (
     <section aria-label={t("SongImport.guideAria")} className={CARD}>
       <h2 className="text-sm font-bold text-fg">{t("SongImport.guideHeading")}</h2>
-      <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm text-fg-sub">
-        <li>
-          {t("SongImport.guideStep1")}{" "}
-          <a ref={linkRef} onClick={(e) => e.preventDefault()} className="inline-block rounded-lg border border-ctl px-2 py-0.5 text-fg">
+      {/* 3단계 카드(1 북마크 만들기 / 2 곡 목록 페이지에서 누르기 / 3 미리보기 후 반영). 안내 문장은 그대로이고 배치만 나눴다. 폰은 세로로 쌓고 1024px 이상은 3칸이다. */}
+      <ol className="grid list-none grid-cols-1 gap-2 p-0 lg:grid-cols-3">
+        <StepCard n={1} title={t("SongImport.guideStepTitle1")}>
+          <p>{t("SongImport.guideStep1")}</p>
+          <a ref={linkRef} onClick={(e) => e.preventDefault()} className="inline-block self-start rounded-lg border border-ctl px-2 py-0.5 text-fg">
             {t("SongImport.bookmarkName")}
           </a>
-        </li>
-        <li>{t("SongImport.guideStep2")}</li>
-        <li>{t("SongImport.guideStep3")}</li>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={BUTTON} onClick={copy}>
+              {t("SongImport.copyBookmark")}
+            </button>
+            <button type="button" className={BUTTON} onClick={copyBody}>
+              {t("SongImport.copyScript")}
+            </button>
+          </div>
+        </StepCard>
+        <StepCard n={2} title={t("SongImport.guideStepTitle2")}>
+          <p>{t("SongImport.guideStep2")}</p>
+        </StepCard>
+        <StepCard n={3} title={t("SongImport.guideStepTitle3")}>
+          <p>{t("SongImport.guideStep3")}</p>
+        </StepCard>
       </ol>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className={BUTTON} onClick={copy}>
-          {t("SongImport.copyBookmark")}
-        </button>
-        <button type="button" className={BUTTON} onClick={copyBody}>
-          {t("SongImport.copyScript")}
-        </button>
-      </div>
       <p className="text-xs text-fg-dim">{t("SongImport.guideNote")}</p>
     </section>
+  );
+}
+
+/** 사용 방법의 한 단계 카드. 번호는 목록(ol)이 알려 주므로 숫자 동그라미는 장식이다(aria-hidden). */
+function StepCard({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+  return (
+    <li className="flex flex-col gap-2 rounded-xl border border-line bg-table-head p-3 text-sm text-fg-sub">
+      <div className="flex items-center gap-2">
+        <span aria-hidden="true" className="font-num flex size-6 shrink-0 items-center justify-center rounded-full bg-chip-on-bg text-xs font-extrabold text-chip-on-fg">
+          {n}
+        </span>
+        <h3 className="text-sm font-bold text-fg">{title}</h3>
+      </div>
+      {children}
+    </li>
   );
 }
 
