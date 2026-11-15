@@ -4,6 +4,8 @@ import { useFirstAppearance } from "@/lib/use-first-appearance";
 import { percentOf, type ProgressSummary } from "@/lib/progress";
 import { useTranslations } from "next-intl";
 
+/** 링 한 변의 크기(px). 링 크기는 여기 한 곳에서만 정한다. 선 두께는 viewBox 비율이라 같이 커지고, 가운데 % 글자는 이 값의 비율로 정한다(88px: 큰 글자 19px, % 기호 12px) */
+export const RING_SIZE = 88;
 const RADIUS = 40;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
@@ -54,8 +56,8 @@ export function ProgressDonut({ progress, heading }: { progress: ProgressSummary
 
   return (
     <div className="flex items-center gap-3">
-      {/* 64px 링(시안 Home4). viewBox 100 기준 선 두께 12는 64px에서 약 8px이다 */}
-      <div className="relative size-16 shrink-0">
+      {/* 링 크기는 RING_SIZE(시안 Home4는 64px였으나 작아 보여 88px로 키움). viewBox 100 기준 선 두께 12가 같은 비율로 커진다 */}
+      <div className="relative shrink-0" style={{ width: RING_SIZE, height: RING_SIZE }}>
         <svg viewBox="0 0 100 100" className="size-full" aria-hidden="true" data-donut="">
           <defs>
             <linearGradient id={`${uid}-exc`} x1="0" y1="0" x2="1" y2="1">
@@ -109,14 +111,14 @@ export function ProgressDonut({ progress, heading }: { progress: ProgressSummary
           </g>
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="font-num text-sm font-bold leading-none text-fg">
+          <span className="font-num font-bold leading-none text-fg" style={{ fontSize: Math.round(RING_SIZE * 0.22) }}>
             <ValueSwap value={percentOf(progress.recorded, progress.total)}>{percentOf(progress.recorded, progress.total)}</ValueSwap>
-            <span className="text-[9px] font-medium">%</span>
+            <span className="font-medium" style={{ fontSize: Math.round(RING_SIZE * 0.14) }}>%</span>
           </span>
         </div>
       </div>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 break-keep">
         {heading}
         <p className="mb-1.5 mt-0.5 font-num text-[10px] text-fg-dim">
           {t("record")}
