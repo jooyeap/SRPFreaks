@@ -386,6 +386,7 @@ body {
   --motion-fast: 120ms;
   --motion-base: 180ms;
   --motion-slow: 240ms;
+  --motion-stagger: 50ms;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
 }
 @keyframes motion-fade-in {
@@ -398,6 +399,10 @@ body {
 }
 @keyframes motion-drop-in {
   from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes motion-rise-in {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 @keyframes motion-pop-in {
@@ -431,6 +436,21 @@ body {
   .edge-bounce-higher, .edge-bounce-lower { animation: none; }
 }
 .motion-reveal { animation: motion-drop-in var(--motion-base) var(--ease-out); }
+/* 목록 줄 순차 등장(모션 PR 3, D82): 줄이 새로 그려질 때 한 번, 8px 아래에서 올라오며 나타난다. 줄 번호(--stagger-i)마다 50ms씩 늦게 시작하고 처음 8줄만 쓴다(lib/motion.ts).
+   fill-mode를 backwards로 둬서 끝난 뒤에는 transform이 남지 않는다(남으면 안쪽 fixed 요소의 기준이 되어 튄다). */
+.motion-stagger { animation: motion-rise-in var(--motion-base) var(--ease-out) backwards; animation-delay: calc(var(--stagger-i, 0) * var(--motion-stagger)); }
+/* 접기/펼치기(모션 PR 3, D82): 높이는 grid-template-rows 0fr↔1fr, 투명도와 함께 slow 길이로 바뀐다(components/Collapse.tsx, lib/use-collapse.ts).
+   안쪽은 모션 중에만 잘라서(data-clip) 다 펼친 뒤에는 포커스 링·팝오버가 잘리지 않는다. 접힌 동안은 hidden 속성으로 숨긴다. */
+.motion-collapse { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--motion-slow) var(--ease-out), opacity var(--motion-slow) var(--ease-out); }
+.motion-collapse[hidden], .motion-collapse[data-closed="true"] { display: none; }
+.motion-collapse[data-expanded="true"] { grid-template-rows: 1fr; opacity: 1; }
+.motion-collapse > .motion-collapse-inner { min-height: 0; }
+.motion-collapse[data-clip="true"] > .motion-collapse-inner { overflow: hidden; }
+/* 넓은 화면(md, 48rem)에서 늘 보이는 영역(곡 목록 필터 패널)은 접지 않고 모션도 없다 */
+@media (min-width: 48rem) {
+  .motion-collapse.motion-collapse-wide, .motion-collapse.motion-collapse-wide[data-closed="true"] { display: grid; grid-template-rows: 1fr; opacity: 1; transition: none; }
+  .motion-collapse.motion-collapse-wide[data-clip] > .motion-collapse-inner { overflow: visible; }
+}
 /* 화면·탭 전환(모션 PR 2, D82). 둘 다 투명도만 180ms로 나타난다. 일부러 위치(translate)는 쓰지 않는다: 위치 애니메이션이 걸린 요소는 안쪽 `fixed` 요소(맨 위로 버튼 등)의 기준이 되어
    움직이는 동안 그 요소가 튀기 때문이다. 투명도는 그런 부작용이 없고 스크롤 위치·클릭에도 영향이 없다.
    motion-page: app/template.tsx가 화면(주소)이 바뀔 때마다 새로 그려 나타낸다. motion-swap: 탭 내용 영역이 key로 새로 그려질 때 나타낸다. */
@@ -484,6 +504,8 @@ dialog[open]::backdrop { animation: motion-fade-in var(--motion-base) var(--ease
 @media (prefers-reduced-motion: reduce) {
   .motion-fade, .motion-sheet, .motion-reveal, .motion-page, .motion-swap, dialog[open], dialog[open]::backdrop { animation: none; }
   .motion-indicator { transition: none; }
+  .motion-stagger { animation: none; }
+  .motion-collapse { transition: none; }
   .tile-glow::after { animation: none; }
   .folder-pill-zone { transition: none; }
   .motion-switch-track, .motion-switch-thumb { transition: none; }

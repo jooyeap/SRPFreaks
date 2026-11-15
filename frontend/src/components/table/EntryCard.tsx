@@ -5,6 +5,7 @@ import type { TableEntryResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
 import { StageRatePill } from "@/components/table/StageRatePill";
 import { useJackets } from "@/lib/jackets";
+import { stagger } from "@/lib/motion";
 
 /**
  * 서열표 한 줄 (모바일). 재킷을 켜든 끄든 같은 배치다(2026-11-01, 시안 `재킷 끈 서열표 줄 시안` A): 재킷 칸만 있고 없을 뿐이다.
@@ -15,6 +16,7 @@ export function EntryCard({
   tier = null,
   onRecord,
   showRecord = true,
+  index,
 }: {
   entry: TableEntryResponse;
   /** 묶음의 레이팅 상수 난이도. 기록이 있을 때 레이팅 점수를 계산하는 데 쓴다(미정이면 null) */
@@ -22,6 +24,8 @@ export function EntryCard({
   onRecord?: (entry: TableEntryResponse) => void;
   /** false면 오른쪽의 내 기록 칸(알약·점수)과 `+` 버튼을 그리지 않는다(비로그인 서열표 폴더) */
   showRecord?: boolean;
+  /** 묶음 안 번호(0부터). 처음 8줄만 차례로 나타난다(lib/motion.ts) */
+  index?: number;
 }) {
   const jackets = useJackets();
   return (
@@ -30,6 +34,7 @@ export function EntryCard({
       tier={tier}
       onRecord={onRecord}
       showRecord={showRecord}
+      index={index}
       jacket={jackets.visible ? { url: jackets.urlOf(entry.songId) } : null}
     />
   );
@@ -47,19 +52,23 @@ function EntryLine({
   tier,
   onRecord,
   showRecord,
+  index,
   jacket,
 }: {
   entry: TableEntryResponse;
   tier: number | null;
   onRecord?: (entry: TableEntryResponse) => void;
   showRecord: boolean;
+  index?: number;
   /** 재킷을 보일 때만 값이 있다(url이 없으면 같은 크기의 단색 칸). 재킷을 끄면 null이고 칸이 없다 */
   jacket: { url: string | null } | null;
 }) {
   const stage = entry.mine?.stage ?? null;
+  const s = stagger(index);
   return (
     <ChartLine
-      className="border-t border-row-line first:border-t-0 md:hidden"
+      className={`border-t border-row-line first:border-t-0 md:hidden ${s.className}`}
+      style={s.style}
       stage={stage}
       jacket={jacket}
       pattern={entry.pattern}

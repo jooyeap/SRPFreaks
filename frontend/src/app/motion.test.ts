@@ -118,3 +118,62 @@ describe("화면·탭 전환과 지시선 (D82, 모션 PR 2)", () => {
     expect(read("components/MobileTabBar.tsx")).toContain("motion-indicator");
   });
 });
+
+// 목록 등장과 접기/펼치기 (D82, 모션 PR 3)
+describe("목록 등장과 접기/펼치기 (D82, 모션 PR 3)", () => {
+  const rule = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    expect(at).toBeGreaterThanOrEqual(0);
+    return css.slice(at, css.indexOf("}", at));
+  };
+  const read = (file: string) => readFileSync(join(__dirname, "..", file), "utf8");
+  const reducedBlock = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce) {\n  .motion-fade"));
+
+  it("motion-stagger는 base 길이·50ms 간격 토큰을 쓰고 끝난 뒤 transform을 남기지 않으며(backwards) 움직임 줄이기에서 꺼진다", () => {
+    expect(css).toContain("--motion-stagger: 50ms;");
+    const body = rule(".motion-stagger");
+    expect(body).toContain("motion-rise-in var(--motion-base) var(--ease-out) backwards");
+    expect(body).toContain("var(--stagger-i, 0) * var(--motion-stagger)");
+    expect(body).not.toMatch(/forwards|both/);
+    expect(reducedBlock).toMatch(/\.motion-stagger \{ animation: none; \}/);
+  });
+
+  it("motion-collapse는 grid-template-rows와 투명도만 slow 토큰으로 전환하고 움직임 줄이기에서 꺼진다", () => {
+    const body = rule(".motion-collapse");
+    expect(body).toContain("grid-template-rows var(--motion-slow) var(--ease-out)");
+    expect(body).toContain("opacity var(--motion-slow) var(--ease-out)");
+    expect(body).not.toMatch(/\bheight\b|max-height|transform/);
+    expect(rule('.motion-collapse[data-expanded="true"]')).toContain("grid-template-rows: 1fr");
+    expect(reducedBlock).toMatch(/\.motion-collapse \{ transition: none; \}/);
+  });
+
+  it("모션 중에만 안쪽을 자르고(data-clip), 다 펼친 뒤에는 자르지 않는다", () => {
+    expect(rule('.motion-collapse[data-clip="true"] > .motion-collapse-inner')).toContain("overflow: hidden");
+    expect(rule(".motion-collapse > .motion-collapse-inner")).not.toContain("overflow");
+  });
+
+  it("COLLAPSE_MS는 --motion-slow(240ms)와 같다", () => {
+    expect(read("lib/use-collapse.ts")).toContain("export const COLLAPSE_MS = 240;");
+  });
+
+  it("곡 목록 폴더·달성률 폴더·서열표 묶음·곡 목록 필터 패널이 Collapse를 쓰고, 옛 motion-reveal을 더 쓰지 않는다", () => {
+    for (const file of [
+      "components/songs/FolderSection.tsx",
+      "components/mypage/RateFolderCard.tsx",
+      "components/table/TierGroupSection.tsx",
+      "components/songs/SongListView.tsx",
+    ]) {
+      const src = read(file);
+      expect(src, file).toContain("<Collapse");
+      expect(src, file).not.toContain("motion-reveal");
+    }
+  });
+
+  it("줄 번호는 곡 목록·서열표·달성률 구간 줄에 넘기고, 항상 펼친 서열표 묶음에는 넘기지 않는다", () => {
+    expect(read("components/songs/ChartList.tsx")).toContain("index={i}");
+    expect(read("components/mypage/RateFolderCard.tsx")).toContain("stagger(index)");
+    const group = read("components/table/TierGroupSection.tsx");
+    expect(group).toContain("index={animate ? i : undefined}");
+    expect(group).toContain("renderBody(false)");
+  });
+});

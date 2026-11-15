@@ -8,6 +8,7 @@ import { songListDetailHref } from "@/lib/song-list";
 import { SongJacket } from "@/components/SongJacket";
 import { STAGE_EDGE_CLIP, StageEdgeBar } from "@/components/StageEdgeBar";
 import { useJackets } from "@/lib/jackets";
+import { stagger } from "@/lib/motion";
 
 /**
  * 데스크톱 열(2026-11-01, 서열표 표와 같은 규칙): 곡명(재킷 40px) · 채보 알약 190 · `[랭크 | 달성률]` 알약 72.
@@ -28,14 +29,17 @@ const ROW_GRID = `md:grid ${ROW_COLUMNS} md:items-center md:gap-x-3`;
  * md:contents — 모바일의 묶음(div, p)을 데스크톱에서는 없는 것처럼 풀어서 자식들이 위 격자의 칸이 되게 한다.
  * 그러면 칸 순서가 DOM 순서(곡명, 알약, 랭크, 달성률)가 되므로 md:order-*로 데스크톱 순서만 따로 정한다.
  */
-export function ChartRow({ row, href }: { row: ChartRowResponse; href?: string }) {
+/** index: 목록 안 번호(0부터). 처음 8줄만 차례로 나타난다(lib/motion.ts) */
+export function ChartRow({ row, href, index }: { row: ChartRowResponse; href?: string; index?: number }) {
+  const s = stagger(index);
   const stage = row.mine?.stage ?? null;
   const jackets = useJackets();
   const jacketUrl = jackets.urlOf(row.songId);
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative ${STAGE_EDGE_CLIP} flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-3 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:h-14 md:min-h-0 md:py-0 ${ROW_GRID} ${
+      style={s.style}
+      className={`${s.className} relative ${STAGE_EDGE_CLIP} flex min-h-14 items-center gap-3 border-t border-row-line py-2 ${jackets.visible ? "pl-3 md:pl-4" : "pl-4"} pr-3 first:border-t-0 md:h-14 md:min-h-0 md:py-0 ${ROW_GRID} ${
         stage ? "stage-tint" : ""
       }`}
     >
