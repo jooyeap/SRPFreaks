@@ -75,7 +75,7 @@ function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
 const foldersBody: ChartFolderListResponse = {
   totalSongs: 30,
   totalCharts: 30,
-  versions: [],
+  versions: [], patternCounts: {},
   folders: [folder({ lo: 9.5, hi: 9.99 }), folder({ lo: 9, hi: 9.49, total: 20, recorded: 4, exc: 0, fc: 0, ss: 1, sPlus: 0, s: 1, belowS: 2 })],
 };
 
@@ -278,7 +278,8 @@ describe("HomeDashboard", () => {
     expect(rows[1]).toHaveTextContent("20/20");
     expect(rows[1]).not.toHaveTextContent("완료");
     expect(rows[1].closest("li")).toHaveAttribute("data-done", "true");
-    expect(rows[1].querySelector(".text-done-text")).not.toBeNull();
+    // 전부 EXC로 채운 줄은 단계 색(EXC 그라데이션 글자)이 완료 색을 대신한다(D85). 완료 색(text-done-text)은 S 미만이 섞인 완료 줄에만 남는다
+    expect(rows[1].querySelector(".stage-grad-text[data-stage='EXC']")).not.toBeNull();
     // 완료한 줄은 막대에 완료 색 테두리가 붙는다 (막대 안은 단계 비율 칸이다)
     expect(rows[1].querySelector("[data-stage-bar].ring-done")).not.toBeNull();
     // 넓은 화면에서 보이는 단계 칩(EXC/FC/SS/S/S 미만 개수)이 칸마다 있고, 숫자가 글자로 있다

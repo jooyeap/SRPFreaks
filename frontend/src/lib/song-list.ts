@@ -7,6 +7,8 @@ import type { DifficultyType, InstrumentPart } from "@/lib/types";
 export const songListKeys = {
   // 필터가 걸리면 폴더 구성이 달라지므로 조건도 키에 넣는다. 필터 없음(EMPTY_SONG_FILTERS)이 전체 현황용 키다
   folders: (userId: number, filters: SongListFilters = EMPTY_SONG_FILTERS) => ["song-list", "folders", userId, filters] as const,
+  // 홈 진행도의 속성 필터(D85): 필터 없음 키 뒤에 속성을 붙인다. "song-list"로 시작하므로 기록 저장 후 함께 무효화된다
+  foldersByPattern: (userId: number, pattern: string) => ["song-list", "folders", userId, EMPTY_SONG_FILTERS, "pattern", pattern] as const,
   // 같은 시작값(9.50)이 큰 폴더와 하위 폴더 둘 다 있으므로 단위(step)도 키에 넣는다
   // 한 번에 이어 받는 개수(size)도 키에 넣는다: 개수를 바꾸면 이전 개수로 받은 쪽이 섞이지 않고 새로 받는다
   folder: (userId: number, lo: number, step: FolderStep, filters: SongListFilters = EMPTY_SONG_FILTERS, size: number = CHARTS_PAGE_SIZE) =>
@@ -87,8 +89,13 @@ function filterQuery(filters: SongListFilters) {
 }
 
 /** 레벨 폴더 목록. 필터를 주면 맞는 채보만으로 폴더가 만들어진다(맞는 채보가 없는 폴더는 오지 않는다). */
-export function fetchChartFolders(signal?: AbortSignal, filters: SongListFilters = EMPTY_SONG_FILTERS): Promise<ChartFolderListResponse> {
-  return apiFetch<ChartFolderListResponse>("/songs/chart-folders", { query: filterQuery(filters), signal });
+export function fetchChartFolders(
+  signal?: AbortSignal,
+  filters: SongListFilters = EMPTY_SONG_FILTERS,
+  /** 홈 진행도의 속성 필터(단일/복합/이중/삼중). null이면 전체. 서버가 화이트리스트로 검증한다 */
+  pattern: string | null = null,
+): Promise<ChartFolderListResponse> {
+  return apiFetch<ChartFolderListResponse>("/songs/chart-folders", { query: { ...filterQuery(filters), pattern }, signal });
 }
 
 /** 폴더 안 채보 한 페이지. folder는 폴더 시작 레벨(예: 9.5), step은 그 단위. 단위의 배수가 아니면 서버가 400으로 거절한다. */

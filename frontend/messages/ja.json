@@ -192,7 +192,12 @@
     "mergedHigh": "{tier}以上",
     "tileEmpty": "まだ記録がありません",
     "foldClosed": "{from}〜{to}・記録のない区間 {count}個",
-    "foldOpen": "記録のない高い区間をたたむ"
+    "foldOpen": "記録のない高い区間をたたむ",
+    "patternAria": "属性フィルター",
+    "patternAll": "すべて",
+    "patternEmpty": "この属性の譜面はありません。",
+    "allAtLeast": "すべての譜面が{stage}以上です。",
+    "allExc": "すべての譜面がEXCです。"
   },
   "Songs": {
     "loadFailed": "曲リストを読み込めませんでした。しばらくしてからもう一度お試しください。",

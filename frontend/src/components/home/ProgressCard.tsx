@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AverageLevelHelp } from "@/components/HelpTip";
+import { PatternChips } from "@/components/home/PatternChips";
 import { ProgressDonut } from "@/components/home/ProgressDonut";
 import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
@@ -10,6 +11,7 @@ import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import type { SkillResponse } from "@/lib/api-types";
 import { HIT_HEAD } from "@/lib/hit-area";
 import { emptyHighCount, nextGoal, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
+import type { PatternCounts, ProgressPattern } from "@/lib/progress-pattern";
 import { ratingEntryThreshold } from "@/lib/rating-threshold";
 import { useTranslations } from "next-intl";
 
@@ -48,6 +50,9 @@ export function ProgressCard({
   songs,
   average = null,
   skill = null,
+  pattern = "all",
+  onPatternChange,
+  patternCounts,
 }: {
   table: ProgressPanel;
   songs: ProgressPanel;
@@ -55,6 +60,12 @@ export function ProgressCard({
   average?: number | null;
   /** 내 레이팅 목록. 있으면 평균 근처 안내 뒤에 `N% 이상이면 레이팅에 반영됩니다`를 붙인다(목록이 덜 찼으면 붙이지 않는다) */
   skill?: SkillResponse | null;
+  /** 속성 필터(D85): 지금 고른 속성. 두 탭이 같은 값을 쓴다(링·`다음 목표`·칸 지도가 모두 이 속성만으로 만들어진 panel이다) */
+  pattern?: ProgressPattern;
+  /** 속성 칩을 눌렀을 때. 없으면 칩을 그리지 않는다 */
+  onPatternChange?: (pattern: ProgressPattern) => void;
+  /** 탭별 칩 숫자(속성 필터를 걸기 전 기준). 아직 못 받은 탭은 null이고 그때는 칩을 그리지 않는다 */
+  patternCounts?: { table: PatternCounts | null; songs: PatternCounts | null };
 }) {
   const t = useTranslations("Progress");
   const [active, setActive] = useState<TabKey>("table");
@@ -87,13 +98,16 @@ export function ProgressCard({
             {tab.link}
           </Link>
         </div>
-        <PanelBody panel={panel} tab={tab} average={active === "table" ? average : null} skill={skill} showWeak={active === "table"} />
+        {onPatternChange && patternCounts?.[active] ? (
+          <PatternChips value={pattern} counts={patternCounts[active]} onChange={onPatternChange} />
+        ) : null}
+        <PanelBody panel={panel} tab={tab} filtered={onPatternChange !== undefined && pattern !== "all"} average={active === "table" ? average : null} skill={skill} showWeak={active === "table"} />
       </section>
     </div>
   );
 }
 
-function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPanel; tab: TabText; average: number | null; skill: SkillResponse | null; showWeak: boolean }) {
+function PanelBody({ panel, tab, average, skill, showWeak, filtered }: { panel: ProgressPanel; tab: TabText; average: number | null; skill: SkillResponse | null; showWeak: boolean; filtered: boolean }) {
   const t = useTranslations("Progress");
   const fade = useSkeletonFade(panel.kind === "loading");
   if (panel.kind === "loading") {
@@ -111,6 +125,10 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
   }
 
   const { progress } = panel;
+  // 속성을 골랐는데 그 속성의 채보가 이 탭에 하나도 없을 때(칩 숫자 0): 빈 도넛 대신 한 줄 안내. 전체(속성 없음)가 0이면 예전처럼 0% 도넛이다
+  if (filtered && progress.total === 0) {
+    return <p className="text-sm text-fg-sub">{t("patternEmpty")}</p>;
+  }
   const goal = nextGoal(progress);
   // 가장 비어 있는 구간 안내는 서열표 탭에서만 보여 준다(곡 목록 탭은 레벨 폴더 기준이라 뺐다).
   // 평균을 모르는 신규(기록 부족)에게는 안내를 두지 않는다: 기록이 적어 "어디가 비었는지"가 의미 없다(2026-10-27)
