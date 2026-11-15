@@ -237,14 +237,33 @@ describe("SongDetailView", () => {
     expect(replace).toHaveBeenCalledWith("/songs/1?from=table&chart=10");
   });
 
-  it("리스트에 추가는 곡명 오른쪽(관리 버튼 자리)에 있고 내 기록 카드 안에는 없다", async () => {
+  it("리스트에 추가는 재킷+정보 블록 아래 한 줄에 있고(남는 폭 전체) 내 기록 카드 안에는 없다 (2026-11-14)", async () => {
     renderView("table", 10, true); // 리스트에 추가는 로그인 상태(AuthProvider)에서만 그려진다
     const title = await screen.findByRole("heading", { name: "테스트곡" });
-    const header = title.closest("section");
-    const button = await within(header as HTMLElement).findByRole("button", { name: "테스트곡 리스트에 추가" });
+    const header = title.closest("section") as HTMLElement;
+    const button = await screen.findByRole("button", { name: "테스트곡 리스트에 추가" });
     expect(button).toHaveTextContent("리스트에 추가");
+    // 정보 칸(section) 안이 아니라 그 아래 줄에 있고, 권한이 없으면 관리 버튼 없이 줄 전체 폭(flex-1)을 쓴다
+    expect(header.contains(button)).toBe(false);
+    expect(header.nextElementSibling).toContainElement(button);
+    expect(button).toHaveClass("flex-1");
+    expect(screen.queryByRole("button", { name: "관리" })).toBeNull();
     const mine = await screen.findByRole("region", { name: "내 기록" });
     expect(within(mine).queryByRole("button", { name: /리스트/ })).not.toBeInTheDocument();
+  });
+
+  it("ROOT·ADMIN이면 같은 줄 오른쪽에 작은 관리 버튼(88px)이 함께 있다 (2026-11-14)", async () => {
+    renderView("table", 10, true, true);
+    const title = await screen.findByRole("heading", { name: "테스트곡" });
+    const header = title.closest("section") as HTMLElement;
+    const add = await screen.findByRole("button", { name: "테스트곡 리스트에 추가" });
+    const manage = await screen.findByRole("button", { name: "관리" });
+    const row = header.nextElementSibling as HTMLElement;
+    expect(row).toContainElement(add);
+    expect(row).toContainElement(manage);
+    expect(manage).toHaveClass("w-[88px]", "shrink-0");
+    // 담기 버튼이 먼저, 관리 버튼이 오른쪽
+    expect(add.compareDocumentPosition(manage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("서열표에서: 속성 칩, 서열표 정보, 내 기록, 같은 난이도의 곡 목록, 다른 채보를 보여 준다", async () => {
@@ -512,7 +531,8 @@ describe("SongDetailView", () => {
   it("모바일 순서: 곡 정보 -> 내 기록(기록 등록 버튼) -> 나머지 정보 순으로 order가 붙고, md 이상에서는 풀린다", async () => {
     renderView("songs", 10, true);
     const mine = (await screen.findByRole("region", { name: "내 기록" })).parentElement;
-    const info = screen.getByRole("region", { name: "곡 정보" }).parentElement;
+    // 곡 정보(section)는 버튼 줄과 함께 한 묶음(div) 안에 있고(2026-11-14), order는 그 묶음을 감싼 칸에 붙는다
+    const info = screen.getByRole("region", { name: "곡 정보" }).parentElement?.parentElement;
     expect(info).toHaveClass("order-1", "md:order-none");
     expect(mine).toHaveClass("order-2", "md:order-none");
     const rest = screen.getByRole("region", { name: "레벨 정보" }).parentElement;

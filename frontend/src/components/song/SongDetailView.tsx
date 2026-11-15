@@ -241,19 +241,22 @@ export function SongDetailView({
               chart={chart}
               pattern={isTable ? (found?.entry.pattern ?? null) : null}
               action={
-                // 리스트에 추가(로그인했을 때만 그려진다, D76)와 ROOT·ADMIN의 `관리`가 곡명 오른쪽에 나란히 놓인다
-                <div className="flex items-center gap-2">
-                  {chart ? <ListAddButton songDifficultyId={chart.id} title={data.title} /> : null}
-                  {canEditTable ? (
-                    <button
-                      type="button"
-                      onClick={() => setManageOpen(true)}
-                      className="min-h-9 rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg"
-                    >
-                      {t("Song.manage")}
-                    </button>
-                  ) : null}
-                </div>
+                // 재킷+정보 블록 아래 한 줄(2026-11-14): 리스트에 추가(로그인했을 때만, D76)가 남는 폭을 차지하고 ROOT·ADMIN의 `관리`는 작게(88px) 오른쪽에 둔다.
+                // 비로그인이면 둘 다 없으니 줄 자체를 그리지 않는다. 권한이 없으면 `관리`가 없어 담기 버튼이 줄 전체 폭이다.
+                loggedIn && (chart || canEditTable) ? (
+                  <>
+                    {chart ? <ListAddButton songDifficultyId={chart.id} title={data.title} fill /> : null}
+                    {canEditTable ? (
+                      <button
+                        type="button"
+                        onClick={() => setManageOpen(true)}
+                        className="min-h-9 w-[88px] shrink-0 rounded-lg border border-ctl px-3 py-1 text-sm text-fg-sub hover:text-fg"
+                      >
+                        {t("Song.manage")}
+                      </button>
+                    ) : null}
+                  </>
+                ) : undefined
               }
             />
           </div>

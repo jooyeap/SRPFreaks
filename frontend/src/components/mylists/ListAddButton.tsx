@@ -28,15 +28,19 @@ export const MY_LISTS_HREF = "/me?tab=list&view=mine";
  * 세트리스트 로직(30곡 한도·완료 계산)은 그대로고, 여기서는 기존 API(addToSetlist/removeFromSetlist)를 같은 쿼리 키로 부르기만 한다.
  * 담김 표시: 세트리스트나 내 리스트 어디든 이 채보가 들어 있으면 버튼에 체크 아이콘이 붙는다(색만으로 알리지 않는다).
  */
-export function ListAddButton({ songDifficultyId, title }: { songDifficultyId: number; title: string }) {
+export function ListAddButton({ songDifficultyId, title, fill = false }: { songDifficultyId: number; title: string; fill?: boolean }) {
   const user = useOptionalUser();
   if (!user) {
     return null;
   }
-  return <ButtonInner userId={user.id} songDifficultyId={songDifficultyId} title={title} />;
+  return <ButtonInner userId={user.id} songDifficultyId={songDifficultyId} title={title} fill={fill} />;
 }
 
-function ButtonInner({ userId, songDifficultyId, title }: { userId: number; songDifficultyId: number; title: string }) {
+/**
+ * `fill`: 곡 상세의 버튼 줄(곡 정보 아래 한 줄)에서 남는 폭을 모두 차지하고 글자를 가운데 맞춘다(2026-11-14).
+ * 옆에 `관리` 버튼이 없으면(권한 없음) 줄 전체 폭이 된다.
+ */
+function ButtonInner({ userId, songDifficultyId, title, fill }: { userId: number; songDifficultyId: number; title: string; fill: boolean }) {
   const t = useTranslations();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -84,7 +88,7 @@ function ButtonInner({ userId, songDifficultyId, title }: { userId: number; song
         aria-haspopup={noLists || lists.isError ? undefined : "dialog"}
         aria-label={t("MyList.addAria", { title })}
         // 보이는 높이는 32px 그대로, ::after로 누를 수 있는 영역만 넓힌다(옆 버튼과 겹치지 않게 가로는 4px만)
-        className="relative flex h-9 shrink-0 items-center gap-1 rounded-lg border border-ctl px-3 text-sm text-fg after:absolute after:-inset-x-1 after:-inset-y-1 after:content-[''] enabled:hover:bg-table-head disabled:text-disabled"
+        className={`relative flex h-9 items-center gap-1 rounded-lg border border-ctl px-3 text-sm text-fg after:absolute after:-inset-x-1 after:-inset-y-1 after:content-[''] enabled:hover:bg-table-head disabled:text-disabled ${fill ? "min-w-0 flex-1 justify-center" : "shrink-0"}`}
       >
         {marked ? (
           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
