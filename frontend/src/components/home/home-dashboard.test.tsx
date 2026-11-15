@@ -218,7 +218,7 @@ describe("HomeDashboard", () => {
     mockWithPlayLevel({ status: "READY", tier: 5.0 });
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    await waitFor(() => expect(progress).toHaveTextContent("기록 24/30"));
+    await waitFor(() => expect(progress).toHaveTextContent("기록 24 / 30곡"));
     await waitFor(() => expect(progress).not.toHaveTextContent("가장 비어 있어요"));
     expect(progress).not.toHaveTextContent("채워 보세요");
   });
@@ -227,7 +227,7 @@ describe("HomeDashboard", () => {
     mockWithPlayLevel({ status: "INSUFFICIENT", tier: null });
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    await waitFor(() => expect(progress).toHaveTextContent("기록 24/30"));
+    await waitFor(() => expect(progress).toHaveTextContent("기록 24 / 30곡"));
     expect(progress).not.toHaveTextContent("채워 보세요");
     expect(progress).not.toHaveTextContent("가장 비어 있어요");
     expect(within(progress).queryByRole("link", { name: "구간 보기" })).toBeNull();
@@ -262,9 +262,10 @@ describe("HomeDashboard", () => {
     expect(screen.getByText("123.45")).toBeInTheDocument();
 
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    expect(progress).toHaveTextContent("기록 24/30"); // 미정 묶음(2개)은 합계에서도 뺀다
+    expect(progress).toHaveTextContent("기록 24 / 30곡"); // 미정 묶음(2개)은 합계에서도 뺀다
     const legend = within(progress).getByRole("list", { name: "전체 달성 현황" });
-    expect(within(legend).getByLabelText("달성 단계 EXC").closest("li")).toHaveTextContent("21");
+    // 범례는 단계 글자 + 개수(점은 장식). EXC 21
+    expect(within(legend).getByText("EXC").closest("li")).toHaveTextContent("EXC21");
     expect(legend).toHaveTextContent("기록 없음6");
     // 묶음별 진행: 각 줄은 묶음 페이지로 가는 링크
     const rows = within(within(progress).getByRole("list", { name: "묶음별 진행" })).getAllByRole("link");
@@ -429,7 +430,7 @@ describe("ProgressCard 도넛", () => {
     render(<ProgressCard table={ready(tableProgress([group({ tier: 5.8, total: 10, recorded: 6, exc: 1, fc: 2, ss: 0, sPlus: 0, s: 2, belowS: 1 })], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
     expect(card).toHaveTextContent("60%");
-    expect(card).toHaveTextContent("기록 6/10");
+    expect(card).toHaveTextContent("기록 6 / 10곡");
     expect(within(card).getByRole("list", { name: "전체 달성 현황" })).toHaveTextContent("기록 없음4");
   });
 
@@ -472,10 +473,10 @@ describe("ProgressCard 칸 지도", () => {
   it("기록이 모두 채워진 칸에만 완료 색이 붙고 `완료` 글자는 쓰지 않는다", () => {
     render(<ProgressCard table={ready(tableProgress([group({ tier: 5.0, total: 3, recorded: 3, exc: 3, ss: 0, sPlus: 0, s: 0, belowS: 0 })], koT))} songs={loading} />);
     const card = screen.getByRole("region", { name: "서열표 진행도" });
-    // 완료한 칸은 하나이고, 그 칸의 막대(모바일 줄용·카드용 두 배치)가 모두 완료 색을 쓴다
+    // 완료한 칸은 하나이고, 넓은 화면 카드의 막대가 완료 색을 쓴다(모바일 표형 줄은 시안 Home4처럼 얇은 막대만 둔다)
     const doneTiles = card.querySelectorAll('li[data-done="true"]');
     expect(doneTiles).toHaveLength(1);
-    expect(doneTiles[0].querySelectorAll("[data-stage-bar].ring-done")).toHaveLength(2);
+    expect(doneTiles[0].querySelectorAll("[data-stage-bar].ring-done")).toHaveLength(1);
     expect(card).not.toHaveTextContent("완료");
     // 비어 있는 구간이 없으면 안내와 약함 표시를 만들지 않는다
     expect(card).not.toHaveTextContent("약함");
@@ -513,7 +514,7 @@ describe("ProgressCard 탭", () => {
     expect(screen.getByRole("button", { name: "곡 목록" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("region", { name: "서열표 진행도" })).toBeNull();
     const card = screen.getByRole("region", { name: "곡 목록 진행도" });
-    expect(card).toHaveTextContent("기록 10/30"); // (6 + 4) / (10 + 20)
+    expect(card).toHaveTextContent("기록 10 / 30곡"); // (6 + 4) / (10 + 20)
     expect(within(card).getByRole("link", { name: "곡 목록 보기" })).toHaveAttribute("href", "/songs");
     const tiles = within(within(card).getByRole("list", { name: "폴더별 진행" })).getAllByRole("link");
     expect(tiles.map((t) => t.textContent)).toEqual(expect.arrayContaining([expect.stringContaining("9.50 ~ 9.99"), expect.stringContaining("9.00 ~ 9.49")]));
