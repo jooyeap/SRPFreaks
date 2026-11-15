@@ -167,12 +167,12 @@ export function PhotoInputView() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold text-fg">{t("Photo.title")}</h1>
-        <p className="text-sm text-fg-sub">{t("Photo.lead")}</p>
+        <p className="break-keep text-sm text-fg-sub">{t("Photo.lead")}</p>
         <p className="text-xs text-fg-dim">{t("Photo.privacy")}</p>
       </header>
 
       <section aria-label={t("Photo.pickAria")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4">
-        <p className="text-sm text-fg">
+        <p className="break-keep text-sm text-fg">
           {t.rich("Photo.remaining", { remaining: st.remaining, limit: st.weeklyLimit, b: (c) => <b className="font-num">{c}</b> })}
         </p>
         {!st.available && st.nextRefillAt ? <p className="text-sm text-fg-sub">{t("Photo.refillAt", { date: formatSeoulDateTime(st.nextRefillAt) })}</p> : null}

@@ -14,7 +14,7 @@ export function ImportEntryLink() {
     >
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="text-sm font-bold text-fg">{t("Import.title")}</span>
-        <span className="text-xs text-fg-sub">{t("Import.entryLead")}</span>
+        <span className="break-keep text-xs text-fg-sub">{t("Import.entryLead")}</span>
       </span>
       <span aria-hidden="true" className="shrink-0 text-sm font-bold text-fg">→</span>
     </Link>

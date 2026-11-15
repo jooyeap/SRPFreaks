@@ -15,7 +15,7 @@ export function TableTip() {
   if (!open) return null;
   return (
     <div role="note" className="motion-reveal flex items-start gap-2 rounded-xl border border-check-line bg-check-bg py-1 pl-3 pr-1 text-sm text-fg">
-      <p className="flex-1 py-1.5">{t("Table.tilesTip")}</p>
+      <p className="break-keep flex-1 py-1.5">{t("Table.tilesTip")}</p>
       <button
         type="button"
         aria-label={t("Common.close")}

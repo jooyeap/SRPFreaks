@@ -71,7 +71,7 @@ export function MyRecordCard({
 
       {scoreChanged ? <ArrivalScore before={arrival.beforeScore} after={arrival.afterScore} /> : null}
 
-      {emphasizeSrn ? <p className="text-xs text-fg-dim">{t("Song.tableBasis")}</p> : null}
+      {emphasizeSrn ? <p className="break-keep text-xs text-fg-dim">{t("Song.tableBasis")}</p> : null}
 
       <button
         type="button"

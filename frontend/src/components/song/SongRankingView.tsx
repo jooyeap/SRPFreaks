@@ -129,7 +129,7 @@ function RankingBody({
 
   const data = ranking.data;
   if (data.players === 0) {
-    return <p className="text-[13px] text-fg-sub">{t("empty")}</p>;
+    return <p className="break-keep text-[13px] text-fg-sub">{t("empty")}</p>;
   }
   const mine = myRankOf(data.me);
   // 내 순위가 이 쪽에 없으면 그 쪽으로 갈 수 있게 한다(D74 18.2.2 `내 순위로 이동`). 쪽 번호는 서버가 준 쪽 크기로 계산한다
@@ -138,7 +138,7 @@ function RankingBody({
 
   return (
     <>
-      <p className="font-num text-xs text-fg-dim">
+      <p className="break-keep font-num text-xs text-fg-dim">
         {mine ? t("summary", { rank: mine.rank, players: data.players }) : t("playersOnly", { players: data.players })}
       </p>
       {data.items.length === 0 ? (

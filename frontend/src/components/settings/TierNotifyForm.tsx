@@ -59,7 +59,7 @@ export function TierNotifyForm({ user }: { user: UserResponse }) {
           </button>
         </span>
       </div>
-      <p id="tier-notify-help" className="text-xs leading-relaxed text-fg-dim">
+      <p id="tier-notify-help" className="break-keep text-xs leading-relaxed text-fg-dim">
         {t("tierNotifyHelp")}
       </p>
       <p role="alert" className="min-h-4 text-xs text-danger">

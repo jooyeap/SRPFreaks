@@ -111,7 +111,7 @@ export function RivalPatternDetailView({
         <section aria-label={t("Rival.tierTitle")} className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-3">
           <h2 className="text-sm font-bold text-fg">{t("Rival.tierTitle")}</h2>
           <RivalTierBars tiers={tiers} />
-          <p className="text-xs text-fg-dim">{t("Rival.barLegend")}</p>
+          <p className="break-keep text-xs text-fg-dim">{t("Rival.barLegend")}</p>
         </section>
       ) : null}
 
@@ -160,7 +160,7 @@ export function RivalPatternDetailView({
           <Pager page={page} totalPages={rows.totalPages} onChange={onPageChange} />
         </>
       )}
-      <p className="text-xs text-fg-dim">{t("Rival.ratingLegend")}</p>
+      <p className="break-keep text-xs text-fg-dim">{t("Rival.ratingLegend")}</p>
     </div>
   );
 }

@@ -89,7 +89,7 @@ export function TierTileGrid({
             type="button"
             aria-expanded={unfolded}
             onClick={() => setUnfolded((v) => !v)}
-            className="min-h-11 w-full rounded-lg border border-dashed border-ctl px-3 text-left text-[13px] text-fg-sub hover:bg-table-head"
+            className="break-keep min-h-11 w-full rounded-lg border border-dashed border-ctl px-3 text-left text-[13px] text-fg-sub hover:bg-table-head"
           >
             <span aria-hidden="true">{unfolded ? "▴ " : "▸ "}</span>
             {unfolded ? t("tilesFoldClose") : foldText}

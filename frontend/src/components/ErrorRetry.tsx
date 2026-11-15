@@ -23,7 +23,7 @@ export function ErrorRetry({
   const t = useTranslations("Common");
   return (
     <div role="alert" className={`flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-fg ${className}`}>
-      <span>{children}</span>
+      <span className="break-keep">{children}</span>
       <button
         type="button"
         onClick={onRetry}

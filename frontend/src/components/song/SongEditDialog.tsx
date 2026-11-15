@@ -258,7 +258,7 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
             {aliasError}
           </p>
         ) : null}
-        <p id="edit-alias-help" className="text-xs text-fg-dim">
+        <p id="edit-alias-help" className="break-keep text-xs text-fg-dim">
           {t("Song.aliasHelp", { count: aliases.length, limit })}
         </p>
       </div>
@@ -316,7 +316,7 @@ function ChartForm({ song, chart, onDone }: { song: SongDetailResponse; chart: S
           </p>
         ) : null}
       </div>
-      <p className="text-xs text-fg-dim">{t("Song.partLockedNote")}</p>
+      <p className="break-keep text-xs text-fg-dim">{t("Song.partLockedNote")}</p>
       <Footer pending={mutation.isPending} error={mutation.error} onDone={onDone} />
     </form>
   );

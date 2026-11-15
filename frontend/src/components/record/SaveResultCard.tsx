@@ -155,9 +155,9 @@ export function SaveResultCard({ outcome, onClose, onNext }: { outcome: SaveOutc
         ) : null}
       </dl>
       {undecided ? (
-        <p className="text-xs text-fg-dim">{t("Record.tierUndecidedNote")}</p>
+        <p className="break-keep text-xs text-fg-dim">{t("Record.tierUndecidedNote")}</p>
       ) : excluded ? (
-        <p className="text-xs text-fg-dim">{t("Record.excludedNote")}</p>
+        <p className="break-keep text-xs text-fg-dim">{t("Record.excludedNote")}</p>
       ) : (
         <>
           {/* 최고 기록 아님 안내가 있으면 `레이팅은 그대로입니다.` 계열 문구를 대신한다 */}

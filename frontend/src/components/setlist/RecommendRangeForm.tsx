@@ -63,7 +63,7 @@ export function RecommendRangeForm({ current, onDone }: { current: Current; onDo
 
   return (
     <form onSubmit={handleSubmit((values) => save.mutate(values))} noValidate aria-label={t("Setlist.rangeAria")} className="flex flex-col gap-3 rounded-xl border border-line p-3">
-      <p className="text-xs text-fg-sub">{t("Setlist.rangeLead")}</p>
+      <p className="break-keep text-xs text-fg-sub">{t("Setlist.rangeLead")}</p>
       <RangeRow title={t("Setlist.ssBasis")} lowName="ssMin" highName="ssMax" register={register} errors={errors} />
       <RangeRow title={t("Setlist.sBasis")} lowName="sMin" highName="sMax" register={register} errors={errors} />
       <div className="flex items-center justify-end gap-2">

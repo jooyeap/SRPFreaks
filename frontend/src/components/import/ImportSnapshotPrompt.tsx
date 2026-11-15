@@ -41,7 +41,7 @@ export function ImportSnapshotPrompt({ userId }: { userId: number }) {
   }
   return (
     <section aria-label={t("snapshotSuggestAria")} className="flex flex-col gap-2 rounded-xl border border-chip-on-bg p-3">
-      <p className="text-xs text-fg-sub">{t("snapshotHint")}</p>
+      <p className="break-keep text-xs text-fg-sub">{t("snapshotHint")}</p>
       <button
         type="button"
         disabled={record.isPending}

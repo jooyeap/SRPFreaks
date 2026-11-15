@@ -46,7 +46,7 @@ export function RegisteredMeSection({ userId }: { userId: number }) {
       </div>
       {isPending ? <p className="text-sm text-fg-sub">{tc("Common.loading")}</p> : null}
       {isError ? (
-        <p role="alert" className="text-sm text-fg">{error instanceof ApiError ? error.message : t("loadFailed")}</p>
+        <p role="alert" className="break-keep text-sm text-fg">{error instanceof ApiError ? error.message : t("loadFailed")}</p>
       ) : null}
       {data && data.content.length === 0 ? <p className="text-sm text-fg-sub">{t("registeredMeEmpty")}</p> : null}
       {data && data.content.length > 0 ? (

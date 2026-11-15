@@ -47,7 +47,7 @@ export function RivalTab({ userId }: { userId: number }) {
         <h2 className="text-[15px] font-bold text-fg">{t("myRivals")}</h2>
         <span className="font-num text-xs text-fg-dim">{data.length}/5</span>
       </div>
-      {data.length === 0 ? <p className="text-sm text-fg-sub">{t("emptyList")}</p> : null}
+      {data.length === 0 ? <p className="break-keep text-sm text-fg-sub">{t("emptyList")}</p> : null}
       {data.map((rival) =>
         rival.available && rival.counts && rival.tier ? (
           <Link
@@ -64,7 +64,7 @@ export function RivalTab({ userId }: { userId: number }) {
                 {rival.tier.displayName}
               </span>
             </span>
-            <span className="text-xs text-fg-dim">
+            <span className="break-keep text-xs text-fg-dim">
               {t.rich("scoreLine", {
                 n: (c) => <span className="font-num text-fg">{c}</span>,
                 total: formatScore(rival.totalScore),
@@ -94,7 +94,7 @@ export function RivalTab({ userId }: { userId: number }) {
               <b className="min-w-0 flex-1 truncate text-[15px] text-fg-sub">{rival.nickname ?? t("unknown")}</b>
               <span className="text-xs text-fg-dim">{t("private")}</span>
             </span>
-            <p className="text-xs text-fg-dim">{t("privateLine")}</p>
+            <p className="break-keep text-xs text-fg-dim">{t("privateLine")}</p>
             <button
               type="button"
               onClick={() => setRemoving(rival)}
@@ -110,7 +110,7 @@ export function RivalTab({ userId }: { userId: number }) {
           {unregister.error instanceof ApiError ? unregister.error.message : t("failed")}
         </p>
       ) : null}
-      <p className="text-xs text-fg-dim">
+      <p className="break-keep text-xs text-fg-dim">
         {t.rich("listHint", { a: (c) => <Link href="/players" className="underline">{c}</Link> })}
       </p>
       <RegisteredMeSection userId={userId} />

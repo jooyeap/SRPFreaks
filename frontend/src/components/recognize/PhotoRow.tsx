@@ -154,7 +154,7 @@ export function PhotoRow({
 
       {needsSrn ? (
         <div className="flex flex-col gap-1 rounded-[10px] border border-line bg-table-head px-3 py-2">
-          <p className="text-xs text-fg">{t(srnRead === false ? "Photo.srnOther" : "Photo.srnUnknown")}</p>
+          <p className="break-keep text-xs text-fg">{t(srnRead === false ? "Photo.srnOther" : "Photo.srnUnknown")}</p>
           <label className="flex min-h-11 items-center gap-2 text-sm text-fg">
             <input type="checkbox" checked={draft.srnConfirmed} onChange={(e) => set({ srnConfirmed: e.target.checked })} disabled={state === "saved"} />
             {t("Photo.srnConfirm")}

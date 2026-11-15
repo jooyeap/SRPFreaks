@@ -256,7 +256,7 @@ export function RivalDashboard({
         <p className="col-span-3 font-num text-sm font-bold text-fg">
           {t("Rival.wltLine", { wins: totals.wins, ties: totals.ties, losses: totals.losses })}
         </p>
-        <p className="col-span-3 text-[11px] leading-4 text-fg-dim">{t("Rival.judgeNote")}</p>
+        <p className="break-keep col-span-3 text-[11px] leading-4 text-fg-dim">{t("Rival.judgeNote")}</p>
       </div>
 
       <div role="group" aria-label={t("Rival.cardsAria")} className="grid grid-cols-3 gap-2">
@@ -288,7 +288,7 @@ export function RivalDashboard({
         {chart === "bar" ? (
           <>
             <RivalBarChart patterns={patterns} />
-            <p className="text-xs text-fg-dim">{t("Rival.barLegend")}</p>
+            <p className="break-keep text-xs text-fg-dim">{t("Rival.barLegend")}</p>
           </>
         ) : chart === "dot" ? (
           <RivalDotChart patterns={patterns} distribution={rateDistribution} closeMargin={closeMargin} />

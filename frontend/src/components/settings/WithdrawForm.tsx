@@ -58,7 +58,7 @@ export function WithdrawForm() {
 
       <section className="flex flex-col gap-1.5 rounded-2xl border border-line bg-card p-4" aria-label={t("Settings.scopeAria")}>
         <h2 className="text-sm font-bold text-fg-sub">{t("Settings.scopeAria")}</h2>
-        <p className="text-xs leading-relaxed text-fg-sub">
+        <p className="break-keep text-xs leading-relaxed text-fg-sub">
           {t("Settings.scopeText")}
         </p>
       </section>

@@ -59,7 +59,7 @@ export function TierHistorySection({ songId }: { songId: number }) {
           {t("TierHistory.loadFailed")}
         </ErrorRetry>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-fg-sub">{t("TierHistory.empty")}</p>
+        <p className="break-keep text-sm text-fg-sub">{t("TierHistory.empty")}</p>
       ) : (
         <>
           <ul className="flex flex-col divide-y divide-line">
@@ -88,7 +88,7 @@ export function TierHistorySection({ songId }: { songId: number }) {
               {history.isFetchingNextPage ? t("TierHistory.loadingMore") : t("TierHistory.loadMore")}
             </button>
           ) : null}
-          <p className="text-xs text-fg-sub">{t("TierHistory.note")}</p>
+          <p className="break-keep text-xs text-fg-sub">{t("TierHistory.note")}</p>
         </>
       )}
     </section>

@@ -205,7 +205,7 @@ export function ImportProcessor({ userId, done, onDone, onClose }: { userId: num
           {t("Import.pagesRead", { done: donePages, max: MAX_PAGES })}
         </span>
       </div>
-      <p className="text-xs leading-relaxed text-fg-sub">{t("Import.notSavedYet")}</p>
+      <p className="break-keep text-xs leading-relaxed text-fg-sub">{t("Import.notSavedYet")}</p>
       {preview.isPending && <p className="text-sm text-fg-sub">{t("Import.checking")}</p>}
       {preview.isError && (
         <p role="alert" className="text-sm text-danger">

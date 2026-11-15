@@ -67,7 +67,7 @@ export function RivalRadarChart({ patterns }: { patterns: readonly RivalPatternS
           );
         })}
       </svg>
-      <p className="text-xs text-fg-dim">{t("Rival.radarLegend")}</p>
+      <p className="break-keep text-xs text-fg-dim">{t("Rival.radarLegend")}</p>
       {anySmall ? <p className="text-[11px] text-fg-dim">{t("Rival.smallSample")}</p> : null}
       <RivalChartTable patterns={patterns} />
     </div>

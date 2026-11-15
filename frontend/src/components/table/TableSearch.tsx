@@ -129,7 +129,7 @@ export function TableSearch({ userId, groups }: { userId: number; groups: readon
                 ))}
               </ul>
               {truncated ? (
-                <p className="mt-3 text-xs text-fg-dim">{t("Table.searchTooMany")}</p>
+                <p className="break-keep mt-3 text-xs text-fg-dim">{t("Table.searchTooMany")}</p>
               ) : null}
             </>
           )}

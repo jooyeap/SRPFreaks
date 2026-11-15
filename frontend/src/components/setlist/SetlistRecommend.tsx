@@ -59,9 +59,9 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
           {result.error instanceof ApiError ? result.error.message : t("Setlist.recFailed")}
         </ErrorRetry>
       ) : result.data.status === "UNAVAILABLE" ? (
-        <p className="text-sm text-fg-sub">{t("Setlist.recNotYet")}</p>
+        <p className="break-keep text-sm text-fg-sub">{t("Setlist.recNotYet")}</p>
       ) : result.data.status === "INSUFFICIENT" ? (
-        <p className="text-sm text-fg-sub">
+        <p className="break-keep text-sm text-fg-sub">
           {t("Setlist.insufficient", {
             ratedSingle: result.data.ratedSingle,
             requiredSingle: result.data.requiredSingle,
@@ -72,7 +72,7 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
       ) : (
         <>
           {result.data.status === "STARTER" ? (
-            <p className="text-xs text-fg-sub">
+            <p className="break-keep text-xs text-fg-sub">
               {t.rich("Setlist.starterNote", { n: (c) => <span className="font-num text-fg">{c}</span>, tier: formatTier(result.data.baseTier, t) })}
             </p>
           ) : (
@@ -95,7 +95,7 @@ export function SetlistRecommend({ userId, addedIds, full }: { userId: number; a
               {adjusting ? <RecommendRangeForm current={result.data} onDone={() => setAdjusting(false)} /> : null}
             </div>
           ) : null}
-          {full ? <p className="text-xs text-fg-sub">{t("Setlist.limitFull", { limit: SETLIST_LIMIT })}</p> : null}
+          {full ? <p className="break-keep text-xs text-fg-sub">{t("Setlist.limitFull", { limit: SETLIST_LIMIT })}</p> : null}
           {result.data.status === "READY" ? (
             <Group
               title={t("Setlist.ssBasis")}

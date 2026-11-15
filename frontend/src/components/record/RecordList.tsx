@@ -67,7 +67,7 @@ export function RecordList({
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs text-fg-dim">{t("Record.editNote")}</p>
+      <p className="break-keep mt-2 text-xs text-fg-dim">{t("Record.editNote")}</p>
     </section>
   );
 }

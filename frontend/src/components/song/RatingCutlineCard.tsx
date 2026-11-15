@@ -61,7 +61,7 @@ export function RatingCutlineCard({ chartId, userId }: { chartId: number; userId
   const data = query.data;
   if (data.status === "NOT_RATED") {
     // 카드는 숨기고 이유만 한 줄로 알린다
-    return <p className="px-1 text-xs text-fg-dim">{t(notRatedKey(data.notRatedReason))}</p>;
+    return <p className="break-keep px-1 text-xs text-fg-dim">{t(notRatedKey(data.notRatedReason))}</p>;
   }
 
   return (
@@ -112,7 +112,7 @@ function CutlineSummary({ data }: { data: RatingSimulationResponse }) {
       </dl>
 
       {/* 필요 달성률 한 줄: 글자로 말하므로 색에 기대지 않는다. (진행 막대는 항상 거의 가득 차 뜻을 알 수 없다는 피드백으로 삭제했다) */}
-      <p className="text-sm font-semibold text-fg">
+      <p className="break-keep text-sm font-semibold text-fg">
         {cutline === null || required === null
           ? t("unreachable")
           : data.status === "IN_LIST"

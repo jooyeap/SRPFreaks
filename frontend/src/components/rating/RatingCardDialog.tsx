@@ -162,7 +162,7 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
         )}
       </div>
 
-      <p className="mt-2 text-xs text-fg-sub">{t("RatingCard.hint")}</p>
+      <p className="break-keep mt-2 text-xs text-fg-sub">{t("RatingCard.hint")}</p>
 
       <div className="mt-4 flex gap-2.5">
         <button

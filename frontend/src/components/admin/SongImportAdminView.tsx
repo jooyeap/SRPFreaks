@@ -97,7 +97,7 @@ export function SongImportAdminView() {
         {/* 다른 관리 화면과 같은 뒤로 버튼(2026-10-27) */}
         <AdminBackLink />
         <h1 className="text-xl font-semibold text-fg">{t("SongImport.title")}</h1>
-        <p className="text-sm text-fg-sub">{t("SongImport.lead")}</p>
+        <p className="break-keep text-sm text-fg-sub">{t("SongImport.lead")}</p>
       </header>
 
       <BookmarkGuide />
@@ -116,12 +116,12 @@ export function SongImportAdminView() {
           </button>
         </div>
         {invalid ? (
-          <p role="alert" className="text-sm text-fg">
+          <p role="alert" className="break-keep text-sm text-fg">
             {t("SongImport.invalidFragment")}
           </p>
         ) : null}
         {previewMutation.isError ? (
-          <p role="alert" className="text-sm text-fg">
+          <p role="alert" className="break-keep text-sm text-fg">
             {t("SongImport.previewFailed")}
           </p>
         ) : null}
@@ -208,7 +208,7 @@ function BookmarkGuide() {
           <p>{t("SongImport.guideStep3")}</p>
         </StepCard>
       </ol>
-      <p className="text-xs text-fg-dim">{t("SongImport.guideNote")}</p>
+      <p className="break-keep text-xs text-fg-dim">{t("SongImport.guideNote")}</p>
     </section>
   );
 }
@@ -216,7 +216,7 @@ function BookmarkGuide() {
 /** 사용 방법의 한 단계 카드. 번호는 목록(ol)이 알려 주므로 숫자 동그라미는 장식이다(aria-hidden). */
 function StepCard({ n, title, children }: { n: number; title: string; children: ReactNode }) {
   return (
-    <li className="flex flex-col gap-2 rounded-xl border border-line bg-table-head p-3 text-sm text-fg-sub">
+    <li className="break-keep flex flex-col gap-2 rounded-xl border border-line bg-table-head p-3 text-sm text-fg-sub">
       <div className="flex items-center gap-2">
         <span aria-hidden="true" className="font-num flex size-6 shrink-0 items-center justify-center rounded-full bg-chip-on-bg text-xs font-extrabold text-chip-on-fg">
           {n}
@@ -257,7 +257,7 @@ function PreviewSection({
   return (
     <section aria-label={t("SongImport.previewAria")} className={CARD}>
       <h2 className="text-sm font-bold text-fg">{t("SongImport.previewHeading")}</h2>
-      <p className="text-sm text-fg-sub">
+      <p className="break-keep text-sm text-fg-sub">
         {t("SongImport.summary", { read: preview.readSongs, matched: preview.matchedSongs, unchanged: preview.unchangedSongs })}
       </p>
       {preview.readSongs === 0 ? <p className="text-sm text-fg">{t("SongImport.readNothing")}</p> : null}
@@ -270,7 +270,7 @@ function PreviewSection({
               <li key={title}>{title}</li>
             ))}
           </ul>
-          <p className="mt-1 text-xs text-fg-dim">{t("SongImport.unmatchedNote")}</p>
+          <p className="break-keep mt-1 text-xs text-fg-dim">{t("SongImport.unmatchedNote")}</p>
         </details>
       ) : null}
 

@@ -49,7 +49,7 @@ export function SongNavBar({ view, onStep }: { view: NavView; onStep: (direction
           role="status"
           className="motion-reveal fixed inset-x-0 bottom-[calc(var(--tabbar-h)+3.5rem+0.5rem)] z-30 mx-auto flex w-[calc(100%-2rem)] max-w-sm items-start gap-2 rounded-xl border border-ctl bg-card px-3 py-2 text-sm text-fg shadow-lg"
         >
-          <span className="flex-1">{t("Song.navHint")}</span>
+          <span className="break-keep flex-1">{t("Song.navHint")}</span>
           <button
             type="button"
             aria-label={t("Song.navHintClose")}

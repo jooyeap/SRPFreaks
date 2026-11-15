@@ -112,7 +112,7 @@ export function SetlistTab({ userId }: { userId: number }) {
       </div>
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-fg-sub">
+          <p className="break-keep text-sm text-fg-sub">
             {t.rich("Setlist.doneTotal", { n: (c) => <span className="font-num text-fg">{c}</span>, done, total: items.length })}
             <span className="text-fg-dim">{t("Setlist.maxSongs", { limit: SETLIST_LIMIT })}</span>
           </p>
@@ -127,7 +127,7 @@ export function SetlistTab({ userId }: { userId: number }) {
         </div>
 
         {items.length === 0 ? (
-          <p className="text-sm text-fg-sub">
+          <p className="break-keep text-sm text-fg-sub">
             {t("Setlist.emptyList")}
           </p>
         ) : (
