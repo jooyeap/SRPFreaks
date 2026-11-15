@@ -271,11 +271,11 @@ function NotificationGroupView({ group, now, onOpen }: { group: NotificationGrou
         <span className={`min-w-0 flex-1 text-[13px] [overflow-wrap:anywhere] ${group.unreadCount > 0 ? "text-fg" : "text-fg-sub"}`}>
           {t.rich("groupHead", { ...b, nickname, n: group.songTotal })}
         </span>
-        {group.unreadCount > 0 ? <span className="shrink-0 text-xs text-fg">{t("groupUnread", { n: group.unreadCount })}</span> : null}
+        {group.unreadCount > 0 ? <span className="shrink-0 rounded-full bg-danger px-2 py-0.5 text-[11px] font-bold leading-4 text-page">{t("groupUnread", { n: group.unreadCount })}</span> : null}
       </button>
       {open ? (
         <>
-          <ul className="flex flex-col gap-1 pl-3">
+          <ul className="ml-3 flex flex-col gap-1 border-l-2 border-line pl-1">
             {shown.map((item) => (
               <NotificationItem key={`${item.kind}-${item.id}`} item={item} now={now} onOpen={() => onOpen(item)} />
             ))}
@@ -326,7 +326,7 @@ function NotificationItem({ item, now, onOpen, lone = false }: { item: Notificat
           {item.kind === "RIVAL" && bundle ? <RivalBundlePreview item={item} /> : null}
           <span className="mt-1 flex flex-wrap items-center gap-1">
             {item.kind === "TIER" ? <TierChips item={item} /> : bundle ? null : <RivalChips item={item} lone={lone} />}
-            <span className="text-xs text-fg-dim">{whenText}</span>
+            <span className="ml-auto text-xs text-fg-dim">{whenText}</span>
             {item.read ? null : lone ? <span className="text-xs text-fg">{t("new")}</span> : <span className="sr-only">{t("new")}</span>}
           </span>
         </span>
@@ -357,10 +357,10 @@ function RivalBundlePreview({ item }: { item: RivalNotificationResponse }) {
   const titles = item.previewTitles && item.previewTitles.length > 0 ? item.previewTitles : [item.title];
   const more = item.songCount - titles.length;
   return (
-    <span className="mt-0.5 block text-xs leading-5 text-fg-sub">
+    <span className="mt-1.5 block rounded-lg bg-page px-2.5 py-2 text-xs leading-5 text-fg-sub">
       {titles.join(" · ")}
       {more > 0 ? ` ${t("previewMore", { n: more })}` : ""}
-      <span className="mt-0.5 block font-bold text-check-fg">{t("bundleOpen")}</span>
+      <span className="block font-bold text-check-fg">{t("bundleOpen")}</span>
     </span>
   );
 }

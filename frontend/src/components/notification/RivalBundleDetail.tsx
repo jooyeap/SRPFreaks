@@ -4,9 +4,9 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import type { RivalBundleSongResponse, RivalNotificationResponse } from "@/lib/api-types";
-import { formatRate } from "@/lib/format";
+import { formatRate, formatSeoulDateTime } from "@/lib/format";
 import { fetchRivalBundleSongs, formatScoreDiff, notificationKeys } from "@/lib/rivals";
-import { ChartChip, DiffChip } from "@/components/notification/NotificationParts";
+import { ChartChip } from "@/components/notification/NotificationParts";
 
 /** 곡 한 줄의 차이(내 − 상대). 둘째 자리 값으로 부호를 정한다(formatScoreDiff). */
 function songDiff(song: RivalBundleSongResponse) {
@@ -65,7 +65,7 @@ export function RivalBundleDetail({
         </button>
         <b className="min-w-0 flex-1 text-sm text-fg [overflow-wrap:anywhere]">{t("bundleTitle", { nickname, n })}</b>
       </div>
-      <p className="px-1 text-xs text-fg-dim">{t("bundleNote")}</p>
+      <p className="px-1 text-xs text-fg-dim">{formatSeoulDateTime(item.visibleAt)} · {t("bundleNote")}</p>
       <div className="min-h-0 overflow-y-auto overflow-x-hidden">
         {query.isPending ? (
           <p className="p-3 text-sm text-fg-sub">{t("loading")}</p>
@@ -91,7 +91,7 @@ export function RivalBundleDetail({
                       <span>
                         {t("mineLabel")} <b className="text-fg-sub">{formatRate(song.myRate)}</b>
                       </span>
-                      {diff ? <DiffChip text={diff.text} sign={diff.sign} /> : null}
+                      {diff ? <b className={diff.sign === "up" ? "text-done-text" : diff.sign === "down" ? "text-danger" : "text-fg-sub"}>{diff.text}</b> : null}
                     </span>
                   </span>
                 </li>
