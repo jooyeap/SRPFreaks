@@ -71,7 +71,7 @@ export function ProgressTiles({
         </button>
       ) : null}
       <ul aria-label={label} className="grid grid-cols-1 sm:grid-cols-3 sm:gap-2">
-        {shown.map((g) => {
+        {shown.map((g, tileIndex) => {
           const done = isDone(g.recorded, g.total);
           const tint = tileTint(g.recorded, g.total);
           const chips = chipsOf(g);
@@ -108,7 +108,7 @@ export function ProgressTiles({
                     </span>
                   ))}
                   <span aria-hidden="true" className="absolute inset-x-1 bottom-0.5">
-                    <StageBar counts={g} total={g.total} className="h-[3px]" done={done} />
+                    <StageBar counts={g} total={g.total} className="h-[3px]" done={done} motionKey={`tile:${label}:${g.key}:m`} motionIndex={tileIndex} />
                   </span>
                 </span>
 
@@ -148,7 +148,7 @@ export function ProgressTiles({
                   </span>
                 </span>
                 <span className="hidden sm:block">
-                  <StageBar counts={g} total={g.total} className="h-1" done={done} />
+                  <StageBar counts={g} total={g.total} className="h-1" done={done} motionKey={`tile:${label}:${g.key}:d`} motionIndex={tileIndex} />
                 </span>
               </Link>
             </li>

@@ -12,3 +12,20 @@ export function stagger(index: number | undefined): { className: string; style: 
   if (index === undefined || index < 0 || index >= STAGGER_LIMIT) return { className: "", style: undefined };
   return { className: "motion-stagger", style: { "--stagger-i": index } as CSSProperties };
 }
+
+/** 막대 채움 모션(D82, 모션 PR 5)을 적용할 막대 수. 목록에 막대가 많아도 처음 8개까지만 움직여 느려지지 않는다(줄 순차 등장과 같은 한도) */
+export const BAR_LIMIT = 8;
+
+/**
+ * 막대 하나에 붙일 채움 모션 속성. `first`는 useFirstAppearance(키)의 결과(처음 나타나는 막대인가), `index`는 목록 안 번호(0부터, 목록이 아니면 생략)다.
+ * 처음 나타나는 막대이고 번호가 한도 안일 때만 `motion-bar-fill`(왼쪽에서 오른쪽으로 clip-path가 열림)을 붙이고, 번호마다 50ms씩 늦게 시작한다.
+ * `rtl`은 오른쪽에서 왼쪽으로 채우는 막대(라이벌 비교의 왼쪽 반)다. 값을 아직 모르는 자리(불러오는 중)에는 막대 자체를 그리지 않으므로 여기서 다루지 않는다.
+ * 끝난 뒤에는 clip-path가 남지 않는다(fill-mode backwards).
+ */
+export function barFill(first: boolean, index?: number, rtl = false): { className: string; style: CSSProperties | undefined } {
+  if (!first || (index !== undefined && (index < 0 || index >= BAR_LIMIT))) return { className: "", style: undefined };
+  return {
+    className: rtl ? "motion-bar-fill motion-bar-fill-rtl" : "motion-bar-fill",
+    style: index ? ({ "--bar-i": index } as CSSProperties) : undefined,
+  };
+}

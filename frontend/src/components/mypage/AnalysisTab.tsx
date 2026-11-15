@@ -2,7 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { AnalysisHelpSheet } from "@/components/mypage/AnalysisHelpSheet";
+import { BarFill } from "@/components/BarFill";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { ValueSwap } from "@/components/ValueSwap";
 import { SetlistAddCell } from "@/components/rivals/SetlistAddCell";
 import { Skeleton } from "@/components/Skeleton";
 import { ChartLine } from "@/components/table/ChartLine";
@@ -162,8 +164,8 @@ function CompareList({ rows, peerAvailable, ariaLabel }: { rows: readonly Compar
   return (
     <>
       <ul aria-label={ariaLabel} className="flex flex-col gap-3">
-        {rows.map((row) => (
-          <CompareRow key={row.key} row={row} peerAvailable={peerAvailable} />
+        {rows.map((row, i) => (
+          <CompareRow key={row.key} row={row} peerAvailable={peerAvailable} index={i} />
         ))}
       </ul>
       <ScaleTicks />
@@ -193,7 +195,7 @@ function ScaleTicks() {
  * 차이 글자는 같은 티어보다 낮으면 주황(`weak-text`), 높으면 초록(`done-text`)이고 부호(`−`/`+`)가 글자로 같이 있다.
  * 막대 도형은 장식(aria-hidden)이고 값은 막대 오른쪽 글자와 아래 글자 줄이 담는다.
  */
-function CompareRow({ row, peerAvailable }: { row: CompareRowData; peerAvailable: boolean }) {
+function CompareRow({ row, peerAvailable, index }: { row: CompareRowData; peerAvailable: boolean; index: number }) {
   const t = useTranslations();
   const diff = formatAvgDiff(row.diff);
   const diffTone = diff?.sign === "down" ? "text-weak-text" : diff?.sign === "up" ? "text-done-text" : "text-fg";
@@ -205,7 +207,7 @@ function CompareRow({ row, peerAvailable }: { row: CompareRowData; peerAvailable
           {diff ? (
             <>
               <span className="sr-only">{t("Analysis.diffLabel")} </span>
-              {diff.text}
+              <ValueSwap value={diff.text} className={diffTone}>{diff.text}</ValueSwap>
             </>
           ) : (
             "–"
@@ -213,8 +215,8 @@ function CompareRow({ row, peerAvailable }: { row: CompareRowData; peerAvailable
         </span>
       </div>
       <div className="mt-1 flex flex-col gap-1">
-        <BarLine kind="me" name={t("Analysis.barMe")} avg={row.myAvg} fillClass="bg-done" />
-        <BarLine kind="peer" name={t("Analysis.barPeer")} avg={row.peerAvg} fillClass="bg-ctl" />
+        <BarLine kind="me" name={t("Analysis.barMe")} avg={row.myAvg} fillClass="bg-done" motionKey={`analysis:${row.key}:me`} index={index} />
+        <BarLine kind="peer" name={t("Analysis.barPeer")} avg={row.peerAvg} fillClass="bg-ctl" motionKey={`analysis:${row.key}:peer`} index={index} />
       </div>
       <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[11px] text-fg-dim">
         {row.weak ? (
@@ -227,12 +229,13 @@ function CompareRow({ row, peerAvailable }: { row: CompareRowData; peerAvailable
 }
 
 /** 막대 하나: `이름 | 막대(80~100 눈금) | 값`. 값이 없으면 빈 막대와 `–`. 막대 끝 테두리·세로선은 없다. */
-function BarLine({ kind, name, avg, fillClass }: { kind: "me" | "peer"; name: string; avg: number | null; fillClass: string }) {
+function BarLine({ kind, name, avg, fillClass, motionKey, index }: { kind: "me" | "peer"; name: string; avg: number | null; fillClass: string; motionKey: string; index: number }) {
   return (
     <div data-bar={kind} className="flex items-center gap-2">
       <span className={`${BAR_LABEL_W} shrink-0 whitespace-nowrap text-[11px] text-fg-sub`}>{name}</span>
       <div aria-hidden="true" className="h-3.5 min-w-0 flex-1 overflow-hidden rounded border border-line bg-card">
-        <div style={{ width: `${Number(scalePercent(avg).toFixed(2))}%` }} className={`h-full ${fillClass}`} />
+        {/* 값이 있을 때만 처음 한 번 왼쪽에서 채운다(값이 없는 빈 막대는 움직이지 않는다) */}
+        <BarFill as="div" motionKey={avg === null ? undefined : motionKey} index={index} style={{ width: `${Number(scalePercent(avg).toFixed(2))}%` }} className={`h-full ${fillClass}`} />
       </div>
       <span className={`${BAR_VALUE_W} shrink-0 text-right font-num text-xs tabular-nums text-fg`}>
         {avg === null ? "–" : formatRate(avg)}

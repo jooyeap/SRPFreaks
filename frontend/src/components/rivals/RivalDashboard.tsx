@@ -2,6 +2,8 @@
 
 import { useQueries, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { BarFill } from "@/components/BarFill";
+import { ValueSwap } from "@/components/ValueSwap";
 import { RivalBarChart } from "@/components/rivals/RivalBarChart";
 import { RivalDotChart } from "@/components/rivals/RivalDotChart";
 import { RivalRadarChart } from "@/components/rivals/RivalRadarChart";
@@ -115,14 +117,14 @@ function ConclusionCard({ patterns }: { patterns: readonly RivalPatternSummary[]
 }
 
 /** 작은 승패 막대: 왼쪽 패(주황) · 가운데 무(회색 바탕) · 오른쪽 승(초록). 장식이고 같은 값이 `승 N · 무 N · 패 N` 글자로 있다. */
-function MiniBar({ pattern }: { pattern: RivalPatternSummary }) {
+function MiniBar({ pattern, index }: { pattern: RivalPatternSummary; index: number }) {
   const total = Math.max(pattern.wins + pattern.ties + pattern.losses, 1);
   return (
-    <span aria-hidden="true" className="flex h-1.5 w-14 shrink-0 overflow-hidden rounded bg-table-head">
+    <BarFill decorative motionKey={`rival-mini:${pattern.key}`} index={index} className="flex h-1.5 w-14 shrink-0 overflow-hidden rounded bg-table-head">
       <span style={{ width: `${(pattern.losses / total) * 100}%` }} className="bg-weak" />
       <span style={{ width: `${(pattern.ties / total) * 100}%` }} />
       <span style={{ width: `${(pattern.wins / total) * 100}%` }} className="bg-done" />
-    </span>
+    </BarFill>
   );
 }
 
@@ -246,7 +248,7 @@ export function RivalDashboard({
         </div>
         <div className="flex flex-col items-center gap-1">
           <span className="text-xs text-fg-dim">{t("Rival.totalDiff")}</span>
-          <span className="font-num text-lg font-bold text-fg">{signedSum(totalDiff)}</span>
+          <span className="font-num text-lg font-bold text-fg"><ValueSwap value={totalDiff}>{signedSum(totalDiff)}</ValueSwap></span>
         </div>
         <div className="flex min-w-0 flex-col items-center gap-1">
           <span className="max-w-full truncate text-xs text-fg-dim">{rating.nickname}</span>
@@ -309,7 +311,7 @@ export function RivalDashboard({
           <p className="text-sm text-fg-sub">{t("Rival.tabEmpty")}</p>
         ) : (
           <ul className="overflow-hidden rounded-2xl border border-line bg-card">
-            {inTab.map((p) => (
+            {inTab.map((p, patternIndex) => (
               <li key={p.key} className="border-t border-row-line first:border-t-0">
                 <Link
                   href={`/players/${targetId}/compare/${p.key}?from=${tab}`}
@@ -322,7 +324,7 @@ export function RivalDashboard({
                     <UnplayedLine pattern={p} />
                     <RecordLine pattern={p} />
                   </span>
-                  <MiniBar pattern={p} />
+                  <MiniBar pattern={p} index={patternIndex} />
                   <PatternValue pattern={p} tab={tab} />
                   <span aria-hidden="true" className="text-fg-dim">›</span>
                 </Link>

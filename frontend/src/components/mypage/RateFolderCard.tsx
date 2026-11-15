@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { BarFill } from "@/components/BarFill";
 import { Collapse } from "@/components/Collapse";
 import { StageBar } from "@/components/table/StageBar";
 import { groupStage, visibleChipsOf } from "@/components/table/TierGroupSection";
@@ -40,7 +41,7 @@ const BUCKET_CHIP: Record<RateBucketKey, string> = {
  * 색만으로 구분하지 않도록 개수와 구간 이름이 글자로 같이 있다. 막대는 장식이라 aria-hidden이다.
  * 95~100% 구간에는 막대 아래에 MAX(100.00)와 FC(풀콤보, 100 미만) 개수를 뱃지로 따로 보인다.
  */
-export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis; folder: RateFolderResponse; includeZero: boolean }) {
+export function RateFolderCard({ axis, folder, includeZero, index }: { axis: StatsAxis; folder: RateFolderResponse; includeZero: boolean; index?: number }) {
   const t = useTranslations();
   const [open, setOpen] = useState(false);
   const title = folderLabel(axis, folder.key, t);
@@ -84,7 +85,7 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
           </span>
           {/* 폴더 전체의 단계 분포: 막대(장식) + 같은 숫자를 글자 칩으로 오른쪽에 모아 보인다 */}
           <span className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5">
-            <StageBar counts={counts} total={folder.total} className="h-2 min-w-24 flex-1" />
+            <StageBar counts={counts} total={folder.total} className="h-2 min-w-24 flex-1" motionKey={`folder:${axis}:${folder.key}`} motionIndex={index} />
             <span className="ml-auto flex flex-wrap items-center gap-1.5">
               {visibleChipsOf(counts).map((chip) => (
                 <span
@@ -154,7 +155,8 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
                   <span aria-hidden="true" className="ml-1 text-fg-dim">›</span>
                 </span>
               </span>
-              <span aria-hidden="true" className="flex h-[5px] overflow-hidden rounded-full bg-table-head">
+              {/* 이어진 막대라 칸마다가 아니라 막대 전체가 한 번에 열린다. 구간 7개는 모두 한도(8) 안이다 */}
+              <BarFill decorative motionKey={`bucket:${axis}:${folder.key}:${key}`} index={index} className="flex h-[5px] overflow-hidden rounded-full bg-table-head">
                 {segments.map((seg) => (
                   <span
                     key={seg.key}
@@ -164,7 +166,7 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
                     style={{ width: `${folder.total > 0 ? (seg.count / folder.total) * 100 : 0}%` }}
                   />
                 ))}
-              </span>
+              </BarFill>
               {key === "R95" ? (
                 <span className="flex gap-1.5 text-[11px]">
                   <span data-stage="EXC" className={`stage-text border-l-2 border-current pl-1.5 font-num font-bold ${badges.max === 0 ? "opacity-50" : ""}`}>

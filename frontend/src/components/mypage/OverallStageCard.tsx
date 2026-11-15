@@ -27,7 +27,7 @@ export function OverallStageCard({ stages }: { stages: OverallStages }) {
         {t.rich("MyPage.recordedOverall", { n: (c) => <span className="font-num font-semibold text-fg">{c}</span>, recorded: stages.recorded, total: stages.total })}
         <span className="ml-2 font-num text-xs text-fg-dim">{percent(stages.recorded, stages.total)}%</span>
       </p>
-      <StageBar counts={stages} total={stages.total} className="h-2.5" />
+      <StageBar counts={stages} total={stages.total} className="h-2.5" motionKey="mypage-overall-stage" />
       <ul className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
         {counts.map((c) => (
           <li key={c.stage} className={c.count === 0 ? "opacity-60" : undefined}>
