@@ -79,7 +79,7 @@ export function formatFolderAverage(value: number | null): string {
 }
 
 /**
- * 폴더의 달성 단계별 개수(EXC / FC / SS / S / S 미만)와 전체 수. 폴더를 단계 색으로 밝힐지(groupStage) 정하는 데 쓴다.
+ * 폴더의 달성 단계별 개수(EXC / FC / SS / S / S 미만, S+는 구간이 나누지 못해 S에 합침)와 전체 수. 폴더를 단계 색으로 밝힐지(groupStage) 정하는 데 쓴다.
  * 단계 규칙은 서버와 같다: 달성률 100.00 -> EXC, 풀콤보(100 미만) -> FC, 그다음은 95 이상 SS / 80 이상 S / 나머지 S 미만.
  * 구간 안의 EXC·FC를 먼저 빼고 남은 수를 구간이 정하는 단계(SS/S/S 미만)로 센다. 기록이 없는 채보(미플레이)는 어느 단계에도 세지 않는다.
  */
@@ -87,7 +87,7 @@ export function folderStageCounts(folder: RateFolderResponse): StageCounts & { t
   let exc = 0;
   let fc = 0;
   let ss = 0;
-  let s = 0;
+  let s = 0; // 85~89.99 구간 안에 S+(87.50~)가 섞여 있어 구간만으로는 S+를 나눌 수 없다. S 이상 구간은 S에 합치고 sPlus는 0이다(D83)
   let belowS = 0;
   for (const b of folder.buckets) {
     exc += b.exc;
@@ -97,7 +97,7 @@ export function folderStageCounts(folder: RateFolderResponse): StageCounts & { t
     else if (b.bucket === "R90" || b.bucket === "R85" || b.bucket === "R80") s += rest;
     else if (b.bucket === "R73" || b.bucket === "BELOW") belowS += rest;
   }
-  return { exc, fc, ss, s, belowS, total: folder.total };
+  return { exc, fc, ss, sPlus: 0, s, belowS, total: folder.total };
 }
 
 /** 구간의 MAX / FC 개수 (95~100 구간 막대 아래 뱃지에 쓴다). */

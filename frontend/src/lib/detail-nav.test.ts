@@ -21,7 +21,7 @@ function entry(id: number, title: string, over: Partial<TableEntryResponse> = {}
   };
 }
 function group(tier: number | null, entries: TableEntryResponse[]): TierGroupResponse {
-  return { tier, total: entries.length, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries };
+  return { tier, total: entries.length, recorded: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries };
 }
 // 서버 순서: 높은 난이도 먼저
 const groups = [group(5.4, [entry(41, "d"), entry(42, "e")]), group(5.3, [entry(31, "a"), entry(32, "b"), entry(33, "c")]), group(5.2, [entry(21, "f")]), group(null, [entry(1, "미정")])];

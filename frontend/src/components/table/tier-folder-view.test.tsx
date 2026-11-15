@@ -49,6 +49,7 @@ function group(tier: number | null, titles: string[]): TierGroupResponse {
     exc: 0,
     fc: 0,
     ss: 0,
+    sPlus: 0,
     s: 0,
     belowS: 0,
     averageRecorded: null,

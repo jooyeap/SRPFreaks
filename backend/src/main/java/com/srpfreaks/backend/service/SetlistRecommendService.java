@@ -142,7 +142,7 @@ public class SetlistRecommendService {
         return diff.compareTo(min) >= 0 && diff.compareTo(max) <= 0;
     }
 
-    /** 기록이 없거나, 기록의 달성 단계가 limit보다 낮은가. (SS 미만 = S 이하, FC·EXC는 SS 이상이다) */
+    /** 기록이 없거나, 기록의 달성 단계가 limit보다 낮은가. (SS 미만 = S+ 이하, FC·EXC는 SS 이상이다. S+는 S 이상이라 "S 미만"에는 들지 않는다, D83) */
     private static boolean below(RecommendCandidate c, AchievementStage limit) {
         AchievementStage stage = stageOf(c);
         return stage == null || stage.compareTo(limit) < 0;

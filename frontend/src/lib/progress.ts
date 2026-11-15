@@ -17,6 +17,7 @@ export function folderProgress(folders: readonly ChartFolderResponse[]): Progres
     exc: sum((f) => f.exc),
     fc: sum((f) => f.fc),
     ss: sum((f) => f.ss),
+    sPlus: sum((f) => f.sPlus),
     s: sum((f) => f.s),
     belowS: sum((f) => f.belowS),
     groups: folders.map((f) => ({
@@ -29,6 +30,7 @@ export function folderProgress(folders: readonly ChartFolderResponse[]): Progres
       exc: f.exc,
       fc: f.fc,
       ss: f.ss,
+      sPlus: f.sPlus,
       s: f.s,
       belowS: f.belowS,
     })),

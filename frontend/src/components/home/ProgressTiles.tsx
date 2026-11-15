@@ -10,7 +10,7 @@ import { percentOf, tileTint } from "@/lib/progress";
 import { useTranslations } from "next-intl";
 
 // 머리글 칩 이름을 chipsOf와 같은 목록에서 얻기 위한 빈 개수
-const EMPTY_COUNTS = { total: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0 };
+const EMPTY_COUNTS = { total: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0 };
 
 /** 전체가 있고 기록이 모두 채워졌으면 완료. 완료한 칸은 막대 테두리와 이름 글자 색이 달라진다(`n/n` 숫자가 같이 보여 색만으로 구분하지 않는다). */
 function isDone(recorded: number, total: number): boolean {
@@ -22,17 +22,17 @@ function mix(percent: number): string {
   return `color-mix(in srgb, var(--stage-ss-bar) ${percent}%, transparent)`;
 }
 
-/** 모바일 표형 줄의 열 배치: 구간 · 달성 % · 단계 5칸(EXC FC SS S S 미만). 머리글과 줄이 같은 값을 써서 열이 맞는다. */
-const MOBILE_COLS = "grid grid-cols-[4rem_2.5rem_repeat(5,minmax(0,1fr))] items-center";
+/** 모바일 표형 줄의 열 배치: 구간 · 달성 % · 단계 6칸(EXC FC SS S+ S S 미만). 머리글과 줄이 같은 값을 써서 열이 맞는다. */
+const MOBILE_COLS = "grid grid-cols-[4rem_2.5rem_repeat(6,minmax(0,1fr))] items-center";
 
 /**
  * 칸 지도: 묶음(서열표는 기준 난이도, 곡 목록은 레벨 폴더) 하나가 한 칸이다. 칸마다 기록 퍼센트, `기록/전체`,
  * 단계 비율 막대가 있고, 많이 채울수록 칸이 진해진다. 칸 전체가 링크라서 누르면 그 묶음으로 간다.
- * - sm(640px) 이상: 3열 카드. 칸 오른편에 개수 칩이 두 줄(EXC·FC / SS·S·S 미만)로 보이고 막대는 칸 아래에 전체 폭으로 깔린다.
+ * - sm(640px) 이상: 3열 카드. 칸 오른편에 개수 칩이 두 줄(EXC·FC·SS / S+·S·S 미만)로 보이고 막대는 칸 아래에 전체 폭으로 깔린다.
  * - 640px 미만(폰): **표형 1열**(2026-10-20 시안 A). 단계 이름은 맨 위 머리글에 한 번만 쓰고 줄마다 숫자만 둔다(0은 `-`).
  *   카드는 폭이 좁아 칩이 들어가지 않아서 바꿨다. 목록(ul)은 하나이고 한 줄(li) 안에 두 배치를 CSS로 번갈아 보인다
  *   (같은 목록을 두 번 그리면 링크와 접근성 이름이 겹친다). 숫자 앞에는 화면에 보이지 않는 단계 이름(sr-only)이 있고,
- *   색은 단계 글자(EXC·FC·SS·S)와 함께 쓰여 색만으로 구분하지 않는다.
+ *   색은 단계 글자(EXC·FC·SS·S+·S)와 함께 쓰여 색만으로 구분하지 않는다.
  */
 export function ProgressTiles({
   groups,
@@ -75,9 +75,9 @@ export function ProgressTiles({
           const done = isDone(g.recorded, g.total);
           const tint = tileTint(g.recorded, g.total);
           const chips = chipsOf(g);
-          // 넓은 화면 카드의 칩은 0이 아닌 단계만 보인다(0 칩이 다섯 개씩 붙어 화면이 복잡했다, 2026-10-27). 줄 나눔(EXC·FC / 나머지)과 순서는 그대로다.
+          // 넓은 화면 카드의 칩은 0이 아닌 단계만 보인다(0 칩이 다섯 개씩 붙어 화면이 복잡했다, 2026-10-27). 줄 나눔(EXC·FC·SS / 나머지)과 순서는 그대로다.
           // 모바일 표형 줄은 열이 고정이라 지금처럼 0을 "-"로 둔다.
-          const chipRows = [chips.slice(0, 2), chips.slice(2)].map((row) => row.filter((chip) => chip.count > 0)).filter((row) => row.length > 0);
+          const chipRows = [chips.slice(0, 3), chips.slice(3)].map((row) => row.filter((chip) => chip.count > 0)).filter((row) => row.length > 0);
           return (
             <li key={g.key} data-done={done ? "true" : undefined} className="border-t border-line first:border-t-0 sm:border-0">
               <Link

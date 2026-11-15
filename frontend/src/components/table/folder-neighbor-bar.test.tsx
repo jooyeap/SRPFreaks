@@ -11,7 +11,7 @@ const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: replaceMock }) }));
 
 const g = (tier: number): TierGroupResponse =>
-  ({ tier, total: 18, recorded: 5, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries: [] });
+  ({ tier, total: 18, recorded: 5, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries: [] });
 
 describe("FolderNeighborBar", () => {
   it("D68: 이웃 버튼은 맨 위로 올리지 않고(scroll: false) 이동 직전에 스크롤 맞춤 표시를 남긴다", () => {

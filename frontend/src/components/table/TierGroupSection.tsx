@@ -12,7 +12,7 @@ import type { AchievementStage } from "@/lib/types";
 import { useTranslations } from "next-intl";
 
 /** 칩과 묶음 단계 판정에 필요한 개수. 서열표 묶음과 곡 목록의 레벨 폴더가 같은 모양이라 함께 쓴다. */
-export type StageCounts = Pick<TierGroupResponse, "total" | "exc" | "fc" | "ss" | "s" | "belowS">;
+export type StageCounts = Pick<TierGroupResponse, "total" | "exc" | "fc" | "ss" | "sPlus" | "s" | "belowS">;
 
 export interface ChipSpec {
   key: string;
@@ -22,12 +22,13 @@ export interface ChipSpec {
   stage: AchievementStage | null;
 }
 
-/** 묶음 머리의 달성 현황 칩: EXC / FC / SS / S / S 미만 (DESIGN-UI 3장, D24). */
+/** 묶음 머리의 달성 현황 칩: EXC / FC / SS / S+ / S / S 미만, 6개 (DESIGN-UI 3장, D24, D83). */
 export function chipsOf(group: StageCounts): ChipSpec[] {
   return [
     { key: "EXC", label: "EXC", count: group.exc, stage: "EXC" },
     { key: "FC", label: "FC", count: group.fc, stage: "FC" },
     { key: "SS", label: "SS", count: group.ss, stage: "SS" },
+    { key: "S_PLUS", label: "S+", count: group.sPlus, stage: "S+" },
     { key: "S", label: "S", count: group.s, stage: "S" },
     { key: "BELOW_S", label: "S 미만", count: group.belowS, stage: null },
   ];
@@ -43,7 +44,7 @@ export function visibleChipsOf(group: StageCounts): ChipSpec[] {
 
 /**
  * 묶음 전체가 도달한 단계. 묶음 안 모든 채보가 같은 단계 "이상"일 때만 그 단계를 돌려준다.
- * 서버가 준 칩 개수(exc/fc/ss/s)로 판정하므로 화면에서 채보를 다시 세지 않는다.
+ * 서버가 준 칩 개수(exc/fc/ss/sPlus/s)로 판정하므로 화면에서 채보를 다시 세지 않는다.
  * 예) 48개 중 EXC 3 + FC 10 + SS 35 = 48 → "SS"(모두 SS 이상). 한 곡이라도 S 미만이면 null.
  * S 미만은 A/B/C가 합쳐진 값이라 단계를 정할 수 없으므로 효과를 주지 않는다.
  */
@@ -53,6 +54,7 @@ export function groupStage(group: StageCounts): AchievementStage | null {
     ["EXC", group.exc],
     ["FC", group.fc],
     ["SS", group.ss],
+    ["S+", group.sPlus],
     ["S", group.s],
   ];
   // 위(EXC)에서 아래로 누적한다. 누적이 처음 전체와 같아지는 단계가 "모두가 이상인 가장 낮은 단계"다.

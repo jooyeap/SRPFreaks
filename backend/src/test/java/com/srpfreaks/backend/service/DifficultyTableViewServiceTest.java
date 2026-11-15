@@ -139,29 +139,33 @@ class DifficultyTableViewServiceTest {
     @Test
     void 칩_개수는_채보당_가장_높은_단계_하나만_센다() {
         List<DifficultyTableEntry> list = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 8; i++) {
             list.add(simple("t" + i, "9.0" + i, "6.0"));
         }
         when(entryRepository.findAllForView(1L)).thenReturn(list);
-        // 채보 1: EXC, 2: FC(96%), 3: SS, 4: S, 5: 70%(B), 6: 기록 없음(미플레이)
+        // 채보 1: EXC, 2: FC(96%), 3: SS, 4: S(85%), 5: 70%(B), 6: 기록 없음(미플레이), 7: 87.50(S+ 경계), 8: 87.49(S 경계)
         when(recordRepository.findBestByTable(7L, NoteOption.SUPER_RANDOM_PLUS, 1L)).thenReturn(List.of(
                 new RecordBest(1L, new BigDecimal("100.00"), true),
                 new RecordBest(2L, new BigDecimal("96.00"), true),
                 new RecordBest(3L, new BigDecimal("97.00"), false),
                 new RecordBest(4L, new BigDecimal("85.00"), false),
-                new RecordBest(5L, new BigDecimal("70.00"), false)));
+                new RecordBest(5L, new BigDecimal("70.00"), false),
+                new RecordBest(7L, new BigDecimal("87.50"), false),
+                new RecordBest(8L, new BigDecimal("87.49"), false)));
 
         TierGroupResponse g = call(true, 0, 10).content().get(0);
 
-        assertThat(g.total()).isEqualTo(6);
-        assertThat(g.recorded()).isEqualTo(5);
+        assertThat(g.total()).isEqualTo(8);
+        assertThat(g.recorded()).isEqualTo(7);
         assertThat(g.exc()).isEqualTo(1);
         assertThat(g.fc()).isEqualTo(1);
         assertThat(g.ss()).isEqualTo(1);
-        assertThat(g.s()).isEqualTo(1);
+        // 87.50은 S+, 87.49는 S (D83). S+와 S는 칩을 따로 센다
+        assertThat(g.sPlus()).isEqualTo(1);
+        assertThat(g.s()).isEqualTo(2);
         // 70%는 S 미만 칩에 들어가고, 기록 없는 채보(미플레이)는 어느 칩에도 안 들어간다
         assertThat(g.belowS()).isEqualTo(1);
-        assertThat(g.exc() + g.fc() + g.ss() + g.s() + g.belowS()).isEqualTo(g.recorded());
+        assertThat(g.exc() + g.fc() + g.ss() + g.sPlus() + g.s() + g.belowS()).isEqualTo(g.recorded());
         assertThat(g.entries()).filteredOn(e -> e.songDifficultyId() == 2L)
                 .singleElement().satisfies(e -> assertThat(e.mine().stage()).isEqualTo(AchievementStage.FC));
     }

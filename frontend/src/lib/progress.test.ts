@@ -4,17 +4,18 @@ import type { ProgressGroup } from "@/lib/difficulty-table";
 import { emptyHighCount, folderProgress, nextGoal, percentOf, tileTint, weakestGroup, weakestGroupNear } from "@/lib/progress";
 
 function folder(over: Partial<ChartFolderResponse>): ChartFolderResponse {
-  return { lo: 9.5, hi: 9.99, total: 10, recorded: 6, exc: 1, fc: 1, ss: 1, s: 2, belowS: 1, averageRecorded: 90, averageWithZero: 54, subFolders: [], ...over };
+  return { lo: 9.5, hi: 9.99, total: 10, recorded: 6, exc: 1, fc: 1, ss: 1, sPlus: 0, s: 2, belowS: 1, averageRecorded: 90, averageWithZero: 54, subFolders: [], ...over };
 }
 
 function pg(over: Partial<ProgressGroup>): ProgressGroup {
-  return { key: "6.0", label: "6.0", href: "/table/folder/6.0", total: 10, recorded: 5, exc: 0, fc: 0, ss: 0, s: 0, belowS: 5, ...over };
+  return { key: "6.0", label: "6.0", href: "/table/folder/6.0", total: 10, recorded: 5, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 5, ...over };
 }
 
 describe("folderProgress", () => {
   it("폴더별 개수를 합치고 폴더 이름·순서를 유지한다", () => {
-    const p = folderProgress([folder({ lo: 9.5, hi: 9.99 }), folder({ lo: 9, hi: 9.49, total: 20, recorded: 4, exc: 0, fc: 0, ss: 1, s: 1, belowS: 2 })]);
-    expect(p).toMatchObject({ total: 30, recorded: 10, exc: 1, fc: 1, ss: 2, s: 3, belowS: 3 });
+    const p = folderProgress([folder({ lo: 9.5, hi: 9.99 }), folder({ lo: 9, hi: 9.49, total: 20, recorded: 4, exc: 0, fc: 0, ss: 1, sPlus: 1, s: 1, belowS: 1 })]);
+    expect(p).toMatchObject({ total: 30, recorded: 10, exc: 1, fc: 1, ss: 2, sPlus: 1, s: 3, belowS: 2 });
+    expect(p.groups[1]).toMatchObject({ sPlus: 1 });
     expect(p.groups.map((g) => g.label)).toEqual(["9.50 ~ 9.99", "9.00 ~ 9.49"]);
     expect(p.groups[0]).toMatchObject({ key: "9.5", href: "/songs", total: 10, recorded: 6 });
   });

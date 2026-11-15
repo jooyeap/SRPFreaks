@@ -17,7 +17,7 @@ function entry(id: number): TableEntryResponse {
   };
 }
 const groups: TierGroupResponse[] = [
-  { tier: 5.3, total: 3, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries: [entry(1), entry(2), entry(3)] },
+  { tier: 5.3, total: 3, recorded: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries: [entry(1), entry(2), entry(3)] },
 ];
 
 function Harness({ origin = "table", chartId = 2, swipeEnabled = true }: { origin?: "table" | "songs"; chartId?: number; swipeEnabled?: boolean }) {

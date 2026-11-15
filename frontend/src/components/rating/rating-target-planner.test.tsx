@@ -31,7 +31,7 @@ function entry(id: number, title: string, over: Partial<TableEntryResponse> = {}
   };
 }
 function group(tier: number | null, entries: TableEntryResponse[]): TierGroupResponse {
-  return { tier, total: entries.length, recorded: 0, exc: 0, fc: 0, ss: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries };
+  return { tier, total: entries.length, recorded: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, averageRecorded: null, averageWithZero: 0, entries };
 }
 
 describe("RatingTargetPlanner", () => {

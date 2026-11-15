@@ -44,6 +44,7 @@ function group(tier: number | null, entries: TableEntryResponse[]): TierGroupRes
     exc: 0,
     fc: 0,
     ss: 0,
+    sPlus: 0,
     s: 0,
     belowS: 0,
     averageRecorded: null,

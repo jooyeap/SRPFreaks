@@ -5,7 +5,7 @@ import type { TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 
 describe("곡 상세 서열표 정보 카드", () => {
   it("카드 제목 `서열표 정보`가 화면에 보이고, 도움말 `?`가 그 옆에 있다", () => {
-    const group = { tier: 5.6, total: 58, recorded: 18, exc: 0, fc: 0, ss: 3, s: 15, belowS: 0, averageRecorded: 88.07, averageWithZero: 27.33, entries: [] } as unknown as TierGroupResponse;
+    const group = { tier: 5.6, total: 58, recorded: 18, exc: 0, fc: 0, ss: 3, sPlus: 0, s: 15, belowS: 0, averageRecorded: 88.07, averageWithZero: 27.33, entries: [] } as unknown as TierGroupResponse;
     const entry = { recommend: "HIGH", level: 9.9, ratingEnabled: true } as unknown as TableEntryResponse;
     render(<TableInfoCard group={group} entry={entry} />);
     const card = screen.getByRole("region", { name: "서열표 정보" });
@@ -17,7 +17,7 @@ describe("곡 상세 서열표 정보 카드", () => {
 });
 
 describe("서열표 변경 알림에서 왔을 때 (D61)", () => {
-  const group = { tier: 7.0, total: 1, recorded: 1, exc: 0, fc: 0, ss: 0, s: 1, belowS: 0, averageRecorded: 90, averageWithZero: 90, entries: [] } as unknown as TierGroupResponse;
+  const group = { tier: 7.0, total: 1, recorded: 1, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 1, belowS: 0, averageRecorded: 90, averageWithZero: 90, entries: [] } as unknown as TierGroupResponse;
   const entry = { recommend: "MID", level: 8.2, ratingEnabled: true } as unknown as TableEntryResponse;
 
   it("이전 값(취소선)과 `변경` 칩을 보이고 카드를 강조한다", () => {

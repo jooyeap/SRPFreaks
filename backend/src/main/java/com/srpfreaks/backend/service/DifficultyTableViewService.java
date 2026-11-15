@@ -109,7 +109,7 @@ public class DifficultyTableViewService {
                         .thenComparing(DifficultyTableEntry::getId))
                 .toList();
 
-        int exc = 0, fc = 0, ss = 0, s = 0, belowS = 0, recorded = 0;
+        int exc = 0, fc = 0, ss = 0, sPlus = 0, s = 0, belowS = 0, recorded = 0;
         BigDecimal sum = BigDecimal.ZERO;
         List<TableEntryResponse> rows = new java.util.ArrayList<>();
         for (DifficultyTableEntry e : sorted) {
@@ -126,7 +126,8 @@ public class DifficultyTableViewService {
                     case EXC -> exc++;
                     case FC -> fc++;
                     case SS -> ss++;
-                    case S, S_PLUS -> s++;   // S+는 이번 PR에서 S 칩에 합친다(칩 구성 변경은 후속 PR). 칩 개수는 PR 전과 같다
+                    case S_PLUS -> sPlus++;
+                    case S -> s++;
                     case A, B, C -> belowS++;
                 }
             }
@@ -136,7 +137,7 @@ public class DifficultyTableViewService {
         BigDecimal avgRecorded = recorded == 0 ? null : sum.divide(BigDecimal.valueOf(recorded), 2, RoundingMode.HALF_UP);
         BigDecimal avgWithZero = total == 0 ? BigDecimal.ZERO.setScale(2)
                 : sum.divide(BigDecimal.valueOf(total), 2, RoundingMode.HALF_UP);
-        return new TierGroupResponse(tier, total, recorded, exc, fc, ss, s, belowS, avgRecorded, avgWithZero, rows);
+        return new TierGroupResponse(tier, total, recorded, exc, fc, ss, sPlus, s, belowS, avgRecorded, avgWithZero, rows);
     }
 
     /**
