@@ -1,6 +1,8 @@
 import type { ChartFolderResponse } from "@/lib/api-types";
 import type { ProgressGroup, TableProgress } from "@/lib/difficulty-table";
+import { STAGE_ORDER } from "@/lib/stage";
 import { folderTitle } from "@/lib/song-list";
+import type { AchievementStage } from "@/lib/types";
 
 /**
  * 홈 진행도 카드가 쓰는 계산 모음. 서열표 탭과 곡 목록 탭이 같은 모양(TableProgress: 전체 합계 + 묶음별 줄)을 쓰도록
@@ -140,4 +142,24 @@ export function emptyHighCount(groups: readonly ProgressGroup[], average: number
 export function tileTint(recorded: number, total: number): { fill: number; line: number } {
   const ratio = total > 0 ? Math.min(1, recorded / total) : 0;
   return { fill: Math.round(4 + ratio * 20), line: Math.round(18 + ratio * 45) };
+}
+
+/** 난이도 행 색에 쓰는 단계: S 이상만 색이 있다(S 미만 A/B/C와 기록 없음은 색이 없다). */
+export type FullStage = Extract<AchievementStage, "S" | "S+" | "SS" | "FC" | "EXC">;
+
+/**
+ * 전곡 완료 난이도 색(D85): 그 난이도의 모든 채보에 기록이 있을 때만, 그 채보들 중 **가장 낮은 단계**를 돌려준다.
+ * 단계는 새로 판정하지 않고 서버가 센 단계별 개수(exc/fc/ss/sPlus/s/belowS)를 낮은 단계부터 훑어 처음 0이 아닌 단계를 고른다
+ * (달성률→단계 판정은 stage.ts의 achievementStage와 서버가 이미 했다. 순서는 STAGE_ORDER 재사용).
+ * 아래 중 하나면 null이다(색·막대·글자 없음): 채보가 없다 / 기록 없는 채보가 있다 / S 미만(A/B/C)이 하나라도 있다 / 개수가 맞지 않는다.
+ */
+export function lowestFullStage(g: Pick<ProgressGroup, "total" | "recorded" | "exc" | "fc" | "ss" | "sPlus" | "s" | "belowS">): FullStage | null {
+  if (g.total <= 0 || g.recorded < g.total || g.belowS > 0) {
+    return null;
+  }
+  const counts: Record<FullStage, number> = { S: g.s, "S+": g.sPlus, SS: g.ss, FC: g.fc, EXC: g.exc };
+  if (counts.S + counts["S+"] + counts.SS + counts.FC + counts.EXC !== g.total) {
+    return null;
+  }
+  return STAGE_ORDER.find((stage): stage is FullStage => stage in counts && counts[stage as FullStage] > 0) ?? null;
 }

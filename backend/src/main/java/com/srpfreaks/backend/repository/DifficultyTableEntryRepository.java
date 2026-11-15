@@ -32,4 +32,12 @@ public interface DifficultyTableEntryRepository extends JpaRepository<Difficulty
     /** 세트리스트 표시용: 한 표 안에서 여러 채보의 항목(기준 난이도)을 한 번에 읽는다. 채보 연결은 id만 쓰므로 fetch join이 필요 없다. */
     List<DifficultyTableEntry> findByDifficultyTableIdAndSongDifficultyIdIn(Long difficultyTableId,
                                                                           java.util.Collection<Long> songDifficultyIds);
+
+    /** 곡 목록의 속성 필터·칩 개수용: 채보 id와 속성만 가볍게 읽는다(fetch join 없음). */
+    @Query("""
+            select new com.srpfreaks.backend.repository.ChartPattern(e.songDifficulty.id, e.patternType)
+            from DifficultyTableEntry e
+            where e.difficultyTable.id = :tableId
+            """)
+    List<ChartPattern> findChartPatterns(@Param("tableId") Long tableId);
 }
