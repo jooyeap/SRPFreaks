@@ -1,3 +1,5 @@
+> ⚠️ 이 파일은 옛 사본이다. 기준은 저장소 루트의 `CLAUDE.md`이며 여기에는 최신 규칙이 반영돼 있지 않다.
+
 # CLAUDE.md — SRPFreaks
 
 GITADORA(Guitar/Bass) 플레이 기록을 **SRN+(SUPER_RANDOM_PLUS) 옵션으로** 저장하고, SRN+ 기준의 **레이팅 목록**(단일 15 + 그 외 25곡)을 계산하는 비공식 팬 웹 서비스.
