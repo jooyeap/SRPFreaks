@@ -78,7 +78,7 @@ export function RivalButtons({ viewerId, targetId, nickname }: { viewerId: numbe
         </Link>
       </div>
       {data ? (
-        <p className="text-xs text-fg-dim">
+        <p className="break-keep text-xs text-fg-dim">
           {full ? t("full", { max: data.max }) : t("countLine", { count: data.count, max: data.max })}
         </p>
       ) : null}

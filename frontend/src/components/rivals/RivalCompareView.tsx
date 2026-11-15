@@ -193,7 +193,7 @@ export function RivalCompareView({
               ))}
             </ol>
           )}
-          <p className="text-xs text-fg-dim">{t("ratingLegend")}</p>
+          <p className="break-keep text-xs text-fg-dim">{t("ratingLegend")}</p>
         </section>
       ) : (
         <section aria-label={t("viewCharts")} className="flex flex-col gap-3">
@@ -237,7 +237,7 @@ export function RivalCompareView({
               <Pager page={page} totalPages={charts.data.page.totalPages} onChange={setPage} />
             </>
           )}
-          <p className="text-xs text-fg-dim">{t("chartsLegend", { nickname: data.nickname })}</p>
+          <p className="break-keep text-xs text-fg-dim">{t("chartsLegend", { nickname: data.nickname })}</p>
         </section>
       )}
     </div>

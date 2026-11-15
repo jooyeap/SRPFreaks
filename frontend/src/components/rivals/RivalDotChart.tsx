@@ -93,7 +93,7 @@ export function RivalDotChart({
         ))}
       </svg>
       <p className="text-center text-xs text-fg-dim">{t("Rival.dotLegend")}</p>
-      {anyClamped ? <p className="text-center text-[11px] text-fg-dim">{t("Rival.dotClamped")}</p> : null}
+      {anyClamped ? <p className="break-keep text-center text-[11px] text-fg-dim">{t("Rival.dotClamped")}</p> : null}
       {anySmall ? <p className="text-[11px] text-fg-dim">{t("Rival.smallSample")}</p> : null}
       <RivalChartTable patterns={patterns} />
     </div>

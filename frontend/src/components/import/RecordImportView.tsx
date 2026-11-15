@@ -19,7 +19,7 @@ function GuideImage({ src, alt, caption, width = 954, height = 118 }: { src: str
       {/* 정적 안내 이미지(개인 정보는 가림 처리). next/image 최적화가 필요 없는 작은 파일이라 일반 img를 쓴다 */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt} width={width} height={height} loading="lazy" className="h-auto w-full rounded-lg border border-line" />
-      <figcaption className="text-xs text-fg-sub">{caption}</figcaption>
+      <figcaption className="break-keep text-xs text-fg-sub">{caption}</figcaption>
     </figure>
   );
 }
@@ -30,7 +30,7 @@ function GuideStep({ n, children }: { n: number; children: ReactNode }) {
       <span aria-hidden="true" className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-chip-on-bg text-xs font-extrabold text-chip-on-fg">
         {n}
       </span>
-      <div className="text-sm leading-relaxed text-fg-sub">{children}</div>
+      <div className="break-keep text-sm leading-relaxed text-fg-sub">{children}</div>
     </li>
   );
 }
@@ -49,7 +49,7 @@ function OfficialPath() {
           </span>
         ))}
       </p>
-      <p className="text-xs text-fg-dim">{t("Import.officialNote")}</p>
+      <p className="break-keep text-xs text-fg-dim">{t("Import.officialNote")}</p>
     </div>
   );
 }
@@ -157,7 +157,7 @@ function BookmarkGuide() {
               width={440}
               height={236}
             />
-            <p className="text-xs text-fg-dim">{t("Import.barHint")}</p>
+            <p className="break-keep text-xs text-fg-dim">{t("Import.barHint")}</p>
             <GuideImage
               src="/import-guide/bookmark-drag.png"
               alt={t("Import.barAlt")}
@@ -176,7 +176,7 @@ function BookmarkGuide() {
                 {t("Import.copyScriptBtn")}
               </button>
             </div>
-            <p className="text-xs text-fg-dim">{t("Import.phoneNote")}</p>
+            <p className="break-keep text-xs text-fg-dim">{t("Import.phoneNote")}</p>
           </>
         )}
       </section>
@@ -222,14 +222,14 @@ function BookmarkGuide() {
                 {t.rich("Import.stepPreview", { b: (c) => <b className="text-fg">{c}</b> })}
               </GuideStep>
             </ol>
-            <p className="text-xs text-fg-dim">{t("Import.jNote")}</p>
+            <p className="break-keep text-xs text-fg-dim">{t("Import.jNote")}</p>
           </>
         )}
       </section>
 
       <section aria-label={t("Import.criteriaAria")} className={GUIDE_CARD}>
         <h2 className="text-sm font-bold text-fg">{t("Import.criteriaHeading")}</h2>
-        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-fg-sub">
+        <ul className="break-keep list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-fg-sub">
           <li>
             {t.rich("Import.crit1", { b: (c) => <b className="text-fg">{c}</b> })}
           </li>
@@ -247,23 +247,23 @@ function BookmarkGuide() {
         <h2 className="text-sm font-bold text-fg">{t("Import.errHeading")}</h2>
         <details open>
           <summary className="flex min-h-8 cursor-pointer items-center justify-between gap-2 text-sm font-bold text-fg">{t("Import.faq1q")}</summary>
-          <p className="mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq1a")}</p>
+          <p className="break-keep mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq1a")}</p>
         </details>
         <details className={faq}>
           <summary className="flex min-h-8 cursor-pointer items-center justify-between gap-2 text-sm font-bold text-fg">{t("Import.faq2q")}</summary>
-          <p className="mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq2a")}</p>
+          <p className="break-keep mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq2a")}</p>
         </details>
         <details className={faq}>
           <summary className="flex min-h-8 cursor-pointer items-center justify-between gap-2 text-sm font-bold text-fg">{t("Import.faq3q")}</summary>
-          <p className="mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq3a")}</p>
+          <p className="break-keep mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq3a")}</p>
         </details>
         <details className={faq}>
           <summary className="flex min-h-8 cursor-pointer items-center justify-between gap-2 text-sm font-bold text-fg">{t("Import.faq4q")}</summary>
-          <p className="mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq4a")}</p>
+          <p className="break-keep mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq4a")}</p>
         </details>
         <details className={faq}>
           <summary className="flex min-h-8 cursor-pointer items-center justify-between gap-2 text-sm font-bold text-fg">{t("Import.faq5q")}</summary>
-          <p className="mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq5a")}</p>
+          <p className="break-keep mt-1.5 text-xs leading-relaxed text-fg-dim">{t("Import.faq5a")}</p>
         </details>
       </section>
     </div>
@@ -294,7 +294,7 @@ export function RecordImportGate() {
     return (
       <section className="flex min-h-[40svh] flex-col items-start justify-center gap-3">
         <h1 className="text-xl font-semibold text-fg">{t("Import.title")}</h1>
-        <p className="text-sm text-fg-sub">{t("Import.loginLead")}</p>
+        <p className="break-keep text-sm text-fg-sub">{t("Import.loginLead")}</p>
         <Link href="/login" className="min-h-11 rounded-lg border border-ctl px-4 py-1.5 text-sm text-fg hover:bg-table-head">
           {t("Import.login")}
         </Link>

@@ -143,7 +143,7 @@ function ChartAddForm({
 
   return (
     <form onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate className="flex flex-col gap-4">
-      <p className="text-sm text-fg-sub">{t("ChartAdd.lead")}</p>
+      <p className="break-keep text-sm text-fg-sub">{t("ChartAdd.lead")}</p>
       <fieldset disabled={locked} className="flex flex-col gap-3">
         <div className="flex flex-wrap items-stretch gap-2">
           <select
@@ -216,18 +216,18 @@ function ChartAddForm({
               <input type="checkbox" className="size-4" {...register("ratingEnabled")} />
               {t("ChartAdd.rating")}
             </label>
-            <p className="text-xs text-fg-dim">{t("Song.offNote")}</p>
+            <p className="break-keep text-xs text-fg-dim">{t("Song.offNote")}</p>
           </div>
         ) : null}
       </fieldset>
 
-      <p className="text-xs text-fg-dim">
+      <p className="break-keep text-xs text-fg-dim">
         {tableId !== null ? t("SongCreate.noteTable") : t("SongCreate.noteListOnly")}
         {t("SongCreate.noteCommon")}
       </p>
 
       {locked ? (
-        <p role="alert" className="text-sm text-fg">
+        <p role="alert" className="break-keep text-sm text-fg">
           {t("ChartAdd.partialFail")}
         </p>
       ) : null}

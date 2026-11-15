@@ -178,7 +178,7 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
           className={`${FIELD} w-40 font-num`}
           {...register("tier")}
         />
-        <p id="entry-tier-hint" className="text-[11px] text-fg-faint">
+        <p id="entry-tier-hint" className="break-keep text-[11px] text-fg-faint">
           {t("Song.tierHint")}
         </p>
         {errors.tier ? (
@@ -255,17 +255,17 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
             </button>
           </span>
         </div>
-        <p id="entry-rating-hint" className="text-[11px] text-fg-faint">
+        <p id="entry-rating-hint" className="break-keep text-[11px] text-fg-faint">
           {t("Song.offNote")}
         </p>
         {switchIneffective ? (
-          <p role="status" className="text-sm text-fg">
+          <p role="status" className="break-keep text-sm text-fg">
             {t("Song.notCounted")}
           </p>
         ) : null}
       </div>
 
-      <p className="text-xs text-fg-dim">
+      <p className="break-keep text-xs text-fg-dim">
         {t("Song.entryNote")}
       </p>
 

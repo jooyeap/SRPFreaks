@@ -136,7 +136,7 @@ export function JacketUploadDialog({
               }}
             />
           </label>
-          <p className="text-xs text-fg-dim">{t("JacketUpload.hint")}</p>
+          <p className="break-keep text-xs text-fg-dim">{t("JacketUpload.hint")}</p>
           {preview ? (
             // 미리보기: 서열표·곡 목록에서 보이는 것과 같은 둥근 정사각
             // eslint-disable-next-line @next/next/no-img-element

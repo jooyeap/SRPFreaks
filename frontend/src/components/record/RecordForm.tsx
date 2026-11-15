@@ -231,7 +231,7 @@ export function RecordForm({
               }}
             />
           </div>
-          <p className="text-[11px] text-fg-faint">{t("Record.rateHint")}</p>
+          <p className="break-keep text-[11px] text-fg-faint">{t("Record.rateHint")}</p>
           <p aria-live="polite" className="min-h-4 font-num text-xs text-fg-sub">
             {rateNumber === null ? "" : t("Record.rateInterpreted", { value: formatRate(rateNumber) })}
           </p>
@@ -249,7 +249,7 @@ export function RecordForm({
           {errors.achievementRate.message}
         </p>
       ) : null}
-      <p className="-mt-2 text-[11px] text-fg-faint">{t("Record.stageSPlusNote")}</p>
+      <p className="break-keep -mt-2 text-[11px] text-fg-faint">{t("Record.stageSPlusNote")}</p>
 
       {chart.tier !== undefined && chart.tier !== null ? (
         <div aria-live="polite" className="flex flex-col gap-1 rounded-2xl border border-line bg-card px-3.5 py-2.5">

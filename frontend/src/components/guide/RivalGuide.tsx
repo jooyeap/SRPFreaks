@@ -21,7 +21,7 @@ export function RivalGuide() {
       {SECTIONS.map((section) => (
         <section key={section.head} aria-label={t(section.head)} className="space-y-2.5 rounded-2xl border border-line bg-card p-4">
           <h2 className="text-[15px] font-bold text-fg">{t(section.head)}</h2>
-          <ul className="list-disc space-y-2 pl-[18px] text-[13px] leading-relaxed text-fg-sub">
+          <ul className="break-keep list-disc space-y-2 pl-[18px] text-[13px] leading-relaxed text-fg-sub">
             {section.lines.map((line) => (
               <li key={line}>{t(line)}</li>
             ))}

@@ -39,7 +39,7 @@ export function JacketDisplayForm() {
           </button>
         </span>
       </div>
-      <p id="jacket-help" className="text-xs leading-relaxed text-fg-dim">
+      <p id="jacket-help" className="break-keep text-xs leading-relaxed text-fg-dim">
         {t("jacketHelp")}
       </p>
     </section>

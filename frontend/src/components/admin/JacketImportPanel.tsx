@@ -179,7 +179,7 @@ export function JacketImportPanel() {
           <p className="text-sm text-fg">
             {t("summary", { matched: matchResult.matches.length, unmatched: matchResult.unmatchedCount, missing: matchResult.missingSongs.length })}
           </p>
-          {failedPages > 0 ? <p className="text-xs text-danger">{t("failedPages", { n: failedPages })}</p> : null}
+          {failedPages > 0 ? <p className="break-keep text-xs text-danger">{t("failedPages", { n: failedPages })}</p> : null}
           {matchResult.missingSongs.length > 0 ? (
             <details>
               <summary className="cursor-pointer text-xs text-fg-sub">{t("missingList")}</summary>
@@ -200,7 +200,7 @@ export function JacketImportPanel() {
           </div>
         </>
       ) : null}
-      {saveResult ? <p className="text-sm text-fg">{t("result", saveResult)}</p> : null}
+      {saveResult ? <p className="break-keep text-sm text-fg">{t("result", saveResult)}</p> : null}
       {error ? (
         <p role="alert" className="text-sm text-danger">
           {error}
@@ -261,7 +261,7 @@ function JacketBookmarkGuide() {
 
   return (
     <div className={CARD}>
-      <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm text-fg-sub">
+      <ol className="break-keep flex list-decimal flex-col gap-2 pl-5 text-sm text-fg-sub">
         <li>
           {t("JacketImport.guideStep1")}{" "}
           <a ref={linkRef} onClick={(e) => e.preventDefault()} className="inline-block rounded-lg border border-ctl px-2 py-0.5 text-fg">
@@ -276,7 +276,7 @@ function JacketBookmarkGuide() {
           {t("SongImport.copyBookmark")}
         </button>
       </div>
-      <p className="text-xs text-fg-dim">{t("JacketImport.guideNote")}</p>
+      <p className="break-keep text-xs text-fg-dim">{t("JacketImport.guideNote")}</p>
     </div>
   );
 }

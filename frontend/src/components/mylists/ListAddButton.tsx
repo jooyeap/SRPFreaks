@@ -245,7 +245,7 @@ function ListAddSheet({
           {t("Common.close")}
         </button>
       </div>
-      <p className="mt-2 text-xs text-fg-sub">{t("MyList.sheetHint")}</p>
+      <p className="break-keep mt-2 text-xs text-fg-sub">{t("MyList.sheetHint")}</p>
 
       <ul className="mt-3 flex flex-col gap-2">
         <li>

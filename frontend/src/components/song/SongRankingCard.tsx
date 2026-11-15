@@ -57,10 +57,10 @@ export function SongRankingCard({ songId, chartId, userId }: { songId: number; c
     <section aria-label={t("title")} className="flex flex-col gap-2.5 rounded-2xl border border-line bg-card px-4 py-3.5">
       <h2 className="text-[13px] font-bold text-fg">{t("title")}</h2>
       {data.players === 0 ? (
-        <p className="text-[13px] text-fg-sub">{t("empty")}</p>
+        <p className="break-keep text-[13px] text-fg-sub">{t("empty")}</p>
       ) : (
         <>
-          <p className="font-num text-xs text-fg-dim">
+          <p className="break-keep font-num text-xs text-fg-dim">
             {mine ? t("summary", { rank: mine.rank, players: data.players }) : t("playersOnly", { players: data.players })}
           </p>
           <ol className="flex flex-col gap-1.5">

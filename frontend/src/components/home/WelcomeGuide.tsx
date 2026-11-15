@@ -21,7 +21,7 @@ export function WelcomeGuide() {
         <h2 className="text-base font-bold text-fg">{t("title")}</h2>
         <span className="font-num text-xs text-fg-dim">{t("progress")}</span>
       </div>
-      <p className="text-[13px] leading-relaxed text-fg-sub">
+      <p className="break-keep text-[13px] leading-relaxed text-fg-sub">
         {t("lead")}
       </p>
       <ol className="flex flex-col gap-2.5">
@@ -34,7 +34,7 @@ export function WelcomeGuide() {
               {t("step1Title")}{" "}
               <span className="ml-1 rounded bg-chip-on-bg px-1.5 py-0.5 align-[1px] font-num text-[11px] text-chip-on-fg">{t("fastest")}</span>
             </p>
-            <p className="text-xs leading-normal text-fg-sub">{t("step1Desc")}</p>
+            <p className="break-keep text-xs leading-normal text-fg-sub">{t("step1Desc")}</p>
             <Link href="/import" className={LINK_PRIMARY}>
               {t("step1Link")}
             </Link>
@@ -46,7 +46,7 @@ export function WelcomeGuide() {
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <p className="text-sm font-bold text-fg">{t("step2Title")}</p>
-            <p className="text-xs leading-normal text-fg-sub">{t("step2Desc")}</p>
+            <p className="break-keep text-xs leading-normal text-fg-sub">{t("step2Desc")}</p>
             <Link href="/table" className={LINK_TEXT}>
               {t("step2Link")}
             </Link>
@@ -58,7 +58,7 @@ export function WelcomeGuide() {
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <p className="text-sm font-bold text-fg-dim">{t("step3Title")}</p>
-            <p className="text-xs leading-normal text-fg-dim">{t("step3Desc")}</p>
+            <p className="break-keep text-xs leading-normal text-fg-dim">{t("step3Desc")}</p>
           </div>
         </li>
       </ol>

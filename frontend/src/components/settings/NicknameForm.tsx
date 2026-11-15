@@ -70,7 +70,7 @@ export function NicknameForm({ initialNickname }: { initialNickname: string | nu
           className="w-full rounded-xl border border-ctl bg-page px-3 py-2 text-base text-fg"
           {...register("nickname")}
         />
-        <p id="nickname-help" className="text-xs text-fg-dim">
+        <p id="nickname-help" className="break-keep text-xs text-fg-dim">
           {t("Settings.nicknameHelp", { min: NICKNAME_MIN_LENGTH, max: NICKNAME_MAX_LENGTH })}
         </p>
         <p id="nickname-error" role="alert" className="min-h-4 text-xs text-danger">

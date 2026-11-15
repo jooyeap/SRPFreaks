@@ -39,7 +39,7 @@ export function TitleDuplicateNotice({ title, excludeSongId = null }: { title: s
     return null;
   }
   return (
-    <p role="status" className="text-sm font-bold text-fg">
+    <p role="status" className="break-keep text-sm font-bold text-fg">
       {t.rich("Song.titleDuplicate", {
         title: check.data.title ?? "",
         l: (chunks) => (

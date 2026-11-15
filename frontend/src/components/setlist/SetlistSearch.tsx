@@ -54,7 +54,7 @@ export function SetlistSearch({ userId, addedIds, full }: { userId: number; adde
           }}
         />
       </div>
-      {full ? <p className="text-xs text-fg-sub">{t("Setlist.limitFull", { limit: SETLIST_LIMIT })}</p> : null}
+      {full ? <p className="break-keep text-xs text-fg-sub">{t("Setlist.limitFull", { limit: SETLIST_LIMIT })}</p> : null}
 
       {term === "" ? null : result.isPending ? (
         <p className="text-sm text-fg-sub">{t("Setlist.searching")}</p>

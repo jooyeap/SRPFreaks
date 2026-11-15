@@ -14,7 +14,7 @@ export function OfflineBanner() {
     return null;
   }
   return (
-    <p role="status" className="sticky top-0 z-30 border-b border-weak bg-card px-4 py-2 text-center text-[13px] text-weak-text">
+    <p role="status" className="break-keep sticky top-0 z-30 border-b border-weak bg-card px-4 py-2 text-center text-[13px] text-weak-text">
       {t("banner")}
     </p>
   );

@@ -99,7 +99,7 @@ function ListIndex({ userId, onOpen }: { userId: number; onOpen: (listId: number
       )}
 
       {items.length === 0 ? (
-        <p className="text-sm text-fg-sub">{t("MyList.empty")}</p>
+        <p className="break-keep text-sm text-fg-sub">{t("MyList.empty")}</p>
       ) : (
         <ul aria-label={t("MyList.indexAria")} className="flex flex-col gap-2">
           {items.map((list) => (
@@ -252,7 +252,7 @@ function ListDetail({ userId, listId, onBack }: { userId: number; listId: number
       ) : null}
 
       {rows.length === 0 ? (
-        <p className="text-sm text-fg-sub">{t("MyList.emptyItems")}</p>
+        <p className="break-keep text-sm text-fg-sub">{t("MyList.emptyItems")}</p>
       ) : (
         <ul aria-label={t("MyList.itemsAria", { name })} className="flex flex-col gap-2">
           {rows.map((row, index) => (

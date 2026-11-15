@@ -208,7 +208,7 @@ function RecordDialogBody({
               </button>
             ) : null}
           </div>
-          <p className="mb-3 text-xs leading-relaxed text-fg-sub">
+          <p className="break-keep mb-3 text-xs leading-relaxed text-fg-sub">
             {editing
               ? t("Record.editingBanner", { rate: formatRate(editing.achievementRate), fc: editing.fullCombo ? " · FC" : "", origin: recordOriginText(editing, t) })
               : hasRecords

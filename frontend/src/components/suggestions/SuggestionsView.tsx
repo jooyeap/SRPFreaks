@@ -74,7 +74,7 @@ export function SuggestionsView({
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-xl font-semibold text-fg">{t("Suggestions.heading")}</h1>
-      <p className="text-sm text-fg-sub">
+      <p className="break-keep text-sm text-fg-sub">
         {t("Suggestions.lead")}
       </p>
 
@@ -108,7 +108,7 @@ export function SuggestionsView({
           {mine.error instanceof ApiError ? mine.error.message : t("Suggestions.listFailed")}
         </ErrorRetry>
       ) : mine.data.content.length === 0 ? (
-        <p className="text-sm text-fg-sub">{t("Suggestions.empty")}</p>
+        <p className="break-keep text-sm text-fg-sub">{t("Suggestions.empty")}</p>
       ) : (
         <>
           <ul aria-label={t("Suggestions.listAria")} className="flex flex-col gap-3">

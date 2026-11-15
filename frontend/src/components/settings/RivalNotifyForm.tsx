@@ -58,7 +58,7 @@ export function RivalNotifyForm({ user }: { user: UserResponse }) {
           </button>
         </span>
       </div>
-      <p id="rival-notify-help" className="text-xs leading-relaxed text-fg-dim">
+      <p id="rival-notify-help" className="break-keep text-xs leading-relaxed text-fg-dim">
         {t("rivalNotifyHelp")}
       </p>
       <p role="alert" className="min-h-4 text-xs text-danger">
