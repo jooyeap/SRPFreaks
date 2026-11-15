@@ -242,14 +242,14 @@ function TableEntryForm({ target, onDone }: { target: TableEntryTarget; onDone: 
               aria-labelledby="entry-rating-label"
               aria-describedby="entry-rating-hint"
               onClick={() => setValue("ratingEnabled", !ratingEnabled, { shouldDirty: true })}
-              className={`relative h-6 w-11 shrink-0 rounded-lg border border-ctl transition-colors ${
+              className={`relative h-6 w-11 shrink-0 rounded-lg border border-ctl motion-switch-track ${
                 ratingEnabled ? "bg-chip-on-bg" : "bg-table-head"
               }`}
             >
               <span
                 aria-hidden="true"
-                className={`absolute top-0.5 h-4.5 w-4.5 rounded-full transition-all ${
-                  ratingEnabled ? "left-5.5 bg-chip-on-fg" : "left-0.5 bg-fg-dim"
+                className={`absolute top-0.5 left-0.5 h-4.5 w-4.5 rounded-full motion-switch-thumb ${
+                  ratingEnabled ? "translate-x-5 bg-chip-on-fg" : "bg-fg-dim"
                 }`}
               />
             </button>

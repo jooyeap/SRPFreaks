@@ -47,13 +47,13 @@ export function RivalNotifyForm({ user }: { user: UserResponse }) {
             aria-describedby="rival-notify-help"
             disabled={mutation.isPending}
             onClick={() => mutation.mutate(!checked)}
-            className={`relative h-6 w-11 shrink-0 rounded-lg border border-ctl transition-colors disabled:opacity-50 ${
+            className={`relative h-6 w-11 shrink-0 rounded-lg border border-ctl motion-switch-track disabled:opacity-50 ${
               checked ? "bg-chip-on-bg" : "bg-table-head"
             }`}
           >
             <span
               aria-hidden="true"
-              className={`absolute top-0.5 h-4.5 w-4.5 rounded-full transition-all ${checked ? "left-5.5 bg-chip-on-fg" : "left-0.5 bg-fg-dim"}`}
+              className={`absolute top-0.5 h-4.5 w-4.5 left-0.5 rounded-full motion-switch-thumb ${checked ? "translate-x-5 bg-chip-on-fg" : "bg-fg-dim"}`}
             />
           </button>
         </span>

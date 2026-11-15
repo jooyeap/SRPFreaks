@@ -47,9 +47,9 @@ import type { Translator } from "@/i18n/translator";
 import { BACK_BUTTON_CLASS, BackArrow } from "@/components/BackArrow";
 
 /** 이웃 목록으로 넘어가는 애니메이션 시간(ms). 놓았을 때 80px 이상이면 이 시간 동안 밀려 나가고 들어온다 */
-const LEAVE_MS = 200;
+const LEAVE_MS = 180;
 /** 80px 미만으로 놓았을 때 제자리로 돌아오는 시간(ms) */
-const RETURN_MS = 150;
+const RETURN_MS = 120;
 /** 현재 목록과 이웃 목록 사이 간격(px) */
 const NEIGHBOR_GAP_PX = 16;
 /** 끌 때 옆에 미리 그리는 이웃 난이도의 곡 줄 수. 전부 그리지 않는다(옆에 살짝 보이는 용도) */
