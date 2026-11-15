@@ -6,6 +6,7 @@ import { AverageLevelHelp } from "@/components/HelpTip";
 import { ProgressDonut } from "@/components/home/ProgressDonut";
 import { ProgressTiles } from "@/components/home/ProgressTiles";
 import { Skeleton } from "@/components/Skeleton";
+import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import type { SkillResponse } from "@/lib/api-types";
 import { HIT_HEAD } from "@/lib/hit-area";
 import { emptyHighCount, nextGoal, weakestGroupNear, type ProgressSummary } from "@/lib/progress";
@@ -94,6 +95,7 @@ export function ProgressCard({
 
 function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPanel; tab: TabText; average: number | null; skill: SkillResponse | null; showWeak: boolean }) {
   const t = useTranslations("Progress");
+  const fade = useSkeletonFade(panel.kind === "loading");
   if (panel.kind === "loading") {
     return <Skeleton label={t("loading", { name: tab.name })} className="h-48" />;
   }
@@ -117,7 +119,8 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
   const foldCount = showWeak && average !== null ? emptyHighCount(progress.groups, average) : 0;
   const threshold = weak && average !== null && skill ? ratingEntryThreshold(skill, weak.group.key) : null;
   return (
-    <>
+    // 섹션(gap-4)의 직접 자식이던 조각들을 같은 간격의 상자 하나로 묶어 스켈레톤→본문 페이드를 건다(배치는 그대로)
+    <div className={`flex flex-col gap-4 ${fade}`}>
       <ProgressDonut progress={progress} />
 
       {goal ? (
@@ -153,6 +156,6 @@ function PanelBody({ panel, tab, average, skill, showWeak }: { panel: ProgressPa
           </Link>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

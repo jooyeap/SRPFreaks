@@ -9,6 +9,7 @@ import { DESKTOP_QUERY, useMediaQuery } from "@/lib/use-media-query";
 import { RateFolderCard } from "@/components/mypage/RateFolderCard";
 import { AverageToggle } from "@/components/table/FilterChips";
 import { Skeleton } from "@/components/Skeleton";
+import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import { ApiError } from "@/lib/api";
 import type { RateFolderListResponse, RateFolderResponse } from "@/lib/api-types";
 import { fetchDifficultyTables, pickRatingTable, tableKeys } from "@/lib/difficulty-table";
@@ -43,10 +44,13 @@ export function StatsTab({ userId, axis, onAxisChange }: { userId: number; axis:
     queryFn: ({ signal }) => fetchChartFolders(signal),
     select: overallStages,
   });
+  const overallFade = useSkeletonFade(overall.isPending);
   return (
     <div className="flex flex-col gap-4">
       {overall.data ? (
-        <OverallStageCard stages={overall.data} />
+        <div className={overallFade}>
+          <OverallStageCard stages={overall.data} />
+        </div>
       ) : overall.isError ? (
         <ErrorRetry onRetry={() => void overall.refetch()} retrying={overall.isFetching}>
           {t("MyPage.overallFailed")}
@@ -127,11 +131,15 @@ function FolderList({
   emptyText: string;
 }) {
   const t = useTranslations();
+  const fade = useSkeletonFade(!query.data && !query.isError);
   if (query.data) {
+    // StatsTab의 gap-4와 같은 간격의 상자 하나로 감싸 스켈레톤→본문 페이드를 건다(모션 PR 6, 배치는 그대로)
     return query.data.folders.length === 0 ? (
       <p className="text-sm text-fg-sub">{emptyText}</p>
     ) : (
-      <PagedFolders key={axis} axis={axis} folders={query.data.folders} includeZero={includeZero} />
+      <div className={`flex flex-col gap-4 ${fade}`}>
+        <PagedFolders key={axis} axis={axis} folders={query.data.folders} includeZero={includeZero} />
+      </div>
     );
   }
   if (query.isError) {

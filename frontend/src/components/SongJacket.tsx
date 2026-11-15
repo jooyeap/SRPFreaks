@@ -1,3 +1,37 @@
+"use client";
+
+import { useState } from "react";
+import { isJacketSeen, markJacketSeen } from "@/lib/jacket-seen";
+
+/**
+ * 재킷 이미지 한 장(D82, 모션 PR 6). 불러오기 전에는 투명이라 아래 단색 칸(bg-jacket)이 보이고, 불러오면(onLoad) 서서히 나타난다.
+ * 이미 본 주소는 처음부터 보이는 상태로 그려서(jacket-seen) 목록을 다시 그리거나 스크롤해도 다시 나타나지 않는다. 불러오기에 실패하면 계속 투명이라 깨진 이미지 대신 단색 칸이 남는다.
+ * 캐시에서 바로 오는 이미지는 hydrate 전에 load가 끝나 onLoad를 놓칠 수 있어, ref에서 complete를 한 번 확인한다. 크기는 부모 칸이 정하므로(absolute inset-0) 배치가 바뀌지 않는다.
+ */
+function JacketImg({ url, title }: { url: string; title: string }) {
+  const [loaded, setLoaded] = useState(() => isJacketSeen(url));
+  const done = () => {
+    markJacketSeen(url);
+    setLoaded(true);
+  };
+  return (
+    // 우리 사이트의 작은 고정 크기 이미지라 next/image의 최적화가 필요 없다(외부 주소를 불러오지 않는다)
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      ref={(el) => {
+        if (el && !loaded && el.complete && el.naturalWidth > 0) done();
+      }}
+      src={url}
+      alt={title}
+      loading="lazy"
+      decoding="async"
+      data-loaded={loaded ? "true" : "false"}
+      onLoad={done}
+      className="motion-jacket absolute inset-0 h-full w-full object-cover"
+    />
+  );
+}
+
 /**
  * 재킷 칸 (D54, DESIGN-UI 8장). 주소가 있으면 우리 사이트의 재킷 이미지(`/jackets/…webp`), 없으면 같은 크기의 단색 칸이다.
  * 칸을 그릴지(운영 설정 + 개인 `재킷 표시`)는 부르는 쪽이 useJackets().visible로 정한다.
@@ -27,10 +61,7 @@ export function SongJacket({
     return (
       <div className={`relative shrink-0 ${className}`}>
         <div aria-hidden={url ? undefined : true} className="absolute inset-0 overflow-hidden rounded-[inherit] bg-jacket">
-          {url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={url} alt={title} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
-          ) : null}
+          {url ? <JacketImg url={url} title={title} /> : null}
           {children}
         </div>
         {badge}
@@ -39,11 +70,7 @@ export function SongJacket({
   }
   return (
     <div aria-hidden={url ? undefined : true} className={`relative shrink-0 overflow-hidden bg-jacket ${className}`}>
-      {url ? (
-        // 우리 사이트의 작은 고정 크기 이미지라 next/image의 최적화가 필요 없다(외부 주소를 불러오지 않는다)
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt={title} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" />
-      ) : null}
+      {url ? <JacketImg url={url} title={title} /> : null}
       {children}
     </div>
   );

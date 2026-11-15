@@ -7,6 +7,7 @@ import { ErrorRetry } from "@/components/ErrorRetry";
 import { ValueSwap } from "@/components/ValueSwap";
 import { SetlistAddCell } from "@/components/rivals/SetlistAddCell";
 import { Skeleton } from "@/components/Skeleton";
+import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import { ChartLine } from "@/components/table/ChartLine";
 import { ApiError } from "@/lib/api";
 import { patternLabel } from "@/lib/chart-labels";
@@ -58,6 +59,8 @@ export function AnalysisTab({ userId }: { userId: number }) {
     queryFn: ({ signal }) => fetchWeakness(signal),
   });
 
+  const fade = useSkeletonFade(!query.data && !query.isError);
+
   if (query.isError) {
     return (
       <ErrorRetry onRetry={() => void query.refetch()} retrying={query.isFetching}>
@@ -68,7 +71,11 @@ export function AnalysisTab({ userId }: { userId: number }) {
   if (!query.data) {
     return <Skeleton label={t("Analysis.loading")} className="h-48" />;
   }
-  return <AnalysisBody userId={userId} data={query.data} />;
+  return (
+    <div className={fade}>
+      <AnalysisBody userId={userId} data={query.data} />
+    </div>
+  );
 }
 
 function AnalysisBody({ userId, data }: { userId: number; data: WeaknessAnalysisResponse }) {

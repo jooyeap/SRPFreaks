@@ -533,6 +533,12 @@ dialog[open][data-closing="true"]::backdrop { animation: motion-fade-out var(--m
 .motion-value-swap { display: inline-block; animation: motion-value-in var(--motion-base) var(--ease-out) backwards; }
 div.motion-value-swap { display: block; }
 .motion-delta { display: inline-block; animation: motion-value-in var(--motion-base) var(--ease-out) backwards; animation-delay: var(--motion-fast); }
+/* 스켈레톤→본문 페이드와 재킷 등장(모션 PR 6, D82). 둘 다 투명도만 움직인다.
+   .motion-content-in: 스켈레톤이 있던 자리에 본문이 처음 나타날 때 base 길이로 서서히 나타난다(스켈레톤은 그대로 바로 사라지고 맥박 애니메이션도 그대로, 높이는 건드리지 않는다).
+   .motion-jacket: 재킷 이미지는 불러오기 전 투명(아래 단색 칸이 보임)이고 불러오면(data-loaded) base 길이로 나타난다. 이미 본 이미지는 처음부터 data-loaded라 전환이 일어나지 않는다. */
+.motion-content-in { animation: motion-fade-in var(--motion-base) var(--ease-out) backwards; }
+.motion-jacket { opacity: 0; transition: opacity var(--motion-base) var(--ease-out); }
+.motion-jacket[data-loaded="true"] { opacity: 1; }
 /* 눌림(모션 PR 4, D82): 누를 수 있는 카드·줄에 .motion-press를 붙인다. 누르는 동안 살짝(98.5%) 줄고 조금 흐려졌다가 fast 길이로 돌아온다.
    scale·opacity 속성만 쓴다(transform을 쓰지 않아 다른 transform과 겹치지 않고, 안쪽 fixed 요소의 기준이 되지 않는다). 색은 바꾸지 않는다.
    버튼은 아래 기본 규칙(98%)이 이미 있고, 여기에 같은 길이의 전환만 더한다. */
@@ -570,6 +576,8 @@ div.motion-value-swap { display: block; }
   .motion-stagger { animation: none; }
   .motion-bar-fill, .motion-donut-draw, .motion-value-swap, .motion-delta { animation: none; }
   .motion-collapse { transition: none; }
+  .motion-content-in { animation: none; }
+  .motion-jacket { transition: none; }
   .tile-glow::after { animation: none; }
   .folder-pill-zone { transition: none; }
   .motion-switch-track, .motion-switch-thumb { transition: none; }

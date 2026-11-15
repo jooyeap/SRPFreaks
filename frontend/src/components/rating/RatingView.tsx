@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Skeleton } from "@/components/Skeleton";
+import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import { RatingEntryCard } from "@/components/rating/RatingEntryCard";
 import { RatingSummary } from "@/components/rating/RatingSummary";
 import { SkillSnapshotPanel } from "@/components/rating/SkillSnapshotPanel";
@@ -125,6 +126,8 @@ export function RatingView({ userId }: { userId: number }) {
     queryFn: ({ signal }) => fetchMySkill(signal),
   });
 
+  const fade = useSkeletonFade(isPending);
+
   if (isPending) {
     return (
       <div className="flex flex-col gap-5">
@@ -143,7 +146,7 @@ export function RatingView({ userId }: { userId: number }) {
 
   // gap-3: 요약·현황 카드·도구 칩·목록 머리 사이를 gap-5에서 줄였다(첫 화면에 단일 목록이 더 올라오게, 2026-11-13). 내 레이팅 화면 전용이다.
   return (
-    <div className="flex flex-col gap-3">
+    <div className={`flex flex-col gap-3 ${fade}`}>
       <RatingBody
         skill={data}
         afterSummary={
