@@ -1,12 +1,18 @@
 package com.srpfreaks.backend.service;
 
+import com.srpfreaks.backend.common.error.ApiException;
+import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.NotificationResponse;
+import com.srpfreaks.backend.dto.RivalBundleSongResponse;
+import com.srpfreaks.backend.dto.RivalBundleSongsResponse;
 import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.entity.NoteOption;
 import com.srpfreaks.backend.entity.RivalNotification;
 import com.srpfreaks.backend.entity.RivalNotificationStatus;
 import com.srpfreaks.backend.entity.TierNotification;
 import com.srpfreaks.backend.mapper.NotificationKey;
+import com.srpfreaks.backend.mapper.RivalBundleCountRow;
+import com.srpfreaks.backend.mapper.RivalBundleSummaryRow;
 import com.srpfreaks.backend.mapper.NotificationMapper;
 import com.srpfreaks.backend.repository.RivalNotificationRepository;
 import com.srpfreaks.backend.repository.TierNotificationRepository;
@@ -72,14 +78,40 @@ public class NotificationService {
                 : tierNotificationRepository.findByUser_IdAndIdIn(userId, tierIds)
                         .stream().collect(Collectors.toMap(TierNotification::getId, Function.identity()));
 
+        Map<Long, RivalBundleInfo> bundleInfo = bundleInfo(userId, rivals.values());
+
         List<NotificationResponse> content = keys.stream()
                 .map(k -> "RIVAL".equals(k.kind())
-                        ? toResponse(rivals.get(k.id()))
+                        ? toResponse(rivals.get(k.id()), bundleInfo)
                         : toResponse(tiers.get(k.id()), calculator))
                 .filter(Objects::nonNull)
                 .toList();
         int totalPages = (int) ((total + safeSize - 1) / safeSize);
         return new PageResponse<>(content, safePage, safeSize, total, totalPages);
+    }
+
+    /**
+     * 라이벌 묶음 알림의 곡 목록(D86). 본인의 묶음 줄(bundled)만 읽고, 남의 알림·없는 알림·묶음이 아닌 줄은 모두 404다.
+     * 곡 = 묶음 줄 자신의 곡 + 같은 (받는 사람, 역전한 사람, 보인 날)의 BUNDLED 줄. 달성률은 줄에 저장된 값이다.
+     */
+    @Transactional(readOnly = true)
+    public RivalBundleSongsResponse rivalBundleSongs(Long userId, Long notificationId, int page, int size) {
+        RivalNotification bundle = rivalNotificationRepository
+                .findByIdAndRecipient_IdAndStatus(notificationId, userId, RivalNotificationStatus.SHOWN)
+                .filter(RivalNotification::isBundled)
+                .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND));
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        Long actorId = bundle.getActor().getId();
+        long total = notificationMapper.countBundleSongs(userId, actorId, bundle.getAlertDate(), bundle.getId());
+        List<RivalBundleSongResponse> content = notificationMapper.findBundleSongs(userId, actorId, bundle.getAlertDate(),
+                        bundle.getId(), safeSize, (long) safePage * safeSize).stream()
+                .map(RivalBundleSongResponse::from).toList();
+        long members = notificationMapper.findBundleMemberCounts(userId, List.of(bundle.getId())).stream()
+                .mapToLong(RivalBundleCountRow::memberCount).sum();
+        int totalPages = (int) ((total + safeSize - 1) / safeSize);
+        return new RivalBundleSongsResponse(actorId, bundle.getActor().getNickname(), bundle.getSongCount(),
+                missingCount(bundle.getSongCount(), members), new PageResponse<>(content, safePage, safeSize, total, totalPages));
     }
 
     /** 모두 읽음: 두 종류 모두. */
@@ -93,8 +125,46 @@ public class NotificationService {
         return keys.stream().filter(k -> kind.equals(k.kind())).map(NotificationKey::id).toList();
     }
 
-    private static NotificationResponse toResponse(RivalNotification n) {
-        return n == null ? null : NotificationResponse.from(n);
+    private record RivalBundleInfo(List<String> previewTitles, int missingCount) {
+    }
+
+    /**
+     * 목록 한 쪽에 든 라이벌 묶음 줄의 곡명 미리보기와 "목록이 없는 곡 수"(D86). 묶음 줄이 없으면 쿼리를 하지 않고,
+     * 있으면 쪽 전체에서 쿼리 2번(미리보기, 남은 줄 수)이다(줄마다 따로 읽으면 N+1).
+     */
+    private Map<Long, RivalBundleInfo> bundleInfo(Long userId, java.util.Collection<RivalNotification> rivals) {
+        List<RivalNotification> bundles = rivals.stream().filter(RivalNotification::isBundled).toList();
+        if (bundles.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> ids = bundles.stream().map(RivalNotification::getId).toList();
+        Map<Long, List<String>> previews = notificationMapper.findBundlePreviews(userId, ids).stream()
+                .collect(Collectors.groupingBy(RivalBundleSummaryRow::bundleId,
+                        Collectors.mapping(RivalBundleSummaryRow::title, Collectors.toList())));
+        Map<Long, Long> members = notificationMapper.findBundleMemberCounts(userId, ids).stream()
+                .collect(Collectors.toMap(RivalBundleCountRow::bundleId, RivalBundleCountRow::memberCount));
+        Map<Long, RivalBundleInfo> result = new java.util.HashMap<>();
+        for (RivalNotification b : bundles) {
+            List<String> titles = new java.util.ArrayList<>();
+            titles.add(b.getSongDifficulty().getSong().getTitle());   // 묶음 줄 자신의 곡이 첫 곡
+            titles.addAll(previews.getOrDefault(b.getId(), List.of()));
+            result.put(b.getId(), new RivalBundleInfo(titles, missingCount(b.getSongCount(), members.getOrDefault(b.getId(), 0L))));
+        }
+        return result;
+    }
+
+    /** 묶음이 센 곡 수 − (묶음 줄 자신 1 + 남아 있는 BUNDLED 줄 수). 줄을 지우던 때의 묶음이면 양수가 된다. */
+    static int missingCount(int songCount, long memberCount) {
+        return (int) Math.max(0, songCount - 1 - memberCount);
+    }
+
+    private static NotificationResponse toResponse(RivalNotification n, Map<Long, RivalBundleInfo> bundleInfo) {
+        if (n == null) {
+            return null;
+        }
+        NotificationResponse base = NotificationResponse.from(n);
+        RivalBundleInfo info = bundleInfo.get(n.getId());
+        return info == null ? base : base.withBundleInfo(info.previewTitles(), info.missingCount());
     }
 
     private static NotificationResponse toResponse(TierNotification n, RatingCalculator calculator) {

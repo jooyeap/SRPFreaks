@@ -193,7 +193,7 @@ public class RivalAlertService {
                 n.showAsBundle(actorBest, recipientBest, day);
             } else {
                 bundle.addToBundle(n.getVisibleAt());
-                notificationRepository.delete(n);
+                n.foldIntoBundle(actorBest, recipientBest, day);   // 지우지 않고 남겨 묶음의 곡 목록에 쓴다(D86)
             }
             // 같은 반복 안에서 다음 줄이 방금 바꾼 상태(개수·묶음)를 보도록 바로 반영한다
             notificationRepository.flush();

@@ -2,6 +2,7 @@ package com.srpfreaks.backend.controller;
 
 import com.srpfreaks.backend.dto.NotificationResponse;
 import com.srpfreaks.backend.dto.PageResponse;
+import com.srpfreaks.backend.dto.RivalBundleSongsResponse;
 import com.srpfreaks.backend.dto.UnreadCountResponse;
 import com.srpfreaks.backend.security.AuthenticatedUser;
 import com.srpfreaks.backend.service.NotificationService;
@@ -39,6 +40,14 @@ public class NotificationController {
                                                    @RequestParam(defaultValue = "0") int page,
                                                    @RequestParam(defaultValue = "" + NotificationService.DEFAULT_PAGE_SIZE) int size) {
         return notificationService.list(user.id(), skillService.ratingNoteOption(), skillService.calculator(), page, size);
+    }
+
+    /** 라이벌 묶음 알림에 속한 곡 목록(D86). 본인의 묶음 알림만, 남의 알림·없는 알림은 404. */
+    @GetMapping("/rival/{id}/songs")
+    public RivalBundleSongsResponse rivalBundleSongs(@AuthenticationPrincipal AuthenticatedUser user, @PathVariable Long id,
+                                                     @RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "" + NotificationService.DEFAULT_PAGE_SIZE) int size) {
+        return notificationService.rivalBundleSongs(user.id(), id, page, size);
     }
 
     @GetMapping("/unread-count")

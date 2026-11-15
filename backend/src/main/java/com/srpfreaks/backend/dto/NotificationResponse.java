@@ -10,6 +10,7 @@ import com.srpfreaks.backend.service.TierAlertService;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * 알림 한 줄. kind로 라이벌 역전 알림(D56)과 서열표 변경 알림(D61)을 구분한다. 종류마다 쓰지 않는 필드는 null이다.
@@ -20,19 +21,21 @@ import java.time.Instant;
  * - TIER : beforeTier·afterTier(null = 미정), myRate = 알림을 만든 때의 내 최고 달성률,
  *          beforeScore·afterScore = 그 달성률로 계산한 전·후 점수(둘째 자리, 미정이면 null), scoreDiff = 후 − 전(둘 다 있을 때만).
  *          bundled면 songCount채보를 묶은 줄이고 값은 첫 채보의 것이다.
+ * - previewTitles·missingCount(D86): 라이벌 묶음 줄만 값이 있다(곡명 미리보기 최대 3개, 목록이 남아 있지 않은 곡 수). 그 밖은 빈 목록·0.
  */
 public record NotificationResponse(NotificationKind kind, Long id, Long actorUserId, String actorNickname, Long songId,
                                    Long songDifficultyId, String title, InstrumentPart part, DifficultyType difficulty,
                                    BigDecimal level, BigDecimal actorRate, BigDecimal myRate, boolean bundled, int songCount,
                                    Instant visibleAt, boolean read, BigDecimal beforeTier, BigDecimal afterTier,
-                                   BigDecimal beforeScore, BigDecimal afterScore, BigDecimal scoreDiff) {
+                                   BigDecimal beforeScore, BigDecimal afterScore, BigDecimal scoreDiff,
+                                   List<String> previewTitles, int missingCount) {
 
     public static NotificationResponse from(RivalNotification n) {
         SongDifficulty d = n.getSongDifficulty();
         return new NotificationResponse(NotificationKind.RIVAL, n.getId(), n.getActor().getId(), n.getActor().getNickname(),
                 d.getSong().getId(), d.getId(), d.getSong().getTitle(), d.getInstrumentPart(), d.getDifficultyType(), d.getLevel(),
                 n.getActorRate(), n.getRecipientRate(), n.isBundled(), n.getSongCount(), n.getVisibleAt(), n.getReadAt() != null,
-                null, null, null, null, null);
+                null, null, null, null, null, List.of(), 0);
     }
 
     /** 점수는 저장하지 않으므로 지금의 레이팅 설정으로 계산한다(레이팅 화면과 같은 계산기). */
@@ -44,7 +47,17 @@ public record NotificationResponse(NotificationKind kind, Long id, Long actorUse
         return new NotificationResponse(NotificationKind.TIER, n.getId(), null, null, d.getSong().getId(), d.getId(),
                 d.getSong().getTitle(), d.getInstrumentPart(), d.getDifficultyType(), d.getLevel(), null, n.getMyRate(),
                 n.isBundled(), n.getSongCount(), n.getChangedAt(), n.getReadAt() != null,
-                n.getBeforeTier(), n.getAfterTier(), before, after, diff);
+                n.getBeforeTier(), n.getAfterTier(), before, after, diff, List.of(), 0);
+    }
+
+    /**
+     * 라이벌 묶음 줄의 곡명 미리보기와 목록이 없는 곡 수를 붙인다(D86).
+     * previewTitles = 묶음 줄 자신의 곡 + 합쳐진 처음 몇 곡(최대 3개), missingCount = 목록이 남아 있지 않은 곡 수(예전 묶음).
+     */
+    public NotificationResponse withBundleInfo(List<String> previewTitles, int missingCount) {
+        return new NotificationResponse(kind, id, actorUserId, actorNickname, songId, songDifficultyId, title, part, difficulty,
+                level, actorRate, myRate, bundled, songCount, visibleAt, read, beforeTier, afterTier, beforeScore, afterScore,
+                scoreDiff, previewTitles, missingCount);
     }
 
     private static BigDecimal display(BigDecimal exact) {
