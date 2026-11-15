@@ -561,6 +561,7 @@
     "rateInterpreted": "달성률 {value}(으)로 저장됩니다",
     "stageDisplay": "달성 표시",
     "autoCalc": "자동 계산",
+    "stageSPlusNote": "S+는 이 사이트가 따로 정한 단계입니다(공식 표기 아님). 달성률 87.50 이상 95 미만입니다.",
     "playedDate": "플레이 날짜",
     "saveNote": "기록은 본인만 등록·수정·삭제할 수 있습니다.",
     "deleteThis": "이 기록 삭제",

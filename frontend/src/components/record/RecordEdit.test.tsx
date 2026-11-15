@@ -27,7 +27,7 @@ const saved: RecordResponse = {
   noteOption: "SUPER_RANDOM_PLUS",
   achievementRate: 91.25,
   fullCombo: false,
-  stage: "S",
+  stage: "S+",
   playedAt: "2026-10-04T15:00:00Z", // 서울 2026-10-05
   platform: null,
   memo: "예전 메모",
@@ -112,7 +112,7 @@ describe("기록 수정 / 삭제", () => {
     expect(screen.getByLabelText("달성률")).toHaveValue("9125");
     expect(screen.getByLabelText("플레이 날짜")).toHaveValue("2026-10-05");
     expect(screen.getByLabelText("메모 (선택)")).toHaveValue("예전 메모");
-    expect(screen.getAllByLabelText("달성 단계 S")).toHaveLength(2); // 기록 목록 줄 + 폼의 달성 표시 미리보기
+    expect(screen.getAllByLabelText("달성 단계 S+")).toHaveLength(2); // 기록 목록 줄 + 폼의 달성 표시 미리보기
     expect(screen.getByRole("button", { name: "이 기록 삭제" })).toBeInTheDocument();
   });
 

@@ -237,7 +237,7 @@ export function hasFilters(filters: TableFilters): boolean {
 /**
  * 묶음 하나를 필터로 거른 새 묶음. 한 필터 안의 값은 OR, 필터끼리는 AND이고(서버의 서열표 필터와 같은 규칙),
  * 추천·속성 값이 없는 채보는 그 필터가 걸리면 빠진다. 머리에 보이는 개수·단계·평균도 남은 채보로 다시 계산한다
- * (단계는 서버가 채보마다 준 mine.stage를 쓴다. S 미만 = 기록이 있으면서 SS·S도 아닌 것).
+ * (단계는 서버가 채보마다 준 mine.stage를 쓴다. S 미만 = 기록이 있으면서 SS·S+·S도 아닌 것).
  * 묶음 한 장만 보는 화면에서 쓴다 — 서열표 본문은 서버가 거른 묶음을 받는다.
  */
 export function filterTierGroup(group: TierGroupResponse, filters: TableFilters): TierGroupResponse {
@@ -255,7 +255,7 @@ export function filterTierGroup(group: TierGroupResponse, filters: TableFilters)
   const exc = count("EXC");
   const fc = count("FC");
   const ss = count("SS");
-  const s = count("S");
+  const s = count("S") + count("S+"); // S+는 S 칩에 합친다(칩 구성 변경은 후속 PR)
   const rateSum = recorded.reduce((acc, e) => acc + (e.mine?.rate ?? 0), 0);
   return {
     ...group,

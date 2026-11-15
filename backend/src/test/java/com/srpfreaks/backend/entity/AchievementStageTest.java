@@ -21,7 +21,9 @@ class AchievementStageTest {
         assertThat(AchievementStage.of(r("73.00"), false)).isEqualTo(AchievementStage.A);
         assertThat(AchievementStage.of(r("79.99"), false)).isEqualTo(AchievementStage.A);
         assertThat(AchievementStage.of(r("80.00"), false)).isEqualTo(AchievementStage.S);
-        assertThat(AchievementStage.of(r("94.99"), false)).isEqualTo(AchievementStage.S);
+        assertThat(AchievementStage.of(r("87.49"), false)).isEqualTo(AchievementStage.S);
+        assertThat(AchievementStage.of(r("87.50"), false)).isEqualTo(AchievementStage.S_PLUS);
+        assertThat(AchievementStage.of(r("94.99"), false)).isEqualTo(AchievementStage.S_PLUS);
         assertThat(AchievementStage.of(r("95.00"), false)).isEqualTo(AchievementStage.SS);
         assertThat(AchievementStage.of(r("99.99"), false)).isEqualTo(AchievementStage.SS);
         assertThat(AchievementStage.of(r("100.00"), false)).isEqualTo(AchievementStage.EXC);
@@ -35,14 +37,23 @@ class AchievementStageTest {
         assertThat(AchievementStage.of(r("70.00"), true)).isEqualTo(AchievementStage.FC);
         // 100.00은 FC가 아니라 EXC
         assertThat(AchievementStage.of(r("100.00"), true)).isEqualTo(AchievementStage.EXC);
+        // S+ 구간(87.50~94.99)이어도 FC면 FC가 이긴다
+        assertThat(AchievementStage.of(r("90.00"), true)).isEqualTo(AchievementStage.FC);
     }
 
     @Test
     void 단계_선언_순서가_낮은_단계에서_높은_단계다() {
         assertThat(AchievementStage.values())
                 .containsExactly(AchievementStage.C, AchievementStage.B, AchievementStage.A, AchievementStage.S,
-                        AchievementStage.SS, AchievementStage.FC, AchievementStage.EXC);
+                        AchievementStage.S_PLUS, AchievementStage.SS, AchievementStage.FC, AchievementStage.EXC);
         assertThat(AchievementStage.FC).isGreaterThan(AchievementStage.SS);
+    }
+
+    @Test
+    void S_PLUS는_S와_SS_사이이고_API_글자는_S_PLUS_기호다() {
+        assertThat(AchievementStage.S_PLUS).isGreaterThan(AchievementStage.S).isLessThan(AchievementStage.SS);
+        assertThat(AchievementStage.S_PLUS.label()).isEqualTo("S+");
+        assertThat(AchievementStage.SS.label()).isEqualTo("SS");
     }
 
     @Test

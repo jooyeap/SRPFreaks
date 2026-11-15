@@ -249,6 +249,7 @@ export function RecordForm({
           {errors.achievementRate.message}
         </p>
       ) : null}
+      <p className="-mt-2 text-[11px] text-fg-faint">{t("Record.stageSPlusNote")}</p>
 
       {chart.tier !== undefined && chart.tier !== null ? (
         <div aria-live="polite" className="flex flex-col gap-1 rounded-2xl border border-line bg-card px-3.5 py-2.5">

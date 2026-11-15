@@ -69,6 +69,7 @@ export const STAGE_COLORS: Record<AchievementStage, string> = {
   EXC: "#ffd84d",
   FC: "#67e8f9",
   SS: "#b3c9ff",
+  "S+": "#5eead4",
   S: "#86efac",
   A: "#c5cbda",
   B: "#a0a9bc",
@@ -195,7 +196,8 @@ export function stageCounts(skill: SkillResponse): CardCountView[] {
   const entries = [...skill.single, ...skill.other];
   return (["EXC", "FC", "SS", "S"] as const).map((stage) => ({
     label: stage,
-    count: entries.filter((entry) => entry.stage === stage).length,
+    // S+는 이번 PR에서 S 칸에 합친다(칩 구성 변경은 후속 PR)
+    count: entries.filter((entry) => entry.stage === stage || (stage === "S" && entry.stage === "S+")).length,
     color: STAGE_COLORS[stage],
   }));
 }

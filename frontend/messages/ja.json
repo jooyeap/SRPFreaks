@@ -561,6 +561,7 @@
     "rateInterpreted": "達成率 {value} として保存されます",
     "stageDisplay": "達成表示",
     "autoCalc": "自動計算",
+    "stageSPlusNote": "S+は当サイト独自のランクです（公式表記ではありません）。達成率87.50以上95未満です。",
     "playedDate": "プレイ日",
     "saveNote": "記録は本人のみ登録・編集・削除できます。",
     "deleteThis": "この記録を削除",
