@@ -23,7 +23,7 @@ describe("SaveResultCard", () => {
     // 직접 계산: T=5.6 -> R=11. A=91.2 -> V=8.8+3.2*11.2/15=11.18933 -> x20=223.787 -> 표시 223.79 / A=96.5 -> V=8.8+3.2=12 -> 240.00
     expect(within(card).getByText("91.20")).toBeInTheDocument();
     expect(within(card).getByText("96.50")).toBeInTheDocument();
-    expect(within(card).getByLabelText("달성 단계 S")).toBeInTheDocument();
+    expect(within(card).getByLabelText("달성 단계 S+")).toBeInTheDocument();
     expect(within(card).getByLabelText("달성 단계 SS")).toBeInTheDocument();
     expect(within(card).getByText("단계 상승")).toBeInTheDocument();
     expect(within(card).getByText("223.79")).toBeInTheDocument();

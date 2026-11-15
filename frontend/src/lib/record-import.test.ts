@@ -9,7 +9,8 @@ describe("가져오기 표시 규칙", () => {
     expect(playStage({ ...base, rate: 10000 })).toBe("EXC");
     expect(playStage({ ...base, rate: 9000, ok: 0, miss: 0 })).toBe("FC");
     expect(playStage(base)).toBe("SS");
-    expect(playStage({ ...base, rate: 8800 })).toBe("S");
+    expect(playStage({ ...base, rate: 8800 })).toBe("S+");
+    expect(playStage({ ...base, rate: 8700 })).toBe("S");
     expect(playStage({ ...base, rate: 7387 })).toBe("A");
     expect(playStage({ ...base, rate: 100 })).toBe("C");
   });
