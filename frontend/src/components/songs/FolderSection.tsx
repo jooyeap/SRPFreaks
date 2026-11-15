@@ -18,6 +18,7 @@ import {
   songListKeys,
 } from "@/lib/song-list";
 import { chartIdOfDetailLink, rememberDetailNav } from "@/lib/detail-nav";
+import { Collapse } from "@/components/Collapse";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { usePageSize } from "@/lib/page-size";
 import { useTranslations } from "next-intl";
@@ -119,8 +120,8 @@ export function FolderSection({
           </span>
         </button>
       </HeadingTag>
-      <div id={bodyId} hidden={!open} className="motion-reveal">
-        {!open ? null : !showsCharts ? (
+      <Collapse open={open} id={bodyId}>
+        {() => !showsCharts ? (
           <div className="flex flex-col gap-2 p-2">
             {subFolders.map((sub) => (
               <FolderSection key={sub.lo} userId={userId} folder={sub} includeZero={includeZero} filters={filters} level="sub" />
@@ -149,7 +150,7 @@ export function FolderSection({
           />
           </div>
         )}
-      </div>
+      </Collapse>
     </section>
   );
 }

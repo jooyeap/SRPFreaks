@@ -34,8 +34,8 @@ export function ChartList({
         </span>
       </div>
       <ul aria-label={label}>
-        {rows.map((row) => (
-          <ChartRow key={row.songDifficultyId} row={row} href={hrefOf?.(row)} />
+        {rows.map((row, i) => (
+          <ChartRow key={row.songDifficultyId} row={row} href={hrefOf?.(row)} index={i} />
         ))}
       </ul>
       {hasMore ? (

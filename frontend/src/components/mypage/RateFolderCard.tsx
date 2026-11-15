@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Collapse } from "@/components/Collapse";
 import { StageBar } from "@/components/table/StageBar";
 import { groupStage, visibleChipsOf } from "@/components/table/TierGroupSection";
 import type { RateBucketKey, RateFolderResponse } from "@/lib/api-types";
@@ -18,6 +19,7 @@ import {
   formatFolderAverage,
   type StatsAxis,
 } from "@/lib/rate-folders";
+import { stagger } from "@/lib/motion";
 import { useTranslations } from "next-intl";
 
 /** 구간 앞 칩 글자. A 미만(B·C)은 합쳐서 보이고, 미플레이는 단계가 없다. */
@@ -99,11 +101,9 @@ export function RateFolderCard({ axis, folder, includeZero }: { axis: StatsAxis;
           </span>
         </button>
       </h3>
-      <div id={bodyId} hidden={!open} className="motion-reveal">
-        {open ? (
-          <BucketList axis={axis} folder={folder} />
-        ) : null}
-      </div>
+      <Collapse open={open} id={bodyId}>
+        {() => <BucketList axis={axis} folder={folder} />}
+      </Collapse>
     </section>
   );
 }
@@ -118,7 +118,8 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
   const badges = bucketBadges(folder, "R95");
   return (
     <ul aria-label={t("MyPage.bucketsAria", { title })} className={className}>
-      {BUCKETS.map(({ key }) => {
+      {BUCKETS.map(({ key }, index) => {
+        const s = stagger(index);
         const label = bucketLabel(key, t);
         const count = bucketCount(folder, key);
         const stage = bucketStage(key);
@@ -132,7 +133,7 @@ export function BucketList({ axis, folder, className = "flex flex-col gap-1.5 bo
           : [{ key, stage, count }]
         ).filter((seg) => seg.count > 0);
         return (
-          <li key={key} className="rounded-lg border border-row-line bg-table-head/40">
+          <li key={key} style={s.style} className={`rounded-lg border border-row-line bg-table-head/40 ${s.className}`}>
             <Link
               href={bucketListHref(axis, folder.key, key)}
               className="flex flex-col gap-1.5 px-3 py-2 hover:bg-table-head"

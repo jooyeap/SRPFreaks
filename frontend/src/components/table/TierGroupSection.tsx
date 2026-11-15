@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useId, useState } from "react";
+import { Collapse } from "@/components/Collapse";
 import { EntryCard } from "@/components/table/EntryCard";
 import { EntryRow, TableHeadRow } from "@/components/table/EntryRow";
 import { groupAverage } from "@/lib/difficulty-table";
@@ -122,6 +123,21 @@ export function TierGroupSection({
   // 모바일은 접힌 묶음에서 칩과 `기록 n/전체`를 숨기고(제목·n개·평균만 한 줄), 펼치면 보인다. 데스크톱(md 이상)은 접혀 있어도 모두 보인다.
   // 곡 목록의 레벨 폴더(FolderSection)와 같은 규칙이다. 접을 수 없는 묶음 화면은 항상 펼쳐 있으므로 늘 보인다.
   const detailClass = expanded ? "flex" : "hidden md:flex";
+  // 묶음 안 내용(머리 행 + 줄). animate가 true일 때만 처음 8줄이 차례로 나타난다
+  const renderBody = (animate: boolean) => (
+    <>
+      <TableHeadRow showRecord={showRecord} />
+      {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
+      <ul>
+        {entries.map((entry, i) => (
+          <EntryCard key={`card-${entry.entryId}`} index={animate ? i : undefined} entry={entry} tier={group.tier} showRecord={showRecord} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
+        ))}
+        {entries.map((entry, i) => (
+          <EntryRow key={`row-${entry.entryId}`} index={animate ? i : undefined} entry={entry} tier={group.tier} showRecord={showRecord} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
+        ))}
+      </ul>
+    </>
+  );
   return (
     <section aria-label={t("Chart.tierAria", { tier: title })} className="overflow-hidden rounded-2xl border border-line bg-card">
       {/* 묶음 전체가 한 단계 이상이면 곡 카드와 같은 왼쪽 막대와 배경을 머리에 준다. 단계 글자는 칩이 이미 보여 준다 */}
@@ -188,21 +204,14 @@ export function TierGroupSection({
         </p>
       </header>
 
-      {expanded ? (
-        // 펼칠 때만 살짝 내려오며 나타난다(D57). 접을 수 없는 묶음(항상 펼침)은 처음부터 있으므로 움직이지 않는다
-        <div id={bodyId} className={collapsible ? "motion-reveal" : undefined}>
-          <TableHeadRow showRecord={showRecord} />
-          {/* 모바일: 한 줄 행(EntryCard) / 데스크톱: 표(EntryRow). 각 항목이 md 기준으로 서로를 숨긴다 */}
-          <ul>
-            {entries.map((entry) => (
-              <EntryCard key={`card-${entry.entryId}`} entry={entry} tier={group.tier} showRecord={showRecord} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
-            ))}
-            {entries.map((entry) => (
-              <EntryRow key={`row-${entry.entryId}`} entry={entry} tier={group.tier} showRecord={showRecord} onRecord={onRecord && ((e) => onRecord(e, group.tier))} />
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      {collapsible ? (
+        // 펼치고 접을 때 높이가 부드럽게 바뀌고 줄이 차례로 나타난다(D82 모션 PR 3, components/Collapse.tsx). 접을 수 없는 묶음(항상 펼침)은 처음부터 있으므로 움직이지 않는다
+        <Collapse open={open} id={bodyId}>
+          {() => renderBody(true)}
+        </Collapse>
+      ) : (
+        <div id={bodyId}>{renderBody(false)}</div>
+      )}
     </section>
   );
 }

@@ -1586,3 +1586,4 @@ CLAUDE.md를 짧게 하려고 "구현됨" 설명 원문을 그대로 옮겼다. 
 | 2026-11-15 | **D83 ② 반영.** 통계 칩 6개(`sPlus`를 `ss`와 `s` 사이에 추가, `TierGroupResponse`·`ChartFolderResponse`), 홈·마이페이지·레이팅 카드 머리글에 S+ 반영. 달성률 구간(RateBucket) 폴더 칩은 S+를 나누지 못해 S에 합침. DB 변경 없음 |
 | 2026-11-15 | **D82 추가(모션 PR 1).** 움직임 정비 프로젝트 시작과 D57 개정, 시간 통일(`edge-bounce` 240ms·테마 손잡이 120ms·폴더 스와이프 180/120ms·`arrive-glow` 1.8초), 설정 스위치 `left`→`translate`와 움직임 줄이기 적용, `.drawer-*` 삭제. 코드·문구 외 API·DB·권한 변경 없음 |
 | 2026-11-15 | **D82 확장(모션 PR 2).** 화면 전환(`motion-page`, 투명도 180ms)·탭 내용 전환(`motion-swap`)·하단 탭바·마이페이지 탭 선택 지시선(`motion-indicator`, translateX 180ms) 추가, 움직임 줄이기에서 모두 끔. 새 D 번호 없음. 프론트·문서만, API·DB·권한 변경 없음 |
+| 2026-11-15 | **D82 확장(모션 PR 3).** 목록 줄 순차 등장(`motion-stagger`, 처음 8줄·50ms 간격)과 접기/펼치기(`Collapse`, `grid-template-rows` 0fr↔1fr 240ms, 닫는 모션 포함)를 곡 목록 폴더·마이페이지 달성률 폴더·서열표 묶음·곡 목록 모바일 필터 패널에 적용. 새 D 번호 없음. 프론트·문서만, API·DB·권한 변경 없음 |

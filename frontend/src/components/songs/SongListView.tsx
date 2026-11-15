@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Collapse } from "@/components/Collapse";
 import { Pager, usePaged } from "@/components/Pager";
 import { PageSizeSelect } from "@/components/PageSizeSelect";
 import { usePageSize } from "@/lib/page-size";
@@ -109,13 +110,18 @@ export function SongListView({
         </div>
 
         {/* 모바일: 필터 버튼으로 펼치는 패널. 데스크톱(md 이상)은 항상 보이는 둘째 줄 */}
-        <SongListFilterPanel
-          id="song-filters"
-          className={`${filtersOpen ? "flex motion-reveal md:animate-none" : "hidden"} flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:flex md:flex-row md:flex-wrap md:items-center md:gap-3 md:rounded-none md:border-0 md:bg-transparent md:p-0`}
-          filters={filters}
-          versions={versions}
-          onChange={onFiltersChange}
-        />
+        {/* 여닫을 때 높이가 부드럽게 바뀐다(D82 모션 PR 3). 넓은 화면은 늘 펼쳐 있고 모션이 없다 */}
+        <Collapse open={filtersOpen} alwaysOnWide>
+          {() => (
+            <SongListFilterPanel
+              id="song-filters"
+              className="flex flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:flex md:flex-row md:flex-wrap md:items-center md:gap-3 md:rounded-none md:border-0 md:bg-transparent md:p-0"
+              filters={filters}
+              versions={versions}
+              onChange={onFiltersChange}
+            />
+          )}
+        </Collapse>
       </div>
 
       {/* 검색어에 맞는 채보의 바로가기 후보(누르면 곡 상세). 아래 폴더 목록은 같은 검색어로 걸러진다 */}

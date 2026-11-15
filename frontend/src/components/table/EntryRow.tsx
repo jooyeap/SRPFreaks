@@ -5,6 +5,7 @@ import { StageRatePill } from "@/components/table/StageRatePill";
 import { SongJacket } from "@/components/SongJacket";
 import { STAGE_EDGE_CLIP, StageEdgeBar } from "@/components/StageEdgeBar";
 import { useJackets } from "@/lib/jackets";
+import { stagger } from "@/lib/motion";
 import { tableDetailHref } from "@/components/song/TableContext";
 import { patternLabel } from "@/lib/chart-labels";
 import { EMPTY_MARK } from "@/lib/format";
@@ -64,6 +65,7 @@ export function EntryRow({
   tier = null,
   onRecord,
   showRecord = true,
+  index,
 }: {
   entry: TableEntryResponse;
   /** 묶음의 레이팅 상수 난이도. 기록이 있을 때 레이팅 점수를 계산하는 데 쓴다(미정이면 null) */
@@ -71,14 +73,18 @@ export function EntryRow({
   onRecord?: (entry: TableEntryResponse) => void;
   /** false면 내 기록 칸(알약·점수·기록 버튼)을 그리지 않는다(비로그인 폴더). 머리 행(TableHeadRow)도 같은 값을 쓴다 */
   showRecord?: boolean;
+  /** 묶음 안 번호(0부터). 처음 8줄만 차례로 나타난다(lib/motion.ts) */
+  index?: number;
 }) {
+  const s = stagger(index);
   const t = useTranslations();
   const stage = entry.mine?.stage ?? null;
   const jackets = useJackets();
   return (
     <li
       data-stage={stage ?? undefined}
-      className={`relative ${STAGE_EDGE_CLIP} hidden h-14 border-t border-row-line px-4 text-sm hover:bg-table-head md:grid ${showRecord ? ROW_GRID : ROW_GRID_PLAIN} ${stage ? "stage-tint" : ""}`}
+      style={s.style}
+      className={`${s.className} relative ${STAGE_EDGE_CLIP} hidden h-14 border-t border-row-line px-4 text-sm hover:bg-table-head md:grid ${showRecord ? ROW_GRID : ROW_GRID_PLAIN} ${stage ? "stage-tint" : ""}`}
     >
       {stage ? <StageEdgeBar /> : null}
       <span className="flex min-w-0 items-center gap-2.5">

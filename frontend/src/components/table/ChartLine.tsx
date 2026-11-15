@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { SongJacket } from "@/components/SongJacket";
 import { STAGE_EDGE_CLIP, StageEdgeBar } from "@/components/StageEdgeBar";
 import { ChartBadge } from "@/components/table/Badges";
@@ -26,6 +26,7 @@ import { useTranslations } from "next-intl";
  */
 export function ChartLine({
   className = "",
+  style,
   stage = null,
   done,
   lead,
@@ -45,6 +46,8 @@ export function ChartLine({
 }: {
   /** li 바깥 모양(구분선, 카드 테두리 등). 높이·간격은 이 컴포넌트가 정한다 */
   className?: string;
+  /** 등장 모션의 줄 번호(--stagger-i) 등 인라인 변수. lib/motion.ts */
+  style?: CSSProperties;
   /** 내 기록의 달성 단계. 있으면 왼쪽 막대와 배경 틴트를 준다 */
   stage?: AchievementStage | null;
   /** 세트리스트 줄의 완료 여부(data-done) */
@@ -77,6 +80,7 @@ export function ChartLine({
     <li
       data-stage={stage ?? undefined}
       data-done={done === undefined ? undefined : done ? "true" : "false"}
+      style={style}
       className={`relative ${STAGE_EDGE_CLIP} flex h-[68px] items-center gap-2.5 ${jacket ? "pl-3" : "pl-4"} pr-3 ${stage ? "stage-tint" : ""} ${className}`}
     >
       {stage ? <StageEdgeBar /> : null}

@@ -405,7 +405,8 @@ describe("SongListView", () => {
     const toggle = screen.getByRole("button", { name: "0% 미포함" });
     const filters = document.getElementById("song-filters");
     expect(filters).not.toBeNull();
-    const card = filters!.parentElement!;
+    // 필터 패널은 접기 영역(Collapse)의 안쪽 칸 안에 있다: 패널 → 안쪽 칸 → 접기 영역 → 카드
+    const card = filters!.parentElement!.parentElement!.parentElement!;
     expect(card).toHaveClass("md:border", "md:bg-card");
     // 1줄: 검색창과 평균 계산 토글이 같은 줄(카드의 첫 자식) 안에 있다
     const firstRow = card.firstElementChild as HTMLElement;
