@@ -53,15 +53,15 @@
   --stage-b-bar: #8b93a8; --stage-b-text: var(--fg-dim);
   --stage-a-bar: #98a0b4; --stage-a-text: var(--fg-sub);
   --stage-s-bar: #4ade80; --stage-s-text: #86efac;
-  --stage-sp-bar: #2dd4bf; --stage-sp-text: #5eead4;
+  --stage-sp-bar: #f87171; --stage-sp-text: #fca5a5;
   --stage-ss-bar: #6ea0ff; --stage-ss-text: #b3c9ff;
   --stage-fc-bar: linear-gradient(180deg, #22d3ee, #c084fc); --stage-fc-text: #67e8f9; --stage-fc-name: #d9f3ff;
   --stage-exc-bar: linear-gradient(180deg, #ffe27a, #ffb347, #ff7eb6); --stage-exc-text: #ffd84d; --stage-exc-name: #ffe48a;
   --stage-c-tint: transparent; --stage-b-tint: transparent; --stage-a-tint: transparent;
-  --stage-s-tint: rgb(74 222 128 / 0.1); --stage-sp-tint: rgb(45 212 191 / 0.1); --stage-ss-tint: rgb(110 160 255 / 0.1);
+  --stage-s-tint: rgb(74 222 128 / 0.1); --stage-sp-tint: rgb(248 113 113 / 0.1); --stage-ss-tint: rgb(110 160 255 / 0.1);
   --stage-fc-tint: rgb(34 211 238 / 0.12); --stage-exc-tint: rgb(255 194 77 / 0.14);
   --stage-c-chip: #98a0b4; --stage-b-chip: #a9b0c2; --stage-a-chip: #bcc2d1;
-  --stage-s-chip: #4ade80; --stage-sp-chip: #2dd4bf; --stage-ss-chip: #6ea0ff;
+  --stage-s-chip: #4ade80; --stage-sp-chip: #f87171; --stage-ss-chip: #6ea0ff;
   --stage-fc-chip: linear-gradient(90deg, #22d3ee, #c084fc);
   --stage-exc-chip: linear-gradient(90deg, #ffe27a, #ffb347, #ff7eb6);
   /* 홈 진행도 도넛: SVG 선은 CSS 그라데이션 값을 못 쓰므로 EXC/FC 그라데이션의 끝점 색을 따로 둔다 */
@@ -110,12 +110,12 @@
   --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
 
   --stage-s-bar: #16a34a; --stage-s-text: #15803d;
-  --stage-sp-bar: #0d9488; --stage-sp-text: #0f766e;
+  --stage-sp-bar: #dc2626; --stage-sp-text: #b91c1c;
   --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
   --stage-fc-bar: linear-gradient(180deg, #0891b2, #9333ea); --stage-fc-text: #0e7490; --stage-fc-name: #0c4a6e;
   --stage-exc-bar: linear-gradient(180deg, #f5b301, #f97316, #ec4899); --stage-exc-text: #b45309; --stage-exc-name: #92400e;
   --stage-c-bar: #7d869a; --stage-b-bar: #6f788d; --stage-a-bar: #626b80;
-  --stage-s-tint: rgb(22 163 74 / 0.08); --stage-sp-tint: rgb(13 148 136 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
+  --stage-s-tint: rgb(22 163 74 / 0.08); --stage-sp-tint: rgb(220 38 38 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
   --stage-fc-tint: rgb(8 145 178 / 0.09); --stage-exc-tint: rgb(245 179 1 / 0.12);
   --ring-exc-1: #f5b301; --ring-exc-2: #f97316; --ring-exc-3: #ec4899;
   --ring-fc-1: #0891b2; --ring-fc-2: #9333ea;
@@ -152,12 +152,12 @@
     --diff-text-bas: #166534; --diff-text-adv: #854d0e; --diff-text-ext: #b91c1c; --diff-text-mas: #6d28d9;
 
     --stage-s-bar: #16a34a; --stage-s-text: #15803d;
-    --stage-sp-bar: #0d9488; --stage-sp-text: #0f766e;
+    --stage-sp-bar: #dc2626; --stage-sp-text: #b91c1c;
     --stage-ss-bar: #2563eb; --stage-ss-text: #1d4ed8;
     --stage-fc-bar: linear-gradient(180deg, #0891b2, #9333ea); --stage-fc-text: #0e7490; --stage-fc-name: #0c4a6e;
     --stage-exc-bar: linear-gradient(180deg, #f5b301, #f97316, #ec4899); --stage-exc-text: #b45309; --stage-exc-name: #92400e;
     --stage-c-bar: #7d869a; --stage-b-bar: #6f788d; --stage-a-bar: #626b80;
-    --stage-s-tint: rgb(22 163 74 / 0.08); --stage-sp-tint: rgb(13 148 136 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
+    --stage-s-tint: rgb(22 163 74 / 0.08); --stage-sp-tint: rgb(220 38 38 / 0.08); --stage-ss-tint: rgb(37 99 235 / 0.08);
     --stage-fc-tint: rgb(8 145 178 / 0.09); --stage-exc-tint: rgb(245 179 1 / 0.12);
     --ring-exc-1: #f5b301; --ring-exc-2: #f97316; --ring-exc-3: #ec4899;
     --ring-fc-1: #0891b2; --ring-fc-2: #9333ea;
