@@ -147,6 +147,14 @@ describe("stageCounts", () => {
     const counts = Object.fromEntries(stageCounts(s).map((c) => [c.label, c.count]));
     expect(counts).toEqual({ EXC: 1, FC: 1, SS: 1, S: 0 });
   });
+
+  it("S+ 곡은 이번에는 S 칸에 합쳐 센다 (칩 구성 변경은 후속 PR)", () => {
+    const s = skill(2, 1);
+    s.single[0].stage = "S+";
+    s.single[1].stage = "S";
+    const counts = Object.fromEntries(stageCounts(s).map((c) => [c.label, c.count]));
+    expect(counts.S).toBe(2);
+  });
 });
 
 describe("buildCardModel", () => {

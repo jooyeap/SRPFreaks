@@ -11,7 +11,9 @@ describe("achievementStage (백엔드와 같은 구간)", () => {
     [73, "A"],
     [79.99, "A"],
     [80, "S"],
-    [94.99, "S"],
+    [87.49, "S"],
+    [87.5, "S+"],
+    [94.99, "S+"],
     [95, "SS"],
     [99.99, "SS"],
     [100, "EXC"],
@@ -23,6 +25,11 @@ describe("achievementStage (백엔드와 같은 구간)", () => {
     expect(achievementStage(96, true)).toBe("FC");
     expect(achievementStage(70, true)).toBe("FC");
     expect(achievementStage(0, true)).toBe("FC");
+  });
+
+  it("S+ 구간이어도 FC면 FC다 (90% + FC -> FC)", () => {
+    expect(achievementStage(90, true)).toBe("FC");
+    expect(achievementStage(87.5, true)).toBe("FC");
   });
 
   it("100.00은 FC 여부와 상관없이 EXC다", () => {
@@ -37,14 +44,14 @@ describe("achievementStage (백엔드와 같은 구간)", () => {
   });
 
   it("소수 오차가 있는 값도 경계를 바르게 판정한다", () => {
-    expect(achievementStage(0.1 + 0.2 + 94.69, false)).toBe("S"); // 94.99000000000001 같은 값 -> 9499
+    expect(achievementStage(0.1 + 0.2 + 94.69, false)).toBe("S+"); // 94.99000000000001 같은 값 -> 9499
     expect(achievementStage(72.999999999, false)).toBe("A"); // 반올림하면 73.00
   });
 });
 
 describe("단계 순서", () => {
   it("낮은 단계에서 높은 단계 순서다", () => {
-    expect(STAGE_ORDER).toEqual(["C", "B", "A", "S", "SS", "FC", "EXC"]);
+    expect(STAGE_ORDER).toEqual(["C", "B", "A", "S", "S+", "SS", "FC", "EXC"]);
   });
 
   it("isHigherStage로 높낮이를 비교한다", () => {
@@ -52,5 +59,7 @@ describe("단계 순서", () => {
     expect(isHigherStage("S", "A")).toBe(true);
     expect(isHigherStage("B", "A")).toBe(false);
     expect(isHigherStage("S", "S")).toBe(false);
+    expect(isHigherStage("S+", "S")).toBe(true);
+    expect(isHigherStage("SS", "S+")).toBe(true);
   });
 });

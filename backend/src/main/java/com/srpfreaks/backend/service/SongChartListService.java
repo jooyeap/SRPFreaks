@@ -273,7 +273,7 @@ public class SongChartListService {
                 case EXC -> exc++;
                 case FC -> fc++;
                 case SS -> ss++;
-                case S -> s++;
+                case S, S_PLUS -> s++;   // S+는 이번 PR에서 S 칩에 합친다(칩 구성 변경은 후속 PR). 칩 개수는 PR 전과 같다
                 case A, B, C -> belowS++;
             }
         }

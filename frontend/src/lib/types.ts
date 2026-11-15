@@ -14,4 +14,4 @@ export type DifficultyType = "BASIC" | "ADVANCED" | "EXTREME" | "MASTER";
 export type NoteOption = "NORMAL" | "RANDOM" | "SUPER_RANDOM" | "RANDOM_PLUS" | "SUPER_RANDOM_PLUS";
 
 /** 달성 단계. 낮은 단계 -> 높은 단계 순서다 (D24). */
-export type AchievementStage = "C" | "B" | "A" | "S" | "SS" | "FC" | "EXC";
+export type AchievementStage = "C" | "B" | "A" | "S" | "S+" | "SS" | "FC" | "EXC";
