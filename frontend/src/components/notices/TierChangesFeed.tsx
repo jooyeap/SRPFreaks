@@ -121,7 +121,7 @@ export function TierChangesFeed() {
                 >
                   <Link
                     href={tableDetailHref(row)}
-                    className="flex flex-col gap-1 px-4 py-2.5 hover:bg-table-head"
+                    className="motion-press flex flex-col gap-1 px-4 py-2.5 hover:bg-table-head"
                   >
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="min-w-0 truncate text-sm font-medium text-fg">

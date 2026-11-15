@@ -49,7 +49,7 @@ export function AdminMenu({ role, viewerId }: { role: Role; viewerId: number }) 
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className="flex min-h-14 items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3 hover:bg-table-head"
+                      className="motion-press flex min-h-14 items-center gap-3 rounded-2xl border border-line bg-card px-4 py-3 hover:bg-table-head"
                     >
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-table-head text-fg-sub">
                         <AdminMenuIcon name={item.icon} />

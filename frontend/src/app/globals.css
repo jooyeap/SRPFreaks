@@ -380,7 +380,8 @@ body {
  *  - motion-sheet  : 아래에서 올라오는 시트(모바일). 넓은 화면(64rem 이상)에서는 같은 요소가 위에서 살짝 내려오는 펼침이 된다.
  *  - motion-reveal : 접혀 있던 내용·필터·토스트가 살짝 내려오며 나타난다.
  *  - <dialog> 창    : 열릴 때 살짝 커지며 나타나고, 뒤 배경은 서서히 어두워진다(모든 창 공통).
- *  - 누름          : 버튼을 누르는 동안 98%로 줄어 눌렸다는 느낌을 준다(scale 속성이라 다른 transform과 겹치지 않는다).
+ *  - 누름          : 버튼을 누르는 동안 98%로 줄어 눌렸다는 느낌을 준다(scale 속성이라 다른 transform과 겹치지 않는다). 누를 수 있는 카드·줄은 .motion-press(98.5% + 살짝 흐림).
+ *  - 닫힘          : 창·시트·알림 창·말풍선·토스트는 열릴 때의 반대로 나간다(data-closing, 모션 PR 4).
  */
 :root {
   --motion-fast: 120ms;
@@ -479,8 +480,42 @@ body {
 }
 dialog[open] { animation: motion-pop-in var(--motion-base) var(--ease-out); }
 dialog[open]::backdrop { animation: motion-fade-in var(--motion-base) var(--ease-out); }
+/* 닫힘 모션(모션 PR 4, D82): 열릴 때의 반대로 나간다. useExitPresence(lib/use-exit-presence.ts)가 open이 false가 된 뒤에도 그 길이만큼 요소를 남기고
+   data-closing="true"를 붙인다. 나가는 동안은 클릭을 받지 않는다(pointer-events: none). fill-mode forwards로 마지막 모양(투명)을 지킨 채 지워진다.
+   창은 pop-out(97%로 작아지며 사라짐)+뒤 배경 페이드, 시트는 아래로 내려가고(lg 이상 펼침은 위로 4px), 말풍선·토스트는 reveal의 반대다. */
+@keyframes motion-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes motion-pop-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.97); }
+}
+@keyframes motion-sheet-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(24px); }
+}
+@keyframes motion-drop-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-4px); }
+}
+dialog[open][data-closing="true"] { animation: motion-pop-out var(--motion-base) var(--ease-out) forwards; pointer-events: none; }
+dialog[open][data-closing="true"]::backdrop { animation: motion-fade-out var(--motion-base) var(--ease-out) forwards; pointer-events: none; }
+.motion-fade[data-closing="true"] { animation: motion-fade-out var(--motion-base) var(--ease-out) forwards; pointer-events: none; }
+.motion-sheet[data-closing="true"] { animation: motion-sheet-out var(--motion-slow) var(--ease-out) forwards; pointer-events: none; }
+.motion-reveal[data-closing="true"], .motion-reveal[data-closing="true"] * { pointer-events: none; }
+.motion-reveal[data-closing="true"] { animation: motion-drop-out var(--motion-fast) var(--ease-out) forwards; }
+@media (min-width: 64rem) {
+  .motion-sheet[data-closing="true"] { animation: motion-drop-out var(--motion-base) var(--ease-out) forwards; }
+}
+/* 눌림(모션 PR 4, D82): 누를 수 있는 카드·줄에 .motion-press를 붙인다. 누르는 동안 살짝(98.5%) 줄고 조금 흐려졌다가 fast 길이로 돌아온다.
+   scale·opacity 속성만 쓴다(transform을 쓰지 않아 다른 transform과 겹치지 않고, 안쪽 fixed 요소의 기준이 되지 않는다). 색은 바꾸지 않는다.
+   버튼은 아래 기본 규칙(98%)이 이미 있고, 여기에 같은 길이의 전환만 더한다. */
+.motion-press { transition: scale var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
+.motion-press:active { scale: 0.985; opacity: 0.88; }
 @layer base {
   button:not(:disabled):active { scale: 0.98; }
+  button:not(:disabled) { transition: scale var(--motion-fast) var(--ease-out); }
   /*
    * 키보드 포커스 링 (2026-11-02): 모든 화면이 같은 2px 파란 링을 쓴다. 지금까지는 브라우저 기본 링에 맡겨서
    * 카드 배경 위에서 잘 안 보이거나 브라우저마다 달랐다.
@@ -503,6 +538,9 @@ dialog[open]::backdrop { animation: motion-fade-in var(--motion-base) var(--ease
 .folder-pill-zone:focus-visible { outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) {
   .motion-fade, .motion-sheet, .motion-reveal, .motion-page, .motion-swap, dialog[open], dialog[open]::backdrop { animation: none; }
+  .motion-fade[data-closing], .motion-sheet[data-closing], .motion-reveal[data-closing], dialog[open][data-closing], dialog[open][data-closing]::backdrop { animation: none; }
+  .motion-press { transition: none; }
+  .motion-press:active { scale: none; opacity: 1; }
   .motion-indicator { transition: none; }
   .motion-stagger { animation: none; }
   .motion-collapse { transition: none; }

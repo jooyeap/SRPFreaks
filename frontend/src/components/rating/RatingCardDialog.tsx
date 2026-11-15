@@ -8,6 +8,7 @@ import { buildCardModel, CARD_LAYOUTS, cardFileName, type CardLayout } from "@/l
 import { renderRatingCard } from "@/lib/rating-card-draw";
 import { useJackets } from "@/lib/jackets";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence, type ExitPresence } from "@/lib/use-exit-presence";
 
 /**
  * 레이팅 카드 이미지 저장 (D44). 버튼을 누르면 창이 열리고, 브라우저 캔버스로 PNG를 만들어 미리 보여 준다. 서버로 아무것도 보내지 않는다.
@@ -18,6 +19,8 @@ import { useHistoryClose } from "@/lib/use-history-close";
 export function RatingCardButton({ skill, className }: { skill: SkillResponse; className?: string }) {
   const t = useTranslations("RatingCard");
   const [open, setOpen] = useState(false);
+  // 닫힘 모션(D82, 모션 PR 4): 닫아도 나가는 모션이 끝날 때까지 창을 남긴다(Hook은 early return 앞에서 부른다)
+  const exit = useExitPresence(open, { onRequestClose: () => setOpen(false) });
   if (skill.single.length + skill.other.length === 0) {
     return null;
   }
@@ -30,19 +33,29 @@ export function RatingCardButton({ skill, className }: { skill: SkillResponse; c
       >
         {t("open")}
       </button>
-      {open ? <RatingCardDialog skill={skill} onClose={() => setOpen(false)} /> : null}
+      {exit.present ? <RatingCardDialog skill={skill} open={open} dialogProps={exit.dialogProps} onClose={() => setOpen(false)} /> : null}
     </>
   );
 }
 
 type Status = "preparing" | "ready" | "failed";
 
-function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: () => void }) {
+function RatingCardDialog({
+  skill,
+  open,
+  dialogProps,
+  onClose,
+}: {
+  skill: SkillResponse;
+  open: boolean;
+  dialogProps: ExitPresence["dialogProps"];
+  onClose: () => void;
+}) {
   const t = useTranslations();
   const user = useOptionalUser();
   const ref = useRef<HTMLDialogElement>(null);
-  // 이 컴포넌트는 창이 열려 있는 동안에만 그려지므로 항상 "열림"이다. 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
-  useHistoryClose(true, onClose);
+  // 이 컴포넌트는 창이 열려 있는 동안(그리고 닫히는 모션 동안)만 그려진다. open이 false가 되면 모션 중이라도 history 칸을 바로 걷어낸다. 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
+  useHistoryClose(open, onClose);
   const [layout, setLayout] = useState<CardLayout>("landscape");
   const [showName, setShowName] = useState(true);
   // 그린 결과는 "어떤 옵션으로 그렸는지(key)"와 함께 보관한다. 옵션이 바뀌면 key가 달라져 자동으로 "만드는 중"이 된다
@@ -113,6 +126,7 @@ function RatingCardDialog({ skill, onClose }: { skill: SkillResponse; onClose: (
       ref={ref}
       aria-labelledby="rating-card-title"
       onClose={onClose}
+      {...dialogProps}
       onClick={(event) => {
         if (event.target === ref.current) onClose();
       }}

@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { TERM_HELP, type TermKey } from "@/lib/term-help";
 import { useTranslations } from "next-intl";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { EXIT_FAST_MS, useExitPresence } from "@/lib/use-exit-presence";
 
 /**
  * 낯선 용어 옆의 작은 `?` 버튼. 누르면 한두 줄 설명과 설명서 링크가 담긴 말풍선이 열린다.
@@ -21,6 +22,8 @@ export function TermHelp({ term, label }: { term: TermKey; label: string }) {
   const help = TERM_HELP[term];
   // 설명 상자가 열려 있을 때 뒤로 가기를 누르면 상자만 닫힌다(lib/history-layers.ts)
   useHistoryClose(open, () => setOpen(false));
+  // 나타날 때 motion-reveal, 닫힐 때는 반대로 사라진다(D82, 모션 PR 4). 닫는 동안(120ms)만 남기고 그동안은 눌림을 받지 않는다
+  const exit = useExitPresence(open, { ms: EXIT_FAST_MS });
 
   useEffect(() => {
     if (!open) {
@@ -65,12 +68,13 @@ export function TermHelp({ term, label }: { term: TermKey; label: string }) {
           ?
         </span>
       </button>
-      {open ? (
+      {exit.present ? (
         <span
           id={panelId}
+          data-closing={exit.closing ? "true" : undefined}
           role="dialog"
           aria-label={t("helpLabel", { label })}
-          className="absolute left-0 top-full z-30 mt-2 flex w-64 max-w-[80vw] flex-col gap-2 whitespace-normal rounded-xl border border-chip-on-bg bg-table-head p-3 text-left font-sans font-normal shadow-lg"
+          className="motion-reveal absolute left-0 top-full z-30 mt-2 flex w-64 max-w-[80vw] flex-col gap-2 whitespace-normal rounded-xl border border-chip-on-bg bg-table-head p-3 text-left font-sans font-normal shadow-lg"
         >
           <span className="text-[13px] font-bold text-fg">{t(help.title)}</span>
           <span className="flex flex-col gap-1.5 text-xs leading-relaxed text-fg-sub">

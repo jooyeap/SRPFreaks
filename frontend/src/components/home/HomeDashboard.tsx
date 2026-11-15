@@ -123,7 +123,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       <ul className="hidden gap-3 md:grid md:grid-cols-3">
         {SHORTCUTS.map((item) => (
           <li key={item.href}>
-            <Link href={item.href} className="flex h-full flex-col gap-1 rounded-lg border border-line bg-card p-4 hover:bg-table-head">
+            <Link href={item.href} className="motion-press flex h-full flex-col gap-1 rounded-lg border border-line bg-card p-4 hover:bg-table-head">
               <span className="flex items-center gap-2 text-base font-semibold text-fg">
                 <NavIcon name={item.icon} />
                 {t(item.title)}

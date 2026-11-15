@@ -14,6 +14,7 @@ import { useWakeLock } from "@/lib/wake-lock";
 import { fetchRecordsOfChart, recordKeys, recordOriginText, type RecordResponse } from "@/lib/records";
 import { useTranslations } from "next-intl";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence, useHeldWhileOpen } from "@/lib/use-exit-presence";
 
 /** 달성률이 가장 높은 기록(서열표에 보이는 기록). 같으면 목록 앞(더 최근) */
 function bestOf(records: readonly RecordResponse[] | undefined): RecordResponse | null {
@@ -66,6 +67,10 @@ export function RecordDialog({
   }, [onClose]);
   // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
   useHistoryClose(chart !== null, close);
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 창을 남긴다. history·포커스 판단은 계속 open 기준이다
+  const exit = useExitPresence(chart !== null, { onRequestClose: close });
+  // close()가 입력 상태를 비우고 부모가 chart를 비워도, 나가는 동안은 닫히기 직전 화면(폼 또는 결과 카드) 그대로 둔다
+  const shown = useHeldWhileOpen(chart !== null, { active, outcome, nextChart });
   const handleSaved = useCallback(
     (_saved: RecordResponse, result: SaveOutcome) => {
       // 창을 닫지 않고 같은 창에서 결과를 보여 준다. 입력 중인 값은 없다(저장됨)
@@ -101,7 +106,7 @@ export function RecordDialog({
     if (!dialog) {
       return;
     }
-    if (chart && !dialog.open) {
+    if (exit.present && !dialog.open) {
       // 일부 환경(테스트용 가짜 브라우저)에는 showModal이 없어서 open 속성으로 대신한다
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
@@ -110,14 +115,14 @@ export function RecordDialog({
       }
       // 열 때 달성률 칸으로 커서를 둔다(브라우저 기본은 첫 버튼). 폼이 아직 없으면(기록을 불러오는 중) 폼이 직접 맞춘다
       dialog.querySelector<HTMLInputElement>("#achievementRate")?.focus();
-    } else if (!chart && dialog.open) {
+    } else if (!exit.present && dialog.open) {
       if (typeof dialog.close === "function") {
         dialog.close();
       } else {
         dialog.removeAttribute("open");
       }
     }
-  }, [chart]);
+  }, [exit.present]);
 
   return (
     <dialog
@@ -125,6 +130,7 @@ export function RecordDialog({
       aria-labelledby="record-dialog-title"
       // Esc(cancel 이벤트)와 닫힘(close 이벤트) 모두 부모 상태를 맞춘다
       onClose={close}
+      {...exit.dialogProps}
       // 창 바깥(::backdrop) 클릭은 dialog 자신이 target이 된다
       onClick={(event) => {
         if (event.target === ref.current && !dirtyRef.current) {
@@ -133,15 +139,15 @@ export function RecordDialog({
       }}
       className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-[20px] border border-line bg-card px-5 pb-5 pt-2.5 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
     >
-      {active ? (
+      {exit.present && shown.active ? (
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
-          {outcome ? (
-            <SaveResultCard outcome={outcome} onClose={close} onNext={nextChart ? goNext : undefined} />
+          {shown.outcome ? (
+            <SaveResultCard outcome={shown.outcome} onClose={close} onNext={shown.nextChart ? goNext : undefined} />
           ) : (
             <>
-              <RecentCharts currentChartId={active.songDifficultyId} onPick={switchTo} />
-              <RecordDialogBody key={active.songDifficultyId} chart={active} onClose={close} onSaved={handleSaved} onDirtyChange={onDirtyChange} />
+              <RecentCharts currentChartId={shown.active.songDifficultyId} onPick={switchTo} />
+              <RecordDialogBody key={shown.active.songDifficultyId} chart={shown.active} onClose={close} onSaved={handleSaved} onDirtyChange={onDirtyChange} />
             </>
           )}
         </>

@@ -24,7 +24,8 @@ function stubViewport(desktop: boolean) {
   vi.stubGlobal(
     "matchMedia",
     vi.fn((query: string) => ({
-      matches: desktop && query === DESKTOP_QUERY,
+      // 움직임 줄이기는 켠 것으로 둔다: 닫힘 모션(D82)을 기다리지 않고 창이 바로 사라진다
+      matches: (desktop && query === DESKTOP_QUERY) || query === "(prefers-reduced-motion: reduce)",
       media: query,
       addEventListener: vi.fn(),
       removeEventListener: vi.fn(),

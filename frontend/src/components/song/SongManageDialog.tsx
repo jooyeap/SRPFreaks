@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { SongDeleteControl } from "@/components/song/SongDeleteControl";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence, useHeldWhileOpen } from "@/lib/use-exit-presence";
 
 const ROW = "min-h-11 w-full rounded-lg border border-ctl px-3 py-2 text-left text-sm text-fg hover:bg-table-head";
 
@@ -50,6 +51,20 @@ export function SongManageDialog({
   const ref = useRef<HTMLDialogElement>(null);
   // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
   useHistoryClose(open, onClose);
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 창을 남긴다. history·포커스 판단은 계속 open 기준이다
+  const exit = useExitPresence(open, { onRequestClose: onClose });
+  // 부모가 닫으면서 값을 비워도(채보 없음 등) 나가는 동안은 열려 있던 모양 그대로 둔다. 함수는 매 렌더 새로 만들어지므로 붙잡지 않고(무한 렌더가 된다) 있는지 여부만 붙잡는다
+  const held = useHeldWhileOpen(open, {
+    tableEditLabel,
+    hasEditChart: onEditChart !== null,
+    hasAddChart: onAddChart !== null,
+    hasEditJacket: !!onEditJacket,
+    songId,
+    songTitle,
+    chartId,
+    chartLabel,
+  });
+  const noop = () => {};
   const titleId = useId();
 
   // 다른 창들과 같은 방식: 열림 상태를 <dialog>의 showModal/close에 맞춘다
@@ -58,20 +73,20 @@ export function SongManageDialog({
     if (!dialog) {
       return;
     }
-    if (open && !dialog.open) {
+    if (exit.present && !dialog.open) {
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
       } else {
         dialog.setAttribute("open", "");
       }
-    } else if (!open && dialog.open) {
+    } else if (!exit.present && dialog.open) {
       if (typeof dialog.close === "function") {
         dialog.close();
       } else {
         dialog.removeAttribute("open");
       }
     }
-  }, [open]);
+  }, [exit.present]);
 
   // 수정 창을 열기 전에 이 창부터 닫는다
   const pick = (action: () => void) => () => {
@@ -84,9 +99,10 @@ export function SongManageDialog({
       ref={ref}
       aria-labelledby={titleId}
       onClose={onClose}
+      {...exit.dialogProps}
       className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-[20px] border border-line bg-card px-5 pb-5 pt-2.5 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
     >
-      {open ? (
+      {exit.present ? (
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
           <h2 id={titleId} className="mb-3 text-lg font-extrabold">
@@ -95,26 +111,26 @@ export function SongManageDialog({
           <div className="flex flex-col gap-4">
             <section className="flex flex-col gap-2" aria-label={t("Song.manageEditHeading")}>
               <h3 className="text-xs font-bold text-fg-sub">{t("Song.manageEditHeading")}</h3>
-              {tableEditLabel !== null ? (
+              {held.tableEditLabel !== null ? (
                 <button type="button" onClick={pick(onEditTable)} className={ROW}>
-                  {tableEditLabel}
+                  {held.tableEditLabel}
                 </button>
               ) : null}
               <button type="button" onClick={pick(onEditSong)} className={ROW}>
                 {t("Song.editSong")}
               </button>
-              {onAddChart ? (
-                <button type="button" onClick={pick(onAddChart)} className={ROW}>
+              {held.hasAddChart ? (
+                <button type="button" onClick={pick(onAddChart ?? noop)} className={ROW}>
                   {t("Song.addChart")}
                 </button>
               ) : null}
-              {onEditChart ? (
-                <button type="button" onClick={pick(onEditChart)} className={ROW}>
+              {held.hasEditChart ? (
+                <button type="button" onClick={pick(onEditChart ?? noop)} className={ROW}>
                   {t("Song.editChart")}
                 </button>
               ) : null}
-              {onEditJacket ? (
-                <button type="button" onClick={pick(onEditJacket)} className={ROW}>
+              {held.hasEditJacket ? (
+                <button type="button" onClick={pick(onEditJacket ?? noop)} className={ROW}>
                   {t("Song.editJacket")}
                 </button>
               ) : null}
@@ -122,10 +138,10 @@ export function SongManageDialog({
             <section className="flex flex-col gap-2" aria-label={t("Song.manageDeleteHeading")}>
               <h3 className="text-xs font-bold text-fg-sub">{t("Song.manageDeleteHeading")}</h3>
               <SongDeleteControl
-                songId={songId}
-                songTitle={songTitle}
-                chartId={chartId}
-                chartLabel={chartLabel}
+                songId={held.songId}
+                songTitle={held.songTitle}
+                chartId={held.chartId}
+                chartLabel={held.chartLabel}
                 onDeleted={(target) => {
                   onClose();
                   onDeleted(target);

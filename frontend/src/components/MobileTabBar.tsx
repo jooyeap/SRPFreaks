@@ -12,6 +12,7 @@ import { NavIcon } from "@/components/NavIcon";
 import { MORE_ITEMS, SONG_PATHS, TAB_ITEMS } from "@/lib/nav";
 import { useSongHomeHref } from "@/lib/song-tab";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { EXIT_SHEET_MS, useExitPresence } from "@/lib/use-exit-presence";
 
 const TAB_CLASS = "flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[11px]";
 
@@ -32,6 +33,9 @@ export function MobileTabBar() {
   const [moreOpen, setMoreOpen] = useState(false);
   // 더보기 시트가 열려 있을 때 뒤로 가기를 누르면 시트만 닫힌다. 시트 안·탭바 링크로 이동할 때는 링크 클릭을 감지해 history를 되돌리지 않는다(lib/history-layers.ts)
   useHistoryClose(moreOpen, () => setMoreOpen(false));
+  // 닫힘 모션(D82, 모션 PR 4): 시트가 아래로 내려가는 동안(240ms)만 남긴다. 닫는 중에는 눌림을 받지 않는다(pointer-events-none)
+  const exit = useExitPresence(moreOpen, { ms: EXIT_SHEET_MS });
+  const closingAttr = exit.closing ? "true" : undefined;
 
   // Esc로 닫는다. 화면을 이동하면(pathname 변경) 시트 안 링크 클릭 핸들러가 닫아 준다.
   useEffect(() => {
@@ -53,12 +57,13 @@ export function MobileTabBar() {
 
   return (
     <>
-      {moreOpen ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
+      {exit.present ? (
+        <div className={`fixed inset-0 z-40 lg:hidden${exit.closing ? " pointer-events-none" : ""}`}>
           {/* 바깥을 누르면 닫는다. 키보드 사용자는 Esc나 더보기 버튼을 쓴다 */}
-          <div className="motion-fade absolute inset-0 bg-black/55" onClick={() => setMoreOpen(false)} aria-hidden="true" />
+          <div data-closing={closingAttr} className="motion-fade absolute inset-0 bg-black/55" onClick={() => setMoreOpen(false)} aria-hidden="true" />
           <section
             aria-label={t("more")}
+            data-closing={closingAttr}
             className="motion-sheet absolute inset-x-0 bottom-[var(--tabbar-h)] max-h-[calc(100dvh-var(--tabbar-h)-3rem)] overflow-y-auto rounded-t-2xl border border-b-0 border-line bg-card px-4 pb-4 pt-3"
           >
             <h2 className="px-1 pb-1 text-[13px] font-bold text-fg-dim">{t("more")}</h2>
@@ -68,7 +73,7 @@ export function MobileTabBar() {
                   <Link
                     href={item.href}
                     onClick={() => setMoreOpen(false)}
-                    className="flex min-h-[52px] items-center gap-3 px-1 text-[15px] text-fg"
+                    className="motion-press flex min-h-[52px] items-center gap-3 px-1 text-[15px] text-fg"
                   >
                     <NavIcon name={item.icon} className="h-5 w-5 shrink-0 text-fg-sub" />
                     <span className="flex-1">{t(item.label)}</span>

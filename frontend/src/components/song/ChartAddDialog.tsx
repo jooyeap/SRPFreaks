@@ -21,6 +21,7 @@ import {
 } from "@/lib/song-admin";
 import { PATTERN_CHOICES, RECOMMEND_CHOICES } from "@/lib/table-entry-admin";
 import { useHistoryClose } from "@/lib/use-history-close";
+import { useExitPresence } from "@/lib/use-exit-presence";
 
 const FIELD = "rounded-[10px] border border-line bg-card px-3 py-2 text-fg";
 
@@ -47,6 +48,8 @@ export function ChartAddDialog({
   const ref = useRef<HTMLDialogElement>(null);
   // 뒤로 가기를 누르면 이 창만 닫힌다(lib/history-layers.ts)
   useHistoryClose(open, onClose);
+  // 닫힘 모션(D82, 모션 PR 4): open이 false가 된 뒤에도 나가는 모션이 끝날 때까지 창을 남긴다. history·포커스 판단은 계속 open 기준이다
+  const exit = useExitPresence(open, { onRequestClose: onClose });
   const titleId = useId();
 
   useEffect(() => {
@@ -54,29 +57,30 @@ export function ChartAddDialog({
     if (!dialog) {
       return;
     }
-    if (open && !dialog.open) {
+    if (exit.present && !dialog.open) {
       if (typeof dialog.showModal === "function") {
         dialog.showModal();
       } else {
         dialog.setAttribute("open", "");
       }
-    } else if (!open && dialog.open) {
+    } else if (!exit.present && dialog.open) {
       if (typeof dialog.close === "function") {
         dialog.close();
       } else {
         dialog.removeAttribute("open");
       }
     }
-  }, [open]);
+  }, [exit.present]);
 
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
       onClose={onClose}
+      {...exit.dialogProps}
       className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[90vh] w-full max-w-none overflow-y-auto rounded-t-[20px] border border-line bg-card px-5 pb-5 pt-2.5 text-fg backdrop:bg-black/60 md:inset-0 md:m-auto md:max-w-md md:rounded-xl"
     >
-      {open ? (
+      {exit.present ? (
         <>
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-chip-line md:hidden" aria-hidden="true" />
           <h2 id={titleId} className="mb-3 text-lg font-extrabold">
