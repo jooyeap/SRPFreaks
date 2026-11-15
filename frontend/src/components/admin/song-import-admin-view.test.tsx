@@ -57,6 +57,23 @@ describe("공식 곡 목록 갱신 화면", () => {
     expect(screen.getByRole("link", { name: "관리로" })).toHaveAttribute("href", "/admin");
   });
 
+  it("사용 방법은 3단계 카드로 나뉘고, 안내 문장은 그대로이며 복사 버튼은 1단계에 있다", () => {
+    renderView();
+    const guide = within(screen.getByRole("region", { name: "사용 방법" }));
+    const steps = guide.getAllByRole("listitem");
+    expect(steps).toHaveLength(3);
+    expect(within(steps[0]).getByRole("heading", { name: "북마크 만들기" })).toBeInTheDocument();
+    expect(within(steps[1]).getByRole("heading", { name: "곡 목록 페이지에서 누르기" })).toBeInTheDocument();
+    expect(within(steps[2]).getByRole("heading", { name: "미리보기 후 반영" })).toBeInTheDocument();
+    // 문장 내용은 바꾸지 않았다
+    expect(within(steps[0]).getByText("아래 이름의 링크를 북마크 바로 끌어 놓거나, 주소 복사 버튼으로 북마크를 만듭니다.")).toBeInTheDocument();
+    expect(within(steps[1]).getByText(/이어뮤즈먼트의 곡 목록 페이지를 연 상태에서/)).toBeInTheDocument();
+    expect(within(steps[2]).getByText(/이 창으로 값이 넘어오면/)).toBeInTheDocument();
+    expect(within(steps[0]).getByRole("button", { name: "북마크 주소 복사" })).toBeInTheDocument();
+    expect(within(steps[0]).getByRole("button", { name: "주소창용 코드 복사" })).toBeInTheDocument();
+    expect(guide.getByText(/곡 정보를 읽는 것은 이 브라우저뿐/)).toBeInTheDocument();
+  });
+
   it("주소 조각으로 받은 곡을 세고 주소에서 지운다", async () => {
     window.history.replaceState(null, "", `/admin/song-import${FRAGMENT_PREFIX}${encodeURIComponent(JSON.stringify({ songs: [song("A"), song("B")] }))}`);
     renderView();
