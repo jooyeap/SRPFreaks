@@ -45,7 +45,10 @@ describe("NotificationBell", () => {
         content: [
           base,
           tier,
-          { ...base, id: 2, actorUserId: 8, actorNickname: "ASTRA", bundled: true, songCount: 3, title: "KAISER PHOENIX", read: true },
+          {
+            ...base, id: 2, actorUserId: 8, actorNickname: "ASTRA", bundled: true, songCount: 3, title: "KAISER PHOENIX", read: true,
+            previewTitles: ["KAISER PHOENIX", "SONG B", "SONG C"], missingCount: 0,
+          },
           { ...tier, id: 2, title: "Bundle Song", bundled: true, songCount: 6, read: true },
           { ...tier, id: 3, title: "Undecided Song", beforeTier: null, beforeScore: null, scoreDiff: null, read: true },
         ],
@@ -72,10 +75,14 @@ describe("NotificationBell", () => {
     fireEvent.click(bell);
     const dialog = await screen.findByRole("dialog", { name: "알림" });
     expect(await screen.findByText(/MEGALOVANIA/)).toBeInTheDocument();
-    expect(dialog).toHaveTextContent("Rumi님이 MEGALOVANIA (Bass MAS) 곡을 역전했습니다.");
-    expect(dialog).toHaveTextContent("Rumi 96.40 · 내 기록 96.10");
-    expect(dialog).toHaveTextContent("ASTRA님이 3곡을 역전했습니다.");
-    expect(dialog).toHaveTextContent("KAISER PHOENIX 외 2곡");
+    // 줄 구조(D86): 칩 → 곡명 → 난이도 칩 → 점수 칩. 긴 문장 대신 곡명이 먼저 보인다
+    const row = screen.getByRole("button", { name: /MEGALOVANIA/ });
+    expect(row).toHaveTextContent(/^라이벌MEGALOVANIABass MASRumi 96\.40내 96\.10−0\.30/);
+    expect(row).not.toHaveTextContent("역전했습니다");
+    // 묶음 줄: 곡명 미리보기(최대 3개) + 곡 목록 보기
+    expect(dialog).toHaveTextContent("ASTRA님이 3곡을 역전했습니다");
+    expect(dialog).toHaveTextContent("KAISER PHOENIX · SONG B · SONG C");
+    expect(dialog).toHaveTextContent("곡 목록 보기 ›");
     expect(dialog).toHaveTextContent("새 알림");
     expect(dialog).toHaveTextContent("알림은 30일 동안 보관됩니다.");
   });
@@ -99,13 +106,15 @@ describe("NotificationBell", () => {
     const tierRow = await screen.findByRole("button", { name: /Cosmic Cat/ });
 
     expect(tierRow).toHaveTextContent("서열표");
-    expect(tierRow).toHaveTextContent("Cosmic Cat (Guitar EXT) 기준 난이도 6.5 → 7.0");
-    expect(tierRow).toHaveTextContent("내 점수 322.67 → 362.67 (+40.00)");
+    expect(tierRow).toHaveTextContent(/^서열표Cosmic CatGuitar EXT기준 6\.5 → 7\.0점수 \+40\.00/);
     expect(dialog).toHaveTextContent("라이벌");
-    expect(dialog).toHaveTextContent("6채보의 기준 난이도가 바뀌었습니다.");
+    // 서열표 알림이 이어지는 곳에는 소제목이 한 번 붙는다(라이벌과 구역을 나눈다)
+    expect(screen.getAllByRole("heading", { name: "서열표" })).toHaveLength(2);
+    expect(dialog).toHaveTextContent("6채보의 기준 난이도가 바뀌었습니다");
     expect(dialog).toHaveTextContent("Bundle Song 외 5채보");
-    expect(dialog).toHaveTextContent("Undecided Song (Guitar EXT) 기준 난이도 미정 → 7.0");
-    expect(dialog).toHaveTextContent("내 점수 미정 → 362.67");
+    expect(dialog).toHaveTextContent("Undecided Song");
+    expect(dialog).toHaveTextContent("기준 미정 → 7.0");
+    expect(dialog).toHaveTextContent("점수 미정 → 362.67");
   });
 
   it("서열표 알림을 누르면 서열표용 경로로 읽음 처리하고 곡 상세로, 묶음은 서열표 변경 탭으로 간다", async () => {
@@ -224,8 +233,8 @@ describe("NotificationBell", () => {
       await openPanel("알림");
       expect(await screen.findByRole("button", { name: /Rumi님 · 5곡/ })).toBeInTheDocument();
       // 한 줄짜리 묶음(Mira, 뒤쪽 Rumi)은 묶지 않고 예전 모양 그대로 보인다
-      expect(screen.getByRole("button", { name: /Mira님이 SONG-2/ })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Rumi님이 SONG-1/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /SONG-2.*Mira 96\.40/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /SONG-1.*Rumi 96\.40/ })).toBeInTheDocument();
     });
 
     it("서열표 알림은 묶지 않고, 같은 사람의 라이벌 알림 사이에 끼면 연달아가 끊겨 따로 묶는다", async () => {
@@ -266,6 +275,146 @@ describe("NotificationBell", () => {
       fireEvent.click(await screen.findByRole("button", { name: /Rumi님 · 3곡/ }));
       expect(push).not.toHaveBeenCalled();
       expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/read"))).toBe(false);
+    });
+  });
+
+  describe("라이벌 묶음 알림의 곡 목록 (D86)", () => {
+    const bundle: RivalNotificationResponse = {
+      ...base, id: 5, title: "XIII", bundled: true, songCount: 3, previewTitles: ["XIII", "星のカケラ", "Dragon Chaser"], missingCount: 0,
+    };
+    const songRow = (n: number, extra: Partial<{ part: "GUITAR" | "BASS"; difficulty: "MASTER" | "EXTREME"; actorRate: number; myRate: number }> = {}) => ({
+      songDifficultyId: 100 + n, title: `BUNDLED-${n}`, part: "GUITAR" as const, difficulty: "MASTER" as const, actorRate: 96.1, myRate: 95.2, ...extra,
+    });
+    let songsHandler: (url: string) => Response;
+    function open(content: NotificationResponse[]) {
+      fetchMock.mockImplementation(async (input) => {
+        const url = String(input);
+        if (url.includes("/unread-count")) return json({ count: content.filter((c) => !c.read).length });
+        if (url.includes("/notifications/rival/")) return songsHandler(url);
+        if (url.includes("/notifications/")) return new Response(null, { status: 204 });
+        return json({ content, page: 0, size: 20, totalElements: content.length, totalPages: 1 });
+      });
+      renderWith(<NotificationBell />);
+    }
+    async function openBundle() {
+      fireEvent.click(await screen.findByRole("button", { name: /알림 \d+개/ }));
+      return fireEvent.click(await screen.findByRole("button", { name: /3곡을 역전했습니다/ }));
+    }
+
+    it("묶음 줄을 누르면 읽음 처리하고, 이동하지 않고 곡별 상대 / 내 / 차이 화면을 보인다", async () => {
+      songsHandler = () => json({
+        actorUserId: 7, actorNickname: "Rumi", songCount: 3, missingCount: 0,
+        songs: { content: [songRow(1), songRow(2, { part: "BASS", difficulty: "EXTREME", actorRate: 91.4, myRate: 90.8 }), songRow(3, { actorRate: 88.05, myRate: 87.9 })], page: 0, size: 20, totalElements: 3, totalPages: 1 },
+      });
+      open([bundle]);
+      await openBundle();
+
+      const dialog = await screen.findByRole("dialog", { name: "알림" });
+      expect(await screen.findByText("BUNDLED-1")).toBeInTheDocument();
+      expect(dialog).toHaveTextContent("Rumi님이 역전한 3곡");
+      expect(dialog).toHaveTextContent("Guitar MAS");
+      expect(dialog).toHaveTextContent("Bass EXT");
+      expect(dialog).toHaveTextContent("상대 96.10");
+      expect(dialog).toHaveTextContent("내 95.20");
+      expect(dialog).toHaveTextContent("−0.90");   // 부호가 글자로 보인다(색만 쓰지 않는다)
+      expect(dialog).toHaveTextContent("−0.60");
+      expect(dialog).toHaveTextContent("−0.15");
+      expect(dialog).not.toHaveTextContent("이전에 묶인");
+      expect(push).not.toHaveBeenCalled();
+      await waitFor(() => expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/notifications/5/read"))).toBe(true));
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/notifications/rival/5/songs"))).toBe(true);
+    });
+
+    it("되돌아가기로 알림 목록에 돌아가고, 아래 버튼은 그 사람과의 곡별 승패로 보낸다", async () => {
+      songsHandler = () => json({
+        actorUserId: 7, actorNickname: "Rumi", songCount: 3, missingCount: 0,
+        songs: { content: [songRow(1)], page: 0, size: 20, totalElements: 1, totalPages: 1 },
+      });
+      open([bundle]);
+      await openBundle();
+      await screen.findByText("BUNDLED-1");
+
+      fireEvent.click(screen.getByRole("button", { name: "알림 목록으로 돌아가기" }));
+      expect(await screen.findByRole("button", { name: /3곡을 역전했습니다/ })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /3곡을 역전했습니다/ }));
+      fireEvent.click(await screen.findByRole("button", { name: "Rumi님과 곡별 승패 보기 ›" }));
+      await waitFor(() => expect(push).toHaveBeenCalledWith("/players/7/compare?view=charts"));
+    });
+
+    it("예전에 묶여 곡 목록이 없는 곡이 있으면 안내한다", async () => {
+      songsHandler = () => json({
+        actorUserId: 7, actorNickname: "Rumi", songCount: 6, missingCount: 5,
+        songs: { content: [songRow(1)], page: 0, size: 20, totalElements: 1, totalPages: 1 },
+      });
+      open([{ ...bundle, songCount: 6, previewTitles: ["XIII"], missingCount: 5 }]);
+      fireEvent.click(await screen.findByRole("button", { name: /알림 1개/ }));
+      // 옛 묶음은 미리보기가 첫 곡뿐이라 `첫 곡 외 N곡`으로 보인다
+      const row = await screen.findByRole("button", { name: /6곡을 역전했습니다/ });
+      expect(row).toHaveTextContent("XIII 외 5곡");
+      fireEvent.click(row);
+      expect(await screen.findByText("이전에 묶인 5곡은 목록이 없습니다.")).toBeInTheDocument();
+    });
+
+    it("곡이 20개를 넘으면 `곡 더 보기`로 다음 쪽을 이어 받는다", async () => {
+      songsHandler = (url) => {
+        const page = new URL(url, "http://x").searchParams.get("page") === "1" ? 1 : 0;
+        return json({
+          actorUserId: 7, actorNickname: "Rumi", songCount: 22, missingCount: 0,
+          songs: { content: page === 0 ? [songRow(1)] : [songRow(21)], page, size: 20, totalElements: 22, totalPages: 2 },
+        });
+      };
+      open([{ ...bundle, songCount: 22 }]);
+      fireEvent.click(await screen.findByRole("button", { name: /알림 1개/ }));
+      fireEvent.click(await screen.findByRole("button", { name: /22곡을 역전했습니다/ }));
+      await screen.findByText("BUNDLED-1");
+      fireEvent.click(screen.getByRole("button", { name: "곡 더 보기" }));
+      expect(await screen.findByText("BUNDLED-21")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "곡 더 보기" })).not.toBeInTheDocument();
+    });
+
+    it("곡 목록을 못 불러오면 오류를 알리고, 되돌아가기·비교 버튼은 계속 쓸 수 있다", async () => {
+      songsHandler = () => json({ message: "x" }, 500);
+      open([bundle]);
+      await openBundle();
+      expect(await screen.findByRole("alert")).toHaveTextContent("알림을 불러오지 못했습니다.");
+      expect(screen.getByRole("button", { name: "알림 목록으로 돌아가기" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Rumi님과 곡별 승패 보기 ›" })).toBeInTheDocument();
+    });
+
+    it("서열표 묶음은 곡 목록 화면 없이 서열표 변경 탭으로 간다", async () => {
+      songsHandler = () => json({}, 500);
+      open([{ ...tier, id: 9, title: "T-BUNDLE", bundled: true, songCount: 4 }]);
+      fireEvent.click(await screen.findByRole("button", { name: /알림 1개/ }));
+      fireEvent.click(await screen.findByRole("button", { name: /4채보/ }));
+      await waitFor(() => expect(push).toHaveBeenCalledWith("/notices#tier-changes"));
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("/notifications/rival/"))).toBe(false);
+    });
+  });
+
+  describe("안 읽은 줄 표시 (D86)", () => {
+    it("안 읽은 줄은 배경색과 큰 점과 `새 알림` 글자가 있고, 읽은 줄은 빈 점이다", async () => {
+      fetchMock.mockImplementation(async (input) => {
+        const url = String(input);
+        if (url.includes("/unread-count")) return json({ count: 1 });
+        return json({
+          content: [{ ...base, id: 1, title: "FRESH-ONE" }, { ...base, id: 2, actorUserId: 9, actorNickname: "Mira", title: "OLD-ONE", read: true }],
+          page: 0, size: 20, totalElements: 2, totalPages: 1,
+        });
+      });
+      renderWith(<NotificationBell />);
+      fireEvent.click(await screen.findByRole("button", { name: "알림 1개" }));
+      const unread = await screen.findByRole("button", { name: /FRESH-ONE/ });
+      const read = screen.getByRole("button", { name: /OLD-ONE/ });
+
+      expect(unread).toHaveClass("bg-check-bg");
+      expect(unread).toHaveTextContent("새 알림");
+      expect(unread.querySelector("span[aria-hidden]")).toHaveClass("size-3", "bg-check-line");
+      expect(read).not.toHaveClass("bg-check-bg");
+      expect(read).not.toHaveTextContent("새 알림");
+      expect(read.querySelector("span[aria-hidden]")).toHaveClass("border");
+      // 누르는 영역은 44px 이상
+      expect(unread).toHaveClass("min-h-11");
     });
   });
 });

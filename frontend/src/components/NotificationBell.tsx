@@ -3,14 +3,15 @@
 import { tierArrivalHref } from "@/lib/tier-arrival";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import type { NotificationResponse, RivalNotificationResponse, TierNotificationResponse } from "@/lib/api-types";
-import { difficultyLabel, formatRate, formatScore, formatTier, partLabel } from "@/lib/format";
+import { formatRate, formatScore, formatTier } from "@/lib/format";
 import {
   NOTIFICATION_POLL_MS,
   badgeText,
   fetchNotifications,
+  formatScoreDiff as formatSignedDiff,
   fetchUnreadCount,
   markAllNotificationsRead,
   markNotificationRead,
@@ -27,6 +28,8 @@ import {
 } from "@/lib/notification-groups";
 import { useHistoryClose } from "@/lib/use-history-close";
 import { EXIT_SHEET_MS, useExitPresence } from "@/lib/use-exit-presence";
+import { ChartChip, DiffChip, ScoreChip, TextChip } from "@/components/notification/NotificationParts";
+import { RivalBundleDetail } from "@/components/notification/RivalBundleDetail";
 
 function BellIcon() {
   return (
@@ -41,7 +44,9 @@ function BellIcon() {
  * 헤더의 알림 종(D56, D61). 라이벌 역전 알림과 서열표 변경 알림이 한 목록에 시간순으로 섞이고, 줄 앞 칩(`라이벌`/`서열표`)으로 구분한다. 로그인했을 때만 그린다. 안 읽은 개수는 1분마다, 창에 다시 들어올 때 다시 읽는다
  * (서버는 이때 "10분이 지난 알림"을 처리하므로 따로 주기 작업이 없다).
  * 모바일(lg 미만)은 아래에서 올라오는 시트, 데스크톱은 종 아래 펼침. Esc·바깥 누르기로 닫는다.
- * 안 읽은 줄은 배경 + 점 + `새 알림` 글자로 보인다(색만 쓰지 않는다).
+ * 안 읽은 줄은 배경 + 큰 파란 점 + `새 알림` 글자로 보인다(색만 쓰지 않는다).
+ * 줄 구조(D86): 칩(`라이벌`/`서열표`) → 곡명(굵게) → 난이도 칩 → 점수 칩. 라이벌 묶음 줄은 곡명 미리보기와 `곡 목록 보기`를 두고,
+ * 누르면 창 안에서 묶음의 곡 목록 화면(RivalBundleDetail)으로 바뀐다.
  * 창은 헤더 안에 있어서 헤더의 `whitespace-nowrap`을 물려받는다. 그대로 두면 알림 문장이 한 줄로 이어져 잘리고 가로 스크롤이 생기므로
  * 창에 `whitespace-normal`을 두고(TermHelp와 같은 이유), 띄어쓰기 없는 긴 글자도 `overflow-wrap:anywhere`로 줄바꿈한다.
  */
@@ -58,6 +63,8 @@ function Bell({ viewerId }: { viewerId: number }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  // 라이벌 묶음 알림의 곡 목록 화면(D86). null이면 알림 목록. 창을 다시 열면 목록부터 보인다(종 버튼에서 비운다)
+  const [detail, setDetail] = useState<RivalNotificationResponse | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   // 뒤로 가기를 누르면 알림 창만 닫힌다(lib/history-layers.ts)
@@ -112,11 +119,20 @@ function Bell({ viewerId }: { viewerId: number }) {
 
   const n = count.data?.count ?? 0;
   const badge = badgeText(n);
-  const go = (item: NotificationResponse) => {
-    if (!item.read) readOne.mutate(item);
+  // 알림 창을 닫고 알림이 가리키는 곳으로 간다
+  const leave = (item: NotificationResponse) => {
     setOpen(false);
     // 창이 쌓아 둔 history 칸을 먼저 걷어낸 뒤에 이동한다(바로 push하면 칸 정리와 겹쳐 새 화면이 걷히거나 칸이 하나 남는다. lib/history-layers.ts)
     runAfterHistorySettled(() => router.push(notificationHref(item)));
+  };
+  const go = (item: NotificationResponse) => {
+    if (!item.read) readOne.mutate(item);
+    if (item.kind === "RIVAL" && isBundle(item)) {
+      // 묶음 줄은 이동하지 않고 곡 목록 화면을 연다. 그 사람과의 곡별 승패는 그 화면 아래 버튼으로 간다
+      setDetail(item);
+      return;
+    }
+    leave(item);
   };
 
   return (
@@ -127,7 +143,10 @@ function Bell({ viewerId }: { viewerId: number }) {
         aria-label={badge ? t("bellAriaCount", { n }) : t("bellAria")}
         aria-expanded={open}
         aria-haspopup="dialog"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setDetail(null);
+          setOpen((v) => !v);
+        }}
         className="relative inline-flex size-9 items-center justify-center rounded-lg border border-ctl text-fg-sub hover:text-fg"
       >
         <BellIcon />
@@ -148,35 +167,59 @@ function Bell({ viewerId }: { viewerId: number }) {
             className="motion-sheet fixed inset-x-0 bottom-0 z-50 flex max-h-[80svh] flex-col gap-2 whitespace-normal rounded-t-2xl border-t border-line bg-card p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:absolute lg:inset-x-auto lg:bottom-auto lg:right-0 lg:top-full lg:mt-2 lg:max-h-[70vh] lg:w-[380px] lg:rounded-2xl lg:border lg:p-3 lg:shadow-xl"
           >
             <span aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-chip-line lg:hidden" />
-            <div className="flex items-center gap-2">
-              <b className="flex-1 text-base text-fg">{t("title")}</b>
-              <button
-                type="button"
-                disabled={readAll.isPending || n === 0}
-                onClick={() => readAll.mutate()}
-                className="min-h-9 rounded-lg border border-ctl px-3 text-xs text-fg-sub hover:text-fg disabled:opacity-50"
-              >
-                {t("readAll")}
-              </button>
-            </div>
-            <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto overflow-x-hidden">
-              {list.isPending ? (
-                <li className="p-3 text-sm text-fg-sub">{t("loading")}</li>
-              ) : list.isError ? (
-                <li role="alert" className="p-3 text-sm text-fg">{t("failed")}</li>
-              ) : list.data.content.length === 0 ? (
-                <li className="p-3 text-sm text-fg-sub">{t("empty")}</li>
-              ) : (
-                groupNotifications(list.data.content).map((group) =>
-                  group.items.length === 1 ? (
-                    // 한 줄뿐이면 묶지 않고 예전 모양 그대로 보인다(접을 것이 없다). 서열표 알림(D61)은 늘 이 경우다
-                    <NotificationItem key={`${group.items[0].kind}-${group.items[0].id}`} item={group.items[0]} now={list.dataUpdatedAt} onOpen={() => go(group.items[0])} />
+            {detail ? (
+              <RivalBundleDetail
+                viewerId={viewerId}
+                item={detail}
+                nickname={detail.actorNickname ?? t("unknown")}
+                onBack={() => setDetail(null)}
+                onCompare={() => leave(detail)}
+              />
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <b className="flex-1 text-base text-fg">{t("title")}</b>
+                  <button
+                    type="button"
+                    disabled={readAll.isPending || n === 0}
+                    onClick={() => readAll.mutate()}
+                    className="min-h-9 rounded-lg border border-ctl px-3 text-xs text-fg-sub hover:text-fg disabled:opacity-50"
+                  >
+                    {t("readAll")}
+                  </button>
+                </div>
+                <ul className="flex min-h-0 flex-col gap-1 overflow-y-auto overflow-x-hidden">
+                  {list.isPending ? (
+                    <li className="p-3 text-sm text-fg-sub">{t("loading")}</li>
+                  ) : list.isError ? (
+                    <li role="alert" className="p-3 text-sm text-fg">{t("failed")}</li>
+                  ) : list.data.content.length === 0 ? (
+                    <li className="p-3 text-sm text-fg-sub">{t("empty")}</li>
                   ) : (
-                    <NotificationGroupView key={`${group.items[0].kind}-${group.key}`} group={group} now={list.dataUpdatedAt} onOpen={go} />
-                  ),
-                )
-              )}
-            </ul>
+                    groupNotifications(list.data.content).map((group, i, groups) => {
+                      const first = group.items[0];
+                      // 서열표 알림이 이어지는 곳 맨 앞에 소제목을 둔다(시간 순서는 그대로, 라이벌과 구역만 나눈다)
+                      const sectionHead = first.kind === "TIER" && (i === 0 || groups[i - 1].items[0].kind !== "TIER");
+                      return (
+                        <Fragment key={`${first.kind}-${group.key}`}>
+                          {sectionHead ? (
+                            <li>
+                              <h3 className="px-3 pb-0.5 pt-2 text-xs font-bold text-fg-sub">{t("tierSection")}</h3>
+                            </li>
+                          ) : null}
+                          {group.items.length === 1 ? (
+                            // 한 줄뿐이면 묶지 않는다(접을 것이 없다). 머리 줄이 없어 줄에 상대 닉네임을 같이 보인다. 서열표 알림(D61)은 늘 이 경우다
+                            <NotificationItem item={first} now={list.dataUpdatedAt} onOpen={() => go(first)} lone />
+                          ) : (
+                            <NotificationGroupView group={group} now={list.dataUpdatedAt} onOpen={go} />
+                          )}
+                        </Fragment>
+                      );
+                    })
+                  )}
+                </ul>
+              </>
+            )}
             <p className="text-center text-xs text-fg-dim">{t("keep")}</p>
           </div>
         </>
@@ -253,33 +296,38 @@ function NotificationGroupView({ group, now, onOpen }: { group: NotificationGrou
 }
 
 /**
+ * 알림 한 줄(D86, 시안 ②). 읽는 순서: 칩(`라이벌`/`서열표`) → 곡명(굵게) → 난이도 칩 → 점수 칩 → 시각.
+ * 안 읽은 줄은 배경(check-bg) + 큰 파란 점 + `새 알림` 글자(묶음 안에서는 머리 줄이 `새 알림 N`을 보이므로 화면 읽기용 글자만)로 보인다.
+ * 읽은 줄은 빈 점. 줄 전체가 하나의 버튼이고 높이는 44px 이상이다. 곡명·닉네임이 길면 잘라 내지 않고 줄바꿈한다(break-keep + overflow-wrap).
+ * `lone` = 묶음의 머리 줄 없이 혼자 보이는 줄이다. 머리 줄이 닉네임을 알려 주지 못하므로 상대 점수 칩에 닉네임을 쓰고 `새 알림` 글자를 보인다.
  * `n분 전`의 기준 시각(now)은 목록을 받아 온 시각(dataUpdatedAt)을 쓴다. 그리는 중에 Date.now()를 부르면
  * 그릴 때마다 값이 달라지는 "순수하지 않은" 렌더가 되어 lint(react-hooks/purity)가 막는다.
  */
-function NotificationItem({ item, now, onOpen }: { item: NotificationResponse; now: number; onOpen: () => void }) {
+function NotificationItem({ item, now, onOpen, lone = false }: { item: NotificationResponse; now: number; onOpen: () => void; lone?: boolean }) {
   const t = useTranslations("Notify");
   const when = relativeMinutes(item.visibleAt, now);
   const whenText = when.unit === "now" ? t("now") : t(when.unit, { n: when.n });
+  const bundle = isBundle(item);
   return (
     <li>
       <button
         type="button"
         onClick={onOpen}
-        className={`flex w-full min-w-0 gap-2.5 rounded-xl p-3 text-left hover:bg-table-head ${item.read ? "" : "bg-table-head"}`}
+        className={`motion-press flex min-h-11 w-full min-w-0 gap-2.5 rounded-xl p-3 text-left hover:bg-table-head ${item.read ? "" : "bg-check-bg"}`}
       >
-        <span aria-hidden="true" className={`mt-1.5 size-2 shrink-0 rounded-full ${item.read ? "border border-ctl" : "bg-fg"}`} />
-        <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
-          <span className={`block text-[13px] leading-relaxed ${item.read ? "text-fg-sub" : "text-fg"}`}>
+        <span aria-hidden="true" className={`mt-1 size-3 shrink-0 rounded-full ${item.read ? "border border-ctl" : "bg-check-line"}`} />
+        <span className="min-w-0 flex-1 break-keep [overflow-wrap:anywhere]">
+          <span className={`block text-[13px] leading-5 ${item.read ? "text-fg-sub" : "text-fg"}`}>
             <span className="mr-1.5 inline-block rounded border border-chip-line px-1.5 align-[1px] text-[11px] font-bold leading-4 text-fg-sub">
               {item.kind === "TIER" ? t("kindTier") : t("kindRival")}
             </span>
-            {item.kind === "TIER" ? <TierText item={item} /> : <RivalText item={item} />}
+            {item.kind === "TIER" ? <TierTitle item={item} /> : <RivalTitle item={item} />}
           </span>
-          <span className="mt-0.5 block text-xs text-fg-dim">
-            {item.kind === "TIER" ? <TierSub item={item} /> : <RivalSub item={item} />}
-            {" · "}
-            {whenText}
-            {item.read ? null : <> · <span className="text-fg">{t("new")}</span></>}
+          {item.kind === "RIVAL" && bundle ? <RivalBundlePreview item={item} /> : null}
+          <span className="mt-1 flex flex-wrap items-center gap-1">
+            {item.kind === "TIER" ? <TierChips item={item} /> : bundle ? null : <RivalChips item={item} lone={lone} />}
+            <span className="text-xs text-fg-dim">{whenText}</span>
+            {item.read ? null : lone ? <span className="text-xs text-fg">{t("new")}</span> : <span className="sr-only">{t("new")}</span>}
           </span>
         </span>
       </button>
@@ -293,46 +341,67 @@ function isBundle(item: NotificationResponse): boolean {
   return item.bundled && item.songCount > 1;
 }
 
-function RivalText({ item }: { item: RivalNotificationResponse }) {
+/** 줄의 첫 문장: 라이벌 묶음이면 `HJY님이 3곡을 역전했습니다`, 아니면 곡명(굵게). 긴 문장 대신 곡명이 먼저 보이게 한다. */
+function RivalTitle({ item }: { item: RivalNotificationResponse }) {
   const t = useTranslations("Notify");
   const nickname = item.actorNickname ?? t("unknown");
-  return isBundle(item)
-    ? t.rich("bundled", { ...bold, nickname, n: item.songCount })
-    : t.rich("single", { ...bold, nickname, title: item.title, chart: `${partLabel(item.part)} ${difficultyLabel(item.difficulty)}` });
+  return isBundle(item) ? <span>{t.rich("bundled", { ...bold, nickname, n: item.songCount })}</span> : <b className="font-bold text-fg">{item.title}</b>;
 }
 
-function RivalSub({ item }: { item: RivalNotificationResponse }) {
+/**
+ * 묶음 줄의 곡명 미리보기(최대 3개)와 `곡 목록 보기 ›`. 서버가 곡명을 못 준 옛 묶음은 첫 곡뿐이라 `첫 곡 외 N곡`이 된다.
+ * `곡 목록 보기`는 줄 전체 버튼 안의 글자일 뿐이다(줄을 누르면 목록 화면이 열린다).
+ */
+function RivalBundlePreview({ item }: { item: RivalNotificationResponse }) {
   const t = useTranslations("Notify");
-  const nickname = item.actorNickname ?? t("unknown");
-  return isBundle(item)
-    ? t("bundledSub", { title: item.title, n: item.songCount - 1 })
-    : t("singleSub", { nickname, theirs: formatRate(item.actorRate), mine: formatRate(item.myRate) });
+  const titles = item.previewTitles && item.previewTitles.length > 0 ? item.previewTitles : [item.title];
+  const more = item.songCount - titles.length;
+  return (
+    <span className="mt-0.5 block text-xs leading-5 text-fg-sub">
+      {titles.join(" · ")}
+      {more > 0 ? ` ${t("previewMore", { n: more })}` : ""}
+      <span className="mt-0.5 block font-bold text-check-fg">{t("bundleOpen")}</span>
+    </span>
+  );
 }
 
-function TierText({ item }: { item: TierNotificationResponse }) {
+/** 라이벌 점수 칩: 난이도 · 상대 · 내 · 차이(내 − 상대, 부호가 글자로 보인다). 묶음 안에서는 머리 줄이 닉네임을 알려 주므로 `상대`라고 쓴다. */
+function RivalChips({ item, lone }: { item: RivalNotificationResponse; lone: boolean }) {
   const t = useTranslations("Notify");
-  const tc = useTranslations();
-  return isBundle(item)
-    ? t.rich("tierBundled", { ...bold, n: item.songCount })
-    : t.rich("tierSingle", {
-        ...bold,
-        title: item.title,
-        chart: `${partLabel(item.part)} ${difficultyLabel(item.difficulty)}`,
-        before: formatTier(item.beforeTier, tc),
-        after: formatTier(item.afterTier, tc),
-      });
+  const diff = formatSignedDiff(item.myRate - item.actorRate);
+  return (
+    <>
+      <ChartChip part={item.part} difficulty={item.difficulty} />
+      <ScoreChip label={lone ? (item.actorNickname ?? t("unknown")) : t("theirsLabel")} value={formatRate(item.actorRate)} strong />
+      <ScoreChip label={t("mineLabel")} value={formatRate(item.myRate)} />
+      {diff ? <DiffChip text={diff.text} sign={diff.sign} /> : null}
+    </>
+  );
 }
 
-function TierSub({ item }: { item: TierNotificationResponse }) {
+function TierTitle({ item }: { item: TierNotificationResponse }) {
+  const t = useTranslations("Notify");
+  return isBundle(item) ? <span>{t.rich("tierBundled", { ...bold, n: item.songCount })}</span> : <b className="font-bold text-fg">{item.title}</b>;
+}
+
+/** 서열표 점수 칩: 난이도 · `기준 5.4 → 5.5` · `점수 +16.00`. 묶음이면 `첫 곡 외 N채보`. 기준 난이도가 미정이면 점수도 없다(`미정`으로 보이고 차이는 쓰지 않는다). */
+function TierChips({ item }: { item: TierNotificationResponse }) {
   const t = useTranslations("Notify");
   const tc = useTranslations();
   if (isBundle(item)) {
-    return t("tierBundledSub", { title: item.title, n: item.songCount - 1 });
+    return <span className="text-xs text-fg-sub">{t("tierBundledSub", { title: item.title, n: item.songCount - 1 })}</span>;
   }
-  // 기준 난이도가 미정이면 점수도 없다(`미정`으로 보이고 차이는 쓰지 않는다)
   const score = (v: number | null) => (v === null ? tc("Common.undecided") : formatScore(v));
-  const values = { before: score(item.beforeScore), after: score(item.afterScore) };
-  return item.scoreDiff === null
-    ? t("tierScoreNoDiff", values)
-    : t("tierScore", { ...values, diff: formatScoreDiff(item.scoreDiff) });
+  const diffTone = item.scoreDiff === null ? "even" : item.scoreDiff > 0 ? "up" : item.scoreDiff < 0 ? "down" : "even";
+  return (
+    <>
+      <ChartChip part={item.part} difficulty={item.difficulty} />
+      <TextChip>{t("tierChangeChip", { before: formatTier(item.beforeTier, tc), after: formatTier(item.afterTier, tc) })}</TextChip>
+      {item.scoreDiff === null ? (
+        <TextChip>{t("tierScoreChipNoDiff", { before: score(item.beforeScore), after: score(item.afterScore) })}</TextChip>
+      ) : (
+        <DiffChip text={t("tierScoreChip", { diff: formatScoreDiff(item.scoreDiff) })} sign={diffTone} />
+      )}
+    </>
+  );
 }
