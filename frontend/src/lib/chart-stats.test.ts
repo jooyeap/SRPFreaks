@@ -6,11 +6,9 @@ import {
   chartKindText,
   chartStatsHref,
   deviationBarPercent,
-  layoutCurve,
   ratioPercent,
   signedText,
   tierText,
-  type FolderRow,
 } from "@/lib/chart-stats";
 
 describe("편차·평균 표시", () => {
@@ -68,52 +66,6 @@ describe("막대 길이(장식)", () => {
     expect(ratioPercent(10, 10)).toBe(100);
     expect(ratioPercent(3, 0)).toBe(0);
     expect(ratioPercent(-1, 10)).toBe(0);
-  });
-});
-
-function folder(tier: number, avg: number | null): FolderRow {
-  return { tier, chartCount: 5, sampledCharts: avg === null ? 1 : 4, avgRate: avg, deltaFromPrevious: null };
-}
-
-describe("폴더 곡선 배치", () => {
-  const pad = { left: 30, right: 10, top: 10, bottom: 20 };
-
-  it("점이 없으면 빈 배치다", () => {
-    expect(layoutCurve([], 320, 190, pad).points).toEqual([]);
-    expect(layoutCurve([folder(5.8, null)], 320, 190, pad).points).toEqual([]);
-  });
-
-  it("표본 부족 폴더는 점이 없고 선이 거기서 끊긴다(건너뜀)", () => {
-    const layout = layoutCurve([folder(5.8, 80), folder(5.9, 82), folder(6.0, null), folder(6.1, 70), folder(6.2, 72)], 320, 190, pad);
-
-    expect(layout.points.map((p) => p.tier)).toEqual([5.8, 5.9, 6.1, 6.2]);
-    expect(layout.segments).toHaveLength(2);
-    expect(layout.segments[0].map((p) => p.tier)).toEqual([5.8, 5.9]);
-    expect(layout.segments[1].map((p) => p.tier)).toEqual([6.1, 6.2]);
-    // x는 표본 부족 폴더 자리도 같은 간격으로 남긴다: 5칸 → 4등분
-    expect(layout.xs).toHaveLength(5);
-    expect(layout.xs[0]).toBe(30);
-    expect(layout.xs[4]).toBe(310);
-    expect(layout.xs[2]).toBe(170);
-  });
-
-  it("y축은 5의 배수로 맞추고 값이 클수록 위(작은 y)에 놓인다", () => {
-    const layout = layoutCurve([folder(5.8, 78), folder(5.9, 91)], 320, 190, pad);
-
-    expect(layout.min).toBe(75);
-    expect(layout.max).toBe(95);
-    expect(layout.yTicks.map((t) => t.value)).toEqual([75, 80, 85, 90, 95]);
-    const [low, high] = layout.points;
-    expect(high.y).toBeLessThan(low.y);
-    // 맨 위 눈금(95)은 위쪽 여백, 맨 아래 눈금(75)은 아래쪽 여백에 닿는다
-    expect(layout.yTicks[4].y).toBe(10);
-    expect(layout.yTicks[0].y).toBe(170);
-  });
-
-  it("폴더가 하나면 가운데에 놓는다", () => {
-    const layout = layoutCurve([folder(6.0, 80)], 320, 190, pad);
-    expect(layout.points).toHaveLength(1);
-    expect(layout.points[0].x).toBe(30 + 140);
   });
 });
 

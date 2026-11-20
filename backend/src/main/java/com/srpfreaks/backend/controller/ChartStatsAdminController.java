@@ -1,6 +1,7 @@
 package com.srpfreaks.backend.controller;
 
 import com.srpfreaks.backend.dto.ChartStatsResponse.DeviationRow;
+import com.srpfreaks.backend.dto.ChartStatsResponse.FolderDistributionPage;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderRow;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Page;
 import com.srpfreaks.backend.dto.ChartStatsResponse.PlayerRow;
@@ -57,6 +58,14 @@ public class ChartStatsAdminController {
                                    @RequestParam(defaultValue = "0") int page,
                                    @RequestParam(defaultValue = "" + ChartStatsService.MAX_PAGE_SIZE) int size) {
         return chartStatsService.folders(actor.id(), page, size);
+    }
+
+    /** 폴더 분포(D88): 폴더(0.1 단위)별 공개 유저의 평균 달성률 칸. 폴더 단위 페이지네이션이고 기본 크기를 최대(100)로 둔다. */
+    @GetMapping("/folder-distribution")
+    public FolderDistributionPage folderDistribution(@AuthenticationPrincipal AuthenticatedUser actor,
+                                                     @RequestParam(defaultValue = "0") int page,
+                                                     @RequestParam(defaultValue = "" + ChartStatsService.MAX_PAGE_SIZE) int size) {
+        return chartStatsService.folderDistribution(actor.id(), page, size);
     }
 
     /** 미정 목록: 서열표 기준 난이도가 없는데 공개 유저 기록이 있는 채보. */

@@ -4,6 +4,10 @@ import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Chart;
 import com.srpfreaks.backend.dto.ChartStatsResponse.DeviationRow;
+import com.srpfreaks.backend.dto.ChartStatsResponse.DistCell;
+import com.srpfreaks.backend.dto.ChartStatsResponse.DistFolder;
+import com.srpfreaks.backend.dto.ChartStatsResponse.DistUser;
+import com.srpfreaks.backend.dto.ChartStatsResponse.FolderDistributionPage;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderRow;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Meta;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Page;
@@ -15,6 +19,7 @@ import com.srpfreaks.backend.dto.SkillResponse.PlayerTierResponse;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.PatternType;
 import com.srpfreaks.backend.entity.Role;
 import com.srpfreaks.backend.entity.TableStatus;
 import com.srpfreaks.backend.entity.User;
@@ -23,6 +28,7 @@ import com.srpfreaks.backend.mapper.ChartInfoRow;
 import com.srpfreaks.backend.mapper.ChartPlayerRow;
 import com.srpfreaks.backend.mapper.ChartStatsMapper;
 import com.srpfreaks.backend.mapper.FolderChartCountRow;
+import com.srpfreaks.backend.mapper.FolderUserRow;
 import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.UserRepository;
 import com.srpfreaks.backend.service.ChartStatsCalculator.ChartAvg;
@@ -160,6 +166,41 @@ public class ChartStatsService {
                         ChartStatsCalculator.display(f.delta())))
                 .toList();
         return page(rows, page, size, loaded.meta());
+    }
+
+    /**
+     * 폴더 분포(D88): 기준 난이도 폴더(0.1 단위)마다 공개 유저 한 명당 한 칸(채보 수, 최고 달성률 합). 점 하나 = 한 유저의 한 폴더 평균이다.
+     * 레이팅에 계산되는 기록만 센다(기준 난이도·속성이 있고 레이팅 제외가 아닌 채보). 유저 색은 현재 레이팅 티어(후보 쿼리 한 번, ratedBatch)로 정해
+     * 유저 수와 상관없이 쿼리 수가 같다. 표본 부족(폴더 유저 minPlayers명 미만) 판단은 화면이 한다: 0.5 단위로 묶으면 칸이 합쳐지므로 묶은 뒤에 세야 한다.
+     * 폴더 단위로 페이지를 자른다(폴더 오름차순). 판정은 하지 않는다.
+     */
+    public FolderDistributionPage folderDistribution(Long actorId, int page, int size) {
+        requireAdmin(actorId);
+        Loaded loaded = load();
+        List<FolderUserRow> rows = loaded.tableId() == null ? List.of()
+                : statsMapper.findFolderUserAverages(loaded.noteOption(), loaded.tableId(), PatternType.EXCLUDED.getLabel(), loaded.since());
+        Map<BigDecimal, List<DistCell>> byTier = new TreeMap<>();
+        for (FolderUserRow row : rows) {
+            byTier.computeIfAbsent(row.tier().setScale(1, RoundingMode.HALF_UP), k -> new ArrayList<>())
+                    .add(new DistCell(row.userId(), row.chartCount(), row.sumRate()));
+        }
+        byTier.values().forEach(cells -> cells.sort(Comparator.comparing(DistCell::userId)));
+        List<DistFolder> folders = byTier.entrySet().stream().map(e -> new DistFolder(e.getKey(), List.copyOf(e.getValue()))).toList();
+
+        int pageSize = pageSize(size);
+        int pageIndex = Math.max(page, 0);
+        int from = (int) Math.min((long) pageIndex * pageSize, folders.size());
+        List<DistFolder> content = folders.subList(from, Math.min(from + pageSize, folders.size()));
+        List<Long> userIds = content.stream().flatMap(f -> f.cells().stream()).map(DistCell::userId).distinct().sorted().toList();
+        Map<Long, String> nicknames = rows.stream().collect(Collectors.toMap(FolderUserRow::userId, FolderUserRow::nickname, (a, b) -> a));
+        Map<Long, SkillService.RatedSkill> rated = ratedFor(userIds);
+        List<DistUser> users = userIds.stream().map(id -> {
+            SkillService.RatedSkill skill = rated.get(id);
+            PlayerTierResponse tier = skill == null || skill.skill() == null ? null : skill.skill().tier();
+            return new DistUser(id, nicknames.get(id), tier, totalOf(skill));
+        }).toList();
+        int totalPages = (folders.size() + pageSize - 1) / pageSize;
+        return new FolderDistributionPage(List.copyOf(content), pageIndex, pageSize, folders.size(), totalPages, users, loaded.meta());
     }
 
     /** 미정 목록: 서열표 기준 난이도가 없는데 공개 유저 기록이 있는 채보. 저장 횟수 많은 순. */
