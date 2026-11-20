@@ -23,7 +23,15 @@ export interface CardTierStyle {
   stops: readonly string[];
   /** Bronze 이상의 빛. 낮은 티어는 없다 */
   glow: { color: string; blur: number } | null;
+  /**
+   * 10,000 이상 4티어(D87)만 있다: 검정 금속 칩(TIER_CHIP_METAL) 위의 이름 글자색, 카드 뒤 은은한 빛 색, 큰 배지의 모양과 장식 단계.
+   * 없으면 예전처럼 티어 그라데이션으로 칩을 채운다.
+   */
+  chip?: { text: string; tint: string; shape: "pill" | "hex"; ornament: 0 | 1 | 2 | 3 };
 }
+
+/** 4티어 칩 바탕의 검정 금속 그라데이션(위→아래 4색). globals.css의 `--tier-metal`과 같다. */
+export const TIER_CHIP_METAL = ["#2b2438", "#0c0a14", "#1c1626", "#0c0a14"] as const;
 
 /** globals.css의 `[data-tier="…"]` 값과 같다(--tier-fill의 색 순서, --tier-glow의 크기와 색). rating-card.test.ts가 일치를 확인한다. */
 export const TIER_STYLES: Record<string, CardTierStyle> = {
@@ -50,8 +58,26 @@ export const TIER_STYLES: Record<string, CardTierStyle> = {
     glow: { color: "rgb(192 132 252 / 0.65)", blur: 20 },
   },
   IRIDESCENT: { stops: ["#ffe27a", "#ff7eb6", "#c084fc", "#22d3ee"], glow: { color: "rgb(255 126 182 / 0.7)", blur: 22 } },
-  ALIEN: { stops: ["#b9f6ca", "#22d3ee", "#bae6fd"], glow: { color: "rgb(34 211 238 / 0.8)", blur: 24 } },
-  HSB: { stops: ["#ffffff", "#fde68a", "#ffffff", "#bae6fd", "#ffffff"], glow: { color: "rgb(255 255 255 / 0.95)", blur: 28 } },
+  SIX_FINGERS: {
+    stops: ["#f0abfc", "#a78bfa", "#f472b6"],
+    glow: { color: "rgb(167 139 250 / 0.6)", blur: 20 },
+    chip: { text: "#f5d0fe", tint: "rgb(167 139 250 / 0.12)", shape: "pill", ornament: 0 },
+  },
+  MUTANT: {
+    stops: ["#ff7ae6", "#ff2bd6", "#a855f7"],
+    glow: { color: "rgb(255 43 214 / 0.65)", blur: 22 },
+    chip: { text: "#ffd0f5", tint: "rgb(255 43 214 / 0.13)", shape: "pill", ornament: 1 },
+  },
+  ALIEN: {
+    stops: ["#a5f3fc", "#22d3ee", "#a7f3d0"],
+    glow: { color: "rgb(34 211 238 / 0.7)", blur: 24 },
+    chip: { text: "#d8fbff", tint: "rgb(34 211 238 / 0.13)", shape: "hex", ornament: 2 },
+  },
+  HSB: {
+    stops: ["#ffffff", "#fde68a", "#c4b5fd", "#67e8f9"],
+    glow: { color: "rgb(255 255 255 / 0.85)", blur: 28 },
+    chip: { text: "#ffffff", tint: "rgb(255 255 255 / 0.14)", shape: "hex", ornament: 3 },
+  },
 };
 
 /** 알 수 없는 티어 key가 오면(서버가 티어를 늘렸을 때) 가장 낮은 티어 색으로 그린다. 카드가 깨지는 것보다 낫다. */

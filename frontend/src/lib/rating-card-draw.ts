@@ -6,6 +6,7 @@ import {
   type CardTileView,
   fitTitle,
   PART_TEXT_COLORS,
+  TIER_CHIP_METAL,
   truncateText,
 } from "@/lib/rating-card";
 
@@ -104,6 +105,76 @@ function withGlow(ctx: Ctx, tier: CardTierStyle, draw: () => void): void {
   ctx.restore();
 }
 
+/** 알약 또는 육각형 윤곽. 육각은 좌우가 뾰족하고 위아래가 평평하다(시안의 notch 모양). */
+function chipPath(ctx: Ctx, shape: "pill" | "hex", x: number, y: number, w: number, h: number): void {
+  if (shape === "pill") {
+    roundRect(ctx, x, y, w, h, h / 2);
+    return;
+  }
+  const mid = y + h / 2;
+  const k = h * 0.4;
+  ctx.beginPath();
+  ctx.moveTo(x, mid);
+  ctx.lineTo(x + k, y);
+  ctx.lineTo(x + w - k, y);
+  ctx.lineTo(x + w, mid);
+  ctx.lineTo(x + w - k, y + h);
+  ctx.lineTo(x + k, y + h);
+  ctx.closePath();
+}
+
+/**
+ * 10,000 이상 4티어(D87)의 검정 금속 칩. 아래 그림자 -> 세로 금속 그라데이션 -> 위쪽 흰 하이라이트 -> 티어 색 테두리 -> 안쪽 흰 테두리 순으로 겹치고,
+ * 빛(번짐)은 이름 글자에만 준다. 양옆 장식 선은 정지 그림으로도 생략했다(레이팅 화면의 큰 배지에만 있다).
+ */
+function drawMetalChip(
+  ctx: Ctx,
+  tier: CardTierStyle,
+  chip: NonNullable<CardTierStyle["chip"]>,
+  name: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  f: CardFonts,
+): void {
+  ctx.save();
+  ctx.shadowColor = "rgb(0 0 0 / 0.5)";
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 3;
+  chipPath(ctx, chip.shape, x, y, w, h);
+  const metal = ctx.createLinearGradient(x, y, x, y + h);
+  TIER_CHIP_METAL.forEach((color, i) => metal.addColorStop(i / (TIER_CHIP_METAL.length - 1), color));
+  ctx.fillStyle = metal;
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  chipPath(ctx, chip.shape, x, y, w, h);
+  ctx.clip();
+  const shine = ctx.createLinearGradient(x, y, x, y + h * 0.5);
+  shine.addColorStop(0, "rgb(255 255 255 / 0.4)");
+  shine.addColorStop(1, "rgb(255 255 255 / 0)");
+  ctx.fillStyle = shine;
+  ctx.fillRect(x, y, w, h * 0.5);
+  ctx.restore();
+
+  ctx.save();
+  chipPath(ctx, chip.shape, x + 1.5, y + 1.5, w - 3, h - 3);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = gradient(ctx, tier, x, y, x + w, y);
+  ctx.stroke();
+  chipPath(ctx, chip.shape, x + 4.5, y + 4.5, w - 9, h - 9);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = "rgb(255 255 255 / 0.3)";
+  ctx.stroke();
+  ctx.restore();
+
+  withGlow(ctx, { ...tier, glow: tier.glow && { ...tier.glow, blur: 10 } }, () =>
+    text(ctx, name, x + w / 2, y + 28, `700 22px ${f.num}`, chip.text, "center"),
+  );
+}
+
 function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
   const { header: h, contentX: x0, contentW: w, headerY: y0 } = m;
   const right = x0 + w;
@@ -135,17 +206,22 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
   }
   const chipH = 40;
   ctx.font = `700 22px ${f.num}`;
-  const chipW = ctx.measureText(h.tierName).width + 40;
+  // 육각 칩(Alien, HSB)은 좌우 뾰족한 끝이 글자와 겹치지 않게 조금 더 넓게 잡는다
+  const chipW = ctx.measureText(h.tierName).width + (h.tier.chip?.shape === "hex" ? 64 : 40);
   const chipY = nameY - 32;
   if (!h.nickname) {
     chipX = x0;
   }
-  withGlow(ctx, h.tier, () => {
-    roundRect(ctx, chipX, chipY, chipW, chipH, chipH / 2);
-    ctx.fillStyle = gradient(ctx, h.tier, chipX, chipY, chipX + chipW, chipY);
-    ctx.fill();
-  });
-  text(ctx, h.tierName, chipX + chipW / 2, chipY + 28, `700 22px ${f.num}`, BG, "center");
+  if (h.tier.chip) {
+    drawMetalChip(ctx, h.tier, h.tier.chip, h.tierName, chipX, chipY, chipW, chipH, f);
+  } else {
+    withGlow(ctx, h.tier, () => {
+      roundRect(ctx, chipX, chipY, chipW, chipH, chipH / 2);
+      ctx.fillStyle = gradient(ctx, h.tier, chipX, chipY, chipX + chipW, chipY);
+      ctx.fill();
+    });
+    text(ctx, h.tierName, chipX + chipW / 2, chipY + 28, `700 22px ${f.num}`, BG, "center");
+  }
 
   // 단계별 곡 수 (가로: 합계 아래 오른쪽, 세로: 닉네임 줄 아래 왼쪽)
   let cx = portrait ? x0 : right;
@@ -343,6 +419,22 @@ export function drawRatingCard(ctx: Ctx, m: CardModel, fonts: CardFonts, images:
   roundRect(ctx, CARD_FRAME, CARD_FRAME, width - 2 * CARD_FRAME, height - 2 * CARD_FRAME, 20);
   ctx.fillStyle = BG;
   ctx.fill();
+
+  // 10,000 이상 4티어(D87): 카드 뒤 위쪽에 티어 색 방사형 빛을 은은하게 깐다(머리글 둘레)
+  const tint = m.header.tier.chip?.tint;
+  if (tint) {
+    const cx = width / 2;
+    const cy = height * 0.04 + 90;
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, width * 0.55);
+    glow.addColorStop(0, tint);
+    glow.addColorStop(1, "rgb(0 0 0 / 0)");
+    ctx.save();
+    roundRect(ctx, CARD_FRAME, CARD_FRAME, width - 2 * CARD_FRAME, height - 2 * CARD_FRAME, 20);
+    ctx.clip();
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
 
   drawHeader(ctx, m, fonts);
 

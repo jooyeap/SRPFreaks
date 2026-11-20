@@ -2,16 +2,18 @@ import { describe, expect, it } from "vitest";
 import { chartTier, chartTierAttrs, playerTierKey, chartTierStart, PLAYER_TIER_MINS, previewScore, ratedScore } from "@/lib/chart-tier";
 
 describe("chartTierStart", () => {
-  it("티어 최소 점수를 40으로 나눈다 (Iridescent 9500 -> 237.5, Alien 10000 -> 250, HSB 11000 -> 275)", () => {
+  it("티어 최소 점수를 40으로 나눈다 (Iridescent 9500 -> 237.5, 6 Fingers 10000 -> 250, Mutant 10500 -> 262.5, Alien 11000 -> 275, HSB 11500 -> 287.5)", () => {
     expect(chartTierStart(9500)).toBe(237.5);
     expect(chartTierStart(10000)).toBe(250);
+    expect(chartTierStart(10500)).toBe(262.5);
     expect(chartTierStart(11000)).toBe(275);
+    expect(chartTierStart(11500)).toBe(287.5);
     expect(chartTierStart(500)).toBe(12.5);
     expect(chartTierStart(0)).toBe(0);
   });
 
-  it("티어는 22단계이고 최소 점수가 오름차순이다", () => {
-    expect(PLAYER_TIER_MINS).toHaveLength(22);
+  it("티어는 24단계이고 최소 점수가 오름차순이다", () => {
+    expect(PLAYER_TIER_MINS).toHaveLength(24);
     const mins = PLAYER_TIER_MINS.map((t) => t.min);
     expect([...mins].sort((a, b) => a - b)).toEqual(mins);
   });
@@ -24,9 +26,13 @@ describe("chartTier", () => {
     expect(chartTier(237.49).key).toBe("RAINBOW_GRADIENT");
     expect(chartTier(237.5).key).toBe("IRIDESCENT");
     expect(chartTier(249.99).key).toBe("IRIDESCENT");
-    expect(chartTier(250).key).toBe("ALIEN");
-    expect(chartTier(274.99).key).toBe("ALIEN");
-    expect(chartTier(275).key).toBe("HSB");
+    expect(chartTier(250).key).toBe("SIX_FINGERS");
+    expect(chartTier(262.49).key).toBe("SIX_FINGERS");
+    expect(chartTier(262.5).key).toBe("MUTANT");
+    expect(chartTier(274.99).key).toBe("MUTANT");
+    expect(chartTier(275).key).toBe("ALIEN");
+    expect(chartTier(287.49).key).toBe("ALIEN");
+    expect(chartTier(287.5).key).toBe("HSB");
     expect(chartTier(384).key).toBe("HSB"); // 7.0, 95%: 가장 높은 칸
   });
 
@@ -89,8 +95,19 @@ describe("playerTierKey (레이팅 합계 → 티어, 정수부 기준)", () => 
     expect(playerTierKey(0)).toBe("WHITE");
     expect(playerTierKey(7999.99)).toBe("SILVER"); // 정수부 7999 < 8000
     expect(playerTierKey(8000)).toBe("GOLD");
-    expect(playerTierKey(11000)).toBe("HSB");
     expect(playerTierKey(12345.6)).toBe("HSB");
+  });
+
+  it("10,000 이상 경계 (D87): 합계 9,999 / 10,000 / 10,499 / 10,500 / 10,999 / 11,000 / 11,499 / 11,500", () => {
+    expect(playerTierKey(9999)).toBe("IRIDESCENT");
+    expect(playerTierKey(10000)).toBe("SIX_FINGERS");
+    expect(playerTierKey(10499)).toBe("SIX_FINGERS");
+    expect(playerTierKey(10499.99)).toBe("SIX_FINGERS"); // 정수부 10499
+    expect(playerTierKey(10500)).toBe("MUTANT");
+    expect(playerTierKey(10999)).toBe("MUTANT");
+    expect(playerTierKey(11000)).toBe("ALIEN");
+    expect(playerTierKey(11499)).toBe("ALIEN");
+    expect(playerTierKey(11500)).toBe("HSB");
   });
 
   it("레이팅 기록 화면의 예시 점수가 속한 티어", () => {

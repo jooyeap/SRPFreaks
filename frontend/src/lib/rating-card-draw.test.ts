@@ -21,7 +21,12 @@ function fakeCtx() {
   const ctx = new Proxy(target, {
     get(t, prop: string) {
       if (prop === "measureText") return (s: string) => ({ width: s.length * 10 });
-      if (prop === "createLinearGradient") return () => ({ addColorStop: vi.fn() });
+      if (prop === "createLinearGradient" || prop === "createRadialGradient") {
+        return (...args: unknown[]) => {
+          (calls[prop] ??= []).push(args);
+          return { addColorStop: vi.fn() };
+        };
+      }
       if (prop in t) return t[prop];
       return (...args: unknown[]) => {
         (calls[prop] ??= []).push(args);
@@ -53,6 +58,25 @@ describe("drawRatingCard", () => {
       expect(drawn).toEqual(expect.arrayContaining(["200", ".00"]));
     });
   }
+
+  for (const key of ["SIX_FINGERS", "MUTANT", "ALIEN", "HSB"]) {
+    it(`10,000 이상 티어 ${key}(D87): 검정 금속 칩에 티어 이름을 그리고 카드 뒤 빛을 깐다`, () => {
+      const top: SkillResponse = { ...skill, tier: { key, displayName: `Name ${key}`, minScore: 10000, nextDisplayName: null, nextMinScore: null } };
+      const model = buildCardModel("landscape", top, koT, { nickname: "Tester", now: new Date("2026-11-20T00:00:00Z") });
+      const { ctx, calls } = fakeCtx();
+      drawRatingCard(ctx, model, { sans: "sans", num: "num" });
+      expect((calls.fillText ?? []).map((a) => a[0])).toContain(`Name ${key}`);
+      expect(calls.createRadialGradient ?? []).toHaveLength(1); // 카드 뒤 빛
+      expect((calls.stroke ?? []).length).toBeGreaterThanOrEqual(2); // 티어 색 테두리 + 안쪽 흰 테두리
+    });
+  }
+
+  it("10,000 미만 티어는 예전 칩을 그린다(금속 칩·뒤 빛 없음)", () => {
+    const model = buildCardModel("landscape", skill, koT, { nickname: "Tester", now: new Date("2026-11-20T00:00:00Z") });
+    const { ctx, calls } = fakeCtx();
+    drawRatingCard(ctx, model, { sans: "sans", num: "num" });
+    expect(calls.createRadialGradient ?? []).toHaveLength(0);
+  });
 
   it("닉네임이 없으면 이름을 그리지 않는다", () => {
     const model = buildCardModel("landscape", skill, koT, { nickname: null, now: new Date() });

@@ -51,7 +51,7 @@ describe("RecordForm", () => {
 
     fireEvent.change(rateInput(), { target: { value: "9500" } });
     const top = screen.getByText("304.00"); // 15×0.8 + 3.2 = 15.2, ×20
-    expect(top).toHaveAttribute("data-tier", "HSB"); // 304는 275 이상
+    expect(top).toHaveAttribute("data-tier", "HSB"); // 304는 287.5 이상
 
     fireEvent.change(rateInput(), { target: { value: "8000" } });
     expect(screen.getByText("240.00")).toHaveAttribute("data-tier", "IRIDESCENT"); // 237.5 이상 250 미만

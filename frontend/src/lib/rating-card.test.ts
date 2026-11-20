@@ -18,6 +18,7 @@ import {
   LAYOUT_GEOMETRY,
   songScoreStyle,
   stageCounts,
+  TIER_CHIP_METAL,
   TIER_STYLES,
   tierStyleOf,
   truncateText,
@@ -78,6 +79,44 @@ describe("rating-card 색 표", () => {
     }
   });
 
+  it("10,000 이상 4티어(D87)의 칩 색(글자·카드 뒤 빛)과 검정 금속 바탕도 globals.css와 같다", () => {
+    const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
+    for (const key of ["SIX_FINGERS", "MUTANT", "ALIEN", "HSB"]) {
+      const chip = TIER_STYLES[key].chip;
+      expect(chip, key).toBeDefined();
+      // 같은 키의 둘째 줄이 이름 글자색(--tier-text)과 카드 뒤 빛(--tier-tint)을 가진다
+      const lines = css.split("\n").filter((l) => l.startsWith(`[data-tier="${key}"] {`));
+      expect(lines, key).toHaveLength(2);
+      expect(lines[1], key).toContain(`--tier-text: ${chip!.text};`);
+      expect(lines[1], key).toContain(`--tier-tint: ${chip!.tint};`);
+    }
+    // 아래 티어에는 칩 질감이 없다
+    expect(TIER_STYLES.IRIDESCENT.chip).toBeUndefined();
+    expect(css).toContain(`--tier-metal: linear-gradient(180deg, ${TIER_CHIP_METAL.join(", ")});`);
+  });
+
+  it("10,000 이상 4티어의 라이트 테마 글자 그라데이션은 흰 배경과 페이지 배경에서 모든 색이 대비 4.5:1 이상이다", () => {
+    const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
+    const lum = (hex: string) => {
+      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const ratio = (a: string, b: string) => {
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+    for (const key of ["SIX_FINGERS", "MUTANT", "ALIEN", "HSB"]) {
+      const line = css.split("\n").filter((l) => l.startsWith(`[data-tier="${key}"] {`))[1];
+      const light = /--tier-fill-light:([^;]*);/.exec(line)?.[1] ?? "";
+      const colors = light.match(/#[0-9a-f]{6}/g) ?? [];
+      expect(colors.length, key).toBeGreaterThanOrEqual(3);
+      for (const color of colors) {
+        expect(ratio(color, "#ffffff"), `${key} ${color} on card`).toBeGreaterThanOrEqual(4.5);
+        expect(ratio(color, "#f3f5f9"), `${key} ${color} on page`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
   it("S+ 단계 색(빨강, D83)은 globals.css와 같고 다크·라이트 바탕에서 글자 대비 4.5:1 이상이다", () => {
     const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
     const lum = (hex: string) => {
@@ -103,7 +142,10 @@ describe("rating-card 색 표", () => {
     expect(songScoreStyle(0)).toBe(TIER_STYLES.WHITE);
     expect(songScoreStyle(124.9)).toBe(TIER_STYLES.BLUE_GRADIENT);
     expect(songScoreStyle(125)).toBe(TIER_STYLES.PURPLE);
-    expect(songScoreStyle(275)).toBe(TIER_STYLES.HSB);
+    expect(songScoreStyle(250)).toBe(TIER_STYLES.SIX_FINGERS);
+    expect(songScoreStyle(262.5)).toBe(TIER_STYLES.MUTANT);
+    expect(songScoreStyle(275)).toBe(TIER_STYLES.ALIEN);
+    expect(songScoreStyle(287.5)).toBe(TIER_STYLES.HSB);
   });
 });
 

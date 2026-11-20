@@ -12,7 +12,7 @@ const orange: PlayerTierResponse = {
 const top: PlayerTierResponse = {
   key: "HSB",
   displayName: "HSB",
-  minScore: 11000,
+  minScore: 11500,
   nextDisplayName: null,
   nextMinScore: null,
 };
