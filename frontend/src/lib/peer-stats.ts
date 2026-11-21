@@ -20,8 +20,14 @@ export interface PeerChartStat {
 
 export interface PeerStatsResponse {
   tierName: string | null;
+  /** 내 티어 구간의 총점 범위 [하한, 다음 티어 하한). 최고 티어는 bandNextMinScore가 null, 티어를 모르면 둘 다 null (D98) */
+  bandMinScore: number | null;
+  bandNextMinScore: number | null;
   /** 집계에 쓰인 공개 유저 수 ("n명 중"의 n) */
   bandUsers: number;
+  /** 표시 기준 인원(설정 peer.*): 구간의 유저 수 / 한 채보를 레이팅에 넣은 유저 수. 기준 미달 안내(`기준 N명`)에 쓴다 (D98) */
+  minBandUsers: number;
+  minChartUsers: number;
   /** 표시 기준(구간 인원, 채보 인원)을 넘은 채보만 온다. 기준에 못 미치면 비어 있다 */
   charts: PeerChartStat[];
 }
@@ -44,4 +50,12 @@ export function findPeerStat(response: PeerStatsResponse, chartId: number): Peer
 /** `내 예상 레이팅` 줄을 보여 줄지: 오를 점수가 0보다 클 때만(0이면 보여 줄 것이 없다) */
 export function hasExpectedGain(stat: PeerChartStat): boolean {
   return stat.expectedGain !== null && stat.expectedGain > 0;
+}
+
+/**
+ * 기준 미달로 이 채보의 값이 비었을 때 어느 기준에 못 미쳤는지(D98). 구간 인원이 모자라면 `band`, 구간은 충분한데
+ * 이 채보를 레이팅에 넣은 유저가 모자라면 `chart`. 안내 문구의 `기준 N명`이 서로 다른 수라서 구분한다.
+ */
+export function shortfallKind(response: PeerStatsResponse): "band" | "chart" {
+  return response.bandUsers < response.minBandUsers ? "band" : "chart";
 }

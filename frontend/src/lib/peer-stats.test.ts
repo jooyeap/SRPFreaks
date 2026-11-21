@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchPeerStats, findPeerStat, hasExpectedGain, type PeerChartStat, type PeerStatsResponse } from "@/lib/peer-stats";
+import { fetchPeerStats, findPeerStat, hasExpectedGain, shortfallKind, type PeerChartStat, type PeerStatsResponse } from "@/lib/peer-stats";
 
 function stat(over: Partial<PeerChartStat> = {}): PeerChartStat {
   return { songDifficultyId: 10, users: 6, medianRate: 88, expectedGain: 12.4, inMyList: false, myRate: null, ...over };
@@ -22,7 +22,7 @@ describe("peer-stats", () => {
   });
 
   it("응답에서 채보 하나의 집계를 찾고, 없으면 null", () => {
-    const response: PeerStatsResponse = { tierName: "SS 3", bandUsers: 8, charts: [stat({ songDifficultyId: 10 }), stat({ songDifficultyId: 11 })] };
+    const response: PeerStatsResponse = { tierName: "SS 3", bandMinScore: 5000, bandNextMinScore: 5500, bandUsers: 8, minBandUsers: 5, minChartUsers: 5, charts: [stat({ songDifficultyId: 10 }), stat({ songDifficultyId: 11 })] };
 
     expect(findPeerStat(response, 11)?.songDifficultyId).toBe(11);
     expect(findPeerStat(response, 99)).toBeNull();
@@ -32,5 +32,12 @@ describe("peer-stats", () => {
     expect(hasExpectedGain(stat({ expectedGain: 12.4 }))).toBe(true);
     expect(hasExpectedGain(stat({ expectedGain: 0 }))).toBe(false);
     expect(hasExpectedGain(stat({ expectedGain: null }))).toBe(false);
+  });
+
+  it("기준 미달 안내는 구간 인원이 모자라면 band, 아니면 chart 기준을 쓴다 (D98)", () => {
+    const base: PeerStatsResponse = { tierName: "SS 3", bandMinScore: 5000, bandNextMinScore: 5500, bandUsers: 4, minBandUsers: 5, minChartUsers: 3, charts: [] };
+
+    expect(shortfallKind(base)).toBe("band");
+    expect(shortfallKind({ ...base, bandUsers: 5 })).toBe("chart");
   });
 });

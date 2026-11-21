@@ -13,6 +13,7 @@ import { clearAccessToken } from "@/lib/auth-token";
 import { rememberDetailNav, resetDetailNavForTest } from "@/lib/detail-nav";
 import { resetDetailNavHintForTest } from "@/lib/detail-nav-hint";
 import { EMPTY_FILTERS } from "@/lib/difficulty-table";
+import type { PeerStatsResponse } from "@/lib/peer-stats";
 import type { SongDetailOrigin } from "@/lib/songs";
 
 const back = vi.fn();
@@ -125,8 +126,8 @@ describe("SongDetailView", () => {
   const fetchMock = vi.fn<typeof fetch>();
   let tables: DifficultyTableResponse[];
   let songResponse: () => Response;
-  // 같은 티어 유저 기록(D53): 기본은 기준 인원에 못 미쳐 채보가 비어 있다(카드가 안 나옴)
-  let peerStats: { tierName: string | null; bandUsers: number; charts: unknown[] };
+  // 같은 티어 유저 기록(D53): 기본은 기준 인원에 못 미쳐 채보가 비어 있다(값 대신 기준 미달 안내 한 줄)
+  let peerStats: PeerStatsResponse;
   // 서열표 분석(D77) 채보 요약(공개 유저 6명, 평균 87.12%, 폴더 평균 89.47% → 편차 -2.35)
   const chartStatsSummary = {
     chart: { songDifficultyId: 10, songId: 1, title: "테스트곡", part: "GUITAR", difficulty: "MASTER", level: 9.8, tier: 5.8 },
@@ -150,7 +151,7 @@ describe("SongDetailView", () => {
     fetchMock.mockReset();
     tables = [table];
     songResponse = () => json(song);
-    peerStats = { tierName: "SS 3", bandUsers: 4, charts: [] };
+    peerStats = { tierName: "SS 3", bandMinScore: 5000, bandNextMinScore: 5500, bandUsers: 4, minBandUsers: 5, minChartUsers: 5, charts: [] };
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockImplementation((input) => {
       const url = String(input);
@@ -543,7 +544,7 @@ describe("SongDetailView", () => {
 
   it("로그인했고 같은 티어 유저 기록이 있으면 서열표 정보 아래에 카드를 보여 준다", async () => {
     peerStats = {
-      tierName: "SS 3",
+      ...peerStats,
       bandUsers: 8,
       charts: [{ songDifficultyId: 10, users: 6, medianRate: 88, expectedGain: 12.4, inMyList: false, myRate: null }],
     };
@@ -555,11 +556,12 @@ describe("SongDetailView", () => {
     expect(card).toHaveTextContent("+12.40점");
   });
 
-  it("기준 인원에 못 미치면 같은 티어 유저 기록 카드가 없다", async () => {
+  it("기준 인원에 못 미치면 값 대신 `기준 N명` 안내 한 줄만 보여 준다 (D98)", async () => {
     renderView("table", 10);
 
     await screen.findByRole("region", { name: "같은 난이도의 곡" });
-    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/peer-stats"))).toBe(true));
-    expect(screen.queryByRole("region", { name: "같은 티어 유저 기록" })).not.toBeInTheDocument();
+    const card = await screen.findByRole("region", { name: "같은 티어 유저 기록" });
+    expect(card).toHaveTextContent("같은 티어 유저가 적어 표시하지 않습니다(기준 5명)");
+    expect(card).not.toHaveTextContent("레이팅에 포함된 유저 수");
   });
 });
