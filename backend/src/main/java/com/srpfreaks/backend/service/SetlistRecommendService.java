@@ -2,6 +2,7 @@ package com.srpfreaks.backend.service;
 
 import com.srpfreaks.backend.dto.SetlistRecommendationResponse;
 import com.srpfreaks.backend.dto.SetlistRecommendationResponse.Item;
+import com.srpfreaks.backend.dto.SetlistRecommendationResponse.Reason;
 import com.srpfreaks.backend.dto.SetlistRecommendationResponse.Status;
 import com.srpfreaks.backend.dto.TableEntryResponse.MyRecord;
 import com.srpfreaks.backend.entity.AchievementStage;
@@ -25,8 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 세트리스트 추천(D37). 내 평균 난이도(PlayLevelEstimator)를 기준으로 오늘 도전해 볼 채보를 두 묶음으로 골라 준다.
@@ -37,6 +40,9 @@ import java.util.stream.Collectors;
  * - 레이팅 목록이 비어 있으면(신규) 평균이 없으므로 기준 난이도 starterTier(5.2) 이하에서 S 미만인 채보만 S 기준으로 보여 준다(STARTER).
  * - 단일 / 그 외 채보가 최소 개수 미만이면 추천하지 않고 개수만 알려 준다(INSUFFICIENT).
  * - 이미 세트리스트에 담은 채보와 레이팅 대상이 아닌 채보(미정·레이팅 제외·반영 꺼짐)는 쿼리에서 빠진다.
+ * - 비슷한 실력대 근거(D89, READY만): 같은 티어 공개 유저(나 제외)가 레이팅에 반영한 채보는 각 묶음 맨 앞에 반영 인원 많은 순으로 놓고(reason=PEER_TIER, peerUsers=인원),
+ *   채보별 인원이 peer.min_chart_users 미만이거나 구간 인원이 peer.min_band_users 미만이거나 이미 내 레이팅 목록에 든 채보는 근거 없이 아래 기존 정렬로 둔다(reason=NEAR_AVERAGE).
+ *   후보를 늘리거나 줄이지 않고 순서와 근거만 바꾼다(범위 조정·SS/S 판정·담은 채보 제외는 그대로).
  * - 정렬: 기준 난이도(평균 또는 starterTier)에 가까운 순이 먼저, 같으면 기록 없는 채보, 내 최고 달성률이 낮은 순, 채보 id 순(요청마다 순서가 바뀌지 않게).
  * - 두 묶음을 각각 자기 page(ssPage / sPage)로 size개씩 넘긴다. 조회는 두 범위를 합친 한 번이고 단계 판정·정렬·페이지는 여기(Java)에서 한다.
  * userId는 토큰에서만 오고, 남의 기록은 쿼리에서 user_id 조건으로 섞이지 않는다.
@@ -57,6 +63,7 @@ public class SetlistRecommendService {
     private final SetlistRecommendMapper recommendMapper;
     private final PlayLevelEstimator playLevelEstimator;
     private final SetlistRecommendRangeRepository rangeRepository;
+    private final PeerRecommendEvidence peerEvidence;
 
     /** 잘못된 page/size는 400이 아니라 허용 범위로 맞춘다(목록 API 공통 방식). */
     public SetlistRecommendationResponse recommend(Long userId, int ssPage, int sPage, int size) {
@@ -98,6 +105,11 @@ public class SetlistRecommendService {
         List<RecommendCandidate> candidates = recommendMapper.findCandidates(userId, RECORD_OPTION.name(),
                 table.getId(), PatternType.EXCLUDED.getLabel(), lo, hi);
 
+        // 근거 인원: 이미 내 레이팅 목록에 있는 채보는 "새로 반영할 곡"이 아니므로 근거에서 뺀다
+        PeerRecommendEvidence.Evidence evidence = peerEvidence.of(userId);
+        Map<Long, Integer> peer = evidence.usersByChart().entrySet().stream()
+                .filter(e -> !evidence.myRatedIds().contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         Comparator<RecommendCandidate> order = order(base);
         List<RecommendCandidate> ss = candidates.stream()
                 .filter(c -> within(c, base, config.ssMin(), config.ssMax()) && below(c, AchievementStage.SS))
@@ -105,7 +117,8 @@ public class SetlistRecommendService {
         List<RecommendCandidate> s = candidates.stream()
                 .filter(c -> !ss.contains(c) && within(c, base, config.sMin(), config.sMax()) && below(c, AchievementStage.S))
                 .sorted(order).toList();
-        return response(Status.READY, base, estimate.ratedSingle(), estimate.ratedOther(), config, customRange, ss, s, ssIndex, sIndex, pageSize);
+        return response(Status.READY, base, estimate.ratedSingle(), estimate.ratedOther(), config, customRange,
+                peerFirst(ss, peer), peerFirst(s, peer), peer, true, ssIndex, sIndex, pageSize);
     }
 
     /** 레이팅 목록이 비어 있는 신규 사용자: starterTier 이하에서 S 미만인 채보만, S 기준 묶음으로. */
@@ -117,23 +130,25 @@ public class SetlistRecommendService {
         List<RecommendCandidate> s = candidates.stream()
                 .filter(c -> c.tier().compareTo(top) <= 0 && below(c, AchievementStage.S))
                 .sorted(order(top)).toList();
-        return response(Status.STARTER, top, 0, 0, config, customRange, List.of(), s, ssIndex, sIndex, pageSize);
+        // 신규는 평균도 티어도 없어 근거 칩을 달지 않는다(reason 없음)
+        return response(Status.STARTER, top, 0, 0, config, customRange, List.of(), s, Map.of(), false, ssIndex, sIndex, pageSize);
     }
 
     private static SetlistRecommendationResponse response(Status status, BigDecimal base, int ratedSingle, int ratedOther,
                                                           SetlistRecommendConfig config, boolean customRange,
                                                           List<RecommendCandidate> ss, List<RecommendCandidate> s,
+                                                          Map<Long, Integer> peer, boolean withReason,
                                                           int ssIndex, int sIndex, int pageSize) {
         return new SetlistRecommendationResponse(status, base, config.ssMin(), config.ssMax(), config.sMin(), config.sMax(), customRange,
                 ratedSingle, ratedOther, config.minSingle(), config.minOther(),
-                slice(ss, ssIndex, pageSize), slice(s, sIndex, pageSize), ssIndex, sIndex, pageSize,
+                slice(ss, peer, withReason, ssIndex, pageSize), slice(s, peer, withReason, sIndex, pageSize), ssIndex, sIndex, pageSize,
                 pages(ss.size(), pageSize), pages(s.size(), pageSize));
     }
 
     private static SetlistRecommendationResponse empty(Status status, BigDecimal base, int ratedSingle, int ratedOther,
                                                        SetlistRecommendConfig config, boolean customRange,
                                                        int ssIndex, int sIndex, int pageSize) {
-        return response(status, base, ratedSingle, ratedOther, config, customRange, List.of(), List.of(), ssIndex, sIndex, pageSize);
+        return response(status, base, ratedSingle, ratedOther, config, customRange, List.of(), List.of(), Map.of(), false, ssIndex, sIndex, pageSize);
     }
 
     /** 기준 난이도가 base + min ~ base + max 안(경계 포함)인가. */
@@ -165,16 +180,32 @@ public class SetlistRecommendService {
         return (count + size - 1) / size;
     }
 
-    private static List<Item> slice(List<RecommendCandidate> all, int page, int size) {
-        int from = (int) Math.min((long) page * size, all.size());
-        int to = Math.min(from + size, all.size());
-        return all.subList(from, to).stream().map(SetlistRecommendService::toItem).toList();
+    /**
+     * 근거 있는 채보(peer에 id가 있는 것)를 반영 인원 많은 순으로 앞에 놓고, 나머지는 원래 순서 그대로 뒤에 붙인다.
+     * List.sort는 안정 정렬이라 인원이 같으면 기존 정렬(가까운 순 등)이 유지된다.
+     */
+    private static List<RecommendCandidate> peerFirst(List<RecommendCandidate> sorted, Map<Long, Integer> peer) {
+        if (peer.isEmpty()) {
+            return sorted;
+        }
+        List<RecommendCandidate> backed = sorted.stream().filter(c -> peer.containsKey(c.songDifficultyId()))
+                .sorted(Comparator.comparing((RecommendCandidate c) -> peer.get(c.songDifficultyId())).reversed()).toList();
+        List<RecommendCandidate> rest = sorted.stream().filter(c -> !peer.containsKey(c.songDifficultyId())).toList();
+        return Stream.concat(backed.stream(), rest.stream()).toList();
     }
 
-    private static Item toItem(RecommendCandidate c) {
+    private static List<Item> slice(List<RecommendCandidate> all, Map<Long, Integer> peer, boolean withReason, int page, int size) {
+        int from = (int) Math.min((long) page * size, all.size());
+        int to = Math.min(from + size, all.size());
+        return all.subList(from, to).stream().map(c -> toItem(c, peer, withReason)).toList();
+    }
+
+    private static Item toItem(RecommendCandidate c, Map<Long, Integer> peer, boolean withReason) {
+        Integer peerUsers = peer.get(c.songDifficultyId());
+        Reason reason = !withReason ? null : peerUsers != null ? Reason.PEER_TIER : Reason.NEAR_AVERAGE;
         AchievementStage stage = stageOf(c);
         MyRecord mine = stage == null ? null : new MyRecord(c.bestRate(), Boolean.TRUE.equals(c.fullCombo()), stage);
         return new Item(c.songDifficultyId(), c.songId(), c.title(), InstrumentPart.valueOf(c.part()),
-                DifficultyType.valueOf(c.difficulty()), c.level(), c.tier(), c.pattern(), mine);
+                DifficultyType.valueOf(c.difficulty()), c.level(), c.tier(), c.pattern(), mine, peerUsers, reason);
     }
 }

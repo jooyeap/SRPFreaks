@@ -8,6 +8,7 @@ import { TableCredit } from "@/components/TableCredit";
 import { SongCreateButton } from "@/components/songs/SongCreateButton";
 import { TableFilterPanel } from "@/components/table/TableFilterPanel";
 import { TableSearch } from "@/components/table/TableSearch";
+import { PatternGridView } from "@/components/table/PatternGridView";
 import { TierTileGrid, type TierTile } from "@/components/table/TierTileGrid";
 import { TableTip } from "@/components/table/TableTip";
 import { ApiError } from "@/lib/api";
@@ -103,7 +104,9 @@ export function DifficultyTableView({
     () =>
       decided.flatMap((g) => {
         const f = filterTierGroup(g, filters);
-        return g.tier !== null && f.total > 0 ? [{ tier: g.tier, total: f.total, recorded: f.recorded }] : [];
+        return g.tier !== null && f.total > 0
+          ? [{ tier: g.tier, total: f.total, recorded: f.recorded, exc: f.exc, fc: f.fc, ss: f.ss, sPlus: f.sPlus, s: f.s, belowS: f.belowS }]
+          : [];
       }),
     [decided, filters],
   );
@@ -170,43 +173,68 @@ export function DifficultyTableView({
             )}
           </p>
 
-          <TableTip />
+          {view.mode === "folder" ? <TableTip /> : null}
 
+          {/* 보기 방식 전환(폴더 | 속성별)은 왼쪽, 순서(폴더 화면만)와 필터는 오른쪽. 선택은 주소(view=pattern)에 남아 폴더 상세에서 돌아와도 유지된다 */}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div role="group" aria-label={t("Table.tilesOrderLabel")} className="inline-flex rounded-lg border border-line bg-table-head p-0.5">
-              {(["hard", "easy"] as const).map((value) => {
-                const on = order === value;
+            <div role="group" aria-label={t("Table.viewLabel")} className="inline-flex rounded-lg border border-line bg-table-head p-0.5">
+              {(["folder", "pattern"] as const).map((value) => {
+                const on = view.mode === value;
                 return (
                   <button
                     key={value}
                     type="button"
                     aria-pressed={on}
-                    onClick={() => updateView({ order: value })}
+                    onClick={() => updateView({ mode: value })}
                     className={`min-h-[34px] rounded-lg px-3 py-0.5 text-sm ${on ? "bg-card font-bold text-fg shadow-sm ring-1 ring-chip-line" : "text-fg-dim hover:text-fg"}`}
                   >
-                    {t(value === "hard" ? "Table.tilesOrderHard" : "Table.tilesOrderEasy")}
+                    {t(value === "folder" ? "Table.viewFolder" : "Table.viewPattern")}
                   </button>
                 );
               })}
             </div>
-            <button
-              type="button"
-              aria-expanded={filtersOpen}
-              aria-controls="table-filters"
-              onClick={() => setFiltersOpen((open) => !open)}
-              className="flex min-h-[34px] items-center gap-1.5 rounded-lg border border-ctl bg-card px-3 text-sm text-fg hover:bg-table-head"
-            >
-              {t("Songs.filter")}
-              <span aria-hidden="true">{filtersOpen ? "▴" : "▾"}</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <div role="group" aria-label={t("Table.tilesOrderLabel")} className="inline-flex rounded-lg border border-line bg-table-head p-0.5">
+                {(["hard", "easy"] as const).map((value) => {
+                  const on = order === value;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => updateView({ order: value })}
+                      className={`min-h-[34px] rounded-lg px-3 py-0.5 text-sm ${on ? "bg-card font-bold text-fg shadow-sm ring-1 ring-chip-line" : "text-fg-dim hover:text-fg"}`}
+                    >
+                      {t(value === "hard" ? "Table.tilesOrderHard" : "Table.tilesOrderEasy")}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                aria-expanded={filtersOpen}
+                aria-controls="table-filters"
+                onClick={() => setFiltersOpen((open) => !open)}
+                className="flex min-h-[34px] items-center gap-1.5 rounded-lg border border-ctl bg-card px-3 text-sm text-fg hover:bg-table-head"
+              >
+                {t("Songs.filter")}
+                <span aria-hidden="true">{filtersOpen ? "▴" : "▾"}</span>
+              </button>
+            </div>
           </div>
           {filtersOpen ? (
             <div id="table-filters" className="motion-reveal flex flex-col gap-2 rounded-2xl border border-line bg-card p-4 md:flex-row md:flex-wrap md:items-center md:gap-x-5 md:gap-y-2">
-              <TableFilterPanel filters={filters} onChange={changeFilter} />
+              <TableFilterPanel filters={filters} onChange={changeFilter} hidePattern={view.mode === "pattern"} />
             </div>
           ) : null}
 
-          {tiles.length === 0 ? (
+          {view.mode === "pattern" ? (
+            decided.length === 0 ? (
+              <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
+            ) : (
+              <PatternGridView groups={decided} filters={filters} average={average} order={order} returnQuery={viewStateToQuery(view)} />
+            )
+          ) : tiles.length === 0 ? (
             <p className="text-sm text-fg-sub">{t("Songs.noMatch")}</p>
           ) : (
             // key: 순서나 필터가 바뀌면 접힘 상태를 처음(접힘)으로 돌린다

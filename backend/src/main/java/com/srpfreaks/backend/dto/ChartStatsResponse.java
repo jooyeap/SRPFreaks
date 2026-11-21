@@ -61,4 +61,24 @@ public final class ChartStatsResponse {
     public record PlayerRow(Long userId, String nickname, PlayerTierResponse tier, BigDecimal totalScore, BigDecimal bestRate,
                             long playCount, Instant lastPlayedAt) {
     }
+
+    /**
+     * 폴더 분포(D88). content = 기준 난이도 폴더(0.1 단위, 오름차순)와 그 폴더의 유저별 칸, users = 이 쪽에 나오는 공개 유저(닉네임·티어 한 번씩).
+     * 목록은 페이지네이션 규칙대로 폴더 단위로 자른다(기본·최대 100폴더라 화면이 한 번에 받는다).
+     */
+    public record FolderDistributionPage(List<DistFolder> content, int page, int size, long totalElements, int totalPages,
+                                         List<DistUser> users, Meta meta) {
+    }
+
+    /** 폴더 한 개와 그 폴더의 공개 유저 칸들. 유저가 minPlayers명 미만이어도 내려 주고 화면이 표본 부족으로 처리한다. */
+    public record DistFolder(BigDecimal tier, List<DistCell> cells) {
+    }
+
+    /** 한 유저의 한 폴더: 채보 수와 최고 달성률 합. 평균은 화면이 sumRate / charts로 낸다(0.5 단위 묶음도 정확히 같은 가중 평균이 된다). */
+    public record DistCell(Long userId, int charts, BigDecimal sumRate) {
+    }
+
+    /** 점 색·말풍선용 유저. 티어는 유저 목록(D26)과 같은 계산이고, 레이팅 계산이 불가능하면 null이다. 이메일·역할·Google ID는 없다. */
+    public record DistUser(Long userId, String nickname, PlayerTierResponse tier, BigDecimal totalScore) {
+    }
 }

@@ -199,7 +199,8 @@ describe("진행도 칸 지도의 난이도 색 (전곡 완료)", () => {
     );
     expect(link(/7\.0/).querySelector(".stage-grad-text[data-stage='EXC']")).toHaveTextContent("7.0");
     expect(link(/7\.0/)).toHaveTextContent("모든 채보가 EXC입니다.");
-    expect(link(/7\.0/)).toHaveTextContent("EXC↑"); // 시안 Home4: EXC도 화살표가 붙는다
+    expect(link(/7\.0/).querySelector("[data-full-stage='EXC'] [aria-hidden='true']")?.textContent).toBe("EXC"); // EXC만 화살표 없음(시안 Home4 예외)
+    expect(link(/7\.0/)).not.toHaveTextContent("EXC↑");
     expect(link(/6\.8/).querySelector(".stage-grad-text[data-stage='FC']")).toHaveTextContent("6.8");
     expect(link(/6\.8/)).toHaveTextContent("FC↑");
   });
