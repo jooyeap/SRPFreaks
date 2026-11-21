@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { PLAYER_TIER_MINS } from "@/lib/chart-tier";
-import { TIER_CHIP_SIZES, TIER_CHIPS, tierChipDarkens, tierChipHighlight, tierChipLabel, tierChipOf, tierChipWidth } from "@/lib/tier-chip";
+import {
+  TIER_CHIP_CHAR_EM,
+  TIER_CHIP_MAX_CHARS,
+  TIER_CHIP_SIDE_EM,
+  TIER_CHIP_SIZES,
+  TIER_CHIPS,
+  tierChipDarkens, tierChipHighlight, tierChipLabel, tierChipOf,
+  tierChipWidth,
+} from "@/lib/tier-chip";
 
 describe("tier-chip 표 (D95)", () => {
   it("24티어가 모두 표에 있다(PLAYER_TIER_MINS와 같은 key)", () => {
@@ -51,30 +59,40 @@ describe("tier-chip 표 (D95)", () => {
     expect(tierChipOf("NOPE")).toBe(TIER_CHIPS.WHITE);
   });
 
-  describe("폭 규칙: 짧은 이름만 최소 폭으로 넓히고 긴 이름은 넓히지 않는다", () => {
-    const { fs } = TIER_CHIP_SIZES.sm;
-    it("짧은 이름(HSB 육각, Red 알약)은 최소 폭이다", () => {
-      expect(tierChipWidth("HSB", "hex", fs)).toBe(Math.round(fs * 8.4)); // 92
-      expect(tierChipWidth("Red", "pill", fs)).toBe(Math.round(fs * 7.4)); // 81
-      expect(tierChipWidth("Gold", "pill", fs)).toBe(81);
+  describe("고정 폭: 24티어 모두(알약·육각) 같은 폭 (D102)", () => {
+    const sizes = [
+      ["작은 칩", TIER_CHIP_SIZES.sm.fs, 96],
+      ["큰 칩", TIER_CHIP_SIZES.lg.fs, 123],
+      ["레이팅 카드(Canvas) 칩", 22, 193],
+    ] as const;
+
+    for (const [label, fs, expected] of sizes) {
+      it(`${label}(글자 ${fs}px): 폭은 이름·모양과 상관없이 ${expected}이다`, () => {
+        // 직접 계산: 11자 × fs × 0.56 + fs × 2.6 = fs 11 -> 96.36, fs 14 -> 122.64, fs 22 -> 192.72 (반올림)
+        expect(tierChipWidth(fs)).toBe(expected);
+      });
+    }
+
+    it("글자 폭 추정치가 칩 폭 − 좌우 여백 안에 들어간다: 24티어 모두, 세 크기 모두", () => {
+      expect(PLAYER_TIER_MINS).toHaveLength(24);
+      for (const tier of PLAYER_TIER_MINS) {
+        const chars = Array.from(tierChipLabel(tier.name)).length;
+        // 새 티어 이름이 더 길어지면 여기서 실패한다: TIER_CHIP_MAX_CHARS를 늘려야 한다(폭이 한 곳에서만 정해지도록)
+        expect(chars, `${tier.name}(${chars}자)이 TIER_CHIP_MAX_CHARS(${TIER_CHIP_MAX_CHARS})보다 길다`).toBeLessThanOrEqual(TIER_CHIP_MAX_CHARS);
+        for (const fs of [TIER_CHIP_SIZES.sm.fs, TIER_CHIP_SIZES.lg.fs, 22]) {
+          const textWidth = chars * fs * TIER_CHIP_CHAR_EM;
+          // 반올림 오차 0.5. 여백(fs×2.6)은 육각 끝(노치)보다 넓다: 작은 칩 28.6 > 노치 7.1×2
+          expect(textWidth, `${tier.name} @${fs}px`).toBeLessThanOrEqual(tierChipWidth(fs) - fs * TIER_CHIP_SIDE_EM + 0.5);
+        }
+      }
     });
-    it("긴 이름은 글자 폭 + 여백(알약 fs×2.2, 육각 fs×2.6)이다", () => {
-      // Rainbow Gradient 16자: 16×11×0.56 + 24.2 = 122.76 -> 123
-      // (D102) 칩 글자는 `Rainbow Gr.` 11자: 11×11×0.56 + 24.2 = 91.96 -> 92. 전체 이름을 넘겨도 줄임말로 잰다
-      expect(tierChipWidth("Rainbow Gradient", "pill", fs)).toBe(92);
-      expect(tierChipWidth("Rainbow Gr.", "pill", fs)).toBe(92);
-      // Alien 5자 육각: 5×11×.56 + 28.6 = 59.4 -> 최소 92
-      expect(tierChipWidth("Alien", "hex", fs)).toBe(92);
-      expect(tierChipWidth("Yellow Gradient", "pill", fs)).toBe(Math.max(Math.round(10 * fs * 0.56 + fs * 2.2), Math.round(fs * 7.4)));
-    });
-    it("최소 폭보다 큰 이름은 최소 폭 규칙의 영향을 받지 않는다(이름이 길수록 넓다)", () => {
-      expect(tierChipWidth("Rainbow Gradient", "pill", fs)).toBeGreaterThan(tierChipWidth("Rainbow", "pill", fs)); // 92 > 81
-      expect(tierChipWidth("Rainbow", "pill", fs)).toBeGreaterThanOrEqual(Math.round(fs * 7.4));
-    });
-    it("큰 배지(글자 14px)도 같은 비율이다", () => {
-      const big = TIER_CHIP_SIZES.lg.fs;
-      expect(tierChipWidth("6 Fingers", "pill", big)).toBe(Math.max(Math.round(9 * big * 0.56 + big * 2.2), Math.round(big * 7.4)));
-      expect(tierChipWidth("Alien", "hex", big)).toBe(Math.round(big * 8.4)); // 118
+
+    it("가장 긴 글자는 Rainbow Gr.(11자)이고, 그보다 긴 이름은 폭 안에 들어가지 않는다", () => {
+      const longest = Math.max(...PLAYER_TIER_MINS.map((t) => Array.from(tierChipLabel(t.name)).length));
+      expect(longest).toBe(TIER_CHIP_MAX_CHARS);
+      expect(tierChipLabel("Rainbow Gradient")).toBe("Rainbow Gr.");
+      const fs = TIER_CHIP_SIZES.sm.fs;
+      expect(12 * fs * TIER_CHIP_CHAR_EM).toBeGreaterThan(tierChipWidth(fs) - fs * TIER_CHIP_SIDE_EM + 0.5);
     });
   });
 

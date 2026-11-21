@@ -15,7 +15,7 @@ import {
 /**
  * 플레이어 티어 칩(D95). 사이트에서 티어 이름을 칩으로 보여 주는 모든 곳이 이 컴포넌트 하나를 쓴다
  * (마이페이지·유저 상세의 큰 배지, 유저 목록·홈·라이벌·관리자 대시보드의 작은 칩).
- * 색·모양·폭 규칙은 lib/tier-chip.ts의 표 하나이고, 레이팅 카드 이미지(Canvas)도 같은 표를 읽는다.
+ * 색·모양과 고정 폭(24티어 모두 같은 폭, 글자는 가운데 정렬, D102)은 lib/tier-chip.ts의 표·함수 하나이고, 레이팅 카드 이미지(Canvas)도 같은 표를 읽는다.
  * 이름 글자는 SVG 안의 <text>로 있어(Gradient는 `Gr.`로 줄여 쓴다, D102) 색만으로 구분하지 않는다. 접근 가능한 이름(`플레이어 티어 Gold`, 줄임말 칩도 전체 이름)은 role="group"에 붙인다
  * (role="img"로 하면 같은 영역의 차트 그림과 역할이 섞여 `getByRole("img")`가 둘을 찾는다). 움직이는 효과·글로우는 없다.
  */
@@ -34,7 +34,7 @@ export function TierChip({
   const spec = tierChipOf(tier.key);
   const { h, fs } = TIER_CHIP_SIZES[size];
   const label = tierChipLabel(tier.displayName);
-  const w = tierChipWidth(tier.displayName, spec.shape, fs);
+  const w = tierChipWidth(fs);
   const pad = 2;
   const geo: Geo = { shape: spec.shape, x0: pad, y0: pad, x1: pad + w, y1: pad + h, h };
   const id = (name: string) => `${uid}-${name}`;

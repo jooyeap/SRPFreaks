@@ -180,7 +180,7 @@ function drawTierChip(ctx: Ctx, spec: TierChipSpec, name: string, x: number, y: 
   }
   ctx.restore();
 
-  // 칩 글자는 줄임말(Gradient -> Gr., D102). 폭도 tierChipWidth가 같은 줄임말로 잰다
+  // 칩 글자는 줄임말(Gradient -> Gr., D102). 폭은 이름과 상관없이 고정이다(tierChipWidth)
   text(ctx, tierChipLabel(name), x + w / 2, y + h / 2 + fs * 0.36, `700 ${fs}px ${f.num}`, spec.text, "center");
 }
 
@@ -213,11 +213,11 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
     text(ctx, name, x0, nameY, `700 44px ${f.sans}`, TEXT);
     chipX = x0 + ctx.measureText(name).width + 22;
   }
-  // 티어 칩(D95): 사이트의 큰 배지와 같은 표·같은 폭 규칙. 글자 22px에 높이 40px(비율은 14px : 26px)
+  // 티어 칩(D95): 사이트의 큰 배지와 같은 표·같은 고정 폭(D102). 글자 22px에 높이 40px(비율은 14px : 26px)
   const chipSpec = tierChipOf(h.tierKey);
   const chipFs = 22;
   const chipH = 40;
-  const chipW = tierChipWidth(h.tierName, chipSpec.shape, chipFs);
+  const chipW = tierChipWidth(chipFs);
   const chipY = nameY - 32;
   if (!h.nickname) {
     chipX = x0;
