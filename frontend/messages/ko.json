@@ -65,7 +65,8 @@
     "privacy": "개인정보 처리방침",
     "terms": "이용약관",
     "contact": "문의·삭제 요청:",
-    "tableCredit": "서열표(레이팅 상수 난이도) 정보 제공·설계:"
+    "tableCredit": "서열표(레이팅 상수 난이도) 정보 제공·설계:",
+    "songInfoCredit": "곡 정보(BPM·아티스트) 일부 출처:"
   },
   "Offline": {
     "banner": "인터넷에 연결되어 있지 않습니다. 연결되면 다시 시도해 주세요."
@@ -1580,7 +1581,8 @@
     "settingsGroupPeer": "같은 티어",
     "settingsGroupSetlistRival": "세트리스트·라이벌",
     "settingsGroupOther": "기타",
-    "settingChanging": "바꾸는 중: {from} → {to}"
+    "settingChanging": "바꾸는 중: {from} → {to}",
+    "actionSongInfoImport": "곡 정보(아티스트·BPM) 가져오기"
   },
   "ServerErrors": {
     "AUTH_FAILED": "로그인할 수 없습니다. 다시 로그인해 주세요.",
@@ -2047,6 +2049,51 @@
     "result": "저장 결과: 새로 {saved}곡, 교체 {replaced}곡",
     "saveFailed": "저장하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "matchFailed": "곡명을 맞추지 못했습니다. 잠시 후 다시 시도해 주세요."
+  },
+  "RemyBpm": {
+    "heading": "곡 정보 가져오기 (RemyWiki)",
+    "lead": "RemyWiki의 GITADORA 곡 표에서 아티스트와 BPM을 읽어 마스터에 있는 곡에 채웁니다. 새 곡은 만들지 않습니다.",
+    "bookmarkName": "SRP 곡 정보",
+    "bmTitle": "SRPFreaks 곡 정보 가져오기",
+    "bmWrongPage": "RemyWiki(remywiki.com)의 GITADORA 곡 표가 있는 페이지에서 눌러 주세요.",
+    "bmNoTable": "곡명과 BPM 열이 있는 표를 찾지 못했습니다. 읽지 못한 BPM {invalid}건. 곡 표가 있는 페이지인지 확인해 주세요.",
+    "bmPopupBlocked": "SRPFreaks 창을 열지 못했습니다. 팝업을 허용한 뒤 다시 눌러 주세요.",
+    "bmSending": "{count}곡을 SRPFreaks 창으로 넘기는 중입니다.",
+    "bmDone": "{count}곡을 넘겼습니다. SRPFreaks 창에서 확인해 주세요.",
+    "bmNoReply": "SRPFreaks 창이 응답하지 않습니다. 관리 화면이 열려 있는지 확인하고 다시 눌러 주세요.",
+    "guideStep1": "아래 버튼을 북마크 바로 끌어다 놓습니다.",
+    "guideStep2": "RemyWiki에서 GITADORA 버전 페이지(예: AC_GD_EXCHAIN)를 엽니다.",
+    "guideStep3": "북마크를 누르면 이 화면이 열리고, 페이지의 곡 표에서 읽은 아티스트·BPM이 아래에 쌓입니다. 다른 버전 페이지에서도 이어서 누를 수 있습니다.",
+    "guideNote": "열린 페이지의 표만 읽고 서버는 RemyWiki와 통신하지 않습니다. 마스터와 곡명이 맞는 곡만 저장하며, 곡명이 달라 맞지 않는 곡은 건너뜁니다. RemyWiki의 아티스트 표기는 마스터의 게임 표기와 다를 수 있으니 현재값과 가져온 값을 비교해 확인한 항목만 저장해 주세요.",
+    "receivedNone": "받은 곡이 없습니다.",
+    "received": "{count}곡을 받았습니다. (페이지 {pages}개, 읽지 못한 BPM {invalid}건)",
+    "sourceList": "받은 페이지: {sources}",
+    "conflicts": "같은 곡명의 아티스트·BPM이 달라 나중에 받은 값으로 바꾼 곡이 {n}곡 있습니다.",
+    "comparing": "마스터와 비교하는 중입니다.",
+    "compareFailed": "비교하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+    "summary": "맞은 곡 {matched}곡 · 일치 안 됨 {unmatched}곡",
+    "statusFill": "새로 채움 {n}",
+    "statusOverwrite": "덮어쓰기 {n}",
+    "statusUnchanged": "변경 없음 {n}",
+    "statusNone": "값 없음 {n}",
+    "unmatchedList": "마스터와 곡명이 맞지 않은 곡 보기",
+    "unmatchedNote": "곡명 표기가 달라 맞지 않은 곡입니다. 필요하면 곡 상세에서 직접 입력해 주세요.",
+    "includeOverwrite": "덮어쓰기 {n}건 선택",
+    "excludeOverwrite": "덮어쓰기 {n}건 제외",
+    "save": "선택 {n}건 저장",
+    "saving": "저장하는 중입니다.",
+    "clear": "비우기",
+    "colSong": "곡",
+    "colRemy": "RemyWiki 곡명",
+    "col_artist": "아티스트",
+    "col_bpm": "BPM",
+    "row_FILL": "새로 채움",
+    "row_OVERWRITE": "덮어쓰기",
+    "row_UNCHANGED": "변경 없음",
+    "row_NONE": "값 없음",
+    "saved": "저장했습니다. (새로 {filled}건, 덮어쓰기 {overwritten}건)",
+    "result": "저장 결과: 아티스트 새로 {artistFilled}곡·덮어쓰기 {artistOverwritten}곡, BPM 새로 {bpmFilled}곡·덮어쓰기 {bpmOverwritten}곡, 건너뜀 {skipped}건",
+    "saveFailed": "저장하지 못했습니다. 잠시 후 다시 시도해 주세요."
   },
   "JacketUpload": {
     "title": "재킷 바꾸기",

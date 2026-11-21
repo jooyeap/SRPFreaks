@@ -7,3 +7,9 @@ export const TABLE_CREDIT = {
   handle: "@trist_is",
   url: "https://x.com/trist_is",
 } as const;
+
+/** 곡 정보(BPM·아티스트) 일부 출처 표기(D94). 사실 데이터만 쓰고 서술 텍스트·이미지는 쓰지 않는다. 문구는 messages의 Footer.songInfoCredit. */
+export const SONG_INFO_CREDIT = {
+  name: "RemyWiki",
+  url: "https://remywiki.com",
+} as const;

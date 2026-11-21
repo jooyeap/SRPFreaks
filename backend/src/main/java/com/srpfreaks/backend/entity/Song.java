@@ -93,6 +93,15 @@ public class Song extends BaseTimeEntity {
         this.bpmMax = bpmMax;
     }
 
+    /** 가져온 BPM만 바꾼다(D90·D94). 고정 BPM이면 최소·최대가 같다. 둘 다 있어야 하고 최소 <= 최대. */
+    public void changeBpm(int bpmMin, int bpmMax) {
+        if (bpmMin > bpmMax) {
+            throw new IllegalArgumentException("최소 BPM은 최대 BPM보다 클 수 없습니다.");
+        }
+        this.bpmMin = bpmMin;
+        this.bpmMax = bpmMax;
+    }
+
     public void changeImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
