@@ -27,7 +27,35 @@ describe("SongHeader", () => {
     const chip = screen.getByText(song.addedVersion ?? "");
     expect(chip).toHaveClass("max-w-full", "truncate");
     expect(chip).toHaveAttribute("title", song.addedVersion);
-    expect(screen.getByText(song.artist ?? "")).toHaveClass("break-words");
+    expect(screen.getByText(song.artist ?? "")).toHaveClass("[overflow-wrap:anywhere]");
+  });
+
+  describe("BPM 줄과 긴 이름 (D103)", () => {
+    it("범위면 `BPM 165~172`, 같은 값이면 한 값만 보이고 아티스트 줄 바로 아래(태그 줄 위)에 놓인다", () => {
+      const { rerender } = render(<SongHeader song={{ ...song, bpmMin: 165, bpmMax: 172 }} chart={chart} />);
+      const bpm = screen.getByTestId("song-bpm");
+      expect(bpm).toHaveTextContent("BPM 165~172");
+      expect(bpm.previousElementSibling).toHaveTextContent(song.artist ?? "");
+      rerender(<SongHeader song={{ ...song, bpmMin: 150, bpmMax: 150 }} chart={chart} />);
+      expect(screen.getByTestId("song-bpm")).toHaveTextContent(/^BPM 150$/);
+    });
+
+    it("BPM이 없으면 줄을 그리지 않는다", () => {
+      render(<SongHeader song={song} chart={chart} />);
+      expect(screen.queryByTestId("song-bpm")).toBeNull();
+      expect(screen.queryByText("BPM")).toBeNull();
+    });
+
+    it("곡명·아티스트는 2줄 말줄임 + 글자 단위 줄바꿈이고 전체 글자를 title로 준다", () => {
+      const long = { ...song, title: "ア".repeat(80) };
+      render(<SongHeader song={long} chart={chart} />);
+      const h1 = screen.getByRole("heading", { name: long.title });
+      expect(h1).toHaveClass("line-clamp-2", "[overflow-wrap:anywhere]");
+      expect(h1).toHaveAttribute("title", long.title);
+      const artist = screen.getByText(song.artist ?? "");
+      expect(artist).toHaveClass("line-clamp-2", "[overflow-wrap:anywhere]");
+      expect(artist).toHaveAttribute("title", song.artist);
+    });
   });
 
   describe("재킷이 보일 때 (2026-11-14, 재킷 높이 안에 끝나는 정보 칸)", () => {
@@ -52,7 +80,7 @@ describe("SongHeader", () => {
       expect(within(top).getByText(song.artist ?? "")).toBeInTheDocument();
       const tags = info.lastElementChild as HTMLElement;
       expect(within(tags).getByText(song.addedVersion ?? "")).toBeInTheDocument();
-      expect(tags).toHaveClass("flex-wrap");
+      expect(tags).toHaveClass("flex-nowrap");
     });
 
     it("곡명은 모바일에서 2줄까지만 보이고 넘치면 말줄임이다 (line-clamp-2)", () => {

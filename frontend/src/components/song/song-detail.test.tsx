@@ -311,10 +311,10 @@ describe("SongDetailView", () => {
     renderView("songs", 10);
     const cards = await screen.findByRole("list", { name: "곡 정보 요약" });
     expect(within(cards).getByText("V5")).toBeInTheDocument();
-    // BPM과 노트 수는 화면에서 뺐다
+    // 정보 카드에는 BPM과 노트 수가 없다. BPM은 곡 정보 머리의 한 줄로만 보인다(D103)
     expect(within(cards).queryByText("BPM")).toBeNull();
     expect(within(cards).queryByText("노트 수")).toBeNull();
-    expect(screen.queryByText("120~180")).toBeNull();
+    expect(screen.getByTestId("song-bpm")).toHaveTextContent("BPM 120~180");
     expect(screen.queryByText("1,234")).toBeNull();
 
     const table = screen.getByRole("region", { name: "레벨 정보" });

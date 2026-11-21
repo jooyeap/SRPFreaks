@@ -4,6 +4,7 @@ import { ChartBadge } from "@/components/table/Badges";
 import type { SongChartResponse, SongDetailResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
 import { patternLabel } from "@/lib/chart-labels";
+import { formatBpm } from "@/lib/songs";
 
 const CHIP = "rounded-lg border border-ctl px-2 py-0.5 text-xs font-bold text-fg-sub";
 
@@ -37,6 +38,8 @@ export function SongHeader({
   const t = useTranslations();
   const jackets = useJackets();
   const withJacket = jackets.visible;
+  // BPM(D103): 값이 둘 다 없으면 줄 자체를 그리지 않는다
+  const hasBpm = song.bpmMin != null || song.bpmMax != null;
   const patternText = pattern ? t("Chart.patternValue", { pattern: patternLabel(pattern, t) }) : null;
   return (
     <div className="flex flex-col gap-3">
@@ -67,12 +70,17 @@ export function SongHeader({
         {/* 정보 칸: 재킷 높이만큼 최소 높이를 주고 위(곡명+아티스트)·아래(태그 줄)로 벌린다. 재킷이 없으면 내용 높이 그대로 */}
         <div className={`flex min-w-0 flex-1 flex-col justify-between gap-1.5 ${withJacket ? "min-h-[104px] md:min-h-[140px]" : ""}`}>
           <div className="flex flex-col gap-1" style={{ marginTop: -TITLE_TOP_TRIM_PX }}>
-            {/* 전체 곡명: 재킷이 있는 모바일은 2줄까지만 보이고 말줄임이다(데스크톱은 칸이 넉넉해 그대로 보인다) */}
-            <h1 className={`min-w-0 break-words font-num font-bold leading-[1.15] text-fg ${withJacket ? "line-clamp-2 text-[22px] md:line-clamp-none md:text-[26px]" : "text-[26px]"}`}>{song.title}</h1>
-            {song.artist ? <p className="break-words text-[13px] text-fg-dim">{song.artist}</p> : null}
+            {/* 곡명·아티스트: 각각 2줄까지만 보이고 말줄임. overflow-wrap:anywhere라 띄어쓰기 없는 긴 영문·일본어도 글자 단위로 꺾인다(D103). 전체 글자는 title로 준다 */}
+            <h1 title={song.title} className={`min-w-0 font-num font-bold leading-[1.15] text-fg [overflow-wrap:anywhere] line-clamp-2 ${withJacket ? "text-[22px] md:text-[26px]" : "text-[26px]"}`}>{song.title}</h1>
+            {song.artist ? <p title={song.artist} className="line-clamp-2 text-[13px] text-fg-dim [overflow-wrap:anywhere]">{song.artist}</p> : null}
+            {hasBpm ? (
+              <p data-testid="song-bpm" className="truncate text-xs text-fg-dim">
+                <span>BPM</span> <span className="font-num">{formatBpm(song.bpmMin, song.bpmMax)}</span>
+              </p>
+            ) : null}
           </div>
-          <p className="flex flex-wrap items-center gap-1.5">
-            {song.addedVersion ? <span title={song.addedVersion} className={`${CHIP} max-w-full truncate font-num`}>{song.addedVersion}</span> : null}
+          <p className="flex flex-nowrap items-center gap-1.5">
+            {song.addedVersion ? <span title={song.addedVersion} className={`${CHIP} min-w-0 max-w-full truncate font-num`}>{song.addedVersion}</span> : null}
             {chart ? <ChartBadge part={chart.instrumentPart} difficulty={chart.difficultyType} level={chart.level} /> : null}
             {/* 재킷이 없을 때(설정 꺼짐)는 칸 자체가 없어 폭이 넓으므로 속성 칩을 태그 줄 맨 뒤에 둔다 */}
             {!withJacket && patternText ? (
