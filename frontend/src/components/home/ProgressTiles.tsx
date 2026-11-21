@@ -33,14 +33,14 @@ function nameColor(stage: FullStage | null, fallback: string): string {
   return stage === "EXC" || stage === "FC" ? "stage-grad-text" : "stage-text";
 }
 
-/** 숫자 아래 작은 글자: `S+↑`(전곡 S+ 이상). 시안 Home4처럼 EXC도 `EXC↑`다. 색만으로 전달하지 않으려고 항상 글자를 같이 쓴다. */
+/** 숫자 아래 작은 글자: `S+↑`(전곡 S+ 이상). 가장 높은 단계인 EXC는 "이상"이 아니라 화살표 없이 `EXC`다(시안 Home4는 `EXC↑`지만 EXC 예외로 바꿈). 색만으로 전달하지 않으려고 항상 글자를 같이 쓴다. */
 function FullStageMark({ stage, inline = false }: { stage: FullStage; inline?: boolean }) {
   const t = useTranslations("Progress");
   return (
     // inline: 모바일 표형 줄(시안 Home4 B안)은 `기록/전체` 바로 오른쪽에 8px 글자로 붙는다. 넓은 화면 카드는 숫자 아래 10px 한 줄
     <span data-stage={stage} data-full-stage={stage} className={`stage-text font-num font-bold leading-none ${inline ? "ml-[3px] text-[8px]" : "text-[10px]"}`}>
       <span className="sr-only">{stage === "EXC" ? t("allExc") : t("allAtLeast", { stage })} </span>
-      <span aria-hidden="true">{stage}↑</span>
+      <span aria-hidden="true">{stage === "EXC" ? stage : `${stage}↑`}</span>
     </span>
   );
 }
