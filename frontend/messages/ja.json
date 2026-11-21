@@ -121,6 +121,12 @@
   "Home": {
     "greeting": "<num>{name}</num>さんのホーム",
     "defaultName": "プレイヤー",
+    "searchTitle": "曲を検索",
+    "searchHint": "曲名またはアーティスト名を入力してください。ハングル・日本語・ローマ字で検索できます。",
+    "searching": "検索しています。",
+    "searchFailed": "曲を検索できませんでした。しばらくしてからもう一度お試しください。",
+    "searchNoResults": "検索ワードに合う曲がありません。",
+    "searchViewAll": "曲一覧ですべて見る",
     "ratingLoadFailed": "レーティングを読み込めませんでした。しばらくしてからもう一度お試しください。",
     "ratingLoading": "レーティングを読み込み中です。",
     "toMyPage": "マイページへ",
