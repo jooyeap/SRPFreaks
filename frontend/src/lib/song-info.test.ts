@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { formatBpm, isWritable, parseBpmText } from "@/lib/song-info";
+import { formatBpm, isWritable, normalizeArtist, parseBpmText } from "@/lib/song-info";
 
-describe("곡 정보 가져오기 값 표시 (D90)", () => {
+describe("곡 정보 가져오기 값 표시 (D94)", () => {
   it("BPM은 고정이면 한 값, 가변이면 범위, 없으면 줄표", () => {
     expect(formatBpm(172, 172)).toBe("172");
     expect(formatBpm(120, 180)).toBe("120–180");
@@ -32,5 +32,19 @@ describe("BPM 글자 검증 (D94)", () => {
     for (const bad of ["", "0", "2001", "200-100", "172.5", "BPM 172", "varies", "120-", "1-2-3", "12345"]) {
       expect(parseBpmText(bad), bad).toBeNull();
     }
+  });
+});
+
+describe("아티스트 글자 정리 (D94, 서버 normalizeArtist와 같은 규칙)", () => {
+  it("NFKC 정규화, 줄바꿈·제어문자는 공백, 공백은 하나로 합친다", () => {
+    expect(normalizeArtist("  Ｗｉｄｅ\n\r\n Name\t X ")).toBe("Wide Name X");
+    expect(normalizeArtist("a\u0001b")).toBe("a b");
+  });
+
+  it("비었거나 255자를 넘으면 빈 글자(값 없음)이고, 255자는 그대로 쓴다", () => {
+    expect(normalizeArtist("")).toBe("");
+    expect(normalizeArtist(" \n ")).toBe("");
+    expect(normalizeArtist("a".repeat(255))).toBe("a".repeat(255));
+    expect(normalizeArtist("a".repeat(256))).toBe("");
   });
 });

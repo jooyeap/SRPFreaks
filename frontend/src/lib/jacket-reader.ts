@@ -13,11 +13,6 @@ import type { Translator } from "@/i18n/translator";
  * 양쪽 모두 상대 출처를 확인한다(이 코드는 우리 사이트 출처의 메시지만, 우리 창은 공식 사이트 출처의 메시지만 받는다).
  * 서버는 공식 사이트와 통신하지 않는다. 계정·쿠키·페이지 HTML은 우리 쪽으로 보내지 않는다.
  *
- * (D90) 같은 줄에 아티스트(게임 표기 = 작곡가 자리)가 보이면 곡명과 함께 읽어 `infos`로 넘긴다. 없으면 건너뛴다(값 없음).
- * 아티스트가 줄의 어느 칸에 있는지는 아직 실제 화면으로 확인하지 못했다. 읽는 위치는 READER_SOURCE 한 곳에만 있다
- * (클래스에 artist가 든 요소). 위치가 다르면 READER_SOURCE만 고친다.
- * (D94) BPM은 공식 화면에 따로 표기되지 않아 여기서 읽지 않는다. BPM은 RemyWiki 읽기(lib/remywiki-reader.ts)로만 받는다.
- *
  * 왜 동시에 2개·간격을 두는가: 공식 사이트가 봇 차단(Imperva)을 쓴다. 짧은 시간에 요청이 몰리면 브라우저가 막힐 수 있어
  * 설계의 "동시에 4개"보다 낮췄다(2026-10-31, 약 480장에 2~3분).
  *
@@ -73,16 +68,10 @@ export function jacketBookmarkletMessages(t: Translator): JacketBookmarkletMessa
 }
 
 /**
- * 한 쪽(문서)에서 재킷의 곡명과 주소, 같은 줄의 아티스트 글자를 읽는다.
- * `srpReadJackets(doc, pageUrl)`가 [{title, src, artist}]를 돌려준다.
+ * 한 쪽(문서)에서 재킷의 곡명과 주소를 읽는다. `srpReadJackets(doc, pageUrl)`가 [{title, src}]를 돌려준다.
  * 곡명은 앞뒤 공백만 뗀다(정규화·매칭은 서버가 한다). 곡명이나 주소가 비면 건너뛴다.
- * 아티스트가 줄에 없으면 빈 글자다(값 없음). 아티스트가 500자를 넘으면 읽지 않은 것으로 본다.
  */
 export const READER_SOURCE = `
-function srpClean(el,max){
-  var t=el?(el.textContent||'').replace(/\\s+/g,' ').trim():'';
-  return t.length>max?'':t;
-}
 function srpReadJackets(doc,pageUrl){
   var imgs=doc.querySelectorAll('img.jacket');
   var out=[];
@@ -90,9 +79,7 @@ function srpReadJackets(doc,pageUrl){
     var title=(imgs[i].getAttribute('alt')||'').replace(/\\s+/g,' ').trim();
     var src=imgs[i].getAttribute('src')||'';
     if(!title||!src){continue;}
-    var row=imgs[i].closest('tr')||imgs[i].closest('li');
-    var artist=row?srpClean(row.querySelector('[class*=artist]'),500):'';
-    out.push({title:title,src:new URL(src,pageUrl).href,artist:artist});
+    out.push({title:title,src:new URL(src,pageUrl).href});
   }
   return out;
 }
@@ -111,14 +98,14 @@ if(location.hostname!==${JSON.stringify(OFFICIAL_HOST)}||(location.pathname||'')
 var w=null;
 try{w=window.open(BASE+'/admin/song-import?${JACKET_QUERY}',${JSON.stringify(JACKET_WINDOW)});}catch(e){w=null;}
 if(!w){srpModal(TITLE,MSG.popupBlocked);return;}
-var found={};var titles=[];var infos=[];var failedPages=0;var readDone=false;var ready=false;var sent=false;var started=false;
+var found={};var titles=[];var failedPages=0;var readDone=false;var ready=false;var sent=false;var started=false;
 function send(m,t){try{w.postMessage(m,BASE,t||[]);}catch(e){}}
 function trySendTitles(){
   if(!ready||!readDone||sent){return;}
   sent=true;
   if(!titles.length){srpModal(TITLE,MSG.noSongs);return;}
   srpModal(TITLE,srpFmt(MSG.matching,{count:titles.length}));
-  send({type:'${MSG_TITLES}',titles:titles,infos:infos,failedPages:failedPages});
+  send({type:'${MSG_TITLES}',titles:titles,failedPages:failedPages});
 }
 function readCat(i){
   if(i>=${JACKET_CATEGORIES}){readDone=true;trySendTitles();return;}
@@ -132,7 +119,7 @@ function readCat(i){
       var doc=new DOMParser().parseFromString(x.responseText,'text/html');
       var rows=srpReadJackets(doc,location.href);
       for(var k=0;k<rows.length;k++){
-        if(!Object.prototype.hasOwnProperty.call(found,rows[k].title)){found[rows[k].title]=rows[k].src;titles.push(rows[k].title);if(rows[k].artist){infos.push({title:rows[k].title,artist:rows[k].artist});}}
+        if(!Object.prototype.hasOwnProperty.call(found,rows[k].title)){found[rows[k].title]=rows[k].src;titles.push(rows[k].title);}
       }
     }else{failedPages++;}
     setTimeout(function(){readCat(i+1);},400);
@@ -198,44 +185,16 @@ export function buildJacketBookmarkletHref(siteBase: string, messages: JacketBoo
 
 /* ---------- 우리 창 쪽: 받은 메시지 검사 ---------- */
 
-/** 곡 정보 한 줄(서버 SongInfoImportRequest.InfoRow와 같은 모양). 공식 화면에서는 아티스트만 읽고 BPM은 빈 글자다(D94). */
-export interface InfoRow {
-  title: string;
-  artist: string;
-  bpm: string;
-}
-
 export type JacketMessage =
-  | { type: typeof MSG_TITLES; titles: string[]; infos: InfoRow[]; failedPages: number }
+  | { type: typeof MSG_TITLES; titles: string[]; failedPages: number }
   | { type: typeof MSG_IMAGE; title: string; data: ArrayBuffer }
   | { type: typeof MSG_DONE; sent: number; failed: number };
 
 const MAX_TITLES = 4000;
 const MAX_TITLE_LENGTH = 300;
-/** 서버 SongInfoImportRequest의 한도(아티스트 500자)와 같다. */
-const MAX_ARTIST_LENGTH = 500;
 
 function isCount(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 100_000;
-}
-
-/**
- * 곡 정보 줄을 검사한다(D90). 옛 북마클릿은 `infos` 없이 보내므로 없거나 모양이 틀리면 빈 목록이고,
- * 줄 하나가 틀리면 그 줄만 버린다(곡명 목록·재킷은 그대로 쓴다). 문자열 아닌 값·한도 초과는 버린다.
- */
-function parseInfos(value: unknown): InfoRow[] {
-  if (!Array.isArray(value) || value.length > MAX_TITLES) return [];
-  const out: InfoRow[] = [];
-  for (const item of value) {
-    if (typeof item !== "object" || item === null) continue;
-    const r = item as Record<string, unknown>;
-    if (typeof r.title !== "string" || r.title.length < 1 || r.title.length > MAX_TITLE_LENGTH) continue;
-    const artist = typeof r.artist === "string" ? r.artist : "";
-    // BPM은 공식 화면에서 받지 않는다(D94): 옛 북마클릿이 bpm을 보내도 버린다
-    if (artist.length > MAX_ARTIST_LENGTH || !artist) continue;
-    out.push({ title: r.title, artist, bpm: "" });
-  }
-  return out;
 }
 
 /**
@@ -249,7 +208,7 @@ export function parseJacketMessage(data: unknown): JacketMessage | null {
     if (!Array.isArray(m.titles) || m.titles.length > MAX_TITLES) return null;
     const titles = m.titles.filter((t): t is string => typeof t === "string" && t.length >= 1 && t.length <= MAX_TITLE_LENGTH);
     if (titles.length !== m.titles.length) return null;
-    return { type: MSG_TITLES, titles, infos: parseInfos(m.infos), failedPages: isCount(m.failedPages) ? m.failedPages : 0 };
+    return { type: MSG_TITLES, titles, failedPages: isCount(m.failedPages) ? m.failedPages : 0 };
   }
   if (m.type === MSG_IMAGE) {
     if (typeof m.title !== "string" || !(m.data instanceof ArrayBuffer)) return null;

@@ -1,9 +1,9 @@
 import { compactBookmarkletSource, encodeBookmarklet, senderSource } from "@/lib/import-bookmarklet";
-import { BPM_TEXT_SOURCE, parseBpmText } from "@/lib/song-info";
+import { BPM_TEXT_SOURCE, MAX_ARTIST_LENGTH, normalizeArtist, parseBpmText } from "@/lib/song-info";
 import type { Translator } from "@/i18n/translator";
 
 /**
- * RemyWiki GITADORA 곡 표에서 BPM 읽기 북마클릿 (D94, ROOT 전용). 설계는 docs/DESIGN.md D94.
+ * RemyWiki GITADORA 곡 표에서 BPM·아티스트 읽기 북마클릿 (D94, ROOT 전용). 설계는 docs/DESIGN.md D94.
  *
  * ROOT가 RemyWiki(remywiki.com)의 곡 표가 있는 페이지(예: AC_GD_EXCHAIN)를 연 상태에서 북마크를 누르면:
  *  1. 지금 열린 페이지의 표만 읽는다(추가 요청 없음). 머리글에서 `Song`(또는 `Song Title`)과 `BPM` 열을 이름으로 찾고, 못 찾는 표는 건너뛴다.
@@ -11,7 +11,7 @@ import type { Translator } from "@/i18n/translator";
  *     우리 창이 받았다는 답(ack)을 줄 때까지 1초마다 다시 보낸다(최대 60번). 새로 열린 창은 읽어 들이는 동안 메시지를 받지 못하기 때문이다.
  * 우리 창은 RemyWiki 출처의 메시지만 받고, 이 코드는 우리 사이트 출처의 답만 받는다. 서버는 RemyWiki와 통신하지 않는다.
  *
- * D47 로더(짧은 스텁 + 해시 고정 파일)는 최근 플레이 가져오기 전용이라 쓰지 않는다. 재킷(D54)·곡 목록(D42)·곡 정보(D90)처럼
+ * D47 로더(짧은 스텁 + 해시 고정 파일)는 최근 플레이 가져오기 전용이라 쓰지 않는다. 재킷(D54)·곡 목록(D42)처럼
  * ROOT 관리 화면에서 끌어다 놓는 일반 북마클릿이고, 새 `public/import-loader/` 파일은 만들지 않는다.
  *
  * 북마클릿은 한 줄짜리 글자로 배포되므로 소스에는 `//` 주석을 쓰지 않고 ES5 문법만 쓴다(다른 북마클릿과 같은 규칙).
@@ -31,7 +31,6 @@ export const MSG_REMY_ACK = "srp-remy-ack";
 /** 한 번에 받는 곡 수(서버 SongInfoImportRequest의 4,000과 같다). */
 export const REMY_MAX_ROWS = 4000;
 const MAX_TITLE_LENGTH = 300;
-const MAX_ARTIST_LENGTH = 500;
 const MAX_ID_LENGTH = 64;
 const MAX_SOURCE_LENGTH = 120;
 
@@ -68,7 +67,7 @@ export function remyBookmarkletMessages(t: Translator): RemyBookmarkletMessages 
  *
  * 읽는 규칙(RemyWiki 표 모양 확인: docs/DESIGN.md D94):
  *  - 표마다 앞 4줄 안에서 머리글 칸 글자가 `Song`/`Song Title`/`Title`인 열과 `BPM`인 열을 찾는다. 둘 다 없으면 그 표는 건너뛴다.
- *    `Artist` 열은 있으면 읽는다. 열 위치는 colspan·rowspan을 펼친 격자로 계산한다(두 줄 머리글, `Drive Flare` 같은 앞 열 대응).
+ *    `Artist` 열은 있으면 읽는다(칸 안의 `from ○○` 원작 줄은 빼고 나머지 줄을 공백으로 잇는다). 열 위치는 colspan·rowspan을 펼친 격자로 계산한다(두 줄 머리글, `Drive Flare` 같은 앞 열 대응).
  *  - 머리글 아래 줄 중 곡 칸이 머리글 칸 그대로(rowspan), 또는 곡 칸과 BPM 칸이 같은 칸(구분 줄 `Default`, `Hidden Songs`)이면 건너뛴다.
  *  - 곡명: 칸 글자에서 <br>·블록을 줄바꿈으로 보고, 첫 줄을 곡명으로 쓴다. 다음 줄이 `from ○○`(원작 표시)이면 버리되 줄 끝의 `(Long Version)` 같은 괄호는 곡명에 붙인다.
  *    같은 줄 안의 ` from <BEMANI 시리즈>`도 같은 규칙으로 떼고(알려진 시리즈 이름일 때만), `[1]` 각주와 끝의 `new song` 표시를 지운다. 이미지·위첨자·각주는 읽지 않는다.
@@ -79,6 +78,7 @@ export function remyBookmarkletMessages(t: Translator): RemyBookmarkletMessages 
 export const READER_SOURCE = `
 var SRP_BPM_RE=new RegExp(${JSON.stringify(BPM_TEXT_SOURCE)});
 var SRP_FROM_RE=/^(.*?\\S)\\s+from\\s+(?:GUITARFREAKS|GuitarFreaks|drummania|DrumMania|beatmania|jubeat|pop'n|REFLEC|SOUND VOLTEX|DanceDanceRevolution|DANCERUSH|Keyboardmania|NOSTALGIA|\\u30CE\\u30B9\\u30BF\\u30EB\\u30B8\\u30A2|GITADORA)(.*)$/i;
+var SRP_FROMLINE_RE=/^from\\s+(?:GUITARFREAKS|GuitarFreaks|drummania|DrumMania|beatmania|jubeat|pop'n|REFLEC|SOUND VOLTEX|DanceDanceRevolution|DANCERUSH|Keyboardmania|NOSTALGIA|\\u30CE\\u30B9\\u30BF\\u30EB\\u30B8\\u30A2|GITADORA)/i;
 var SRP_TAIL_RE=/((?:\\s*\\([^()]*\\))+)\\s*$/;
 function srpNorm(s){
   s=String(s==null?'':s);
@@ -165,6 +165,13 @@ function srpTitle(lines){
   title=title.replace(/\\[\\d+\\]/g,'').replace(/\\s+new\\s+song\\s*$/i,'').replace(/\\s+/g,' ').replace(/^ | $/g,'');
   return title;
 }
+function srpArtist(cell){
+  var lines=srpLines(cell);var out=[];
+  for(var i=0;i<lines.length;i++){
+    if(!SRP_FROMLINE_RE.test(lines[i])){out.push(lines[i]);}
+  }
+  return out.join(' ').replace(/\\[\\d+\\]/g,'').replace(/\\s+/g,' ').replace(/^ | $/g,'');
+}
 function srpBpm(text){
   var t=srpNorm(text).replace(/\\[\\d+\\]/g,'').replace(/[*\\u2020\\u2021]+\\s*$/,'').replace(/[\\s\\u00A0]+/g,' ').replace(/^ | $/g,'');
   var m=t.match(SRP_BPM_RE);
@@ -194,7 +201,7 @@ function srpReadRemy(doc){
       var key=title.replace(/\\s+/g,'').toLowerCase();
       if(Object.prototype.hasOwnProperty.call(seen,key)){continue;}
       var artist='';
-      if(cols.artist>=0&&grid[r][cols.artist]&&grid[r][cols.artist]!==sc){artist=srpLines(grid[r][cols.artist]).join(' ');}
+      if(cols.artist>=0&&grid[r][cols.artist]&&grid[r][cols.artist]!==sc){artist=srpArtist(grid[r][cols.artist]);}
       if(artist.length>${MAX_ARTIST_LENGTH}){artist='';}
       if(rows.length>=${REMY_MAX_ROWS}){truncated=true;continue;}
       seen[key]=true;
@@ -277,7 +284,7 @@ function isCount(value: unknown): value is number {
 /**
  * RemyWiki 창이 보낸 메시지를 검사한다. 모양이 틀리면 null(무시). 출처 확인은 부르는 쪽이 먼저 한다.
  * 줄 하나가 틀리면 그 줄만 버린다: 곡명이 1~300자 문자열이 아니거나, BPM이 song-info.ts의 규칙(정수 1~2000, 범위는 최소<=최대)에 맞지 않으면
- * 버리고 invalid로 센다. 아티스트는 500자를 넘으면 빈 글자로 둔다. 줄 수가 4,000을 넘으면 통째로 버린다.
+ * 버리고 invalid로 센다. 아티스트는 song-info.ts의 normalizeArtist(NFKC, 줄바꿈→공백, 255자 초과는 빈 글자)로 다시 쓴다. 줄 수가 4,000을 넘으면 통째로 버린다.
  * BPM은 `172`·`120-180` 모양으로 다시 써서 돌려준다(서버가 받는 모양).
  */
 export function parseRemyMessage(data: unknown): RemyMessage | null {
@@ -297,7 +304,7 @@ export function parseRemyMessage(data: unknown): RemyMessage | null {
       invalid += 1;
       continue;
     }
-    const artist = typeof r.artist === "string" && r.artist.length <= MAX_ARTIST_LENGTH ? r.artist : "";
+    const artist = typeof r.artist === "string" ? normalizeArtist(r.artist) : "";
     rows.push({ title: r.title, artist, bpm: bpm.min === bpm.max ? String(bpm.min) : `${bpm.min}-${bpm.max}` });
   }
   const source = typeof m.source === "string" ? m.source.slice(0, MAX_SOURCE_LENGTH) : "";

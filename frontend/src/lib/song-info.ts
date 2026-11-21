@@ -1,7 +1,16 @@
 import { apiFetch } from "@/lib/api";
-import type { InfoRow } from "@/lib/jacket-reader";
 
-/** 곡 정보(아티스트·BPM) 가져오기 (D90, ROOT 전용). 백엔드 SongInfoPreviewResponse·SongInfoCommitResponse와 같은 모양. */
+/**
+ * 곡 정보(아티스트·BPM) 가져오기 (D94, ROOT 전용). 백엔드 SongInfoPreviewResponse·SongInfoCommitResponse와 같은 모양.
+ * 값은 RemyWiki 곡 표에서만 읽는다(공식 사이트에는 아티스트·BPM이 표기되지 않는다. D90은 D94로 대체).
+ */
+
+/** 곡 정보 한 줄(서버 SongInfoImportRequest.InfoRow와 같은 모양). artist·bpm이 비면 값 없음. */
+export interface InfoRow {
+  title: string;
+  artist: string;
+  bpm: string;
+}
 
 /** FILL=새로 채움, OVERWRITE=덮어쓰기, UNCHANGED=변경 없음, NONE=값 없음 */
 export type InfoStatus = "FILL" | "OVERWRITE" | "UNCHANGED" | "NONE";
@@ -91,4 +100,20 @@ export function parseBpmText(raw: string): { min: number; max: number } | null {
   const max = m[2] === undefined ? min : Number(m[2]);
   if (min < MIN_BPM || max > MAX_BPM || min > max) return null;
   return { min, max };
+}
+
+/** 서버 SongInfoImportService.MAX_ARTIST_LENGTH와 같다. */
+export const MAX_ARTIST_LENGTH = 255;
+
+/**
+ * 아티스트 글자를 저장 형태로(서버 normalizeArtist와 같은 규칙). NFKC 정규화, 줄바꿈·제어문자는 공백으로 바꾸고 공백은 하나로 합친다.
+ * 비었거나 255자를 넘으면 빈 글자(값 없음). 잘라서 쓰지 않는다.
+ */
+export function normalizeArtist(raw: string): string {
+  const text = raw
+    .normalize("NFKC")
+    .replace(/[\p{Cc}\r\n]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length === 0 || text.length > MAX_ARTIST_LENGTH ? "" : text;
 }

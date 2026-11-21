@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 곡 정보(아티스트·BPM) 가져오기 API (D90). ROOT만 부를 수 있다(ADMIN도 403).
- * 값은 ROOT의 브라우저가 공식 `곡별 성적` 화면에서 읽어 사이트 화면으로 넘긴 것이고, 서버는 공식 사이트와 통신하지 않는다.
- * 요청 본문(공식 곡 값)은 로그에 남기지 않는다.
+ * 곡 정보(아티스트·BPM) 가져오기 API (D90·D94). ROOT만 부를 수 있다(ADMIN도 403).
+ * 값은 ROOT의 브라우저가 RemyWiki 곡 표에서 읽어 사이트 화면으로 넘긴 것이고, 서버는 외부 사이트와 통신하지 않는다.
+ * 요청 본문(가져온 곡 값)은 로그에 남기지 않는다.
  */
 @RestController
 @RequestMapping("/api/v1/admin/song-info-imports")

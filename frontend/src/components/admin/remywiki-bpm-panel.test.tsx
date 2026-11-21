@@ -8,11 +8,19 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
-const row = (songId: number, title: string, status: "FILL" | "OVERWRITE" | "UNCHANGED" | "NONE", cur: [number | null, number | null], off: [number, number]) => ({
+type Status = "FILL" | "OVERWRITE" | "UNCHANGED" | "NONE";
+const row = (
+  songId: number,
+  title: string,
+  status: Status,
+  cur: [number | null, number | null],
+  off: [number, number],
+  artist: { current: string | null; official: string | null; status: Status } = { current: null, official: null, status: "NONE" },
+) => ({
   officialTitle: title,
   songId,
   songTitle: title,
-  artist: { current: null, official: null, status: "NONE" },
+  artist,
   bpm: { currentMin: cur[0], currentMax: cur[1], officialMin: off[0], officialMax: off[1], status },
 });
 
@@ -69,79 +77,86 @@ describe("RemyWikiBpmPanel (D94)", () => {
           matchedSongs: 3,
           unmatchedCount: 1,
           rows: [
-            row(1, "Alpha", "FILL", [null, null], [180, 180]),
-            row(2, "Beta", "OVERWRITE", [150, 150], [160, 170]),
-            row(3, "Gamma", "UNCHANGED", [200, 200], [200, 200]),
+            row(1, "Alpha", "FILL", [null, null], [180, 180], { current: null, official: "Artist A", status: "FILL" }),
+            row(2, "Beta", "OVERWRITE", [150, 150], [160, 170], { current: "Old Name", official: "New Name", status: "OVERWRITE" }),
+            row(3, "Gamma", "UNCHANGED", [200, 200], [200, 200], { current: "G", official: "G", status: "UNCHANGED" }),
           ],
         });
       }
       if (url.endsWith("/admin/song-info-imports/commit")) {
-        return json({ artistFilled: 0, artistOverwritten: 0, bpmFilled: 1, bpmOverwritten: 0, skipped: 0 });
+        return json({ artistFilled: 1, artistOverwritten: 0, bpmFilled: 1, bpmOverwritten: 0, skipped: 0 });
       }
       return json({});
     });
   }
 
-  it("RemyWiki가 보낸 곡을 받으면 답(ack)을 보내고 미리보기를 보여 준다. 새로 채움만 기본 체크한다", async () => {
+  it("RemyWiki가 보낸 곡을 받으면 답(ack)을 보내고 미리보기를 보여 준다. 새로 채움 항목만 기본 체크한다", async () => {
     mockServer();
     renderPanel();
-    expect(screen.getByText("SRP BPM")).toBeInTheDocument();
+    expect(screen.getByText("SRP 곡 정보")).toBeInTheDocument();
     send(message("m1", [
-      { title: "Alpha", bpm: "180" },
-      { title: "Beta", bpm: "160-170" },
-      { title: "Gamma", bpm: "200" },
+      { title: "Alpha", artist: "Artist A", bpm: "180" },
+      { title: "Beta", artist: "New Name", bpm: "160-170" },
+      { title: "Gamma", artist: "G", bpm: "200" },
       { title: "Unknown Song", bpm: "120" },
     ]));
     expect(acks).toEqual([{ message: { type: MSG_REMY_ACK, id: "m1" }, target: REMY_ORIGIN }]);
 
     expect(await screen.findByText("맞은 곡 3곡 · 일치 안 됨 1곡")).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Alpha" })).toBeChecked();
-    expect(screen.getByRole("checkbox", { name: "Beta" })).not.toBeChecked(); // 덮어쓰기는 기본 해제
-    expect(screen.getByRole("checkbox", { name: "Gamma" })).toBeDisabled(); // 변경 없음은 고를 수 없다
+    expect(screen.getByRole("checkbox", { name: "Alpha 아티스트" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Alpha BPM" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Beta 아티스트" })).not.toBeChecked(); // 덮어쓰기는 기본 해제
+    expect(screen.getByRole("checkbox", { name: "Beta BPM" })).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Gamma 아티스트" })).toBeDisabled(); // 변경 없음은 고를 수 없다
+    expect(screen.getByRole("checkbox", { name: "Gamma BPM" })).toBeDisabled();
+    // 현재값 → 가져온 값을 나란히 보여 사용자가 판단한다
+    expect(screen.getByText("Old Name →", { exact: false })).toBeInTheDocument();
+    expect(screen.getByText("New Name")).toBeInTheDocument();
     // 상태는 색이 아니라 글자로도 보인다
     expect(screen.getAllByText("새로 채움").length).toBeGreaterThan(0);
     expect(screen.getAllByText("덮어쓰기").length).toBeGreaterThan(0);
     expect(screen.getAllByText("변경 없음").length).toBeGreaterThan(0);
     expect(screen.getByText("Unknown Song", { exact: false })).toBeInTheDocument(); // 일치 안 된 곡명 목록
-    expect(screen.getByRole("button", { name: "선택 1곡 저장" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "선택 2건 저장" })).toBeEnabled();
 
-    // 서버로 가는 값: 아티스트는 보내지 않는다(BPM만)
+    // 서버로 가는 값: 아티스트도 BPM도 함께 간다
     const previewCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/preview"));
-    expect(JSON.parse(String(previewCall?.[1]?.body)).songs).toContainEqual({ title: "Beta", artist: "", bpm: "160-170" });
+    expect(JSON.parse(String(previewCall?.[1]?.body)).songs).toContainEqual({ title: "Beta", artist: "New Name", bpm: "160-170" });
   });
 
-  it("체크한 곡의 BPM만 저장하고, 덮어쓰기는 체크한 곡만 보낸다", async () => {
+  it("체크한 항목만 저장하고, 덮어쓰기는 체크한 항목만 보낸다", async () => {
     mockServer();
     renderPanel();
-    send(message("m1", [{ title: "Alpha", bpm: "180" }, { title: "Beta", bpm: "160-170" }, { title: "Gamma", bpm: "200" }]));
-    await screen.findByRole("checkbox", { name: "Alpha" });
+    send(message("m1", [{ title: "Alpha", artist: "Artist A", bpm: "180" }, { title: "Beta", artist: "New Name", bpm: "160-170" }, { title: "Gamma", artist: "G", bpm: "200" }]));
+    await screen.findByRole("checkbox", { name: "Alpha BPM" });
 
-    fireEvent.click(screen.getByRole("button", { name: "덮어쓰기 1곡 선택" }));
-    expect(screen.getByRole("checkbox", { name: "Beta" })).toBeChecked();
-    expect(screen.getByRole("button", { name: "덮어쓰기 1곡 제외" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "덮어쓰기 1곡 제외" }));
-    expect(screen.getByRole("checkbox", { name: "Beta" })).not.toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "덮어쓰기 2건 선택" }));
+    expect(screen.getByRole("checkbox", { name: "Beta 아티스트" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Beta BPM" })).toBeChecked();
+    expect(screen.getByRole("button", { name: "덮어쓰기 2건 제외" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "덮어쓰기 2건 제외" }));
+    expect(screen.getByRole("checkbox", { name: "Beta BPM" })).not.toBeChecked();
 
-    fireEvent.click(screen.getByRole("button", { name: "선택 1곡 저장" }));
-    await waitFor(() => expect(screen.getByText(/저장 결과: BPM 새로 1곡·덮어쓰기 0곡/)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "선택 2건 저장" }));
+    await waitFor(() => expect(screen.getByText(/저장 결과: 아티스트 새로 1곡·덮어쓰기 0곡, BPM 새로 1곡·덮어쓰기 0곡/)).toBeInTheDocument());
     const commitCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/commit"));
     expect(JSON.parse(String(commitCall?.[1]?.body))).toEqual({
-      songs: [{ title: "Alpha", artist: "", bpm: "180" }],
-      selections: [{ songId: 1, artist: false, bpm: true }],
+      songs: [{ title: "Alpha", artist: "Artist A", bpm: "180" }],
+      selections: [{ songId: 1, artist: true, bpm: true }],
     });
   });
 
-  it("덮어쓰기를 체크하면 그 곡도 저장한다", async () => {
+  it("덮어쓰기 항목을 하나만 체크하면 그 항목만 저장한다(같은 곡의 다른 항목은 건드리지 않는다)", async () => {
     mockServer();
     renderPanel();
-    send(message("m1", [{ title: "Alpha", bpm: "180" }, { title: "Beta", bpm: "160-170" }]));
-    await screen.findByRole("checkbox", { name: "Beta" });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Beta" }));
-    fireEvent.click(screen.getByRole("button", { name: "선택 2곡 저장" }));
+    send(message("m1", [{ title: "Alpha", artist: "Artist A", bpm: "180" }, { title: "Beta", artist: "New Name", bpm: "160-170" }]));
+    await screen.findByRole("checkbox", { name: "Beta BPM" });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Beta BPM" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 3건 저장" }));
     await waitFor(() => expect(fetchMock.mock.calls.some((c) => String(c[0]).endsWith("/commit"))).toBe(true));
     const commitCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/commit"));
     expect(JSON.parse(String(commitCall?.[1]?.body)).selections).toEqual([
-      { songId: 1, artist: false, bpm: true },
+      { songId: 1, artist: true, bpm: true },
       { songId: 2, artist: false, bpm: true },
     ]);
   });
@@ -164,7 +179,7 @@ describe("RemyWikiBpmPanel (D94)", () => {
     renderPanel();
     send(message("m1", [{ title: "Alpha", bpm: "180" }]));
     send(message("m1", [{ title: "Alpha", bpm: "180" }])); // 북마클릿의 재전송
-    await screen.findByRole("checkbox", { name: "Alpha" });
+    await screen.findByRole("checkbox", { name: "Alpha BPM" });
     expect(acks).toHaveLength(2);
     expect(fetchMock.mock.calls.filter((c) => String(c[0]).endsWith("/preview"))).toHaveLength(1);
 
@@ -187,10 +202,10 @@ describe("RemyWikiBpmPanel (D94)", () => {
     mockServer();
     renderPanel();
     send(message("m1", [{ title: "Alpha", bpm: "180" }]));
-    await screen.findByRole("checkbox", { name: "Alpha" });
+    await screen.findByRole("checkbox", { name: "Alpha BPM" });
     fireEvent.click(screen.getByRole("button", { name: "비우기" }));
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(screen.getByText("받은 곡이 없습니다.")).toBeInTheDocument();
-    expect(screen.getByText("SRP BPM")).toBeInTheDocument();
+    expect(screen.getByText("SRP 곡 정보")).toBeInTheDocument();
   });
 });

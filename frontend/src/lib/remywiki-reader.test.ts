@@ -123,6 +123,24 @@ describe("RemyWiki 표 읽기 (D94)", () => {
     ]);
   });
 
+  it("아티스트 칸: 줄바꿈은 공백으로 잇고, `from ○○` 원작 줄과 각주는 빼며, 빈 칸은 빈 글자다", () => {
+    const html = `<table>
+      <tr><th>Song</th><th>Artist</th><th>BPM</th></tr>
+      <tr><td>A</td><td>Band One<br>feat. Singer<br>from GITADORA</td><td>120</td></tr>
+      <tr><td>B</td><td><div>Name X</div><div>from jubeat</div>[1]</td><td>130</td></tr>
+      <tr><td>C</td><td></td><td>140</td></tr>
+      <tr><td>D</td><td>from the edge</td><td>150</td></tr>
+      <tr><td>E</td><td>Ｚｅｄｄ</td><td>160</td></tr>
+    </table>`;
+    expect(parse(html).rows).toEqual([
+      { title: "A", artist: "Band One feat. Singer", bpm: "120" },
+      { title: "B", artist: "Name X", bpm: "130" },
+      { title: "C", artist: "", bpm: "140" },
+      { title: "D", artist: "from the edge", bpm: "150" }, // 시리즈 이름이 아닌 `from`은 아티스트 글자다
+      { title: "E", artist: "Zedd", bpm: "160" },
+    ]);
+  });
+
   it("4,000곡을 넘으면 넘는 줄은 버리고 truncated로 알린다", () => {
     const body = Array.from({ length: 4005 }, (_, i) => `<tr><td>Song ${i}</td><td>A</td><td>${100 + (i % 100)}</td></tr>`).join("");
     const result = parse(`<table><tr><th>Song</th><th>Artist</th><th>BPM</th></tr>${body}</table>`);
@@ -226,7 +244,10 @@ describe("RemyWiki 메시지 검사 (D94)", () => {
         { title: "Reversed", bpm: "200-100" },
         { title: "Float", bpm: "172.5" },
         { title: "NoBpm" },
-        { title: "LongArtist", artist: "y".repeat(501), bpm: "90" },
+        { title: "LongArtist", artist: "y".repeat(256), bpm: "90" },
+        { title: "Multi", artist: "Line\nTwo \r\n  Three", bpm: "91" },
+        { title: "Wide", artist: "Ｗｉｄｅ", bpm: "92" },
+        { title: "Blank", artist: "   ", bpm: "93" },
         null,
       ],
     });
@@ -239,7 +260,10 @@ describe("RemyWiki 메시지 검사 (D94)", () => {
         { title: "Ok", artist: "Z", bpm: "172" },
         { title: "Range", artist: "", bpm: "120-180" },
         { title: "Same", artist: "", bpm: "150" },
-        { title: "LongArtist", artist: "", bpm: "90" },
+        { title: "LongArtist", artist: "", bpm: "90" }, // 255자 초과는 값 없음
+        { title: "Multi", artist: "Line Two Three", bpm: "91" },
+        { title: "Wide", artist: "Wide", bpm: "92" },
+        { title: "Blank", artist: "", bpm: "93" },
       ],
     });
   });
