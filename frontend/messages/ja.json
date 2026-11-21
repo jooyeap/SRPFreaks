@@ -390,8 +390,9 @@
     "tilesOrderLabel": "難易度の順序",
     "tilesOrderHard": "難しい順",
     "tilesOrderEasy": "やさしい順",
+    "tilesNoRecord": "記録なし",
     "tilesDone": "完了",
-    "tilesTip": "色が濃いほど記録が多い難易度です。タイルを押すと、その難易度の曲が開きます。"
+    "tilesTip": "タイル下のバーは段階別の記録割合です。タイルを押すと、その難易度の曲が開きます。"
   },
   "Chart": {
     "patternSingle": "単色",

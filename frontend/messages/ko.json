@@ -390,8 +390,9 @@
     "tilesOrderLabel": "난이도 순서",
     "tilesOrderHard": "어려운 순",
     "tilesOrderEasy": "쉬운 순",
+    "tilesNoRecord": "기록 없음",
     "tilesDone": "완료",
-    "tilesTip": "색이 진할수록 기록이 많은 난이도입니다. 타일을 누르면 그 난이도의 곡이 열립니다."
+    "tilesTip": "타일 아래 막대는 단계별 기록 비율입니다. 타일을 누르면 그 난이도의 곡이 열립니다."
   },
   "Chart": {
     "patternSingle": "단일",
