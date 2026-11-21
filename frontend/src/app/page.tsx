@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { HomeSongSearch } from "@/components/home/HomeSongSearch";
 import { LandingNotices } from "@/components/home/LandingNotices";
 import { LandingPlayers } from "@/components/home/LandingPlayers";
 import { LandingTierShortcuts } from "@/components/home/LandingTierShortcuts";
@@ -10,6 +11,7 @@ import { useTranslations } from "next-intl";
 
 /**
  * 홈. 로그인하지 않았으면 서비스 소개와 로그인 안내, 로그인했으면 내 요약(레이팅·서열표 진행도)을 보여 준다.
+ * 헤더의 곡 검색 돋보기(HomeSongSearch, D100)는 두 상태 모두에서 쓴다.
  * 서열표/레이팅 등 개별 화면은 로그인이 필요하며, 로그인하지 않았으면 각 화면이 로그인 안내를 보여 준다.
  */
 export default function Home() {
@@ -22,10 +24,17 @@ export default function Home() {
     return <p className="text-sm text-fg-sub">{tc("loading")}</p>;
   }
   if (status === "authenticated" && user) {
-    return <HomeDashboard userId={user.id} name={user.nickname ?? t("defaultName")} />;
+    return (
+      <>
+        <HomeSongSearch userId={user.id} />
+        <HomeDashboard userId={user.id} name={user.nickname ?? t("defaultName")} />
+      </>
+    );
   }
   return (
     <div className="flex flex-col gap-4">
+      {/* 곡 검색은 비로그인 공개 읽기(D43)라 로그인 전 홈에서도 쓴다. userId 0 = 비로그인 */}
+      <HomeSongSearch userId={0} />
       <section className="rounded-lg border border-line bg-card p-4">
         <h1 className="font-num text-xl font-semibold">SRPFreaks</h1>
         <p className="mt-2 text-sm text-fg-sub">
