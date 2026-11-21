@@ -27,6 +27,7 @@ export function FolderNeighborBar({
   recorded,
   total,
   selectedSide = null,
+  onNavigate,
 }: {
   neighbors: FolderNeighbors;
   /** 스와이프를 80px 넘게 끌고 있을 때 놓으면 가게 될 쪽(D68). 그쪽 이웃 숫자를 선택 상태(반전)로 보인다. higher = 오른쪽 구역, lower = 왼쪽 구역 */
@@ -35,6 +36,8 @@ export function FolderNeighborBar({
   tier: number | null;
   recorded: number;
   total: number;
+  /** 주면 이동을 이쪽에 맡긴다(필터를 싣고 가려고, D99). 안 주면 예전처럼 필터 없는 주소로 replace 한다 */
+  onNavigate?: (tier: number | null) => void;
 }) {
   const t = useTranslations();
 
@@ -54,7 +57,7 @@ export function FolderNeighborBar({
           data-testid="folder-pill"
           className="mx-auto grid h-12 max-w-md grid-cols-[1fr_auto_1fr] items-stretch rounded-3xl border border-ctl bg-card p-1"
         >
-          <Zone group={neighbors.lower} direction="prev" selected={selectedSide === "lower"} />
+          <Zone group={neighbors.lower} direction="prev" selected={selectedSide === "lower"} onNavigate={onNavigate} />
           <div data-testid="folder-pill-center" className="pointer-events-none flex flex-col items-center justify-center px-2">
             <span className="font-num text-[15px] font-bold leading-tight text-fg">{formatTier(tier, t)}</span>
             <span aria-hidden="true" data-testid="folder-pill-bar" className="my-0.5 block h-[3px] w-16 overflow-hidden rounded-full bg-line">
@@ -68,14 +71,24 @@ export function FolderNeighborBar({
               {recorded}/{total}
             </span>
           </div>
-          <Zone group={neighbors.higher} direction="next" selected={selectedSide === "higher"} />
+          <Zone group={neighbors.higher} direction="next" selected={selectedSide === "higher"} onNavigate={onNavigate} />
         </div>
       </div>
     </nav>
   );
 }
 
-function Zone({ group, direction, selected }: { group: TierGroupResponse | null; direction: "prev" | "next"; selected: boolean }) {
+function Zone({
+  group,
+  direction,
+  selected,
+  onNavigate,
+}: {
+  group: TierGroupResponse | null;
+  direction: "prev" | "next";
+  selected: boolean;
+  onNavigate?: (tier: number | null) => void;
+}) {
   const t = useTranslations();
   const router = useRouter();
   const prev = direction === "prev";
@@ -108,6 +121,10 @@ function Zone({ group, direction, selected }: { group: TierGroupResponse | null;
       data-testid={`folder-pill-${direction}`}
       aria-label={t(prev ? "Table.neighborPrevTier" : "Table.neighborNextTier", { tier: label })}
       onClick={() => {
+        if (onNavigate) {
+          onNavigate(group.tier);
+          return;
+        }
         // 맨 위로 올리지 않는다(scroll: false). 이동 직후 목록 머리가 화면 위로 지나가 있으면 새 화면이 머리 위치로 맞춘다(folder-scroll)
         requestFolderScrollAdjust();
         router.replace(folderHref(group.tier), { scroll: false });
