@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 서열표 분석 API(D77)의 권한: USER는 403(AccessDenied), ADMIN·ROOT는 통과(RoleHierarchy), 비로그인은 호출 불가.
- * 일곱 개 엔드포인트를 모두 확인한다(클래스에 걸린 @PreAuthorize가 메서드마다 적용되는지).
+ * 여덟 개 엔드포인트를 모두 확인한다(클래스에 걸린 @PreAuthorize가 메서드마다 적용되는지).
  * TableEntryAdminControllerAuthorizationTest와 같은 방식(메서드 보안 + 실제 RoleHierarchy만 띄운다).
  */
 class ChartStatsAdminControllerAuthorizationTest {
@@ -71,7 +71,7 @@ class ChartStatsAdminControllerAuthorizationTest {
         return user;
     }
 
-    /** 일곱 엔드포인트를 모두 한 번씩 부르는 동작들. */
+    /** 여덟 엔드포인트를 모두 한 번씩 부르는 동작들. */
     private List<Consumer<AuthenticatedUser>> calls() {
         return List.of(
                 u -> controller.deviation(u, null, 0, 20),
@@ -79,6 +79,7 @@ class ChartStatsAdminControllerAuthorizationTest {
                 u -> controller.folders(u, 0, 100),
                 u -> controller.undecided(u, 0, 20),
                 u -> controller.folderDistribution(u, 0, 100),
+                u -> controller.folderUserRecords(u, new java.math.BigDecimal("6.4"), 11L, null, 0, 100),
                 u -> controller.summary(u, 10L),
                 u -> controller.players(u, 10L, null, 0, 20));
     }

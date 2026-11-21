@@ -3,6 +3,7 @@ package com.srpfreaks.backend.controller;
 import com.srpfreaks.backend.dto.ChartStatsResponse.DeviationRow;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderDistributionPage;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderRow;
+import com.srpfreaks.backend.dto.ChartStatsResponse.FolderUserRecords;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Page;
 import com.srpfreaks.backend.dto.ChartStatsResponse.PlayerRow;
 import com.srpfreaks.backend.dto.ChartStatsResponse.PopularityRow;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 /**
  * 서열표 분석 API (D77, ROOT·ADMIN). 읽기 전용이고 공개 읽기 경로(PublicReadPaths)에 넣지 않았다.
@@ -66,6 +69,20 @@ public class ChartStatsAdminController {
                                                      @RequestParam(defaultValue = "0") int page,
                                                      @RequestParam(defaultValue = "" + ChartStatsService.MAX_PAGE_SIZE) int size) {
         return chartStatsService.folderDistribution(actor.id(), page, size);
+    }
+
+    /**
+     * 폴더 기록 상세(D97): 폴더 분포의 한 유저 평균에 들어간 곡 목록. folder = 기준 난이도(6.4), unit = 0.1(폴더 하나, 기본) / 0.5(folder ~ folder+0.4 묶음).
+     * 공개 프로필이 아닌 유저는 404. 목록은 페이지네이션(size 기본·최대 100)이고 합계는 모든 곡으로 낸다.
+     */
+    @GetMapping("/folders/{folder}/users/{userId}/records")
+    public FolderUserRecords folderUserRecords(@AuthenticationPrincipal AuthenticatedUser actor,
+                                               @PathVariable BigDecimal folder,
+                                               @PathVariable Long userId,
+                                               @RequestParam(required = false) String unit,
+                                               @RequestParam(defaultValue = "0") int page,
+                                               @RequestParam(defaultValue = "" + ChartStatsService.MAX_PAGE_SIZE) int size) {
+        return chartStatsService.folderUserRecords(actor.id(), folder, unit, userId, page, size);
     }
 
     /** 미정 목록: 서열표 기준 난이도가 없는데 공개 유저 기록이 있는 채보. */

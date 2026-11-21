@@ -255,7 +255,7 @@ function DistributionTab({ viewerId }: { viewerId: number }) {
       empty={query.isSuccess && query.data.content.length === 0}
       emptyText={t("distEmpty")}
     >
-      {query.data ? <FolderDistribution data={query.data} /> : null}
+      {query.data ? <FolderDistribution data={query.data} viewerId={viewerId} /> : null}
     </ListState>
   );
 }
