@@ -114,7 +114,7 @@ describe("서열표 첫 화면 (타일 격자)", () => {
     expect(done).toHaveAttribute("href", "/table/folder/5.8");
     expect(done).toHaveTextContent("3/3");
     expect(done).toHaveTextContent("완료");
-    expect(screen.getByRole("link", { name: /^5\.9/ })).toHaveTextContent("0/3");
+    expect(screen.getByRole("link", { name: /^5\.9/ })).toHaveTextContent("기록 없음");
     expect(screen.getByRole("link", { name: /^5\.9/ })).not.toHaveTextContent("완료");
   });
 
@@ -228,7 +228,7 @@ describe("서열표 첫 화면 (타일 격자)", () => {
   });
 
   describe("첫 방문 안내 말풍선", () => {
-    const tip = "색이 진할수록 기록이 많은 난이도입니다. 타일을 누르면 그 난이도의 곡이 열립니다.";
+    const tip = "타일 아래 막대는 단계별 기록 비율입니다. 타일을 누르면 그 난이도의 곡이 열립니다.";
 
     it("처음에는 보이고, ×로 닫으면 이 기기에서 다시 뜨지 않는다 (화면을 다시 만들어도)", async () => {
       serve([tier(5.8, 1, 2)]);

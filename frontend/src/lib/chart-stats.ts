@@ -53,12 +53,34 @@ export interface PopularityRow {
   recentRecords: number;
 }
 
-export interface FolderRow {
+/** 폴더 분포(D88): 한 유저의 한 폴더(0.1 단위). 평균 달성률 = sumRate / charts. */
+export interface DistCell {
+  userId: number;
+  charts: number;
+  sumRate: number;
+}
+
+export interface DistFolder {
   tier: number;
-  chartCount: number;
-  sampledCharts: number;
-  avgRate: number | null;
-  deltaFromPrevious: number | null;
+  cells: DistCell[];
+}
+
+/** 점 색·말풍선용 유저. tier는 서버가 레이팅 총점으로 구한 티어(없으면 null). 이메일·역할·Google ID는 오지 않는다. */
+export interface DistUser {
+  userId: number;
+  nickname: string;
+  tier: PlayerTierResponse | null;
+  totalScore: number;
+}
+
+export interface FolderDistributionPage {
+  content: DistFolder[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  users: DistUser[];
+  meta: ChartStatsMeta;
 }
 
 export interface UndecidedRow {
@@ -92,14 +114,14 @@ export interface StatsPlayerRow {
 export type DeviationSort = "deviation" | "avg" | "players";
 export type PopularityRange = "all" | "7d";
 export type PlayerSort = "rate" | "score" | "plays";
-export type ChartStatsTab = "deviation" | "popularity" | "folders" | "undecided";
+export type ChartStatsTab = "deviation" | "popularity" | "distribution" | "undecided";
 
-export const CHART_STATS_TABS: readonly ChartStatsTab[] = ["deviation", "popularity", "folders", "undecided"];
+export const CHART_STATS_TABS: readonly ChartStatsTab[] = ["deviation", "popularity", "distribution", "undecided"];
 export const DEVIATION_SORTS: readonly DeviationSort[] = ["deviation", "avg", "players"];
 export const POPULARITY_RANGES: readonly PopularityRange[] = ["all", "7d"];
 export const PLAYER_SORTS: readonly PlayerSort[] = ["rate", "score", "plays"];
 export const CHART_STATS_PAGE_SIZE = 20;
-/** 폴더 곡선은 그래프가 한 번에 모두 받는다(서버 최대 100). 폴더는 수십 개다. */
+/** 폴더 분포는 그래프가 한 번에 모두 받는다(서버 최대 100폴더). */
 export const FOLDER_PAGE_SIZE = 100;
 
 /** 조회 키. 보는 사람(viewerId)을 넣는 이유는 다른 관리 화면과 같다(계정이 바뀌어도 이전 계정의 캐시가 보이지 않게). */
@@ -107,7 +129,7 @@ export const chartStatsKeys = {
   all: ["admin", "chart-stats"] as const,
   deviation: (viewerId: number, sort: DeviationSort, page: number) => ["admin", "chart-stats", "deviation", viewerId, sort, page] as const,
   popularity: (viewerId: number, range: PopularityRange, page: number) => ["admin", "chart-stats", "popularity", viewerId, range, page] as const,
-  folders: (viewerId: number) => ["admin", "chart-stats", "folders", viewerId] as const,
+  folderDistribution: (viewerId: number) => ["admin", "chart-stats", "folder-distribution", viewerId] as const,
   undecided: (viewerId: number, page: number) => ["admin", "chart-stats", "undecided", viewerId, page] as const,
   summary: (viewerId: number, chartId: number) => ["admin", "chart-stats", "summary", viewerId, chartId] as const,
   players: (viewerId: number, chartId: number, sort: PlayerSort, page: number) =>
@@ -124,8 +146,8 @@ export function fetchPopularity(range: PopularityRange, page: number, signal?: A
   return apiFetch<ChartStatsPage<PopularityRow>>(`${BASE}/popularity`, { query: { range, page, size: CHART_STATS_PAGE_SIZE }, signal });
 }
 
-export function fetchFolders(signal?: AbortSignal): Promise<ChartStatsPage<FolderRow>> {
-  return apiFetch<ChartStatsPage<FolderRow>>(`${BASE}/folders`, { query: { page: 0, size: FOLDER_PAGE_SIZE }, signal });
+export function fetchFolderDistribution(signal?: AbortSignal): Promise<FolderDistributionPage> {
+  return apiFetch<FolderDistributionPage>(`${BASE}/folder-distribution`, { query: { page: 0, size: FOLDER_PAGE_SIZE }, signal });
 }
 
 export function fetchUndecided(page: number, signal?: AbortSignal): Promise<ChartStatsPage<UndecidedRow>> {
@@ -212,67 +234,4 @@ export function ratioPercent(value: number, max: number): number {
     return 0;
   }
   return Math.min(Math.max(value / max, 0), 1) * 100;
-}
-
-// ---- 폴더 곡선(SVG) ---------------------------------------------------------------------------------
-
-export interface CurvePoint {
-  tier: number;
-  x: number;
-  y: number;
-  avg: number;
-  row: FolderRow;
-}
-
-export interface CurveLayout {
-  /** 폴더마다의 x 좌표(표본 부족 폴더 자리도 포함, x축 글자용) */
-  xs: number[];
-  points: CurvePoint[];
-  /** 이어서 그릴 선 조각들. 표본 부족 폴더(평균 null)는 선을 끊는다(건너뛴 곳에는 선을 긋지 않는다). */
-  segments: CurvePoint[][];
-  /** y축 눈금(달성률, %) */
-  yTicks: { value: number; y: number }[];
-  min: number;
-  max: number;
-}
-
-/**
- * 폴더 곡선 좌표. x는 폴더 순서(기준 난이도 오름차순)를 같은 간격으로 놓고, y는 평균 달성률을 보이는 범위(5의 배수로 맞춘 최소~최대)에 맞춘다.
- * 표본 부족 폴더는 점이 없고 그 자리는 비워 둔다(x 칸은 남긴다). 점이 하나도 없으면 빈 배치를 돌려준다.
- */
-export function layoutCurve(rows: readonly FolderRow[], width: number, height: number, pad: { left: number; right: number; top: number; bottom: number }): CurveLayout {
-  const innerW = width - pad.left - pad.right;
-  const innerH = height - pad.top - pad.bottom;
-  const avgs = rows.map((r) => r.avgRate).filter((v): v is number => v !== null);
-  if (rows.length === 0 || avgs.length === 0) {
-    return { xs: [], points: [], segments: [], yTicks: [], min: 0, max: 0 };
-  }
-  const min = Math.floor(Math.min(...avgs) / 5) * 5;
-  const max = Math.max(Math.ceil(Math.max(...avgs) / 5) * 5, min + 5);
-  const yOf = (value: number) => pad.top + innerH - ((value - min) / (max - min)) * innerH;
-  const xOf = (index: number) => pad.left + (rows.length === 1 ? innerW / 2 : (index / (rows.length - 1)) * innerW);
-
-  const points: CurvePoint[] = [];
-  const segments: CurvePoint[][] = [];
-  let current: CurvePoint[] = [];
-  rows.forEach((row, index) => {
-    if (row.avgRate === null) {
-      if (current.length > 0) {
-        segments.push(current);
-        current = [];
-      }
-      return;
-    }
-    const point = { tier: row.tier, x: xOf(index), y: yOf(row.avgRate), avg: row.avgRate, row };
-    points.push(point);
-    current.push(point);
-  });
-  if (current.length > 0) {
-    segments.push(current);
-  }
-  const yTicks: { value: number; y: number }[] = [];
-  for (let value = min; value <= max; value += 5) {
-    yTicks.push({ value, y: yOf(value) });
-  }
-  return { xs: rows.map((_, index) => xOf(index)), points, segments, yTicks, min, max };
 }
