@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { TierChip } from "@/components/rating/TierChip";
 import { Pager } from "@/components/Pager";
 import { useToast } from "@/components/Toast";
 import { ApiError } from "@/lib/api";
@@ -57,9 +58,7 @@ export function RegisteredMeSection({ userId }: { userId: number }) {
                 <Link href={`/players/${row.userId}`} className="min-w-0 max-w-full truncate text-[15px] font-bold text-fg underline-offset-2 hover:underline">
                   {row.nickname}
                 </Link>
-                <span data-tier={row.tier.key} className="tier-chip shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-                  {row.tier.displayName}
-                </span>
+                <TierChip tier={row.tier} />
                 {row.mutual ? (
                   <span className="shrink-0 rounded-full border border-ctl px-1.5 text-[11px] font-semibold text-fg-sub">{t("mutualChip")}</span>
                 ) : null}

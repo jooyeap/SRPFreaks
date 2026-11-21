@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { koT } from "@/i18n/ko-translator";
 import type { SkillEntryResponse, SkillResponse } from "@/lib/api-types";
 import { PLAYER_TIER_MINS } from "@/lib/chart-tier";
+import { TIER_CHIP_METAL, TIER_CHIPS } from "@/lib/tier-chip";
 import {
   accentColor,
   buildCardModel,
@@ -18,7 +19,6 @@ import {
   LAYOUT_GEOMETRY,
   songScoreStyle,
   stageCounts,
-  TIER_CHIP_METAL,
   TIER_STYLES,
   tierStyleOf,
   truncateText,
@@ -79,20 +79,23 @@ describe("rating-card 색 표", () => {
     }
   });
 
-  it("10,000 이상 4티어(D87)의 칩 색(글자)과 검정 금속 바탕도 globals.css와 같다", () => {
-    const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
+  it("10,000 이상 4티어의 칩 테두리 색은 점수·카드 테두리(--tier-fill)와 같은 색이다(D95)", () => {
     for (const key of ["SIX_FINGERS", "MUTANT", "ALIEN", "HSB"]) {
-      const chip = TIER_STYLES[key].chip;
-      expect(chip, key).toBeDefined();
-      // 같은 키의 둘째 줄이 이름 글자색(--tier-text)을 가진다
-      const lines = css.split("\n").filter((l) => l.startsWith(`[data-tier="${key}"] {`));
-      expect(lines, key).toHaveLength(2);
-      expect(lines[1], key).toContain(`--tier-text: ${chip!.text};`);
-      expect(lines[1], key).not.toContain("--tier-tint"); // 카드 뒤 빛은 사용자 요청으로 뺐다(2026-11-21)
+      expect(TIER_CHIPS[key].border, key).toEqual([...TIER_STYLES[key].stops]);
+      expect(TIER_CHIPS[key].fill, key).toEqual([...TIER_CHIP_METAL]);
     }
-    // 아래 티어에는 칩 질감이 없다
-    expect(TIER_STYLES.IRIDESCENT.chip).toBeUndefined();
-    expect(css).toContain(`--tier-metal: linear-gradient(180deg, ${TIER_CHIP_METAL.join(", ")});`);
+  });
+
+  it("칩 디자인(lib/tier-chip.ts)은 globals.css가 아니라 이 표 한 곳이다: 옛 칩 규칙과 변수가 css에 남아 있지 않다(D95)", () => {
+    const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
+    expect(css).not.toContain(".tier-chip");
+    expect(css).not.toContain("--tier-metal");
+    expect(css).not.toContain("--tier-text");
+    // 점수 글자·카드에 빛(drop-shadow, box-shadow: var(--tier-glow))과 반짝임이 없다. 서열표 칸만 --tier-glow를 쓴다
+    expect(css).not.toContain("tier-shimmer");
+    expect(css).not.toMatch(/drop-shadow\(var\(--tier-glow\)\)/);
+    const users = css.split("\n").filter((l) => l.includes("var(--tier-glow)"));
+    expect(users.every((l) => l.includes(".chart-cell") || l.includes(".chart-swatch")), users.join("\n")).toBe(true);
   });
 
   it("10,000 이상 4티어의 라이트 테마 글자 그라데이션은 흰 배경과 페이지 배경에서 모든 색이 대비 4.5:1 이상이다", () => {

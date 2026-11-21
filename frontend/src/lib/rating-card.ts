@@ -12,7 +12,7 @@ import type { AchievementStage, DifficultyType } from "@/lib/types";
  * 위치·문구·색은 이 파일에서 테스트하고 캔버스 쪽은 가짜 컨텍스트로 호출만 확인한다.
  *
  * 카드는 사이트 테마와 상관없이 다크 고정이다(공유 이미지가 보는 사람의 설정에 따라 달라지지 않게). 그래서 색은
- * 다크 테마 값을 여기 상수로 둔다. 티어 색은 globals.css의 `[data-tier]`와 같은 값이어야 하고, 테스트가 두 파일을 비교한다.
+ * 다크 테마 값을 여기 상수로 둔다. 티어 색(점수·띠)은 globals.css의 `[data-tier]`와 같은 값이어야 하고, 테스트가 두 파일을 비교한다. 티어 칩은 lib/tier-chip.ts를 사이트와 함께 쓴다.
  */
 
 export const CARD_LAYOUTS = ["landscape", "portrait"] as const;
@@ -21,17 +21,12 @@ export type CardLayout = (typeof CARD_LAYOUTS)[number];
 /** 티어 하나의 색. stops가 1개면 단색, 여러 개면 왼쪽→오른쪽(칩·글자) 또는 위→아래(왼쪽 띠) 그라데이션이다. */
 export interface CardTierStyle {
   stops: readonly string[];
-  /** Bronze 이상의 빛. 낮은 티어는 없다 */
-  glow: { color: string; blur: number } | null;
   /**
-   * 10,000 이상 4티어(D87)만 있다: 검정 금속 칩(TIER_CHIP_METAL) 위의 이름 글자색과 칩 모양(알약/육각).
-   * 없으면 예전처럼 티어 그라데이션으로 칩을 채운다.
+   * Bronze 이상의 빛. globals.css의 `--tier-glow`(서열표 칸이 쓴다)와 같은 값이다. 카드 이미지는 점수·칩·띠에 빛을 쓰지 않는다(D95).
+   * 칩(뱃지) 디자인은 lib/tier-chip.ts의 표를 쓴다.
    */
-  chip?: { text: string; shape: "pill" | "hex" };
+  glow: { color: string; blur: number } | null;
 }
-
-/** 4티어 칩 바탕의 검정 금속 그라데이션(위→아래 4색). globals.css의 `--tier-metal`과 같다. */
-export const TIER_CHIP_METAL = ["#2b2438", "#0c0a14", "#1c1626", "#0c0a14"] as const;
 
 /** globals.css의 `[data-tier="…"]` 값과 같다(--tier-fill의 색 순서, --tier-glow의 크기와 색). rating-card.test.ts가 일치를 확인한다. */
 export const TIER_STYLES: Record<string, CardTierStyle> = {
@@ -61,22 +56,18 @@ export const TIER_STYLES: Record<string, CardTierStyle> = {
   SIX_FINGERS: {
     stops: ["#f0abfc", "#a78bfa", "#f472b6"],
     glow: { color: "rgb(167 139 250 / 0.6)", blur: 20 },
-    chip: { text: "#f5d0fe", shape: "pill" },
   },
   MUTANT: {
     stops: ["#ff7ae6", "#ff2bd6", "#a855f7"],
     glow: { color: "rgb(255 43 214 / 0.65)", blur: 22 },
-    chip: { text: "#ffd0f5", shape: "pill" },
   },
   ALIEN: {
     stops: ["#a5f3fc", "#22d3ee", "#a7f3d0"],
     glow: { color: "rgb(34 211 238 / 0.7)", blur: 24 },
-    chip: { text: "#d8fbff", shape: "hex" },
   },
   HSB: {
     stops: ["#ffffff", "#fde68a", "#c4b5fd", "#67e8f9"],
     glow: { color: "rgb(255 255 255 / 0.85)", blur: 28 },
-    chip: { text: "#ffffff", shape: "hex" },
   },
 };
 
@@ -208,6 +199,8 @@ export interface CardModel {
     /** 닉네임을 끄거나 없으면 null */
     nickname: string | null;
     tierName: string;
+    /** 티어 key. 칩 모양·색은 lib/tier-chip.ts의 표에서 이 key로 찾는다 */
+    tierKey: string;
     tier: CardTierStyle;
     totalText: string;
     counts: CardCountView[];
@@ -386,6 +379,7 @@ export function buildCardModel(layout: CardLayout, skill: SkillResponse, t: Tran
       brand: `SRPFreaks · ${t("RatingCard.title")}`,
       nickname: options.nickname,
       tierName: skill.tier.displayName,
+      tierKey: skill.tier.key,
       tier: tierStyleOf(skill.tier.key),
       totalText: formatScore(skill.totalScore),
       counts: stageCounts(skill),

@@ -257,8 +257,8 @@ body {
 /*
  * 플레이어 티어 색 (docs/DESIGN-UI.md 5장). 티어별 구체 색은 시안 보드에서 정하는데 이 저장소에는 값이 없어서
  * 이름에서 정한 임시 값이다. 값만 바꾸면 모든 화면에 반영된다.
- * --tier-fill: 칩 배경 / 카드 테두리, --tier-glow: Bronze 이상의 글로우(위로 갈수록 강하게).
- * 칩 글자색은 모든 티어에서 어두운 색으로 같게 둔다 (밝은 배경 위 대비).
+ * --tier-fill: 점수 글자 / 카드 테두리 / 막대 / 서열표 칸의 색, --tier-glow: 서열표 칸(.chart-cell, .chart-swatch)의 빛.
+ * 티어 칩(뱃지)의 색과 모양은 여기가 아니라 lib/tier-chip.ts 한 곳이다(D95). 점수 글자와 카드에는 빛·반짝임을 쓰지 않는다.
  */
 [data-tier="WHITE"] { --tier-fill: #e5e7eb; }
 [data-tier="WHITE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #e5e7eb, #9ca3af); }
@@ -281,79 +281,44 @@ body {
 [data-tier="RAINBOW_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ff6b6b, #ffd93d, #6bff95, #6bd5ff, #c084fc, #ff6bd6); --tier-glow: 0 0 20px rgb(192 132 252 / 0.65); }
 [data-tier="IRIDESCENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffe27a, #ff7eb6, #c084fc, #22d3ee); --tier-glow: 0 0 22px rgb(255 126 182 / 0.7); }
 /*
- * 10,000 이상 4티어 (D87): 6 Fingers / Mutant / Alien / HSB. 칩은 검정 금속이고 빛은 테두리·이름 글자·점수 숫자에만 든다.
- * 줄마다 하는 일이 다르다. 첫 줄 = 테두리/글자 그라데이션(--tier-fill)과 빛(--tier-glow): rating-card.ts의 TIER_STYLES와 같고 테스트가 비교한다.
- * 둘째 줄 = 이름 글자색(--tier-text), 라이트 테마용 진한 그라데이션(--tier-fill-light, 흰 배경에서 글자 대비 4.5 이상).
+ * 10,000 이상 4티어 (D87): 6 Fingers / Mutant / Alien / HSB.
+ * 줄마다 하는 일이 다르다. 첫 줄 = 점수 글자/카드 테두리 그라데이션(--tier-fill)과 서열표 칸의 빛(--tier-glow): rating-card.ts의 TIER_STYLES와 같고 테스트가 비교한다.
+ * 둘째 줄 = 라이트 테마용 진한 그라데이션(--tier-fill-light, 흰 배경에서 글자 대비 4.5 이상).
  */
 [data-tier="SIX_FINGERS"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #f0abfc, #a78bfa, #f472b6); --tier-glow: 0 0 20px rgb(167 139 250 / 0.6); }
-[data-tier="SIX_FINGERS"] { --tier-text: #f5d0fe; --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #a21caf, #7c3aed, #be185d); }
+[data-tier="SIX_FINGERS"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #a21caf, #7c3aed, #be185d); }
 [data-tier="MUTANT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ff7ae6, #ff2bd6, #a855f7); --tier-glow: 0 0 22px rgb(255 43 214 / 0.65); }
-[data-tier="MUTANT"] { --tier-text: #ffd0f5; --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #a21caf, #86198f, #7e22ce); }
+[data-tier="MUTANT"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #a21caf, #86198f, #7e22ce); }
 [data-tier="ALIEN"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #a5f3fc, #22d3ee, #a7f3d0); --tier-glow: 0 0 24px rgb(34 211 238 / 0.7); }
-[data-tier="ALIEN"] { --tier-text: #d8fbff; --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #0e7490, #0369a1, #047857); }
+[data-tier="ALIEN"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #0e7490, #0369a1, #047857); }
 [data-tier="HSB"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffffff, #fde68a, #c4b5fd, #67e8f9); --tier-glow: 0 0 28px rgb(255 255 255 / 0.85); }
-[data-tier="HSB"] { --tier-text: #ffffff; --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #475569, #a16207, #6d28d9, #0e7490); }
-/* 검정 금속 칩 바탕(위에서 아래로). rating-card.ts의 TIER_CHIP_METAL과 같다 */
-:root { --tier-metal: linear-gradient(180deg, #2b2438, #0c0a14, #1c1626, #0c0a14); }
+[data-tier="HSB"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #475569, #a16207, #6d28d9, #0e7490); }
 
 :root { --tabbar-h: 0px; } /* 하단 탭바 높이. lg 미만에서만 값이 생기고, 떠 있는 버튼·토스트·본문 여백이 이 값만큼 위로 올라간다 */
 @media (max-width: 1023.98px) {
   :root { --tabbar-h: calc(3.5rem + env(safe-area-inset-bottom)); }
 }
-:root { --tier-glow: 0 0 0 transparent; } /* 빛 없음 기본값 (Bronze 미만). 위 [data-tier] 규칙이 더 가까워서 덮어쓴다 */
-.tier-chip { background: var(--tier-fill); color: var(--stage-chip-fg); }
-/*
- * 10,000 이상 4티어(D87)의 칩: 검정 금속 질감(위쪽 흰 하이라이트 + 세로 그라데이션 + 안쪽 흰 테두리 + 아래 그림자)에
- * 티어 그라데이션 테두리와 이름 글자 빛. 이름 글자는 그대로 보이므로 색만으로 구분하지 않는다. 칩 모양은 작은 칩에서는 모두 알약이다
- * (육각 모양은 마이페이지 레이팅 카드의 큰 배지에서만, components/rating/TierBadge.tsx).
- */
-:is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-chip,
-:is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-chip {
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0) 48%) padding-box,
-    var(--tier-metal) padding-box,
-    var(--tier-fill) border-box;
-  border: 1.5px solid transparent;
-  color: var(--tier-text);
-  text-shadow: var(--tier-glow);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.28), 0 2px 3px rgb(0 0 0 / 0.5);
-}
+:root { --tier-glow: 0 0 0 transparent; } /* 빛 없음 기본값 (Bronze 미만). 서열표 칸만 쓴다. 위 [data-tier] 규칙이 더 가까워서 덮어쓴다 */
 .tier-bar { background: var(--tier-fill); }
 /* 세로 띠(레이팅 곡 카드 왼쪽)는 그라데이션이 위→아래로 흐르게 한다. 티어 채움 값의 방향만 바꾼다 */
 .tier-bar-v { --tier-dir: 180deg; }
 
 /*
- * 총점 글자에 티어 색 (레이팅 카드, 유저 목록). 칩과 같은 --tier-fill을 글자 모양으로 오려 쓴다.
- * 효과는 두 가지: (1) Bronze 이상은 --tier-glow를 글자 빛(drop-shadow)으로 쓴다. 낮은 티어는 --tier-glow가 없어
- * 선언이 무시되어 빛이 없다. (2) GOLD 이상은 그라데이션이 천천히 좌우로 흐른다(반짝임).
- * 움직임을 줄이는 설정(prefers-reduced-motion)에서는 멈춘다. 라이트 테마는 밝은 티어 색(White, Silver 등)이 흰 배경에서 안 보이지 않게 글자를 어둡게 누른다(brightness).
- * --tier-glow가 없는 티어에서도 filter가 유효하도록 위 :root에 빛 없음 기본값을 둔다(var()가 비면 선언 전체가 무시되기 때문).
+ * 총점 글자에 티어 색 (레이팅 카드, 유저 목록). --tier-fill을 글자 모양으로 오려 쓴다.
+ * 빛(drop-shadow)과 반짝임(shimmer)은 없다(D95, 사용자 요청: 칩 밖에 따로 달린 효과는 쓰지 않는다).
+ * 라이트 테마는 밝은 티어 색(White, Silver 등)이 흰 배경에서 안 보이지 않게 글자를 어둡게 누른다(brightness).
  */
 .tier-score {
   background: var(--tier-fill);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(var(--tier-glow));
 }
-/* 10,000 이상 4티어(D87)는 움직이지 않는다(반짝임은 아래 목록에서 뺐다). 글자 그라데이션은 --tier-fill 그대로다 */
-@keyframes tier-shimmer {
-  from { background-position: 0% 0; }
-  to { background-position: 100% 0; }
-}
-:is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"]).tier-score,
-:is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"]) .tier-score {
-  background-size: 200% 100%;
-  animation: tier-shimmer 3.5s ease-in-out infinite alternate;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tier-score { animation: none !important; }
-}
-:root[data-theme="light"] .tier-score { filter: brightness(0.6) saturate(1.5) drop-shadow(var(--tier-glow)); }
+:root[data-theme="light"] .tier-score { filter: brightness(0.6) saturate(1.5); }
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme]) .tier-score { filter: brightness(0.6) saturate(1.5) drop-shadow(var(--tier-glow)); }
+  :root:not([data-theme]) .tier-score { filter: brightness(0.6) saturate(1.5); }
 }
-/* 10,000 이상 4티어의 라이트 테마: 밝은 네온은 흰 배경에서 대비 4.5 미만이라 진한 그라데이션(--tier-fill-light)으로 바꾸고 빛은 끈다 */
+/* 10,000 이상 4티어의 라이트 테마: 밝은 네온은 흰 배경에서 대비 4.5 미만이라 진한 그라데이션(--tier-fill-light)으로 바꾼다(밝기 누름은 끈다) */
 :root[data-theme="light"] :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,
 :root[data-theme="light"] :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score { background-image: var(--tier-fill-light); filter: none; }
 @media (prefers-color-scheme: light) {
@@ -361,7 +326,7 @@ body {
   :root:not([data-theme]) :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score { background-image: var(--tier-fill-light); filter: none; }
 }
 
-/* 레이팅 카드 테두리: 기본 1px. Bronze 이상은 2px 그라데이션 테두리 + 글로우 */
+/* 레이팅 카드 테두리: 기본 1px. Bronze 이상은 2px 그라데이션 테두리(빛 없음, D95) */
 .tier-card { border: 1px solid var(--line); }
 [data-tier="BRONZE"].tier-card,
 [data-tier="SILVER"].tier-card,
@@ -375,17 +340,14 @@ body {
 [data-tier="HSB"].tier-card {
   border: 2px solid transparent;
   background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill) border-box;
-  box-shadow: var(--tier-glow);
 }
-/* 10,000 이상 4티어(D87): 라이트 테마는 진한 테두리 그라데이션, 빛 없음 (카드 뒤 방사형 빛과 장식 선은 사용자 요청으로 뺐다, 2026-11-21) */
+/* 10,000 이상 4티어(D87): 라이트 테마는 진한 테두리 그라데이션 (카드 뒤 빛·장식 선은 사용자 요청으로 뺐다, 2026-11-21) */
 :root[data-theme="light"] :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-card {
   background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill-light) border-box;
-  box-shadow: none;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-card {
     background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill-light) border-box;
-    box-shadow: none;
   }
 }
 
