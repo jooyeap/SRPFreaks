@@ -479,4 +479,91 @@ class ChartStatsMapperTest {
         em.createNativeQuery("UPDATE option_records SET updated_at = ?1 WHERE option_record_id = ?2")
                 .setParameter(1, at).setParameter(2, r.getId()).executeUpdate();
     }
+
+    // ---- 폴더 분포 상세 (D97): 평균에 어떤 곡이 들어갔나
+
+    private List<FolderRecordRow> detail(User u, String from, String to) {
+        em.flush();
+        em.clear();
+        sqlSession.clearCache();
+        return mapper.findFolderUserRecords(SRN_PLUS, table.getId(), PatternType.EXCLUDED.getLabel(), u.getId(), new BigDecimal(from), new BigDecimal(to));
+    }
+
+    @Test
+    void 상세의_평균에_든_채보는_폴더_분포의_합과_개수와_정확히_같다() {
+        // 폴더 분포 쿼리(findFolderUserAverages)와 같은 데이터를 두 쿼리로 읽어, 상세에서 counted인 채보만 모으면 분포의 합·개수와 같은지 대조한다.
+        SongDifficulty a = chart("6.0", PatternType.SINGLE);
+        SongDifficulty b = chart("6.0", PatternType.COMPOUND);
+        SongDifficulty excluded = chart("6.0", PatternType.EXCLUDED);       // 평균에서 빠지는 채보
+        SongDifficulty off = chart("6.0", PatternType.SINGLE);              // 레이팅 반영 꺼짐
+        em.createNativeQuery("UPDATE difficulty_table_entries SET rating_enabled = FALSE WHERE song_difficulty_id = ?1")
+                .setParameter(1, off.getId()).executeUpdate();
+        SongDifficulty other = chart("7.0", PatternType.SINGLE);            // 다른 폴더
+        User u = user(true);
+        record(u, a, "80.00");
+        record(u, a, "90.00");   // 같은 채보 여러 번 -> 최고 1개
+        record(u, b, "70.00");
+        record(u, excluded, "99.00");
+        record(u, off, "98.00");
+        record(u, other, "100.00");
+
+        List<FolderRecordRow> rows = detail(u, "6.0", "6.0");
+        List<FolderUserRow> dist = folderRows();
+        FolderUserRow six = dist.stream().filter(r -> r.tier().compareTo(new BigDecimal("6.0")) == 0).findFirst().orElseThrow();
+
+        assertThat(rows).hasSize(4);   // 7.0 폴더 채보는 없다
+        List<FolderRecordRow> counted = rows.stream().filter(FolderRecordRow::counted).toList();
+        assertThat(counted).hasSize(six.chartCount());
+        assertThat(counted.stream().map(FolderRecordRow::bestRate).reduce(BigDecimal.ZERO, BigDecimal::add)).isEqualByComparingTo(six.sumRate());
+        assertThat(rows.stream().filter(r -> !r.counted()).map(FolderRecordRow::songDifficultyId))
+                .containsExactlyInAnyOrder(excluded.getId(), off.getId());
+        assertThat(counted).extracting(FolderRecordRow::bestRate).usingElementComparator(BigDecimal::compareTo)
+                .containsExactlyInAnyOrder(new BigDecimal("90.00"), new BigDecimal("70.00"));
+    }
+
+    @Test
+    void 상세는_비공개_차단_유저의_기록을_돌려주지_않고_공개_여부는_닉네임_조회로_가린다() {
+        SongDifficulty chart = chart("6.0", PatternType.SINGLE);
+        User hidden = user(false);
+        User blocked = blockedPublicUser();
+        User open = user(true);
+        record(hidden, chart, "90.00");
+        record(blocked, chart, "90.00");
+        record(open, chart, "90.00");
+
+        assertThat(detail(hidden, "6.0", "6.0")).isEmpty();
+        assertThat(detail(blocked, "6.0", "6.0")).isEmpty();
+        assertThat(detail(open, "6.0", "6.0")).hasSize(1);
+        assertThat(mapper.findPublicNickname(hidden.getId())).isNull();
+        assertThat(mapper.findPublicNickname(blocked.getId())).isNull();
+        assertThat(mapper.findPublicNickname(open.getId())).isEqualTo(open.getNickname());
+        assertThat(mapper.findPublicNickname(999_999L)).isNull();
+    }
+
+    @Test
+    void 상세는_SRN_플러스_기록만_읽고_FC와_저장일과_범위_경계를_맞게_낸다() {
+        SongDifficulty low = chart("6.0", PatternType.SINGLE);
+        SongDifficulty mid = chart("6.4", PatternType.SINGLE);
+        SongDifficulty high = chart("6.5", PatternType.SINGLE);    // 0.5 묶음(6.0~6.4) 밖
+        SongDifficulty undecided = chart(null, PatternType.SINGLE);
+        SongDifficulty notInTable = chartNotInTable();
+        User u = user(true);
+        OptionRecord fc = persist(OptionRecord.create(u, mid, NoteOption.SUPER_RANDOM_PLUS, new BigDecimal("97.00"), true, (Instant) null, null, null));
+        record(u, low, "80.00");
+        record(u, mid, NoteOption.RANDOM, "99.00", SINCE.minusDays(30));    // 다른 옵션은 읽지 않는다
+        record(u, high, "90.00");
+        record(u, undecided, "95.00");
+        record(u, notInTable, "95.00");
+        setUpdatedAt(fc, LocalDateTime.of(2026, 11, 5, 3, 0, 0));
+
+        List<FolderRecordRow> bucket = detail(u, "6.0", "6.4");
+
+        assertThat(bucket).extracting(FolderRecordRow::songDifficultyId).containsExactlyInAnyOrder(low.getId(), mid.getId());
+        FolderRecordRow midRow = bucket.stream().filter(r -> r.songDifficultyId().equals(mid.getId())).findFirst().orElseThrow();
+        assertThat(midRow.bestRate()).isEqualByComparingTo("97.00");   // RANDOM 99.00은 섞이지 않는다
+        assertThat(midRow.fullCombo()).isTrue();
+        assertThat(midRow.lastSavedAt()).isEqualTo(LocalDateTime.of(2026, 11, 5, 3, 0, 0));
+        assertThat(midRow.tier()).isEqualByComparingTo("6.4");
+        assertThat(detail(u, "6.4", "6.4")).hasSize(1);   // 0.1 폴더 하나는 그 폴더의 채보만
+    }
 }

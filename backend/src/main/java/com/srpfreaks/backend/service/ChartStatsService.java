@@ -8,7 +8,9 @@ import com.srpfreaks.backend.dto.ChartStatsResponse.DistCell;
 import com.srpfreaks.backend.dto.ChartStatsResponse.DistFolder;
 import com.srpfreaks.backend.dto.ChartStatsResponse.DistUser;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderDistributionPage;
+import com.srpfreaks.backend.dto.ChartStatsResponse.FolderRecord;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderRow;
+import com.srpfreaks.backend.dto.ChartStatsResponse.FolderUserRecords;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Meta;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Page;
 import com.srpfreaks.backend.dto.ChartStatsResponse.PlayerRow;
@@ -16,6 +18,7 @@ import com.srpfreaks.backend.dto.ChartStatsResponse.PopularityRow;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Summary;
 import com.srpfreaks.backend.dto.ChartStatsResponse.UndecidedRow;
 import com.srpfreaks.backend.dto.SkillResponse.PlayerTierResponse;
+import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
 import com.srpfreaks.backend.entity.NoteOption;
@@ -28,6 +31,7 @@ import com.srpfreaks.backend.mapper.ChartInfoRow;
 import com.srpfreaks.backend.mapper.ChartPlayerRow;
 import com.srpfreaks.backend.mapper.ChartStatsMapper;
 import com.srpfreaks.backend.mapper.FolderChartCountRow;
+import com.srpfreaks.backend.mapper.FolderRecordRow;
 import com.srpfreaks.backend.mapper.FolderUserRow;
 import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.UserRepository;
@@ -81,6 +85,8 @@ public class ChartStatsService {
     public static final Set<String> DEVIATION_SORTS = Set.of("deviation", "avg", "players");
     public static final Set<String> POPULARITY_RANGES = Set.of("all", "7d");
     public static final Set<String> PLAYER_SORTS = Set.of("rate", "score", "plays");
+    /** 폴더 기록 상세의 묶음 단위(0.1 = 폴더 하나, 0.5 = 0.5 단위 묶음). 화면의 폴더 단위 칩과 같다. */
+    public static final Set<String> FOLDER_UNITS = Set.of("0.1", "0.5");
 
     private final UserRepository userRepository;
     private final ChartStatsMapper statsMapper;
@@ -202,6 +208,48 @@ public class ChartStatsService {
         }).toList();
         int totalPages = (folders.size() + pageSize - 1) / pageSize;
         return new FolderDistributionPage(List.copyOf(content), pageIndex, pageSize, folders.size(), totalPages, users, loaded.meta());
+    }
+
+    /**
+     * 폴더 분포 상세(D97): "이 평균에 어떤 곡이 들어갔나". 한 공개 유저가 기준 난이도 폴더(unit 0.1이면 그 폴더 하나, 0.5이면 folder ~ folder+0.4 묶음)에서
+     * 기록한 채보와 평균 계산 근거(합계 ÷ 곡 수)를 돌려준다. 화면의 폴더 줄·점과 같은 묶음 규칙이라 평균이 똑같이 나온다.
+     * 평균에 들어간 채보(counted)는 findFolderUserAverages와 같은 조건이고, 같은 폴더의 평균에서 빠진 기록(레이팅 제외 등)은 counted=false로 따로 표시한다.
+     * 합계·곡 수는 모든 채보로 계산하고 content만 쪽으로 자른다. 정렬: 평균에 든 채보 먼저, 달성률 높은 순, 곡명, 채보 id(요청마다 순서가 바뀌지 않게).
+     * 공개(profile_public)·ACTIVE가 아닌 유저는 없는 유저와 똑같이 404다(존재 여부 비노출). 읽기 전용이라 감사 로그는 쓰지 않는다.
+     * folder·unit은 화이트리스트/범위 검사 후에만 SQL 바인딩(#{})으로 쓴다.
+     */
+    public FolderUserRecords folderUserRecords(Long actorId, BigDecimal folder, String unit, Long userId, int page, int size) {
+        requireAdmin(actorId);
+        String unitKey = unit == null || unit.isBlank() ? "0.1" : unit;
+        requireAllowed(unitKey, FOLDER_UNITS);
+        BigDecimal from = requireFolder(folder);
+        BigDecimal to = unitKey.equals("0.5") ? from.add(new BigDecimal("0.4")) : from;
+        String nickname = statsMapper.findPublicNickname(userId);
+        if (nickname == null) {
+            throw new ApiException(ErrorCode.NOT_FOUND);
+        }
+        Loaded loaded = load();
+        // 정렬하려고 항상 바꿀 수 있는 목록으로 복사한다(mapper가 돌려주는 목록·List.of()는 바꿀 수 없을 수 있다)
+        List<FolderRecordRow> rows = new ArrayList<>(loaded.tableId() == null ? List.<FolderRecordRow>of()
+                : statsMapper.findFolderUserRecords(loaded.noteOption(), loaded.tableId(), PatternType.EXCLUDED.getLabel(), userId, from, to));
+        rows.sort(Comparator.comparing(FolderRecordRow::counted).reversed()
+                .thenComparing(FolderRecordRow::bestRate, Comparator.reverseOrder())
+                .thenComparing(FolderRecordRow::title)
+                .thenComparing(FolderRecordRow::songDifficultyId));
+        List<FolderRecordRow> counted = rows.stream().filter(FolderRecordRow::counted).toList();
+        BigDecimal sum = counted.stream().map(FolderRecordRow::bestRate).reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal avg = counted.isEmpty() ? null : sum.divide(BigDecimal.valueOf(counted.size()), 2, RoundingMode.HALF_UP);
+
+        int pageSize = pageSize(size);
+        int pageIndex = Math.max(page, 0);
+        int fromIndex = (int) Math.min((long) pageIndex * pageSize, rows.size());
+        List<FolderRecord> content = rows.subList(fromIndex, Math.min(fromIndex + pageSize, rows.size())).stream().map(r -> new FolderRecord(
+                new Chart(r.songDifficultyId(), r.songId(), r.title(), InstrumentPart.valueOf(r.part()), DifficultyType.valueOf(r.difficulty()), r.level(), r.tier()),
+                r.bestRate().setScale(2, RoundingMode.HALF_UP), r.fullCombo(), AchievementStage.of(r.bestRate(), r.fullCombo()),
+                r.lastSavedAt() == null ? null : r.lastSavedAt().toInstant(ZoneOffset.UTC), r.counted())).toList();
+        int totalPages = (rows.size() + pageSize - 1) / pageSize;
+        return new FolderUserRecords(userId, nickname, from, to, counted.size(), sum, avg, rows.size() - counted.size(), content,
+                pageIndex, pageSize, rows.size(), totalPages);
     }
 
     /** 미정 목록: 서열표 기준 난이도가 없는데 공개 유저 기록이 있는 채보. 저장 횟수 많은 순. */
@@ -335,6 +383,18 @@ public class ChartStatsService {
         if (actor == null || !actor.isActive() || (actor.getRole() != Role.ADMIN && actor.getRole() != Role.ROOT)) {
             throw new ApiException(ErrorCode.FORBIDDEN);
         }
+    }
+
+    /** 폴더 기준 난이도: 0.1 단위(DECIMAL(3,1))의 0 이상 값만. 소수 둘째 자리 이상이 0이 아니거나 범위 밖이면 400. 같은 값(6.00)은 6.0으로 맞춘다. */
+    private static BigDecimal requireFolder(BigDecimal folder) {
+        if (folder == null) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
+        }
+        BigDecimal stripped = folder.stripTrailingZeros();
+        if (stripped.scale() > 1 || folder.signum() < 0 || folder.compareTo(new BigDecimal("99.9")) > 0) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
+        }
+        return folder.setScale(1, RoundingMode.UNNECESSARY);
     }
 
     private static void requireAllowed(String value, Set<String> allowed) {

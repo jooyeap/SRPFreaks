@@ -4,6 +4,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -183,4 +184,65 @@ public interface ChartStatsMapper {
                                                @Param("tableId") Long tableId,
                                                @Param("excludedPattern") String excludedPattern,
                                                @Param("since") LocalDateTime since);
+
+    /**
+     * 폴더 분포 상세(D97): 이 유저가 기준 난이도 폴더(tierFrom ~ tierTo, 0.1 단위 폴더면 같은 값, 0.5 묶음이면 +0.4)에서 기록한 채보를 (유저, 채보)당 한 줄로 읽는다.
+     * 안쪽 b는 findFolderUserAverages와 같이 PUBLIC_RECORDS 한 조각에서 나온다(공개 + ACTIVE 유저, SRN+ 기록, 채보당 최고 1개). 그래서 비공개 유저는 여기서도 한 줄도 나오지 않는다.
+     * counted는 findFolderUserAverages의 WHERE와 똑같은 조건(rating_enabled, 기준 난이도·속성 있음, 속성이 '레이팅 제외' 아님)을 CASE로 적은 것이다:
+     * 평균에 들어간 채보와 아닌 채보를 한 목록에서 구분해 보여 주려고 일부러 거르지 않고 표시만 한다. 두 쿼리가 어긋나지 않는지는 ChartStatsMapperTest가 같은 데이터로 대조한다.
+     * 이 쪽은 기준 난이도가 없는(미정) 채보와 서열표에 없는 채보는 폴더가 아니라서 나오지 않는다(범위 비교가 NULL이면 거짓). 삭제된 곡·채보는 뺀다.
+     * 이메일·역할·Google ID는 select 하지 않는다. 한 유저로 좁혀 읽으므로 목록은 그 유저가 그 폴더에 쌓은 채보 수만큼이다(서비스가 페이지로 자른다).
+     */
+    @Select("""
+            SELECT d.song_difficulty_id AS songDifficultyId,
+                   s.song_id            AS songId,
+                   s.title              AS title,
+                   d.instrument_part    AS part,
+                   d.difficulty_type    AS difficulty,
+                   d.level              AS level,
+                   e.tier_label         AS tier,
+                   b.best_rate          AS bestRate,
+                   b.full_combo         AS fullCombo,
+                   b.last_saved_at      AS lastSavedAt,
+                   CASE WHEN e.rating_enabled = TRUE
+                         AND e.tier_label IS NOT NULL
+                         AND e.pattern_type IS NOT NULL
+                         AND e.pattern_type <> #{excludedPattern}
+                        THEN TRUE ELSE FALSE END AS counted
+            FROM (
+                SELECT r.song_difficulty_id AS song_difficulty_id,
+                       MAX(r.achievement_rate) AS best_rate,
+                       MAX(r.is_full_combo)    AS full_combo,
+                       MAX(r.updated_at)       AS last_saved_at
+                """ + PUBLIC_RECORDS + """
+                  AND r.user_id = #{userId}
+                GROUP BY r.song_difficulty_id
+            ) b
+            JOIN song_difficulties d ON d.song_difficulty_id = b.song_difficulty_id
+            JOIN songs s ON s.song_id = d.song_id
+            JOIN difficulty_table_entries e
+                 ON e.song_difficulty_id = d.song_difficulty_id
+                AND e.difficulty_table_id = #{tableId}
+            WHERE d.is_deleted = FALSE
+              AND s.is_deleted = FALSE
+              AND e.tier_label >= #{tierFrom}
+              AND e.tier_label <= #{tierTo}
+            """)
+    List<FolderRecordRow> findFolderUserRecords(@Param("noteOption") String noteOption,
+                                                @Param("tableId") Long tableId,
+                                                @Param("excludedPattern") String excludedPattern,
+                                                @Param("userId") Long userId,
+                                                @Param("tierFrom") BigDecimal tierFrom,
+                                                @Param("tierTo") BigDecimal tierTo);
+
+    /** 공개 + ACTIVE + 닉네임 있는 유저의 닉네임. 비공개·차단·탈퇴·없는 유저면 null(서비스가 404로 바꾼다: 존재 여부를 드러내지 않는다). */
+    @Select("""
+            SELECT u.nickname
+            FROM users u
+            WHERE u.user_id = #{userId}
+              AND u.profile_public = TRUE
+              AND u.status = 'ACTIVE'
+              AND u.nickname IS NOT NULL
+            """)
+    String findPublicNickname(@Param("userId") Long userId);
 }

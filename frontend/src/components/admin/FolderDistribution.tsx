@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
+import { FolderUserRecordsPanel } from "@/components/admin/FolderUserRecordsPanel";
 import { Segment } from "@/components/rivals/Segment";
 import type { FolderDistributionPage } from "@/lib/chart-stats";
 import { averageText } from "@/lib/chart-stats";
@@ -61,6 +62,7 @@ const DOT_PX = 10;
  * 점 색 = 그 유저의 현재 레이팅 티어 색(globals.css의 [data-tier] 변수를 그대로 쓴다. 색 값은 이 파일에 없다).
  * 색만으로 뜻을 전하지 않도록 점을 누르면 아래 카드에 티어 이름·닉네임·평균·곡 수·마지막 기록 저장일이 글자로 나오고,
  * `표로 보기`는 폴더 줄을 눌러 그 폴더의 유저 목록을 펼친다(아코디언).
+ * 평균이 어떤 곡으로 계산됐는지는 점 카드의 `기록 보기`와 표의 유저 줄(한 번 더 누르기)로 펼친다(FolderUserRecordsPanel, 서버가 집계와 같은 조건으로 센다).
  * 폴더 유저가 minPlayers명 미만이면 점을 그리지 않고 「표본 부족」이다. 판정을 뜻하는 문구·색은 없다(D77).
  * 점은 SVG가 아니라 절대 위치 버튼이다: 티어 색이 그라데이션이라 SVG fill로 쓸 수 없고, 버튼이면 누르는 영역(24px)도 키보드 초점도 그대로 얻는다.
  *
@@ -69,7 +71,7 @@ const DOT_PX = 10;
  *   선택 밖의 점은 색을 빼고 작은 회색 점으로 둔다(색 가짓수를 줄이는 가장 단순한 방법: 새 색 체계 없이 기존 칩만 쓴다). `전체`·`전체 구간`을 누르면 모두 보인다.
  * - 점은 작게·반투명(테두리로 윤곽)·같은 폴더 안에서 결정적으로 흩뿌린다(layoutDotX).
  */
-export function FolderDistribution({ data }: { data: FolderDistributionPage }) {
+export function FolderDistribution({ data, viewerId }: { data: FolderDistributionPage; viewerId: number }) {
   const t = useTranslations("ChartStats");
   // 폴더 단위는 고르기 전까지 화면 폭을 따른다: 데스크톱(1024px 이상) 0.1, 모바일 0.5. 고르면 그 값을 쓴다.
   const wide = useSyncExternalStore(subscribeWide, isWide, () => false);
@@ -171,11 +173,11 @@ export function FolderDistribution({ data }: { data: FolderDistributionPage }) {
           ) : (
             <p className="break-keep rounded-xl bg-table-head p-3 text-sm text-fg-sub">{t("distNoPoints", { min: minPlayers })}</p>
           )}
-          <PickCard pick={pick} />
+          <PickCard key={pick ? `${pick.bucket.start}-${pick.point.userId}` : "none"} pick={pick} unit={unit} viewerId={viewerId} />
           <TierLegend buckets={shown} group={group} />
         </>
       ) : (
-        <DistTable buckets={buckets} />
+        <DistTable buckets={buckets} unit={unit} viewerId={viewerId} />
       )}
 
       {insufficient.length > 0 ? (
@@ -395,8 +397,11 @@ function savedDateText(iso: string | null): string {
  * 예전 말풍선은 점 위에 떠서 작은 화면에서 점·눈금을 가렸고 가장자리에서 잘렸다. 도표 아래 고정 카드는 가리지 않고 글자도 크게 쓸 수 있다.
  * 점이 없을 때는 안내 문구가 같은 자리를 차지해 도표가 위아래로 흔들리지 않는다.
  */
-function PickCard({ pick }: { pick: { bucket: DistBucket; point: DistPoint; index: number } | null }) {
+function PickCard({ pick, unit, viewerId }: { pick: { bucket: DistBucket; point: DistPoint; index: number } | null; unit: FolderUnit; viewerId: number }) {
   const t = useTranslations("ChartStats");
+  const panelId = useId();
+  // 카드는 점마다 key가 달라 새로 만들어지므로 다른 점을 누르면 기록 상세는 자동으로 접힌다
+  const [open, setOpen] = useState(false);
   if (pick === null) {
     return (
       <p role="status" className="break-keep rounded-xl border border-dashed border-line p-2.5 text-[11px] text-fg-dim">
@@ -418,9 +423,24 @@ function PickCard({ pick }: { pick: { bucket: DistBucket; point: DistPoint; inde
         <Fact label={t("colCharts")} value={t("chartsValue", { n: point.charts })} />
         <Fact label={t("colLastSaved")} value={savedDateText(point.lastRecordedAt)} />
       </dl>
-      <Link href={`/players/${point.userId}`} className="mt-1.5 inline-flex min-h-6 items-center text-[11px] text-fg-sub underline">
-        {t("bubbleDetail")}
-      </Link>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => setOpen((prev) => !prev)}
+          className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-ctl px-2.5 text-[11px] text-fg hover:bg-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg"
+        >
+          <span aria-hidden>{open ? "▾" : "▸"}</span>
+          {open ? t("recHide") : t("recShow")}
+        </button>
+        <Link href={`/players/${point.userId}`} className="inline-flex min-h-8 items-center text-[11px] text-fg-sub underline">
+          {t("bubbleDetail")}
+        </Link>
+      </div>
+      {open ? (
+        <FolderUserRecordsPanel id={panelId} viewerId={viewerId} folder={bucket.start} unit={unit} userId={point.userId} expectedCharts={point.charts} />
+      ) : null}
     </div>
   );
 }
@@ -484,7 +504,7 @@ function TierLegend({ buckets, group }: { buckets: readonly DistBucket[]; group:
  * 열림 여부는 aria-expanded로 알리고 `▸/▾` 글자도 같이 둔다(색·모양만으로 전달하지 않는다). 펼친 목록의 티어는 색과 이름을 같이 적는다.
  * 여러 폴더를 동시에 펼칠 수 있다. 표본 부족 폴더는 유저가 드러나지 않으므로 펼 수 없는 한 줄이다.
  */
-function DistTable({ buckets }: { buckets: readonly DistBucket[] }) {
+function DistTable({ buckets, unit, viewerId }: { buckets: readonly DistBucket[]; unit: FolderUnit; viewerId: number }) {
   const t = useTranslations("ChartStats");
   const baseId = useId();
   const [open, setOpen] = useState<ReadonlySet<number>>(new Set());
@@ -493,6 +513,16 @@ function DistTable({ buckets }: { buckets: readonly DistBucket[] }) {
       const next = new Set(prev);
       if (!next.delete(start)) {
         next.add(start);
+      }
+      return next;
+    });
+  // 유저 줄을 한 번 더 누르면 그 유저의 폴더 기록 상세가 펼쳐진다(키 = `묶음시작-유저id`). 여러 유저를 동시에 펼칠 수 있다.
+  const [openUsers, setOpenUsers] = useState<ReadonlySet<string>>(new Set());
+  const toggleUser = (key: string) =>
+    setOpenUsers((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(key)) {
+        next.add(key);
       }
       return next;
     });
@@ -529,6 +559,7 @@ function DistTable({ buckets }: { buckets: readonly DistBucket[] }) {
             </h3>
             {isOpen ? (
               <div id={panelId} data-folder-panel={bucket.label} className="px-3 pb-2">
+                <p className="break-keep pb-1 text-[11px] text-fg-dim">{t("recTableHint")}</p>
                 <table className="w-full table-fixed text-left text-xs">
                   <caption className="sr-only">{t("userListCaption", { folder: bucket.label })}</caption>
                   <colgroup>
@@ -548,20 +579,47 @@ function DistTable({ buckets }: { buckets: readonly DistBucket[] }) {
                   <tbody className="divide-y divide-row-line">
                     {[...bucket.points]
                       .sort((a, b) => b.avg - a.avg || a.userId - b.userId)
-                      .map((point) => (
-                        <tr key={point.userId} data-user-row={point.userId}>
-                          <th scope="row" className="py-1.5 pr-2 text-left font-normal">
-                            <span className="block break-all text-fg">{point.nickname}</span>
-                            <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-fg-sub">
-                              <i data-tier={point.tierKey ?? undefined} className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${point.tierKey ? "chart-swatch" : "bg-fg-dim"}`} aria-hidden />
-                              {point.tierName ?? t("tierUnknown")}
-                            </span>
-                          </th>
-                          <td className="py-1.5 pr-1 text-right font-num text-fg">{averageText(point.avg)}</td>
-                          <td className="py-1.5 pr-1 text-right font-num text-fg-sub">{t("chartsValue", { n: point.charts })}</td>
-                          <td className="py-1.5 text-right font-num text-fg-sub">{savedDateText(point.lastRecordedAt)}</td>
-                        </tr>
-                      ))}
+                      .map((point) => {
+                        const userKey = `${bucket.start}-${point.userId}`;
+                        const userOpen = openUsers.has(userKey);
+                        const recordsId = `${panelId}-u${point.userId}`;
+                        return (
+                          <Fragment key={point.userId}>
+                            <tr data-user-row={point.userId}>
+                              <th scope="row" className="py-0 pr-2 text-left font-normal">
+                                {/* 유저 줄 전체가 아니라 이름 칸이 버튼이다(표 안에서 가장 단순하게 키보드·낭독을 지킨다). 열림 여부는 aria-expanded와 ▸/▾ 글자로 알린다 */}
+                                <button
+                                  type="button"
+                                  aria-expanded={userOpen}
+                                  aria-controls={recordsId}
+                                  aria-label={t("recToggleAria", { nickname: point.nickname })}
+                                  onClick={() => toggleUser(userKey)}
+                                  className="flex min-h-11 w-full items-start gap-1 py-1.5 text-left hover:bg-table-head focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-fg"
+                                >
+                                  <span aria-hidden className="w-3 shrink-0 pt-px text-fg-dim">{userOpen ? "▾" : "▸"}</span>
+                                  <span className="min-w-0">
+                                    <span className="block break-all text-fg">{point.nickname}</span>
+                                    <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-fg-sub">
+                                      <i data-tier={point.tierKey ?? undefined} className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${point.tierKey ? "chart-swatch" : "bg-fg-dim"}`} aria-hidden />
+                                      {point.tierName ?? t("tierUnknown")}
+                                    </span>
+                                  </span>
+                                </button>
+                              </th>
+                              <td className="py-1.5 pr-1 text-right font-num text-fg">{averageText(point.avg)}</td>
+                              <td className="py-1.5 pr-1 text-right font-num text-fg-sub">{t("chartsValue", { n: point.charts })}</td>
+                              <td className="py-1.5 text-right font-num text-fg-sub">{savedDateText(point.lastRecordedAt)}</td>
+                            </tr>
+                            {userOpen ? (
+                              <tr data-user-records={point.userId}>
+                                <td colSpan={4} className="pb-2">
+                                  <FolderUserRecordsPanel id={recordsId} viewerId={viewerId} folder={bucket.start} unit={unit} userId={point.userId} expectedCharts={point.charts} />
+                                </td>
+                              </tr>
+                            ) : null}
+                          </Fragment>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>

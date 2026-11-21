@@ -5,6 +5,7 @@ import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.ChartStatsResponse.DeviationRow;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderDistributionPage;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderRow;
+import com.srpfreaks.backend.dto.ChartStatsResponse.FolderUserRecords;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Page;
 import com.srpfreaks.backend.dto.ChartStatsResponse.PlayerRow;
 import com.srpfreaks.backend.dto.ChartStatsResponse.PopularityRow;
@@ -22,6 +23,7 @@ import com.srpfreaks.backend.mapper.ChartInfoRow;
 import com.srpfreaks.backend.mapper.ChartPlayerRow;
 import com.srpfreaks.backend.mapper.ChartStatsMapper;
 import com.srpfreaks.backend.mapper.FolderChartCountRow;
+import com.srpfreaks.backend.mapper.FolderRecordRow;
 import com.srpfreaks.backend.mapper.FolderUserRow;
 import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.UserRepository;
@@ -668,6 +670,105 @@ class ChartStatsServiceTest {
 
         for (long actor : new long[] {2L, 3L, 99L}) {
             assertThatThrownBy(() -> service.folderDistribution(actor, 0, 100))
+                    .isInstanceOf(ApiException.class).extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+        }
+        verifyNoInteractions(statsMapper);
+    }
+
+    // ---- 폴더 분포 상세 (D97)
+
+    private static FolderRecordRow rec(long id, String title, String rate, boolean fc, boolean counted) {
+        return new FolderRecordRow(id, 100 + id, title, id % 2 == 0 ? "BASS" : "GUITAR", "MASTER", d("9.50"), d("6.4"), d(rate), fc,
+                LocalDateTime.of(2026, 11, 5, 3, 0, 0), counted);
+    }
+
+    private void detailRows(FolderRecordRow... rows) {
+        when(statsMapper.findPublicNickname(10L)).thenReturn("nick10");
+        when(statsMapper.findFolderUserRecords(eq(SRN_PLUS), eq(TABLE_ID), anyString(), eq(10L), any(BigDecimal.class), any(BigDecimal.class)))
+                .thenReturn(List.of(rows));
+    }
+
+    @Test
+    void 폴더_상세의_합계와_평균은_평균에_든_곡만으로_내고_제외된_곡은_개수만_센다() {
+        detailRows(rec(1, "가", "90.00", false, true), rec(2, "나", "70.50", false, true), rec(3, "다", "99.00", false, false));
+
+        FolderUserRecords r = service.folderUserRecords(ADMIN, d("6.4"), null, 10L, 0, 100);
+
+        assertThat(r.countedCharts()).isEqualTo(2);
+        assertThat(r.sumRate()).isEqualByComparingTo("160.50");
+        assertThat(r.avgRate()).isEqualByComparingTo("80.25");   // 160.50 / 2 (폴더 분포의 sumRate / charts와 같은 값)
+        assertThat(r.excludedCharts()).isEqualTo(1);
+        assertThat(r.totalElements()).isEqualTo(3);
+        assertThat(r.nickname()).isEqualTo("nick10");
+    }
+
+    @Test
+    void 폴더_상세는_평균에_든_곡을_먼저_달성률_높은_순으로_내고_단계와_저장_시각을_붙인다() {
+        detailRows(rec(3, "다", "99.00", false, false), rec(1, "가", "90.00", false, true), rec(2, "나", "100.00", false, true),
+                rec(4, "라", "96.00", true, true));
+
+        FolderUserRecords r = service.folderUserRecords(ADMIN, d("6.4"), null, 10L, 0, 100);
+
+        assertThat(r.content()).extracting(c -> c.chart().songDifficultyId()).containsExactly(2L, 4L, 1L, 3L);
+        assertThat(r.content()).extracting(c -> c.stage().label()).containsExactly("EXC", "FC", "S+", "SS");
+        assertThat(r.content().get(2).savedAt()).isEqualTo(Instant.parse("2026-11-05T03:00:00Z"));
+        assertThat(r.content().get(3).counted()).isFalse();
+    }
+
+    @Test
+    void 폴더_상세는_쪽으로_자르지만_합계는_모든_곡으로_낸다() {
+        detailRows(rec(1, "가", "90.00", false, true), rec(2, "나", "80.00", false, true), rec(3, "다", "70.00", false, true));
+
+        FolderUserRecords r = service.folderUserRecords(ADMIN, d("6.4"), null, 10L, 1, 2);
+
+        assertThat(r.content()).hasSize(1);
+        assertThat(r.totalPages()).isEqualTo(2);
+        assertThat(r.countedCharts()).isEqualTo(3);
+        assertThat(r.avgRate()).isEqualByComparingTo("80.00");
+    }
+
+    @Test
+    void 폴더_상세의_0_5_묶음은_folder부터_0_4_위까지를_읽는다() {
+        when(statsMapper.findPublicNickname(10L)).thenReturn("nick10");
+
+        FolderUserRecords r = service.folderUserRecords(ADMIN, d("6.0"), "0.5", 10L, 0, 100);
+
+        ArgumentCaptor<BigDecimal> to = ArgumentCaptor.forClass(BigDecimal.class);
+        verify(statsMapper).findFolderUserRecords(eq(SRN_PLUS), eq(TABLE_ID), anyString(), eq(10L), eq(d("6.0")), to.capture());
+        assertThat(to.getValue()).isEqualByComparingTo("6.4");
+        assertThat(r.tierTo()).isEqualByComparingTo("6.4");
+        assertThat(r.avgRate()).isNull();   // 평균에 든 곡이 없으면 평균 없음(0으로 나누지 않는다)
+        assertThat(r.content()).isEmpty();
+    }
+
+    @Test
+    void 폴더_상세는_공개가_아니거나_없는_유저를_404로_막고_기록을_읽지_않는다() {
+        // findPublicNickname이 null(비공개·차단·탈퇴·없는 유저 모두)
+        assertThatThrownBy(() -> service.folderUserRecords(ADMIN, d("6.4"), null, 99L, 0, 100))
+                .isInstanceOf(ApiException.class).extracting("errorCode").isEqualTo(ErrorCode.NOT_FOUND);
+        verify(statsMapper, never()).findFolderUserRecords(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void 폴더_상세는_허용하지_않는_단위와_폴더_값을_400으로_막는다() {
+        for (String unit : new String[] {"1", "0.25", "abc", "0.5; DROP"}) {
+            assertThatThrownBy(() -> service.folderUserRecords(ADMIN, d("6.4"), unit, 10L, 0, 100))
+                    .isInstanceOf(ApiException.class).extracting("errorCode").isEqualTo(ErrorCode.VALIDATION_ERROR);
+        }
+        for (String folder : new String[] {"6.45", "-0.1", "100.0"}) {
+            assertThatThrownBy(() -> service.folderUserRecords(ADMIN, d(folder), null, 10L, 0, 100))
+                    .isInstanceOf(ApiException.class).extracting("errorCode").isEqualTo(ErrorCode.VALIDATION_ERROR);
+        }
+        verify(statsMapper, never()).findFolderUserRecords(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void 폴더_상세도_ADMIN_미만이거나_차단된_계정은_403이고_아무것도_읽지_않는다() {
+        user(2L, Role.USER, true);
+        user(3L, Role.ADMIN, false);
+
+        for (long actor : new long[] {2L, 3L, 99L}) {
+            assertThatThrownBy(() -> service.folderUserRecords(actor, d("6.4"), null, 10L, 0, 100))
                     .isInstanceOf(ApiException.class).extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
         }
         verifyNoInteractions(statsMapper);

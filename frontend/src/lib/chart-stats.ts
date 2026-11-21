@@ -1,7 +1,7 @@
 import { apiFetch } from "@/lib/api";
 import type { PlayerTierResponse } from "@/lib/api-types";
 import { difficultyLabel, formatRate, partLabel } from "@/lib/format";
-import type { DifficultyType, InstrumentPart } from "@/lib/types";
+import type { AchievementStage, DifficultyType, InstrumentPart } from "@/lib/types";
 
 /**
  * 서열표 분석(D77, ROOT·ADMIN) 응답 모양. 서버 ChartStatsResponse와 같다.
@@ -85,6 +85,39 @@ export interface FolderDistributionPage {
   meta: ChartStatsMeta;
 }
 
+/**
+ * 폴더 분포 상세(D97): 한 유저의 한 폴더(0.5 묶음이면 tierFrom~tierTo) 평균에 어떤 곡이 들어갔는지.
+ * countedCharts·sumRate·avgRate는 점 도표·표와 같은 조건으로 센 값이라 sumRate ÷ countedCharts = avgRate다.
+ * 서버 ChartStatsResponse.FolderUserRecords와 같다. 이메일·역할·Google ID는 오지 않는다.
+ */
+export interface FolderRecord {
+  chart: StatsChart;
+  bestRate: number;
+  fullCombo: boolean;
+  stage: AchievementStage;
+  /** 그 채보 기록을 마지막으로 저장·수정한 시각(UTC ISO). 모르면 null */
+  savedAt: string | null;
+  /** false = 같은 폴더에 기록은 있지만 레이팅에 계산되지 않아 평균에서 빠진 곡 */
+  counted: boolean;
+}
+
+export interface FolderUserRecords {
+  userId: number;
+  nickname: string;
+  tierFrom: number;
+  tierTo: number;
+  countedCharts: number;
+  sumRate: number;
+  /** 평균에 든 곡이 없으면 null */
+  avgRate: number | null;
+  excludedCharts: number;
+  content: FolderRecord[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface UndecidedRow {
   chart: StatsChart;
   records: number;
@@ -116,6 +149,8 @@ export interface StatsPlayerRow {
 export type DeviationSort = "deviation" | "avg" | "players";
 export type PopularityRange = "all" | "7d";
 export type PlayerSort = "rate" | "score" | "plays";
+/** 폴더 기록 상세의 묶음 단위(폴더 분포의 단위 칩과 같다). 0.1 = 폴더 하나, 0.5 = 0.5 단위 묶음 */
+export type FolderRecordUnit = "0.1" | "0.5";
 export type ChartStatsTab = "deviation" | "popularity" | "distribution" | "undecided";
 
 export const CHART_STATS_TABS: readonly ChartStatsTab[] = ["deviation", "popularity", "distribution", "undecided"];
@@ -125,6 +160,8 @@ export const PLAYER_SORTS: readonly PlayerSort[] = ["rate", "score", "plays"];
 export const CHART_STATS_PAGE_SIZE = 20;
 /** 폴더 분포는 그래프가 한 번에 모두 받는다(서버 최대 100폴더). */
 export const FOLDER_PAGE_SIZE = 100;
+/** 폴더 기록 상세 한 쪽의 곡 수(서버 최대 100). 평균·합계는 모든 곡으로 내므로 쪽을 넘겨도 같다. */
+export const FOLDER_RECORDS_PAGE_SIZE = 50;
 
 /** 조회 키. 보는 사람(viewerId)을 넣는 이유는 다른 관리 화면과 같다(계정이 바뀌어도 이전 계정의 캐시가 보이지 않게). */
 export const chartStatsKeys = {
@@ -132,6 +169,8 @@ export const chartStatsKeys = {
   deviation: (viewerId: number, sort: DeviationSort, page: number) => ["admin", "chart-stats", "deviation", viewerId, sort, page] as const,
   popularity: (viewerId: number, range: PopularityRange, page: number) => ["admin", "chart-stats", "popularity", viewerId, range, page] as const,
   folderDistribution: (viewerId: number) => ["admin", "chart-stats", "folder-distribution", viewerId] as const,
+  folderUserRecords: (viewerId: number, folder: number, unit: FolderRecordUnit, userId: number, page: number) =>
+    ["admin", "chart-stats", "folder-user-records", viewerId, folder, unit, userId, page] as const,
   undecided: (viewerId: number, page: number) => ["admin", "chart-stats", "undecided", viewerId, page] as const,
   summary: (viewerId: number, chartId: number) => ["admin", "chart-stats", "summary", viewerId, chartId] as const,
   players: (viewerId: number, chartId: number, sort: PlayerSort, page: number) =>
@@ -150,6 +189,20 @@ export function fetchPopularity(range: PopularityRange, page: number, signal?: A
 
 export function fetchFolderDistribution(signal?: AbortSignal): Promise<FolderDistributionPage> {
   return apiFetch<FolderDistributionPage>(`${BASE}/folder-distribution`, { query: { page: 0, size: FOLDER_PAGE_SIZE }, signal });
+}
+
+/** 폴더 기록 상세. folder는 묶음의 시작 기준 난이도(6.4, 0.5 묶음이면 6.0). 소수 첫째 자리로 맞춰 보낸다. */
+export function fetchFolderUserRecords(
+  folder: number,
+  unit: FolderRecordUnit,
+  userId: number,
+  page: number,
+  signal?: AbortSignal,
+): Promise<FolderUserRecords> {
+  return apiFetch<FolderUserRecords>(`${BASE}/folders/${folder.toFixed(1)}/users/${userId}/records`, {
+    query: { unit, page, size: FOLDER_RECORDS_PAGE_SIZE },
+    signal,
+  });
 }
 
 export function fetchUndecided(page: number, signal?: AbortSignal): Promise<ChartStatsPage<UndecidedRow>> {
