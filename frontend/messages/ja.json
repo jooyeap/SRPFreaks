@@ -410,7 +410,9 @@
     "patternFilterRemove": "{pattern}の属性フィルターを解除",
     "filterReset": "フィルターをリセット",
     "backToGrid": "属性別に戻る",
-    "patternFromGridNote": "属性別画面で選んだ{pattern}フィルターが自動で適用されました。このフォルダのみ有効で、別のフォルダへ移動すると解除されます。",
+    "patternFromGridNote": "属性別画面で選んだ{pattern}フィルターが自動で適用されました。別のフォルダへ移動しても引き続き適用されます。",
+    "filterCarryNotice": "フィルターが適用されています。リセットしますか？",
+    "filterCarryReset": "リセット",
     "tilesDone": "完了",
     "tilesTip": "タイル下のバーは段階別の記録割合です。タイルを押すと、その難易度の曲が開きます。"
   },

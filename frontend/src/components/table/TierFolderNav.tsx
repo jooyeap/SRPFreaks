@@ -19,6 +19,8 @@ export function TierFolderNav({
   groups,
   currentTier,
   dragHint = null,
+  hrefFor = folderHref,
+  onLinkClick,
 }: {
   groups: readonly TierGroupResponse[];
   currentTier: number | null;
@@ -27,6 +29,10 @@ export function TierFolderNav({
    * 색만으로 알리지 않는다: 같은 순간 목록 옆 알약과 아래 스테퍼도 함께 바뀐다. 테두리 색만 바꿔서 타일 크기는 그대로다.
    */
   dragHint?: { tier: number | null; strong: boolean } | null;
+  /** 칩의 이동 주소. 필터를 싣고 가려고 부모가 바꾼다(D99). 기본은 필터 없는 폴더 주소 */
+  hrefFor?: (tier: number | null) => string;
+  /** 칩을 눌렀을 때(이동 직전) 부모가 할 일: 필터를 싣고 옮긴다는 표시 등 */
+  onLinkClick?: () => void;
 }) {
   const t = useTranslations();
   const currentRef = useRef<HTMLAnchorElement>(null);
@@ -60,8 +66,9 @@ export function TierFolderNav({
               <li key={tierParam(g.tier)} className="shrink-0" data-done={done ? "true" : undefined}>
                 <Link
                   ref={here ? currentRef : undefined}
-                  href={folderHref(g.tier)}
+                  href={hrefFor(g.tier)}
                   replace
+                  onClick={onLinkClick}
                   aria-current={here ? "page" : undefined}
                   data-drag-hint={hinted ? (dragHint.strong ? "strong" : "weak") : undefined}
                   // 지금 난이도는 배경으로 강조하고, 완료는 글자 색으로 구분한다(숫자 n/n이 같이 있어 색만으로 구분하지 않는다)

@@ -410,7 +410,9 @@
     "patternFilterRemove": "{pattern} 속성 필터 해제",
     "filterReset": "필터 초기화",
     "backToGrid": "속성별로 돌아가기",
-    "patternFromGridNote": "속성별 화면에서 고른 {pattern} 필터가 자동으로 걸렸습니다. 이 폴더에만 적용되고, 다른 폴더로 옮기면 풀립니다.",
+    "patternFromGridNote": "속성별 화면에서 고른 {pattern} 필터가 자동으로 걸렸습니다. 다른 폴더로 옮겨도 이어서 적용됩니다.",
+    "filterCarryNotice": "필터가 적용되어 있습니다. 초기화할까요?",
+    "filterCarryReset": "초기화",
     "tilesDone": "완료",
     "tilesTip": "타일 아래 막대는 단계별 기록 비율입니다. 타일을 누르면 그 난이도의 곡이 열립니다."
   },

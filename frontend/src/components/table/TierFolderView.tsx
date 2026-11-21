@@ -31,6 +31,15 @@ import {
   tableKeys,
   type TableFilters,
 } from "@/lib/difficulty-table";
+import { FilterCarryNotice } from "@/components/table/FilterCarryNotice";
+import {
+  clearFilterCarried,
+  folderCarryToQuery,
+  markFilterCarried,
+  peekFilterCarried,
+  withCarryQuery,
+  type FolderCarry,
+} from "@/lib/folder-filter-carry";
 import { chartIdOfDetailLink, rememberDetailNav } from "@/lib/detail-nav";
 import { dragOffsetPx, dragPassed, FOLDER_SWIPE_RULES, neighborGroups, type SwipeDirection } from "@/lib/folder-nav";
 import { alignListHead, requestFolderScrollAdjust, stickyTopOffset, takeFolderScrollAdjust } from "@/lib/folder-scroll";
@@ -87,14 +96,36 @@ function errorMessage(error: unknown, t: Translator): string {
  *  - 이웃 난이도 이동: 화면 아래 고정 버튼 + 곡 목록 영역의 좌우 스와이프. 모두 replace(뒤로 가기 한 번이 서열표).
  *  - n/전체 계산: 서열표 타일은 서열표의 필터(처음엔 추천 상·중)로 센 값이다. 폴더의 머리·이웃 버튼·칩 띠도 **같은 필터로** 세야 타일 숫자와 어긋나지 않는다.
  *    그래서 서열표에서 타일을 눌러 들어오면 그때의 서열표 필터로 시작한다(folderStartFilters). 다른 길(곡 상세 등)로 오면 필터 없이(묶음 전체) 시작한다.
- *    폴더 안에서 필터를 바꾸면 이 폴더 화면에만 적용되고(이동하면 다시 시작 필터), 서열표 필터는 바뀌지 않는다.
+ *    폴더 안에서 필터를 바꾸면 이 폴더 화면에 적용되고, 옆 폴더로 옮길 때는 주소 쿼리에 실려 도착 폴더가 그대로 이어받는다(D99, folder-filter-carry). 서열표 필터는 바뀌지 않는다.
  */
-export function TierFolderView({ userId, param, initialPattern = null }: { userId: number; param: string; initialPattern?: GridPattern | null }) {
+export function TierFolderView({
+  userId,
+  param,
+  initialPattern = null,
+  carry = null,
+}: {
+  userId: number;
+  param: string;
+  initialPattern?: GridPattern | null;
+  /** 옆 폴더에서 싣고 온 필터·정렬·평균 계산(주소 쿼리, D99). 있으면 시작 값으로 쓴다 */
+  carry?: FolderCarry | null;
+}) {
   const t = useTranslations();
-  const [includeZero, setIncludeZero] = useState(false);
-  const [sort, setSort] = useState<TableSort>(DEFAULT_SORT);
-  // 서열표에서 눌러 들어왔으면 그때의 필터, 아니면 없음. 속성별 화면의 칸으로 들어왔으면(?pattern=) 그 속성을 더 건다(D93, 이 폴더에만 적용: 폴더를 옮기면 화면을 새로 만들어 풀린다)
-  const [filters, setFilters] = useState<TableFilters>(() => (initialPattern ? { ...folderStartFilters(), pattern: [initialPattern] } : folderStartFilters()));
+  const [includeZero, setIncludeZero] = useState(carry?.includeZero ?? false);
+  const [sort, setSort] = useState<TableSort>(carry?.sort ?? DEFAULT_SORT);
+  // 서열표에서 눌러 들어왔으면 그때의 필터, 아니면 없음. 속성별 화면의 칸으로 들어왔으면(?pattern=) 그 속성을 더 건다(D93). 옆 폴더에서 싣고 온 값(carry)이 있으면 그것이 먼저다(D99: 옮겨도 필터가 이어진다)
+  const [filters, setFilters] = useState<TableFilters>(() =>
+    carry ? carry.filters : initialPattern ? { ...folderStartFilters(), pattern: [initialPattern] } : folderStartFilters(),
+  );
+  // 옆 폴더로 옮길 때 싣고 갈 쿼리(D99). 도착 폴더가 어차피 같은 상태로 시작하면 빈 문자열이라 주소는 예전과 같다.
+  // 비교 기준은 "도착 폴더의 시작 필터"(folderStartFilters)다: 서열표에서 들어왔을 때의 필터를 그대로 두고 옮기면 싣지 않고, 풀었거나 더 걸었으면 싣는다
+  const carryQuery = folderCarryToQuery({ filters, sort, includeZero }, folderStartFilters());
+  const hrefFor = (tier: number | null) => withCarryQuery(folderHref(tier), carryQuery);
+  // 안내(토스트)는 필터가 실제로 걸린 채 옮겨 온 직후에만 띄운다. 마운트 때 한 번 정하고(표시는 이동 직전에 남긴다) 새로고침·링크 열기에는 뜨지 않는다
+  const [carriedNotice] = useState(() => peekFilterCarried() && carry !== null && hasFilters(carry.filters));
+  useEffect(() => {
+    clearFilterCarried();
+  }, []);
   const router = useRouter();
   const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -195,9 +226,13 @@ export function TierFolderView({ userId, param, initialPattern = null }: { userI
   }
 
   /** 이웃 난이도로 이동한다. replace(뒤로 가기 한 번이 서열표)이고 맨 위로 올리지 않는다(scroll: false). 이동 직후의 스크롤 맞춤은 새 화면이 표시를 보고 한다(folder-scroll) */
-  function goTo(target: { tier: number | null }) {
+  function navigateTo(tier: number | null) {
     requestFolderScrollAdjust();
-    router.replace(folderHref(target.tier), { scroll: false });
+    if (carryQuery !== "" && hasFilters(filters)) markFilterCarried(); // 필터가 걸린 채 가는 이동만 도착 화면이 안내를 띄운다
+    router.replace(hrefFor(tier), { scroll: false });
+  }
+  function goTo(target: { tier: number | null }) {
+    navigateTo(target.tier);
     // 화면이 바뀌면 이 컴포넌트는 사라진다. 혹시 안 바뀌었으면 끌려 간 목록을 제자리로 돌려 화면이 비지 않게 한다
     later(STUCK_RESET_MS, () => {
       clearSlider();
@@ -353,6 +388,10 @@ export function TierFolderView({ userId, param, initialPattern = null }: { userI
         groups={filteredGroups}
         currentTier={rawGroup.tier}
         dragHint={drag?.phase === "dragging" && dragTarget ? { tier: dragTarget.tier, strong: drag.passed } : null}
+        hrefFor={hrefFor}
+        onLinkClick={() => {
+          if (carryQuery !== "" && hasFilters(filters)) markFilterCarried();
+        }}
       />
       {/* 이 구간을 몇 % 이상 치면 내 레이팅에 반영되는지(로그인했을 때만, 홈 진행도 카드 안내와 같은 계산) */}
       {isLoggedInViewer(userId) && rawGroup.tier !== null ? <FolderThresholdNote userId={userId} tier={rawGroup.tier} entries={rawGroup.entries} /> : null}
@@ -430,7 +469,10 @@ export function TierFolderView({ userId, param, initialPattern = null }: { userI
         recorded={group.recorded}
         total={group.total}
         selectedSide={drag?.phase === "dragging" && drag.passed ? drag.side : null}
+        onNavigate={navigateTo}
       />
+      {/* 필터를 싣고 옆 폴더로 넘어온 직후의 안내(D99). 이웃 이동 바 바로 위에 뜬다 */}
+      <FilterCarryNotice show={carriedNotice} onReset={() => setFilters(EMPTY_FILTERS)} />
       <ScrollTopButton lifted />
       <RecordDialog
         chart={
