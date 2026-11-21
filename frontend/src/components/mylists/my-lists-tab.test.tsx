@@ -87,7 +87,7 @@ describe("MyListsTab (내 리스트, D76)", () => {
 
     await waitFor(() => expect(calls("POST", "/me/lists")).toHaveLength(1));
     expect(JSON.parse(String(calls("POST", "/me/lists")[0][1]?.body))).toEqual({ name: "새 리스트" });
-    expect(await screen.findByText("담은 곡이 없습니다. 아래 「곡 추가」로 곡을 담아 보세요.")).toBeInTheDocument();
+    expect(await screen.findByText("담은 곡이 없습니다. 아래 「곡 추가」로 곡을 담아 주세요.")).toBeInTheDocument();
   });
 
   it("개수 한도 같은 서버 거절은 문구 그대로 안내하고 폼을 유지한다", async () => {
