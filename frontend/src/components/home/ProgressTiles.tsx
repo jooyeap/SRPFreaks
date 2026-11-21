@@ -13,7 +13,7 @@ import { useTranslations } from "next-intl";
 const EMPTY_COUNTS = { total: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0 };
 
 /** 전체가 있고 기록이 모두 채워졌으면 완료. 완료한 칸은 막대 테두리와 이름 글자 색이 달라진다(`n/n` 숫자가 같이 보여 색만으로 구분하지 않는다). */
-function isDone(recorded: number, total: number): boolean {
+export function isDone(recorded: number, total: number): boolean {
   return total > 0 && recorded >= total;
 }
 

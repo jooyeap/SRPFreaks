@@ -103,7 +103,9 @@ export function DifficultyTableView({
     () =>
       decided.flatMap((g) => {
         const f = filterTierGroup(g, filters);
-        return g.tier !== null && f.total > 0 ? [{ tier: g.tier, total: f.total, recorded: f.recorded }] : [];
+        return g.tier !== null && f.total > 0
+          ? [{ tier: g.tier, total: f.total, recorded: f.recorded, exc: f.exc, fc: f.fc, ss: f.ss, sPlus: f.sPlus, s: f.s, belowS: f.belowS }]
+          : [];
       }),
     [decided, filters],
   );
