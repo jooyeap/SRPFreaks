@@ -37,7 +37,8 @@ public interface ChartStatsMapper {
                    MAX(r.achievement_rate) AS best_rate,
                    COUNT(*) AS play_count,
                    SUM(CASE WHEN r.created_at >= #{since} THEN 1 ELSE 0 END) AS recent_count,
-                   MAX(r.played_at) AS last_played_at
+                   MAX(r.played_at) AS last_played_at,
+                   MAX(r.updated_at) AS last_saved_at
             """;
 
     String ROLLUP_GROUP = " GROUP BY r.user_id, r.song_difficulty_id ";
@@ -151,6 +152,8 @@ public interface ChartStatsMapper {
      * 안쪽 b는 PUBLIC_RECORDS 한 조각에서 나온 (유저, 채보)당 최고 달성률이라 공개 + ACTIVE 유저만 들어가고, 한 채보를 여러 번 저장해도 1개로 센다.
      * 레이팅 후보(SkillMapper)와 같은 조건만 센다: 서열표에 기준 난이도·속성이 있고, 속성이 '레이팅 제외'가 아니고, 레이팅 반영이 켜져 있다.
      * 폴더(tier_label)로 묶어 0.1 단위 그대로 내려 주고, 0.5 단위로 묶는 것은 화면이 한다(합과 개수만 있으면 가중 평균이 정확히 같다).
+     * lastRecordedAt = 그 폴더의 채보 기록을 이 유저가 가장 최근에 저장·수정한 시각(option_records.updated_at의 최댓값, UTC).
+     * played_at(플레이한 날, 사용자가 고칠 수 있다)이 아니라 updated_at을 쓰는 이유: "언제 기록을 올렸나"를 보려는 값이라 저장·수정 시각이 맞고, 마이그레이션 없이 기존 컬럼으로 읽는다.
      * 이메일·역할·Google ID는 select 하지 않는다. 삭제된 곡·채보는 뺀다.
      */
     @Select("""
@@ -158,7 +161,8 @@ public interface ChartStatsMapper {
                    u.nickname          AS nickname,
                    e.tier_label        AS tier,
                    COUNT(*)            AS chartCount,
-                   SUM(b.best_rate)    AS sumRate
+                   SUM(b.best_rate)    AS sumRate,
+                   MAX(b.last_saved_at) AS lastRecordedAt
             FROM (""" + ROLLUP_ALL + """
             ) b
             JOIN users u ON u.user_id = b.user_id

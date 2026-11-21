@@ -564,8 +564,11 @@ class ChartStatsServiceTest {
     // ---- 폴더 분포 (D88)
 
     private static FolderUserRow cell(long userId, String tier, int charts, String sum) {
-        return new FolderUserRow(userId, "nick" + userId, d(tier), charts, d(sum));
+        return new FolderUserRow(userId, "nick" + userId, d(tier), charts, d(sum), SAVED_AT);
     }
+
+    /** DB는 UTC 그대로(LocalDateTime) 준다. 서비스는 Instant(UTC)로 바꿔 내려 준다. */
+    private static final LocalDateTime SAVED_AT = LocalDateTime.of(2026, 11, 20, 15, 30, 0);
 
     private void folderRows(FolderUserRow... rows) {
         when(statsMapper.findFolderUserAverages(eq(SRN_PLUS), eq(TABLE_ID), eq("레이팅 제외"), any(LocalDateTime.class))).thenReturn(List.of(rows));
@@ -584,6 +587,17 @@ class ChartStatsServiceTest {
         assertThat(page.content().get(0).cells().get(0).sumRate()).isEqualByComparingTo("270.00");
         assertThat(page.totalElements()).isEqualTo(2);
         assertThat(page.meta().minPlayers()).isEqualTo(3);   // 표본 부족 기준은 응답에 실어 화면이 쓴다
+    }
+
+    @Test
+    void 폴더_분포_칸은_마지막_기록_저장_시각을_UTC_Instant로_내려_준다() {
+        folderRows(cell(10, "6.0", 3, "270.00"));
+        ratedBatchByUserId();
+
+        FolderDistributionPage page = service.folderDistribution(ADMIN, 0, 100);
+
+        // 2026-11-20 15:30 UTC (Seoul로는 11-21 00:30이지만 날짜 변환은 화면이 한다)
+        assertThat(page.content().get(0).cells().get(0).lastRecordedAt()).isEqualTo(java.time.Instant.parse("2026-11-20T15:30:00Z"));
     }
 
     @Test

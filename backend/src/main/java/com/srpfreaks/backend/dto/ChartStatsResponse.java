@@ -74,8 +74,11 @@ public final class ChartStatsResponse {
     public record DistFolder(BigDecimal tier, List<DistCell> cells) {
     }
 
-    /** 한 유저의 한 폴더: 채보 수와 최고 달성률 합. 평균은 화면이 sumRate / charts로 낸다(0.5 단위 묶음도 정확히 같은 가중 평균이 된다). */
-    public record DistCell(Long userId, int charts, BigDecimal sumRate) {
+    /**
+     * 한 유저의 한 폴더: 채보 수와 최고 달성률 합. 평균은 화면이 sumRate / charts로 낸다(0.5 단위 묶음도 정확히 같은 가중 평균이 된다).
+     * lastRecordedAt = 그 폴더의 채보 기록을 가장 최근에 저장·수정한 시각(UTC). 화면이 Asia/Seoul 날짜로 바꾸고, 0.5 단위 묶음은 가장 늦은 값을 쓴다.
+     */
+    public record DistCell(Long userId, int charts, BigDecimal sumRate, Instant lastRecordedAt) {
     }
 
     /** 점 색·말풍선용 유저. 티어는 유저 목록(D26)과 같은 계산이고, 레이팅 계산이 불가능하면 null이다. 이메일·역할·Google ID는 없다. */

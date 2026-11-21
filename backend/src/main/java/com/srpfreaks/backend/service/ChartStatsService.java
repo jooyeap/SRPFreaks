@@ -182,7 +182,8 @@ public class ChartStatsService {
         Map<BigDecimal, List<DistCell>> byTier = new TreeMap<>();
         for (FolderUserRow row : rows) {
             byTier.computeIfAbsent(row.tier().setScale(1, RoundingMode.HALF_UP), k -> new ArrayList<>())
-                    .add(new DistCell(row.userId(), row.chartCount(), row.sumRate()));
+                    .add(new DistCell(row.userId(), row.chartCount(), row.sumRate(),
+                            row.lastRecordedAt() == null ? null : row.lastRecordedAt().toInstant(ZoneOffset.UTC)));
         }
         byTier.values().forEach(cells -> cells.sort(Comparator.comparing(DistCell::userId)));
         List<DistFolder> folders = byTier.entrySet().stream().map(e -> new DistFolder(e.getKey(), List.copyOf(e.getValue()))).toList();

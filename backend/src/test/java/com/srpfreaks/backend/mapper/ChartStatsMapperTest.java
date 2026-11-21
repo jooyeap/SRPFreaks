@@ -452,4 +452,31 @@ class ChartStatsMapperTest {
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).sumRate()).isEqualByComparingTo("90.00");
     }
+
+    @Test
+    void 폴더_분포의_마지막_기록_저장일은_그_폴더_채보_기록의_updated_at_최댓값이고_다른_폴더_기록은_섞이지_않는다() {
+        SongDifficulty a = chart("6.0", PatternType.SINGLE);
+        SongDifficulty b = chart("6.0", PatternType.COMPOUND);
+        SongDifficulty c = chart("7.0", PatternType.SINGLE);
+        User u = user(true);
+        OptionRecord ra = record(u, a, "80.00");
+        OptionRecord rb = record(u, b, "70.00");
+        OptionRecord rc = record(u, c, "90.00");
+        setUpdatedAt(ra, LocalDateTime.of(2026, 11, 1, 10, 0, 0));
+        setUpdatedAt(rb, LocalDateTime.of(2026, 11, 5, 3, 0, 0));    // 6.0 폴더에서 가장 늦은 저장
+        setUpdatedAt(rc, LocalDateTime.of(2026, 11, 20, 9, 0, 0));   // 7.0 폴더(6.0 폴더 값에 섞이면 안 된다)
+
+        List<FolderUserRow> rows = folderRows();
+
+        FolderUserRow six = rows.stream().filter(r -> r.tier().compareTo(new BigDecimal("6.0")) == 0).findFirst().orElseThrow();
+        assertThat(six.lastRecordedAt()).isEqualTo(LocalDateTime.of(2026, 11, 5, 3, 0, 0));
+        FolderUserRow seven = rows.stream().filter(r -> r.tier().compareTo(new BigDecimal("7.0")) == 0).findFirst().orElseThrow();
+        assertThat(seven.lastRecordedAt()).isEqualTo(LocalDateTime.of(2026, 11, 20, 9, 0, 0));
+    }
+
+    private void setUpdatedAt(OptionRecord r, LocalDateTime at) {
+        em.flush();
+        em.createNativeQuery("UPDATE option_records SET updated_at = ?1 WHERE option_record_id = ?2")
+                .setParameter(1, at).setParameter(2, r.getId()).executeUpdate();
+    }
 }
