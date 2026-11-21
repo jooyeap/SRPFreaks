@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TableAreaGuard } from "@/components/table/TableAreaGuard";
 import { TierFolderView } from "@/components/table/TierFolderView";
 import type { DifficultyTableResponse, PageResponse, TableEntryResponse, TierGroupResponse } from "@/lib/api-types";
 import { DEFAULT_SORT } from "@/lib/table-sort";
-import { clearFilterCarried, folderCarryFromParams, markFilterCarried, peekFilterCarried, type FolderCarry } from "@/lib/folder-filter-carry";
+import { clearFilterCarried, folderCarryFromParams, markFilterCarried, peekFilterCarried, resetFilterNoticeShown, type FolderCarry } from "@/lib/folder-filter-carry";
 import { resetTableReturnForTest } from "@/lib/table-view-state";
 
 const { replaceMock } = vi.hoisted(() => ({ replaceMock: vi.fn() }));
@@ -38,6 +39,7 @@ describe("폴더 이동 시 필터 이어가기 (D99)", () => {
   beforeEach(() => {
     resetTableReturnForTest();
     clearFilterCarried();
+    resetFilterNoticeShown();
     replaceMock.mockReset();
     fetchMock.mockReset();
     fetchMock.mockImplementation((input) => {
@@ -149,6 +151,65 @@ describe("폴더 이동 시 필터 이어가기 (D99)", () => {
       expect(await screen.findByRole("heading", { name: /5\.8\s*2개/ })).toBeInTheDocument();
       expect(screen.getAllByText("5.8단일곡").length).toBeGreaterThan(0);
       expect(regionNotice()).toBeNull();
+    });
+  });
+
+  describe("안내는 서열표 영역 안에서 한 번만", () => {
+    it("첫 이동에서는 뜨고, 초기화하지 않고 다시 옮기면(필터는 이어진 채) 뜨지 않는다", async () => {
+      markFilterCarried();
+      const first = renderView(COMPLEX);
+      await screen.findByRole("heading", { name: /5\.8\s*1개/ });
+      expect(await screen.findByText("필터가 적용되어 있습니다. 초기화할까요?")).toBeInTheDocument();
+      first.unmount();
+
+      markFilterCarried(); // 두 번째 이동: 필터는 그대로 실려 온다
+      renderView(COMPLEX, "5.9");
+      await screen.findByRole("heading", { name: /5\.9\s*1개/ });
+      expect(screen.getAllByText("5.9복합곡").length).toBeGreaterThan(0); // 필터는 계속 이어진다
+      expect(regionNotice()).toBeNull();
+      expect(peekFilterCarried()).toBe(false); // 표시는 그래도 지워진다
+    });
+
+    it("서열표 영역을 벗어났다가(레이아웃이 사라짐) 다시 들어오면 다시 뜬다", async () => {
+      markFilterCarried();
+      const first = renderView(COMPLEX);
+      await screen.findByText("필터가 적용되어 있습니다. 초기화할까요?");
+      first.unmount();
+
+      const guard = render(<TableAreaGuard />); // /table 레이아웃이 살아 있는 동안은 지우지 않는다
+      markFilterCarried();
+      const second = renderView(COMPLEX, "5.9");
+      await screen.findByRole("heading", { name: /5\.9\s*1개/ });
+      expect(regionNotice()).toBeNull();
+      second.unmount();
+
+      guard.unmount(); // 홈·곡·마이페이지로 나감
+      markFilterCarried();
+      renderView(COMPLEX, "5.7");
+      expect(await screen.findByText("필터가 적용되어 있습니다. 초기화할까요?")).toBeInTheDocument();
+    });
+
+    it("`초기화`를 눌렀으면 이후 필터를 다시 걸고 넘어올 때 안내가 다시 뜬다", async () => {
+      markFilterCarried();
+      const first = renderView(COMPLEX);
+      fireEvent.click(await screen.findByRole("button", { name: "필터 초기화" }));
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      first.unmount();
+
+      markFilterCarried();
+      renderView(COMPLEX, "5.9");
+      expect(await screen.findByText("필터가 적용되어 있습니다. 초기화할까요?")).toBeInTheDocument();
+    });
+
+    it("필터가 없어 안내가 뜨지 않은 이동은 \"보여 줬다\"로 치지 않는다", async () => {
+      markFilterCarried();
+      const first = renderView(EMPTY);
+      await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+      first.unmount();
+
+      markFilterCarried();
+      renderView(COMPLEX, "5.9");
+      expect(await screen.findByText("필터가 적용되어 있습니다. 초기화할까요?")).toBeInTheDocument();
     });
   });
 });

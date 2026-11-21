@@ -6,8 +6,11 @@ import {
   FILTER_NOTICE_MAX_MS,
   folderCarryFromParams,
   folderCarryToQuery,
+  isFilterNoticeShown,
   markFilterCarried,
+  markFilterNoticeShown,
   peekFilterCarried,
+  resetFilterNoticeShown,
   withCarryQuery,
 } from "@/lib/folder-filter-carry";
 
@@ -70,5 +73,17 @@ describe("이동 표시(한 번짜리)와 안내 시간", () => {
   it("입력이 없으면 5초, 최대 15초", () => {
     expect(FILTER_NOTICE_IDLE_MS).toBe(5000);
     expect(FILTER_NOTICE_MAX_MS).toBeGreaterThan(FILTER_NOTICE_IDLE_MS);
+  });
+});
+
+describe("안내를 이미 보여 줬다는 기억 (D99)", () => {
+  afterEach(() => resetFilterNoticeShown());
+
+  it("처음에는 보여 주지 않은 상태이고, 표시하면 유지되며, 지우면 되돌아간다", () => {
+    expect(isFilterNoticeShown()).toBe(false);
+    markFilterNoticeShown();
+    expect(isFilterNoticeShown()).toBe(true);
+    resetFilterNoticeShown();
+    expect(isFilterNoticeShown()).toBe(false);
   });
 });

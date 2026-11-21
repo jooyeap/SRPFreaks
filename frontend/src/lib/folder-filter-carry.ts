@@ -84,6 +84,27 @@ export function clearFilterCarried(): void {
   carried = false;
 }
 
+/**
+ * 안내는 서열표 영역에 들어와 있는 동안 한 번만 보여 준다(2026-11-21, D99 보강).
+ * 필터를 풀지 않고 계속 폴더를 넘기는 사람에게 매번 같은 안내를 띄우면 방해라서, 한 번 떴으면(초기화를 누르지 않고 무시·자동 사라짐 포함) 필터는 계속 이어 가되 안내는 더 띄우지 않는다.
+ * 저장 방식은 모듈 변수(메모리)다: 폴더 화면은 난이도마다 새로 마운트되므로 화면 안의 state로는 못 기억하지만, 클라이언트 이동 중에는 모듈이 살아 있어 이 변수가 유지된다.
+ * sessionStorage를 쓰지 않는 이유: 새로고침하면 다시 안내가 떠도 괜찮다고 정했고(사용자 확정), 쓰기·읽기 실패(try/catch)를 다룰 필요가 없고 기기에 남길 값도 없다. 값은 화면이 마운트된 뒤(효과 안)에만 바꾸므로 서버 렌더에는 영향이 없다.
+ * 다시 켜지는 때: (1) 서열표 영역(`/table` 이하)을 벗어날 때(TableAreaGuard) (2) 안내에서 `초기화`를 눌렀을 때. 초기화로 필터를 풀었다면 이후에 필터를 새로 걸고 넘어올 때는 처음 보는 상황과 같아서 안내가 다시 도움이 된다.
+ */
+let noticeShown = false;
+
+export function isFilterNoticeShown(): boolean {
+  return noticeShown;
+}
+
+export function markFilterNoticeShown(): void {
+  noticeShown = true;
+}
+
+export function resetFilterNoticeShown(): void {
+  noticeShown = false;
+}
+
 /** 안내가 입력 없이 떠 있는 시간(ms). 입력(누르기·스크롤·키)이 있으면 이 시간부터 다시 센다 */
 export const FILTER_NOTICE_IDLE_MS = 5000;
 

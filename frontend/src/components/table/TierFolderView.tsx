@@ -35,8 +35,11 @@ import { FilterCarryNotice } from "@/components/table/FilterCarryNotice";
 import {
   clearFilterCarried,
   folderCarryToQuery,
+  isFilterNoticeShown,
   markFilterCarried,
+  markFilterNoticeShown,
   peekFilterCarried,
+  resetFilterNoticeShown,
   withCarryQuery,
   type FolderCarry,
 } from "@/lib/folder-filter-carry";
@@ -122,10 +125,13 @@ export function TierFolderView({
   const carryQuery = folderCarryToQuery({ filters, sort, includeZero }, folderStartFilters());
   const hrefFor = (tier: number | null) => withCarryQuery(folderHref(tier), carryQuery);
   // 안내(토스트)는 필터가 실제로 걸린 채 옮겨 온 직후에만 띄운다. 마운트 때 한 번 정하고(표시는 이동 직전에 남긴다) 새로고침·링크 열기에는 뜨지 않는다
-  const [carriedNotice] = useState(() => peekFilterCarried() && carry !== null && hasFilters(carry.filters));
+  // 이미 한 번 안내했으면(서열표 영역 안에서) 필터만 이어 가고 안내는 다시 띄우지 않는다(folder-filter-carry의 noticeShown)
+  const [carriedNotice] = useState(() => peekFilterCarried() && carry !== null && hasFilters(carry.filters) && !isFilterNoticeShown());
   useEffect(() => {
+    // 안내를 띄우기로 한 마운트에서만 "보여 줬다"를 남긴다. 렌더 중(useState 초기값)에 바꾸지 않는 이유: 개발 모드 이중 렌더·취소된 렌더가 표시를 먼저 소모하지 않게
+    if (carriedNotice) markFilterNoticeShown();
     clearFilterCarried();
-  }, []);
+  }, [carriedNotice]);
   const router = useRouter();
   const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -472,7 +478,13 @@ export function TierFolderView({
         onNavigate={navigateTo}
       />
       {/* 필터를 싣고 옆 폴더로 넘어온 직후의 안내(D99). 이웃 이동 바 바로 위에 뜬다 */}
-      <FilterCarryNotice show={carriedNotice} onReset={() => setFilters(EMPTY_FILTERS)} />
+      <FilterCarryNotice
+        show={carriedNotice}
+        onReset={() => {
+          setFilters(EMPTY_FILTERS);
+          resetFilterNoticeShown(); // 초기화를 눌렀으면 다음에 필터를 다시 걸고 넘어올 때는 안내를 다시 보여도 된다
+        }}
+      />
       <ScrollTopButton lifted />
       <RecordDialog
         chart={
