@@ -7,6 +7,7 @@ import {
   chartStatsHref,
   deviationBarPercent,
   ratioPercent,
+  recentRangeText,
   signedText,
   tierText,
 } from "@/lib/chart-stats";
@@ -66,6 +67,27 @@ describe("막대 길이(장식)", () => {
     expect(ratioPercent(10, 10)).toBe(100);
     expect(ratioPercent(3, 0)).toBe(0);
     expect(ratioPercent(-1, 10)).toBe(0);
+  });
+});
+
+describe("최근 N일 날짜 범위 (D98)", () => {
+  it("서울 기준 오늘을 포함한 N일을 월-일로 쓴다", () => {
+    // 2026-11-21 정오(서울) = 03:00Z
+    expect(recentRangeText(7, new Date("2026-11-21T03:00:00Z"))).toBe("11-15~11-21");
+    expect(recentRangeText(1, new Date("2026-11-21T03:00:00Z"))).toBe("11-21~11-21");
+  });
+
+  it("UTC로는 아직 전날이어도 서울 날짜로 센다(UTC 15:00 = 서울 다음 날 0시)", () => {
+    expect(recentRangeText(7, new Date("2026-11-20T15:00:00Z"))).toBe("11-15~11-21");
+    expect(recentRangeText(7, new Date("2026-11-20T14:59:00Z"))).toBe("11-14~11-20");
+  });
+
+  it("달·해가 바뀌어도 이어서 센다", () => {
+    expect(recentRangeText(7, new Date("2027-01-03T03:00:00Z"))).toBe("12-28~01-03");
+  });
+
+  it("일 수가 올바르지 않으면 null", () => {
+    expect(recentRangeText(0, new Date("2026-11-21T03:00:00Z"))).toBeNull();
   });
 });
 

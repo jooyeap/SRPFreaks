@@ -19,7 +19,7 @@ class PeerStatsControllerTest {
 
     @Test
     void 토큰의_사용자_id로_조회한다() {
-        PeerStatsResponse expected = new PeerStatsResponse("SS 3", 8, List.of());
+        PeerStatsResponse expected = new PeerStatsResponse("SS 3", 5000, 5500, 8, 5, 3, List.of());
         Mockito.when(service.stats(7L, List.of(1L, 2L))).thenReturn(expected);
 
         assertThat(controller.get(new AuthenticatedUser(7L, Role.USER), List.of(1L, 2L))).isSameAs(expected);

@@ -147,7 +147,23 @@ class PeerStatsServiceTest {
 
         assertThat(response.bandUsers()).isEqualTo(4);
         assertThat(response.charts()).isEmpty();
+        // 기준 미달이어도 화면이 안내할 수 있게 구간 범위와 기준 인원은 담는다
+        assertThat(response.bandMinScore()).isEqualTo(1000);
+        assertThat(response.bandNextMinScore()).isEqualTo(1100);
+        assertThat(response.minBandUsers()).isEqualTo(5);
+        assertThat(response.minChartUsers()).isEqualTo(5);
         verify(mapper, never()).findChartRates(any(), any(), any(), any(), anyCollection());
+    }
+
+    @Test
+    void 최고_티어는_다음_티어_하한이_없다() {
+        when(skillService.mySkill(ME)).thenReturn(skill(tier(11000, null), List.of(), List.of()));
+        givenPeers(5, rates(CHART, "90", "90", "90", "90", "90"), "단일");
+
+        PeerStatsResponse response = service.stats(ME, List.of(CHART));
+
+        assertThat(response.bandMinScore()).isEqualTo(11000);
+        assertThat(response.bandNextMinScore()).isNull();
     }
 
     @Test
@@ -197,6 +213,8 @@ class PeerStatsServiceTest {
         PeerStatsResponse response = service.stats(ME, List.of(CHART));
 
         assertThat(response.tierName()).isNull();
+        assertThat(response.bandMinScore()).isNull();
+        assertThat(response.bandNextMinScore()).isNull();
         assertThat(response.charts()).isEmpty();
         verify(mapper, never()).countBandUsers(any(), any(), any(), any());
     }

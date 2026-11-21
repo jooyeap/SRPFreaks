@@ -267,7 +267,7 @@ class WeaknessAnalysisServiceTest {
         when(recommendMapper.findCandidates(eq(ME), eq("SUPER_RANDOM_PLUS"), eq(3L), any(),
                 eq(new BigDecimal("6.0")), eq(new BigDecimal("6.4")))).thenReturn(List.of(
                 cand(10, null), cand(11, "90.00"), cand(12, "60.00"), cand(13, "70.00"), cand(14, "99.00")));
-        when(peerStatsService.statsForServerChosenCharts(eq(ME), anyList())).thenReturn(new PeerStatsResponse("SS 3", 6, List.of(
+        when(peerStatsService.statsForServerChosenCharts(eq(ME), anyList())).thenReturn(new PeerStatsResponse("SS 3", 5000, 5500, 6, 5, 3, List.of(
                 stat(10, "88.00", "30.00"),
                 stat(11, "92.00", "5.00"),
                 stat(12, "88.00", "50.00"),

@@ -45,6 +45,15 @@ describe("PlayerListView", () => {
     expect(rows[1]).toHaveAttribute("href", "/players/3");
   });
 
+  it("목록 위에 `공개 유저 N명 · 총점 순`과 동점 규칙 `?` 설명이 있다 (D98)", async () => {
+    fetchMock.mockResolvedValue(json(pageOf([player(7, 1, "あか", 100), player(3, 2, "あお", 50)], { totalElements: 42, totalPages: 3 })));
+    renderWith(<PlayerListView viewerId={1} />);
+
+    expect(await screen.findByText("공개 유저 42명 · 총점 순")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "순위 기준 설명 보기" }));
+    expect(await screen.findByText(/총점이 같으면 먼저 달성한 사람이 위/)).toBeInTheDocument();
+  });
+
   it("같은 닉네임이 둘이어도 userId로 구분되는 서로 다른 링크가 된다", async () => {
     fetchMock.mockResolvedValue(json(pageOf([player(1, 1, "たろう", 10), player(2, 2, "たろう", 5)])));
     renderWith(<PlayerListView viewerId={99} />);

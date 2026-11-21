@@ -10,11 +10,13 @@ import { ApiError } from "@/lib/api";
 import { fetchPlayers, PLAYERS_PAGE_SIZE, playerKeys } from "@/lib/players";
 import { useScrollTopOnChange } from "@/lib/use-scroll-top";
 import { ErrorRetry } from "@/components/ErrorRetry";
+import { HelpTip } from "@/components/HelpTip";
 import { useTranslations } from "next-intl";
 
 /**
  * 유저 목록 (D26). 본인이 공개를 켠 유저의 닉네임·플레이어 티어·총점만 보이고, 누르면 읽기 전용 상세로 간다.
  * 순위와 총점은 서버가 계산한 값을 그대로 보여 준다(화면에서 다시 계산하지 않는다).
+ * 목록 위에 `공개 유저 N명 · 총점 순` 한 줄과 동점 규칙 `?` 설명을 둔다(D98: 정렬 기준과 모수를 밝힌다).
  */
 export function PlayerListView({ viewerId }: { viewerId: number }) {
   const t = useTranslations();
@@ -61,6 +63,12 @@ export function PlayerListView({ viewerId }: { viewerId: number }) {
         <p className="text-sm text-fg-sub">{t("Players.listEmpty")}</p>
       ) : (
         <>
+          <div className="flex items-center gap-1.5">
+            <p data-players-basis="" className="text-xs text-fg-sub">
+              {t("Players.basis", { n: data.totalElements })}
+            </p>
+            <HelpTip title={t("Players.tieTitle")} ariaLabel={t("Players.tieAria")} body={t("Players.tieBody")} />
+          </div>
           <ul aria-label={t("Players.listTitle")} className="overflow-hidden rounded-2xl border border-line bg-card">
             {data.content.map((player) => (
               <PlayerRow key={player.userId} player={player} viewerId={viewerId} />

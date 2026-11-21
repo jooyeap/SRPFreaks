@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PeerStatsCard } from "@/components/song/PeerStatsCard";
 import type { PeerChartStat, PeerStatsResponse } from "@/lib/peer-stats";
@@ -16,6 +16,11 @@ const CHART = 10;
 
 function stat(over: Partial<PeerChartStat> = {}): PeerChartStat {
   return { songDifficultyId: CHART, users: 6, medianRate: 88, expectedGain: 12.4, inMyList: false, myRate: null, ...over };
+}
+
+/** 서버 응답(구간 5000~5500점, 기준 인원 5명). 테스트마다 바꿀 값만 넘긴다 */
+function res(over: Partial<PeerStatsResponse> & Pick<PeerStatsResponse, "charts">): PeerStatsResponse {
+  return { tierName: "SS 3", bandMinScore: 5000, bandNextMinScore: 5500, bandUsers: 8, minBandUsers: 5, minChartUsers: 5, ...over };
 }
 
 /** 카드 틀은 불러오는 동안에도 있으므로, 값이 채워질 때까지 기다린 뒤 카드를 돌려준다 */
@@ -51,13 +56,13 @@ describe("PeerStatsCard", () => {
   }
 
   it("레이팅에 포함된 유저 수, 달성률 중앙값, 내 예상 레이팅을 보여 준다", async () => {
-    givenResponse({ tierName: "SS 3", bandUsers: 8, charts: [stat()] });
+    givenResponse(res({ bandUsers: 8, charts: [stat()] }));
     renderCard();
 
     const card = await loadedCard();
     expect(card).toHaveTextContent("레이팅에 포함된 유저 수");
     expect(card).toHaveTextContent("6명 / 8명");
-    expect(card).toHaveTextContent("달성률");
+    expect(card).toHaveTextContent("달성률(중앙값)");
     expect(card).toHaveTextContent("88.00%");
     expect(card).toHaveTextContent("내 예상 레이팅");
     expect(card).toHaveTextContent("+12.40점");
@@ -65,7 +70,7 @@ describe("PeerStatsCard", () => {
   });
 
   it("이미 레이팅에 포함된 곡은 내 기록을 보여 주고, 오를 점수가 있으면 예상 레이팅도 같이 보여 준다", async () => {
-    givenResponse({ tierName: "SS 3", bandUsers: 8, charts: [stat({ inMyList: true, myRate: 82.1, expectedGain: 5.2 })] });
+    givenResponse(res({ bandUsers: 8, charts: [stat({ inMyList: true, myRate: 82.1, expectedGain: 5.2 })] }));
     renderCard();
 
     const card = await loadedCard();
@@ -74,7 +79,7 @@ describe("PeerStatsCard", () => {
   });
 
   it("이미 내 기록이 더 높아 오를 점수가 0이면 예상 레이팅 줄을 숨긴다", async () => {
-    givenResponse({ tierName: "SS 3", bandUsers: 8, charts: [stat({ inMyList: true, myRate: 93.4, expectedGain: 0 })] });
+    givenResponse(res({ bandUsers: 8, charts: [stat({ inMyList: true, myRate: 93.4, expectedGain: 0 })] }));
     renderCard();
 
     const card = await loadedCard();
@@ -83,7 +88,7 @@ describe("PeerStatsCard", () => {
   });
 
   it("레이팅 대상이 아니라 예상 점수가 없으면 그 줄만 없다", async () => {
-    givenResponse({ tierName: "SS 3", bandUsers: 8, charts: [stat({ expectedGain: null })] });
+    givenResponse(res({ bandUsers: 8, charts: [stat({ expectedGain: null })] }));
     renderCard();
 
     const card = await loadedCard();
@@ -92,19 +97,35 @@ describe("PeerStatsCard", () => {
   });
 
   it("달성률 중앙값이 100.00이면 MAX로 쓴다", async () => {
-    givenResponse({ tierName: "SS 3", bandUsers: 8, charts: [stat({ medianRate: 100 })] });
+    givenResponse(res({ bandUsers: 8, charts: [stat({ medianRate: 100 })] }));
     renderCard();
 
     expect(await loadedCard()).toHaveTextContent("MAX");
   });
 
-  it("기준 인원에 못 미쳐 응답에 채보가 없으면 카드를 그리지 않는다", async () => {
-    givenResponse({ tierName: "SS 3", bandUsers: 4, charts: [] });
+  it("구간 인원이 기준에 못 미쳐 채보가 없으면 카드는 남기고 `기준 N명` 안내 한 줄만 보여 준다 (D98)", async () => {
+    givenResponse(res({ bandUsers: 4, charts: [] }));
+    renderCard();
+
+    const card = await screen.findByRole("region", { name: "같은 티어 유저 기록" });
+    expect(card).toHaveTextContent("같은 티어 유저가 적어 표시하지 않습니다(기준 5명)");
+    expect(card).not.toHaveTextContent("레이팅에 포함된 유저 수");
+  });
+
+  it("구간 인원은 충분한데 이 채보를 넣은 유저가 모자라면 채보 기준 인원으로 안내한다 (D98)", async () => {
+    givenResponse(res({ bandUsers: 8, minChartUsers: 3, charts: [] }));
+    renderCard();
+
+    const card = await screen.findByRole("region", { name: "같은 티어 유저 기록" });
+    expect(card).toHaveTextContent("이 채보를 레이팅에 넣은 같은 티어 유저가 적어 표시하지 않습니다(기준 3명)");
+  });
+
+  it("티어를 알 수 없으면(구간 정보 없음) 카드를 그리지 않는다", async () => {
+    givenResponse(res({ tierName: null, bandMinScore: null, bandNextMinScore: null, bandUsers: 0, charts: [] }));
     renderCard();
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     await waitFor(() => expect(screen.queryByRole("region", { name: "같은 티어 유저 기록" })).not.toBeInTheDocument());
-    expect(screen.queryByText("같은 티어 유저 기록")).not.toBeInTheDocument();
   });
 
   it("불러오는 동안은 아무것도 그리지 않는다 (없는 경우가 흔해서 카드가 나타났다 사라지지 않게)", () => {
@@ -122,11 +143,21 @@ describe("PeerStatsCard", () => {
     expect(screen.getByRole("button", { name: "다시 시도" })).toBeInTheDocument();
   });
 
-  it("도움말(`?`) 버튼은 없다 (따로 설명할 내용이 없어서)", async () => {
-    givenResponse({ tierName: "SS 3", bandUsers: 8, charts: [stat()] });
+  it("어느 티어 구간(점수 범위)의 유저인지 글자로 밝히고, `?` 설명에 중앙값·기준 인원을 적는다 (D98)", async () => {
+    givenResponse(res({ minBandUsers: 5, minChartUsers: 4, charts: [stat()] }));
     renderCard();
 
-    await loadedCard();
-    expect(screen.queryByRole("button", { name: /설명 보기/ })).not.toBeInTheDocument();
+    const card = await loadedCard();
+    expect(card).toHaveTextContent("SS 3 구간(5,000점 이상 5,500점 미만)의 공개 유저 기준");
+    fireEvent.click(screen.getByRole("button", { name: "같은 티어 유저 기록 기준 설명 보기" }));
+    expect(await screen.findByText(/중앙값\(가운데 값\)이며 평균이 아닙니다/)).toBeInTheDocument();
+    expect(screen.getByText(/구간의 유저가 5명 미만이거나 이 채보를 레이팅에 넣은 유저가 4명 미만/)).toBeInTheDocument();
+  });
+
+  it("최고 티어는 상한이 없어 `점 이상`만 쓴다", async () => {
+    givenResponse(res({ bandMinScore: 11000, bandNextMinScore: null, charts: [stat()] }));
+    renderCard();
+
+    expect(await loadedCard()).toHaveTextContent("SS 3 구간(11,000점 이상)의 공개 유저 기준");
   });
 });

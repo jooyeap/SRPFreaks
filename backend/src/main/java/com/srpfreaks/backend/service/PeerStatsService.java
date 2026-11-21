@@ -86,7 +86,7 @@ public class PeerStatsService {
         SkillResponse mine = skillService.mySkill(userId);
         PlayerTierResponse tier = mine.tier();
         if (tier == null) {
-            return new PeerStatsResponse(null, 0, List.of());   // 티어 구간표가 비어 있으면 같은 티어를 정할 수 없다
+            return new PeerStatsResponse(null, null, null, 0, config.minBandUsers(), config.minChartUsers(), List.of());   // 티어 구간표가 비어 있으면 같은 티어를 정할 수 없다
         }
         BigDecimal[] bounds = bandBounds(tier);
         BigDecimal lo = bounds[0];
@@ -95,7 +95,7 @@ public class PeerStatsService {
 
         int bandUsers = mapper.countBandUsers(userId, option, lo, hi);
         if (bandUsers < config.minBandUsers()) {
-            return new PeerStatsResponse(tier.displayName(), bandUsers, List.of());
+            return response(tier, config, bandUsers, List.of());
         }
 
         Map<Long, List<BigDecimal>> ratesByChart = mapper.findChartRates(userId, option, lo, hi, chartIds).stream()
@@ -106,7 +106,7 @@ public class PeerStatsService {
                 .filter(id -> ratesByChart.getOrDefault(id, List.of()).size() >= config.minChartUsers())
                 .toList();
         if (enoughIds.isEmpty()) {
-            return new PeerStatsResponse(tier.displayName(), bandUsers, List.of());
+            return response(tier, config, bandUsers, List.of());
         }
 
         RatingCalculator calculator = new RatingCalculator(ratingConfig);
@@ -123,7 +123,14 @@ public class PeerStatsService {
             charts.add(new PeerChartStat(id, rates.size(), median, gain, own != null,
                     own == null ? null : own.achievementRate()));
         }
-        return new PeerStatsResponse(tier.displayName(), bandUsers, charts);
+        return response(tier, config, bandUsers, charts);
+    }
+
+    /** 응답을 만든다. 구간 범위와 기준 인원은 항상 같이 담는다(기준 미달로 채보가 비어도 화면이 안내할 수 있게). */
+    private static PeerStatsResponse response(PlayerTierResponse tier, PeerStatsConfig config, int bandUsers,
+                                              List<PeerChartStat> charts) {
+        return new PeerStatsResponse(tier.displayName(), tier.minScore(), tier.nextMinScore(), bandUsers,
+                config.minBandUsers(), config.minChartUsers(), charts);
     }
 
     /** 내 티어 구간 [하한, 상한)을 총점 값으로 돌려준다(마지막 티어는 상한이 없어 큰 값). 약점 분석(D72)도 같은 구간을 쓴다. */
