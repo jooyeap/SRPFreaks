@@ -71,7 +71,7 @@ describe("속성별 화면에서 들어온 폴더 상세 (D93)", () => {
     expect(screen.queryByText("단일곡")).toBeNull();
     const bar = screen.getByTestId("pattern-from-grid");
     expect(within(bar).getByText("속성: 복합")).toBeInTheDocument();
-    expect(within(bar).getByText("속성별 화면에서 고른 복합 필터가 자동으로 걸렸습니다. 이 폴더에만 적용되고, 다른 폴더로 옮기면 풀립니다.")).toBeInTheDocument();
+    expect(within(bar).getByText("속성별 화면에서 고른 복합 필터가 자동으로 걸렸습니다. 다른 폴더로 옮겨도 이어서 적용됩니다.")).toBeInTheDocument();
     expect(within(bar).getByRole("button", { name: "필터 초기화" })).toBeInTheDocument();
     expect(within(bar).getByRole("link", { name: "속성별로 돌아가기" })).toHaveAttribute("href", "/table?view=pattern");
   });
