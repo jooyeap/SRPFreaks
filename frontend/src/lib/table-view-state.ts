@@ -10,6 +10,7 @@ import type { TileOrder } from "@/lib/table-tiles";
  * 주소 예: `/table?rec=상&pat=단일,복합&sort=rateDesc&zero=1&page=3` (옛 주소의 `part`는 무시)
  *  - rec: 없으면 기본(상·중), `all`이면 추천 필터 없음(전체), 아니면 쉼표로 이은 값
  *  - page: 1부터 (화면의 `1 / 5`와 같다). 내부 값은 0부터
+ *  - view: 보기 방식(`pattern` = 속성별 화면, D93). 없으면 폴더 화면. 폴더 상세로 갔다가 `←`로 돌아와도 같은 방식이 되도록 주소 쿼리에 둔다(rememberTableReturn이 이 쿼리를 기억한다)
  *  - order: 첫 화면 타일의 난이도 순서(`hard` 어려운 순 / `easy` 쉬운 순). 없으면 null = 평균이 있으면 어려운 순, 없으면 쉬운 순(table-tiles.ts defaultOrder)
  */
 export interface TableViewState {
@@ -19,9 +20,13 @@ export interface TableViewState {
   /** 0부터 */
   page: number;
   order: TileOrder | null;
+  /** 첫 화면 보기 방식: 폴더 타일(`folder`, 기본) / 폴더 × 속성(`pattern`) */
+  mode: TableViewMode;
 }
 
-export const DEFAULT_VIEW_STATE: TableViewState = { filters: DEFAULT_FILTERS, sort: DEFAULT_SORT, includeZero: false, page: 0, order: null };
+export type TableViewMode = "folder" | "pattern";
+
+export const DEFAULT_VIEW_STATE: TableViewState = { filters: DEFAULT_FILTERS, sort: DEFAULT_SORT, includeZero: false, page: 0, order: null, mode: "folder" };
 
 const MAX_PAGE = 1000;
 
@@ -48,6 +53,7 @@ export function viewStateFromParams(params: URLSearchParams): TableViewState {
     includeZero: params.get("zero") === "1",
     page: Number.isInteger(pageNumber) && pageNumber >= 2 ? Math.min(pageNumber, MAX_PAGE) - 1 : 0,
     order: params.get("order") === "hard" ? "hard" : params.get("order") === "easy" ? "easy" : null,
+    mode: params.get("view") === "pattern" ? "pattern" : "folder", // 알 수 없는 값은 폴더 화면
   };
 }
 
@@ -63,6 +69,7 @@ export function viewStateToQuery(state: TableViewState): string {
   if (state.includeZero) params.set("zero", "1");
   if (state.page > 0) params.set("page", String(state.page + 1));
   if (state.order !== null) params.set("order", state.order);
+  if (state.mode === "pattern") params.set("view", "pattern");
   return params.toString();
 }
 
@@ -130,6 +137,17 @@ export function tableReturnHref(): string {
 export function folderStartFilters(): TableFilters {
   const saved = readTableReturn();
   return saved ? viewStateFromParams(new URLSearchParams(saved.query)).filters : EMPTY_FILTERS;
+}
+
+/**
+ * 폴더 상세의 `속성별로 돌아가기` 주소. 속성별 화면에서 들어왔으면 떠날 때의 쿼리(보기 방식 포함)로 돌아가고,
+ * 기억이 없으면(주소를 직접 열었을 때) 속성별 화면의 기본 상태로 간다.
+ */
+export function patternGridReturnHref(): string {
+  const saved = readTableReturn();
+  const params = new URLSearchParams(saved?.query ?? "");
+  params.set("view", "pattern");
+  return `/table?${params.toString()}`;
 }
 
 /** 테스트용: 기억을 비운다 */
