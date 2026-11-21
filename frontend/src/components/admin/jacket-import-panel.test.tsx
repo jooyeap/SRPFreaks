@@ -94,7 +94,7 @@ describe("JacketImportPanel (D54)", () => {
       type: MSG_TITLES,
       titles: ["Alpha", "Beta", "Other"],
       infos: [
-        { title: "Alpha", artist: "Tsukasa Komori", bpm: "180" }, // 옛 북마클릿이 보낸 BPM은 버려진다 (D93)
+        { title: "Alpha", artist: "Tsukasa Komori", bpm: "180" }, // 옛 북마클릿이 보낸 BPM은 버려진다 (D94)
         { title: "Beta", artist: "Ryu feat. Kobaryo", bpm: "195" },
       ],
       failedPages: 0,
@@ -116,7 +116,7 @@ describe("JacketImportPanel (D54)", () => {
     // 상태는 색이 아니라 글자로도 보인다
     expect(screen.getAllByText("새로 채움").length).toBeGreaterThan(0);
     expect(screen.getAllByText("덮어쓰기").length).toBeGreaterThan(0);
-    expect(screen.queryByText("BPM")).not.toBeInTheDocument(); // BPM 열·칩은 없다 (D93)
+    expect(screen.queryByText("BPM")).not.toBeInTheDocument(); // BPM 열·칩은 없다 (D94)
     expect(screen.getByRole("button", { name: "덮어쓰기 1곡 제외" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "선택 1곡 저장" }));

@@ -261,7 +261,7 @@ class SongInfoImportServiceTest {
 
     @Test
     void RemyWiki_BPM만_보내면_아티스트는_건드리지_않고_덮어쓰기는_고른_곡만_반영한다() {
-        // D93: RemyWiki 경로는 artist를 빈 글자로, 항목은 bpm만 고른다
+        // D94: RemyWiki 경로는 artist를 빈 글자로, 항목은 bpm만 고른다
         Song empty = song(10L, "Empty", "Game Artist", null, null);
         Song changed = song(11L, "Changed", "Game Artist", 150, 150);
         Song skipped = song(12L, "NotChosen", "Game Artist", 120, 120);

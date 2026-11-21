@@ -42,7 +42,7 @@ function titleKey(title: string): string {
 }
 
 /**
- * RemyWiki에서 BPM 가져오기 (D93, ROOT 전용). 설계는 docs/DESIGN.md D93, 화면은 DESIGN-UI.md 27.2.
+ * RemyWiki에서 BPM 가져오기 (D94, ROOT 전용). 설계는 docs/DESIGN.md D94, 화면은 DESIGN-UI.md 27.2.
  * 흐름: RemyWiki 곡 표 페이지에서 북마크를 누르면 이 화면(창 이름 고정)이 메시지로 곡명·BPM을 받는다 → 받은 곡이 쌓인다(같은 곡명은 나중 값이 이긴다)
  * → 쌓일 때마다 서버가 마스터와 맞춰 `현재값 → 가져온 값`을 돌려준다(저장 없음) → 체크한 곡만 BPM을 저장한다.
  * 기본 체크는 비어 있던 곡(새로 채움)뿐이고, 덮어쓰기는 사용자가 체크한 곡만 저장한다. 새 곡은 만들지 않는다.

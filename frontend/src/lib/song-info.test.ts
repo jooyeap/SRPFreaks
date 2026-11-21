@@ -17,7 +17,7 @@ describe("곡 정보 가져오기 값 표시 (D90)", () => {
   });
 });
 
-describe("BPM 글자 검증 (D93)", () => {
+describe("BPM 글자 검증 (D94)", () => {
   it("고정·범위(하이픈·물결표·긴 줄표·전각)를 최소·최대로 읽는다", () => {
     expect(parseBpmText("172")).toEqual({ min: 172, max: 172 });
     expect(parseBpmText(" 120-180 ")).toEqual({ min: 120, max: 180 });

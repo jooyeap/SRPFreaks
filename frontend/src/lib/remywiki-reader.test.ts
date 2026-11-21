@@ -45,7 +45,7 @@ const MAIN_TABLE = `
   <tr><td>Dash Only</td><td>X</td><td>-</td></tr>
 </table>`;
 
-describe("RemyWiki 표 읽기 (D93)", () => {
+describe("RemyWiki 표 읽기 (D94)", () => {
   afterEach(() => {
     document.body.innerHTML = "";
   });
@@ -131,7 +131,7 @@ describe("RemyWiki 표 읽기 (D93)", () => {
   });
 });
 
-describe("RemyWiki 북마클릿 (D93)", () => {
+describe("RemyWiki 북마클릿 (D94)", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     document.body.innerHTML = "";
@@ -204,7 +204,7 @@ describe("RemyWiki 북마클릿 (D93)", () => {
   });
 });
 
-describe("RemyWiki 메시지 검사 (D93)", () => {
+describe("RemyWiki 메시지 검사 (D94)", () => {
   it("모양이 틀리면 null이고, 줄 하나가 틀리면 그 줄만 버린다", () => {
     expect(parseRemyMessage(null)).toBeNull();
     expect(parseRemyMessage({ type: "other", id: "a", rows: [] })).toBeNull();

@@ -42,7 +42,7 @@ describe("재킷 북마클릿 (D54)", () => {
     ]);
   });
 
-  it("같은 줄에 아티스트가 보이면 함께 읽고, 없으면 빈 글자로 건너뛴다. BPM은 읽지 않는다 (D90, D93)", () => {
+  it("같은 줄에 아티스트가 보이면 함께 읽고, 없으면 빈 글자로 건너뛴다. BPM은 읽지 않는다 (D90, D94)", () => {
     const read = new Function(`${READER_SOURCE}; return srpReadJackets;`)() as Reader;
     const doc = new DOMParser().parseFromString(
       `<table>
@@ -100,7 +100,7 @@ describe("parseJacketMessage", () => {
     expect(parseJacketMessage({ type: MSG_TITLES, titles: Array(4001).fill("A") })).toBeNull();
   });
 
-  it("곡 정보(infos)는 없어도 되고, 틀린 줄만 버리며, 옛 북마클릿이 보낸 BPM은 버린다 (D90, D93)", () => {
+  it("곡 정보(infos)는 없어도 되고, 틀린 줄만 버리며, 옛 북마클릿이 보낸 BPM은 버린다 (D90, D94)", () => {
     const parsed = parseJacketMessage({
       type: MSG_TITLES,
       titles: ["A"],

@@ -84,7 +84,7 @@ export function JacketImportPanel() {
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{ saved: number; replaced: number; info: SongInfoCommitResult | null } | null>(null);
-  // D90: 공식 화면에서 읽은 아티스트와 서버가 비교한 결과 (BPM은 D93부터 RemyWiki 패널에서만 받는다), 저장할 항목 칩(기본 모두 켬)
+  // D90: 공식 화면에서 읽은 아티스트와 서버가 비교한 결과 (BPM은 D94부터 RemyWiki 패널에서만 받는다), 저장할 항목 칩(기본 모두 켬)
   const [infoRows, setInfoRows] = useState<Map<number, SongInfoRow>>(new Map());
   const [kinds, setKinds] = useState<Set<Kind>>(new Set(KINDS));
   const infosRef = useRef<InfoRow[]>([]);

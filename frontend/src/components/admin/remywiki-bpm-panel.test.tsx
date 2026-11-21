@@ -16,7 +16,7 @@ const row = (songId: number, title: string, status: "FILL" | "OVERWRITE" | "UNCH
   bpm: { currentMin: cur[0], currentMax: cur[1], officialMin: off[0], officialMax: off[1], status },
 });
 
-describe("RemyWikiBpmPanel (D93)", () => {
+describe("RemyWikiBpmPanel (D94)", () => {
   const fetchMock = vi.fn<typeof fetch>();
   let remy: Window;
   let acks: unknown[];

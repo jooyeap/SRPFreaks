@@ -3,7 +3,7 @@ import { BPM_TEXT_SOURCE, parseBpmText } from "@/lib/song-info";
 import type { Translator } from "@/i18n/translator";
 
 /**
- * RemyWiki GITADORA 곡 표에서 BPM 읽기 북마클릿 (D93, ROOT 전용). 설계는 docs/DESIGN.md D93.
+ * RemyWiki GITADORA 곡 표에서 BPM 읽기 북마클릿 (D94, ROOT 전용). 설계는 docs/DESIGN.md D94.
  *
  * ROOT가 RemyWiki(remywiki.com)의 곡 표가 있는 페이지(예: AC_GD_EXCHAIN)를 연 상태에서 북마크를 누르면:
  *  1. 지금 열린 페이지의 표만 읽는다(추가 요청 없음). 머리글에서 `Song`(또는 `Song Title`)과 `BPM` 열을 이름으로 찾고, 못 찾는 표는 건너뛴다.
@@ -66,7 +66,7 @@ export function remyBookmarkletMessages(t: Translator): RemyBookmarkletMessages 
  * 페이지(문서)의 표에서 곡명·아티스트·BPM을 읽는 함수들. `srpReadRemy(doc)`가
  * `{rows:[{title,artist,bpm}], tables, invalid, truncated}`를 돌려준다. (document에만 기대는 순수 함수라 HTML 샘플로 테스트한다)
  *
- * 읽는 규칙(RemyWiki 표 모양 확인: docs/DESIGN.md D93):
+ * 읽는 규칙(RemyWiki 표 모양 확인: docs/DESIGN.md D94):
  *  - 표마다 앞 4줄 안에서 머리글 칸 글자가 `Song`/`Song Title`/`Title`인 열과 `BPM`인 열을 찾는다. 둘 다 없으면 그 표는 건너뛴다.
  *    `Artist` 열은 있으면 읽는다. 열 위치는 colspan·rowspan을 펼친 격자로 계산한다(두 줄 머리글, `Drive Flare` 같은 앞 열 대응).
  *  - 머리글 아래 줄 중 곡 칸이 머리글 칸 그대로(rowspan), 또는 곡 칸과 BPM 칸이 같은 칸(구분 줄 `Default`, `Hidden Songs`)이면 건너뛴다.

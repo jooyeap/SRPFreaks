@@ -16,7 +16,7 @@ import type { Translator } from "@/i18n/translator";
  * (D90) 같은 줄에 아티스트(게임 표기 = 작곡가 자리)가 보이면 곡명과 함께 읽어 `infos`로 넘긴다. 없으면 건너뛴다(값 없음).
  * 아티스트가 줄의 어느 칸에 있는지는 아직 실제 화면으로 확인하지 못했다. 읽는 위치는 READER_SOURCE 한 곳에만 있다
  * (클래스에 artist가 든 요소). 위치가 다르면 READER_SOURCE만 고친다.
- * (D93) BPM은 공식 화면에 따로 표기되지 않아 여기서 읽지 않는다. BPM은 RemyWiki 읽기(lib/remywiki-reader.ts)로만 받는다.
+ * (D94) BPM은 공식 화면에 따로 표기되지 않아 여기서 읽지 않는다. BPM은 RemyWiki 읽기(lib/remywiki-reader.ts)로만 받는다.
  *
  * 왜 동시에 2개·간격을 두는가: 공식 사이트가 봇 차단(Imperva)을 쓴다. 짧은 시간에 요청이 몰리면 브라우저가 막힐 수 있어
  * 설계의 "동시에 4개"보다 낮췄다(2026-10-31, 약 480장에 2~3분).
@@ -198,7 +198,7 @@ export function buildJacketBookmarkletHref(siteBase: string, messages: JacketBoo
 
 /* ---------- 우리 창 쪽: 받은 메시지 검사 ---------- */
 
-/** 곡 정보 한 줄(서버 SongInfoImportRequest.InfoRow와 같은 모양). 공식 화면에서는 아티스트만 읽고 BPM은 빈 글자다(D93). */
+/** 곡 정보 한 줄(서버 SongInfoImportRequest.InfoRow와 같은 모양). 공식 화면에서는 아티스트만 읽고 BPM은 빈 글자다(D94). */
 export interface InfoRow {
   title: string;
   artist: string;
@@ -231,7 +231,7 @@ function parseInfos(value: unknown): InfoRow[] {
     const r = item as Record<string, unknown>;
     if (typeof r.title !== "string" || r.title.length < 1 || r.title.length > MAX_TITLE_LENGTH) continue;
     const artist = typeof r.artist === "string" ? r.artist : "";
-    // BPM은 공식 화면에서 받지 않는다(D93): 옛 북마클릿이 bpm을 보내도 버린다
+    // BPM은 공식 화면에서 받지 않는다(D94): 옛 북마클릿이 bpm을 보내도 버린다
     if (artist.length > MAX_ARTIST_LENGTH || !artist) continue;
     out.push({ title: r.title, artist, bpm: "" });
   }
