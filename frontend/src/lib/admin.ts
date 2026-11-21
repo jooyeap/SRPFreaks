@@ -60,6 +60,7 @@ const ACTION_LABELS: Record<string, MessageKey> = {
   SUGGESTION_REVIEW: "Admin.actionSuggestionReview",
   SETTING_UPDATE: "Admin.actionSettingUpdate",
   SONG_OFFICIAL_IMPORT: "Admin.actionSongOfficialImport",
+  SONG_INFO_IMPORT: "Admin.actionSongInfoImport",
 };
 
 /** 작업 종류 선택 상자에 보이는 값들(화면 이름이 있는 종류). 목록에 없는 새 종류는 서버가 남겨도 선택지에는 아직 없다. */
@@ -86,6 +87,7 @@ const ACTION_KINDS: Record<string, AuditKind> = {
   DIFFICULTY_UPDATE: "songs",
   DIFFICULTY_DELETE: "songs",
   SONG_OFFICIAL_IMPORT: "songs",
+  SONG_INFO_IMPORT: "songs",
   SONG_JACKET_IMPORT: "songs",
   SONG_JACKET_DELETE: "songs",
   TABLE_ENTRY_CREATE: "table",

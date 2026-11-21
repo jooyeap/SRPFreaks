@@ -63,12 +63,42 @@ describe("JacketImportPanel (D54)", () => {
           missingSongs: [{ songId: 9, title: "Gamma" }],
         });
       }
+      if (url.endsWith("/admin/song-info-imports/preview")) {
+        return json({
+          readSongs: 3,
+          matchedSongs: 2,
+          unmatchedCount: 1,
+          rows: [
+            {
+              officialTitle: "Alpha", songId: 1, songTitle: "Alpha",
+              artist: { current: null, official: "Tsukasa Komori", status: "FILL" },
+              bpm: { currentMin: null, currentMax: null, officialMin: 180, officialMax: 180, status: "FILL" },
+            },
+            {
+              officialTitle: "Beta", songId: 2, songTitle: "Beta",
+              artist: { current: "Ryu", official: "Ryu feat. Kobaryo", status: "OVERWRITE" },
+              bpm: { currentMin: 195, currentMax: 195, officialMin: 195, officialMax: 195, status: "UNCHANGED" },
+            },
+          ],
+        });
+      }
+      if (url.endsWith("/admin/song-info-imports/commit")) {
+        return json({ artistFilled: 1, artistOverwritten: 0, bpmFilled: 1, bpmOverwritten: 0, skipped: 0 });
+      }
       return json({ saved: 1, replaced: 0 });
     });
     renderPanel();
     expect(posted).toContainEqual({ type: MSG_READY });
 
-    send({ type: MSG_TITLES, titles: ["Alpha", "Beta", "Other"], failedPages: 0 });
+    send({
+      type: MSG_TITLES,
+      titles: ["Alpha", "Beta", "Other"],
+      infos: [
+        { title: "Alpha", artist: "Tsukasa Komori", bpm: "180" },
+        { title: "Beta", artist: "Ryu feat. Kobaryo", bpm: "195" },
+      ],
+      failedPages: 0,
+    });
     await waitFor(() => expect(posted).toContainEqual({ type: MSG_WANT, titles: ["Alpha", "Beta"] }));
     expect(await screen.findByText("맞은 곡 2곡 · 마스터에 없음 5곡 · 공식 목록에 없음 1곡")).toBeInTheDocument();
 
@@ -79,13 +109,24 @@ describe("JacketImportPanel (D54)", () => {
 
     const alpha = await screen.findByRole("checkbox", { name: /Alpha/ });
     const beta = screen.getByRole("checkbox", { name: /Beta/ });
-    expect(alpha).toBeChecked(); // 새로 넣기는 기본 체크
-    expect(beta).not.toBeChecked(); // 교체 후보는 기본 해제
+    expect(alpha).toBeChecked(); // 새로 채움은 기본 체크
+    expect(beta).not.toBeChecked(); // 덮어쓰기(아티스트·재킷 교체)가 든 곡은 기본 해제
     expect(screen.getAllByRole("checkbox")).toHaveLength(2);
     expect(screen.getByRole("status")).toHaveTextContent("재킷 2장을 받았습니다. (실패 1장)");
+    // 상태는 색이 아니라 글자로도 보인다
+    expect(screen.getAllByText("새로 채움").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("덮어쓰기").length).toBeGreaterThan(0);
+    expect(screen.getByText("변경 없음")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "덮어쓰기 1곡 제외" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "체크한 1곡 저장" }));
+    fireEvent.click(screen.getByRole("button", { name: "선택 1곡 저장" }));
     await waitFor(() => expect(screen.getByText("저장 결과: 새로 1곡, 교체 0곡")).toBeInTheDocument());
+    expect(screen.getByText(/곡 정보: 아티스트 새로 1곡/)).toBeInTheDocument();
+    const commitCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/admin/song-info-imports/commit"));
+    expect(JSON.parse(String(commitCall?.[1]?.body))).toEqual({
+      songs: [{ title: "Alpha", artist: "Tsukasa Komori", bpm: "180" }],
+      selections: [{ songId: 1, artist: true, bpm: true }],
+    });
     const saveCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/admin/song-jackets"));
     const form = saveCall?.[1]?.body as FormData;
     expect(form.getAll("songIds")).toEqual(["1"]);
@@ -105,5 +146,59 @@ describe("JacketImportPanel (D54)", () => {
     renderPanel();
     expect(screen.getByText("SRP 재킷")).toBeInTheDocument();
     expect(posted).toEqual([]);
+  });
+
+  it("공식 화면에 아티스트·BPM이 없으면 비교를 부르지 않고 값 없음으로 두며 재킷만 저장한다 (D90)", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/admin/song-jackets/match")) {
+        return json({ matches: [{ officialTitle: "Alpha", songId: 1, songTitle: "Alpha", hasJacket: false }], unmatchedCount: 0, missingSongs: [] });
+      }
+      return json({ saved: 1, replaced: 0 });
+    });
+    renderPanel();
+    send({ type: MSG_TITLES, titles: ["Alpha"], failedPages: 0 }); // 옛 북마클릿: infos 없음
+    await waitFor(() => expect(posted).toContainEqual({ type: MSG_WANT, titles: ["Alpha"] }));
+    send({ type: MSG_IMAGE, title: "Alpha", data: new ArrayBuffer(8) });
+    send({ type: MSG_DONE, sent: 1, failed: 0 });
+
+    expect(await screen.findByText("공식 화면에서 아티스트·BPM을 읽지 못했습니다. 재킷만 가져옵니다.")).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("song-info-imports"))).toBe(false);
+    expect(screen.getAllByText("값 없음").length).toBeGreaterThanOrEqual(2);
+    fireEvent.click(screen.getByRole("button", { name: "선택 1곡 저장" }));
+    await waitFor(() => expect(screen.getByText("저장 결과: 새로 1곡, 교체 0곡")).toBeInTheDocument());
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("song-info-imports/commit"))).toBe(false);
+  });
+
+  it("저장할 항목 칩을 끄면 그 항목은 저장하지 않는다 (D90)", async () => {
+    fetchMock.mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith("/admin/song-jackets/match")) {
+        return json({ matches: [{ officialTitle: "Alpha", songId: 1, songTitle: "Alpha", hasJacket: false }], unmatchedCount: 0, missingSongs: [] });
+      }
+      if (url.endsWith("/preview")) {
+        return json({
+          readSongs: 1, matchedSongs: 1, unmatchedCount: 0,
+          rows: [{
+            officialTitle: "Alpha", songId: 1, songTitle: "Alpha",
+            artist: { current: null, official: "A", status: "FILL" },
+            bpm: { currentMin: null, currentMax: null, officialMin: 100, officialMax: 120, status: "FILL" },
+          }],
+        });
+      }
+      if (url.endsWith("/commit")) return json({ artistFilled: 1, artistOverwritten: 0, bpmFilled: 0, bpmOverwritten: 0, skipped: 0 });
+      return json({ saved: 0, replaced: 0 });
+    });
+    renderPanel();
+    send({ type: MSG_TITLES, titles: ["Alpha"], infos: [{ title: "Alpha", artist: "A", bpm: "100-120" }], failedPages: 0 });
+    await waitFor(() => expect(posted).toContainEqual({ type: MSG_WANT, titles: ["Alpha"] }));
+    send({ type: MSG_DONE, sent: 0, failed: 0 });
+
+    expect(await screen.findByText("100–120")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /BPM/ })); // BPM 끄기
+    fireEvent.click(screen.getByRole("button", { name: "선택 1곡 저장" }));
+    await waitFor(() => expect(screen.getByText(/곡 정보: 아티스트 새로 1곡/)).toBeInTheDocument());
+    const commitCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/commit"));
+    expect(JSON.parse(String(commitCall?.[1]?.body)).selections).toEqual([{ songId: 1, artist: true, bpm: false }]);
   });
 });

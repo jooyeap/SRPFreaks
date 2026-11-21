@@ -18,7 +18,7 @@ const messages: JacketBookmarkletMessages = {
   noSongs: "없음", matching: "{count}", converting: "{n}/{total}", done: "{count} {failed}",
 };
 
-type Reader = (doc: Document, pageUrl: string) => { title: string; src: string }[];
+type Reader = (doc: Document, pageUrl: string) => { title: string; src: string; artist: string; bpm: string }[];
 
 describe("재킷 북마클릿 (D54)", () => {
   afterEach(() => {
@@ -38,7 +38,28 @@ describe("재킷 북마클릿 (D54)", () => {
     );
     const rows = read(doc, "https://p.eagate.573.jp/game/gfdm/gitadora_galaxywave_delta/p/playdata/music.html?cat=0");
     expect(rows).toEqual([
-      { title: "0時20分の Roulette", src: "https://p.eagate.573.jp/game/gfdm/gitadora_galaxywave_delta/p/playdata/img.html?imgkey=a&imgid=1" },
+      { title: "0時20分の Roulette", src: "https://p.eagate.573.jp/game/gfdm/gitadora_galaxywave_delta/p/playdata/img.html?imgkey=a&imgid=1", artist: "", bpm: "" },
+    ]);
+  });
+
+  it("같은 줄에 아티스트·BPM이 보이면 함께 읽고, 없으면 빈 글자로 건너뛴다 (D90)", () => {
+    const read = new Function(`${READER_SOURCE}; return srpReadJackets;`)() as Reader;
+    const doc = new DOMParser().parseFromString(
+      `<table>
+        <tr><td><img class="jacket" alt="Fixed" src="a.html"></td><td class="music_artist"> Yusuke
+          Kitaura </td><td class="bpm">172</td></tr>
+        <tr><td><img class="jacket" alt="Variable" src="b.html"></td><td class="artist">Ryu</td><td class="bpm_text">BPM 120 - 180</td></tr>
+        <tr><td><img class="jacket" alt="Label" src="c.html"></td><td>BPM: １５０</td></tr>
+        <tr><td><img class="jacket" alt="Nothing" src="d.html"></td><td>98.00%</td></tr>
+      </table>`,
+      "text/html",
+    );
+    const rows = read(doc, "https://p.eagate.573.jp/x/music.html");
+    expect(rows.map((r) => [r.title, r.artist, r.bpm])).toEqual([
+      ["Fixed", "Yusuke Kitaura", "172"],
+      ["Variable", "Ryu", "120 - 180"],
+      ["Label", "", "１５０"],
+      ["Nothing", "", ""],
     ]);
   });
 
@@ -72,10 +93,32 @@ describe("재킷 북마클릿 (D54)", () => {
 
 describe("parseJacketMessage", () => {
   it("곡명 목록은 1~300자 글자만, 4,000개까지 받는다", () => {
-    expect(parseJacketMessage({ type: MSG_TITLES, titles: ["A", "B"], failedPages: 1 })).toEqual({ type: MSG_TITLES, titles: ["A", "B"], failedPages: 1 });
+    expect(parseJacketMessage({ type: MSG_TITLES, titles: ["A", "B"], failedPages: 1 })).toEqual({ type: MSG_TITLES, titles: ["A", "B"], infos: [], failedPages: 1 });
     expect(parseJacketMessage({ type: MSG_TITLES, titles: ["A", 3] })).toBeNull();
     expect(parseJacketMessage({ type: MSG_TITLES, titles: [""] })).toBeNull();
     expect(parseJacketMessage({ type: MSG_TITLES, titles: Array(4001).fill("A") })).toBeNull();
+  });
+
+  it("곡 정보(infos)는 없어도 되고, 틀린 줄만 버린다 (D90)", () => {
+    const parsed = parseJacketMessage({
+      type: MSG_TITLES,
+      titles: ["A"],
+      infos: [
+        { title: "A", artist: "Ryu", bpm: "172" },
+        { title: "B", artist: "", bpm: "" }, // 둘 다 비면 보낼 값이 없다
+        { title: "C", artist: 3, bpm: "1" }, // 글자가 아닌 아티스트는 빈 값으로 본다
+        { title: "D", artist: "x".repeat(501), bpm: "1" }, // 길이 초과
+        { title: "E", artist: "e", bpm: "9".repeat(41) },
+        null,
+      ],
+    });
+    expect(parsed).toMatchObject({
+      infos: [
+        { title: "A", artist: "Ryu", bpm: "172" },
+        { title: "C", artist: "", bpm: "1" },
+      ],
+    });
+    expect(parseJacketMessage({ type: MSG_TITLES, titles: ["A"], infos: "x" })).toMatchObject({ infos: [] });
   });
 
   it("이미지는 50KB 이하 ArrayBuffer만 받는다", () => {
