@@ -151,7 +151,7 @@ export function SongMetaView({ viewerId }: { viewerId: number }) {
         <AdminBackLink />
         <div>
           <h1 className="text-xl font-semibold text-fg">{t("SongMeta.title")}</h1>
-          <p className="mt-1 text-sm text-fg-sub">{t("SongMeta.lead")}</p>
+          <p className="mt-1 break-keep text-sm text-fg-sub">{t("SongMeta.lead")}</p>
         </div>
       </div>
 
@@ -203,28 +203,28 @@ export function SongMetaView({ viewerId }: { viewerId: number }) {
 
       {notice ? (
         <div role="status" data-testid="song-meta-notice" className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 py-3 text-sm text-fg">
-          <span className="min-w-0 break-words">{t("SongMeta.savedNotice", { title: notice.title, count: summary?.anyMissing ?? 0 })}</span>
+          <span className="min-w-0 break-keep break-words">{t("SongMeta.savedNotice", { title: notice.title, count: summary?.anyMissing ?? 0 })}</span>
           <button type="button" className={BTN} disabled={undo.isPending} aria-label={t("SongMeta.undoAria", { title: notice.title })} onClick={() => undo.mutate(notice)}>
             {t("SongMeta.undo")}
           </button>
         </div>
       ) : null}
       {undo.isError ? (
-        <p role="alert" className="text-sm text-fg">
+        <p role="alert" className="break-keep text-sm text-fg">
           {messageOf(undo.error, t)}
         </p>
       ) : null}
 
       {!data ? (
         list.isError ? (
-          <p role="alert" className="text-sm text-fg">
+          <p role="alert" className="break-keep text-sm text-fg">
             {list.error instanceof ApiError ? list.error.message : t("SongMeta.loadFailed")}
           </p>
         ) : (
           <p className="text-sm text-fg-sub">{t("Common.loading")}</p>
         )
       ) : rows.length === 0 ? (
-        <p className="text-sm text-fg-sub">{q || filter !== "ANY" ? t("SongMeta.emptyFiltered") : t("SongMeta.empty")}</p>
+        <p className="break-keep text-sm text-fg-sub">{q || filter !== "ANY" ? t("SongMeta.emptyFiltered") : t("SongMeta.empty")}</p>
       ) : (
         <>
           {desktop ? (
@@ -372,7 +372,7 @@ function KeywordField({ row, draft }: { row: SongMetaRow; draft: Draft }) {
         </button>
       </div>
       {draft.problem ? (
-        <p role="alert" className="text-xs text-danger">
+        <p role="alert" className="break-keep text-xs text-danger">
           {draft.problem}
         </p>
       ) : null}
@@ -426,7 +426,7 @@ function DesktopRow({ row, pending, error, onSave }: RowProps) {
         </button>
       </div>
       {error ? (
-        <p role="alert" className="mt-2 text-sm text-fg">
+        <p role="alert" className="mt-2 break-keep text-sm text-fg">
           {error}
         </p>
       ) : null}
@@ -480,7 +480,7 @@ function MobileRow({ row, pending, error, onSave, open, onToggle }: RowProps & {
             </div>
           ) : null}
           {error ? (
-            <p role="alert" className="text-sm text-fg">
+            <p role="alert" className="break-keep text-sm text-fg">
               {error}
             </p>
           ) : null}

@@ -169,7 +169,7 @@ export function DifficultyTableView({
             ) : recordedTotal > 0 ? (
               <span>{t("Table.tilesRecordedCount", { count: recordedTotal })}</span>
             ) : (
-              <span className="text-base font-semibold text-fg">{t("Table.tilesStartHint")}</span>
+              <span className="break-keep text-base font-semibold text-fg">{t("Table.tilesStartHint")}</span>
             )}
           </p>
 

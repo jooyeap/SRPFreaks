@@ -4,6 +4,8 @@ import ko from "../../messages/ko.json";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { RivalGuide } from "@/components/guide/RivalGuide";
 import { TableTip } from "@/components/table/TableTip";
+import { PatternFromGridBar } from "@/components/table/PatternFromGridBar";
+import { PeerReason } from "@/components/setlist/PeerReason";
 import { vi } from "vitest";
 
 /**
@@ -28,5 +30,16 @@ describe("긴 안내 문구의 줄바꿈 (break-keep)", () => {
     render(<RivalGuide />);
     const li = screen.getByText(ko.RivalGuide.reg1);
     expect(li.closest("ul")?.className).toContain("break-keep");
+  });
+
+  it("속성별 화면에서 폴더로 들어왔을 때의 안내 한 줄", () => {
+    render(<PatternFromGridBar pattern="복합" active hasAnyFilter onClearPattern={() => {}} onReset={() => {}} />);
+    const note = screen.getByText(/복합/, { selector: "p" });
+    expect(note.className).toContain("break-keep");
+  });
+
+  it("추천 줄의 `비슷한 실력대 N명` 근거", () => {
+    render(<PeerReason item={{ reason: "PEER_TIER", peerUsers: 12 }} />);
+    expect(screen.getByText("12").parentElement?.className).toContain("break-keep");
   });
 });

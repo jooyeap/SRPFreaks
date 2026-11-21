@@ -69,7 +69,7 @@ export function FolderDistribution({ data }: { data: FolderDistributionPage }) {
   const pick = selected === null ? null : findPoint(buckets, selected.start, selected.userId);
 
   if (buckets.length === 0) {
-    return <p className="rounded-2xl border border-line bg-card p-4 text-sm text-fg-sub">{t("distEmpty")}</p>;
+    return <p className="break-keep rounded-2xl border border-line bg-card p-4 text-sm text-fg-sub">{t("distEmpty")}</p>;
   }
 
   const changeUnit = (next: FolderUnit) => {
@@ -79,7 +79,7 @@ export function FolderDistribution({ data }: { data: FolderDistributionPage }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-3">
-      <p className="text-xs text-fg-sub">{t("distLead")}</p>
+      <p className="break-keep text-xs text-fg-sub">{t("distLead")}</p>
 
       <div className="flex flex-col gap-2">
         <Segment<ViewMode>
@@ -126,9 +126,9 @@ export function FolderDistribution({ data }: { data: FolderDistributionPage }) {
               minPlayers={minPlayers}
             />
           ) : (
-            <p className="rounded-xl bg-table-head p-3 text-sm text-fg-sub">{t("distNoPoints", { min: minPlayers })}</p>
+            <p className="break-keep rounded-xl bg-table-head p-3 text-sm text-fg-sub">{t("distNoPoints", { min: minPlayers })}</p>
           )}
-          <p role="status" className="min-h-4 text-[11px] text-fg-dim">
+          <p role="status" className="break-keep min-h-4 text-[11px] text-fg-dim">
             {pick ? null : t("distHint")}
           </p>
           <TierLegend buckets={buckets} />
@@ -138,7 +138,7 @@ export function FolderDistribution({ data }: { data: FolderDistributionPage }) {
       )}
 
       {insufficient.length > 0 ? (
-        <p className="text-[11px] text-fg-dim">
+        <p className="break-keep text-[11px] text-fg-dim">
           {t("insufficientNote", { min: minPlayers, list: insufficient.map((bucket) => bucket.label).join(", ") })}
         </p>
       ) : null}
@@ -311,7 +311,7 @@ function Bubble({ pick, range, n }: { pick: { bucket: DistBucket; point: DistPoi
         <b className="text-fg">{point.tierName ?? t("tierUnknown")}</b>
       </div>
       <p className="mt-0.5 break-all text-fg">{point.nickname}</p>
-      <p className="mt-0.5 font-num text-fg-sub">
+      <p className="mt-0.5 break-keep font-num text-fg-sub">
         {t("bubbleSummary", { avg: averageText(point.avg) ?? "", charts: point.charts, folder: bucket.label })}
       </p>
       <Link href={`/players/${point.userId}`} className="mt-1 inline-flex min-h-6 items-center text-[11px] text-fg-sub underline">

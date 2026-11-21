@@ -172,7 +172,7 @@ describe("세트리스트", () => {
       renderWith(<SetlistTab userId={1} />);
       expect(await screen.findByText(/담은 곡이 없습니다/)).toBeInTheDocument();
       expect(screen.getByText(/위 검색창에서/)).toBeInTheDocument();
-      expect(screen.getByText("담은 곡이 없습니다. 위 검색창에서 오늘 플레이할 곡을 찾아 담아 보세요.")).toBeInTheDocument();
+      expect(screen.getByText("담은 곡이 없습니다. 위 검색창에서 오늘 플레이할 곡을 찾아 담아 주세요.")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "완료한 곡 비우기" })).toBeDisabled();
     });
 
