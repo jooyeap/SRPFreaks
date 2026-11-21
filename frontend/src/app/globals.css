@@ -257,9 +257,13 @@ body {
 /*
  * 플레이어 티어 색 (docs/DESIGN-UI.md 5장). 티어별 구체 색은 시안 보드에서 정하는데 이 저장소에는 값이 없어서
  * 이름에서 정한 임시 값이다. 값만 바꾸면 모든 화면에 반영된다.
- * --tier-fill: 점수 글자 / 카드 테두리 / 막대 / 서열표 칸의 색, --tier-glow: 서열표 칸(.chart-cell, .chart-swatch)의 빛.
+ * --tier-fill: 점수 글자 / 카드 테두리 / 막대의 색, --tier-glow: 서열표 칸(.chart-cell, .chart-swatch)의 빛.
+ * --chart-fill: 서열표 칸(.chart-cell, .chart-swatch, .chart-dot)의 색. 아래 기본 규칙은 --tier-fill을 그대로 쓰고,
+ * Bronze ~ Iridescent 6단계만 따로 값을 둔다(D96: 점수 글자·테두리·막대는 칩과 같은 계열로 바꿨지만 서열표 칸은 예전 색을 유지).
+ * --tier-fill-light: 라이트 테마의 점수 글자·카드 테두리용 진한 색(흰 배경에서 글자 대비 4.5 이상). 막대는 테마와 상관없이 --tier-fill.
  * 티어 칩(뱃지)의 색과 모양은 여기가 아니라 lib/tier-chip.ts 한 곳이다(D95). 점수 글자와 카드에는 빛·반짝임을 쓰지 않는다.
  */
+[data-tier] { --chart-fill: var(--tier-fill); } /* 아래 6단계 규칙보다 앞이라 6단계는 거기서 덮어쓴다. 요소마다 자기 data-tier의 --tier-fill을 쓴다 */
 [data-tier="WHITE"] { --tier-fill: #e5e7eb; }
 [data-tier="WHITE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #e5e7eb, #9ca3af); }
 [data-tier="ORANGE"] { --tier-fill: #fb923c; }
@@ -274,12 +278,24 @@ body {
 [data-tier="PURPLE_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #c084fc, #f9a8d4); }
 [data-tier="RED"] { --tier-fill: #f87171; }
 [data-tier="RED_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #f87171, #fdba74); }
-[data-tier="BRONZE"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #b45309, #f59e0b); --tier-glow: 0 0 10px rgb(245 158 11 / 0.35); }
-[data-tier="SILVER"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #cbd5e1, #f8fafc); --tier-glow: 0 0 12px rgb(203 213 225 / 0.45); }
-[data-tier="GOLD"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fcd34d, #f59e0b); --tier-glow: 0 0 14px rgb(252 211 77 / 0.55); }
-[data-tier="RAINBOW"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fca5a5, #fde68a, #86efac, #93c5fd, #d8b4fe); --tier-glow: 0 0 16px rgb(147 197 253 / 0.55); }
+[data-tier="BRONZE"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fcd9a8, #e08a3c, #b45309); --tier-glow: 0 0 10px rgb(245 158 11 / 0.35); }
+[data-tier="BRONZE"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #7d6c53, #9f612a, #b45309); }
+[data-tier="BRONZE"] { --chart-fill: linear-gradient(var(--tier-dir, 90deg), #b45309, #f59e0b); }
+[data-tier="SILVER"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffffff, #cbd5e1, #94a3b8); --tier-glow: 0 0 12px rgb(203 213 225 / 0.45); }
+[data-tier="SILVER"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #707070, #6b7077, #66707e); }
+[data-tier="SILVER"] { --chart-fill: linear-gradient(var(--tier-dir, 90deg), #cbd5e1, #f8fafc); }
+[data-tier="GOLD"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #fff1b0, #fcd34d, #d97706); --tier-glow: 0 0 14px rgb(252 211 77 / 0.55); }
+[data-tier="GOLD"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #777152, #836d28, #a95c04); }
+[data-tier="GOLD"] { --chart-fill: linear-gradient(var(--tier-dir, 90deg), #fcd34d, #f59e0b); }
+[data-tier="RAINBOW"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #f87171, #fb923c, #facc15, #4ade80, #60a5fa, #c084fc); --tier-glow: 0 0 16px rgb(147 197 253 / 0.55); }
+[data-tier="RAINBOW"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #b25151, #a35e26, #866e0b, #2a7e48, #4271ac, #885db2); }
+[data-tier="RAINBOW"] { --chart-fill: linear-gradient(var(--tier-dir, 90deg), #fca5a5, #fde68a, #86efac, #93c5fd, #d8b4fe); }
 [data-tier="RAINBOW_GRADIENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ff6b6b, #ffd93d, #6bff95, #6bd5ff, #c084fc, #ff6bd6); --tier-glow: 0 0 20px rgb(192 132 252 / 0.65); }
+[data-tier="RAINBOW_GRADIENT"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #b74d4d, #826e1f, #347c49, #3b778e, #885db2, #af4993); }
+[data-tier="RAINBOW_GRADIENT"] { --chart-fill: linear-gradient(var(--tier-dir, 90deg), #ff6b6b, #ffd93d, #6bff95, #6bd5ff, #c084fc, #ff6bd6); }
 [data-tier="IRIDESCENT"] { --tier-fill: linear-gradient(var(--tier-dir, 90deg), #ffe27a, #ff7eb6, #c084fc, #22d3ee); --tier-glow: 0 0 22px rgb(255 126 182 / 0.7); }
+[data-tier="IRIDESCENT"] { --tier-fill-light: linear-gradient(var(--tier-dir, 90deg), #7c6e3b, #aa5479, #885db2, #137a8a); }
+[data-tier="IRIDESCENT"] { --chart-fill: linear-gradient(var(--tier-dir, 90deg), #ffe27a, #ff7eb6, #c084fc, #22d3ee); }
 /*
  * 10,000 이상 4티어 (D87): 6 Fingers / Mutant / Alien / HSB.
  * 줄마다 하는 일이 다르다. 첫 줄 = 점수 글자/카드 테두리 그라데이션(--tier-fill)과 서열표 칸의 빛(--tier-glow): rating-card.ts의 TIER_STYLES와 같고 테스트가 비교한다.
@@ -318,12 +334,12 @@ body {
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) .tier-score { filter: brightness(0.6) saturate(1.5); }
 }
-/* 10,000 이상 4티어의 라이트 테마: 밝은 네온은 흰 배경에서 대비 4.5 미만이라 진한 그라데이션(--tier-fill-light)으로 바꾼다(밝기 누름은 끈다) */
-:root[data-theme="light"] :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,
-:root[data-theme="light"] :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score { background-image: var(--tier-fill-light); filter: none; }
+/* Bronze 이상 10티어의 라이트 테마(D96): 밝은 금속·파스텔·네온은 흰 배경에서 대비 4.5 미만이라 진한 그라데이션(--tier-fill-light)으로 바꾼다(밝기 누름은 끈다) */
+:root[data-theme="light"] :is([data-tier="BRONZE"], [data-tier="SILVER"], [data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,
+:root[data-theme="light"] :is([data-tier="BRONZE"], [data-tier="SILVER"], [data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score { background-image: var(--tier-fill-light); filter: none; }
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme]) :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,
-  :root:not([data-theme]) :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score { background-image: var(--tier-fill-light); filter: none; }
+  :root:not([data-theme]) :is([data-tier="BRONZE"], [data-tier="SILVER"], [data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,
+  :root:not([data-theme]) :is([data-tier="BRONZE"], [data-tier="SILVER"], [data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score { background-image: var(--tier-fill-light); filter: none; }
 }
 
 /* 레이팅 카드 테두리: 기본 1px. Bronze 이상은 2px 그라데이션 테두리(빛 없음, D95) */
@@ -341,12 +357,12 @@ body {
   border: 2px solid transparent;
   background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill) border-box;
 }
-/* 10,000 이상 4티어(D87): 라이트 테마는 진한 테두리 그라데이션 (카드 뒤 빛·장식 선은 사용자 요청으로 뺐다, 2026-11-21) */
-:root[data-theme="light"] :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-card {
+/* Bronze 이상 10티어(D87·D96): 라이트 테마는 진한 테두리 그라데이션 (카드 뒤 빛·장식 선은 사용자 요청으로 뺐다, 2026-11-21) */
+:root[data-theme="light"] :is([data-tier="BRONZE"], [data-tier="SILVER"], [data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-card {
   background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill-light) border-box;
 }
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme]) :is([data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-card {
+  :root:not([data-theme]) :is([data-tier="BRONZE"], [data-tier="SILVER"], [data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-card {
     background: linear-gradient(var(--card), var(--card)) padding-box, var(--tier-fill-light) border-box;
   }
 }
@@ -357,9 +373,10 @@ body {
  * 칸 글자는 순수 검정이다: 모든 티어 색 위에서 대비 4.5 이상(가장 어두운 Bronze 왼쪽 끝은 글자가 놓이는 가운데에서 5 이상).
  * 최상위 티어(Iridescent / 6 Fingers / Mutant / Alien / HSB, D38·D87)는 237.5 이상 구간을 나눈 것이라 글자가 놓이는 칸이 모두 밝은 색이다.
  */
-.chart-cell { background: var(--tier-fill); color: #000; box-shadow: var(--tier-glow); }
+.chart-cell { background: var(--chart-fill); color: #000; box-shadow: var(--tier-glow); }
 [data-tier="HSB"].chart-cell { outline: 2px solid var(--fg); outline-offset: 1px; }
-.chart-swatch { background: var(--tier-fill); box-shadow: var(--tier-glow); }
+.chart-swatch { background: var(--chart-fill); box-shadow: var(--tier-glow); }
+.chart-dot { background: var(--chart-fill); } /* 서열표 분포 그래프의 점: 범례의 .chart-swatch와 같은 색 */
 /* 최상위 다섯 티어는 흰 안쪽 테두리를 더해 중간 티어(Gold 등)와 한눈에 갈라 보이게 한다. Alien은 금색과 겹치지 않는 청록이다 */
 :is([data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).chart-cell,
 :is([data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).chart-swatch { box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.9), var(--tier-glow); }

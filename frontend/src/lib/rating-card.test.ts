@@ -45,6 +45,16 @@ function entry(rank: number, overrides: Partial<SkillEntryResponse> = {}): Skill
   };
 }
 
+/** globals.css에서 `[data-tier="KEY"] { … }` 규칙 줄들을 훑어 선언 하나(`--tier-fill` 등)의 값을 돌려준다. 없으면 빈 문자열. */
+function cssDecl(css: string, key: string, name: string): string {
+  for (const line of css.split("\n")) {
+    if (!line.startsWith(`[data-tier="${key}"] {`)) continue;
+    const match = new RegExp(`${name}:([^;]*);`).exec(line);
+    if (match) return match[1].trim();
+  }
+  return "";
+}
+
 function skill(single: number, other: number): SkillResponse {
   return {
     noteOption: "SUPER_RANDOM_PLUS",
@@ -68,15 +78,54 @@ describe("rating-card 색 표", () => {
     }
   });
 
-  it("globals.css의 [data-tier] 색과 같다", () => {
+  it("globals.css의 [data-tier] 색과 같다 (--tier-fill의 색 순서, --tier-glow의 유무)", () => {
     const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
     for (const [key, style] of Object.entries(TIER_STYLES)) {
-      const line = css.split("\n").find((l) => l.startsWith(`[data-tier="${key}"] {`));
-      expect(line, key).toBeDefined();
-      const colors = line!.match(/#[0-9a-f]{6}/g) ?? [];
-      expect(colors, key).toEqual([...style.stops]);
-      expect(line!.includes("--tier-glow"), key).toBe(style.glow !== null);
+      const fill = cssDecl(css, key, "--tier-fill");
+      expect(fill, key).not.toBe("");
+      expect(fill.match(/#[0-9a-f]{6}/g) ?? [], key).toEqual([...style.stops]);
+      expect(cssDecl(css, key, "--tier-glow") !== "", key).toBe(style.glow !== null);
     }
+  });
+
+  it("Rainbow는 끊어진 색 띠가 아니라 6색이 부드럽게 이어지는 그라데이션이다 (점수 글자·카드 테두리·막대, D96)", () => {
+    const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
+    const palette = ["#f87171", "#fb923c", "#facc15", "#4ade80", "#60a5fa", "#c084fc"];
+    expect([...TIER_STYLES.RAINBOW.stops]).toEqual(palette);
+    for (const decl of ["--tier-fill", "--tier-fill-light"]) {
+      const value = cssDecl(css, "RAINBOW", decl);
+      expect(value.startsWith("linear-gradient("), decl).toBe(true);
+      const colors = value.match(/#[0-9a-f]{6}/g) ?? [];
+      expect(colors.length, decl).toBe(6);
+      expect(new Set(colors).size, `${decl}: 같은 색을 두 번 쓰면 띠가 된다`).toBe(6);
+      // 색 뒤에 위치(%)를 따로 주면 끊어진 띠(hard stop)가 된다. 위치는 브라우저가 균등하게 나눠 보간한다
+      expect(value, decl).not.toMatch(/#[0-9a-f]{6}\s+-?\d/);
+    }
+    // 점수 글자(.tier-score)·카드 테두리(.tier-card)·막대(.tier-bar)가 모두 --tier-fill을 읽는다
+    expect(css).toMatch(/\.tier-bar \{ background: var\(--tier-fill\); \}/);
+    expect(css).toMatch(/\.tier-score \{[^}]*background: var\(--tier-fill\)/);
+    expect(css).toMatch(/var\(--card\)\) padding-box, var\(--tier-fill\) border-box/);
+  });
+
+  it("서열표 칸(.chart-cell/.chart-swatch/.chart-dot)은 --tier-fill이 아니라 --chart-fill을 쓰고, Bronze~Iridescent 6단계는 예전 색을 유지한다 (D96)", () => {
+    const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
+    expect(css).toMatch(/\.chart-cell \{ background: var\(--chart-fill\)/);
+    expect(css).toMatch(/\.chart-swatch \{ background: var\(--chart-fill\)/);
+    expect(css).toMatch(/\.chart-dot \{ background: var\(--chart-fill\)/);
+    const kept: Record<string, string[]> = {
+      BRONZE: ["#b45309", "#f59e0b"],
+      SILVER: ["#cbd5e1", "#f8fafc"],
+      GOLD: ["#fcd34d", "#f59e0b"],
+      RAINBOW: ["#fca5a5", "#fde68a", "#86efac", "#93c5fd", "#d8b4fe"],
+      RAINBOW_GRADIENT: ["#ff6b6b", "#ffd93d", "#6bff95", "#6bd5ff", "#c084fc", "#ff6bd6"],
+      IRIDESCENT: ["#ffe27a", "#ff7eb6", "#c084fc", "#22d3ee"],
+    };
+    for (const [key, colors] of Object.entries(kept)) {
+      expect(cssDecl(css, key, "--chart-fill").match(/#[0-9a-f]{6}/g) ?? [], key).toEqual(colors);
+    }
+    // 나머지 티어는 기본 규칙(--chart-fill: var(--tier-fill))을 따라가므로 따로 값이 없다
+    expect(css).toContain("[data-tier] { --chart-fill: var(--tier-fill); }");
+    expect(cssDecl(css, "WHITE", "--chart-fill")).toBe("");
   });
 
   it("10,000 이상 4티어의 칩 테두리 색은 점수·카드 테두리(--tier-fill)와 같은 색이다(D95)", () => {
@@ -98,7 +147,7 @@ describe("rating-card 색 표", () => {
     expect(users.every((l) => l.includes(".chart-cell") || l.includes(".chart-swatch")), users.join("\n")).toBe(true);
   });
 
-  it("10,000 이상 4티어의 라이트 테마 글자 그라데이션은 흰 배경과 페이지 배경에서 모든 색이 대비 4.5:1 이상이다", () => {
+  it("Bronze 이상 10티어의 라이트 테마 글자·테두리 그라데이션은 흰 배경과 페이지 배경에서 모든 색이 대비 4.5:1 이상이다", () => {
     const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
     const lum = (hex: string) => {
       const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
@@ -108,9 +157,8 @@ describe("rating-card 색 표", () => {
       const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
       return (hi + 0.05) / (lo + 0.05);
     };
-    for (const key of ["SIX_FINGERS", "MUTANT", "ALIEN", "HSB"]) {
-      const line = css.split("\n").filter((l) => l.startsWith(`[data-tier="${key}"] {`))[1];
-      const light = /--tier-fill-light:([^;]*);/.exec(line)?.[1] ?? "";
+    for (const key of ["BRONZE", "SILVER", "GOLD", "RAINBOW", "RAINBOW_GRADIENT", "IRIDESCENT", "SIX_FINGERS", "MUTANT", "ALIEN", "HSB"]) {
+      const light = cssDecl(css, key, "--tier-fill-light");
       const colors = light.match(/#[0-9a-f]{6}/g) ?? [];
       expect(colors.length, key).toBeGreaterThanOrEqual(3);
       for (const color of colors) {
@@ -197,7 +245,7 @@ describe("날짜·파일 이름", () => {
 
 describe("accentColor", () => {
   it("가장 밝은 색을 고른다", () => {
-    expect(accentColor(TIER_STYLES.GOLD)).toBe("#fcd34d");
+    expect(accentColor(TIER_STYLES.GOLD)).toBe("#fff1b0");
     expect(accentColor(TIER_STYLES.PURPLE)).toBe("#c084fc");
   });
 });

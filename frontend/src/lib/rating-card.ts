@@ -44,10 +44,11 @@ export const TIER_STYLES: Record<string, CardTierStyle> = {
   PURPLE_GRADIENT: { stops: ["#c084fc", "#f9a8d4"], glow: null },
   RED: { stops: ["#f87171"], glow: null },
   RED_GRADIENT: { stops: ["#f87171", "#fdba74"], glow: null },
-  BRONZE: { stops: ["#b45309", "#f59e0b"], glow: { color: "rgb(245 158 11 / 0.35)", blur: 10 } },
-  SILVER: { stops: ["#cbd5e1", "#f8fafc"], glow: { color: "rgb(203 213 225 / 0.45)", blur: 12 } },
-  GOLD: { stops: ["#fcd34d", "#f59e0b"], glow: { color: "rgb(252 211 77 / 0.55)", blur: 14 } },
-  RAINBOW: { stops: ["#fca5a5", "#fde68a", "#86efac", "#93c5fd", "#d8b4fe"], glow: { color: "rgb(147 197 253 / 0.55)", blur: 16 } },
+  BRONZE: { stops: ["#fcd9a8", "#e08a3c", "#b45309"], glow: { color: "rgb(245 158 11 / 0.35)", blur: 10 } },
+  SILVER: { stops: ["#ffffff", "#cbd5e1", "#94a3b8"], glow: { color: "rgb(203 213 225 / 0.45)", blur: 12 } },
+  GOLD: { stops: ["#fff1b0", "#fcd34d", "#d97706"], glow: { color: "rgb(252 211 77 / 0.55)", blur: 14 } },
+  // Rainbow: 끊어진 띠가 아니라 6색을 균등 간격으로 이어 부드러운 그라데이션(globals.css의 linear-gradient와 같은 보간)
+  RAINBOW: { stops: ["#f87171", "#fb923c", "#facc15", "#4ade80", "#60a5fa", "#c084fc"], glow: { color: "rgb(147 197 253 / 0.55)", blur: 16 } },
   RAINBOW_GRADIENT: {
     stops: ["#ff6b6b", "#ffd93d", "#6bff95", "#6bd5ff", "#c084fc", "#ff6bd6"],
     glow: { color: "rgb(192 132 252 / 0.65)", blur: 20 },
