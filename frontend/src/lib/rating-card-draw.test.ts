@@ -75,18 +75,28 @@ describe("drawRatingCard", () => {
   }
 
   it("칩 폭은 사이트와 같은 규칙이다: 육각은 최소 폭 8.4×글자 크기, 긴 이름은 넓히지 않는다", () => {
-    const widthOf = (key: string, name: string) => {
+    const widthOf = (key: string, name: string, drawn: string = name) => {
       const top: SkillResponse = { ...skill, tier: { key, displayName: name, minScore: 0, nextDisplayName: null, nextMinScore: null } };
       const model = buildCardModel("landscape", top, koT, { nickname: null, now: new Date("2026-11-20T00:00:00Z") });
       const { ctx, calls } = fakeCtx();
       drawRatingCard(ctx, model, { sans: "sans", num: "num" });
       // 칩 윤곽 중 첫 번째 roundRect/moveTo가 아니라, 글자를 가운데에 그린 x(= 칩 왼쪽 + 폭/2)로 폭을 거꾸로 잰다
-      const textCall = (calls.fillText ?? []).find((a) => a[0] === name)!;
+      const textCall = (calls.fillText ?? []).find((a) => a[0] === drawn)!;
       return (textCall[1] as number - model.contentX) * 2;
     };
     expect(widthOf("HSB", "HSB")).toBe(tierChipWidth("HSB", "hex", 22));
-    expect(widthOf("RAINBOW_GRADIENT", "Rainbow Gradient")).toBe(tierChipWidth("Rainbow Gradient", "pill", 22));
+    expect(widthOf("RAINBOW_GRADIENT", "Rainbow Gradient", "Rainbow Gr.")).toBe(tierChipWidth("Rainbow Gradient", "pill", 22)); // D102: 칩 글자는 줄임말, 폭은 사이트 칩과 같은 규칙
     expect(widthOf("RED", "Red")).toBe(Math.round(22 * 7.4));
+  });
+
+  it("Gradient 티어는 카드 칩에 Gr.로 그리고 전체 이름은 그리지 않는다 (D102)", () => {
+    const top: SkillResponse = { ...skill, tier: { key: "RED_GRADIENT", displayName: "Red Gradient", minScore: 0, nextDisplayName: null, nextMinScore: null } };
+    const model = buildCardModel("landscape", top, koT, { nickname: null, now: new Date("2026-11-20T00:00:00Z") });
+    const { ctx, calls } = fakeCtx();
+    drawRatingCard(ctx, model, { sans: "sans", num: "num" });
+    const drawn = (calls.fillText ?? []).map((a) => a[0]);
+    expect(drawn).toContain("Red Gr.");
+    expect(drawn).not.toContain("Red Gradient");
   });
 
   it("닉네임이 없으면 이름을 그리지 않는다", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { PLAYER_TIER_MINS } from "@/lib/chart-tier";
-import { TIER_CHIP_SIZES, TIER_CHIPS, tierChipDarkens, tierChipHighlight, tierChipOf, tierChipWidth } from "@/lib/tier-chip";
+import { TIER_CHIP_SIZES, TIER_CHIPS, tierChipDarkens, tierChipHighlight, tierChipLabel, tierChipOf, tierChipWidth } from "@/lib/tier-chip";
 
 describe("tier-chip 표 (D95)", () => {
   it("24티어가 모두 표에 있다(PLAYER_TIER_MINS와 같은 key)", () => {
@@ -60,19 +60,39 @@ describe("tier-chip 표 (D95)", () => {
     });
     it("긴 이름은 글자 폭 + 여백(알약 fs×2.2, 육각 fs×2.6)이다", () => {
       // Rainbow Gradient 16자: 16×11×0.56 + 24.2 = 122.76 -> 123
-      expect(tierChipWidth("Rainbow Gradient", "pill", fs)).toBe(123);
+      // (D102) 칩 글자는 `Rainbow Gr.` 11자: 11×11×0.56 + 24.2 = 91.96 -> 92. 전체 이름을 넘겨도 줄임말로 잰다
+      expect(tierChipWidth("Rainbow Gradient", "pill", fs)).toBe(92);
+      expect(tierChipWidth("Rainbow Gr.", "pill", fs)).toBe(92);
       // Alien 5자 육각: 5×11×.56 + 28.6 = 59.4 -> 최소 92
       expect(tierChipWidth("Alien", "hex", fs)).toBe(92);
-      expect(tierChipWidth("Yellow Gradient", "pill", fs)).toBe(Math.round(15 * fs * 0.56 + fs * 2.2));
+      expect(tierChipWidth("Yellow Gradient", "pill", fs)).toBe(Math.max(Math.round(10 * fs * 0.56 + fs * 2.2), Math.round(fs * 7.4)));
     });
     it("최소 폭보다 큰 이름은 최소 폭 규칙의 영향을 받지 않는다(이름이 길수록 넓다)", () => {
-      expect(tierChipWidth("Rainbow Gradient", "pill", fs)).toBeGreaterThan(tierChipWidth("Rainbow", "pill", fs));
+      expect(tierChipWidth("Rainbow Gradient", "pill", fs)).toBeGreaterThan(tierChipWidth("Rainbow", "pill", fs)); // 92 > 81
       expect(tierChipWidth("Rainbow", "pill", fs)).toBeGreaterThanOrEqual(Math.round(fs * 7.4));
     });
     it("큰 배지(글자 14px)도 같은 비율이다", () => {
       const big = TIER_CHIP_SIZES.lg.fs;
       expect(tierChipWidth("6 Fingers", "pill", big)).toBe(Math.max(Math.round(9 * big * 0.56 + big * 2.2), Math.round(big * 7.4)));
       expect(tierChipWidth("Alien", "hex", big)).toBe(Math.round(big * 8.4)); // 118
+    });
+  });
+
+  describe("tierChipLabel: Gradient -> Gr. (D102)", () => {
+    const GRADIENT_TIERS = ["White", "Orange", "Yellow", "Green", "Blue", "Purple", "Red", "Rainbow"];
+    it("Gradient가 들어간 티어는 모두 Gr.로 줄인다", () => {
+      for (const color of GRADIENT_TIERS) {
+        expect(tierChipLabel(`${color} Gradient`)).toBe(`${color} Gr.`);
+      }
+    });
+    it("Gradient가 아닌 티어와 알 수 없는 이름은 그대로다", () => {
+      for (const name of ["White", "Red", "Rainbow", "Bronze", "Iridescent", "6 Fingers", "Mutant", "Alien", "HSB", "Future"]) {
+        expect(tierChipLabel(name)).toBe(name);
+      }
+      expect(tierChipLabel("Name RAINBOW_GRADIENT")).toBe("Name RAINBOW_GRADIENT"); // 단어 Gradient만 바꾼다
+    });
+    it("이미 줄인 글자에 다시 적용해도 같다(여러 번 거쳐도 안전)", () => {
+      expect(tierChipLabel(tierChipLabel("Rainbow Gradient"))).toBe("Rainbow Gr.");
     });
   });
 });

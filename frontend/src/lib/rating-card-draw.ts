@@ -8,7 +8,7 @@ import {
   PART_TEXT_COLORS,
   truncateText,
 } from "@/lib/rating-card";
-import { TIER_CHIP_SIZES, type TierChipSpec, tierChipDarkens, tierChipHighlight, tierChipOf, tierChipWidth } from "@/lib/tier-chip";
+import { TIER_CHIP_SIZES, type TierChipSpec, tierChipDarkens, tierChipHighlight, tierChipLabel, tierChipOf, tierChipWidth } from "@/lib/tier-chip";
 
 /**
  * 레이팅 카드 모델(lib/rating-card.ts)을 캔버스에 그린다. 위치·문구·색은 모델이 이미 정했으므로 여기서는 "그리기"만 한다.
@@ -180,7 +180,8 @@ function drawTierChip(ctx: Ctx, spec: TierChipSpec, name: string, x: number, y: 
   }
   ctx.restore();
 
-  text(ctx, name, x + w / 2, y + h / 2 + fs * 0.36, `700 ${fs}px ${f.num}`, spec.text, "center");
+  // 칩 글자는 줄임말(Gradient -> Gr., D102). 폭도 tierChipWidth가 같은 줄임말로 잰다
+  text(ctx, tierChipLabel(name), x + w / 2, y + h / 2 + fs * 0.36, `700 ${fs}px ${f.num}`, spec.text, "center");
 }
 
 function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {

@@ -78,6 +78,16 @@ export const TIER_CHIPS: Record<string, TierChipSpec> = {
   HSB: neon("hex", ["#ffffff", "#fde68a", "#c4b5fd", "#67e8f9"], "#ffffff"),
 };
 
+/**
+ * 칩에 쓰는 글자(D102). 이름에 단어 `Gradient`가 들어가면 `Gr.`로 줄인다(`Rainbow Gradient` -> `Rainbow Gr.`).
+ * 표시 계층에서만 바꾼다: 서버의 티어 이름(`player_tiers`)·번역 파일·본문 글자는 전체 이름 그대로고,
+ * 칩의 접근 가능한 이름(aria-label)·툴팁에는 전체 이름을 쓴다. 영문 표기라서 ko·ja 화면이 같다.
+ * 사이트 SVG 칩과 레이팅 카드(Canvas) 칩, 폭 계산이 모두 이 함수 하나를 거친다.
+ */
+export function tierChipLabel(name: string): string {
+  return name.replace(/\bGradient\b/g, "Gr.");
+}
+
 /** 알 수 없는 티어 key(서버가 티어를 늘렸을 때)는 가장 낮은 티어 칩으로 그린다. 이름 글자는 그대로 나온다. */
 export function tierChipOf(key: string): TierChipSpec {
   return TIER_CHIPS[key] ?? TIER_CHIPS.WHITE;
@@ -92,11 +102,12 @@ export type TierChipSize = keyof typeof TIER_CHIP_SIZES;
 
 /**
  * 칩 가로 폭. 글자 폭 + 좌우 여백이고(알약 fs×2.2, 육각 fs×2.6), 짧은 이름만 최소 폭(알약 fs×7.4, 육각 fs×8.4)까지 넓힌다.
- * 긴 이름(Rainbow Gradient 등)은 넓히지 않는다. fs는 글자 크기라서 Canvas(22px)에서도 같은 비율로 쓴다.
+ * 긴 이름(Rainbow Gr. 등)은 넓히지 않는다. fs는 글자 크기라서 Canvas(22px)에서도 같은 비율로 쓴다.
  */
 export function tierChipWidth(name: string, shape: TierChipShape, fs: number): number {
   const hex = shape === "hex";
-  const natural = Math.round(Array.from(name).length * fs * 0.56 + fs * (hex ? 2.6 : 2.2));
+  // 칩에 실제로 그려지는 글자(줄임말)로 잰다. 전체 이름을 넘겨도 같은 폭이라 호출하는 쪽이 줄임을 신경 쓰지 않아도 된다
+  const natural = Math.round(Array.from(tierChipLabel(name)).length * fs * 0.56 + fs * (hex ? 2.6 : 2.2));
   return Math.max(natural, Math.round(fs * (hex ? 8.4 : 7.4)));
 }
 
