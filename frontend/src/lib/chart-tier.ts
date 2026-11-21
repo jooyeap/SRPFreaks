@@ -7,7 +7,7 @@ import { chartScore } from "@/lib/rating-guide";
  * 어느 티어일까"를 곡 점수 = 티어 최소 점수 ÷ 40 으로 비교해 색을 고른다. 색 값은 globals.css의 `[data-tier="…"]`에 있고,
  * 여기서는 어느 티어인지(key)만 정한다.
  *
- * 티어 최소 점수는 DB(player_tiers, V1 시드 + V10)의 값을 그대로 옮긴 것이다. 서버에서 ROOT가 구간표를 바꾸면 이 표도 같이 고쳐야 한다
+ * 티어 최소 점수는 DB(player_tiers, V1 시드 + V10 + V23)의 값을 그대로 옮긴 것이다. 서버에서 ROOT가 구간표를 바꾸면 이 표도 같이 고쳐야 한다
  * (설명서 상수표처럼 로그인 없이 보는 화면이 있어 API로 읽지 않는다).
  */
 export const PLAYER_TIER_MINS: readonly { key: string; name: string; min: number }[] = [
@@ -31,14 +31,16 @@ export const PLAYER_TIER_MINS: readonly { key: string; name: string; min: number
   { key: "RAINBOW", name: "Rainbow", min: 8500 },
   { key: "RAINBOW_GRADIENT", name: "Rainbow Gradient", min: 9000 },
   { key: "IRIDESCENT", name: "Iridescent", min: 9500 },
-  { key: "ALIEN", name: "Alien", min: 10000 },
-  { key: "HSB", name: "HSB", min: 11000 },
+  { key: "SIX_FINGERS", name: "6 Fingers", min: 10000 },
+  { key: "MUTANT", name: "Mutant", min: 10500 },
+  { key: "ALIEN", name: "Alien", min: 11000 },
+  { key: "HSB", name: "HSB", min: 11500 },
 ];
 
 /** 레이팅에 들어가는 채보 수: 단일 15 + 그 외 25 (rating.list_single + rating.list_other 기본값) */
 export const RATED_CHART_COUNT = 40;
 
-/** 곡 점수 기준의 티어 구간 시작점 (티어 최소 점수 ÷ 40). Iridescent는 237.5, Alien은 250, HSB는 275. */
+/** 곡 점수 기준의 티어 구간 시작점 (티어 최소 점수 ÷ 40). Iridescent 237.5, 6 Fingers 250, Mutant 262.5, Alien 275, HSB 287.5. */
 export function chartTierStart(min: number): number {
   return min / RATED_CHART_COUNT;
 }
@@ -50,7 +52,7 @@ export interface ChartTier {
 
 /**
  * 점수(소수 그대로, 반올림 전)가 속한 티어. 음수는 가장 낮은 티어로 본다.
- * 예전에는 최고 티어 안을 25점마다 6단계(빛)로 나눴지만, 그 구간이 Iridescent / Alien / HSB 세 티어가 되었다(D38).
+ * 예전에는 최고 티어 안을 25점마다 6단계(빛)로 나눴지만, 그 구간이 Iridescent / Alien / HSB 세 티어가 되었고, 다시 6 Fingers / Mutant / Alien / HSB로 나뉘었다(D38, D87).
  */
 export function chartTier(score: number): ChartTier {
   let current = PLAYER_TIER_MINS[0];

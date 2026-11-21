@@ -57,7 +57,7 @@ describe("레이팅 설명서", () => {
     expect(cells[6]).toHaveTextContent("304");
   });
 
-  it("칸마다 점수에 맞는 플레이어 티어 색(data-tier)이 붙고, 최상위 세 티어(Iridescent / Alien / HSB)도 나뉜다", () => {
+  it("칸마다 점수에 맞는 플레이어 티어 색(data-tier)이 붙고, 최상위 다섯 티어(Iridescent / 6 Fingers / Mutant / Alien / HSB)도 나뉜다", () => {
     render(<GuidePage />);
     const table = screen.getByRole("table", { name: /레이팅 점수표/ });
     const rows = within(table).getAllByRole("row");
@@ -67,12 +67,18 @@ describe("레이팅 설명서", () => {
     const topRight = top[top.length - 1]; // 7.0, 95% = 384 -> 하수봉, 가장 높은 단계(6)
     expect(topRight).toHaveTextContent("384");
     expect(topRight).toHaveAttribute("data-tier", "HSB");
-    // 6.0 행 95% = 304 -> HSB(275 이상) / 85% = 261 -> Alien(250~275) / 80% = 240 -> Iridescent(237.5~250)
+    // 6.0 행 95% = 304 -> HSB(287.5 이상) / 90% = 283 -> Alien(275~287.5) / 85% = 261 -> 6 Fingers(250~262.5) / 80% = 240 -> Iridescent(237.5~250)
     const row60 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "6.0") as HTMLElement;
     const c60 = cellsOf(row60);
     expect(c60[5]).toHaveAttribute("data-tier", "HSB");
+    expect(c60[4]).toHaveTextContent("283");
+    expect(c60[4]).toHaveAttribute("data-tier", "ALIEN");
     expect(c60[3]).toHaveTextContent("261");
-    expect(c60[3]).toHaveAttribute("data-tier", "ALIEN");
+    expect(c60[3]).toHaveAttribute("data-tier", "SIX_FINGERS");
+    // 5.9 행 90% = (14×0.8 + 3.2×10/15) × 20 = 266.67 -> Mutant(262.5~275)
+    const row59 = bodyRows.find((r) => within(r).getByRole("rowheader").textContent === "5.9") as HTMLElement;
+    expect(cellsOf(row59)[4]).toHaveTextContent("267");
+    expect(cellsOf(row59)[4]).toHaveAttribute("data-tier", "MUTANT");
     expect(c60[2]).toHaveTextContent("240");
     expect(c60[2]).toHaveAttribute("data-tier", "IRIDESCENT");
     // 5.5 행: 80% = 160 -> Red(빛 없음), 5.0 행 80% = 80 -> Green
@@ -82,11 +88,15 @@ describe("레이팅 설명서", () => {
     expect(cellsOf(row50)[2]).toHaveAttribute("data-tier", "GREEN");
   });
 
-  it("색 기준 범례에 22개 티어의 곡 점수 기준이 글자로 있다 (Iridescent 237.5, Alien 250, HSB 275~)", () => {
+  it("색 기준 범례에 24개 티어의 곡 점수 기준이 글자로 있다 (Iridescent 237.5, 6 Fingers 250, Mutant 262.5, Alien 275, HSB 287.5~)", () => {
     render(<GuidePage />);
     expect(screen.getByText("237.5")).toBeInTheDocument();
     expect(screen.getByText("250")).toBeInTheDocument();
-    expect(screen.getByText("275~")).toBeInTheDocument();
+    expect(screen.getByText("262.5")).toBeInTheDocument();
+    expect(screen.getByText("287.5~")).toBeInTheDocument();
+    expect(screen.getByText("6 Fingers")).toBeInTheDocument();
+    expect(screen.getByText("Mutant")).toBeInTheDocument();
+    expect(screen.getByText("Alien")).toBeInTheDocument();
     expect(screen.getByText("12.5")).toBeInTheDocument();
     expect(screen.getByText("HSB")).toBeInTheDocument();
     expect(screen.queryByText("하수봉")).toBeNull();

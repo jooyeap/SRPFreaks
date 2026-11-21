@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TierChip } from "@/components/rating/TierChip";
 import { formatScore } from "@/lib/format";
 import type { PlayerSummaryResponse } from "@/lib/api-types";
 import { useTranslations } from "next-intl";
@@ -25,13 +26,7 @@ export function PlayerRow({ player, viewerId }: { player: PlayerSummaryResponse;
               <span className="shrink-0 rounded-full border border-ctl px-1.5 text-[11px] font-semibold text-fg-sub">{t("Players.me")}</span>
             ) : null}
           </span>
-          <span
-            data-tier={player.tier.key}
-            aria-label={t("Rating.tierAria", { name: player.tier.displayName })}
-            className="tier-chip mt-1 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold"
-          >
-            {player.tier.displayName}
-          </span>
+          <TierChip tier={player.tier} className="mt-1" />
         </span>
         <span className="shrink-0 text-right">
           <span className="sr-only text-[11px] text-fg-dim sm:not-sr-only sm:block">{t("Players.totalScore")}</span>

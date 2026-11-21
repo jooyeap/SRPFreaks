@@ -12,7 +12,7 @@ import type { AchievementStage, DifficultyType } from "@/lib/types";
  * 위치·문구·색은 이 파일에서 테스트하고 캔버스 쪽은 가짜 컨텍스트로 호출만 확인한다.
  *
  * 카드는 사이트 테마와 상관없이 다크 고정이다(공유 이미지가 보는 사람의 설정에 따라 달라지지 않게). 그래서 색은
- * 다크 테마 값을 여기 상수로 둔다. 티어 색은 globals.css의 `[data-tier]`와 같은 값이어야 하고, 테스트가 두 파일을 비교한다.
+ * 다크 테마 값을 여기 상수로 둔다. 티어 색(점수·띠)은 globals.css의 `[data-tier]`와 같은 값이어야 하고, 테스트가 두 파일을 비교한다. 티어 칩은 lib/tier-chip.ts를 사이트와 함께 쓴다.
  */
 
 export const CARD_LAYOUTS = ["landscape", "portrait"] as const;
@@ -21,7 +21,10 @@ export type CardLayout = (typeof CARD_LAYOUTS)[number];
 /** 티어 하나의 색. stops가 1개면 단색, 여러 개면 왼쪽→오른쪽(칩·글자) 또는 위→아래(왼쪽 띠) 그라데이션이다. */
 export interface CardTierStyle {
   stops: readonly string[];
-  /** Bronze 이상의 빛. 낮은 티어는 없다 */
+  /**
+   * Bronze 이상의 빛. globals.css의 `--tier-glow`(서열표 칸이 쓴다)와 같은 값이다. 카드 이미지는 점수·칩·띠에 빛을 쓰지 않는다(D95).
+   * 칩(뱃지) 디자인은 lib/tier-chip.ts의 표를 쓴다.
+   */
   glow: { color: string; blur: number } | null;
 }
 
@@ -41,17 +44,32 @@ export const TIER_STYLES: Record<string, CardTierStyle> = {
   PURPLE_GRADIENT: { stops: ["#c084fc", "#f9a8d4"], glow: null },
   RED: { stops: ["#f87171"], glow: null },
   RED_GRADIENT: { stops: ["#f87171", "#fdba74"], glow: null },
-  BRONZE: { stops: ["#b45309", "#f59e0b"], glow: { color: "rgb(245 158 11 / 0.35)", blur: 10 } },
-  SILVER: { stops: ["#cbd5e1", "#f8fafc"], glow: { color: "rgb(203 213 225 / 0.45)", blur: 12 } },
-  GOLD: { stops: ["#fcd34d", "#f59e0b"], glow: { color: "rgb(252 211 77 / 0.55)", blur: 14 } },
-  RAINBOW: { stops: ["#fca5a5", "#fde68a", "#86efac", "#93c5fd", "#d8b4fe"], glow: { color: "rgb(147 197 253 / 0.55)", blur: 16 } },
+  BRONZE: { stops: ["#fcd9a8", "#e08a3c", "#b45309"], glow: { color: "rgb(245 158 11 / 0.35)", blur: 10 } },
+  SILVER: { stops: ["#ffffff", "#cbd5e1", "#94a3b8"], glow: { color: "rgb(203 213 225 / 0.45)", blur: 12 } },
+  GOLD: { stops: ["#fff1b0", "#fcd34d", "#d97706"], glow: { color: "rgb(252 211 77 / 0.55)", blur: 14 } },
+  // Rainbow: 끊어진 띠가 아니라 6색을 균등 간격으로 이어 부드러운 그라데이션(globals.css의 linear-gradient와 같은 보간)
+  RAINBOW: { stops: ["#f87171", "#fb923c", "#facc15", "#4ade80", "#60a5fa", "#c084fc"], glow: { color: "rgb(147 197 253 / 0.55)", blur: 16 } },
   RAINBOW_GRADIENT: {
     stops: ["#ff6b6b", "#ffd93d", "#6bff95", "#6bd5ff", "#c084fc", "#ff6bd6"],
     glow: { color: "rgb(192 132 252 / 0.65)", blur: 20 },
   },
   IRIDESCENT: { stops: ["#ffe27a", "#ff7eb6", "#c084fc", "#22d3ee"], glow: { color: "rgb(255 126 182 / 0.7)", blur: 22 } },
-  ALIEN: { stops: ["#b9f6ca", "#22d3ee", "#bae6fd"], glow: { color: "rgb(34 211 238 / 0.8)", blur: 24 } },
-  HSB: { stops: ["#ffffff", "#fde68a", "#ffffff", "#bae6fd", "#ffffff"], glow: { color: "rgb(255 255 255 / 0.95)", blur: 28 } },
+  SIX_FINGERS: {
+    stops: ["#f0abfc", "#a78bfa", "#f472b6"],
+    glow: { color: "rgb(167 139 250 / 0.6)", blur: 20 },
+  },
+  MUTANT: {
+    stops: ["#ff7ae6", "#ff2bd6", "#a855f7"],
+    glow: { color: "rgb(255 43 214 / 0.65)", blur: 22 },
+  },
+  ALIEN: {
+    stops: ["#a5f3fc", "#22d3ee", "#a7f3d0"],
+    glow: { color: "rgb(34 211 238 / 0.7)", blur: 24 },
+  },
+  HSB: {
+    stops: ["#ffffff", "#fde68a", "#c4b5fd", "#67e8f9"],
+    glow: { color: "rgb(255 255 255 / 0.85)", blur: 28 },
+  },
 };
 
 /** 알 수 없는 티어 key가 오면(서버가 티어를 늘렸을 때) 가장 낮은 티어 색으로 그린다. 카드가 깨지는 것보다 낫다. */
@@ -182,6 +200,8 @@ export interface CardModel {
     /** 닉네임을 끄거나 없으면 null */
     nickname: string | null;
     tierName: string;
+    /** 티어 key. 칩 모양·색은 lib/tier-chip.ts의 표에서 이 key로 찾는다 */
+    tierKey: string;
     tier: CardTierStyle;
     totalText: string;
     counts: CardCountView[];
@@ -360,6 +380,7 @@ export function buildCardModel(layout: CardLayout, skill: SkillResponse, t: Tran
       brand: `SRPFreaks · ${t("RatingCard.title")}`,
       nickname: options.nickname,
       tierName: skill.tier.displayName,
+      tierKey: skill.tier.key,
       tier: tierStyleOf(skill.tier.key),
       totalText: formatScore(skill.totalScore),
       counts: stageCounts(skill),

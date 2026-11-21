@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { TierChip } from "@/components/rating/TierChip";
 import { RegisteredMeSection } from "@/components/rivals/RegisteredMeSection";
 import { RivalTopSongs } from "@/components/rivals/RivalTopSongs";
 import { ApiError } from "@/lib/api";
@@ -60,9 +61,7 @@ export function RivalTab({ userId }: { userId: number }) {
               {rival.mutual ? (
                 <span className="shrink-0 rounded-full border border-ctl px-1.5 text-[11px] font-semibold text-fg-sub">{t("mutualChip")}</span>
               ) : null}
-              <span data-tier={rival.tier.key} className="tier-chip shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-                {rival.tier.displayName}
-              </span>
+              <TierChip tier={rival.tier} />
             </span>
             <span className="break-keep text-xs text-fg-dim">
               {t.rich("scoreLine", {

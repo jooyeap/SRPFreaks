@@ -1,3 +1,4 @@
+import { TierChip as SharedTierChip } from "@/components/rating/TierChip";
 import type { PlayerTierResponse } from "@/lib/api-types";
 
 /** 둘 중 하나만 고르는 작은 전환(레이팅 목록 / 곡별 승패 같은). 선택은 굵은 글씨·테두리로도 보인다. */
@@ -29,10 +30,7 @@ export function Segment<T extends string>({ label, items, value, onChange, nowra
   );
 }
 
+/** 작은 티어 칩. 디자인은 공용 TierChip 하나다(D95). 관리자 대시보드가 이 이름으로 가져다 쓴다. */
 export function TierChip({ tier }: { tier: PlayerTierResponse }) {
-  return (
-    <span data-tier={tier.key} className="tier-chip inline-block rounded-full px-2.5 py-0.5 text-[11px] font-bold">
-      {tier.displayName}
-    </span>
-  );
+  return <SharedTierChip tier={tier} />;
 }

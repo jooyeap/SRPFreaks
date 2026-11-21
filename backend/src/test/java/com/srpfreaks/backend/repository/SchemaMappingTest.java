@@ -69,17 +69,36 @@ class SchemaMappingTest {
     @Test
     void 시드_데이터가_들어_있다() {
         Number tiers = (Number) em.createNativeQuery("select count(*) from player_tiers").getSingleResult();
-        // V1이 20단계를 넣고, V10(D38)이 하수봉을 HSB로 옮기고 Iridescent·Alien 두 행을 더해 22단계가 된다
-        assertThat(tiers.intValue()).isEqualTo(22);
+        // V1이 20단계를 넣고, V10(D38)이 Iridescent·Alien·HSB로 나눠 22단계, V23(D87)이 6 Fingers·Mutant를 더해 24단계가 된다
+        assertThat(tiers.intValue()).isEqualTo(24);
         @SuppressWarnings("unchecked")
         List<Object[]> top = em.createNativeQuery(
                 "select tier_key, min_score from player_tiers where min_score >= 9500 order by min_score").getResultList();
         assertThat(top).extracting(row -> row[0] + ":" + ((Number) row[1]).intValue())
-                .containsExactly("IRIDESCENT:9500", "ALIEN:10000", "HSB:11000");
+                .containsExactly("IRIDESCENT:9500", "SIX_FINGERS:10000", "MUTANT:10500", "ALIEN:11000", "HSB:11500");
 
         AppSetting pivot = em.find(AppSetting.class, "rating.pivot");
         assertThat(pivot).isNotNull();
         assertThat(pivot.getValue()).isEqualTo("6.0");
+    }
+
+    @Test
+    void 플레이어_티어_경계값은_합계_정수부로_정해진다() {
+        // SkillService와 같은 규칙: min_score <= 합계 중 가장 큰 구간. 경계 바로 아래/위를 직접 확인한다(D87)
+        String sql = "select tier_key from player_tiers where min_score <= :score order by min_score desc limit 1";
+        String[][] cases = {
+                {"9999", "IRIDESCENT"}, {"10000", "SIX_FINGERS"}, {"10499", "SIX_FINGERS"}, {"10500", "MUTANT"},
+                {"10999", "MUTANT"}, {"11000", "ALIEN"}, {"11499", "ALIEN"}, {"11500", "HSB"},
+        };
+        for (String[] c : cases) {
+            Object key = em.createNativeQuery(sql).setParameter("score", Integer.parseInt(c[0])).getSingleResult();
+            assertThat(key).as("합계 " + c[0]).isEqualTo(c[1]);
+        }
+        @SuppressWarnings("unchecked")
+        List<Object[]> names = em.createNativeQuery(
+                "select display_name, sort_order from player_tiers where min_score >= 10000 order by min_score").getResultList();
+        assertThat(names).extracting(row -> row[0] + ":" + ((Number) row[1]).intValue())
+                .containsExactly("6 Fingers:21", "Mutant:22", "Alien:23", "HSB:24");
     }
 
     @Test

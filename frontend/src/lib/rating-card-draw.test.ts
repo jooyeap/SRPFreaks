@@ -6,6 +6,8 @@ import { jaT } from "@/i18n/ja-translator";
 import type { Translator } from "@/i18n/translator";
 import { buildCardModel, PART_TEXT_COLORS } from "@/lib/rating-card";
 import { CARD_PANEL, drawRatingCard } from "@/lib/rating-card-draw";
+import { PLAYER_TIER_MINS } from "@/lib/chart-tier";
+import { TIER_CHIPS, tierChipWidth } from "@/lib/tier-chip";
 
 function entry(rank: number): SkillEntryResponse {
   return {
@@ -21,7 +23,12 @@ function fakeCtx() {
   const ctx = new Proxy(target, {
     get(t, prop: string) {
       if (prop === "measureText") return (s: string) => ({ width: s.length * 10 });
-      if (prop === "createLinearGradient") return () => ({ addColorStop: vi.fn() });
+      if (prop === "createLinearGradient" || prop === "createRadialGradient") {
+        return (...args: unknown[]) => {
+          (calls[prop] ??= []).push(args);
+          return { addColorStop: vi.fn() };
+        };
+      }
       if (prop in t) return t[prop];
       return (...args: unknown[]) => {
         (calls[prop] ??= []).push(args);
@@ -53,6 +60,34 @@ describe("drawRatingCard", () => {
       expect(drawn).toEqual(expect.arrayContaining(["200", ".00"]));
     });
   }
+
+  // 24티어 모두 같은 칩 문법으로 그린다(D95): 이름 글자, 빛 없음, 하위 14티어는 테두리 한 번(얇은 흰 선), 나머지는 두 번(티어 색 + 안쪽 흰 선)
+  for (const tier of PLAYER_TIER_MINS) {
+    it(`티어 ${tier.key}(D95): 칩에 티어 이름을 그린다(빛·카드 뒤 빛 없음)`, () => {
+      const top: SkillResponse = { ...skill, tier: { key: tier.key, displayName: `Name ${tier.key}`, minScore: tier.min, nextDisplayName: null, nextMinScore: null } };
+      const model = buildCardModel("landscape", top, koT, { nickname: "Tester", now: new Date("2026-11-20T00:00:00Z") });
+      const { ctx, calls } = fakeCtx();
+      drawRatingCard(ctx, model, { sans: "sans", num: "num" });
+      expect((calls.fillText ?? []).map((a) => a[0])).toContain(`Name ${tier.key}`);
+      expect(calls.createRadialGradient ?? []).toHaveLength(0);
+      expect((calls.stroke ?? []).length).toBe(TIER_CHIPS[tier.key].border ? 2 : 1);
+    });
+  }
+
+  it("칩 폭은 사이트와 같은 규칙이다: 육각은 최소 폭 8.4×글자 크기, 긴 이름은 넓히지 않는다", () => {
+    const widthOf = (key: string, name: string) => {
+      const top: SkillResponse = { ...skill, tier: { key, displayName: name, minScore: 0, nextDisplayName: null, nextMinScore: null } };
+      const model = buildCardModel("landscape", top, koT, { nickname: null, now: new Date("2026-11-20T00:00:00Z") });
+      const { ctx, calls } = fakeCtx();
+      drawRatingCard(ctx, model, { sans: "sans", num: "num" });
+      // 칩 윤곽 중 첫 번째 roundRect/moveTo가 아니라, 글자를 가운데에 그린 x(= 칩 왼쪽 + 폭/2)로 폭을 거꾸로 잰다
+      const textCall = (calls.fillText ?? []).find((a) => a[0] === name)!;
+      return (textCall[1] as number - model.contentX) * 2;
+    };
+    expect(widthOf("HSB", "HSB")).toBe(tierChipWidth("HSB", "hex", 22));
+    expect(widthOf("RAINBOW_GRADIENT", "Rainbow Gradient")).toBe(tierChipWidth("Rainbow Gradient", "pill", 22));
+    expect(widthOf("RED", "Red")).toBe(Math.round(22 * 7.4));
+  });
 
   it("닉네임이 없으면 이름을 그리지 않는다", () => {
     const model = buildCardModel("landscape", skill, koT, { nickname: null, now: new Date() });

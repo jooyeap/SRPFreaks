@@ -259,7 +259,7 @@ function Plot({ buckets, range, segments, unit, group, selected, onSelect, pick,
                     style={{ left: `${((index + jitterFraction(point.userId)) / n) * 100}%`, top: `${yPercent(point.avg, range)}%` }}
                   >
                     <span
-                      className={`block rounded-full ${point.tierKey ? "tier-bar" : "bg-fg-dim"} ${on ? "h-4 w-4 ring-2 ring-fg" : "h-3 w-3 ring-1 ring-card"}`}
+                      className={`block rounded-full ${point.tierKey ? "chart-dot" : "bg-fg-dim"} ${on ? "h-4 w-4 ring-2 ring-fg" : "h-3 w-3 ring-1 ring-card"}`}
                       style={{ boxShadow: on ? undefined : "var(--tier-glow)" }}
                     />
                   </button>

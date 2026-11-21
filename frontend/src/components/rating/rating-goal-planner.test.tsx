@@ -186,7 +186,7 @@ describe("RatingGoalPlanner", () => {
   });
 
   it("최고 티어이면 다음 티어 버튼이 없다", () => {
-    const top: SkillResponse = { ...skill, tier: { key: "HSB", displayName: "HSB", minScore: 11000, nextDisplayName: null, nextMinScore: null } };
+    const top: SkillResponse = { ...skill, tier: { key: "HSB", displayName: "HSB", minScore: 11500, nextDisplayName: null, nextMinScore: null } };
     renderPlanner(top);
     fireEvent.click(screen.getByRole("button", { name: /목표 레이팅/ }));
     expect(screen.queryByRole("button", { name: /로 정하기/ })).toBeNull();

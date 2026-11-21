@@ -192,8 +192,8 @@ describe("ChartStatsView (서열표 분석)", () => {
     const red = within(plot).getByRole("button", { name: "5.8 폴더 · Red · 평균 80.00%" });
     expect(red).toHaveAttribute("data-tier", "RED");
     expect(within(plot).getByRole("button", { name: "5.8 폴더 · Iridescent · 평균 70.00%" })).toHaveAttribute("data-tier", "IRIDESCENT");
-    // 색 값은 컴포넌트에 없다: 점은 tier-bar 클래스로 CSS 변수를 쓴다
-    expect(red.querySelector("span")?.className).toContain("tier-bar");
+    // 색 값은 컴포넌트에 없다: 점은 chart-dot 클래스로 CSS 변수를 쓴다
+    expect(red.querySelector("span")?.className).toContain("chart-dot");
     // 범례에도 티어 이름이 글자로 있다
     expect(within(screen.getByRole("list", { name: "티어 색 범례" })).getByText("Iridescent")).toBeInTheDocument();
   });
