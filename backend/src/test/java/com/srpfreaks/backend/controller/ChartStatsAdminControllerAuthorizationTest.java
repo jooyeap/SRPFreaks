@@ -79,7 +79,7 @@ class ChartStatsAdminControllerAuthorizationTest {
                 u -> controller.folders(u, 0, 100),
                 u -> controller.undecided(u, 0, 20),
                 u -> controller.folderDistribution(u, 0, 100),
-                u -> controller.folderUserRecords(u, new java.math.BigDecimal("6.4"), null, 11L, 0, 100),
+                u -> controller.folderUserRecords(u, new java.math.BigDecimal("6.4"), 11L, null, 0, 100),
                 u -> controller.summary(u, 10L),
                 u -> controller.players(u, 10L, null, 0, 20));
     }
