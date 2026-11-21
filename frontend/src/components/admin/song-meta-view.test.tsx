@@ -103,7 +103,7 @@ describe("곡 정보 정리 화면 (D91)", () => {
 
   it("되돌리기를 누르면 저장 직전 값으로 다시 PUT 하고 안내가 사라진다", async () => {
     stubViewport(true);
-    fetchMock.mockImplementation((input, init) => {
+    fetchMock.mockImplementation((input) => {
       const url = String(input);
       if (url.includes("/admin/song-meta/todo")) return Promise.resolve(json(todo([row(1, "Peyotl")], 1)));
       if (url.endsWith("/songs/1")) return Promise.resolve(json(detailOf(1, "Peyotl")));
