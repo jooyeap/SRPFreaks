@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ChartStatsView } from "@/components/admin/ChartStatsView";
 import type { ChartStatsMeta, DeviationRow, FolderDistributionPage, PopularityRow, StatsChart, UndecidedRow } from "@/lib/chart-stats";
@@ -39,25 +39,25 @@ const DIST: FolderDistributionPage = {
     {
       tier: 5.8,
       cells: [
-        { userId: 1, charts: 2, sumRate: 160 },
-        { userId: 2, charts: 1, sumRate: 90 },
-        { userId: 3, charts: 1, sumRate: 70 },
-        { userId: 4, charts: 4, sumRate: 340 },
+        { userId: 1, charts: 2, sumRate: 160, lastRecordedAt: "2026-11-20T15:30:00Z" },
+        { userId: 2, charts: 1, sumRate: 90, lastRecordedAt: "2026-11-01T00:00:00Z" },
+        { userId: 3, charts: 1, sumRate: 70, lastRecordedAt: "2026-10-15T06:00:00Z" },
+        { userId: 4, charts: 4, sumRate: 340, lastRecordedAt: null },
       ],
     },
     {
       tier: 5.9,
       cells: [
-        { userId: 1, charts: 1, sumRate: 50 },
-        { userId: 2, charts: 1, sumRate: 60 },
+        { userId: 1, charts: 1, sumRate: 50, lastRecordedAt: "2026-11-20T15:30:00Z" },
+        { userId: 2, charts: 1, sumRate: 60, lastRecordedAt: "2026-11-01T00:00:00Z" },
       ],
     },
     {
       tier: 6.0,
       cells: [
-        { userId: 1, charts: 1, sumRate: 70 },
-        { userId: 2, charts: 1, sumRate: 80 },
-        { userId: 3, charts: 1, sumRate: 90 },
+        { userId: 1, charts: 1, sumRate: 70, lastRecordedAt: "2026-11-20T15:30:00Z" },
+        { userId: 2, charts: 1, sumRate: 80, lastRecordedAt: "2026-11-01T00:00:00Z" },
+        { userId: 3, charts: 1, sumRate: 90, lastRecordedAt: "2026-10-15T06:00:00Z" },
       ],
     },
   ],
@@ -169,11 +169,13 @@ describe("ChartStatsView (서열표 분석)", () => {
     await waitFor(() => expect(urls().some((u) => u.includes("/popularity") && u.includes("range=7d"))).toBe(true));
   });
 
+  /** 폴더 분포 탭을 열고 0.1 단위·전체 구간·전체 티어로 맞춘다(기본값은 화면 폭과 데이터에 따라 달라서 테스트가 직접 고른다). */
   async function openDistribution() {
     renderView();
     fireEvent.click(await screen.findByRole("tab", { name: "폴더 분포" }));
-    // 유닛은 0.1 단위로 맞춰 폴더를 그대로 본다(기본 단위는 화면 폭에 따라 다르다)
     fireEvent.click(await screen.findByRole("button", { name: "0.1 단위" }));
+    fireEvent.click(screen.getByRole("button", { name: "전체 구간" }));
+    fireEvent.click(screen.getByRole("button", { name: "전체" }));
     return screen.findByRole("group", { name: "폴더별 유저 평균 달성률 점 도표" });
   }
 
@@ -192,42 +194,102 @@ describe("ChartStatsView (서열표 분석)", () => {
     const red = within(plot).getByRole("button", { name: "5.8 폴더 · Red · 평균 80.00%" });
     expect(red).toHaveAttribute("data-tier", "RED");
     expect(within(plot).getByRole("button", { name: "5.8 폴더 · Iridescent · 평균 70.00%" })).toHaveAttribute("data-tier", "IRIDESCENT");
-    // 색 값은 컴포넌트에 없다: 점은 chart-dot 클래스로 CSS 변수를 쓴다
-    expect(red.querySelector("span")?.className).toContain("chart-dot");
+    // 색 값은 컴포넌트에 없다: 반투명 색 원은 chart-dot 클래스로 CSS 변수를 쓰고, 바깥 원이 테두리(윤곽)다
+    const fill = red.querySelector("i");
+    expect(fill?.className).toContain("chart-dot");
+    expect(fill?.className).toContain("opacity-70");
+    expect(red.querySelector("span")?.className).toContain("border");
     // 범례에도 티어 이름이 글자로 있다
     expect(within(screen.getByRole("list", { name: "티어 색 범례" })).getByText("Iridescent")).toBeInTheDocument();
   });
 
-  it("점을 누르면 말풍선에 닉네임·티어·평균 달성률·곡 수가 나오고 누르기 전에는 닉네임이 없다", async () => {
+  it("점은 작고(10px) 같은 데이터는 늘 같은 자리에 찍힌다", async () => {
+    const first = (await openDistribution()).querySelectorAll<HTMLElement>("[data-dot]");
+    const positions = [...first].map((dot) => `${dot.style.left}/${dot.style.top}`);
+    cleanup();
+
+    const second = (await openDistribution()).querySelectorAll<HTMLElement>("[data-dot]");
+
+    expect([...second].map((dot) => `${dot.style.left}/${dot.style.top}`)).toEqual(positions);
+    expect(first[0].querySelector("span")?.className).toContain("h-2.5");
+  });
+
+  it("점을 누르면 아래 카드에 닉네임·티어·평균·곡 수·마지막 기록 저장일(서울 날짜)이 나오고 누르기 전에는 닉네임이 없다", async () => {
     const plot = await openDistribution();
     expect(document.body.textContent).not.toContain("알파");
 
     const point = within(plot).getByRole("button", { name: "5.8 폴더 · Red · 평균 80.00%" });
     fireEvent.click(point);
 
-    const bubble = plot.querySelector("[data-bubble]") as HTMLElement;
-    expect(bubble).not.toBeNull();
-    expect(bubble).toHaveTextContent("Red");
-    expect(bubble).toHaveTextContent("알파");
-    expect(bubble).toHaveTextContent("평균 80.00% · 2곡 · 폴더 5.8");
-    expect(within(bubble).getByRole("link", { name: "유저 상세 ›" })).toHaveAttribute("href", "/players/1");
+    const card = document.querySelector("[data-pick-card]") as HTMLElement;
+    expect(card).not.toBeNull();
+    expect(plot.contains(card)).toBe(false);   // 도표 위에 떠서 점을 가리지 않는다
+    expect(card).toHaveTextContent("Red");
+    expect(card).toHaveTextContent("알파");
+    expect(card).toHaveTextContent("5.8");
+    expect(card).toHaveTextContent("80.00%");
+    expect(card).toHaveTextContent("2곡");
+    // 2026-11-20 15:30 UTC = 서울 2026-11-21 00:30
+    expect(card).toHaveTextContent("2026-11-21");
+    expect(within(card).getByRole("link", { name: "유저 상세 ›" })).toHaveAttribute("href", "/players/1");
     expect(point).toHaveAttribute("aria-pressed", "true");
     // 다시 누르면 닫힌다
     fireEvent.click(point);
-    expect(plot.querySelector("[data-bubble]")).toBeNull();
+    expect(document.querySelector("[data-pick-card]")).toBeNull();
   });
 
-  it("티어 강조 칩은 그 티어군이 아닌 점을 흐리게 한다", async () => {
+  it("저장일을 모르는 유저는 `-`로 보인다", async () => {
+    const plot = await openDistribution();
+
+    fireEvent.click(within(plot).getByRole("button", { name: "5.8 폴더 · Bronze · 평균 85.00%" }));
+
+    expect(document.querySelector("[data-pick-card]")).toHaveTextContent("마지막 기록 저장일-");
+  });
+
+  it("티어 강조 칩은 그 티어군이 아닌 점을 색 없는 작은 회색 점으로 만들고 범례가 같은 모양으로 알려 준다", async () => {
     const plot = await openDistribution();
     expect(plot.querySelectorAll("[data-dimmed]")).toHaveLength(0);
 
     fireEvent.click(screen.getByRole("button", { name: "~Red Gradient" }));
 
-    // Red(5.8·6.0 폴더 각 1개)만 진하게, 나머지는 흐리게
+    // Red(5.8·6.0 폴더 각 1개)만 색으로, 나머지는 회색
     const dimmed = plot.querySelectorAll("[data-dimmed]");
     expect(dimmed).toHaveLength(7 - 2);
     expect(plot.querySelector('[data-tier="RED"]')).not.toHaveAttribute("data-dimmed");
-    expect(plot.querySelector('[data-tier="IRIDESCENT"]')).toHaveAttribute("data-dimmed");
+    const gray = plot.querySelector('[data-tier="IRIDESCENT"]') as HTMLElement;
+    expect(gray).toHaveAttribute("data-dimmed");
+    expect(gray.querySelector("i.chart-dot")).toBeNull();
+    const legend = screen.getByRole("list", { name: "티어 색 범례" });
+    expect(within(legend).queryByText("Iridescent")).toBeNull();
+    expect(legend.querySelector("[data-legend-other]")).toHaveTextContent("그 밖의 티어 (회색 점)5점");
+  });
+
+  it("기본 화면은 단순하다: 점이 가장 많은 티어군과 점이 가장 많은 구간이 미리 골라져 있고 `전체`로 풀 수 있다", async () => {
+    renderView();
+    fireEvent.click(await screen.findByRole("tab", { name: "폴더 분포" }));
+    const plot = await screen.findByRole("group", { name: "폴더별 유저 평균 달성률 점 도표" });
+
+    // 기본 단위 0.5, 구간 4.0~5.9(점 4개)가 6.0~7.9(점 3개)보다 많다. 티어군은 Bronze~Iridescent(점 3개 + 3개)가 가장 많다
+    expect(screen.getByRole("button", { name: "Bronze~Iridescent" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "전체" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "4.0~5.9" })).toHaveAttribute("aria-pressed", "true");
+    expect(plot.querySelectorAll("[data-dot]")).toHaveLength(4);
+    expect(plot.querySelectorAll("[data-dimmed]")).toHaveLength(1);   // Red 한 점만 회색
+
+    fireEvent.click(screen.getByRole("button", { name: "전체" }));
+    expect(plot.querySelectorAll("[data-dimmed]")).toHaveLength(0);
+  });
+
+  it("구간 칩을 고르면 그 구간의 폴더만 그려지고 `전체 구간`은 모두 그린다", async () => {
+    const plot = await openDistribution();
+    expect(plot.querySelectorAll("[data-dot]")).toHaveLength(7);
+
+    fireEvent.click(screen.getByRole("button", { name: "6.0~6.9" }));
+    expect(plot.querySelectorAll("[data-dot]")).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "6.0~6.9" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "전체 구간" }));
+    expect(plot.querySelectorAll("[data-dot]")).toHaveLength(7);
   });
 
   it("0.5 단위로 바꾸면 0.1 폴더의 칸이 합쳐져 채보 수 가중 평균이 된다", async () => {
@@ -235,23 +297,70 @@ describe("ChartStatsView (서열표 분석)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "0.5 단위" }));
 
-    // 5.8 + 5.9 폴더 → 5.5~5.9 묶음. 알파는 3곡 합 210 → 70.00%
+    // 5.8 + 5.9 폴더 → 5.5~5.9 묶음. 알파는 3곡 합 210 → 70.00%. (단위를 바꾸면 구간은 그 단위의 기본으로 돌아간다)
     expect(within(plot).getByRole("button", { name: "5.5~5.9 폴더 · Red · 평균 70.00%" })).toBeInTheDocument();
   });
 
-  it("표로 보기: 같은 값이 표로 나오고 표본 부족 폴더가 표시되며 닉네임은 없다", async () => {
+  it("표로 보기: 폴더 줄을 누르면 그 줄 안에 유저 목록(닉네임·티어·평균·곡 수·마지막 기록 저장일)이 펼쳐진다", async () => {
     await openDistribution();
-
     fireEvent.click(screen.getByRole("button", { name: "표로 보기" }));
 
-    const table = await screen.findByRole("table", { name: "폴더별 유저 평균 달성률 표" });
-    expect(within(table).getAllByRole("row").filter((row) => row.hasAttribute("data-row-folder"))).toHaveLength(4 + 1 + 3);
-    expect(table).toHaveTextContent("표본 부족 (유저 2명)");
-    expect(table).toHaveTextContent("85.00%");
+    const list = await screen.findByRole("list", { name: "폴더별 유저 평균 달성률 표" });
+    // 폴더 줄 3개(5.8 · 표본 부족 5.9 · 6.0). 처음에는 모두 접혀 있고 닉네임이 보이지 않는다
+    expect(list.querySelectorAll("[data-row-folder]")).toHaveLength(3);
+    expect(list).toHaveTextContent("표본 부족 (유저 2명)");
     expect(document.body.textContent).not.toContain("알파");
+    const toggle = within(list).getByRole("button", { name: /^5\.8 유저 4명 평균 81\.25%/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(within(list).queryByRole("table")).toBeNull();
+    // 표본 부족 폴더는 유저가 드러나지 않으므로 펼 수 없다(버튼이 없다)
+    expect(within(list.querySelector('[data-row-folder="5.9"]') as HTMLElement).queryByRole("button")).toBeNull();
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const table = within(list).getByRole("table", { name: "5.8 폴더 유저별 평균 달성률 목록" });
+    expect(document.getElementById(toggle.getAttribute("aria-controls") ?? "")).toContainElement(table);
+    // 평균 높은 순: 베타 90 · 델타 85 · 알파 80 · 감마 70
+    const rows = within(table).getAllByRole("row").filter((row) => row.hasAttribute("data-user-row"));
+    expect(rows.map((row) => row.getAttribute("data-user-row"))).toEqual(["2", "4", "1", "3"]);
+    const alpha = rows[2];
+    expect(alpha).toHaveTextContent("알파");
+    expect(alpha).toHaveTextContent("Red");          // 티어는 색 점과 함께 글자로 적는다
+    expect(alpha).toHaveTextContent("80.00%");
+    expect(alpha).toHaveTextContent("2곡");
+    expect(alpha).toHaveTextContent("2026-11-21");   // UTC 15:30 → 서울 다음 날
+    expect(rows[1]).toHaveTextContent("델타");
+    expect(rows[1]).toHaveTextContent("-");            // 저장일을 모르면 `-`
+    // 다른 폴더는 그대로 닫혀 있다(여러 폴더를 따로 펼칠 수 있다)
+    expect(within(list).getByRole("button", { name: /^6\.0 / })).toHaveAttribute("aria-expanded", "false");
+    expect(within(list).getAllByRole("table")).toHaveLength(1);
+
+    // 다시 누르면 접힌다
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(within(list).queryByRole("table")).toBeNull();
     // 도표로 돌아간다
     fireEvent.click(screen.getByRole("button", { name: "점 도표" }));
     expect(screen.getByRole("group", { name: "폴더별 유저 평균 달성률 점 도표" })).toBeInTheDocument();
+  });
+
+  it("표로 보기의 폴더 줄은 키보드로 조작하는 진짜 버튼이고 상태가 글자(▸/▾)로도 보인다", async () => {
+    await openDistribution();
+    fireEvent.click(screen.getByRole("button", { name: "표로 보기" }));
+    const list = await screen.findByRole("list", { name: "폴더별 유저 평균 달성률 표" });
+
+    const toggle = within(list).getByRole("button", { name: /^6\.0 / });
+    // <button>이라 Tab 순서에 들고 Enter·Space가 브라우저에서 click으로 바뀐다(따로 키 처리를 만들지 않는다)
+    expect(toggle.tagName).toBe("BUTTON");
+    expect(toggle).toHaveAttribute("type", "button");
+    expect(toggle.tabIndex).toBe(0);
+    toggle.focus();
+    expect(toggle).toHaveFocus();
+    expect(toggle).toHaveTextContent("▸");
+    fireEvent.click(toggle);   // Enter·Space와 같은 click
+    expect(toggle).toHaveTextContent("▾");
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
   });
 
   it("미정 탭: 기준 난이도가 없는 곡과 기록 건수·플레이어 수", async () => {

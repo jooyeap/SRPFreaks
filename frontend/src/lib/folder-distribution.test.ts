@@ -6,20 +6,26 @@ import {
   bucketLabel,
   bucketStart,
   buildBuckets,
+  buildWindows,
+  busiestGroup,
+  busiestWindow,
   inTierGroup,
-  jitterFraction,
+  kstDate,
+  layoutDotX,
   tierGroupLabel,
   tierGroupRange,
+  windowOf,
   yPercent,
   yRange,
+  type DistPoint,
 } from "@/lib/folder-distribution";
 
 function user(userId: number, key: string | null): DistUser {
   return { userId, nickname: `n${userId}`, tier: key ? { key, displayName: key, minScore: 0, nextDisplayName: null, nextMinScore: null } : null, totalScore: 0 };
 }
 
-function folder(tier: number, ...cells: [number, number, number][]): DistFolder {
-  return { tier, cells: cells.map(([userId, charts, sumRate]) => ({ userId, charts, sumRate })) };
+function folder(tier: number, ...cells: [number, number, number, string?][]): DistFolder {
+  return { tier, cells: cells.map(([userId, charts, sumRate, lastRecordedAt]) => ({ userId, charts, sumRate, lastRecordedAt: lastRecordedAt ?? null })) };
 }
 
 describe("폴더 묶음", () => {
@@ -114,7 +120,7 @@ describe("그래프 좌표", () => {
     sufficient: avgs.length > 0,
     users: avgs.length,
     avg: avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null,
-    points: avgs.map((avg, i) => ({ userId: i + 1, nickname: "", tierKey: null, tierName: null, avg, charts: 1 })),
+    points: avgs.map((avg, i) => ({ userId: i + 1, nickname: "", tierKey: null, tierName: null, avg, charts: 1, lastRecordedAt: null })),
   });
 
   it("y축은 위가 100이고 S 기준선(80)이 늘 보이도록 아래는 70 이하다", () => {
@@ -131,15 +137,6 @@ describe("그래프 좌표", () => {
     expect(yPercent(40, range)).toBe(100);
   });
 
-  it("점의 가로 자리는 유저마다 정해져 있고 칸 안(20~81%)에 든다", () => {
-    for (const id of [1, 2, 37, 1000, 123456]) {
-      const f = jitterFraction(id);
-      expect(f).toBeGreaterThanOrEqual(0.2);
-      expect(f).toBeLessThanOrEqual(0.81);
-      expect(jitterFraction(id)).toBe(f);
-    }
-  });
-
   it("폴더 평균선은 표본 부족 폴더에서 끊긴다", () => {
     const buckets = [bucket(6.0, [80, 90, 70]), bucket(6.1, []), bucket(6.2, [90, 90, 90]), bucket(6.3, [70, 70, 70])];
 
@@ -149,5 +146,121 @@ describe("그래프 좌표", () => {
     expect(segments[0]).toHaveLength(1);
     expect(segments[1]).toHaveLength(2);
     expect(segments[1][0].x).toBeCloseTo(62.5);
+  });
+});
+
+function dot(userId: number, avg: number, tierKey: string | null = null): DistPoint {
+  return { userId, nickname: `n${userId}`, tierKey, tierName: null, avg, charts: 1, lastRecordedAt: null };
+}
+
+describe("마지막 기록 저장일", () => {
+  it("UTC 시각을 Asia/Seoul 날짜로 바꾼다(UTC 15시 이후는 다음 날)", () => {
+    expect(kstDate("2026-11-20T14:59:59Z")).toBe("2026-11-20");
+    expect(kstDate("2026-11-20T15:00:00Z")).toBe("2026-11-21");
+    expect(kstDate("2026-12-31T16:00:00.123456Z")).toBe("2027-01-01");
+  });
+
+  it("없거나 읽을 수 없으면 null이다", () => {
+    expect(kstDate(null)).toBeNull();
+    expect(kstDate("날짜 아님")).toBeNull();
+  });
+
+  it("0.5 단위로 묶으면 묶인 폴더 중 가장 늦은 시각을 쓰고, 한쪽이 null이면 다른 쪽을 쓴다", () => {
+    const buckets = buildBuckets(
+      [
+        folder(8.0, [1, 1, 80, "2026-11-01T00:00:00Z"], [2, 1, 80], [3, 1, 80, "2026-11-03T00:00:00Z"]),
+        folder(8.3, [1, 1, 80, "2026-11-09T00:00:00Z"], [2, 1, 80, "2026-11-02T00:00:00Z"], [3, 1, 80]),
+      ],
+      [user(1, null), user(2, null), user(3, null)],
+      "0.5",
+      3,
+    );
+
+    const byId = new Map(buckets[0].points.map((p) => [p.userId, p.lastRecordedAt]));
+    expect(byId.get(1)).toBe("2026-11-09T00:00:00Z");   // 늦은 쪽
+    expect(byId.get(2)).toBe("2026-11-02T00:00:00Z");   // null과 값 → 값
+    expect(byId.get(3)).toBe("2026-11-03T00:00:00Z");
+  });
+});
+
+describe("점 가로 배치(layoutDotX)", () => {
+  const points = [dot(1, 90), dot(2, 90), dot(3, 90.2), dot(4, 90.1), dot(5, 70), dot(37, 90), dot(1000, 89.9)];
+
+  it("같은 입력이면 늘 같은 자리다(무작위가 아니다). 입력 순서가 달라도 같다", () => {
+    const a = layoutDotX(points, 80, 5, 1.2);
+    const b = layoutDotX(points, 80, 5, 1.2);
+    const c = layoutDotX([...points].reverse(), 80, 5, 1.2);
+
+    expect([...a.entries()]).toEqual([...b.entries()]);
+    expect([...a.entries()].sort()).toEqual([...c.entries()].sort());
+  });
+
+  it("모든 점이 칸 안(15~85%)에 든다", () => {
+    for (const fraction of layoutDotX(points, 80, 5, 1.2).values()) {
+      expect(fraction).toBeGreaterThanOrEqual(0.15);
+      expect(fraction).toBeLessThanOrEqual(0.85);
+    }
+  });
+
+  it("높이가 비슷한 점은 줄이 남아 있는 동안 서로 다른 가로 자리를 갖는다", () => {
+    const crowded = [dot(1, 90), dot(2, 90), dot(3, 90), dot(4, 90)];
+
+    const xs = layoutDotX(crowded, 80, 4, 1.2);
+
+    expect(new Set(xs.values()).size).toBe(4);
+  });
+
+  it("줄이 하나면 모두 가운데에 서고, 높이가 멀리 떨어진 점은 옆 줄로 밀리지 않는다", () => {
+    const one = layoutDotX([dot(1, 95), dot(2, 70)], 80, 1, 1.2);
+    expect([one.get(1), one.get(2)]).toEqual([0.5, 0.5]);
+
+    // 높이가 멀리 떨어진 두 점은 해시가 고른 줄 그대로다(서로를 피해 옮기지 않는다)
+    const far = layoutDotX([dot(1, 95), dot(2, 70)], 80, 6, 1.2);
+    expect(far.get(1)).toBe(layoutDotX([dot(1, 95)], 80, 6, 1.2).get(1));
+    expect(far.get(2)).toBe(layoutDotX([dot(2, 70)], 80, 6, 1.2).get(2));
+  });
+
+  it("폴더(salt)가 다르면 같은 유저도 다른 자리일 수 있다(모든 폴더에서 같은 세로줄로 서지 않게)", () => {
+    const ids = [1, 2, 3, 4, 5, 6, 7, 8];
+    const first = ids.map((id) => layoutDotX([dot(id, 90)], 80, 6, 1.2).get(id));
+    const second = ids.map((id) => layoutDotX([dot(id, 90)], 81, 6, 1.2).get(id));
+    expect(first).not.toEqual(second);
+  });
+});
+
+describe("폴더 구간 칩", () => {
+  const bucketsOf = (...tiers: [number, number][]) =>
+    buildBuckets(
+      tiers.map(([tier, n]) => folder(tier, ...Array.from({ length: n }, (_, i): [number, number, number] => [i + 1, 1, 80]))),
+      Array.from({ length: 10 }, (_, i) => user(i + 1, null)),
+      "0.1",
+      3,
+    );
+
+  it("0.1 단위는 기준 난이도 1.0 폭, 0.5 단위는 2.0 폭으로 나누고 칩 글자는 `6.0~6.9` 꼴이다", () => {
+    const one = buildWindows(bucketsOf([5.8, 3], [6.0, 3], [6.9, 3], [7.0, 3]), "0.1");
+    expect(one.map((w) => [w.start, w.label, w.points])).toEqual([
+      [5, "5.0~5.9", 3],
+      [6, "6.0~6.9", 6],
+      [7, "7.0~7.9", 3],
+    ]);
+
+    const half = buildBuckets([folder(5.8, [1, 1, 80], [2, 1, 80], [3, 1, 80]), folder(7.5, [1, 1, 80], [2, 1, 80], [3, 1, 80])], [user(1, null), user(2, null), user(3, null)], "0.5", 3);
+    expect(buildWindows(half, "0.5").map((w) => w.label)).toEqual(["4.0~5.9", "6.0~7.9"]);
+    expect(windowOf(half[1], "0.5")).toBe(6);
+  });
+
+  it("가장 점이 많은 구간이 기본이고 같으면 낮은 쪽, 점이 없으면 null", () => {
+    expect(busiestWindow(buildWindows(bucketsOf([5.8, 3], [6.0, 4], [6.1, 4]), "0.1"))).toBe(6);
+    expect(busiestWindow(buildWindows(bucketsOf([5.8, 3], [6.0, 3]), "0.1"))).toBe(5);
+    expect(busiestWindow(buildWindows(bucketsOf([5.8, 2]), "0.1"))).toBeNull();   // 표본 부족뿐
+  });
+
+  it("기본 티어군은 점이 가장 많은 군이고 점이 없으면 all", () => {
+    const users = [user(1, "RED"), user(2, "GOLD"), user(3, "BRONZE"), user(4, "IRIDESCENT")];
+    const [bucket] = buildBuckets([folder(6.0, [1, 1, 80], [2, 1, 80], [3, 1, 80], [4, 1, 80])], users, "0.1", 3);
+
+    expect(busiestGroup([bucket])).toBe("mid");   // Gold·Bronze·Iridescent 3개 vs Red 1개
+    expect(busiestGroup([])).toBe("all");
   });
 });

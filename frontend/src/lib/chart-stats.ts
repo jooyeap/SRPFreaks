@@ -58,6 +58,8 @@ export interface DistCell {
   userId: number;
   charts: number;
   sumRate: number;
+  /** 그 폴더의 채보 기록을 이 유저가 가장 최근에 저장·수정한 시각(UTC ISO). 모르면 null */
+  lastRecordedAt: string | null;
 }
 
 export interface DistFolder {
