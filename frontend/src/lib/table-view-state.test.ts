@@ -26,9 +26,10 @@ describe("서열표 보기 상태 <-> 주소 쿼리", () => {
       includeZero: true,
       page: 2,
       order: "easy",
+      mode: "pattern",
     };
     const query = viewStateToQuery(state);
-    expect(query).toBe(new URLSearchParams({ rec: "상", pat: "단일,복합", sort: "rateDesc", zero: "1", page: "3", order: "easy" }).toString());
+    expect(query).toBe(new URLSearchParams({ rec: "상", pat: "단일,복합", sort: "rateDesc", zero: "1", page: "3", order: "easy", view: "pattern" }).toString());
     expect(parse(query)).toEqual(state);
   });
 
@@ -70,6 +71,14 @@ describe("서열표 보기 상태 <-> 주소 쿼리", () => {
     expect(s.sort).toBe("level");
     expect(s.includeZero).toBe(false);
     expect(s.page).toBe(0);
+  });
+
+  it("보기 방식(view)은 pattern일 때만 속성별 화면이고, 알 수 없는 값은 폴더 화면이다. 폴더 화면은 주소에 쓰지 않는다 (D93)", () => {
+    expect(parse("view=pattern").mode).toBe("pattern");
+    expect(parse("view=grid").mode).toBe("folder");
+    expect(parse("").mode).toBe("folder");
+    expect(viewStateToQuery({ ...DEFAULT_VIEW_STATE, mode: "pattern" })).toBe("view=pattern");
+    expect(viewStateToQuery(DEFAULT_VIEW_STATE)).toBe("");
   });
 
   it("페이지는 1부터 보이고 내부는 0부터이며, 1 이하·소수·음수는 첫 페이지, 너무 큰 값은 상한으로 줄인다", () => {
