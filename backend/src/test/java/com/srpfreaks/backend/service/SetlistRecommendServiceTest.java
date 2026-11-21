@@ -24,13 +24,16 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -46,14 +49,17 @@ class SetlistRecommendServiceTest {
     @Mock SetlistRecommendMapper mapper;
     @Mock PlayLevelEstimator estimator;
     @Mock SetlistRecommendRangeRepository rangeRepository;
+    @Mock PeerRecommendEvidence peerEvidence;
 
     SetlistRecommendService service;
     DifficultyTable table;
 
     @BeforeEach
     void setUp() {
-        service = new SetlistRecommendService(appSettingRepository, difficultyTableRepository, mapper, estimator, rangeRepository);
+        service = new SetlistRecommendService(appSettingRepository, difficultyTableRepository, mapper, estimator, rangeRepository, peerEvidence);
         when(rangeRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        // 기본은 "근거 없음"(구간 인원 부족과 같다). 근거가 있는 경우는 아래 D89 테스트에서 다시 정한다
+        lenient().when(peerEvidence.of(1L)).thenReturn(PeerRecommendEvidence.Evidence.NONE);
         table = DifficultyTable.create("SRN+ 서열표", null, NoteOption.SUPER_RANDOM_PLUS);
         ReflectionTestUtils.setField(table, "id", 3L);
         when(appSettingRepository.findAll()).thenReturn(List.of(
@@ -338,5 +344,99 @@ class SetlistRecommendServiceTest {
         assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.UNAVAILABLE);
         assertThat(r.baseTier()).isNull();
         verifyNoInteractions(estimator, mapper);
+    }
+
+    // ------------------------------------------------------------ 비슷한 실력대 근거 (D89)
+
+    private void givenEvidence(Map<Long, Integer> usersByChart, Set<Long> myRatedIds) {
+        when(peerEvidence.of(1L)).thenReturn(new PeerRecommendEvidence.Evidence(usersByChart, myRatedIds));
+    }
+
+    @Test
+    void 반영_인원이_있는_채보는_묶음_맨_앞에_인원_많은_순으로_오고_나머지는_기존_순서다() {
+        // 모두 S 기준 범위(6.10~6.60). 기존 순서(평균 6.20에 가까운 순): 1(6.20) -> 2(6.30) -> 3(6.40) -> 4(6.50)
+        givenCandidates(cand(1, "6.20", null, false), cand(2, "6.30", null, false),
+                cand(3, "6.40", null, false), cand(4, "6.50", null, false));
+        givenEvidence(Map.of(3L, 7, 4L, 12), Set.of());
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 10);
+
+        assertThat(ids(r.sFill())).containsExactly(4L, 3L, 1L, 2L);   // 12명, 7명, 그다음 근거 없는 1, 2
+        assertThat(r.sFill()).extracting(SetlistRecommendationResponse.Item::peerUsers).containsExactly(12, 7, null, null);
+        assertThat(r.sFill()).extracting(SetlistRecommendationResponse.Item::reason).containsExactly(
+                SetlistRecommendationResponse.Reason.PEER_TIER, SetlistRecommendationResponse.Reason.PEER_TIER,
+                SetlistRecommendationResponse.Reason.NEAR_AVERAGE, SetlistRecommendationResponse.Reason.NEAR_AVERAGE);
+    }
+
+    @Test
+    void 인원이_같으면_기존_정렬_순서를_유지한다() {
+        givenCandidates(cand(1, "6.40", null, false), cand(2, "6.20", null, false));
+        givenEvidence(Map.of(1L, 9, 2L, 9), Set.of());
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 10);
+
+        assertThat(ids(r.sFill())).containsExactly(2L, 1L);   // 평균에 더 가까운 2가 먼저
+    }
+
+    @Test
+    void 근거가_없으면_순서는_기존_그대로이고_모두_평균_근처_사유다() {
+        givenCandidates(cand(1, "6.20", null, false), cand(2, "6.30", null, false));
+        // 기본 stub = Evidence.NONE (구간 인원 부족 / 기준 인원 미만과 같은 결과)
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 10);
+
+        assertThat(ids(r.sFill())).containsExactly(1L, 2L);
+        assertThat(r.sFill()).extracting(SetlistRecommendationResponse.Item::peerUsers).containsOnlyNulls();
+        assertThat(r.sFill()).extracting(SetlistRecommendationResponse.Item::reason)
+                .containsOnly(SetlistRecommendationResponse.Reason.NEAR_AVERAGE);
+    }
+
+    @Test
+    void 이미_내_레이팅_목록에_있는_채보는_근거_있는_추천에서_빠지고_후보에는_남는다() {
+        givenCandidates(cand(1, "6.20", "70.00", false), cand(2, "6.30", null, false));
+        givenEvidence(Map.of(1L, 20, 2L, 6), Set.of(1L));
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 10);
+
+        assertThat(ids(r.sFill())).containsExactly(2L, 1L);
+        assertThat(r.sFill().get(0).peerUsers()).isEqualTo(6);
+        assertThat(r.sFill().get(1).peerUsers()).isNull();
+        assertThat(r.sFill().get(1).reason()).isEqualTo(SetlistRecommendationResponse.Reason.NEAR_AVERAGE);
+    }
+
+    @Test
+    void 근거는_후보를_늘리지_않는다_범위_밖_채보는_인원이_많아도_나오지_않는다() {
+        givenCandidates(cand(1, "6.30", null, false), cand(2, "7.50", null, false));
+        givenEvidence(Map.of(2L, 50), Set.of());
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 10);
+
+        assertThat(ids(r.sFill())).containsExactly(1L);
+        assertThat(r.ssChallenge()).isEmpty();
+    }
+
+    @Test
+    void 근거_순서가_쪽_나누기에도_적용된다() {
+        givenCandidates(cand(1, "6.20", null, false), cand(2, "6.30", null, false), cand(3, "6.40", null, false));
+        givenEvidence(Map.of(3L, 5), Set.of());
+
+        assertThat(ids(service.recommend(1L, 0, 0, 1).sFill())).containsExactly(3L);
+        assertThat(ids(service.recommend(1L, 0, 1, 1).sFill())).containsExactly(1L);
+    }
+
+    @Test
+    void 신규_STARTER에는_근거도_사유도_붙이지_않는다() {
+        givenTable();
+        when(estimator.estimate(1L)).thenReturn(PlayLevelEstimate.newPlayer());
+        when(mapper.findCandidates(eq(1L), anyString(), eq(3L), anyString(), any(), any()))
+                .thenReturn(List.of(cand(1, "5.00", null, false)));
+
+        SetlistRecommendationResponse r = service.recommend(1L, 0, 0, 5);
+
+        assertThat(r.status()).isEqualTo(SetlistRecommendationResponse.Status.STARTER);
+        assertThat(r.sFill()).hasSize(1);
+        assertThat(r.sFill().get(0).reason()).isNull();
+        assertThat(r.sFill().get(0).peerUsers()).isNull();
+        verifyNoInteractions(peerEvidence);
     }
 }

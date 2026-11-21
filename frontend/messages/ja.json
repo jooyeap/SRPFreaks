@@ -198,7 +198,12 @@
     "patternAll": "すべて",
     "patternEmpty": "この属性の譜面はありません。",
     "allAtLeast": "すべての譜面が{stage}以上です。",
-    "allExc": "すべての譜面がEXCです。"
+    "allExc": "すべての譜面がEXCです。",
+    "peerPicksTitle": "近い実力帯が多く反映している曲 · おすすめ{count}曲",
+    "picksTitle": "おすすめ曲 · {count}曲",
+    "setlistCount": "セットリスト {count}/{limit}",
+    "morePicks": "おすすめをもっと見る",
+    "picksAria": "おすすめ曲"
   },
   "Songs": {
     "loadFailed": "曲リストを読み込めませんでした。しばらくしてからもう一度お試しください。",
@@ -854,7 +859,14 @@
     "editAria": "{title} の記録編集",
     "inputBtn": "入力",
     "removeAria": "{title} をセットリストから外す",
-    "offsetRange": "平均 {min} ~ {max}"
+    "offsetRange": "平均 {min} ~ {max}",
+    "reasonPeer": "同じティア帯で多く反映",
+    "reasonNear": "自分の平均難易度付近",
+    "peerCount": "近い実力帯の <n>{count}</n>人がレーティングに反映",
+    "peerGroupTitle": "同じ実力帯が多く反映している曲",
+    "peerGroupNote": "反映人数順",
+    "nearGroupTitle": "自分の平均難易度付近",
+    "nearGroupNote": "根拠となる人数が不足"
   },
   "MyList": {
     "indexAria": "マイリスト一覧",
