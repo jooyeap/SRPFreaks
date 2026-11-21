@@ -24,10 +24,10 @@ export interface CardTierStyle {
   /** Bronze 이상의 빛. 낮은 티어는 없다 */
   glow: { color: string; blur: number } | null;
   /**
-   * 10,000 이상 4티어(D87)만 있다: 검정 금속 칩(TIER_CHIP_METAL) 위의 이름 글자색, 카드 뒤 은은한 빛 색, 큰 배지의 모양과 장식 단계.
+   * 10,000 이상 4티어(D87)만 있다: 검정 금속 칩(TIER_CHIP_METAL) 위의 이름 글자색과 칩 모양(알약/육각).
    * 없으면 예전처럼 티어 그라데이션으로 칩을 채운다.
    */
-  chip?: { text: string; tint: string; shape: "pill" | "hex"; ornament: 0 | 1 | 2 | 3 };
+  chip?: { text: string; shape: "pill" | "hex" };
 }
 
 /** 4티어 칩 바탕의 검정 금속 그라데이션(위→아래 4색). globals.css의 `--tier-metal`과 같다. */
@@ -61,22 +61,22 @@ export const TIER_STYLES: Record<string, CardTierStyle> = {
   SIX_FINGERS: {
     stops: ["#f0abfc", "#a78bfa", "#f472b6"],
     glow: { color: "rgb(167 139 250 / 0.6)", blur: 20 },
-    chip: { text: "#f5d0fe", tint: "rgb(167 139 250 / 0.12)", shape: "pill", ornament: 0 },
+    chip: { text: "#f5d0fe", shape: "pill" },
   },
   MUTANT: {
     stops: ["#ff7ae6", "#ff2bd6", "#a855f7"],
     glow: { color: "rgb(255 43 214 / 0.65)", blur: 22 },
-    chip: { text: "#ffd0f5", tint: "rgb(255 43 214 / 0.13)", shape: "pill", ornament: 1 },
+    chip: { text: "#ffd0f5", shape: "pill" },
   },
   ALIEN: {
     stops: ["#a5f3fc", "#22d3ee", "#a7f3d0"],
     glow: { color: "rgb(34 211 238 / 0.7)", blur: 24 },
-    chip: { text: "#d8fbff", tint: "rgb(34 211 238 / 0.13)", shape: "hex", ornament: 2 },
+    chip: { text: "#d8fbff", shape: "hex" },
   },
   HSB: {
     stops: ["#ffffff", "#fde68a", "#c4b5fd", "#67e8f9"],
     glow: { color: "rgb(255 255 255 / 0.85)", blur: 28 },
-    chip: { text: "#ffffff", tint: "rgb(255 255 255 / 0.14)", shape: "hex", ornament: 3 },
+    chip: { text: "#ffffff", shape: "hex" },
   },
 };
 

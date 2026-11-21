@@ -10,7 +10,7 @@ import { useTranslations } from "next-intl";
  * 맨 위 레이팅 카드 (DESIGN-UI 5장): 합계, 단일/복합·이중·삼중 소계, 플레이어 티어 칩, 다음 티어까지 진행 막대와 남은 점수.
  * 마지막 티어는 `최고 티어`로 표시한다. 티어 이름은 글자로도 쓰므로 색만으로 구분하지 않는다.
  * Bronze 이상은 카드 테두리가 2px 그라데이션 + 글로우다 (globals.css의 .tier-card).
- * 티어 배지는 TierBadge다: 10,000 이상 4티어(D87)는 검정 금속 칩 + 장식 선, 그 아래는 예전 칩.
+ * 티어 배지는 TierBadge다: 10,000 이상 4티어(D87)는 검정 금속 칩(알약/육각), 그 아래는 예전 칩.
  */
 export function RatingSummary({ skill }: { skill: SkillResponse }) {
   const t = useTranslations();

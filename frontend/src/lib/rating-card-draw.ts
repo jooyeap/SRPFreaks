@@ -125,7 +125,7 @@ function chipPath(ctx: Ctx, shape: "pill" | "hex", x: number, y: number, w: numb
 
 /**
  * 10,000 이상 4티어(D87)의 검정 금속 칩. 아래 그림자 -> 세로 금속 그라데이션 -> 위쪽 흰 하이라이트 -> 티어 색 테두리 -> 안쪽 흰 테두리 순으로 겹치고,
- * 빛(번짐)은 이름 글자에만 준다. 양옆 장식 선은 정지 그림으로도 생략했다(레이팅 화면의 큰 배지에만 있다).
+ * 빛(번짐)은 이름 글자에만 준다.
  */
 function drawMetalChip(
   ctx: Ctx,
@@ -419,22 +419,6 @@ export function drawRatingCard(ctx: Ctx, m: CardModel, fonts: CardFonts, images:
   roundRect(ctx, CARD_FRAME, CARD_FRAME, width - 2 * CARD_FRAME, height - 2 * CARD_FRAME, 20);
   ctx.fillStyle = BG;
   ctx.fill();
-
-  // 10,000 이상 4티어(D87): 카드 뒤 위쪽에 티어 색 방사형 빛을 은은하게 깐다(머리글 둘레)
-  const tint = m.header.tier.chip?.tint;
-  if (tint) {
-    const cx = width / 2;
-    const cy = height * 0.04 + 90;
-    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, width * 0.55);
-    glow.addColorStop(0, tint);
-    glow.addColorStop(1, "rgb(0 0 0 / 0)");
-    ctx.save();
-    roundRect(ctx, CARD_FRAME, CARD_FRAME, width - 2 * CARD_FRAME, height - 2 * CARD_FRAME, 20);
-    ctx.clip();
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, width, height);
-    ctx.restore();
-  }
 
   drawHeader(ctx, m, fonts);
 

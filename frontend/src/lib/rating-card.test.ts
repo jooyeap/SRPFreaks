@@ -79,16 +79,16 @@ describe("rating-card 색 표", () => {
     }
   });
 
-  it("10,000 이상 4티어(D87)의 칩 색(글자·카드 뒤 빛)과 검정 금속 바탕도 globals.css와 같다", () => {
+  it("10,000 이상 4티어(D87)의 칩 색(글자)과 검정 금속 바탕도 globals.css와 같다", () => {
     const css = readFileSync(join(__dirname, "../app/globals.css"), "utf8");
     for (const key of ["SIX_FINGERS", "MUTANT", "ALIEN", "HSB"]) {
       const chip = TIER_STYLES[key].chip;
       expect(chip, key).toBeDefined();
-      // 같은 키의 둘째 줄이 이름 글자색(--tier-text)과 카드 뒤 빛(--tier-tint)을 가진다
+      // 같은 키의 둘째 줄이 이름 글자색(--tier-text)을 가진다
       const lines = css.split("\n").filter((l) => l.startsWith(`[data-tier="${key}"] {`));
       expect(lines, key).toHaveLength(2);
       expect(lines[1], key).toContain(`--tier-text: ${chip!.text};`);
-      expect(lines[1], key).toContain(`--tier-tint: ${chip!.tint};`);
+      expect(lines[1], key).not.toContain("--tier-tint"); // 카드 뒤 빛은 사용자 요청으로 뺐다(2026-11-21)
     }
     // 아래 티어에는 칩 질감이 없다
     expect(TIER_STYLES.IRIDESCENT.chip).toBeUndefined();

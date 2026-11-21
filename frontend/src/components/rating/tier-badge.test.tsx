@@ -5,34 +5,32 @@ import { TierBadge } from "@/components/rating/TierBadge";
 import { TIER_STYLES } from "@/lib/rating-card";
 
 describe("TierBadge (레이팅 카드의 큰 티어 배지, D87)", () => {
-  it("10,000 아래 티어는 예전 칩 그대로다(장식 없음)", () => {
+  it("10,000 아래 티어는 예전 칩 그대로다(칩 질감 없음)", () => {
     render(<TierBadge tier={{ key: "ORANGE", displayName: "Orange" }} />);
     const chip = screen.getByText("Orange");
     expect(chip).toHaveClass("tier-chip");
     expect(document.querySelector("svg")).toBeNull();
   });
 
-  const cases: [string, string, number, string][] = [
-    ["SIX_FINGERS", "6 Fingers", 0, "rect"],
-    ["MUTANT", "Mutant", 1, "rect"],
-    ["ALIEN", "Alien", 2, "polygon"],
-    ["HSB", "HSB", 3, "polygon"],
+  const cases: [string, string, string][] = [
+    ["SIX_FINGERS", "6 Fingers", "rect"],
+    ["MUTANT", "Mutant", "rect"],
+    ["ALIEN", "Alien", "polygon"],
+    ["HSB", "HSB", "polygon"],
   ];
-  for (const [key, name, ornament, shape] of cases) {
-    it(`${name}: 이름 글자가 그대로 보이고 장식 단계 ${ornament}, 칩 모양 ${shape === "rect" ? "알약" : "육각"}`, () => {
+  for (const [key, name, shape] of cases) {
+    it(`${name}: 이름 글자가 그대로 보이고 칩 모양은 ${shape === "rect" ? "알약" : "육각"}이며 옆 장식은 없다`, () => {
       const { container } = render(<TierBadge tier={{ key, displayName: name }} />);
       expect(screen.getByText(name)).toBeInTheDocument(); // 색만으로 구분하지 않는다
       const svg = container.querySelector("svg");
       expect(svg).toHaveAttribute("data-tier", key);
-      expect(svg).toHaveAttribute("data-ornament", String(ornament));
-      expect(TIER_STYLES[key].chip?.ornament).toBe(ornament);
+      expect(TIER_STYLES[key].chip?.shape).toBe(shape === "rect" ? "pill" : "hex");
       // 칩 윤곽은 같은 모양이 겹쳐서(그림자, 금속, 하이라이트, 테두리, 안쪽 테두리) 5개다
       expect(container.querySelectorAll(`svg > ${shape}`)).toHaveLength(5);
-      // 장식 선(path 수): 단계 1 = 마름모 2, 단계 2 = + 선 2(+ 점 circle 2), 단계 3 = + 곡선 3 + 위 마름모 1
-      const ornaments = container.querySelector("svg > g");
-      const count = (tag: string) => ornaments?.querySelectorAll(tag).length ?? 0;
-      expect(count("path")).toBe([0, 2, 4, 8][ornament]);
-      expect(count("circle")).toBe(ornament >= 2 ? 2 : 0);
+      // 사용자 요청(2026-11-21)으로 양옆 장식(마름모·선·점·곡선)을 뺐다: 윤곽 말고 그려지는 도형이 없다
+      expect(container.querySelector("svg > g")).toBeNull();
+      expect(container.querySelector("path, circle")).toBeNull();
+      expect(svg?.hasAttribute("data-ornament")).toBe(false);
     });
   }
 
