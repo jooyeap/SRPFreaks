@@ -169,6 +169,26 @@ describe("ChartStatsView (서열표 분석)", () => {
     await waitFor(() => expect(urls().some((u) => u.includes("/popularity") && u.includes("range=7d"))).toBe(true));
   });
 
+  it("인기 탭: `최근 7일`이 어느 날짜인지 서울 기준 범위로 밝힌다 (D98)", async () => {
+    renderView();
+    fireEvent.click(await screen.findByRole("tab", { name: "인기" }));
+
+    const note = await waitFor(() => {
+      const found = document.querySelector("[data-recent-range]");
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+    expect(note.textContent).toMatch(/^최근 7일은 \d{2}-\d{2}~\d{2}-\d{2}입니다\(서울 기준, 오늘 포함\)\.$/);
+  });
+
+  it("편차 탭: 곡 이름이 그 채보의 상세로 가는 링크다", async () => {
+    renderView();
+
+    const list = await screen.findByRole("list", { name: "곡 목록" });
+    const link = within(list).getAllByRole("link")[0];
+    expect(link.getAttribute("href")).toMatch(/^\/admin\/chart-stats\/\d+$/);
+  });
+
   /** 폴더 분포 탭을 열고 0.1 단위·전체 구간·전체 티어로 맞춘다(기본값은 화면 폭과 데이터에 따라 달라서 테스트가 직접 고른다). */
   async function openDistribution() {
     renderView();

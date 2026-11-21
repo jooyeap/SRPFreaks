@@ -117,6 +117,8 @@ describe("서열표 분석 · 곡 상세", () => {
     expect(rows[0]).toHaveTextContent("4건");
     expect(rows[0]).toHaveTextContent("2026-11-10");
     expect(rows[1]).toHaveTextContent("MAX");
+    // `마지막 플레이`는 플레이한 날(played_at)이라 분포의 `마지막 기록 저장일`과 기준이 다르다. 라벨에 기준을 밝힌다 (D98)
+    expect(rows[0]).toHaveTextContent("마지막 플레이(플레이한 날)");
     // 이메일·역할 같은 값은 화면에 없다
     expect(document.body.textContent).not.toMatch(/@|ROOT|ADMIN|google/i);
   });

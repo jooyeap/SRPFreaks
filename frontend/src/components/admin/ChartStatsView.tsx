@@ -20,6 +20,7 @@ import {
   fetchUndecided,
   POPULARITY_RANGES,
   ratioPercent,
+  recentRangeText,
   signedText,
   type ChartStatsMeta,
   type ChartStatsTab,
@@ -189,6 +190,9 @@ function PopularityTab({ viewerId }: { viewerId: number }) {
   // 막대는 이 쪽(페이지)에서 가장 큰 값 대비 길이(장식). 값은 글자가 전한다.
   const maxBy = (pick: (row: (typeof rows)[number]) => number) => Math.max(0, ...rows.map(pick));
   const barMax = range === "all" ? maxBy((r) => r.records) : maxBy((r) => r.recentRecords);
+  // `최근 7일`이 정확히 어느 날들인지(서울 기준)를 밝힌다(D98). 서버가 준 기간(일)으로 계산하고, 아직 못 받았으면 안내를 그리지 않는다.
+  const recentDays = query.data?.meta.recentDays;
+  const recentRange = recentDays === undefined ? null : recentRangeText(recentDays);
 
   return (
     <>
@@ -201,6 +205,11 @@ function PopularityTab({ viewerId }: { viewerId: number }) {
           setPage(0);
         }}
       />
+      {recentRange !== null && recentDays !== undefined ? (
+        <p data-recent-range="" className="break-keep text-[11px] text-fg-dim">
+          {t("recentRangeNote", { days: recentDays, range: recentRange })}
+        </p>
+      ) : null}
       <ListState
         pending={query.isPending}
         error={query.isError}

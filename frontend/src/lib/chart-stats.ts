@@ -1,6 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import type { PlayerTierResponse } from "@/lib/api-types";
-import { difficultyLabel, formatRate, partLabel } from "@/lib/format";
+import { difficultyLabel, formatPlayedDate, formatRate, partLabel } from "@/lib/format";
 import type { AchievementStage, DifficultyType, InstrumentPart } from "@/lib/types";
 
 /**
@@ -289,4 +289,22 @@ export function ratioPercent(value: number, max: number): number {
     return 0;
   }
   return Math.min(Math.max(value / max, 0), 1) * 100;
+}
+
+/**
+ * `최근 N일`의 실제 날짜 범위를 `11-15~11-21`로 만든다(Asia/Seoul 날짜, 오늘 포함 N일). 서버가 세는 범위와 같다:
+ * 서울 기준 오늘 0시에서 N-1일 전 0시까지 거슬러 올라간 시각부터 지금까지(ChartStatsService). 서버는 이 범위를 내려주지 않으므로
+ * 화면이 같은 규칙으로 계산한다. `now`는 테스트에서 날짜를 고정하려고 받는다. 날짜를 읽을 수 없으면 null.
+ */
+export function recentRangeText(days: number, now: Date = new Date()): string | null {
+  const today = formatPlayedDate(now.toISOString());
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(today);
+  if (!match || !Number.isInteger(days) || days < 1) {
+    return null;
+  }
+  // 서울 날짜의 연-월-일을 UTC 자정으로 두고 일 수만 뺀다(시간대·서머타임 영향 없음)
+  const end = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const start = new Date(end - (days - 1) * 24 * 60 * 60 * 1000);
+  const md = (ms: number | Date) => new Date(ms).toISOString().slice(5, 10);
+  return `${md(start)}~${md(end)}`;
 }
