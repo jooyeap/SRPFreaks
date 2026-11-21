@@ -188,6 +188,38 @@ describe("ChartStatsView (서열표 분석)", () => {
     expect(screen.getByText(/표본 부족 폴더\(유저 3명 미만\): 5\.9/)).toBeInTheDocument();
   });
 
+  it("표본 부족 칸에는 음영만이 아니라 `부족` 글자도 있다 (D98: 모바일에는 title이 없어서)", async () => {
+    const plot = await openDistribution();
+
+    const cell = plot.querySelector('[data-insufficient="5.9"]') as HTMLElement;
+    expect(cell.querySelector("[data-insufficient-label]")).toHaveTextContent("부족");
+    // 정상 칸에는 글자가 없다
+    expect(plot.querySelectorAll("[data-insufficient-label]")).toHaveLength(plot.querySelectorAll("[data-insufficient]").length);
+  });
+
+  it("실선이 그려져 있으면 범례에 `폴더 점의 평균` 줄이 있고, 선이 없으면 없다 (D98)", async () => {
+    const plot = await openDistribution();
+    // 0.1 단위: 5.9 폴더가 표본 부족이라 5.8과 6.0 사이에서 선이 끊겨 이어지는 선이 없다
+    expect(plot.querySelectorAll("[data-average-line]")).toHaveLength(0);
+    expect(screen.getByRole("list", { name: "티어 색 범례" }).querySelector("[data-legend-average]")).toBeNull();
+
+    // 0.5 단위: 5.5~5.9와 6.0~6.4 묶음이 이어져 실선이 생긴다
+    fireEvent.click(screen.getByRole("button", { name: "0.5 단위" }));
+    fireEvent.click(screen.getByRole("button", { name: "전체 구간" }));
+    const wide = await screen.findByRole("group", { name: "폴더별 유저 평균 달성률 점 도표" });
+    expect(wide.querySelectorAll("[data-average-line]").length).toBeGreaterThan(0);
+    expect(screen.getByRole("list", { name: "티어 색 범례" })).toHaveTextContent("폴더 점의 평균");
+  });
+
+  it("표로 보기: 폴더 평균은 `유저 평균의 평균`으로 라벨하고 곡 가중이 아님을 한 줄로 밝힌다 (D98)", async () => {
+    await openDistribution();
+    fireEvent.click(screen.getByRole("button", { name: "표로 보기" }));
+
+    await screen.findByRole("list", { name: "폴더별 유저 평균 달성률 표" });
+    expect(screen.getByText(/곡 수로 가중하지 않아, 유저마다 같은 비중/)).toBeInTheDocument();
+    expect(screen.getAllByText(/유저 평균의 평균 \d/).length).toBeGreaterThan(0);
+  });
+
   it("점 색은 유저의 티어 key(data-tier)이고 이름은 글자로도 보인다", async () => {
     const plot = await openDistribution();
 
@@ -310,7 +342,7 @@ describe("ChartStatsView (서열표 분석)", () => {
     expect(list.querySelectorAll("[data-row-folder]")).toHaveLength(3);
     expect(list).toHaveTextContent("표본 부족 (유저 2명)");
     expect(document.body.textContent).not.toContain("알파");
-    const toggle = within(list).getByRole("button", { name: /^5\.8 유저 4명 평균 81\.25%/ });
+    const toggle = within(list).getByRole("button", { name: /^5\.8 유저 4명 유저 평균의 평균 81\.25%/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(within(list).queryByRole("table")).toBeNull();
     // 표본 부족 폴더는 유저가 드러나지 않으므로 펼 수 없다(버튼이 없다)

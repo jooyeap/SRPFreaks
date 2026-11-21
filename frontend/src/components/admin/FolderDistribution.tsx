@@ -174,10 +174,14 @@ export function FolderDistribution({ data, viewerId }: { data: FolderDistributio
             <p className="break-keep rounded-xl bg-table-head p-3 text-sm text-fg-sub">{t("distNoPoints", { min: minPlayers })}</p>
           )}
           <PickCard key={pick ? `${pick.bucket.start}-${pick.point.userId}` : "none"} pick={pick} unit={unit} viewerId={viewerId} />
-          <TierLegend buckets={shown} group={group} />
+          <TierLegend buckets={shown} group={group} showAverageLine={segments.some((segment) => segment.length > 1)} />
         </>
       ) : (
-        <DistTable buckets={buckets} unit={unit} viewerId={viewerId} />
+        <>
+          {/* 폴더 줄의 평균이 곡 가중 평균이 아님을 밝힌다(D98). 줄 자체가 버튼이라 `?` 버튼은 줄 안에 넣을 수 없어 글자로 둔다 */}
+          <p className="break-keep text-[11px] text-fg-dim">{t("folderAvgNote")}</p>
+          <DistTable buckets={buckets} unit={unit} viewerId={viewerId} />
+        </>
       )}
 
       {insufficient.length > 0 ? (
@@ -306,9 +310,15 @@ function Plot({ buckets, range, segments, unit, group, selected, onSelect, minPl
                   data-insufficient={bucket.label}
                   title={t("insufficient")}
                   aria-hidden
-                  className="absolute inset-y-0 bg-table-head opacity-60"
+                  className="absolute inset-y-0 flex items-start justify-center overflow-hidden pt-1"
                   style={{ left: `${(index / n) * 100}%`, width: `${100 / n}%` }}
-                />
+                >
+                  {/* 음영만으로는 뜻이 안 전해지고 모바일에는 title(호버)이 없어서 칸 안에 `부족` 글자를 같이 둔다(D98). 음영은 따로 깔아 글자는 흐려지지 않는다 */}
+                  <span aria-hidden className="absolute inset-0 bg-table-head opacity-60" />
+                  <span data-insufficient-label="" className="relative break-keep text-[10px] font-bold leading-none text-fg-sub">
+                    {t("insufficientShort")}
+                  </span>
+                </div>
               ),
             )}
             <svg aria-hidden className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -457,8 +467,9 @@ function Fact({ label, value }: { label: string; value: string }) {
 /**
  * 범례: 도표에 나온 점의 티어별 인원. 색 옆에 티어 이름을 글자로 같이 적는다. 티어 표(PLAYER_TIER_MINS)의 높은 순.
  * 티어군을 고른 상태에서는 그 군의 티어만 색으로 나열하고, 나머지는 `그 밖의 티어`(회색 점) 한 줄로 합친다(도표와 같은 모양).
+ * 도표에 실선이 그려져 있으면(showAverageLine) `── 폴더 점의 평균` 한 줄을 더한다(D98: 실선이 무엇인지 도표 위 안내문을 읽지 않아도 알게).
  */
-function TierLegend({ buckets, group }: { buckets: readonly DistBucket[]; group: TierGroup }) {
+function TierLegend({ buckets, group, showAverageLine }: { buckets: readonly DistBucket[]; group: TierGroup; showAverageLine: boolean }) {
   const t = useTranslations("ChartStats");
   const counts = new Map<string, { name: string; n: number }>();
   let others = 0;
@@ -475,7 +486,7 @@ function TierLegend({ buckets, group }: { buckets: readonly DistBucket[]; group:
   }
   const order = (key: string) => PLAYER_TIER_MINS.findIndex((tier) => tier.key === key);
   const items = [...counts.entries()].sort(([a], [b]) => order(b) - order(a));
-  if (items.length === 0 && others === 0) {
+  if (items.length === 0 && others === 0 && !showAverageLine) {
     return null;
   }
   return (
@@ -487,6 +498,14 @@ function TierLegend({ buckets, group }: { buckets: readonly DistBucket[]; group:
           <span className="font-num text-fg-dim">{t("legendCount", { n: item.n })}</span>
         </li>
       ))}
+      {showAverageLine ? (
+        <li data-legend-average="" className="flex items-center gap-1 text-[11px] text-fg-sub">
+          <svg aria-hidden width="16" height="8" viewBox="0 0 16 8" className="shrink-0">
+            <line x1="0" y1="4" x2="16" y2="4" className="stroke-fg-sub" strokeWidth={2} strokeLinecap="round" />
+          </svg>
+          {t("legendAverage")}
+        </li>
+      ) : null}
       {others > 0 ? (
         <li data-legend-other="" className="flex items-center gap-1 text-[11px] text-fg-sub">
           <i className="inline-block h-1.5 w-1.5 rounded-full bg-fg-dim opacity-50" aria-hidden />
