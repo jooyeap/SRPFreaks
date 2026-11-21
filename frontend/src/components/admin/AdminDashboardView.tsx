@@ -120,7 +120,7 @@ function DashboardBody({ data }: { data: DashboardResponse }) {
             ) : (
               <ul aria-label={t("tiersAria")} className="flex flex-col gap-2" data-testid="tier-rows">
                 {data.tiers.rows.map((row) => (
-                  <li key={row.key} className="grid grid-cols-[88px_minmax(0,1fr)_56px] items-center gap-2">
+                  <li key={row.key} className="grid grid-cols-[104px_minmax(0,1fr)_56px] items-center gap-2">
                     <span className="min-w-0">
                       <TierChip tier={{ key: row.key, displayName: row.displayName, minScore: row.minScore, nextDisplayName: null, nextMinScore: null }} />
                     </span>

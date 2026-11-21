@@ -7,7 +7,7 @@ import type { Translator } from "@/i18n/translator";
 import { buildCardModel, PART_TEXT_COLORS } from "@/lib/rating-card";
 import { CARD_PANEL, drawRatingCard } from "@/lib/rating-card-draw";
 import { PLAYER_TIER_MINS } from "@/lib/chart-tier";
-import { TIER_CHIPS, tierChipWidth } from "@/lib/tier-chip";
+import { TIER_CHIPS, tierChipLabel, tierChipWidth } from "@/lib/tier-chip";
 
 function entry(rank: number): SkillEntryResponse {
   return {
@@ -74,19 +74,31 @@ describe("drawRatingCard", () => {
     });
   }
 
-  it("칩 폭은 사이트와 같은 규칙이다: 육각은 최소 폭 8.4×글자 크기, 긴 이름은 넓히지 않는다", () => {
-    const widthOf = (key: string, name: string) => {
+  it("칩 폭은 사이트와 같은 고정 폭이다: 24티어 모두(알약·육각) 같고, 글자는 가운데에 그린다 (D102)", () => {
+    const widthOf = (key: string, name: string, drawn: string = name) => {
       const top: SkillResponse = { ...skill, tier: { key, displayName: name, minScore: 0, nextDisplayName: null, nextMinScore: null } };
       const model = buildCardModel("landscape", top, koT, { nickname: null, now: new Date("2026-11-20T00:00:00Z") });
       const { ctx, calls } = fakeCtx();
       drawRatingCard(ctx, model, { sans: "sans", num: "num" });
       // 칩 윤곽 중 첫 번째 roundRect/moveTo가 아니라, 글자를 가운데에 그린 x(= 칩 왼쪽 + 폭/2)로 폭을 거꾸로 잰다
-      const textCall = (calls.fillText ?? []).find((a) => a[0] === name)!;
-      return (textCall[1] as number - model.contentX) * 2;
+      const textCall = (calls.fillText ?? []).find((a) => a[0] === drawn)!;
+      return ((textCall[1] as number) - model.contentX) * 2;
     };
-    expect(widthOf("HSB", "HSB")).toBe(tierChipWidth("HSB", "hex", 22));
-    expect(widthOf("RAINBOW_GRADIENT", "Rainbow Gradient")).toBe(tierChipWidth("Rainbow Gradient", "pill", 22));
-    expect(widthOf("RED", "Red")).toBe(Math.round(22 * 7.4));
+    expect(widthOf("HSB", "HSB")).toBe(tierChipWidth(22));
+    expect(widthOf("RAINBOW_GRADIENT", "Rainbow Gradient", "Rainbow Gr.")).toBe(tierChipWidth(22));
+    expect(widthOf("RED", "Red")).toBe(193); // 직접 계산: 11 × 22 × 0.56 + 22 × 2.6 = 192.72 -> 193
+    const all = PLAYER_TIER_MINS.map((t) => widthOf(t.key, t.name, tierChipLabel(t.name)));
+    expect(new Set(all).size).toBe(1);
+  });
+
+  it("Gradient 티어는 카드 칩에 Gr.로 그리고 전체 이름은 그리지 않는다 (D102)", () => {
+    const top: SkillResponse = { ...skill, tier: { key: "RED_GRADIENT", displayName: "Red Gradient", minScore: 0, nextDisplayName: null, nextMinScore: null } };
+    const model = buildCardModel("landscape", top, koT, { nickname: null, now: new Date("2026-11-20T00:00:00Z") });
+    const { ctx, calls } = fakeCtx();
+    drawRatingCard(ctx, model, { sans: "sans", num: "num" });
+    const drawn = (calls.fillText ?? []).map((a) => a[0]);
+    expect(drawn).toContain("Red Gr.");
+    expect(drawn).not.toContain("Red Gradient");
   });
 
   it("닉네임이 없으면 이름을 그리지 않는다", () => {

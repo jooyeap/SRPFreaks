@@ -78,6 +78,16 @@ export const TIER_CHIPS: Record<string, TierChipSpec> = {
   HSB: neon("hex", ["#ffffff", "#fde68a", "#c4b5fd", "#67e8f9"], "#ffffff"),
 };
 
+/**
+ * 칩에 쓰는 글자(D102). 이름에 단어 `Gradient`가 들어가면 `Gr.`로 줄인다(`Rainbow Gradient` -> `Rainbow Gr.`).
+ * 표시 계층에서만 바꾼다: 서버의 티어 이름(`player_tiers`)·번역 파일·본문 글자는 전체 이름 그대로고,
+ * 칩의 접근 가능한 이름(aria-label)·툴팁에는 전체 이름을 쓴다. 영문 표기라서 ko·ja 화면이 같다.
+ * 사이트 SVG 칩과 레이팅 카드(Canvas) 칩이 모두 이 함수 하나를 거친다(폭은 tierChipWidth, 고정 폭).
+ */
+export function tierChipLabel(name: string): string {
+  return name.replace(/\bGradient\b/g, "Gr.");
+}
+
 /** 알 수 없는 티어 key(서버가 티어를 늘렸을 때)는 가장 낮은 티어 칩으로 그린다. 이름 글자는 그대로 나온다. */
 export function tierChipOf(key: string): TierChipSpec {
   return TIER_CHIPS[key] ?? TIER_CHIPS.WHITE;
@@ -91,14 +101,24 @@ export const TIER_CHIP_SIZES = {
 export type TierChipSize = keyof typeof TIER_CHIP_SIZES;
 
 /**
- * 칩 가로 폭. 글자 폭 + 좌우 여백이고(알약 fs×2.2, 육각 fs×2.6), 짧은 이름만 최소 폭(알약 fs×7.4, 육각 fs×8.4)까지 넓힌다.
- * 긴 이름(Rainbow Gradient 등)은 넓히지 않는다. fs는 글자 크기라서 Canvas(22px)에서도 같은 비율로 쓴다.
+ * 칩에 들어가는 가장 긴 글자 수(줄임말 기준). 지금은 `Rainbow Gr.` 11자다(`Iridescent`·`Yellow Gr.` 등은 10자).
+ * 고정 폭은 이 숫자 하나로 정한다. 새 티어 이름이 이보다 길어지면 tier-chip.test가 실패하니, 그때 이 숫자를 늘린다.
  */
-export function tierChipWidth(name: string, shape: TierChipShape, fs: number): number {
-  const hex = shape === "hex";
-  const natural = Math.round(Array.from(name).length * fs * 0.56 + fs * (hex ? 2.6 : 2.2));
-  return Math.max(natural, Math.round(fs * (hex ? 8.4 : 7.4)));
+export const TIER_CHIP_MAX_CHARS = 11;
+
+/**
+ * 칩 가로 폭(D102): 24티어 모두, 알약·육각 모두 **같은 폭 하나**다. 칩 크기(글자 크기 fs)마다 하나씩만 있다.
+ * 가장 긴 글자(TIER_CHIP_MAX_CHARS자)의 폭 + 좌우 여백이고, 여백은 육각의 뾰족한 끝이 글자를 가리지 않도록 넓은 쪽(fs×2.6)에 맞춘다.
+ * 짧은 이름은 칩 안에서 가운데 정렬된다. 이름·모양을 받지 않는 이유: 어떤 티어든 같은 값이어야 목록 줄이 맞기 때문이다.
+ * fs는 글자 크기라서 Canvas(22px)에서도 같은 비율로 쓰고, 사이트 SVG 칩과 레이팅 카드 이미지가 이 함수 하나를 거친다.
+ */
+export function tierChipWidth(fs: number): number {
+  return Math.round(TIER_CHIP_MAX_CHARS * fs * TIER_CHIP_CHAR_EM + fs * TIER_CHIP_SIDE_EM);
 }
+
+/** 굵은 숫자 글꼴의 글자 하나 폭(글자 크기의 배수)과 좌우 여백 합(육각 기준). 폭 계산과 테스트가 같은 값을 쓴다 */
+export const TIER_CHIP_CHAR_EM = 0.56;
+export const TIER_CHIP_SIDE_EM = 2.6;
 
 /** 어두운 덧칠(아래쪽 그림자 느낌)은 면이 가로 방향인 칩(하위 14티어, Rainbow 3종)에만 한다. 금속·검정 면은 하지 않는다 */
 export function tierChipDarkens(spec: TierChipSpec): boolean {

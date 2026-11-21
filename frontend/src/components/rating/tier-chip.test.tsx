@@ -19,7 +19,7 @@ describe("TierChip (티어 칩 공용 컴포넌트, D95)", () => {
       const spec = TIER_CHIPS[tier.key];
       expect(svg).toHaveAttribute("data-shape", spec.shape);
       const { h, fs } = TIER_CHIP_SIZES.sm;
-      expect(svg).toHaveAttribute("width", String(tierChipWidth(name, spec.shape, fs) + 4));
+      expect(svg).toHaveAttribute("width", String(tierChipWidth(fs) + 4));
       expect(svg).toHaveAttribute("height", String(h + 6));
       // 옆 장식·글로우·반짝임이 없다: 윤곽 도형과 글자 말고는 그려지지 않는다
       expect(container.querySelector("svg g, path, circle, filter, animate, animateTransform")).toBeNull();
@@ -40,15 +40,32 @@ describe("TierChip (티어 칩 공용 컴포넌트, D95)", () => {
     expect(six.container.querySelector("svg > polygon")).toBeNull();
   });
 
-  it("짧은 이름은 최소 폭이고 긴 이름은 넓히지 않는다", () => {
+  it("모든 티어 칩의 폭이 같다: 알약·육각, 짧은 이름·긴 이름, 작은 칩·큰 칩 (D102)", () => {
+    for (const size of ["sm", "lg"] as const) {
+      const widths = PLAYER_TIER_MINS.map((tier) => {
+        const { container, unmount } = render(<TierChip tier={{ key: tier.key, displayName: tier.name }} size={size} />);
+        const svg = container.querySelector("svg")!;
+        const w = Number(svg.getAttribute("width"));
+        // 가운데 정렬: 글자 x가 SVG 가운데이고 text-anchor가 middle이다
+        const text = container.querySelector("text")!;
+        expect(text.getAttribute("text-anchor"), tier.key).toBe("middle");
+        expect(Number(text.getAttribute("x")), tier.key).toBe(w / 2);
+        unmount();
+        return w;
+      });
+      expect(new Set(widths).size, size).toBe(1);
+      expect(widths[0]).toBe(tierChipWidth(TIER_CHIP_SIZES[size].fs) + 4); // 작은 칩 96+4=100, 큰 칩 123+4=127
+    }
+  });
+
+  it("짧은 이름(Red)도 긴 이름(Rainbow Gradient)도 같은 폭 100이다", () => {
     const widths = ["Red", "Rainbow Gradient"].map((name) => {
       const { container, unmount } = render(<TierChip tier={{ key: "RED", displayName: name }} />);
       const w = Number(container.querySelector("svg")!.getAttribute("width"));
       unmount();
       return w;
     });
-    expect(widths[0]).toBe(81 + 4); // 최소 폭 11×7.4
-    expect(widths[1]).toBe(123 + 4); // 글자 폭 + 여백만(최소 폭보다 큰 만큼만 넓다)
+    expect(widths).toEqual([100, 100]);
   });
 
   it("큰 크기(lg)는 글자 14px·높이 26px 칩이다", () => {
@@ -80,5 +97,20 @@ describe("TierChip (티어 칩 공용 컴포넌트, D95)", () => {
     const { container } = render(<TierBadge tier={{ key: "MUTANT", displayName: "Mutant" }} />);
     expect(container.querySelector("svg")).toHaveAttribute("data-size", "lg");
     expect(screen.getByText("Mutant")).toBeInTheDocument();
+  });
+
+  it("Gradient 티어: 칩 글자는 Gr.이고 접근 가능한 이름·툴팁은 전체 이름이다 (D102)", () => {
+    const { container } = render(<TierChip tier={{ key: "RAINBOW_GRADIENT", displayName: "Rainbow Gradient" }} />);
+    expect(screen.getByText("Rainbow Gr.")).toBeInTheDocument();
+    expect(screen.queryByText("Rainbow Gradient", { selector: "text" })).toBeNull();
+    const svg = container.querySelector("svg")!;
+    expect(svg).toHaveAttribute("aria-label", "플레이어 티어 Rainbow Gradient");
+    expect(svg.querySelector("title")?.textContent).toBe("Rainbow Gradient");
+    expect(svg).toHaveAttribute("width", String(tierChipWidth(TIER_CHIP_SIZES.sm.fs) + 4));
+  });
+
+  it("Gradient가 아닌 티어에는 title을 더하지 않는다", () => {
+    const { container } = render(<TierChip tier={{ key: "GOLD", displayName: "Gold" }} />);
+    expect(container.querySelector("svg title")).toBeNull();
   });
 });

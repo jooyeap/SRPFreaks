@@ -8,7 +8,7 @@ import {
   PART_TEXT_COLORS,
   truncateText,
 } from "@/lib/rating-card";
-import { TIER_CHIP_SIZES, type TierChipSpec, tierChipDarkens, tierChipHighlight, tierChipOf, tierChipWidth } from "@/lib/tier-chip";
+import { TIER_CHIP_SIZES, type TierChipSpec, tierChipDarkens, tierChipHighlight, tierChipLabel, tierChipOf, tierChipWidth } from "@/lib/tier-chip";
 
 /**
  * 레이팅 카드 모델(lib/rating-card.ts)을 캔버스에 그린다. 위치·문구·색은 모델이 이미 정했으므로 여기서는 "그리기"만 한다.
@@ -180,7 +180,8 @@ function drawTierChip(ctx: Ctx, spec: TierChipSpec, name: string, x: number, y: 
   }
   ctx.restore();
 
-  text(ctx, name, x + w / 2, y + h / 2 + fs * 0.36, `700 ${fs}px ${f.num}`, spec.text, "center");
+  // 칩 글자는 줄임말(Gradient -> Gr., D102). 폭은 이름과 상관없이 고정이다(tierChipWidth)
+  text(ctx, tierChipLabel(name), x + w / 2, y + h / 2 + fs * 0.36, `700 ${fs}px ${f.num}`, spec.text, "center");
 }
 
 function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
@@ -212,11 +213,11 @@ function drawHeader(ctx: Ctx, m: CardModel, f: CardFonts): void {
     text(ctx, name, x0, nameY, `700 44px ${f.sans}`, TEXT);
     chipX = x0 + ctx.measureText(name).width + 22;
   }
-  // 티어 칩(D95): 사이트의 큰 배지와 같은 표·같은 폭 규칙. 글자 22px에 높이 40px(비율은 14px : 26px)
+  // 티어 칩(D95): 사이트의 큰 배지와 같은 표·같은 고정 폭(D102). 글자 22px에 높이 40px(비율은 14px : 26px)
   const chipSpec = tierChipOf(h.tierKey);
   const chipFs = 22;
   const chipH = 40;
-  const chipW = tierChipWidth(h.tierName, chipSpec.shape, chipFs);
+  const chipW = tierChipWidth(chipFs);
   const chipY = nameY - 32;
   if (!h.nickname) {
     chipX = x0;
