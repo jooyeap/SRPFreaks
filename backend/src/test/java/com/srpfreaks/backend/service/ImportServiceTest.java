@@ -61,6 +61,7 @@ class ImportServiceTest {
     @Mock OptionRecordRepository optionRecordRepository;
     @Mock UserRepository userRepository;
     @Mock RivalAlertTrigger rivalAlertTrigger;
+    @Mock PlayCountRecorder playCountRecorder;
 
     ImportService service;
     User user;
@@ -72,7 +73,7 @@ class ImportServiceTest {
     @BeforeEach
     void setUp() {
         service = new ImportService(songDifficultyRepository, songTitleRepository, optionRecordRepository,
-                userRepository, rivalAlertTrigger, Clock.fixed(NOW, ZoneOffset.UTC));
+                userRepository, rivalAlertTrigger, playCountRecorder, Clock.fixed(NOW, ZoneOffset.UTC));
         user = User.create("sub", "a@example.com", "tester");
         ReflectionTestUtils.setField(user, "id", USER_ID);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
@@ -377,5 +378,73 @@ class ImportServiceTest {
 
         assertThat(result.results().get(0).saved()).isTrue();
         assertThat(savedOnce().getAchievementRate()).isEqualByComparingTo("96.50");
+    }
+
+    // ---- 플레이 횟수 집계 (D84) ----
+
+    private ImportPlayRequest playAt(String title, String diff, int rate, long playedMs) {
+        return new ImportPlayRequest(playedMs, "gf", title, diff, rate, 1, 1, false, SRN_PLUS);
+    }
+
+    @SuppressWarnings("unchecked")
+    private java.util.Collection<PlayCountRecorder.PlayedChart> counted() {
+        ArgumentCaptor<java.util.Collection<PlayCountRecorder.PlayedChart>> captor = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(playCountRecorder).recordImported(eq(USER_ID), captor.capture());
+        return captor.getValue();
+    }
+
+    @Test
+    void 저장하면_채보에_연결된_플레이를_횟수로_넘긴다() {
+        run(play("Alpha", "gf_mst", 9650, 1, 1));
+
+        assertThat(counted()).containsExactly(new PlayCountRecorder.PlayedChart(11L, Instant.ofEpochMilli(PLAYED_MS)));
+    }
+
+    @Test
+    void 기존_최고보다_낮아_저장하지_않은_플레이도_횟수로_센다() {
+        best(alphaGuitar, "80.00", false);
+
+        ImportResultResponse result = run(play("Alpha", "gf_mst", 7999, 1, 1));
+
+        assertThat(result.skippedByReason()).containsEntry(ImportSkipReason.LOWER_THAN_BEST, 1);
+        verify(optionRecordRepository, never()).save(any());
+        assertThat(counted()).hasSize(1);
+    }
+
+    @Test
+    void 개선이_없는_같은_달성률_플레이도_횟수로_센다() {
+        best(alphaGuitar, "80.00", true);
+
+        ImportResultResponse result = run(play("Alpha", "gf_mst", 8000, 0, 0));
+
+        assertThat(result.skippedByReason()).containsEntry(ImportSkipReason.NOT_IMPROVED, 1);
+        assertThat(counted()).hasSize(1);
+    }
+
+    @Test
+    void 곡을_못_찾았거나_걸러진_줄은_센_목록에_넣지_않는다() {
+        run(play("없는곡", "gf_mst", 9000, 1, 1),                                  // 마스터에 없음
+                new ImportPlayRequest(PLAYED_MS, "gf", "Alpha", "gf_mst", 9000, 1, 1, true, SRN_PLUS), // 번역된 페이지
+                new ImportPlayRequest(PLAYED_MS, "gf", "Alpha", "gf_mst", 9000, 1, 1, false, List.of("gf_random_1")), // 옵션 다름
+                playAt("Alpha", "gf_mst", 9000, NOW.plusSeconds(3 * 86400).toEpochMilli()),   // 미래 시각
+                play("Alpha", "gf_bass_x", 9000, 1, 1));                              // 모르는 난이도
+
+        assertThat(counted()).isEmpty(); // 채보에 연결된 플레이가 없으면 빈 목록(recorder는 빈 목록이면 아무것도 하지 않는다)
+    }
+
+    @Test
+    void 같은_채보의_여러_플레이도_각각_넘긴다_같은_시각이면_recorder가_한_번으로_합친다() {
+        run(playAt("Alpha", "gf_mst", 9000, PLAYED_MS), playAt("Alpha", "gf_mst", 8000, PLAYED_MS + 60_000),
+                playAt("Alpha", "bass_mst", 7000, PLAYED_MS));
+
+        assertThat(counted()).extracting(PlayCountRecorder.PlayedChart::chartId).containsExactlyInAnyOrder(11L, 11L, 12L);
+    }
+
+    @Test
+    void 미리보기는_횟수를_세지_않는다() {
+        preview(play("Alpha", "gf_mst", 9650, 1, 1));
+
+        verify(playCountRecorder, never()).recordImported(any(), any());
+        verify(playCountRecorder, never()).recordCreated(any(), any(), any());
     }
 }
