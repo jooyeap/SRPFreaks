@@ -104,14 +104,14 @@ describe("하위 전환 표시 조건", () => {
 describe("overallStages", () => {
   it("모든 폴더의 단계별 개수와 전체·기록 수를 더한다", () => {
     const list: ChartFolderListResponse = {
-      totalSongs: 2, totalCharts: 30, versions: [],
+      totalSongs: 2, totalCharts: 30, versions: [], patternCounts: {},
       folders: [folder({}), folder({ lo: 8, total: 20, recorded: 8, exc: 2, fc: 0, ss: 3, sPlus: 1, s: 2, belowS: 1 })],
     };
     expect(overallStages(list)).toEqual({ exc: 3, fc: 1, ss: 4, sPlus: 1, s: 3, belowS: 2, total: 30, recorded: 13 });
   });
 
   it("폴더가 없으면 모두 0이다", () => {
-    expect(overallStages({ totalSongs: 0, totalCharts: 0, versions: [], folders: [] })).toEqual({
+    expect(overallStages({ totalSongs: 0, totalCharts: 0, versions: [], patternCounts: {}, folders: [] })).toEqual({
       exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, total: 0, recorded: 0,
     });
   });

@@ -6,14 +6,14 @@ import type { CSSProperties } from "react";
 import { StageBar } from "@/components/table/StageBar";
 import { chipsOf } from "@/components/table/TierGroupSection";
 import type { ProgressGroup } from "@/lib/difficulty-table";
-import { percentOf, tileTint } from "@/lib/progress";
+import { lowestFullStage, percentOf, tileTint, type FullStage } from "@/lib/progress";
 import { useTranslations } from "next-intl";
 
 // 머리글 칩 이름을 chipsOf와 같은 목록에서 얻기 위한 빈 개수
 const EMPTY_COUNTS = { total: 0, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0 };
 
 /** 전체가 있고 기록이 모두 채워졌으면 완료. 완료한 칸은 막대 테두리와 이름 글자 색이 달라진다(`n/n` 숫자가 같이 보여 색만으로 구분하지 않는다). */
-function isDone(recorded: number, total: number): boolean {
+export function isDone(recorded: number, total: number): boolean {
   return total > 0 && recorded >= total;
 }
 
@@ -22,8 +22,31 @@ function mix(percent: number): string {
   return `color-mix(in srgb, var(--stage-ss-bar) ${percent}%, transparent)`;
 }
 
+/**
+ * 난이도 이름(숫자)에 입히는 단계 색 클래스(D85). EXC·FC는 그라데이션 글자(`stage-grad-text`), 나머지는 단색(`stage-text`, 단계마다 대비를 맞춘 색).
+ * 색 값은 컴포넌트에 없고 data-stage → globals.css의 단계 변수만 쓴다.
+ */
+function nameColor(stage: FullStage | null, fallback: string): string {
+  if (stage === null) {
+    return fallback;
+  }
+  return stage === "EXC" || stage === "FC" ? "stage-grad-text" : "stage-text";
+}
+
+/** 숫자 아래 작은 글자: `S+↑`(전곡 S+ 이상). 가장 높은 단계인 EXC는 "이상"이 아니라 화살표 없이 `EXC`다(시안 Home4는 `EXC↑`지만 EXC 예외로 바꿈). 색만으로 전달하지 않으려고 항상 글자를 같이 쓴다. */
+function FullStageMark({ stage, inline = false }: { stage: FullStage; inline?: boolean }) {
+  const t = useTranslations("Progress");
+  return (
+    // inline: 모바일 표형 줄(시안 Home4 B안)은 `기록/전체` 바로 오른쪽에 8px 글자로 붙는다. 넓은 화면 카드는 숫자 아래 10px 한 줄
+    <span data-stage={stage} data-full-stage={stage} className={`stage-text font-num font-bold leading-none ${inline ? "ml-[3px] text-[8px]" : "text-[10px]"}`}>
+      <span className="sr-only">{stage === "EXC" ? t("allExc") : t("allAtLeast", { stage })} </span>
+      <span aria-hidden="true">{stage === "EXC" ? stage : `${stage}↑`}</span>
+    </span>
+  );
+}
+
 /** 모바일 표형 줄의 열 배치: 구간 · 달성 % · 단계 6칸(EXC FC SS S+ S S 미만). 머리글과 줄이 같은 값을 써서 열이 맞는다. */
-const MOBILE_COLS = "grid grid-cols-[4rem_2.5rem_repeat(6,minmax(0,1fr))] items-center";
+const MOBILE_COLS = "grid grid-cols-[50px_36px_repeat(6,minmax(0,1fr))] items-center gap-0.5";
 
 /**
  * 칸 지도: 묶음(서열표는 기준 난이도, 곡 목록은 레벨 폴더) 하나가 한 칸이다. 칸마다 기록 퍼센트, `기록/전체`,
@@ -50,7 +73,7 @@ export function ProgressTiles({
   const shown = folded ? groups.slice(foldCount) : groups;
   return (
     <div className="flex flex-col gap-1 sm:gap-0">
-      <div aria-hidden="true" className={`${MOBILE_COLS} border-b border-line px-1 pb-1.5 text-center text-[10px] font-bold text-fg-dim sm:hidden`}>
+      <div aria-hidden="true" className={`${MOBILE_COLS} border-b border-line px-0.5 pb-[3px] text-center text-[9px] font-bold text-fg-dim sm:hidden`}>
         <span className="text-left">{t("colRange")}</span>
         <span>{t("colAchieve")}</span>
         {chipsOf(EMPTY_COUNTS).map((chip) => (
@@ -75,6 +98,8 @@ export function ProgressTiles({
           const done = isDone(g.recorded, g.total);
           const tint = tileTint(g.recorded, g.total);
           const chips = chipsOf(g);
+          // 전곡 기록이 있고 S 이상일 때만 단계가 있다(아니면 null: 색·막대·글자 없음)
+          const fullStage = lowestFullStage(g);
           // 넓은 화면 카드의 칩은 0이 아닌 단계만 보인다(0 칩이 다섯 개씩 붙어 화면이 복잡했다, 2026-10-27). 줄 나눔(EXC·FC·SS / 나머지)과 순서는 그대로다.
           // 모바일 표형 줄은 열이 고정이라 지금처럼 0을 "-"로 둔다.
           const chipRows = [chips.slice(0, 3), chips.slice(3)].map((row) => row.filter((chip) => chip.count > 0)).filter((row) => row.length > 0);
@@ -86,36 +111,59 @@ export function ProgressTiles({
                 className={`relative flex h-full flex-col gap-1.5 rounded-lg hover:bg-table-head sm:rounded-[10px] sm:border ${g.recorded === 0 ? "sm:border-dashed" : ""} sm:p-2 sm:[background:var(--tile-bg)] sm:[border-color:var(--tile-line)] sm:hover:opacity-90 lg:p-3`}
                 style={{ "--tile-bg": mix(tint.fill), "--tile-line": mix(tint.line) } as CSSProperties}
               >
-                {/* 모바일 표형 줄: 구간(이름·기록/전체) · 달성 % · 단계별 개수. 줄 아래에 얇은 단계 비율 막대 */}
-                <span className={`${MOBILE_COLS} min-h-11 px-1 pb-1 sm:hidden`}>
-                  <span className="flex min-w-0 flex-col leading-tight">
-                    <span className={`truncate font-num text-[13px] font-bold ${done ? "text-done-text" : "text-fg"}`}>{g.label}</span>
-                    <span className="font-num text-[10px] text-fg-dim">
-                      {g.recorded}/{g.total}
+                {/* 전곡 완료 난이도: 왼쪽 세로 막대(가장 낮은 단계 색, 시안 Home4 B안). 장식이라 aria-hidden이고 같은 정보가 숫자 아래 글자로 있다.
+                    모바일 표형 줄에서는 카드 안쪽 여백(-8px)에 놓이고, 넓은 화면 카드에서는 카드 안 왼쪽 가장자리에 놓인다 */}
+                {fullStage ? (
+                  <span
+                    aria-hidden="true"
+                    data-stage={fullStage}
+                    data-full-bar=""
+                    className="stage-bar absolute -left-2 bottom-1 top-2 w-[3px] rounded-sm shadow-[0_0_8px_var(--st-text)] sm:inset-y-1.5 sm:left-px sm:shadow-none"
+                  />
+                ) : null}
+                {/* 모바일 표형 줄(시안 Home4): 난이도(숫자·기록/전체·단계 글자) · 달성 % · 단계 6칸(값이 있으면 단계 색 둥근 칩, 없으면 `-`). 줄 아래에 단계 비율 누적 막대 */}
+                <span className="sm:hidden">
+                  <span className={`${MOBILE_COLS} px-0.5 pt-1.5 text-center`}>
+                    <span className="min-w-0 text-left leading-tight">
+                      <span
+                        data-stage={fullStage ?? undefined}
+                        className={`inline-block font-num text-base font-bold leading-[1.1] ${nameColor(fullStage, done ? "text-done-text" : "text-fg")}`}
+                      >
+                        {g.label}
+                      </span>
+                      <span className="block whitespace-nowrap font-num text-[9px] text-fg-dim">
+                        {g.recorded}/{g.total}
+                        {fullStage ? <FullStageMark stage={fullStage} inline /> : null}
+                      </span>
                     </span>
+                    <span className={`font-num text-[11px] font-bold ${g.recorded === 0 ? "text-fg-faint" : "text-fg"}`}>{percentOf(g.recorded, g.total)}%</span>
+                    {chips.map((chip) => (
+                      <span
+                        key={chip.key}
+                        // S 미만(chip.stage 없음)은 회색 계열 A 색을 쓴다(막대·도넛과 같다)
+                        data-stage={chip.count === 0 ? undefined : (chip.stage ?? "A")}
+                        style={chip.count === 0 ? undefined : { background: "color-mix(in srgb, var(--st-text) 16%, transparent)" }}
+                        className={`rounded-[7px] py-1 font-num text-[13px] font-bold ${chip.count === 0 ? "text-fg-faint" : "stage-text"}`}
+                      >
+                        <span className="sr-only">{chip.stage ? chip.label : t("belowS")} </span>
+                        {chip.count === 0 ? "-" : chip.count}
+                      </span>
+                    ))}
                   </span>
-                  <span className={`text-center font-num text-xs font-bold ${g.recorded === 0 ? "text-fg-faint" : "text-fg"}`}>
-                    {percentOf(g.recorded, g.total)}%
-                  </span>
-                  {chips.map((chip) => (
-                    <span
-                      key={chip.key}
-                      data-stage={chip.stage ?? undefined}
-                      className={`text-center font-num text-[13px] font-bold ${chip.count === 0 ? "text-fg-faint" : chip.stage ? "stage-text" : "text-fg-sub"}`}
-                    >
-                      <span className="sr-only">{chip.stage ? chip.label : t("belowS")} </span>
-                      {chip.count === 0 ? "-" : chip.count}
-                    </span>
-                  ))}
-                  <span aria-hidden="true" className="absolute inset-x-1 bottom-0.5">
-                    <StageBar counts={g} total={g.total} className="h-[3px]" done={done} motionKey={`tile:${label}:${g.key}:m`} motionIndex={tileIndex} />
+                  <span aria-hidden="true" className="mx-0.5 mb-1.5 mt-[5px] block">
+                    <StageBar counts={g} total={g.total} className="h-1" motionKey={`tile:${label}:${g.key}:m`} motionIndex={tileIndex} />
                   </span>
                 </span>
 
                 {/* sm 이상 카드: 위줄은 왼쪽 이름·퍼센트·기록/전체, 오른편에 단계 칩 두 줄. 막대는 아래에 전체 폭 */}
                 <span className="hidden items-center justify-between gap-2 sm:flex">
                   <span className="flex min-w-0 flex-col gap-1.5">
-                    <span className={`truncate font-num text-xs font-semibold ${done ? "text-done-text" : "text-fg-sub"}`}>{g.label}</span>
+                    <span
+                      data-stage={fullStage ?? undefined}
+                      className={`truncate font-num text-xs font-semibold ${nameColor(fullStage, done ? "text-done-text" : "text-fg-sub")}`}
+                    >
+                      {g.label}
+                    </span>
                     {/* 기록이 하나도 없는 칸은 0% 대신 한 줄 안내(칩은 없고 테두리는 점선) */}
                     {g.recorded === 0 ? (
                       <span className="text-[13px] leading-5 text-fg-dim">{t("tileEmpty")}</span>
@@ -128,6 +176,7 @@ export function ProgressTiles({
                     <span className="font-num text-[11px] text-fg-dim">
                       {g.recorded}/{g.total}
                     </span>
+                    {fullStage ? <FullStageMark stage={fullStage} /> : null}
                   </span>
                   <span className={`flex shrink-0 flex-col items-end gap-1 ${g.recorded === 0 ? "hidden" : ""}`}>
                     {chipRows.map((row, i) => (

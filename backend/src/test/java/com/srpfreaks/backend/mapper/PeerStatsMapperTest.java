@@ -246,6 +246,54 @@ class PeerStatsMapperTest {
                 .containsExactly("songDifficultyId", "rate");
     }
 
+    // ------------------------------------------------------------ 채보별 반영 인원 (추천, D89)
+
+    private List<PeerChartCount> counts(int minUsers) {
+        em.flush();
+        em.clear();
+        return mapper.countChartUsers(me.getId(), SRN_PLUS, LO, HI, minUsers);
+    }
+
+    private static int usersOf(List<PeerChartCount> rows, SongDifficulty chart) {
+        return rows.stream().filter(r -> r.songDifficultyId().equals(chart.getId())).mapToInt(PeerChartCount::users).sum();
+    }
+
+    @Test
+    void 채보마다_레이팅에_넣은_공개_유저_수를_세고_기준_인원_미만은_돌려주지_않는다() {
+        snapshot(publicPeer(), "2026-10-01", "1050.00", chartA, "90.00", chartB, "80.00");
+        snapshot(publicPeer(), "2026-10-01", "1050.00", chartA, "91.00", chartB, "81.00");
+        snapshot(publicPeer(), "2026-10-01", "1050.00", chartA, "92.00");
+
+        List<PeerChartCount> all = counts(1);
+        assertThat(usersOf(all, chartA)).isEqualTo(3);
+        assertThat(usersOf(all, chartB)).isEqualTo(2);
+
+        List<PeerChartCount> atLeast3 = counts(3);
+        assertThat(atLeast3).extracting(PeerChartCount::songDifficultyId).containsExactly(chartA.getId());
+        assertThat(counts(4)).isEmpty();
+    }
+
+    @Test
+    void 반영_인원에서_비공개_차단_나_구간_밖_다른_옵션은_빠진다() {
+        snapshot(publicPeer(), "2026-10-01", "1050.00", chartA, "90.00");                        // 센다
+        snapshot(peer(false, false), "2026-10-01", "1050.00", chartA, "91.00");                  // 비공개
+        snapshot(peer(true, true), "2026-10-01", "1050.00", chartA, "92.00");                    // 차단
+        snapshot(me, "2026-10-01", "1050.00", chartA, "93.00");                                  // 나
+        snapshot(publicPeer(), "2026-10-01", "1200.00", chartA, "94.00");                        // 구간 밖
+        snapshot(publicPeer(), NoteOption.NORMAL, LocalDate.parse("2026-10-01"), "1050.00", chartA, "95.00"); // 다른 옵션
+
+        assertThat(usersOf(counts(1), chartA)).isEqualTo(1);
+    }
+
+    @Test
+    void 한_유저의_스냅샷이_여러_개여도_채보당_한_명으로_센다() {
+        User p = publicPeer();
+        snapshot(p, "2026-10-01", "1040.00", chartA, "80.00");
+        snapshot(p, "2026-10-10", "1060.00", chartA, "85.00");   // 구간 안에서 총점이 가장 높은 이것만 쓴다
+
+        assertThat(usersOf(counts(1), chartA)).isEqualTo(1);
+    }
+
     // ------------------------------------------------------------ 채보 서열표 값
 
     @Test

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/components/AuthProvider";
 import { SetlistTab } from "@/components/setlist/SetlistTab";
+import { HomePeerPicks } from "@/components/home/HomePeerPicks";
 import type { ChartRowResponse, RecommendationItem, SetlistItemResponse, SetlistRecommendationResponse } from "@/lib/api-types";
 import { clearAccessToken } from "@/lib/auth-token";
 
@@ -171,7 +172,7 @@ describe("세트리스트", () => {
       renderWith(<SetlistTab userId={1} />);
       expect(await screen.findByText(/담은 곡이 없습니다/)).toBeInTheDocument();
       expect(screen.getByText(/위 검색창에서/)).toBeInTheDocument();
-      expect(screen.getByText("담은 곡이 없습니다. 위 검색창에서 오늘 플레이할 곡을 찾아 담아 보세요.")).toBeInTheDocument();
+      expect(screen.getByText("담은 곡이 없습니다. 위 검색창에서 오늘 플레이할 곡을 찾아 담아 주세요.")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "완료한 곡 비우기" })).toBeDisabled();
     });
 
@@ -317,6 +318,47 @@ describe("세트리스트", () => {
       expect(ss[1]).toHaveTextContent("S");
       const s = within(within(section).getByRole("list", { name: "S 기준 추천" })).getAllByRole("listitem");
       expect(s[0]).toHaveTextContent("추천곡3");
+    });
+
+    it("같은 티어대 근거(D89): 근거 줄은 소제목·사유 칩·인원 한 줄과 함께 앞에, 근거 없는 줄은 `내 평균 난이도 근처` 아래에 온다", async () => {
+      recommended = based({
+        ssChallenge: [
+          rec(1, { reason: "PEER_TIER", peerUsers: 12 }),
+          rec(2, { reason: "PEER_TIER", peerUsers: 7 }),
+          rec(3, { reason: "NEAR_AVERAGE", peerUsers: null }),
+        ],
+        sFill: [],
+      });
+      renderWith(<SetlistTab userId={1} />);
+
+      const ss = await screen.findByRole("list", { name: /SS 기준/ });
+      const rows = within(ss).getAllByRole("listitem"); // 소제목(presentation)은 세지 않는다
+      expect(rows).toHaveLength(3);
+      expect(rows[0]).toHaveTextContent("같은 티어대 다수 반영");
+      expect(rows[0]).toHaveTextContent("비슷한 실력대 12명이 레이팅에 반영");
+      expect(rows[1]).toHaveTextContent("비슷한 실력대 7명이 레이팅에 반영");
+      expect(rows[2]).toHaveTextContent("내 평균 난이도 근처");
+      expect(rows[2]).not.toHaveTextContent("명이 레이팅에 반영");
+      expect(within(ss).getByText(/같은 실력대가 많이 반영한 곡/)).toBeInTheDocument();
+      expect(within(ss).getByText(/근거 인원 부족/)).toBeInTheDocument();
+    });
+
+    it("근거 있는 줄이 없으면 소제목 없이 예전 모양에 사유 칩만 붙는다", async () => {
+      recommended = based({ ssChallenge: [rec(1, { reason: "NEAR_AVERAGE" })], sFill: [] });
+      renderWith(<SetlistTab userId={1} />);
+
+      const ss = await screen.findByRole("list", { name: /SS 기준/ });
+      expect(within(ss).getAllByRole("listitem")[0]).toHaveTextContent("내 평균 난이도 근처");
+      expect(within(ss).queryByText(/근거 인원 부족/)).not.toBeInTheDocument();
+      expect(within(ss).queryByText(/같은 실력대가 많이 반영한 곡/)).not.toBeInTheDocument();
+    });
+
+    it("사유가 없는 줄(옛 응답·신규)에는 칩을 달지 않는다", async () => {
+      recommended = based({ ssChallenge: [rec(1)], sFill: [] });
+      renderWith(<SetlistTab userId={1} />);
+
+      const ss = await screen.findByRole("list", { name: /SS 기준/ });
+      expect(within(ss).getAllByRole("listitem")[0]).not.toHaveTextContent("내 평균 난이도 근처");
     });
 
     it("추천 줄에도 속성 글자를 보여 준다", async () => {
@@ -493,6 +535,35 @@ describe("세트리스트", () => {
 
       fireEvent.click(within(ss).getByRole("button", { name: "다음" }));
       await waitFor(() => expect(recommendCalls().some(([input]) => String(input).includes("ssPage=1") && String(input).includes("sPage=1"))).toBe(true));
+    });
+  });
+  describe("홈 추천 곡 (D89)", () => {
+    it("근거 있는 곡을 인원 순으로 3곡까지 보여 주고, 세트리스트 개수와 더 보기 링크가 있다", async () => {
+      listed = [item(1)];
+      recommended = {
+        ...NO_BASE, status: "READY", baseTier: 6.2, ssTotalPages: 1, sTotalPages: 1,
+        ssChallenge: [rec(1, { reason: "NEAR_AVERAGE" }), rec(2, { reason: "PEER_TIER", peerUsers: 7 })],
+        sFill: [rec(3, { reason: "PEER_TIER", peerUsers: 12 }), rec(4, { reason: "NEAR_AVERAGE" })],
+      };
+      renderWith(<HomePeerPicks userId={1} />);
+
+      const list = await screen.findByRole("list", { name: "추천 곡" });
+      const rows = within(list).getAllByRole("listitem");
+      expect(rows).toHaveLength(3);
+      expect(rows[0]).toHaveTextContent("추천곡3");
+      expect(rows[0]).toHaveTextContent("비슷한 실력대 12명이 레이팅에 반영");
+      expect(rows[1]).toHaveTextContent("추천곡2");
+      expect(rows[2]).toHaveTextContent("내 평균 난이도 근처");
+      expect(screen.getByText("비슷한 실력대가 많이 반영한 곡 · 추천 3곡")).toBeInTheDocument();
+      expect(screen.getByText("세트리스트 1/30")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "추천 더 보기" })).toHaveAttribute("href", "/me?tab=list");
+    });
+
+    it("READY가 아니면 아무것도 그리지 않는다", async () => {
+      recommended = { ...NO_BASE, status: "INSUFFICIENT" };
+      const { container } = renderWith(<HomePeerPicks userId={1} />);
+      await waitFor(() => expect(fetchMock.mock.calls.some(([input]) => String(input).includes("/setlist/recommendations"))).toBe(true));
+      expect(container).toBeEmptyDOMElement();
     });
   });
 });

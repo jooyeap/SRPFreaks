@@ -153,6 +153,22 @@ class ApiReadSmokeTest {
 	}
 
 	@Test
+	void 곡_목록_폴더의_속성_필터와_칩_개수() throws Exception {
+		String all = ok("/api/v1/songs/chart-folders");
+		assertThat(all).contains("\"patternCounts\":{\"단일\":2,\"복합\":2,\"이중\":0,\"삼중\":0}");
+		// 속성 필터: 그 속성의 채보만 세고, 칩 개수는 그대로다. 라벨은 주소에 퍼센트 인코딩해서 보낸다
+		String single = ok("/api/v1/songs/chart-folders?pattern=" + java.net.URLEncoder.encode("단일", java.nio.charset.StandardCharsets.UTF_8));
+		assertThat(single).contains("\"totalCharts\":2").contains("\"patternCounts\":{\"단일\":2,\"복합\":2");
+		assertThat(ok("/api/v1/songs/chart-folders?pattern=" + java.net.URLEncoder.encode("삼중", java.nio.charset.StandardCharsets.UTF_8)))
+				.contains("\"totalCharts\":0");
+		// 칩에 없는 값은 400
+		for (String bad : new String[] {"레이팅 제외", "SINGLE"}) {
+			String path = "/api/v1/songs/chart-folders?pattern=" + java.net.URLEncoder.encode(bad, java.nio.charset.StandardCharsets.UTF_8);
+			assertThat(get(path).statusCode()).as(path).isEqualTo(400);
+		}
+	}
+
+	@Test
 	void 곡_상세() throws Exception {
 		assertThat(ok("/api/v1/songs/" + songId)).contains("스모크 곡0");
 	}

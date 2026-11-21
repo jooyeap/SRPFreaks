@@ -120,6 +120,18 @@ public class RivalNotification {
         this.bundled = true;
     }
 
+    /**
+     * 이 줄이 그날 묶음 줄에 합쳐진다(D86). 예전에는 지웠지만, 묶음 줄의 "곡 목록"에 곡·두 달성률을 보여 주려고 남긴다.
+     * 목록·안 읽음 개수·하루 개수는 모두 SHOWN만 보므로 BUNDLED는 따로 보이지 않는다. bundled는 false로 둬서
+     * "그날의 묶음 줄" 조회(bundled = true)에 걸리지 않게 한다. alertDate가 같은 (받는 사람, 역전한 사람)의 묶음 줄에 속한다.
+     */
+    public void foldIntoBundle(BigDecimal actorRate, BigDecimal recipientRate, LocalDate alertDate) {
+        this.actorRate = actorRate;
+        this.recipientRate = recipientRate;
+        this.alertDate = alertDate;
+        this.status = RivalNotificationStatus.BUNDLED;
+    }
+
     /** 이미 있는 묶음 줄에 곡 하나를 더한다. 새 곡이 생겼으니 다시 안 읽음으로 돌린다. */
     public void addToBundle(Instant visibleAt) {
         this.songCount++;

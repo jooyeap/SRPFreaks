@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ContactLine } from "@/components/ContactLine";
+import { SongInfoCredit } from "@/components/SongInfoCredit";
 import { TableCredit } from "@/components/TableCredit";
 import { BUILD_SHA } from "@/lib/build-info";
 import { FOOTER_LINE_LINK } from "@/lib/hit-area";
@@ -31,6 +32,7 @@ export function SiteFooter() {
         {/* 모바일: 제공자 줄 + 링크 묶음 한 덩어리(간격 12px = 제공자 링크 터치 영역 아래쪽 12px 자리). sm 이상은 예전처럼 줄마다 따로 쌓고 오른쪽 정렬(간격 4px) */}
         <div className="flex flex-col gap-3 sm:block sm:space-y-1 sm:text-right">
           <TableCredit tall />
+          <SongInfoCredit tall />
           {/* 모바일에서는 이메일·약관·처리방침을 한 묶음으로 모은다(자리가 모자라면 줄바꿈). 링크는 높이 40px 상자(FOOTER_LINE_LINK)라 서로 겹치지 않는다 */}
           <div className="flex flex-wrap items-center gap-x-3 sm:block sm:space-y-1">
             <ContactLine tall />

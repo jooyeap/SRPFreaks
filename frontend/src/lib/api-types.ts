@@ -275,6 +275,8 @@ export interface ChartFolderListResponse {
   totalCharts: number;
   versions: string[];
   folders: ChartFolderResponse[];
+  /** 속성별 채보 수(키: 단일/복합/이중/삼중). 홈 진행도 속성 칩의 숫자이고, 속성 필터를 걸어도 걸기 전 기준이다(D85) */
+  patternCounts: Record<string, number>;
 }
 
 /** 곡 목록의 채보 한 줄. 전체 곡 목록에는 속성을 보이지 않으므로 서열표 값은 없다. */
@@ -469,7 +471,13 @@ export interface RecommendationItem {
   /** 서열표의 속성 글자(없으면 null). */
   pattern: string | null;
   mine: MyRecord | null;
+  /** 같은 티어대 공개 유저(나 제외) 중 이 채보를 레이팅에 반영한 인원(D89). reason이 PEER_TIER일 때만 값이 있다. 누가 반영했는지는 오지 않는다. 옛 응답에는 없을 수 있다 */
+  peerUsers?: number | null;
+  /** 추천 사유(D89). PEER_TIER = 같은 티어대 다수 반영, NEAR_AVERAGE = 내 평균 난이도 근처(근거 인원 부족). 신규(STARTER)는 null */
+  reason?: RecommendationReason | null;
 }
+
+export type RecommendationReason = "PEER_TIER" | "NEAR_AVERAGE";
 
 /** 추천 상태. READY = 평균 기준, STARTER = 기록 없는 신규(입문 난이도 이하), INSUFFICIENT = 단일/그 외 데이터 부족, UNAVAILABLE = 서열표 없음. */
 export type RecommendationStatus = "READY" | "STARTER" | "INSUFFICIENT" | "UNAVAILABLE";
@@ -776,6 +784,13 @@ export interface RivalNotificationResponse extends NotificationBase {
   actorNickname: string | null;
   actorRate: number;
   myRate: number;
+  /**
+   * 묶음 줄의 곡명 미리보기(D86): 묶음 줄 자신의 곡 + 합쳐진 처음 몇 곡, 최대 3개. 따로 보이는 줄은 빈 목록.
+   * 배포 순서가 어긋난 옛 응답에는 없을 수 있어 선택으로 둔다.
+   */
+  previewTitles?: string[];
+  /** 곡 목록이 남아 있지 않은 곡 수(D86): 줄을 지우던 때 묶인 옛 묶음만 0보다 크다. */
+  missingCount?: number;
 }
 
 /**
@@ -797,3 +812,22 @@ export interface TierNotificationResponse extends NotificationBase {
  * TypeScript가 item을 TierNotificationResponse로 좁혀 주므로 beforeTier 같은 값을 바로 쓸 수 있다.
  */
 export type NotificationResponse = RivalNotificationResponse | TierNotificationResponse;
+
+/** 라이벌 묶음 알림 곡 목록의 한 줄(D86). 두 달성률은 알림을 보인 시점 값이다. 차이(내 − 상대)는 화면에서 계산한다. */
+export interface RivalBundleSongResponse {
+  songDifficultyId: number;
+  title: string;
+  part: InstrumentPart;
+  difficulty: DifficultyType;
+  actorRate: number;
+  myRate: number;
+}
+
+/** 라이벌 묶음 알림 상세(D86). missingCount > 0이면 예전에 묶여 곡 목록이 없는 곡이 있다는 뜻이다. */
+export interface RivalBundleSongsResponse {
+  actorUserId: number;
+  actorNickname: string | null;
+  songCount: number;
+  missingCount: number;
+  songs: PageResponse<RivalBundleSongResponse>;
+}

@@ -9,7 +9,13 @@ import com.srpfreaks.backend.dto.PageResponse;
 import com.srpfreaks.backend.entity.AchievementStage;
 import com.srpfreaks.backend.entity.DifficultyType;
 import com.srpfreaks.backend.entity.InstrumentPart;
+import com.srpfreaks.backend.entity.DifficultyTable;
 import com.srpfreaks.backend.entity.NoteOption;
+import com.srpfreaks.backend.entity.PatternType;
+import com.srpfreaks.backend.entity.TableStatus;
+import com.srpfreaks.backend.repository.DifficultyTableEntryRepository;
+import com.srpfreaks.backend.repository.ChartPattern;
+import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.entity.RateBucket;
 import com.srpfreaks.backend.entity.Song;
 import com.srpfreaks.backend.entity.SongDifficulty;
@@ -27,6 +33,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,6 +51,8 @@ class SongChartListServiceTest {
     @Mock SongDifficultyRepository songDifficultyRepository;
     @Mock OptionRecordRepository optionRecordRepository;
     @Mock SongRepository songRepository;
+    @Mock DifficultyTableRepository difficultyTableRepository;
+    @Mock DifficultyTableEntryRepository difficultyTableEntryRepository;
 
     SongChartListService service;
     final List<SongDifficulty> charts = new ArrayList<>();
@@ -51,7 +60,8 @@ class SongChartListServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SongChartListService(songDifficultyRepository, optionRecordRepository, songRepository);
+        service = new SongChartListService(songDifficultyRepository, optionRecordRepository, songRepository,
+                difficultyTableRepository, difficultyTableEntryRepository);
     }
 
     private SongDifficulty chart(String title, String version, InstrumentPart part, DifficultyType type, String level) {
@@ -540,5 +550,105 @@ class SongChartListServiceTest {
 
         assertThat(callWithBucket(null, ChartSort.LEVEL).content()).extracting(ChartRowResponse::title)
                 .containsExactly("high", "low");
+    }
+
+    // ---- 홈 진행도 속성 필터(D85) ----
+
+    /** 채보 id별 속성을 가진 SRN+ 활성 서열표가 있는 것으로 꾸민다. 목록에 없는 채보는 서열표에 없는 채보다. */
+    private void stubPatterns(Object... idAndPattern) {
+        DifficultyTable table = DifficultyTable.create("SRN+", null, NoteOption.SUPER_RANDOM_PLUS);
+        ReflectionTestUtils.setField(table, "id", 3L);
+        when(difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE))
+                .thenReturn(Optional.of(table));
+        List<ChartPattern> rows = new ArrayList<>();
+        for (int i = 0; i < idAndPattern.length; i += 2) {
+            rows.add(new ChartPattern((Long) idAndPattern[i], (PatternType) idAndPattern[i + 1]));
+        }
+        when(difficultyTableEntryRepository.findChartPatterns(3L)).thenReturn(rows);
+    }
+
+    private ChartFolderListResponse foldersByPattern(String pattern) {
+        return service.folders(7L, null, null, null, null, pattern);
+    }
+
+    @Test
+    void 속성_필터는_그_속성의_채보만_폴더로_세고_칩_개수는_필터와_상관없이_같다() {
+        SongDifficulty a = guitar("a", "9.00");   // 단일
+        SongDifficulty b = guitar("b", "9.10");   // 단일
+        SongDifficulty c = guitar("c", "9.20");   // 복합
+        SongDifficulty d = guitar("d", "9.30");   // 이중
+        SongDifficulty e = guitar("e", "9.40");   // 삼중
+        stubCharts();
+        stubBests(7L);
+        stubPatterns(a.getId(), PatternType.SINGLE, b.getId(), PatternType.SINGLE, c.getId(), PatternType.COMPOUND,
+                d.getId(), PatternType.DOUBLE, e.getId(), PatternType.TRIPLE);
+
+        ChartFolderListResponse single = foldersByPattern("단일");
+        assertThat(single.totalCharts()).isEqualTo(2);
+        assertThat(single.folders().get(0).total()).isEqualTo(2);
+        assertThat(foldersByPattern("복합").totalCharts()).isEqualTo(1);
+        assertThat(foldersByPattern("이중").totalCharts()).isEqualTo(1);
+        assertThat(foldersByPattern("삼중").totalCharts()).isEqualTo(1);
+        // 속성을 안 주면 전체
+        assertThat(foldersByPattern(null).totalCharts()).isEqualTo(5);
+        assertThat(foldersByPattern("  ").totalCharts()).isEqualTo(5);
+        // 칩 개수: 어떤 속성을 걸어도 같다
+        assertThat(single.patternCounts()).containsExactly(
+                java.util.Map.entry("단일", 2), java.util.Map.entry("복합", 1), java.util.Map.entry("이중", 1), java.util.Map.entry("삼중", 1));
+        assertThat(foldersByPattern(null).patternCounts()).isEqualTo(single.patternCounts());
+    }
+
+    @Test
+    void 속성이_없거나_레이팅_제외이거나_서열표에_없는_채보는_전체에만_들어간다() {
+        SongDifficulty single = guitar("single", "9.00");
+        SongDifficulty excluded = guitar("excluded", "9.10");   // 레이팅 제외
+        SongDifficulty nullPattern = guitar("null", "9.20");    // 서열표에는 있으나 속성 없음
+        SongDifficulty composite = guitar("composite", "9.30"); // 복합(단일): 칩에 없는 속성
+        guitar("not-in-table", "9.40");                         // 서열표에 없음
+        stubCharts();
+        stubBests(7L);
+        stubPatterns(single.getId(), PatternType.SINGLE, excluded.getId(), PatternType.EXCLUDED,
+                nullPattern.getId(), null, composite.getId(), PatternType.COMPOSITE_SINGLE);
+
+        assertThat(foldersByPattern(null).totalCharts()).isEqualTo(5);
+        assertThat(foldersByPattern(null).patternCounts().values()).containsExactly(1, 0, 0, 0);
+        for (String label : List.of("단일", "복합", "이중", "삼중")) {
+            assertThat(foldersByPattern(label).totalCharts()).isEqualTo(label.equals("단일") ? 1 : 0);
+        }
+    }
+
+    @Test
+    void 속성_필터는_폴더_통계도_그_채보만으로_센다() {
+        SongDifficulty played = guitar("played", "9.50");
+        SongDifficulty other = guitar("other", "9.60");
+        stubCharts();
+        stubBests(7L, rate(played, "99.00"), rate(other, "99.00"));
+        stubPatterns(played.getId(), PatternType.SINGLE, other.getId(), PatternType.COMPOUND);
+
+        ChartFolderResponse folder = foldersByPattern("단일").folders().get(0);
+
+        assertThat(folder.total()).isEqualTo(1);
+        assertThat(folder.recorded()).isEqualTo(1);
+        assertThat(folder.ss()).isEqualTo(1);
+    }
+
+    @Test
+    void 서열표가_없으면_속성_필터는_빈_결과이고_전체는_그대로다() {
+        guitar("a", "9.00");
+        stubCharts();
+        stubBests(7L);
+        when(difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE))
+                .thenReturn(Optional.empty());
+
+        assertThat(foldersByPattern("단일").totalCharts()).isZero();
+        assertThat(foldersByPattern(null).totalCharts()).isEqualTo(1);
+    }
+
+    @Test
+    void 잘못된_속성값은_400이다() {
+        stubCharts();
+        for (String bad : List.of("레이팅 제외", "복합(단일)", "SINGLE", "단일' OR '1'='1", "없는속성")) {
+            assertThatThrownBy(() -> foldersByPattern(bad)).isInstanceOf(ApiException.class);
+        }
     }
 }

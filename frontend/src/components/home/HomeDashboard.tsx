@@ -1,12 +1,13 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { NavIcon } from "@/components/NavIcon";
 import { Skeleton } from "@/components/Skeleton";
 import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import { ImportEntryLink } from "@/components/import/ImportEntryLink";
 import { WelcomeGuide } from "@/components/home/WelcomeGuide";
+import { HomePeerPicks } from "@/components/home/HomePeerPicks";
 import { HomeNotices } from "@/components/home/HomeNotices";
 import { PlayersPreview } from "@/components/home/PlayersPreview";
 import { ProgressCard, type ProgressPanel } from "@/components/home/ProgressCard";
@@ -22,6 +23,14 @@ import {
   tableProgress,
 } from "@/lib/difficulty-table";
 import { folderProgress } from "@/lib/progress";
+import {
+  groupsForPattern,
+  patternCountsFromServer,
+  patternCountsOfGroups,
+  patternParam,
+  setProgressPattern,
+  useProgressPattern,
+} from "@/lib/progress-pattern";
 import { fetchMyPlayLevel, fetchMySkill, skillKeys } from "@/lib/rating";
 import { fetchChartFolders, songListKeys } from "@/lib/song-list";
 import { useWelcomeHidden } from "@/lib/welcome-guide";
@@ -72,21 +81,34 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
     queryFn: ({ signal }) => fetchChartFolders(signal),
   });
 
+  // 속성 필터(D85): 이 기기에서 고른 속성(단일 등)을 기억한다. 서열표 화면의 필터와는 따로다.
+  // 서열표 탭은 이미 받은 묶음(채보별 속성·기록 포함)을 화면에서 다시 세고, 곡 목록 탭은 서버가 속성으로 거른 폴더를 받는다.
+  // 칩 숫자는 항상 필터 없는 응답(folders.data, 서열표 전체 묶음)에서 읽어서 칩을 눌러도 숫자가 흔들리지 않는다.
+  const pattern = useProgressPattern();
+  const patternFolders = useQuery({
+    queryKey: songListKeys.foldersByPattern(userId, pattern),
+    queryFn: ({ signal }) => fetchChartFolders(signal, undefined, patternParam(pattern)),
+    enabled: pattern !== "all",
+    // 속성을 바꾸는 동안 이전 폴더를 잠깐 그대로 두어 카드가 스켈레톤으로 깜박이지 않게 한다
+    placeholderData: keepPreviousData,
+  });
+  const foldersForPanel = pattern === "all" ? folders : patternFolders;
+
   // 시작 안내: 레이팅 목록이 비어 있고(= 레이팅에 반영되는 기록이 아직 없고) 숨기지 않았을 때만. 기록이 생기면 저절로 사라진다
   const welcomeHidden = useWelcomeHidden();
   const showWelcome = !welcomeHidden && skill.data !== undefined && skill.data.single.length + skill.data.other.length === 0;
 
   const tablePanel: ProgressPanel = groups.data
     // 기준 난이도가 없는 `미정` 묶음은 서열표 화면과 같이 홈 서열표 진행도에서도 뺀다(합계·칸 지도 모두)
-    ? { kind: "ready", progress: tableProgress(decidedGroups(groups.data), tRoot) }
+    ? { kind: "ready", progress: tableProgress(groupsForPattern(decidedGroups(groups.data), pattern), tRoot) }
     : groups.isError || tables.isError
       ? { kind: "error" }
       : tables.isSuccess && tableId === null
         ? { kind: "empty", message: t("tableEmpty") }
         : { kind: "loading" };
-  const songsPanel: ProgressPanel = folders.data
-    ? { kind: "ready", progress: folderProgress(folders.data.folders) }
-    : folders.isError
+  const songsPanel: ProgressPanel = foldersForPanel.data
+    ? { kind: "ready", progress: folderProgress(foldersForPanel.data.folders) }
+    : foldersForPanel.isError
       ? { kind: "error" }
       : { kind: "loading" };
 
@@ -112,7 +134,19 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
       {/* 레이팅 기록 한 줄(점수가 바뀌었을 때만 보인다). 레이팅을 불러온 뒤에만 그린다 */}
       {skill.data ? <HomeSnapshotLine userId={userId} /> : null}
 
-      <ProgressCard table={tablePanel} songs={songsPanel} average={playLevel.data?.status === "READY" ? playLevel.data.tier : null} skill={skill.data ?? null} />
+      <ProgressCard
+        table={tablePanel}
+        songs={songsPanel}
+        average={playLevel.data?.status === "READY" ? playLevel.data.tier : null}
+        skill={skill.data ?? null}
+        pattern={pattern}
+        onPatternChange={setProgressPattern}
+        goalExtra={<HomePeerPicks userId={userId} />}
+        patternCounts={{
+          table: groups.data ? patternCountsOfGroups(decidedGroups(groups.data)) : null,
+          songs: folders.data ? patternCountsFromServer(folders.data.totalCharts, folders.data.patternCounts) : null,
+        }}
+      />
 
       {/* 시작 안내에 가져오기 카드가 이미 있으면 중복이라 뺀다 */}
       {showWelcome ? null : <ImportEntryLink />}

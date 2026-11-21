@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ContactLine } from "@/components/ContactLine";
+import { SongInfoCredit } from "@/components/SongInfoCredit";
 import { TableCredit } from "@/components/TableCredit";
 import { SiteFooter } from "@/components/SiteFooter";
 import { RatedScore } from "@/components/table/RatedScore";
@@ -82,6 +83,17 @@ describe("푸터 링크", () => {
     rerender(<TableCredit tall />);
     expect(screen.getByRole("link")).toHaveClass(...tokens(FOOTER_CREDIT_LINK));
     expect(screen.getByRole("link").className).not.toContain("min-h-");
+  });
+
+  it("곡 정보 출처(RemyWiki) 링크는 새 탭 외부 링크이고, `tall`일 때만 터치 영역을 ::after로 넓힌다", () => {
+    const { rerender } = render(<SongInfoCredit />);
+    const link = screen.getByRole("link", { name: "RemyWiki" });
+    expect(link).toHaveAttribute("href", "https://remywiki.com");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    expect(link.className).not.toContain("after:");
+    rerender(<SongInfoCredit tall />);
+    expect(screen.getByRole("link")).toHaveClass(...tokens(FOOTER_CREDIT_LINK));
   });
 
   it("문의 이메일 링크는 `tall`일 때만 40px 상자다(처리방침 본문의 글 속 링크는 그대로)", () => {

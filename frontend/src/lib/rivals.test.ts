@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RivalRatingRow } from "@/lib/api-types";
-import { badgeText, catchUpRows, formatRateDiff, formatRateGap, formatScoreDiff, relativeMinutes, signed } from "@/lib/rivals";
+import { badgeText, catchUpRows, fetchRivalBundleSongs, notificationKeys, formatRateDiff, formatRateGap, formatScoreDiff, relativeMinutes, signed } from "@/lib/rivals";
 
 describe("라이벌 표시 도우미", () => {
   it("배지는 0이면 없고 9를 넘으면 9+다", () => {
@@ -109,5 +109,27 @@ describe("catchUpRows (D66 따라잡을 곡, 달성률 차 기준 — D67 개정
     expect(catchUpRows([r(1, -1)])).toHaveLength(1);
     expect(catchUpRows([r(1, 1), r(2, 0)])).toEqual([]);
     expect(catchUpRows([])).toEqual([]);
+  });
+});
+
+describe("라이벌 묶음 알림 곡 목록 API (D86)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("알림 id와 쪽 번호로 곡 목록 경로를 부른다", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ songs: { content: [] } }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchRivalBundleSongs(5, 2);
+
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain("/notifications/rival/5/songs");
+    expect(url).toContain("page=2");
+    expect(url).toContain("size=20");
+  });
+
+  it("쿼리 키는 보는 사람과 알림마다 다르고 알림 전체 키 아래에 있다(읽음 처리 때 함께 무효화된다)", () => {
+    expect(notificationKeys.bundle(1, 5)).not.toEqual(notificationKeys.bundle(2, 5));
+    expect(notificationKeys.bundle(1, 5)).not.toEqual(notificationKeys.bundle(1, 6));
+    expect(notificationKeys.bundle(1, 5).slice(0, 1)).toEqual(notificationKeys.all);
   });
 });

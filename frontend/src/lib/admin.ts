@@ -60,6 +60,7 @@ const ACTION_LABELS: Record<string, MessageKey> = {
   SUGGESTION_REVIEW: "Admin.actionSuggestionReview",
   SETTING_UPDATE: "Admin.actionSettingUpdate",
   SONG_OFFICIAL_IMPORT: "Admin.actionSongOfficialImport",
+  SONG_INFO_IMPORT: "Admin.actionSongInfoImport",
 };
 
 /** 작업 종류 선택 상자에 보이는 값들(화면 이름이 있는 종류). 목록에 없는 새 종류는 서버가 남겨도 선택지에는 아직 없다. */
@@ -86,6 +87,7 @@ const ACTION_KINDS: Record<string, AuditKind> = {
   DIFFICULTY_UPDATE: "songs",
   DIFFICULTY_DELETE: "songs",
   SONG_OFFICIAL_IMPORT: "songs",
+  SONG_INFO_IMPORT: "songs",
   SONG_JACKET_IMPORT: "songs",
   SONG_JACKET_DELETE: "songs",
   TABLE_ENTRY_CREATE: "table",
@@ -440,7 +442,7 @@ export function canSeeAdminMenu(role: Role | null | undefined): boolean {
 }
 
 /** 관리 메뉴 줄 아이콘 이름. 그림은 AdminMenuIcon이 그린다. */
-export type AdminMenuIconName = "songs" | "table" | "chartStats" | "songImport" | "suggestions" | "users" | "settings" | "auditLogs" | "dashboard";
+export type AdminMenuIconName = "songs" | "table" | "chartStats" | "songImport" | "suggestions" | "users" | "settings" | "auditLogs" | "dashboard" | "songMeta";
 
 export interface AdminMenuItem {
   href: string;
@@ -473,6 +475,8 @@ export const ADMIN_MENU_GROUPS: readonly AdminMenuGroup[] = [
       { href: "/table", titleKey: "Admin.menuTable", descriptionKey: "Admin.menuTableDesc", minRole: "ADMIN", icon: "table" },
       // 서열표 분석(D77): 공개 유저 기록을 곡별 숫자로 보여 주는 읽기 전용 도구. 곡·서열표 관리와 같은 ADMIN 이상
       { href: "/admin/chart-stats", titleKey: "Admin.menuChartStats", descriptionKey: "Admin.menuChartStatsDesc", minRole: "ADMIN", icon: "chartStats" },
+      // 곡 정보 정리(D91): 아티스트·검색 키워드가 빈 곡만 모아 채우는 화면. 곡·서열표 관리와 같은 ADMIN 이상
+      { href: "/admin/song-meta", titleKey: "Admin.menuSongMeta", descriptionKey: "Admin.menuSongMetaDesc", minRole: "ADMIN", icon: "songMeta" },
       { href: "/admin/song-import", titleKey: "Admin.menuSongImport", descriptionKey: "Admin.menuSongImportDesc", minRole: "ROOT", icon: "songImport" },
     ],
   },

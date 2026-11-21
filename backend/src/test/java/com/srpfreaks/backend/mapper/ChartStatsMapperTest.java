@@ -381,4 +381,75 @@ class ChartStatsMapperTest {
         assertThat(rows).filteredOn(r -> r.tier().compareTo(new BigDecimal("6.1")) == 0).singleElement()
                 .satisfies(r -> assertThat(r.chartCount()).isEqualTo(1));
     }
+
+    // ---- 폴더 분포 (D88)
+
+    private List<FolderUserRow> folderRows() {
+        em.flush();
+        em.clear();
+        sqlSession.clearCache();
+        return mapper.findFolderUserAverages(SRN_PLUS, table.getId(), PatternType.EXCLUDED.getLabel(), SINCE);
+    }
+
+    @Test
+    void 폴더_분포는_유저와_폴더당_한_줄이고_채보별_최고_달성률의_합과_개수를_낸다() {
+        SongDifficulty a = chart("6.0", PatternType.SINGLE);
+        SongDifficulty b = chart("6.0", PatternType.COMPOUND);
+        SongDifficulty c = chart("7.0", PatternType.SINGLE);
+        User u = user(true);
+        record(u, a, "80.00");
+        record(u, a, "90.00");   // 같은 채보를 여러 번 저장해도 최고 1개만(90)
+        record(u, b, "70.00");
+        record(u, c, "100.00");
+
+        List<FolderUserRow> rows = folderRows();
+
+        assertThat(rows).hasSize(2);
+        FolderUserRow six = rows.stream().filter(r -> r.tier().compareTo(new BigDecimal("6.0")) == 0).findFirst().orElseThrow();
+        assertThat(six.userId()).isEqualTo(u.getId());
+        assertThat(six.chartCount()).isEqualTo(2);
+        assertThat(six.sumRate()).isEqualByComparingTo("160.00");   // 90 + 70 (평균 80)
+        FolderUserRow seven = rows.stream().filter(r -> r.tier().compareTo(new BigDecimal("7.0")) == 0).findFirst().orElseThrow();
+        assertThat(seven.chartCount()).isEqualTo(1);
+    }
+
+    @Test
+    void 폴더_분포에는_비공개_차단_유저와_계산되지_않는_채보가_들어가지_않는다() {
+        SongDifficulty ok = chart("6.0", PatternType.SINGLE);
+        SongDifficulty undecided = chart(null, PatternType.SINGLE);          // 기준 난이도 없음
+        SongDifficulty excluded = chart("6.0", PatternType.EXCLUDED);        // 속성 레이팅 제외
+        SongDifficulty notInTable = chartNotInTable();                       // 서열표에 없음
+        User open = user(true);
+        record(open, ok, "90.00");
+        record(open, undecided, "95.00");
+        record(open, excluded, "95.00");
+        record(open, notInTable, "95.00");
+        record(user(false), ok, "100.00");              // 비공개
+        record(blockedPublicUser(), ok, "99.00");       // 차단
+        // 레이팅 반영을 끈 채보(rating_enabled = FALSE)도 레이팅 후보가 아니다
+        SongDifficulty off = chart("6.0", PatternType.SINGLE);
+        em.createNativeQuery("UPDATE difficulty_table_entries SET rating_enabled = FALSE WHERE song_difficulty_id = ?1")
+                .setParameter(1, off.getId()).executeUpdate();
+        record(open, off, "95.00");
+
+        List<FolderUserRow> rows = folderRows();
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).userId()).isEqualTo(open.getId());
+        assertThat(rows.get(0).chartCount()).isEqualTo(1);
+        assertThat(rows.get(0).sumRate()).isEqualByComparingTo("90.00");
+    }
+
+    @Test
+    void 폴더_분포는_SRN_플러스_기록만_센다() {
+        SongDifficulty chart = chart("6.0", PatternType.SINGLE);
+        User u = user(true);
+        record(u, chart, NoteOption.SUPER_RANDOM_PLUS, "90.00", SINCE.minusDays(30));
+        record(u, chart, NoteOption.RANDOM, "50.00", SINCE.minusDays(30));
+
+        List<FolderUserRow> rows = folderRows();
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).sumRate()).isEqualByComparingTo("90.00");
+    }
 }

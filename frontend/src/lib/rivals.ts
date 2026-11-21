@@ -3,6 +3,7 @@ import type {
   NotificationKind,
   NotificationResponse,
   PageResponse,
+  RivalBundleSongsResponse,
   RivalCompareChartsResponse,
   RivalCompareRatingResponse,
   RivalRatingRow,
@@ -31,6 +32,7 @@ export const notificationKeys = {
   all: ["notifications"] as const,
   count: (viewerId: number) => ["notifications", "count", viewerId] as const,
   list: (viewerId: number) => ["notifications", "list", viewerId] as const,
+  bundle: (viewerId: number, notificationId: number) => ["notifications", "bundle", viewerId, notificationId] as const,
 };
 
 export const RIVAL_CHART_PAGE_SIZE = 20;
@@ -85,6 +87,14 @@ export function fetchUnreadCount(signal?: AbortSignal): Promise<{ count: number 
 
 export function fetchNotifications(page: number, signal?: AbortSignal): Promise<PageResponse<NotificationResponse>> {
   return apiFetch<PageResponse<NotificationResponse>>("/notifications", { query: { page, size: NOTIFICATION_PAGE_SIZE }, signal });
+}
+
+/** 라이벌 묶음 알림에 속한 곡 목록(D86). 남의 알림·없는 알림은 404. */
+export function fetchRivalBundleSongs(notificationId: number, page: number, signal?: AbortSignal): Promise<RivalBundleSongsResponse> {
+  return apiFetch<RivalBundleSongsResponse>(`/notifications/rival/${notificationId}/songs`, {
+    query: { page, size: NOTIFICATION_PAGE_SIZE },
+    signal,
+  });
 }
 
 export function markAllNotificationsRead(): Promise<void> {

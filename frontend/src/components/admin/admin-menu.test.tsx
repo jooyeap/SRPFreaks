@@ -74,8 +74,9 @@ describe("AdminMenu 묶음·항목 (D78)", () => {
     expect(content.getByRole("link", { name: /곡 관리/ })).toHaveAttribute("href", "/songs");
     expect(content.getByRole("link", { name: /서열표 관리/ })).toHaveAttribute("href", "/table");
     expect(content.getByRole("link", { name: /서열표 분석/ })).toHaveAttribute("href", "/admin/chart-stats");
+    expect(content.getByRole("link", { name: /곡 정보 정리/ })).toHaveAttribute("href", "/admin/song-meta");
     expect(content.getByRole("link", { name: /공식 곡 목록 갱신/ })).toHaveAttribute("href", "/admin/song-import");
-    expect(content.getAllByRole("link")).toHaveLength(4);
+    expect(content.getAllByRole("link")).toHaveLength(5);
 
     const ops = group("운영");
     expect(ops.getByRole("link", { name: /건의 관리/ })).toHaveAttribute("href", "/admin/suggestions");
@@ -101,6 +102,7 @@ describe("AdminMenu 묶음·항목 (D78)", () => {
     expect(screen.getByRole("link", { name: /곡 관리/ })).toHaveAttribute("href", "/songs");
     expect(screen.getByRole("link", { name: /서열표 관리/ })).toHaveAttribute("href", "/table");
     expect(screen.getByRole("link", { name: /서열표 분석/ })).toHaveAttribute("href", "/admin/chart-stats");
+    expect(screen.getByRole("link", { name: /곡 정보 정리/ })).toHaveAttribute("href", "/admin/song-meta"); // D91: ADMIN도 본다
     expect(screen.getByRole("link", { name: /건의 관리/ })).toHaveAttribute("href", "/admin/suggestions");
     expect(screen.queryByRole("link", { name: /공식 곡 목록 갱신/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /사용자/ })).toBeNull();

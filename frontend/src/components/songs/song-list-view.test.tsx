@@ -53,7 +53,7 @@ function page(content: ChartRowResponse[], p = 0, totalPages = 1, totalElements 
 const folders: ChartFolderListResponse = {
   totalSongs: 5,
   totalCharts: 7,
-  versions: ["V4", "V5"],
+  versions: ["V4", "V5"], patternCounts: {},
   folders: [folder(9.5), folder(9.0, { total: 4, recorded: 0, fc: 0, belowS: 0, averageRecorded: null, averageWithZero: 0 })],
 };
 

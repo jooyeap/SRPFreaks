@@ -37,7 +37,16 @@ export function patternMode(pattern: readonly string[]): PatternMode | null {
  * 속성은 레이팅 두 목록과 같은 나눔인 `전체 / 단일 / 단일 외` 중 하나를 고르고, `단일 외`일 때만 복합·이중·삼중을 세부로 고른다.
  * 값을 직접 바꾸지 않고 바뀐 부분(patch)만 부모에게 알린다.
  */
-export function TableFilterPanel({ filters, onChange }: { filters: TableFilters; onChange: (patch: Partial<TableFilters>) => void }) {
+export function TableFilterPanel({
+  filters,
+  onChange,
+  hidePattern = false,
+}: {
+  filters: TableFilters;
+  onChange: (patch: Partial<TableFilters>) => void;
+  /** 속성별 화면(D93)에서는 열이 속성이라 속성 필터를 숨긴다 */
+  hidePattern?: boolean;
+}) {
   const t = useTranslations();
   // 값(상/중/하, 단일/복합…)은 서버·주소가 쓰는 그대로고, 칩에 보이는 글자만 현재 언어로 바꾼다
   const recommendChips: readonly ChipOption<string>[] = RECOMMEND_OPTIONS.map((v) => ({ value: v, label: recommendLabel(v, t) }));
@@ -52,6 +61,7 @@ export function TableFilterPanel({ filters, onChange }: { filters: TableFilters;
         onToggle={(value) => onChange({ recommend: toggleValue(filters.recommend, value, RECOMMEND_OPTIONS) })}
         onClear={() => onChange({ recommend: [] })}
       />
+      {hidePattern ? null : (
       <Segmented<PatternMode>
         label={t("Table.filterPattern")}
         items={[
@@ -62,7 +72,8 @@ export function TableFilterPanel({ filters, onChange }: { filters: TableFilters;
         value={mode}
         onChange={(next) => onChange({ pattern: next === null ? [] : next === "single" ? ["단일"] : [...NOT_SINGLE] })}
       />
-      {mode === "notSingle" ? (
+      )}
+      {!hidePattern && mode === "notSingle" ? (
         <div role="group" aria-label={t("Table.patternNotSingleDetail")} className="flex flex-wrap items-center gap-1.5">
           <span className="mr-1 text-xs text-fg-dim">{t("Table.patternNotSingleDetail")}</span>
           {subChips.map((chip) => {
