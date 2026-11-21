@@ -59,9 +59,25 @@ describe("개인정보 처리방침", () => {
     expect(screen.getByText(/집계 화면을 조회하는 것만으로는 기록이 남지 않습니다/)).toBeInTheDocument();
   });
 
-  it("시행일이 2026년 11월 15일로 바뀌었다 (배포일에 맞춰 최종 조정)", () => {
+  it("공개한 기록이 비슷한 실력대 추천의 곡별 인원 수로만 쓰인다고 알린다 (D89)", () => {
     render(<PrivacyPage />);
-    expect(screen.getByText(/시행일: 2026년 11월 15일/)).toBeInTheDocument();
+    expect(screen.getByText(/같은 티어대 이용자에게 추천하는 곡을 고르는 데에도 쓰입니다/)).toBeInTheDocument();
+    expect(screen.getByText(/곡별 인원 수로만 집계해 보여 주며, 이용자 본인의 기록은 제외합니다/)).toBeInTheDocument();
+    expect(screen.getByText(/5명 미만이면 그 곡의 인원 수는 보이지 않습니다/)).toBeInTheDocument();
+    expect(screen.getByText(/누구의 기록인지는 드러나지 않으며, 공개를 켜지 않은 회원님의 기록은 포함되지 않습니다/)).toBeInTheDocument();
+  });
+
+  it("추천 근거 항목은 서열표 조정 근거 바로 뒤, 접속 기록 다음 이용 목적 마지막에 놓인다", () => {
+    render(<PrivacyPage />);
+    const items = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
+    const a = items.findIndex((t) => t.includes("서열표(곡별 난이도 정보)를 조정하는 근거"));
+    const b = items.findIndex((t) => t.includes("추천하는 곡을 고르는 데에도"));
+    expect(b).toBe(a + 1);
+  });
+
+  it("시행일이 2026년 11월 21일로 바뀌었다 (배포일에 맞춰 최종 조정)", () => {
+    render(<PrivacyPage />);
+    expect(screen.getByText(/시행일: 2026년 11월 21일/)).toBeInTheDocument();
   });
 
   it("문의 메일이 설정돼 있으면 문의처에 보여 준다", () => {

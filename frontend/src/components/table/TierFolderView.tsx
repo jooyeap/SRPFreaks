@@ -12,6 +12,7 @@ import { ScrollTopButton } from "@/components/ScrollTopButton";
 import { TableSearch } from "@/components/table/TableSearch";
 import { FolderHeader } from "@/components/table/FolderHeader";
 import { FolderNeighborBar } from "@/components/table/FolderNeighborBar";
+import { PatternFromGridBar } from "@/components/table/PatternFromGridBar";
 import { TierFolderNav } from "@/components/table/TierFolderNav";
 import { TierGroupSection } from "@/components/table/TierGroupSection";
 import { FolderThresholdNote } from "@/components/table/FolderThresholdNote";
@@ -19,6 +20,7 @@ import { ApiError } from "@/lib/api";
 import {
   allGroupsKey,
   decidedGroups,
+  EMPTY_FILTERS,
   fetchAllTierGroups,
   fetchDifficultyTables,
   filterTierGroup,
@@ -36,6 +38,7 @@ import { formatTier } from "@/lib/format";
 import { fetchMyPlayLevel, skillKeys } from "@/lib/rating";
 import { DEFAULT_SORT, sortEntries, type TableSort } from "@/lib/table-sort";
 import { averageTenth, layoutTiles } from "@/lib/table-tiles";
+import type { GridPattern } from "@/lib/pattern-grid";
 import { folderStartFilters, tableReturnHref } from "@/lib/table-view-state";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { useSwipeNav } from "@/lib/use-swipe-nav";
@@ -86,11 +89,12 @@ function errorMessage(error: unknown, t: Translator): string {
  *    그래서 서열표에서 타일을 눌러 들어오면 그때의 서열표 필터로 시작한다(folderStartFilters). 다른 길(곡 상세 등)로 오면 필터 없이(묶음 전체) 시작한다.
  *    폴더 안에서 필터를 바꾸면 이 폴더 화면에만 적용되고(이동하면 다시 시작 필터), 서열표 필터는 바뀌지 않는다.
  */
-export function TierFolderView({ userId, param }: { userId: number; param: string }) {
+export function TierFolderView({ userId, param, initialPattern = null }: { userId: number; param: string; initialPattern?: GridPattern | null }) {
   const t = useTranslations();
   const [includeZero, setIncludeZero] = useState(false);
   const [sort, setSort] = useState<TableSort>(DEFAULT_SORT);
-  const [filters, setFilters] = useState<TableFilters>(folderStartFilters); // 서열표에서 눌러 들어왔으면 그때의 필터, 아니면 없음
+  // 서열표에서 눌러 들어왔으면 그때의 필터, 아니면 없음. 속성별 화면의 칸으로 들어왔으면(?pattern=) 그 속성을 더 건다(D93, 이 폴더에만 적용: 폴더를 옮기면 화면을 새로 만들어 풀린다)
+  const [filters, setFilters] = useState<TableFilters>(() => (initialPattern ? { ...folderStartFilters(), pattern: [initialPattern] } : folderStartFilters()));
   const router = useRouter();
   const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -336,6 +340,15 @@ export function TierFolderView({ userId, param }: { userId: number; param: strin
         isAverage={averageTier !== null && averageTier === rawGroup.tier}
         backHref={tableReturnHref()}
       />
+      {initialPattern ? (
+        <PatternFromGridBar
+          pattern={initialPattern}
+          active={filters.pattern.length === 1 && filters.pattern[0] === initialPattern}
+          hasAnyFilter={hasFilters(filters)}
+          onClearPattern={() => setFilters((current) => ({ ...current, pattern: [] }))}
+          onReset={() => setFilters(EMPTY_FILTERS)}
+        />
+      ) : null}
       <TierFolderNav
         groups={filteredGroups}
         currentTier={rawGroup.tier}

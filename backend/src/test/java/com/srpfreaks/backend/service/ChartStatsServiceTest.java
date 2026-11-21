@@ -3,6 +3,7 @@ package com.srpfreaks.backend.service;
 import com.srpfreaks.backend.common.error.ApiException;
 import com.srpfreaks.backend.common.error.ErrorCode;
 import com.srpfreaks.backend.dto.ChartStatsResponse.DeviationRow;
+import com.srpfreaks.backend.dto.ChartStatsResponse.FolderDistributionPage;
 import com.srpfreaks.backend.dto.ChartStatsResponse.FolderRow;
 import com.srpfreaks.backend.dto.ChartStatsResponse.Page;
 import com.srpfreaks.backend.dto.ChartStatsResponse.PlayerRow;
@@ -21,6 +22,7 @@ import com.srpfreaks.backend.mapper.ChartInfoRow;
 import com.srpfreaks.backend.mapper.ChartPlayerRow;
 import com.srpfreaks.backend.mapper.ChartStatsMapper;
 import com.srpfreaks.backend.mapper.FolderChartCountRow;
+import com.srpfreaks.backend.mapper.FolderUserRow;
 import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -557,5 +559,103 @@ class ChartStatsServiceTest {
 
         assertThat(row.totalScore()).isEqualByComparingTo("0");
         assertThat(row.tier()).isNull();
+    }
+
+    // ---- 폴더 분포 (D88)
+
+    private static FolderUserRow cell(long userId, String tier, int charts, String sum) {
+        return new FolderUserRow(userId, "nick" + userId, d(tier), charts, d(sum));
+    }
+
+    private void folderRows(FolderUserRow... rows) {
+        when(statsMapper.findFolderUserAverages(eq(SRN_PLUS), eq(TABLE_ID), eq("레이팅 제외"), any(LocalDateTime.class))).thenReturn(List.of(rows));
+    }
+
+    @Test
+    void 폴더_분포는_폴더_오름차순으로_묶고_유저별_합과_채보_수를_그대로_내려_준다() {
+        folderRows(cell(11, "7.0", 2, "180.00"), cell(10, "6.0", 3, "270.00"), cell(11, "6.0", 1, "95.50"));
+        ratedBatchByUserId();
+
+        FolderDistributionPage page = service.folderDistribution(ADMIN, 0, 100);
+
+        assertThat(page.content()).extracting(f -> f.tier().toPlainString()).containsExactly("6.0", "7.0");
+        assertThat(page.content().get(0).cells()).extracting(c -> c.userId()).containsExactly(10L, 11L);   // 폴더 안은 유저 id 순
+        assertThat(page.content().get(0).cells().get(0).charts()).isEqualTo(3);
+        assertThat(page.content().get(0).cells().get(0).sumRate()).isEqualByComparingTo("270.00");
+        assertThat(page.totalElements()).isEqualTo(2);
+        assertThat(page.meta().minPlayers()).isEqualTo(3);   // 표본 부족 기준은 응답에 실어 화면이 쓴다
+    }
+
+    @Test
+    void 폴더_분포의_유저는_티어와_닉네임이_붙고_한_번만_나오며_티어는_후보_쿼리_한_번으로_구한다() {
+        folderRows(cell(10, "6.0", 3, "270.00"), cell(10, "7.0", 2, "180.00"), cell(11, "6.0", 1, "95.50"));
+        ratedBatchByUserId();
+
+        FolderDistributionPage page = service.folderDistribution(ADMIN, 0, 100);
+
+        assertThat(page.users()).extracting(u -> u.userId()).containsExactly(10L, 11L);
+        assertThat(page.users().get(0).nickname()).isEqualTo("nick10");
+        assertThat(page.users().get(0).tier().key()).isEqualTo("t10");
+        verify(skillService, times(1)).ratedBatch(anyCollection());   // 유저 수와 상관없이 한 번(N+1 없음)
+    }
+
+    @Test
+    void 폴더_분포는_폴더_단위로_페이지를_자르고_그_쪽의_유저만_티어를_구한다() {
+        folderRows(cell(10, "6.0", 1, "90.00"), cell(11, "6.5", 1, "80.00"), cell(12, "7.0", 1, "70.00"));
+        ratedBatchByUserId();
+
+        FolderDistributionPage page = service.folderDistribution(ADMIN, 1, 2);
+
+        assertThat(page.content()).extracting(f -> f.tier().toPlainString()).containsExactly("7.0");
+        assertThat(page.totalPages()).isEqualTo(2);
+        assertThat(page.users()).extracting(u -> u.userId()).containsExactly(12L);
+    }
+
+    @Test
+    void 레이팅_서열표가_없으면_빈_결과이고_폴더_쿼리와_총점_계산을_부르지_않는다() {
+        // 서열표가 없으면 tableId가 null이다. (채보 집계 쿼리는 null tableId로 불리지만 mock 기본값인 빈 목록을 돌려주면 된다.
+        // 여기서 eq(TABLE_ID)로 스텁하면 인자가 달라 Mockito 엄격 스텁 오류가 난다.)
+        when(tableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE)).thenReturn(Optional.empty());
+
+        FolderDistributionPage page = service.folderDistribution(ADMIN, 0, 100);
+
+        assertThat(page.content()).isEmpty();
+        assertThat(page.users()).isEmpty();
+        assertThat(page.totalPages()).isZero();
+        verify(statsMapper, never()).findFolderUserAverages(any(), any(), any(), any());
+        verify(skillService, never()).ratedBatch(anyCollection());
+    }
+
+    @Test
+    void 서열표는_있지만_기록이_없으면_빈_결과이고_총점_계산을_부르지_않는다() {
+        folderRows();
+
+        FolderDistributionPage page = service.folderDistribution(ADMIN, 0, 100);
+
+        assertThat(page.content()).isEmpty();
+        assertThat(page.users()).isEmpty();
+        verify(skillService, never()).ratedBatch(anyCollection());
+    }
+
+    @Test
+    void 티어를_계산할_수_없는_유저는_티어_null로_나온다() {
+        folderRows(cell(10, "6.0", 3, "270.00"));
+        when(skillService.ratedBatch(anyCollection())).thenReturn(Map.of());
+
+        FolderDistributionPage page = service.folderDistribution(ADMIN, 0, 100);
+
+        assertThat(page.users().get(0).tier()).isNull();
+    }
+
+    @Test
+    void 폴더_분포도_ADMIN_미만이거나_차단된_계정은_403이고_아무것도_읽지_않는다() {
+        user(2L, Role.USER, true);
+        user(3L, Role.ADMIN, false);
+
+        for (long actor : new long[] {2L, 3L, 99L}) {
+            assertThatThrownBy(() -> service.folderDistribution(actor, 0, 100))
+                    .isInstanceOf(ApiException.class).extracting("errorCode").isEqualTo(ErrorCode.FORBIDDEN);
+        }
+        verifyNoInteractions(statsMapper);
     }
 }

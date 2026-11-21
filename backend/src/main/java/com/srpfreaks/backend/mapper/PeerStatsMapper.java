@@ -76,6 +76,27 @@ public interface PeerStatsMapper {
                                        @Param("chartIds") Collection<Long> chartIds);
 
     /**
+     * 추천(D89)용: 고른 스냅샷들의 레이팅 목록에서 채보마다 몇 명이 넣었는지 센다. minUsers 미만인 채보는 HAVING으로 아예 돌려주지 않는다
+     * (기준 인원 미만이면 근거를 숨긴다). 스냅샷은 유저당 1개라 서로 다른 스냅샷 수 = 유저 수.
+     * user_id·개별 달성률은 select 하지 않는다(개인이 드러나지 않는 집계값만, D53). 채보 id로 좁히지 않고 구간 전체를 한 번에 센다
+     * (후보가 수백 개일 수 있어 IN 목록을 만들지 않는다). 삭제된 채보는 후보 쪽 쿼리(SetlistRecommendMapper)가 이미 거른다.
+     */
+    @Select("""
+            SELECT e.song_difficulty_id AS songDifficultyId,
+                   COUNT(DISTINCT e.skill_snapshot_id) AS users
+            FROM skill_snapshot_entries e
+            WHERE e.skill_snapshot_id IN (""" + CHOSEN_SNAPSHOTS + """
+            )
+            GROUP BY e.song_difficulty_id
+            HAVING COUNT(DISTINCT e.skill_snapshot_id) >= #{minUsers}
+            """)
+    List<PeerChartCount> countChartUsers(@Param("userId") Long userId,
+                                         @Param("noteOption") String noteOption,
+                                         @Param("lo") BigDecimal lo,
+                                         @Param("hi") BigDecimal hi,
+                                         @Param("minUsers") int minUsers);
+
+    /**
      * 물어본 채보의 서열표 값. 레이팅 대상 조건은 SkillMapper와 같다(기준 난이도·속성이 있고 '레이팅 제외'가 아니며,
      * 레이팅 반영이 켜져 있고, 삭제되지 않은 곡·채보). 조건에 안 맞는 채보는 나오지 않는다 -> 서비스가 상승 예상 점수를 비운다.
      */

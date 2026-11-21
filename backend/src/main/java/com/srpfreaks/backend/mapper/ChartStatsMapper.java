@@ -145,4 +145,38 @@ public interface ChartStatsMapper {
               AND u.nickname IS NOT NULL
             """)
     int countPublicUsers();
+
+    /**
+     * 폴더 분포(D88)용: (유저, 기준 난이도 폴더)당 한 줄 = 그 유저가 그 폴더에서 낸 채보별 최고 달성률의 개수와 합(평균은 화면이 sum/charts로 낸다).
+     * 안쪽 b는 PUBLIC_RECORDS 한 조각에서 나온 (유저, 채보)당 최고 달성률이라 공개 + ACTIVE 유저만 들어가고, 한 채보를 여러 번 저장해도 1개로 센다.
+     * 레이팅 후보(SkillMapper)와 같은 조건만 센다: 서열표에 기준 난이도·속성이 있고, 속성이 '레이팅 제외'가 아니고, 레이팅 반영이 켜져 있다.
+     * 폴더(tier_label)로 묶어 0.1 단위 그대로 내려 주고, 0.5 단위로 묶는 것은 화면이 한다(합과 개수만 있으면 가중 평균이 정확히 같다).
+     * 이메일·역할·Google ID는 select 하지 않는다. 삭제된 곡·채보는 뺀다.
+     */
+    @Select("""
+            SELECT b.user_id           AS userId,
+                   u.nickname          AS nickname,
+                   e.tier_label        AS tier,
+                   COUNT(*)            AS chartCount,
+                   SUM(b.best_rate)    AS sumRate
+            FROM (""" + ROLLUP_ALL + """
+            ) b
+            JOIN users u ON u.user_id = b.user_id
+            JOIN song_difficulties d ON d.song_difficulty_id = b.song_difficulty_id
+            JOIN songs s ON s.song_id = d.song_id
+            JOIN difficulty_table_entries e
+                 ON e.song_difficulty_id = d.song_difficulty_id
+                AND e.difficulty_table_id = #{tableId}
+            WHERE d.is_deleted = FALSE
+              AND s.is_deleted = FALSE
+              AND e.rating_enabled = TRUE
+              AND e.tier_label IS NOT NULL
+              AND e.pattern_type IS NOT NULL
+              AND e.pattern_type <> #{excludedPattern}
+            GROUP BY b.user_id, u.nickname, e.tier_label
+            """)
+    List<FolderUserRow> findFolderUserAverages(@Param("noteOption") String noteOption,
+                                               @Param("tableId") Long tableId,
+                                               @Param("excludedPattern") String excludedPattern,
+                                               @Param("since") LocalDateTime since);
 }

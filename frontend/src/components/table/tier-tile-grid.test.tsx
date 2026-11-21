@@ -4,8 +4,13 @@ import { TierTileGrid, type TierTile } from "@/components/table/TierTileGrid";
 import { resetTableTilesForTest } from "@/lib/table-tiles";
 import { readTableReturn, rememberTableReturn } from "@/lib/table-view-state";
 
+/** 단계 개수를 생략하면 모두 0(기록 없음·단계 분포 없음)인 타일 */
+function tile(tier: number, total: number, recorded: number, stages: Partial<Pick<TierTile, "exc" | "fc" | "ss" | "sPlus" | "s" | "belowS">> = {}): TierTile {
+  return { tier, total, recorded, exc: 0, fc: 0, ss: 0, sPlus: 0, s: 0, belowS: 0, ...stages };
+}
+
 /** 4.9 ~ 7.0 (0.1 단위) 22칸. 기록은 모두 비워 둔다 */
-const all: TierTile[] = Array.from({ length: 22 }, (_, i) => ({ tier: (49 + i) / 10, total: 10, recorded: 0 }));
+const all: TierTile[] = Array.from({ length: 22 }, (_, i) => tile((49 + i) / 10, 10, 0));
 
 function stubMotion(reduce: boolean) {
   vi.stubGlobal("matchMedia", (query: string) => ({
@@ -34,62 +39,98 @@ describe("TierTileGrid", () => {
     vi.restoreAllMocks();
   });
 
-  it("타일에는 난이도 숫자와 기록/전체만 있고, 누르면 그 난이도 폴더로 간다 (4열, 360px 미만 3열)", () => {
-    render(<TierTileGrid tiles={[{ tier: 5.8, total: 10, recorded: 4 }]} average={null} order="hard" label="난이도 목록" />);
+  it("타일에는 난이도 숫자와 기록/전체, 아래 단계 분포 막대가 있고 누르면 그 난이도 폴더로 간다 (3열, 480px 이상 4열)", () => {
+    render(<TierTileGrid tiles={[tile(5.8, 10, 4, { s: 1, belowS: 3 })]} average={null} order="hard" label="난이도 목록" />);
     const list = screen.getByRole("list", { name: "난이도 목록" });
-    expect(list).toHaveClass("grid-cols-3", "min-[360px]:grid-cols-4");
-    const tile = screen.getByRole("link");
-    expect(tile).toHaveAttribute("href", "/table/folder/5.8");
-    expect(tile).toHaveTextContent("5.8");
-    expect(tile).toHaveTextContent("4/10");
-    expect(tile.textContent).toBe("5.8 4/10"); // 막대·약함·평균 글자 등은 없다
-    expect(tile.className).toContain("min-h-14"); // 터치 영역 24px 이상
+    expect(list).toHaveClass("grid-cols-3", "min-[480px]:grid-cols-4");
+    const t = screen.getByRole("link");
+    expect(t).toHaveAttribute("href", "/table/folder/5.8");
+    expect(t.textContent).toBe("5.8 4/10"); // 막대는 글자가 없는 장식(aria-hidden)이다
+    // 막대: 높이 3px, 기록 10곡 중 S 1곡(10%)·S 미만 3곡(30%)이 칸 너비로 나온다
+    const bar = t.querySelector("[data-stage-bar]") as HTMLElement;
+    expect(bar).toHaveClass("h-[3px]");
+    expect(bar.parentElement).toHaveAttribute("aria-hidden", "true");
+    expect([...bar.children].map((c) => [c.getAttribute("data-stage"), (c as HTMLElement).style.width])).toEqual([
+      ["S", "10%"],
+      ["A", "30%"],
+    ]);
+    // 전곡 완료가 아니라서 위쪽 선·`S↑` 글자는 없다
+    expect(t.querySelector("[data-full-line]")).toBeNull();
+    expect(t.querySelector("[data-full-stage]")).toBeNull();
   });
 
-  it("다 채운 타일(n/n)만 완료 색과 숨은 글자 `완료`가 붙고, 체크 글자는 없다", () => {
-    render(
-      <TierTileGrid
-        tiles={[
-          { tier: 5.0, total: 3, recorded: 3 },
-          { tier: 5.1, total: 3, recorded: 2 },
-          { tier: 5.2, total: 0, recorded: 0 },
-        ]}
-        average={null}
-        order="easy"
-        label="난이도 목록"
-      />,
-    );
-    const items = screen.getAllByRole("listitem");
-    expect(items[0]).toHaveAttribute("data-done", "true");
-    expect(within(items[0]).getByText("완료")).toHaveClass("sr-only");
-    expect(items[0]).toHaveTextContent("3/3");
-    expect(items[0].querySelector(".text-done-text")).not.toBeNull();
-    expect(items[0].textContent).not.toContain("✓");
-    expect(items[1]).not.toHaveAttribute("data-done");
-    expect(within(items[1]).queryByText("완료")).toBeNull();
-    expect(items[2]).not.toHaveAttribute("data-done"); // 전체가 0이면 완료가 아니다
+  it("기록이 없는 타일은 `기록 없음` + 점선 윤곽 + 흐린 글자이고, 막대는 빈 바탕뿐이다", () => {
+    render(<TierTileGrid tiles={[tile(6.0, 12, 0)]} average={null} order="hard" label="난이도 목록" />);
+    const t = screen.getByRole("link");
+    expect(t.textContent).toBe("6.0 기록 없음");
+    expect(t).toHaveClass("border-dashed");
+    expect(t.querySelector(".text-fg-dim")).not.toBeNull();
+    expect(t.querySelector("[data-stage-bar]")?.children).toHaveLength(0);
   });
 
-  it("기록이 0인 타일은 점선 윤곽 + 흐린 글자, 기록이 있으면 실선이고 기록 비율대로 진해진다 (tileTint 규칙)", () => {
-    render(
-      <TierTileGrid
-        tiles={[
-          { tier: 5.0, total: 10, recorded: 0 },
-          { tier: 5.1, total: 10, recorded: 10 - 5 },
-          { tier: 5.2, total: 10, recorded: 9 },
-        ]}
-        average={null}
-        order="easy"
-        label="난이도 목록"
-      />,
-    );
-    const empty = link("5.0");
-    expect(empty).toHaveClass("border-dashed");
-    expect(empty.querySelector(".text-fg-dim")).not.toBeNull();
-    const half = link("5.1");
-    expect(half).not.toHaveClass("border-dashed");
-    expect(half.getAttribute("style")).toContain("--tile-bg: color-mix(in srgb, var(--stage-ss-bar) 14%, transparent)"); // 4 + 0.5*20
-    expect(empty.getAttribute("style")).toContain("var(--stage-ss-bar) 4%");
+  describe("전곡 기록(완료) 효과 (D92, 시안 F안)", () => {
+    it("전곡 S 이상이면 위쪽 선(가장 낮은 단계 색) + 숫자 단계색 + 옅은 배경 + `S+↑` 글자 + 숨은 글자가 붙는다", () => {
+      // 21곡 전부 기록: S+ 5곡, SS 10곡, FC 6곡 → 가장 낮은 단계는 S+
+      render(<TierTileGrid tiles={[tile(5.9, 21, 21, { sPlus: 5, ss: 10, fc: 6 })]} average={null} order="hard" label="난이도 목록" />);
+      const t = screen.getByRole("link");
+      const li = screen.getByRole("listitem");
+      expect(li).toHaveAttribute("data-done", "true");
+      expect(t).toHaveAttribute("data-stage", "S+");
+      expect(t.querySelector("[data-full-line]")).toHaveAttribute("data-stage", "S+");
+      expect(t.querySelector("[data-full-line]")).toHaveClass("stage-bar", "h-[3px]", "inset-x-0", "top-0");
+      expect(t.querySelector("span.font-num.text-lg")).toHaveClass("stage-text");
+      expect(t.className).toContain("var(--done-tint)");
+      const mark = t.querySelector("[data-full-stage]") as HTMLElement;
+      expect(mark).toHaveAttribute("data-full-stage", "S+");
+      expect(mark.querySelector("[aria-hidden='true']")).toHaveTextContent("S+↑");
+      expect(within(mark).getByText(/모든 채보가 S\+ 이상입니다/)).toHaveClass("sr-only");
+      expect(within(t).getByText("완료")).toHaveClass("sr-only");
+      expect(t).toHaveTextContent("21/21");
+    });
+
+    it("전곡 EXC는 화살표 없이 `EXC`이고 숫자와 글자가 그라데이션 글자(stage-grad-text)다", () => {
+      render(<TierTileGrid tiles={[tile(5.0, 16, 16, { exc: 16 })]} average={null} order="hard" label="난이도 목록" />);
+      const t = screen.getByRole("link");
+      expect(t).toHaveAttribute("data-stage", "EXC");
+      expect(t.querySelector("span.font-num.text-lg")).toHaveClass("stage-grad-text");
+      const mark = t.querySelector("[data-full-stage]") as HTMLElement;
+      expect(mark).toHaveClass("stage-grad-text");
+      expect(mark.querySelector("[aria-hidden='true']")?.textContent).toBe("EXC");
+      expect(within(mark).getByText(/모든 채보가 EXC입니다/)).toHaveClass("sr-only");
+    });
+
+    it("일부만 기록했으면 선·글자·완료가 없다 (기록 수 한 곡 모자란 경계)", () => {
+      render(<TierTileGrid tiles={[tile(5.5, 52, 51, { ss: 51 })]} average={null} order="hard" label="난이도 목록" />);
+      const t = screen.getByRole("link");
+      expect(screen.getByRole("listitem")).not.toHaveAttribute("data-done");
+      expect(t).not.toHaveAttribute("data-stage");
+      expect(t.querySelector("[data-full-line]")).toBeNull();
+      expect(t.querySelector("[data-full-stage]")).toBeNull();
+      expect(within(t).queryByText("완료")).toBeNull();
+      expect(t.className).not.toContain("var(--done-tint)");
+    });
+
+    it("전체가 0이면 완료가 아니다", () => {
+      render(<TierTileGrid tiles={[tile(5.2, 0, 0)]} average={null} order="hard" label="난이도 목록" />);
+      expect(screen.getByRole("listitem")).not.toHaveAttribute("data-done");
+    });
+
+    it("전곡 기록이지만 S 미만(A/B/C)이 섞이면 단계를 정할 수 없어 선·글자 없이 숫자만 완료 색이다 (홈과 같은 규칙)", () => {
+      render(<TierTileGrid tiles={[tile(5.1, 4, 4, { ss: 3, belowS: 1 })]} average={null} order="hard" label="난이도 목록" />);
+      const t = screen.getByRole("link");
+      expect(screen.getByRole("listitem")).toHaveAttribute("data-done", "true");
+      expect(t).not.toHaveAttribute("data-stage");
+      expect(t.querySelector("[data-full-line]")).toBeNull();
+      expect(t.querySelector("[data-full-stage]")).toBeNull();
+      expect(t.querySelector("span.font-num.text-lg")).toHaveClass("text-done-text");
+    });
+
+    it("색은 CSS 변수만 쓴다: 컴포넌트 클래스·style에 색 값(#, rgb)이 없다", () => {
+      render(<TierTileGrid tiles={[tile(5.9, 3, 3, { s: 3 }), tile(5.8, 3, 1, { s: 1 })]} average={5.8} order="hard" label="난이도 목록" />);
+      const html = document.body.innerHTML;
+      expect(html).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+      expect(html).not.toMatch(/rgba?\(/);
+    });
   });
 
   it("평균 타일은 주황 윤곽과 숨은 글자 `내 평균 난이도`가 붙고 하나뿐이다", () => {
@@ -97,7 +138,9 @@ describe("TierTileGrid", () => {
     const marked = document.querySelectorAll("[data-average='true']");
     expect(marked).toHaveLength(1);
     expect(marked[0]).toHaveTextContent("5.8");
-    expect(marked[0]).toHaveClass("border-2", "border-weak");
+    expect(marked[0]).toHaveClass("outline", "outline-2", "outline-weak"); // border가 아니라 outline이라 다른 타일과 높이가 같다
+    expect(marked[0]).not.toHaveClass("border-2");
+    expect(marked[0].textContent).not.toContain("내 평균 난이도 "); // 눈에 보이는 `내 평균` 글자는 없다(숨은 글자만)
     expect(within(marked[0] as HTMLElement).getByText("내 평균 난이도")).toHaveClass("sr-only");
   });
 
@@ -158,7 +201,7 @@ describe("TierTileGrid", () => {
       render(<TierTileGrid tiles={all} average={5.8} order="hard" label="난이도 목록" />); // 돌아옴
       const avg = document.querySelector("[data-average='true']");
       expect(avg).not.toHaveClass("tile-glow");
-      expect(avg).toHaveClass("border-weak");
+      expect(avg).toHaveClass("outline-weak");
     });
 
     it("움직임 줄이기 설정이면 빛남 없이 윤곽만 있다", () => {
@@ -166,7 +209,7 @@ describe("TierTileGrid", () => {
       render(<TierTileGrid tiles={all} average={5.8} order="hard" label="난이도 목록" />);
       const avg = document.querySelector("[data-average='true']");
       expect(avg).not.toHaveClass("tile-glow");
-      expect(avg).toHaveClass("border-2", "border-weak");
+      expect(avg).toHaveClass("outline-2", "outline-weak");
     });
 
     it("평균이 없으면 연출을 하지 않고 기억도 남기지 않는다 (나중에 평균이 생기면 그때 한다)", () => {

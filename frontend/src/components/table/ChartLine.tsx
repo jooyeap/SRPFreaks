@@ -43,6 +43,7 @@ export function ChartLine({
   level,
   aside,
   action,
+  foot,
 }: {
   /** li 바깥 모양(구분선, 카드 테두리 등). 높이·간격은 이 컴포넌트가 정한다 */
   className?: string;
@@ -74,6 +75,8 @@ export function ChartLine({
   aside?: ReactNode;
   /** 맨 오른쪽 버튼(서열표의 `+`) */
   action?: ReactNode;
+  /** 난이도 알약 아래 덧붙이는 줄(추천의 사유 칩·근거 인원, D89). 있으면 줄 높이가 68px 고정에서 최소 68px로 늘어난다 */
+  foot?: ReactNode;
 }) {
   const t = useTranslations();
   return (
@@ -81,7 +84,7 @@ export function ChartLine({
       data-stage={stage ?? undefined}
       data-done={done === undefined ? undefined : done ? "true" : "false"}
       style={style}
-      className={`relative ${STAGE_EDGE_CLIP} flex h-[68px] items-center gap-2.5 ${jacket ? "pl-3" : "pl-4"} pr-3 ${stage ? "stage-tint" : ""} ${className}`}
+      className={`relative ${STAGE_EDGE_CLIP} flex ${foot ? "min-h-[68px] py-2" : "h-[68px]"} items-center gap-2.5 ${jacket ? "pl-3" : "pl-4"} pr-3 ${stage ? "stage-tint" : ""} ${className}`}
     >
       {stage ? <StageEdgeBar /> : null}
       {lead}
@@ -116,6 +119,7 @@ export function ChartLine({
         <span className="mt-1 flex items-center gap-1.5 overflow-hidden">
           <ChartBadge part={part} difficulty={difficulty} level={level} compact />
         </span>
+        {foot}
       </div>
       {aside}
       {action}

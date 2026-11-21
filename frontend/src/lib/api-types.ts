@@ -471,7 +471,13 @@ export interface RecommendationItem {
   /** 서열표의 속성 글자(없으면 null). */
   pattern: string | null;
   mine: MyRecord | null;
+  /** 같은 티어대 공개 유저(나 제외) 중 이 채보를 레이팅에 반영한 인원(D89). reason이 PEER_TIER일 때만 값이 있다. 누가 반영했는지는 오지 않는다. 옛 응답에는 없을 수 있다 */
+  peerUsers?: number | null;
+  /** 추천 사유(D89). PEER_TIER = 같은 티어대 다수 반영, NEAR_AVERAGE = 내 평균 난이도 근처(근거 인원 부족). 신규(STARTER)는 null */
+  reason?: RecommendationReason | null;
 }
+
+export type RecommendationReason = "PEER_TIER" | "NEAR_AVERAGE";
 
 /** 추천 상태. READY = 평균 기준, STARTER = 기록 없는 신규(입문 난이도 이하), INSUFFICIENT = 단일/그 외 데이터 부족, UNAVAILABLE = 서열표 없음. */
 export type RecommendationStatus = "READY" | "STARTER" | "INSUFFICIENT" | "UNAVAILABLE";
