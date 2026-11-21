@@ -612,15 +612,28 @@ class ChartStatsServiceTest {
     }
 
     @Test
-    void 레이팅_서열표가_없거나_기록이_없으면_빈_결과이고_쿼리와_총점_계산을_부르지_않는다() {
+    void 레이팅_서열표가_없으면_빈_결과이고_폴더_쿼리와_총점_계산을_부르지_않는다() {
+        // 서열표가 없으면 tableId가 null이다. (채보 집계 쿼리는 null tableId로 불리지만 mock 기본값인 빈 목록을 돌려주면 된다.
+        // 여기서 eq(TABLE_ID)로 스텁하면 인자가 달라 Mockito 엄격 스텁 오류가 난다.)
         when(tableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE)).thenReturn(Optional.empty());
-        aggregates();
 
         FolderDistributionPage page = service.folderDistribution(ADMIN, 0, 100);
 
         assertThat(page.content()).isEmpty();
         assertThat(page.users()).isEmpty();
+        assertThat(page.totalPages()).isZero();
         verify(statsMapper, never()).findFolderUserAverages(any(), any(), any(), any());
+        verify(skillService, never()).ratedBatch(anyCollection());
+    }
+
+    @Test
+    void 서열표는_있지만_기록이_없으면_빈_결과이고_총점_계산을_부르지_않는다() {
+        folderRows();
+
+        FolderDistributionPage page = service.folderDistribution(ADMIN, 0, 100);
+
+        assertThat(page.content()).isEmpty();
+        assertThat(page.users()).isEmpty();
         verify(skillService, never()).ratedBatch(anyCollection());
     }
 
