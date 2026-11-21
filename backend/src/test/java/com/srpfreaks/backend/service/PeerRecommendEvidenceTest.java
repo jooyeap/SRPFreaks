@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,7 +44,7 @@ class PeerRecommendEvidenceTest {
     @BeforeEach
     void setUp() {
         evidence = new PeerRecommendEvidence(appSettingRepository, skillService, mapper);
-        when(appSettingRepository.findAll()).thenReturn(List.of(
+        lenient().when(appSettingRepository.findAll()).thenReturn(List.of(
                 setting("rating.pivot", "6.0"), setting("rating.high_slope", "5"), setting("rating.high_offset", "15"),
                 setting("rating.low_slope", "10"), setting("rating.low_offset", "45"),
                 setting("rating.cap_rate", "80"), setting("rating.max_rate", "95"), setting("rating.bonus", "3.2"),
