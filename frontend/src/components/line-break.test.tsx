@@ -24,6 +24,8 @@ describe("긴 안내 문구의 줄바꿈 (break-keep)", () => {
   it("서열표 첫 방문 안내", () => {
     render(<TableTip />);
     expect(screen.getByText(ko.Table.tilesTip).className).toContain("break-keep");
+    // flex 안의 글줄은 min-w-0이 있어야 좁은 폭에서 `×` 버튼을 화면 밖으로 밀어내지 않는다(D101)
+    expect(screen.getByText(ko.Table.tilesTip).className).toContain("min-w-0");
   });
 
   it("라이벌 설명서의 목록", () => {

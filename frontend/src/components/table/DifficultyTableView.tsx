@@ -135,7 +135,8 @@ export function DifficultyTableView({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        {/* min-w-0: 제목·출처 줄이 `곡 등록` 버튼 옆에서 줄어들 수 있게 한다(없으면 좁은 폭·큰 글꼴에서 버튼이 화면 밖으로 밀려난다, D101) */}
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold text-fg">{tableNameLabel(table.name, t)}</h1>
           <p className="mt-1 text-xs text-fg-dim">
             {t("Table.patternBasis")} · <TableCredit className="inline" />
