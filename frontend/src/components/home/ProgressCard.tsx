@@ -54,6 +54,7 @@ export function ProgressCard({
   pattern = "all",
   onPatternChange,
   patternCounts,
+  goalExtra,
 }: {
   table: ProgressPanel;
   songs: ProgressPanel;
@@ -67,6 +68,8 @@ export function ProgressCard({
   onPatternChange?: (pattern: ProgressPattern) => void;
   /** 탭별 칩 숫자(속성 필터를 걸기 전 기준). 아직 못 받은 탭은 null이고 그때는 칩을 그리지 않는다 */
   patternCounts?: { table: PatternCounts | null; songs: PatternCounts | null };
+  /** `다음 목표` 바로 아래에 붙일 내용(추천 곡, D89). 다음 목표가 있을 때만 그린다 */
+  goalExtra?: ReactNode;
 }) {
   const t = useTranslations("Progress");
   const tRoot = useTranslations();
@@ -118,6 +121,7 @@ export function ProgressCard({
           average={active === "table" ? average : null}
           skill={skill}
           showWeak={active === "table"}
+          goalExtra={goalExtra}
         />
       </section>
     </div>
@@ -133,6 +137,7 @@ function PanelBody({
   skill,
   showWeak,
   filtered,
+  goalExtra,
 }: {
   panel: ProgressPanel;
   tab: TabText;
@@ -142,6 +147,7 @@ function PanelBody({
   skill: SkillResponse | null;
   showWeak: boolean;
   filtered: boolean;
+  goalExtra?: ReactNode;
 }) {
   const t = useTranslations("Progress");
   const fade = useSkeletonFade(panel.kind === "loading");
@@ -201,6 +207,7 @@ function PanelBody({
           </p>
         </div>
       ) : null}
+      {goal ? goalExtra : null}
 
       {weak && average !== null ? (
         <div className="flex items-center justify-between gap-3 rounded-[10px] border border-weak bg-weak-tint px-3 py-2.5">

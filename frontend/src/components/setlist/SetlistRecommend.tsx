@@ -1,9 +1,10 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { AverageLevelHelp } from "@/components/HelpTip";
 import { Pager } from "@/components/Pager";
+import { PeerReason } from "@/components/setlist/PeerReason";
 import { RecommendRangeForm } from "@/components/setlist/RecommendRangeForm";
 import { useToast } from "@/components/Toast";
 import { ChartLine } from "@/components/table/ChartLine";
@@ -22,6 +23,8 @@ import { useTranslations } from "next-intl";
  * - S 기준: 평균 근처에서 위쪽(sMin~sMax)에서 기록이 없거나 S 미만인 채보
  * 상태별 화면: READY 두 묶음 / STARTER 기록이 없는 신규는 입문 난이도 이하의 S 기준만 / INSUFFICIENT 단일·그 외 데이터가 적다는 안내만.
  * 줄마다 `담기`를 누른다(한꺼번에 담는 버튼은 없다). 담으면 서버가 그 채보를 추천에서 빼므로 목록이 새로 채워진다.
+ * 줄마다 근거(D89): 같은 티어대 공개 유저가 레이팅에 반영한 곡은 묶음 맨 앞에 `비슷한 실력대 N명이 레이팅에 반영`과 사유 칩으로 보이고(반영 인원 순),
+ * 기준 인원 미만이라 근거가 없는 곡은 그 아래 `내 평균 난이도 근처`로 이어진다. 순서·근거는 모두 서버가 정해 주고 화면은 나눠 그리기만 한다.
  * 범위 숫자와 개수는 서버 값이라 화면에 하드코딩하지 않는다. `범위 조정`으로 사용자가 SS·S 범위를 직접 정할 수 있다(저장하면 내 설정, 기본값으로 되돌릴 수 있다).
  */
 export function SetlistRecommend({ userId, addedIds, full }: { userId: number; addedIds: ReadonlySet<number>; full: boolean }) {
@@ -153,6 +156,8 @@ function Group({
 }) {
   const t = useTranslations();
   const jackets = useJackets();
+  // 서버가 근거 있는 줄을 앞에 두고 준다. 근거 있는 줄이 이 쪽에 하나라도 있을 때만 두 소제목으로 나눈다(없으면 예전 모양 그대로)
+  const hasPeer = items.some((item) => item.reason === "PEER_TIER");
   return (
     <div className="flex flex-col gap-1">
       <h3 className="text-xs font-bold text-fg-sub">
@@ -162,12 +167,21 @@ function Group({
         <p className="text-sm text-fg-dim">{t("Setlist.recEmpty")}</p>
       ) : (
         <ul aria-label={t("Setlist.recGroupAria", { title })} className="flex flex-col">
-          {items.map((item) => {
+          {items.map((item, index) => {
             const added = addedIds.has(item.songDifficultyId);
             const stage = item.mine?.stage ?? null;
+            const peer = item.reason === "PEER_TIER";
+            // 소제목은 목록 항목이 아니라서 role="presentation"(세는 줄 수에 들지 않는다)
+            const subHead = !hasPeer ? null : index === 0 && peer ? "peer" : !peer && items[index - 1]?.reason === "PEER_TIER" ? "near" : null;
             return (
+              <Fragment key={item.songDifficultyId}>
+              {subHead ? (
+                <li role="presentation" className="px-1 pb-1 pt-2 text-[11px] font-bold text-fg-sub first:pt-0">
+                  {subHead === "peer" ? t("Setlist.peerGroupTitle") : t("Setlist.nearGroupTitle")}{" "}
+                  <span className="font-normal text-fg-dim">· {subHead === "peer" ? t("Setlist.peerGroupNote") : t("Setlist.nearGroupNote")}</span>
+                </li>
+              ) : null}
               <ChartLine
-                key={item.songDifficultyId}
                 className="border-t border-row-line first:border-t-0"
                 jacket={jackets.visible ? { url: jackets.urlOf(item.songId) } : null}
                 pattern={item.pattern}
@@ -178,6 +192,7 @@ function Group({
                 part={item.part}
                 difficulty={item.difficulty}
                 level={item.level}
+                foot={item.reason ? <PeerReason item={item} /> : undefined}
                 // 오른쪽: 내 랭크·달성률 알약(기록이 없으면 `–`) 위, `담기`/`담김` 아래. 줄이 좁아서(카드 안 360px) 버튼을 알약 아래에 쌓는다.
                 // 보이는 높이 26px, ::after로 눌리는 영역만 사방 6px 넓힌다. `담김`은 초록 테두리 + 초록 글자(글자로도 구분된다)
                 aside={
@@ -197,6 +212,7 @@ function Group({
                   </div>
                 }
               />
+              </Fragment>
             );
           })}
         </ul>

@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/Skeleton";
 import { useSkeletonFade } from "@/lib/use-skeleton-fade";
 import { ImportEntryLink } from "@/components/import/ImportEntryLink";
 import { WelcomeGuide } from "@/components/home/WelcomeGuide";
+import { HomePeerPicks } from "@/components/home/HomePeerPicks";
 import { HomeNotices } from "@/components/home/HomeNotices";
 import { PlayersPreview } from "@/components/home/PlayersPreview";
 import { ProgressCard, type ProgressPanel } from "@/components/home/ProgressCard";
@@ -140,6 +141,7 @@ export function HomeDashboard({ userId, name }: { userId: number; name: string }
         skill={skill.data ?? null}
         pattern={pattern}
         onPatternChange={setProgressPattern}
+        goalExtra={<HomePeerPicks userId={userId} />}
         patternCounts={{
           table: groups.data ? patternCountsOfGroups(decidedGroups(groups.data)) : null,
           songs: folders.data ? patternCountsFromServer(folders.data.totalCharts, folders.data.patternCounts) : null,
