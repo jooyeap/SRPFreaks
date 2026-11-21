@@ -7,7 +7,7 @@ import { AdminBackLink } from "@/components/admin/AdminBackLink";
 import { HelpTip } from "@/components/HelpTip";
 import { Pager } from "@/components/Pager";
 import { ChartCell, DeviationBar, ListState, StatCell, TableHead } from "@/components/admin/ChartStatsParts";
-import { FolderCurve } from "@/components/admin/FolderCurve";
+import { FolderDistribution } from "@/components/admin/FolderDistribution";
 import { Segment } from "@/components/rivals/Segment";
 import {
   averageText,
@@ -15,13 +15,12 @@ import {
   chartStatsKeys,
   DEVIATION_SORTS,
   fetchDeviation,
-  fetchFolders,
+  fetchFolderDistribution,
   fetchPopularity,
   fetchUndecided,
   POPULARITY_RANGES,
   ratioPercent,
   signedText,
-  tierText,
   type ChartStatsMeta,
   type ChartStatsTab,
   type DeviationSort,
@@ -35,14 +34,13 @@ const DEFAULT_META: ChartStatsMeta = { publicUsers: 0, minPlayers: 3, minFolderC
 // 1024px 이상의 표 형태: 열 크기. 모바일에서는 줄이 곡 이름 아래에 숫자가 이어지는 두 줄 카드다.
 const DEVIATION_COLUMNS = "lg:grid-cols-[minmax(0,1fr)_72px_84px_176px_96px_144px]";
 const POPULARITY_COLUMNS = "lg:grid-cols-[minmax(0,1fr)_88px_88px_104px_160px]";
-const FOLDER_COLUMNS = "lg:grid-cols-[96px_minmax(0,1fr)_120px_140px]";
 const UNDECIDED_COLUMNS = "lg:grid-cols-[minmax(0,1fr)_96px_96px]";
 const ROW_BASE = "flex flex-col gap-1.5 px-4 py-3 lg:grid lg:items-center lg:gap-3";
 const STATS_WRAP = "flex flex-wrap items-center gap-x-3 gap-y-0.5 lg:contents";
 
 /**
  * 서열표 분석 (D77, ROOT·ADMIN). 관리자가 플레이어 기록을 근거로 서열표를 조정하도록 곡별 숫자를 보여 주는 읽기 전용 도구다.
- * 탭 4개: 편차 / 인기 / 폴더 곡선 / 미정. 곡 이름을 누르면 그 곡의 유저별 상세(/admin/chart-stats/{id})로 간다.
+ * 탭 4개: 편차 / 인기 / 폴더 분포 / 미정. 곡 이름을 누르면 그 곡의 유저별 상세(/admin/chart-stats/{id})로 간다.
  *
  * 판정하지 않는다: 쉬움/어려움 후보, 역전, 적정 같은 말도, 경고 색도 없다. 숫자(+/− 부호 포함)·막대·정렬만 있다. 판정은 관리자가 한다.
  * 공개 프로필을 선택한 유저의 기록만 집계한 값이다(서버가 보장). 플레이어 3명 미만 곡은 「표본 부족」으로 보인다.
@@ -50,17 +48,17 @@ const STATS_WRAP = "flex flex-wrap items-center gap-x-3 gap-y-0.5 lg:contents";
 export function ChartStatsView({ viewerId }: { viewerId: number }) {
   const t = useTranslations("ChartStats");
   const [tab, setTab] = useState<ChartStatsTab>("deviation");
-  // 머리의 안내는 폴더 목록의 집계 기준(meta)을 쓴다. 폴더 탭과 같은 조회라서 요청이 한 번뿐이다.
+  // 머리의 안내는 폴더 분포의 집계 기준(meta)을 쓴다. 폴더 분포 탭과 같은 조회라서 요청이 한 번뿐이다.
   const folders = useQuery({
-    queryKey: chartStatsKeys.folders(viewerId),
-    queryFn: ({ signal }) => fetchFolders(signal),
+    queryKey: chartStatsKeys.folderDistribution(viewerId),
+    queryFn: ({ signal }) => fetchFolderDistribution(signal),
     staleTime: 60_000,
   });
   const meta = folders.data?.meta ?? DEFAULT_META;
   const tabLabels: Record<ChartStatsTab, string> = {
     deviation: t("tabDeviation"),
     popularity: t("tabPopularity"),
-    folders: t("tabFolders"),
+    distribution: t("tabDistribution"),
     undecided: t("tabUndecided"),
   };
 
@@ -104,7 +102,7 @@ export function ChartStatsView({ viewerId }: { viewerId: number }) {
       <div role="tabpanel" id="chart-stats-panel" aria-labelledby={`chart-stats-tab-${tab}`} className="flex flex-col gap-3">
         {tab === "deviation" ? <DeviationTab viewerId={viewerId} /> : null}
         {tab === "popularity" ? <PopularityTab viewerId={viewerId} /> : null}
-        {tab === "folders" ? <FoldersTab viewerId={viewerId} /> : null}
+        {tab === "distribution" ? <DistributionTab viewerId={viewerId} /> : null}
         {tab === "undecided" ? <UndecidedTab viewerId={viewerId} /> : null}
       </div>
     </div>
@@ -240,14 +238,13 @@ function PopularityTab({ viewerId }: { viewerId: number }) {
   );
 }
 
-function FoldersTab({ viewerId }: { viewerId: number }) {
+function DistributionTab({ viewerId }: { viewerId: number }) {
   const t = useTranslations("ChartStats");
   const query = useQuery({
-    queryKey: chartStatsKeys.folders(viewerId),
-    queryFn: ({ signal }) => fetchFolders(signal),
+    queryKey: chartStatsKeys.folderDistribution(viewerId),
+    queryFn: ({ signal }) => fetchFolderDistribution(signal),
     staleTime: 60_000,
   });
-  const rows = query.data?.content ?? [];
 
   return (
     <ListState
@@ -255,32 +252,10 @@ function FoldersTab({ viewerId }: { viewerId: number }) {
       error={query.isError}
       onRetry={() => void query.refetch()}
       retrying={query.isFetching}
-      empty={query.isSuccess && rows.length === 0}
-      emptyText={t("empty")}
+      empty={query.isSuccess && query.data.content.length === 0}
+      emptyText={t("distEmpty")}
     >
-      <FolderCurve rows={rows} />
-      <div className="overflow-hidden rounded-2xl border border-line bg-card">
-        <TableHead columns={FOLDER_COLUMNS} labels={[t("colTier"), t("colCharts"), t("colAvg"), t("colDelta")]} />
-        <ul aria-label={t("listAria")} className="divide-y divide-row-line">
-          {rows.map((row) => (
-            <li key={row.tier} data-tier={tierText(row.tier)} className={`${ROW_BASE} ${FOLDER_COLUMNS}`}>
-              <span className="font-num text-sm font-bold text-fg">{tierText(row.tier)}</span>
-              <div className={STATS_WRAP}>
-                <StatCell label={t("colCharts")}>
-                  {t("chartsValue", { n: row.chartCount })}
-                  <span className="text-fg-dim"> ({t("folderSample", { n: row.sampledCharts })})</span>
-                </StatCell>
-                <StatCell label={t("colAvg")} muted={row.avgRate === null}>
-                  {averageText(row.avgRate) ?? t("folderInsufficient")}
-                </StatCell>
-                <StatCell label={t("colDelta")} muted={row.deltaFromPrevious === null}>
-                  <strong className="font-bold">{signedText(row.deltaFromPrevious) ?? "–"}</strong>
-                </StatCell>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {query.data ? <FolderDistribution data={query.data} /> : null}
     </ListState>
   );
 }
