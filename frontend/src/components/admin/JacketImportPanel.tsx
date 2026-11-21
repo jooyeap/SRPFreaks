@@ -24,7 +24,6 @@ import { matchJackets, saveJackets, type JacketMatch, type JacketMatchResponse }
 import {
   commitSongInfo,
   COMMIT_BATCH,
-  formatBpm,
   isWritable,
   previewSongInfo,
   type InfoStatus,
@@ -45,8 +44,8 @@ interface Received {
   url: string;
 }
 
-type Kind = "artist" | "bpm" | "jacket";
-const KINDS: Kind[] = ["artist", "bpm", "jacket"];
+type Kind = "artist" | "jacket";
+const KINDS: Kind[] = ["artist", "jacket"];
 
 /** 곡 한 줄의 전체 상태(칩 개수용): 하나라도 덮어쓰기면 덮어쓰기, 하나라도 새로 채움이면 새로 채움. */
 function overallStatus(statuses: InfoStatus[]): InfoStatus {
@@ -85,7 +84,7 @@ export function JacketImportPanel() {
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{ saved: number; replaced: number; info: SongInfoCommitResult | null } | null>(null);
-  // D90: 공식 화면에서 읽은 아티스트·BPM과 서버가 비교한 결과, 저장할 항목 칩(기본 모두 켬)
+  // D90: 공식 화면에서 읽은 아티스트와 서버가 비교한 결과 (BPM은 D93부터 RemyWiki 패널에서만 받는다), 저장할 항목 칩(기본 모두 켬)
   const [infoRows, setInfoRows] = useState<Map<number, SongInfoRow>>(new Map());
   const [kinds, setKinds] = useState<Set<Kind>>(new Set(KINDS));
   const infosRef = useRef<InfoRow[]>([]);
@@ -123,7 +122,7 @@ export function JacketImportPanel() {
           .then(async (result) => {
             matchesRef.current = new Map(result.matches.map((m) => [m.officialTitle, m]));
             setMatchResult(result);
-            // 아티스트·BPM 비교는 읽은 값이 있을 때만 한다. 실패해도 재킷 가져오기는 계속한다(곡 정보 칸은 값 없음)
+            // 아티스트 비교는 읽은 값이 있을 때만 한다. 실패해도 재킷 가져오기는 계속한다(곡 정보 칸은 값 없음)
             if (infosRef.current.length > 0) {
               try {
                 const preview = await previewSongInfo(infosRef.current);
@@ -132,8 +131,8 @@ export function JacketImportPanel() {
                 setChecked((cur) => {
                   const next = new Set(cur);
                   for (const r of preview.rows) {
-                    // 새로 채움만 있는 곡은 기본 체크, 덮어쓰기가 든 곡은 기본 해제
-                    if ((r.artist.status === "FILL" || r.bpm.status === "FILL") && r.artist.status !== "OVERWRITE" && r.bpm.status !== "OVERWRITE") {
+                    // 새로 채움은 기본 체크, 덮어쓰기는 기본 해제
+                    if (r.artist.status === "FILL") {
                       next.add(r.songId);
                     }
                   }
@@ -159,7 +158,7 @@ export function JacketImportPanel() {
         urls.current.push(item.url);
         setReceived((list) => [...list, item]);
         const info = infoRowsRef.current.get(match.songId);
-        const hasOverwrite = info?.artist.status === "OVERWRITE" || info?.bpm.status === "OVERWRITE";
+        const hasOverwrite = info?.artist.status === "OVERWRITE";
         if (!match.hasJacket && !hasOverwrite) {
           setChecked((s) => new Set(s).add(match.songId));
         }
@@ -201,7 +200,6 @@ export function JacketImportPanel() {
   function savableKinds(row: Row): Kind[] {
     const out: Kind[] = [];
     if (kinds.has("artist") && row.info && isWritable(row.info.artist.status)) out.push("artist");
-    if (kinds.has("bpm") && row.info && isWritable(row.info.bpm.status)) out.push("bpm");
     if (kinds.has("jacket") && row.image) out.push("jacket");
     return out;
   }
@@ -222,20 +220,18 @@ export function JacketImportPanel() {
     let replaced = 0;
     const info: SongInfoCommitResult = { artistFilled: 0, artistOverwritten: 0, bpmFilled: 0, bpmOverwritten: 0, skipped: 0 };
     try {
-      // 곡 정보(아티스트·BPM)를 먼저, 재킷을 나중에 저장한다. 중간에 실패하면 거기서 멈추고 앞의 묶음은 저장된 채로 둔다
+      // 곡 정보(아티스트)를 먼저, 재킷을 나중에 저장한다. 중간에 실패하면 거기서 멈추고 앞의 묶음은 저장된 채로 둔다
       const infoItems = selectedRows
-        .map((r) => ({ songId: r.match.songId, artist: savableKinds(r).includes("artist"), bpm: savableKinds(r).includes("bpm"), title: r.match.officialTitle }))
-        .filter((i) => i.artist || i.bpm);
+        .map((r) => ({ songId: r.match.songId, artist: savableKinds(r).includes("artist"), title: r.match.officialTitle }))
+        .filter((i) => i.artist);
       for (const batch of chunk(infoItems, COMMIT_BATCH)) {
         const wanted = new Set(batch.map((i) => i.title));
         const result = await commitSongInfo(
           infosRef.current.filter((i) => wanted.has(i.title.trim())),
-          batch.map(({ songId, artist, bpm }) => ({ songId, artist, bpm })),
+          batch.map(({ songId, artist }) => ({ songId, artist, bpm: false })),
         );
         info.artistFilled += result.artistFilled;
         info.artistOverwritten += result.artistOverwritten;
-        info.bpmFilled += result.bpmFilled;
-        info.bpmOverwritten += result.bpmOverwritten;
         info.skipped += result.skipped;
       }
       const jacketItems = selectedRows.filter((r) => savableKinds(r).includes("jacket") && r.image).map((r) => ({ songId: r.match.songId, blob: (r.image as Received).blob }));
@@ -256,7 +252,7 @@ export function JacketImportPanel() {
 
   function rowOverall(row: Row): InfoStatus {
     const statuses: InfoStatus[] = [];
-    if (row.info) statuses.push(row.info.artist.status, row.info.bpm.status);
+    if (row.info) statuses.push(row.info.artist.status);
     if (row.image) statuses.push(row.match.hasJacket ? "OVERWRITE" : "FILL");
     return overallStatus(statuses);
   }
@@ -345,8 +341,6 @@ export function JacketImportPanel() {
               {t("infoResult", {
                 artistFilled: saveResult.info.artistFilled,
                 artistOverwritten: saveResult.info.artistOverwritten,
-                bpmFilled: saveResult.info.bpmFilled,
-                bpmOverwritten: saveResult.info.bpmOverwritten,
                 skipped: saveResult.info.skipped,
               })}
             </p>
@@ -378,22 +372,20 @@ function InfoTable({ rows, checked, onToggle, overall }: {
   const statusLabel = (s: InfoStatus) => t(`row_${s}`);
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-card">
-      <div className="hidden grid-cols-[28px_44px_minmax(0,1.3fr)_minmax(0,1.2fr)_minmax(0,1fr)] gap-3 bg-table-head px-3 py-2 text-xs text-fg-sub md:grid">
+      <div className="hidden grid-cols-[28px_44px_minmax(0,1.3fr)_minmax(0,1.6fr)] gap-3 bg-table-head px-3 py-2 text-xs text-fg-sub md:grid">
         <span />
         <span>{t("colJacket")}</span>
         <span>{t("colSong")}</span>
         <span>{t("colArtist")}</span>
-        <span>{t("colBpm")}</span>
       </div>
       <ul>
         {rows.map((row) => {
           const { match, info, image } = row;
           const artistStatus: InfoStatus = info?.artist.status ?? "NONE";
-          const bpmStatus: InfoStatus = info?.bpm.status ?? "NONE";
           return (
             <li
               key={match.songId}
-              className="grid grid-cols-[auto_44px_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-t border-line px-3 py-2 first:border-t-0 md:grid-cols-[28px_44px_minmax(0,1.3fr)_minmax(0,1.2fr)_minmax(0,1fr)]"
+              className="grid grid-cols-[auto_44px_minmax(0,1fr)] items-start gap-x-3 gap-y-2 border-t border-line px-3 py-2 first:border-t-0 md:grid-cols-[28px_44px_minmax(0,1.3fr)_minmax(0,1.6fr)]"
             >
               <input
                 type="checkbox"
@@ -417,9 +409,6 @@ function InfoTable({ rows, checked, onToggle, overall }: {
               </div>
               <Cell label={t("colArtist")} status={artistStatus} statusText={statusLabel(artistStatus)}
                 current={info?.artist.current ?? "–"} official={info?.artist.official ?? "–"} />
-              <Cell label={t("colBpm")} status={bpmStatus} statusText={statusLabel(bpmStatus)}
-                current={formatBpm(info?.bpm.currentMin ?? null, info?.bpm.currentMax ?? null)}
-                official={formatBpm(info?.bpm.officialMin ?? null, info?.bpm.officialMax ?? null)} />
             </li>
           );
         })}

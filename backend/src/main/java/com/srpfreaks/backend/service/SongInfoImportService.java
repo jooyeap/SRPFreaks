@@ -32,7 +32,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 공식 `곡별 성적` 화면에서 읽은 아티스트·BPM을 마스터와 비교하고 ROOT가 고른 것만 반영한다 (D90, 컨트롤러가 ROOT만 통과시킨다).
+ * 공식 `곡별 성적` 화면에서 읽은 아티스트(D90)와 RemyWiki 곡 표에서 읽은 BPM(D93)을 마스터와 비교하고 ROOT가 고른 것만 반영한다 (컨트롤러가 ROOT만 통과시킨다).
+ * RemyWiki 경로는 artist를 빈 글자로 보내고 항목은 bpm만 고르므로 이 서비스는 그대로 쓴다(서버는 어느 쪽 사이트와도 통신하지 않는다).
  * 작곡가 컬럼은 따로 없다: 게임 표기 `songs.artist`가 그 자리이고(D13), BPM은 `songs.bpm_min/bpm_max`(고정 BPM이면 같은 값)다.
  *
  * 지켜야 할 선: ① 새 곡을 만들지 않는다(마스터와 곡명이 맞은 곡만, 자동 등록 금지)

@@ -18,7 +18,7 @@ const messages: JacketBookmarkletMessages = {
   noSongs: "없음", matching: "{count}", converting: "{n}/{total}", done: "{count} {failed}",
 };
 
-type Reader = (doc: Document, pageUrl: string) => { title: string; src: string; artist: string; bpm: string }[];
+type Reader = (doc: Document, pageUrl: string) => { title: string; src: string; artist: string }[];
 
 describe("재킷 북마클릿 (D54)", () => {
   afterEach(() => {
@@ -38,11 +38,11 @@ describe("재킷 북마클릿 (D54)", () => {
     );
     const rows = read(doc, "https://p.eagate.573.jp/game/gfdm/gitadora_galaxywave_delta/p/playdata/music.html?cat=0");
     expect(rows).toEqual([
-      { title: "0時20分の Roulette", src: "https://p.eagate.573.jp/game/gfdm/gitadora_galaxywave_delta/p/playdata/img.html?imgkey=a&imgid=1", artist: "", bpm: "" },
+      { title: "0時20分の Roulette", src: "https://p.eagate.573.jp/game/gfdm/gitadora_galaxywave_delta/p/playdata/img.html?imgkey=a&imgid=1", artist: "" },
     ]);
   });
 
-  it("같은 줄에 아티스트·BPM이 보이면 함께 읽고, 없으면 빈 글자로 건너뛴다 (D90)", () => {
+  it("같은 줄에 아티스트가 보이면 함께 읽고, 없으면 빈 글자로 건너뛴다. BPM은 읽지 않는다 (D90, D93)", () => {
     const read = new Function(`${READER_SOURCE}; return srpReadJackets;`)() as Reader;
     const doc = new DOMParser().parseFromString(
       `<table>
@@ -55,12 +55,13 @@ describe("재킷 북마클릿 (D54)", () => {
       "text/html",
     );
     const rows = read(doc, "https://p.eagate.573.jp/x/music.html");
-    expect(rows.map((r) => [r.title, r.artist, r.bpm])).toEqual([
-      ["Fixed", "Yusuke Kitaura", "172"],
-      ["Variable", "Ryu", "120 - 180"],
-      ["Label", "", "１５０"],
-      ["Nothing", "", ""],
+    expect(rows.map((r) => [r.title, r.artist])).toEqual([
+      ["Fixed", "Yusuke Kitaura"],
+      ["Variable", "Ryu"],
+      ["Label", ""],
+      ["Nothing", ""],
     ]);
+    expect(JSON.stringify(rows)).not.toContain("bpm");
   });
 
   it("줄인 소스도 문법이 맞고, 공식 페이지가 아니면 안내만 띄우고 창을 열지 않는다", () => {
@@ -99,25 +100,20 @@ describe("parseJacketMessage", () => {
     expect(parseJacketMessage({ type: MSG_TITLES, titles: Array(4001).fill("A") })).toBeNull();
   });
 
-  it("곡 정보(infos)는 없어도 되고, 틀린 줄만 버린다 (D90)", () => {
+  it("곡 정보(infos)는 없어도 되고, 틀린 줄만 버리며, 옛 북마클릿이 보낸 BPM은 버린다 (D90, D93)", () => {
     const parsed = parseJacketMessage({
       type: MSG_TITLES,
       titles: ["A"],
       infos: [
-        { title: "A", artist: "Ryu", bpm: "172" },
-        { title: "B", artist: "", bpm: "" }, // 둘 다 비면 보낼 값이 없다
-        { title: "C", artist: 3, bpm: "1" }, // 글자가 아닌 아티스트는 빈 값으로 본다
-        { title: "D", artist: "x".repeat(501), bpm: "1" }, // 길이 초과
-        { title: "E", artist: "e", bpm: "9".repeat(41) },
+        { title: "A", artist: "Ryu", bpm: "172" }, // BPM은 버리고 아티스트만 남긴다
+        { title: "B", artist: "", bpm: "150" }, // 아티스트가 비면 보낼 값이 없다
+        { title: "C", artist: 3, bpm: "1" },
+        { title: "D", artist: "x".repeat(501) }, // 길이 초과
         null,
       ],
     });
-    expect(parsed).toMatchObject({
-      infos: [
-        { title: "A", artist: "Ryu", bpm: "172" },
-        { title: "C", artist: "", bpm: "1" },
-      ],
-    });
+    expect(parsed).toMatchObject({ infos: [{ title: "A", artist: "Ryu", bpm: "" }] });
+    expect((parsed as { infos: unknown[] }).infos).toHaveLength(1);
     expect(parseJacketMessage({ type: MSG_TITLES, titles: ["A"], infos: "x" })).toMatchObject({ infos: [] });
   });
 

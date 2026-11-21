@@ -258,4 +258,34 @@ class SongInfoImportServiceTest {
 
         assertThat(a.getArtist()).isEqualTo("Ryu feat. Kobaryo");
     }
+
+    @Test
+    void RemyWiki_BPM만_보내면_아티스트는_건드리지_않고_덮어쓰기는_고른_곡만_반영한다() {
+        // D93: RemyWiki 경로는 artist를 빈 글자로, 항목은 bpm만 고른다
+        Song empty = song(10L, "Empty", "Game Artist", null, null);
+        Song changed = song(11L, "Changed", "Game Artist", 150, 150);
+        Song skipped = song(12L, "NotChosen", "Game Artist", 120, 120);
+        Song same = song(13L, "Same", null, 99, 99);
+
+        SongInfoPreviewResponse preview = preview(row("Empty", "", "180"), row("Changed", "", "160-170"), row("NotChosen", "", "130"), row("Same", "", "99"));
+        assertThat(preview.rows()).extracting(r -> r.bpm().status().name())
+                .containsExactly("FILL", "OVERWRITE", "OVERWRITE", "UNCHANGED");
+        assertThat(preview.rows()).extracting(r -> r.artist().status().name()).containsOnly("NONE");
+
+        SongInfoCommitResponse result = commit(
+                List.of(new Selection(10L, false, true), new Selection(11L, false, true), new Selection(13L, false, true)),
+                row("Empty", "", "180"), row("Changed", "", "160-170"), row("NotChosen", "", "130"), row("Same", "", "99"));
+
+        assertThat(result.bpmFilled()).isEqualTo(1);
+        assertThat(result.bpmOverwritten()).isEqualTo(1);
+        assertThat(result.skipped()).isEqualTo(1); // Same: 변경 없음
+        assertThat(result.artistFilled() + result.artistOverwritten()).isZero();
+        assertThat(empty.getBpmMin()).isEqualTo(180);
+        assertThat(changed.getBpmMin()).isEqualTo(160);
+        assertThat(changed.getBpmMax()).isEqualTo(170);
+        assertThat(skipped.getBpmMin()).isEqualTo(120); // 고르지 않은 덮어쓰기 후보는 그대로
+        assertThat(empty.getArtist()).isEqualTo("Game Artist"); // 아티스트는 그대로
+        assertThat(changed.getArtist()).isEqualTo("Game Artist");
+        assertThat(same.getBpmMin()).isEqualTo(99);
+    }
 }

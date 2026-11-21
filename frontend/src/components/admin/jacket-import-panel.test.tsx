@@ -72,12 +72,12 @@ describe("JacketImportPanel (D54)", () => {
             {
               officialTitle: "Alpha", songId: 1, songTitle: "Alpha",
               artist: { current: null, official: "Tsukasa Komori", status: "FILL" },
-              bpm: { currentMin: null, currentMax: null, officialMin: 180, officialMax: 180, status: "FILL" },
+              bpm: { currentMin: null, currentMax: null, officialMin: null, officialMax: null, status: "NONE" },
             },
             {
               officialTitle: "Beta", songId: 2, songTitle: "Beta",
               artist: { current: "Ryu", official: "Ryu feat. Kobaryo", status: "OVERWRITE" },
-              bpm: { currentMin: 195, currentMax: 195, officialMin: 195, officialMax: 195, status: "UNCHANGED" },
+              bpm: { currentMin: 195, currentMax: 195, officialMin: null, officialMax: null, status: "NONE" },
             },
           ],
         });
@@ -94,7 +94,7 @@ describe("JacketImportPanel (D54)", () => {
       type: MSG_TITLES,
       titles: ["Alpha", "Beta", "Other"],
       infos: [
-        { title: "Alpha", artist: "Tsukasa Komori", bpm: "180" },
+        { title: "Alpha", artist: "Tsukasa Komori", bpm: "180" }, // 옛 북마클릿이 보낸 BPM은 버려진다 (D93)
         { title: "Beta", artist: "Ryu feat. Kobaryo", bpm: "195" },
       ],
       failedPages: 0,
@@ -116,16 +116,18 @@ describe("JacketImportPanel (D54)", () => {
     // 상태는 색이 아니라 글자로도 보인다
     expect(screen.getAllByText("새로 채움").length).toBeGreaterThan(0);
     expect(screen.getAllByText("덮어쓰기").length).toBeGreaterThan(0);
-    expect(screen.getByText("변경 없음")).toBeInTheDocument();
+    expect(screen.queryByText("BPM")).not.toBeInTheDocument(); // BPM 열·칩은 없다 (D93)
     expect(screen.getByRole("button", { name: "덮어쓰기 1곡 제외" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "선택 1곡 저장" }));
     await waitFor(() => expect(screen.getByText("저장 결과: 새로 1곡, 교체 0곡")).toBeInTheDocument());
     expect(screen.getByText(/곡 정보: 아티스트 새로 1곡/)).toBeInTheDocument();
+    const previewCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/admin/song-info-imports/preview"));
+    expect(JSON.parse(String(previewCall?.[1]?.body)).songs.every((i: { bpm: string }) => i.bpm === "")).toBe(true);
     const commitCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/admin/song-info-imports/commit"));
     expect(JSON.parse(String(commitCall?.[1]?.body))).toEqual({
-      songs: [{ title: "Alpha", artist: "Tsukasa Komori", bpm: "180" }],
-      selections: [{ songId: 1, artist: true, bpm: true }],
+      songs: [{ title: "Alpha", artist: "Tsukasa Komori", bpm: "" }],
+      selections: [{ songId: 1, artist: true, bpm: false }],
     });
     const saveCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/admin/song-jackets"));
     const form = saveCall?.[1]?.body as FormData;
@@ -148,7 +150,7 @@ describe("JacketImportPanel (D54)", () => {
     expect(posted).toEqual([]);
   });
 
-  it("공식 화면에 아티스트·BPM이 없으면 비교를 부르지 않고 값 없음으로 두며 재킷만 저장한다 (D90)", async () => {
+  it("공식 화면에 아티스트가 없으면 비교를 부르지 않고 값 없음으로 두며 재킷만 저장한다 (D90)", async () => {
     fetchMock.mockImplementation(async (input) => {
       const url = String(input);
       if (url.endsWith("/admin/song-jackets/match")) {
@@ -162,9 +164,9 @@ describe("JacketImportPanel (D54)", () => {
     send({ type: MSG_IMAGE, title: "Alpha", data: new ArrayBuffer(8) });
     send({ type: MSG_DONE, sent: 1, failed: 0 });
 
-    expect(await screen.findByText("공식 화면에서 아티스트·BPM을 읽지 못했습니다. 재킷만 가져옵니다.")).toBeInTheDocument();
+    expect(await screen.findByText("공식 화면에서 아티스트를 읽지 못했습니다. 재킷만 가져옵니다.")).toBeInTheDocument();
     expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("song-info-imports"))).toBe(false);
-    expect(screen.getAllByText("값 없음").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("값 없음").length).toBeGreaterThanOrEqual(1);
     fireEvent.click(screen.getByRole("button", { name: "선택 1곡 저장" }));
     await waitFor(() => expect(screen.getByText("저장 결과: 새로 1곡, 교체 0곡")).toBeInTheDocument());
     expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("song-info-imports/commit"))).toBe(false);
@@ -182,23 +184,23 @@ describe("JacketImportPanel (D54)", () => {
           rows: [{
             officialTitle: "Alpha", songId: 1, songTitle: "Alpha",
             artist: { current: null, official: "A", status: "FILL" },
-            bpm: { currentMin: null, currentMax: null, officialMin: 100, officialMax: 120, status: "FILL" },
+            bpm: { currentMin: null, currentMax: null, officialMin: null, officialMax: null, status: "NONE" },
           }],
         });
       }
       if (url.endsWith("/commit")) return json({ artistFilled: 1, artistOverwritten: 0, bpmFilled: 0, bpmOverwritten: 0, skipped: 0 });
-      return json({ saved: 0, replaced: 0 });
+      return json({ saved: 1, replaced: 0 });
     });
     renderPanel();
-    send({ type: MSG_TITLES, titles: ["Alpha"], infos: [{ title: "Alpha", artist: "A", bpm: "100-120" }], failedPages: 0 });
+    send({ type: MSG_TITLES, titles: ["Alpha"], infos: [{ title: "Alpha", artist: "A", bpm: "" }], failedPages: 0 });
     await waitFor(() => expect(posted).toContainEqual({ type: MSG_WANT, titles: ["Alpha"] }));
-    send({ type: MSG_DONE, sent: 0, failed: 0 });
+    send({ type: MSG_IMAGE, title: "Alpha", data: new ArrayBuffer(8) });
+    send({ type: MSG_DONE, sent: 1, failed: 0 });
 
-    expect(await screen.findByText("100–120")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /BPM/ })); // BPM 끄기
+    await screen.findByRole("checkbox", { name: /Alpha/ });
+    fireEvent.click(screen.getByRole("button", { name: /아티스트/ })); // 아티스트 끄기
     fireEvent.click(screen.getByRole("button", { name: "선택 1곡 저장" }));
-    await waitFor(() => expect(screen.getByText(/곡 정보: 아티스트 새로 1곡/)).toBeInTheDocument());
-    const commitCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith("/commit"));
-    expect(JSON.parse(String(commitCall?.[1]?.body)).selections).toEqual([{ songId: 1, artist: true, bpm: false }]);
+    await waitFor(() => expect(screen.getByText("저장 결과: 새로 1곡, 교체 0곡")).toBeInTheDocument());
+    expect(fetchMock.mock.calls.some((c) => String(c[0]).endsWith("/commit"))).toBe(false);
   });
 });
