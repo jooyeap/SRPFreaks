@@ -118,11 +118,11 @@ describe("서열표 첫 화면 (타일 격자)", () => {
     expect(screen.getByRole("link", { name: /^5\.9/ })).not.toHaveTextContent("완료");
   });
 
-  it("기록이 없으면(NEW_PLAYER) 맨 위가 `처음이라면 5.0부터 시작해 보세요`, 쉬운 순 기본이고 평균 타일·깜빡임·접힘이 없다", async () => {
+  it("기록이 없으면(NEW_PLAYER) 맨 위가 `처음이라면 5.0부터 시작하는 것을 추천합니다`, 쉬운 순 기본이고 평균 타일·깜빡임·접힘이 없다", async () => {
     const groups = Array.from({ length: 22 }, (_, i) => tier((49 + i) / 10, 0, 2));
     serve(groups, { status: "NEW_PLAYER", tier: null });
     renderView();
-    expect(await screen.findByText("처음이라면 5.0부터 시작해 보세요")).toBeInTheDocument();
+    expect(await screen.findByText("처음이라면 5.0부터 시작하는 것을 추천합니다")).toBeInTheDocument();
     expect(screen.queryByText("내 평균 난이도")).toBeNull();
     expect(screen.getByRole("button", { name: "쉬운 순" })).toHaveAttribute("aria-pressed", "true");
     expect(tileTiers()[0]).toBe("4.9");
@@ -135,7 +135,7 @@ describe("서열표 첫 화면 (타일 격자)", () => {
   it("비로그인이면 평균을 묻지 않고 시작 안내 + 쉬운 순으로 보인다", async () => {
     serve([tier(5.0, 0, 2), tier(5.1, 0, 2)]);
     renderView(0);
-    expect(await screen.findByText("처음이라면 5.0부터 시작해 보세요")).toBeInTheDocument();
+    expect(await screen.findByText("처음이라면 5.0부터 시작하는 것을 추천합니다")).toBeInTheDocument();
     expect(calls("/skills/me")).toHaveLength(0); // 평균(play-level)도 묻지 않는다
     expect(tileTiers()).toEqual(["5.0", "5.1"]);
   });

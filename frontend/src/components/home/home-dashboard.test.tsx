@@ -200,7 +200,7 @@ describe("HomeDashboard", () => {
     mockWithPlayLevel({ status: "READY", tier: 5.7 });
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간을 채워 보세요."));
+    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간 채우기를 추천합니다."));
     // 평균 근처 안내 끝에 `?` 설명 버튼(서열표 첫 화면·세트리스트 추천과 같은 컴포넌트·같은 문구)
     expect(within(progress).getByRole("button", { name: "내 평균 난이도 설명 보기" })).toBeInTheDocument();
   });
@@ -211,7 +211,7 @@ describe("HomeDashboard", () => {
     mockWithPlayLevel({ status: "READY", tier: 5.7 }, { ...skill, single } as unknown as SkillResponse);
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
-    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간을 채워 보세요. 85% 이상이면 레이팅에 반영됩니다."));
+    await waitFor(() => expect(progress).toHaveTextContent("내 평균 5.7 근처인 5.8 구간 채우기를 추천합니다. 85% 이상이면 레이팅에 반영됩니다."));
   });
 
   it("범위(±0.1) 안에 비어 있는 구간이 없으면 안내를 그리지 않는다 (평균 5.0 → 5.0 구간은 모두 채움)", async () => {
@@ -220,7 +220,7 @@ describe("HomeDashboard", () => {
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
     await waitFor(() => expect(progress).toHaveTextContent("기록 24 / 30곡"));
     await waitFor(() => expect(progress).not.toHaveTextContent("가장 비어 있어요"));
-    expect(progress).not.toHaveTextContent("채워 보세요");
+    expect(progress).not.toHaveTextContent("채우기를 추천합니다");
   });
 
   it("평균을 알 수 없으면(신규·기록 부족) 안내를 두지 않는다", async () => {
@@ -228,7 +228,7 @@ describe("HomeDashboard", () => {
     renderView();
     const progress = await screen.findByRole("region", { name: "서열표 진행도" });
     await waitFor(() => expect(progress).toHaveTextContent("기록 24 / 30곡"));
-    expect(progress).not.toHaveTextContent("채워 보세요");
+    expect(progress).not.toHaveTextContent("채우기를 추천합니다");
     expect(progress).not.toHaveTextContent("가장 비어 있어요");
     expect(within(progress).queryByRole("link", { name: "구간 보기" })).toBeNull();
   });
@@ -290,7 +290,7 @@ describe("HomeDashboard", () => {
     expect(progress).toHaveTextContent("SS 이상 22곡 → 30곡까지 8곡 남음");
     expect(progress).not.toHaveTextContent("약함"); // 칸에는 약함 뱃지를 달지 않는다(구분이 어렵다). 안내 문장과 링크만 있다
     // 평균(play-level)을 모르는 상태라 평균 근처 구간 안내는 없다
-    expect(progress).not.toHaveTextContent("채워 보세요");
+    expect(progress).not.toHaveTextContent("채우기를 추천합니다");
     expect(within(progress).queryByRole("link", { name: "구간 보기" })).toBeNull();
 
     expect(screen.getByRole("link", { name: /^서열표.*레이팅 상수 난이도별로/ })).toHaveAttribute("href", "/table");

@@ -19,7 +19,7 @@ export function PeerReason({ item }: { item: Pick<RecommendationItem, "reason" |
         {peer ? t("reasonPeer") : t("reasonNear")}
       </span>
       {peer ? (
-        <span className="text-[11px] leading-snug text-fg-sub">
+        <span className="break-keep text-[11px] leading-snug text-fg-sub">
           {t.rich("peerCount", { count: item.peerUsers ?? 0, n: (c) => <b className="font-num text-fg">{c}</b> })}
         </span>
       ) : null}

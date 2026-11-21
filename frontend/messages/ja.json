@@ -65,7 +65,8 @@
     "privacy": "プライバシーポリシー",
     "terms": "利用規約",
     "contact": "お問い合わせ・削除依頼:",
-    "tableCredit": "難易度表（レーティング定数難易度）の情報提供・設計:"
+    "tableCredit": "難易度表（レーティング定数難易度）の情報提供・設計:",
+    "songInfoCredit": "曲情報（BPM・アーティスト）の一部の出典:"
   },
   "Offline": {
     "banner": "インターネットに接続されていません。接続されたらもう一度お試しください。"
@@ -1580,7 +1581,8 @@
     "settingsGroupSetlistRival": "セットリスト・ライバル",
     "settingsGroupOther": "その他",
     "settingChanging": "変更中: {from} → {to}",
-    "settingRecognizeDailyDesc": "모든 사용자를 합쳐 하루(서울 날짜)에 인식할 수 있는 장수입니다. 외부 AI 비용의 상한입니다."
+    "settingRecognizeDailyDesc": "모든 사용자를 합쳐 하루(서울 날짜)에 인식할 수 있는 장수입니다. 외부 AI 비용의 상한입니다.",
+    "actionSongInfoImport": "曲情報(アーティスト・BPM)の取り込み"
   },
   "ServerErrors": {
     "AUTH_FAILED": "ログインできません。もう一度ログインしてください。",
@@ -2047,6 +2049,51 @@
     "result": "保存結果: 新規 {saved}曲、差し替え {replaced}曲",
     "saveFailed": "保存できませんでした。しばらくしてから再度お試しください。",
     "matchFailed": "曲名を照合できませんでした。しばらくしてから再度お試しください。"
+  },
+  "RemyBpm": {
+    "heading": "曲情報の取り込み(RemyWiki)",
+    "lead": "RemyWikiのGITADORA曲一覧表からアーティストとBPMを読み取り、マスターにある曲に反映します。新しい曲は作成しません。",
+    "bookmarkName": "SRP 曲情報",
+    "bmTitle": "SRPFreaks 曲情報取り込み",
+    "bmWrongPage": "RemyWiki(remywiki.com)のGITADORA曲一覧表があるページで押してください。",
+    "bmNoTable": "曲名とBPMの列がある表が見つかりませんでした。読み取れなかったBPM {invalid}件。曲一覧表があるページか確認してください。",
+    "bmPopupBlocked": "SRPFreaksのウィンドウを開けませんでした。ポップアップを許可してもう一度押してください。",
+    "bmSending": "{count}曲をSRPFreaksのウィンドウへ送信中です。",
+    "bmDone": "{count}曲を送信しました。SRPFreaksのウィンドウで確認してください。",
+    "bmNoReply": "SRPFreaksのウィンドウが応答しません。管理画面が開いているか確認してもう一度押してください。",
+    "guideStep1": "下のボタンをブックマークバーにドラッグします。",
+    "guideStep2": "RemyWikiでGITADORAのバージョンページ(例: AC_GD_EXCHAIN)を開きます。",
+    "guideStep3": "ブックマークを押すとこの画面が開き、ページの曲一覧表から読み取ったアーティスト・BPMが下に溜まります。別のバージョンページでも続けて押せます。",
+    "guideNote": "開いているページの表だけを読み取り、サーバーはRemyWikiと通信しません。マスターと曲名が一致する曲だけを保存し、曲名が異なって一致しない曲はスキップします。RemyWikiのアーティスト表記はマスターのゲーム表記と異なる場合があるため、現在値と取り込む値を比較し、確認した項目だけを保存してください。",
+    "receivedNone": "受け取った曲はありません。",
+    "received": "{count}曲を受け取りました。(ページ{pages}件、読み取れなかったBPM {invalid}件)",
+    "sourceList": "受け取ったページ: {sources}",
+    "conflicts": "同じ曲名でアーティスト・BPMが異なり、後から受け取った値に置き換えた曲が{n}曲あります。",
+    "comparing": "マスターと比較中です。",
+    "compareFailed": "比較できませんでした。しばらくしてからもう一度お試しください。",
+    "summary": "一致 {matched}曲 · 不一致 {unmatched}曲",
+    "statusFill": "新規 {n}",
+    "statusOverwrite": "上書き {n}",
+    "statusUnchanged": "変更なし {n}",
+    "statusNone": "値なし {n}",
+    "unmatchedList": "マスターと曲名が一致しなかった曲を見る",
+    "unmatchedNote": "曲名の表記が異なり一致しなかった曲です。必要に応じて曲詳細から直接入力してください。",
+    "includeOverwrite": "上書き{n}件を選択",
+    "excludeOverwrite": "上書き{n}件を除外",
+    "save": "選択した{n}件を保存",
+    "saving": "保存中です。",
+    "clear": "クリア",
+    "colSong": "曲",
+    "colRemy": "RemyWikiの曲名",
+    "col_artist": "アーティスト",
+    "col_bpm": "BPM",
+    "row_FILL": "新規",
+    "row_OVERWRITE": "上書き",
+    "row_UNCHANGED": "変更なし",
+    "row_NONE": "値なし",
+    "saved": "保存しました。(新規{filled}件、上書き{overwritten}件)",
+    "result": "保存結果: アーティスト 新規{artistFilled}曲・上書き{artistOverwritten}曲、BPM 新規{bpmFilled}曲・上書き{bpmOverwritten}曲、スキップ{skipped}件",
+    "saveFailed": "保存できませんでした。しばらくしてからもう一度お試しください。"
   },
   "JacketUpload": {
     "title": "ジャケット変更",
