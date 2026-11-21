@@ -62,6 +62,8 @@ public class OptionRecordService {
     private final SongDifficultyRepository songDifficultyRepository;
     private final UserRepository userRepository;
     private final RivalAlertTrigger rivalAlertTrigger;
+    /** 플레이 횟수 집계(D84). 새 기록을 만들 때만 +1(수정은 세지 않음). 사진 입력도 이 create를 거친다. 실패해도 저장은 성공한다 */
+    private final PlayCountRecorder playCountRecorder;
 
     @Transactional
     public RecordResponse create(Long userId, RecordRequest request) {
@@ -83,6 +85,7 @@ public class OptionRecordService {
         optionRecordRepository.save(record);
         rivalAlertTrigger.recordSaved(userId, difficulty.getId(), option, prev,
                 prev == null ? record.getAchievementRate() : prev.max(record.getAchievementRate()));
+        playCountRecorder.recordCreated(userId, difficulty.getId(), request.playedAt());
         return RecordResponse.from(record);
     }
 

@@ -89,6 +89,8 @@ public class ImportService {
     private final OptionRecordRepository optionRecordRepository;
     private final UserRepository userRepository;
     private final RivalAlertTrigger rivalAlertTrigger;
+    /** 플레이 횟수 집계(D84). 저장 경로에서만 부르고 실패해도 가져오기는 성공한다 */
+    private final PlayCountRecorder playCountRecorder;
     private final Clock clock;
 
     /** 가져오기 토큰 경로와 저장 API가 쓴다: 걸러서 실제로 저장한다. */
@@ -154,6 +156,12 @@ public class ImportService {
         }
 
         saveImproved(user, candidates, results, commit);
+        if (commit) {
+            // 플레이 횟수(D84): 채보에 연결된 모든 유효 플레이를 센다. 낮은 점수라 저장하지 않은 플레이도 "친 횟수"다.
+            // 미리보기(commit=false)는 아무것도 세지 않는다. 중복 방지(커서)와 실패 격리는 PlayCountRecorder가 한다.
+            playCountRecorder.recordImported(userId, candidates.stream()
+                    .map(c -> new PlayCountRecorder.PlayedChart(c.chart().getId(), c.playedAt())).toList());
+        }
 
         List<ImportPlayResult> list = List.of(results);
         Map<ImportSkipReason, Integer> byReason = new EnumMap<>(ImportSkipReason.class);
