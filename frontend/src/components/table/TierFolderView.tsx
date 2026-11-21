@@ -429,7 +429,9 @@ export function TierFolderView({
       {/* 곡 목록 영역: 좌우로 쓸면 이웃 난이도로 간다(D68: 가로로 잠긴 뒤 80px 이상·가로축 30° 이내·가장자리 24px 제외). 세로 스크롤은 브라우저에 맡긴다(touch-pan-y).
           가로로 잠긴 뒤에만 목록(slider)이 손가락을 따라 절반만큼 움직이고, 옆에 이웃 난이도 목록(첫 8줄)이 보인다. 이웃 목록은 누를 수 없다(aria-hidden·inert).
           입력 칸·가로로 스크롤되는 영역 위에서는 시작하지 않는다(useSwipeNav). 난이도 칩 띠는 이 영역 밖이라 칩 띠 스크롤이 그대로다.
-          overflow-x-clip: 옆으로 밀려 나간 목록이 페이지에 가로 스크롤을 만들지 않게 자른다(세로는 그대로) */}
+          overflow-x-clip: 옆으로 밀려 나간 목록이 페이지에 가로 스크롤을 만들지 않게 자른다(세로는 그대로).
+          `overflow: clip`을 모르는 브라우저(오래된 삼성 인터넷·인앱 웹뷰 등)는 이 줄을 통째로 무시해서, 끌 때마다 페이지 전체가 오른쪽으로 밀렸다(D101).
+          그래서 바탕은 `overflow-x-hidden`으로 두고, clip을 아는 브라우저에서만 clip으로 바꾼다(supports). 이 영역 안에는 sticky가 없어서 hidden이 만드는 스크롤 영역이 해가 없다 */}
       <div
         {...swipe}
         // 곡 링크를 누르면 이 목록의 정렬·필터를 기억해 둔다 -> 곡 상세의 이전/다음 곡 이동이 같은 순서로 이웃을 찾는다(lib/detail-nav.ts)
@@ -438,7 +440,7 @@ export function TierFolderView({
           if (chartId !== null) rememberDetailNav({ source: "table", sort, filters, current: chartId });
         }}
         data-testid="folder-swipe-area"
-        className="relative min-h-[40vh] touch-pan-y overflow-x-clip"
+        className="relative min-h-[40vh] touch-pan-y overflow-x-hidden supports-[overflow:clip]:overflow-x-clip"
       >
         <div ref={sliderRef} data-testid="folder-slider" className="relative flex min-h-[40vh] flex-col gap-4 will-change-transform">
           <div ref={currentRef} className="flex flex-col gap-4">
