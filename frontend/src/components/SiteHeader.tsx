@@ -17,11 +17,12 @@ export function SiteHeader() {
   return (
     <header className="border-b border-line bg-card pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex w-full max-w-[1200px] items-center gap-x-4 px-4 py-2.5">
-        <Link href="/" className="font-num text-lg font-semibold tracking-wide text-fg">
+        {/* min-w-0 truncate: 폭이 모자랄 때(접힌 폴더블 280~344px + 큰 글꼴) 이름이 줄어들어야 한다. 줄지 못하면 헤더가 화면보다 넓어져 페이지 전체가 오른쪽으로 밀린다(D101) */}
+        <Link href="/" className="min-w-0 truncate font-num text-lg font-semibold tracking-wide text-fg">
           SRPFreaks
         </Link>
         <DesktopNav />
-        <div className="ml-auto flex items-center gap-2 whitespace-nowrap">
+        <div className="ml-auto flex shrink-0 items-center gap-2 whitespace-nowrap">
           <div className="hidden sm:block">
             <AuthControls />
           </div>

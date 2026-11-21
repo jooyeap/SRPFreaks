@@ -101,6 +101,17 @@ describe("TierFolderView", () => {
     expect(screen.getByRole("link", { name: "서열표로" })).toHaveAttribute("href", "/table");
   });
 
+  it("끌 때 옆으로 밀려 나간 목록이 페이지를 넓히지 않는다: `overflow: clip`을 모르는 브라우저를 위한 hidden 바탕이 있다 (D101)", async () => {
+    // jsdom은 배치를 재지 못해서 클래스 규칙으로 지킨다. 실제 측정(Playwright, 끌기 중 scrollWidth)에서는
+    // overflow-x가 visible이면 360px 폭 페이지가 648px로 넓어졌고, hidden·clip이면 360px 그대로였다.
+    renderView("5.8");
+    await screen.findByRole("heading", { name: /5\.8\s*2개/ });
+    const area = screen.getByTestId("folder-swipe-area");
+    expect(area.className).toContain("overflow-x-hidden"); // clip을 모르는 브라우저(오래된 삼성 인터넷·인앱 웹뷰)의 바탕
+    expect(area.className).toContain("supports-[overflow:clip]:overflow-x-clip"); // 아는 브라우저는 clip(스크롤 영역을 만들지 않는다)
+    expect(area.className).not.toMatch(/(^| )overflow-x-clip( |$)/); // 조건 없는 clip만 두면 모르는 브라우저에서 통째로 무시된다
+  });
+
   it("묶음 화면에 난이도 칩 띠와 아래 이웃 난이도 막대가 있다", async () => {
     renderView("5.8");
     await screen.findByRole("heading", { name: /5\.8\s*2개/ });
