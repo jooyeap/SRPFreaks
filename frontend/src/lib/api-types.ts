@@ -289,6 +289,16 @@ export interface ChartRowResponse {
   difficulty: DifficultyType;
   level: number;
   mine: MyRecord | null;
+  /** 아래 6개는 검색 결과 줄(D106)용 공개 정보다. 옛 응답에는 없을 수 있다(없으면 그 칸을 그리지 않는다). 아티스트·BPM은 곡 마스터. */
+  artist?: string | null;
+  bpmMin?: number | null;
+  bpmMax?: number | null;
+  /** 서열표 기준 난이도(0.1 단위). 서열표에 없거나 미정이면 null */
+  tier?: number | null;
+  /** 레이팅상수 R(서버가 설정 rating.*로 계산). 기준 난이도가 없으면 null */
+  ratingConstant?: number | null;
+  /** 속성 라벨(`단일`·`복합` 등, patternLabel로 현재 언어로 바꾼다). 서열표에 없거나 비어 있으면 null */
+  patternType?: string | null;
 }
 
 // ---- 마이페이지 통계 (백엔드 RateFolderListResponse / RateFolderResponse / RateBucketResponse) ----
