@@ -337,7 +337,13 @@
     "editJacket": "재킷 바꾸기",
     "arriveChanged": "변경",
     "arriveBefore": "이전 값 {value}",
-    "arriveScore": "내 점수"
+    "arriveScore": "내 점수",
+    "fieldBpm": "BPM",
+    "bpmMinAria": "최소 BPM",
+    "bpmMaxAria": "최대 BPM",
+    "bpmMinPlaceholder": "최소",
+    "bpmMaxPlaceholder": "최대",
+    "bpmHelp": "고정 BPM은 최소만 입력해도 됩니다. 비워 두면 BPM 없음으로 저장됩니다."
   },
   "Table": {
     "recentChanges": "최근 변경 {count}",
@@ -1022,7 +1028,11 @@
     "aliasLimit": "키워드는 {limit}개까지 등록할 수 있습니다.",
     "goalRequired": "목표 레이팅을 입력해 주세요.",
     "goalFormat": "숫자로 입력해 주세요. 소수는 둘째 자리까지 입력할 수 있습니다.",
-    "goalPositive": "0보다 큰 값을 입력해 주세요."
+    "goalPositive": "0보다 큰 값을 입력해 주세요.",
+    "bpmNumber": "BPM은 숫자(정수)로 입력해 주세요.",
+    "bpmRange": "BPM은 {min} 이상 {max} 이하여야 합니다.",
+    "bpmMinRequired": "최소 BPM을 입력해 주세요.",
+    "bpmOrder": "최소 BPM은 최대 BPM보다 클 수 없습니다."
   },
   "Notices": {
     "tabsAria": "공지 종류",
@@ -1539,7 +1549,7 @@
     "menuChartStats": "서열표 분석",
     "menuChartStatsDesc": "공개 유저의 기록을 곡별로 집계해 숫자로 보여 줍니다.",
     "menuSongMeta": "곡 정보 정리",
-    "menuSongMetaDesc": "아티스트·검색 키워드가 비어 있는 곡만 모아 채웁니다.",
+    "menuSongMetaDesc": "아티스트·검색 키워드·BPM이 비어 있는 곡만 모아 채웁니다.",
     "menuDashboard": "대시보드",
     "menuDashboardDesc": "가입자·기록·티어·건의 현황을 숫자로 보여 줍니다.",
     "groupContent": "콘텐츠",
@@ -2159,7 +2169,7 @@
   },
   "SongMeta": {
     "title": "곡 정보 정리",
-    "lead": "아티스트나 검색 키워드가 비어 있는 곡만 모아 봅니다. 저장하면 목록에서 사라집니다.",
+    "lead": "아티스트·검색 키워드·BPM이 비어 있는 곡만 모아 봅니다. 저장하면 목록에서 사라집니다.",
     "summaryAria": "미등록 현황",
     "summaryTotal": "전체 곡",
     "summaryNoArtist": "아티스트 없음",
@@ -2204,6 +2214,19 @@
     "loadFailed": "곡 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
     "empty": "정리할 곡이 없습니다.",
     "emptyFiltered": "조건에 맞는 곡이 없습니다.",
-    "noChart": "채보 없음"
+    "noChart": "채보 없음",
+    "summaryNoBpm": "BPM 없음",
+    "chipBpm": "BPM 없음",
+    "colBpm": "BPM",
+    "tagNoBpm": "BPM 없음",
+    "bpmCountLine": "전체 {total}곡 중 BPM 없음 {missing}곡",
+    "bpmGroupAria": "{title} BPM",
+    "bpmMinAria": "{title} 최소 BPM",
+    "bpmMaxAria": "{title} 최대 BPM",
+    "bpmMinPlaceholder": "최소",
+    "bpmMaxPlaceholder": "최대",
+    "bpmHelp": "고정 BPM은 최소만 입력해도 됩니다. 범위는 최소와 최대를 모두 입력해 주세요.",
+    "openSong": "곡 상세",
+    "openSongAria": "{title} 곡 상세 열기"
   }
 }

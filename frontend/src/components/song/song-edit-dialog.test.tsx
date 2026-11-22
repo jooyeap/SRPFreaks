@@ -55,11 +55,13 @@ describe("SongEditDialog", () => {
     expect(screen.queryByLabelText("곡명")).toBeNull();
   });
 
-  it("곡 정보 수정: 지금 값이 채워져 있고, 저장하면 화면에 없는 값(BPM·타이틀 폴더)은 그대로 보낸다", async () => {
+  it("곡 정보 수정: 지금 값이 채워져 있고, BPM이 채워져 있고, 저장하면 화면에 없는 값(타이틀 폴더)은 그대로 보낸다", async () => {
     fetchMock.mockResolvedValueOnce(json(song));
     renderDialog({ kind: "song", song });
     expect(screen.getByLabelText("곡명")).toHaveValue("테스트곡");
     expect(screen.getByLabelText("버전")).toHaveValue("V5");
+    expect(screen.getByLabelText("최소 BPM")).toHaveValue("120");
+    expect(screen.getByLabelText("최대 BPM")).toHaveValue("180");
 
     fireEvent.change(screen.getByLabelText("곡명"), { target: { value: "  바뀐 곡  " } });
     fireEvent.change(screen.getByLabelText("아티스트"), { target: { value: "" } });
@@ -70,6 +72,59 @@ describe("SongEditDialog", () => {
     expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("PUT");
     expect(body()).toEqual({ title: "바뀐 곡", artist: null, addedVersion: "V5", titleFolder: "ㅌ", bpmMin: 120, bpmMax: 180 });
     expect(body()).not.toHaveProperty("titles"); // 생략 = 서버가 곡명 표기를 그대로 둔다
+  });
+
+  it("BPM을 최소만 입력해 저장하면 고정 BPM으로 보낸다(최대는 비워 서버가 채운다)", async () => {
+    fetchMock.mockResolvedValueOnce(json(song));
+    renderDialog({ kind: "song", song: { ...song, bpmMin: null, bpmMax: null } });
+    expect(screen.getByLabelText("최소 BPM")).toHaveValue("");
+    fireEvent.change(screen.getByLabelText("최소 BPM"), { target: { value: " 150 " } });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(body()).toMatchObject({ bpmMin: 150, bpmMax: null });
+  });
+
+  it("BPM을 범위로 저장하고, 모두 지우면 BPM 없음(null)으로 보낸다", async () => {
+    fetchMock.mockResolvedValue(json(song));
+    renderDialog({ kind: "song", song });
+    fireEvent.change(screen.getByLabelText("최소 BPM"), { target: { value: "90" } });
+    fireEvent.change(screen.getByLabelText("최대 BPM"), { target: { value: "200" } });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(body()).toMatchObject({ bpmMin: 90, bpmMax: 200 });
+
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValue(json(song));
+    fireEvent.change(screen.getByLabelText("최소 BPM"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("최대 BPM"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(2));
+    expect(body()).toMatchObject({ bpmMin: null, bpmMax: null });
+  });
+
+  it("BPM이 잘못되면 안내를 보이고 서버를 부르지 않는다: 숫자 아님, 범위 밖, 최소 > 최대, 최대만", async () => {
+    renderDialog({ kind: "song", song });
+    const save = () => fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    const set = (min: string, max: string) => {
+      fireEvent.change(screen.getByLabelText("최소 BPM"), { target: { value: min } });
+      fireEvent.change(screen.getByLabelText("최대 BPM"), { target: { value: max } });
+    };
+
+    set("abc", "");
+    save();
+    expect(await screen.findByText("BPM은 숫자(정수)로 입력해 주세요.")).toBeInTheDocument();
+    set("0", "");
+    save();
+    expect(await screen.findByText("BPM은 1 이상 2000 이하여야 합니다.")).toBeInTheDocument();
+    set("200", "100");
+    save();
+    expect(await screen.findByText("최소 BPM은 최대 BPM보다 클 수 없습니다.")).toBeInTheDocument();
+    set("", "100");
+    save();
+    expect(await screen.findByText("최소 BPM을 입력해 주세요.")).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("검색 키워드를 추가하고 저장하면 별칭이 아닌 기존 표기와 함께 titles로 보낸다", async () => {

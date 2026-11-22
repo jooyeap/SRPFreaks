@@ -1,18 +1,18 @@
 import type { Translator } from "@/i18n/translator";
 import { apiFetch } from "@/lib/api";
 import type { PageResponse, SongDetailResponse, TitleKind } from "@/lib/api-types";
-import { ALIAS_MAX_LENGTH, MAX_TITLES, SONG_EDIT_AFFECTED_KEYS, type SongUpdateBody } from "@/lib/song-admin";
+import { ALIAS_MAX_LENGTH, MAX_TITLES, parseBpmInput, SONG_EDIT_AFFECTED_KEYS, type BpmField, type SongUpdateBody } from "@/lib/song-admin";
 import type { DifficultyType, InstrumentPart } from "@/lib/types";
 
 /**
- * 곡 정보 정리(D91, ROOT·ADMIN): 아티스트나 검색 키워드가 비어 있는 곡만 모아 채워 넣는 화면의 API 호출과 계산.
+ * 곡 정보 정리(D91, ROOT·ADMIN): 아티스트·검색 키워드·BPM(D105)이 비어 있는 곡만 모아 채워 넣는 화면의 API 호출과 계산.
  * 목록만 새 API(GET /admin/song-meta/todo, 읽기 전용)이고, 저장·되돌리기는 기존 곡 수정 API(PUT /songs/{id}, D22)를 그대로 쓴다.
  * 곡 삭제·신규 등록은 이 화면에 없다. 감사 로그(SONG_UPDATE)는 서버가 곡 수정과 같은 규칙으로 남긴다.
  */
 
-/** 화면 칩과 1:1. ANY = 전체 미등록, ARTIST = 아티스트 없음, KEYWORD = 검색 키워드 없음, BOTH = 둘 다. 서버 화이트리스트와 같다. */
-export type SongMetaFilter = "ANY" | "ARTIST" | "KEYWORD" | "BOTH";
-export const SONG_META_FILTERS: readonly SongMetaFilter[] = ["ANY", "ARTIST", "KEYWORD", "BOTH"];
+/** 화면 칩과 1:1. ANY = 전체 미등록(아티스트·키워드), ARTIST = 아티스트 없음, KEYWORD = 검색 키워드 없음, BOTH = 둘 다, BPM = BPM 없음(D105). 서버 화이트리스트와 같다. */
+export type SongMetaFilter = "ANY" | "ARTIST" | "KEYWORD" | "BOTH" | "BPM";
+export const SONG_META_FILTERS: readonly SongMetaFilter[] = ["ANY", "ARTIST", "KEYWORD", "BOTH", "BPM"];
 
 /** 한 쪽에 보이는 곡 수(시안: 20개씩). */
 export const SONG_META_PAGE_SIZE = 20;
@@ -24,12 +24,17 @@ export interface SongMetaSummary {
   bothMissing: number;
   /** 아티스트 없음 + 키워드 없음 - 둘 다(중복 없이 센 전체 미등록) */
   anyMissing: number;
+  /** BPM 최소·최대가 모두 비어 있는 곡 수(D105). 전체 미등록(anyMissing)에는 들어 있지 않다 */
+  noBpm: number;
 }
 
 export interface SongMetaRow {
   songId: number;
   title: string;
   artist: string | null;
+  /** 둘 다 null이면 BPM 없음(D105) */
+  bpmMin: number | null;
+  bpmMax: number | null;
   /** song_titles 행 수. 0이면 검색 키워드가 없다 */
   titleCount: number;
   topPart: InstrumentPart | null;
@@ -53,9 +58,27 @@ export function fetchSongMetaTodo(filter: SongMetaFilter, q: string, page: numbe
   return apiFetch<SongMetaTodoResponse>("/admin/song-meta/todo", { query, signal });
 }
 
-/** 줄 상태: 아티스트가 비어 있나, 검색 키워드가 비어 있나. */
-export function missingOf(row: Pick<SongMetaRow, "artist" | "titleCount">): { artist: boolean; keyword: boolean } {
-  return { artist: row.artist === null || row.artist.trim() === "", keyword: row.titleCount === 0 };
+/** 줄 상태: 아티스트가 비어 있나, 검색 키워드가 비어 있나, BPM이 비어 있나(최소·최대 모두 없음, D105). */
+export function missingOf(row: Pick<SongMetaRow, "artist" | "titleCount" | "bpmMin" | "bpmMax">): { artist: boolean; keyword: boolean; bpm: boolean } {
+  return { artist: row.artist === null || row.artist.trim() === "", keyword: row.titleCount === 0, bpm: row.bpmMin === null && row.bpmMax === null };
+}
+
+/** 줄에서 입력한 BPM(검사를 통과한 값). 최소만 쓰면 max는 min과 같다. */
+export interface NewBpm {
+  min: number;
+  max: number;
+}
+
+/**
+ * BPM 입력 글자를 검사해 저장용 값으로 바꾼다(검사 규칙은 곡 수정 창과 같은 parseBpmInput).
+ * 둘 다 비어 있으면 입력 없음(ok, bpm = null). 오류면 어느 칸인지와 안내 문구를 돌려준다.
+ */
+export function readBpmDraft(minText: string, maxText: string, t: Translator): { ok: true; bpm: NewBpm | null } | { ok: false; field: BpmField; message: string } {
+  const result = parseBpmInput(minText, maxText, t);
+  if (!result.ok) {
+    return result;
+  }
+  return { ok: true, bpm: result.min === null || result.max === null ? null : { min: result.min, max: result.max } };
 }
 
 /** 새로 넣을 검색 키워드 하나(곡명 표기). */
@@ -93,24 +116,27 @@ export function addKeyword(current: readonly NewKeyword[], kind: TitleKind, text
 }
 
 /** 이 줄을 저장할 수 있는가: 비어 있는 칸 중 하나라도 채워졌을 때. */
-export function canSaveMeta(row: SongMetaRow, artist: string, keywords: readonly NewKeyword[]): boolean {
+export function canSaveMeta(row: SongMetaRow, artist: string, keywords: readonly NewKeyword[], bpmMin = "", bpmMax = ""): boolean {
   const missing = missingOf(row);
-  return (missing.artist && artist.trim() !== "") || (missing.keyword && keywords.length > 0);
+  // BPM은 글자가 한 칸이라도 있으면 저장을 눌러 볼 수 있다(옳은 값인지는 저장할 때 검사해서 안내한다)
+  return (missing.artist && artist.trim() !== "") || (missing.keyword && keywords.length > 0) || (missing.bpm && (bpmMin.trim() !== "" || bpmMax.trim() !== ""));
 }
 
 /**
  * PUT /songs/{id} 본문을 만든다. 서버 수정은 "보낸 값으로 교체"라서 화면에 없는 값(버전·폴더·BPM)은 지금 값을 그대로 보내야 지워지지 않는다.
  * 아티스트는 비어 있던 줄만 입력값으로 바꾸고(이미 있으면 그대로), 키워드가 있으면 titles를 통째로(기존 표기 + 새 키워드) 보낸다.
  */
-export function toMetaSaveBody(detail: SongDetailResponse, artist: string, keywords: readonly NewKeyword[]): SongUpdateBody {
+export function toMetaSaveBody(detail: SongDetailResponse, artist: string, keywords: readonly NewKeyword[], bpm: NewBpm | null = null): SongUpdateBody {
   const hasArtist = detail.artist !== null && detail.artist.trim() !== "";
+  // BPM도 아티스트처럼 최신 상세에서 비어 있을 때만 입력값으로 채운다(그 사이 다른 관리자가 채웠다면 그 값을 그대로 둔다)
+  const hasBpm = detail.bpmMin !== null || detail.bpmMax !== null;
   const body: SongUpdateBody = {
     title: detail.title,
     artist: hasArtist ? detail.artist : artist.trim() === "" ? null : artist.trim(),
     addedVersion: detail.addedVersion,
     titleFolder: detail.titleFolder,
-    bpmMin: detail.bpmMin,
-    bpmMax: detail.bpmMax,
+    bpmMin: !hasBpm && bpm ? bpm.min : detail.bpmMin,
+    bpmMax: !hasBpm && bpm ? bpm.max : detail.bpmMax,
   };
   if (keywords.length === 0) {
     return body;
@@ -147,9 +173,9 @@ export interface MetaSaved {
  * 저장: 최신 곡 상세를 먼저 읽고(다른 관리자가 그 사이 바꾼 값을 덮어쓰지 않도록) 그 위에 입력값을 얹어 PUT한다.
  * 삭제됐거나 없는 곡이면 서버가 404를 준다(그대로 화면에 안내).
  */
-export async function saveSongMeta(songId: number, artist: string, keywords: readonly NewKeyword[]): Promise<MetaSaved> {
+export async function saveSongMeta(songId: number, artist: string, keywords: readonly NewKeyword[], bpm: NewBpm | null = null): Promise<MetaSaved> {
   const before = await apiFetch<SongDetailResponse>(`/songs/${songId}`);
-  const body = toMetaSaveBody(before, artist, keywords);
+  const body = toMetaSaveBody(before, artist, keywords, bpm);
   await apiFetch<SongDetailResponse>(`/songs/${songId}`, { method: "PUT", body });
   return { songId, title: before.title, restore: toMetaRestoreBody(before, body.titles !== undefined) };
 }

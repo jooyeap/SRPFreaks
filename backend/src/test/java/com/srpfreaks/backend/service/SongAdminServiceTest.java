@@ -204,6 +204,59 @@ class SongAdminServiceTest {
         assertThat(savedTitles()).hasSize(1);
     }
 
+    private SongRequest bpmRequest(Integer min, Integer max) {
+        return new SongRequest("원래 곡명", null, null, null, min, max, null, null);
+    }
+
+    @Test
+    void BPM은_최소만_보내면_고정_BPM으로_최대를_같은_값으로_저장한다() {
+        Song song = song(1L);
+        when(songRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(song));
+
+        service.updateSong(ACTOR, 1L, bpmRequest(150, null));
+
+        assertThat(song.getBpmMin()).isEqualTo(150);
+        assertThat(song.getBpmMax()).isEqualTo(150);
+    }
+
+    @Test
+    void BPM은_범위로도_저장하고_둘_다_비우면_BPM_없음이다() {
+        Song song = song(1L);
+        when(songRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(song));
+
+        service.updateSong(ACTOR, 1L, bpmRequest(120, 180));
+        assertThat(song.getBpmMin()).isEqualTo(120);
+        assertThat(song.getBpmMax()).isEqualTo(180);
+
+        service.updateSong(ACTOR, 1L, bpmRequest(null, null));
+        assertThat(song.getBpmMin()).isNull();
+        assertThat(song.getBpmMax()).isNull();
+    }
+
+    @Test
+    void BPM_최대만_있거나_최소가_최대보다_크면_400이고_저장하지_않는다() {
+        Song song = song(1L);
+        song.changeMeta(null, null, 100, 100);
+        when(songRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(song));
+
+        for (SongRequest bad : List.of(bpmRequest(null, 150), bpmRequest(181, 180))) {
+            assertThatThrownBy(() -> service.updateSong(ACTOR, 1L, bad))
+                    .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR));
+        }
+        assertThat(song.getBpmMin()).isEqualTo(100);
+        verify(auditLogRepository, never()).save(any(AuditLog.class));
+    }
+
+    @Test
+    void BPM을_바꾼_수정도_곡_수정_감사_로그를_남긴다() {
+        Song song = song(1L);
+        when(songRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(song));
+
+        service.updateSong(ACTOR, 1L, bpmRequest(150, null));
+
+        assertThat(savedAudit().getAction()).isEqualTo("SONG_UPDATE");
+    }
+
     @Test
     void 없는_곡을_수정하면_404다() {
         when(songRepository.findByIdAndDeletedFalse(5L)).thenReturn(Optional.empty());

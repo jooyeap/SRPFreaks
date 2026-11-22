@@ -6,6 +6,7 @@ const songCreateSchema = makeSongCreateSchema(koT);
 const chartEditSchema = makeChartEditSchema(koT);
 import {
   makeChartEditSchema,
+  makeSongEditSchema,
   emptyChart,
   emptySongCreate,
   MAX_CHARTS,
@@ -182,11 +183,11 @@ describe("수정 본문", () => {
   };
 
   it("songToEditValues: null은 빈 문자열이 된다", () => {
-    expect(songToEditValues(song)).toEqual({ title: "곡", artist: "", addedVersion: "" });
+    expect(songToEditValues(song)).toEqual({ title: "곡", artist: "", addedVersion: "", bpmMin: "100", bpmMax: "" });
   });
 
   it("toSongUpdateBody: 빈 칸은 null, 화면에 없는 값은 지금 값 그대로, titles는 생략한다", () => {
-    const body = toSongUpdateBody(song, { title: " 새 ", artist: " ", addedVersion: "V3" });
+    const body = toSongUpdateBody(song, { title: " 새 ", artist: " ", addedVersion: "V3", bpmMin: "100", bpmMax: "" });
     expect(body).toEqual({ title: "새", artist: null, addedVersion: "V3", titleFolder: "ㄱ", bpmMin: 100, bpmMax: null });
     expect("titles" in body).toBe(false);
   });
@@ -248,7 +249,7 @@ describe("검색 키워드(별칭)", () => {
       { kind: "ROMAJI", title: "TESUTO" },
       { kind: "ALIAS", title: "옛별칭" },
     ]);
-    const values = { title: "t", artist: "", addedVersion: "" };
+    const values = { title: "t", artist: "", addedVersion: "", bpmMin: "", bpmMax: "" };
     expect(toSongUpdateBody(s, values, ["옛별칭"])).not.toHaveProperty("titles");
     expect(toSongUpdateBody(s, values)).not.toHaveProperty("titles");
     expect(toSongUpdateBody(s, values, ["옛별칭", "새별칭"]).titles).toEqual([
@@ -258,5 +259,45 @@ describe("검색 키워드(별칭)", () => {
     ]);
     // 모두 지우면 별칭만 빠지고 로마자 표기는 남는다
     expect(toSongUpdateBody(s, values, []).titles).toEqual([{ kind: "ROMAJI", title: "TESUTO" }]);
+  });
+});
+
+describe("곡 수정 폼의 BPM 검사 (D105)", () => {
+  const schema = makeSongEditSchema(koT);
+  const parse = (bpmMin: string, bpmMax: string) => schema.safeParse({ title: "곡", artist: "", addedVersion: "", bpmMin, bpmMax });
+  const messageOf = (bpmMin: string, bpmMax: string): string | undefined => {
+    const result = parse(bpmMin, bpmMax);
+    return result.success ? undefined : result.error.issues[0].message;
+  };
+
+  it("둘 다 비어 있거나, 최소만(고정)이거나, 범위면 통과한다", () => {
+    expect(parse("", "").success).toBe(true);
+    expect(parse("150", "").success).toBe(true);
+    expect(parse("120", "180").success).toBe(true);
+    expect(parse("150", "150").success).toBe(true);
+  });
+
+  it("경계값: 1과 2000은 통과, 0과 2001은 거절한다", () => {
+    expect(parse("1", "2000").success).toBe(true);
+    expect(messageOf("0", "")).toBe("BPM은 1 이상 2000 이하여야 합니다.");
+    expect(messageOf("100", "2001")).toBe("BPM은 1 이상 2000 이하여야 합니다.");
+  });
+
+  it("숫자가 아니거나 소수·음수면 거절한다", () => {
+    for (const bad of ["abc", "1.5", "-5", "12a"]) {
+      expect(messageOf(bad, "")).toBe("BPM은 숫자(정수)로 입력해 주세요.");
+    }
+  });
+
+  it("최대만 있거나 최소가 최대보다 크면 거절하고, 어느 칸의 오류인지 알려 준다", () => {
+    const onlyMax = parse("", "180");
+    expect(onlyMax.success).toBe(false);
+    if (!onlyMax.success) expect(onlyMax.error.issues[0].path).toEqual(["bpmMin"]);
+    const reversed = parse("181", "180");
+    expect(reversed.success).toBe(false);
+    if (!reversed.success) {
+      expect(reversed.error.issues[0].path).toEqual(["bpmMax"]);
+      expect(reversed.error.issues[0].message).toBe("최소 BPM은 최대 BPM보다 클 수 없습니다.");
+    }
   });
 });

@@ -50,11 +50,11 @@ public class SongAdminService {
     public SongDetailResponse createSong(Long actorId, SongRequest request) {
         // 같은 이름의 곡을 또 만들면 가져오기가 "같은 이름의 곡이 여러 개"로 제외하고, 곡 목록에도 같은 곡이 두 번 나온다.
         // 다른 파트·난이도 채보가 필요하면 새 곡이 아니라 기존 곡에 채보를 추가해야 한다.
+        Integer[] bpm = normalizeBpm(request.bpmMin(), request.bpmMax());
         rejectDuplicateTitle(request.title(), null);
         Song song = Song.create(request.title().strip(), blankToNull(request.artist()),
                 blankToNull(request.source()), userRepository.getReferenceById(actorId));
-        song.changeMeta(blankToNull(request.addedVersion()), blankToNull(request.titleFolder()),
-                request.bpmMin(), request.bpmMax());
+        song.changeMeta(blankToNull(request.addedVersion()), blankToNull(request.titleFolder()), bpm[0], bpm[1]);
         songRepository.save(song);
         saveTitles(song, request.titles());
 
@@ -65,11 +65,11 @@ public class SongAdminService {
     /** 수정(PUT): 보낸 값으로 교체한다. 출처(source)는 등록 때의 기록이라 바꾸지 않는다. */
     public SongDetailResponse updateSong(Long actorId, Long songId, SongRequest request) {
         Song song = findSong(songId);
+        Integer[] bpm = normalizeBpm(request.bpmMin(), request.bpmMax()); // 값을 바꾸기 전에 먼저 검사한다
         rejectDuplicateTitle(request.title(), songId); // 이름을 바꿔서 다른 곡과 같아지는 경우도 막는다(자기 자신은 제외)
         song.changeTitle(request.title().strip());
         song.changeArtist(blankToNull(request.artist()));
-        song.changeMeta(blankToNull(request.addedVersion()), blankToNull(request.titleFolder()),
-                request.bpmMin(), request.bpmMax());
+        song.changeMeta(blankToNull(request.addedVersion()), blankToNull(request.titleFolder()), bpm[0], bpm[1]);
         if (request.titles() != null) {
             // 곡 변경분을 먼저 DB에 반영(flush)한 뒤 표기를 지우고 다시 넣는다. 삭제는 벌크 쿼리라 바로 실행된다.
             songTitleRepository.deleteAllBySongId(song.getId());
@@ -194,6 +194,21 @@ public class SongAdminService {
     private void audit(Long actorId, String action, String targetType, Long targetId, Map<String, Object> detail) {
         auditLogRepository.save(AuditLog.record(userRepository.getReferenceById(actorId), action, targetType,
                 String.valueOf(targetId), detail));
+    }
+
+    /**
+     * BPM 입력 정리(D105). 둘 다 없으면 BPM 없음(null, null). 최소만 있으면 고정 BPM이라 최대를 같은 값으로 채운다.
+     * 최대만 있거나 최소 > 최대면 400(VALIDATION_ERROR). 범위(1~2000)는 SongRequest의 Bean Validation이 먼저 막는다.
+     * 수정(PUT)은 보낸 값으로 교체하므로 이 규칙은 등록·수정이 같다.
+     */
+    static Integer[] normalizeBpm(Integer min, Integer max) {
+        if (min == null && max == null) {
+            return new Integer[] {null, null};
+        }
+        if (min == null || (max != null && min > max)) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR);
+        }
+        return new Integer[] {min, max == null ? min : max};
     }
 
     private static String blankToNull(String value) {
