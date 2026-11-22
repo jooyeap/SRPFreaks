@@ -167,4 +167,36 @@ class SongMetaTodoMapperTest {
         assertThat(mapper.count("ANY", null)).isEqualTo(summary.noArtist() + summary.noKeyword() - summary.bothMissing());
         assertThat(mapper.count("BOTH", null)).isEqualTo(summary.bothMissing());
     }
+
+    @Test
+    void BPM_없음은_최소와_최대가_모두_비어_있는_곡만_나온다() {
+        // setUp의 곡은 모두 BPM이 비어 있다. 하나는 고정 BPM, 하나는 범위 BPM, 하나는 삭제로 바꿔서 확인한다.
+        em.find(Song.class, complete.getId()).changeMeta(null, null, 150, 150);
+        em.find(Song.class, noArtist.getId()).changeMeta(null, null, 120, 180);
+        em.find(Song.class, both.getId()).delete();
+        em.flush();
+        em.clear();
+
+        assertThat(ids("BPM")).containsExactly(noKeyword.getId());
+        assertThat(mapper.count("BPM", "%정리테스트%")).isEqualTo(1);
+        SongMetaTodoRow row = mapper.findPage("BPM", "%정리테스트%", "title", 10, 0).get(0);
+        assertThat(row.bpmMin()).isNull();
+        assertThat(row.bpmMax()).isNull();
+        // 채워진 곡은 값이 그대로 내려온다
+        SongMetaTodoRow filled = mapper.findPage("ARTIST", "%아티스트없음%", "title", 10, 0).get(0);
+        assertThat(filled.bpmMin()).isEqualTo(120);
+        assertThat(filled.bpmMax()).isEqualTo(180);
+    }
+
+    @Test
+    void BPM_없음_요약은_삭제된_곡과_채워진_곡을_세지_않는다() {
+        long before = mapper.summary().noBpm();
+        em.find(Song.class, complete.getId()).changeMeta(null, null, 150, null);
+        em.find(Song.class, both.getId()).delete();
+        em.flush();
+        em.clear();
+
+        assertThat(mapper.summary().noBpm()).isEqualTo(before - 2);
+        assertThat(mapper.count("BPM", null)).isEqualTo(mapper.summary().noBpm());
+    }
 }

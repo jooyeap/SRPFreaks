@@ -17,7 +17,8 @@ import java.util.List;
  *  - 검색 키워드 없음 = 그 곡의 song_titles 행이 하나도 없음
  *  - 삭제된 곡(is_deleted)은 어느 쪽에도 들어가지 않는다.
  * 정렬은 ORDER BY에 #{}를 쓸 수 없어서 CASE로 고른다. sort 값은 서비스의 화이트리스트(title / level)를 통과한 것만 온다.
- * filter 값(ANY / ARTIST / KEYWORD / BOTH)도 서비스가 검증하며, SQL 글자로 이어 붙이지 않고 비교 값으로만 바인딩한다.
+ * BPM 없음(D105) = bpm_min과 bpm_max가 모두 NULL. 전체 미등록(ANY)에는 넣지 않는다(BPM은 따로 채우는 항목이라 기존 건수·목록의 뜻을 바꾸지 않는다).
+ * filter 값(ANY / ARTIST / KEYWORD / BOTH / BPM)도 서비스가 검증하며, SQL 글자로 이어 붙이지 않고 비교 값으로만 바인딩한다.
  * pattern은 서비스가 LIKE용으로 이스케이프한 값이다(이스케이프 문자 '!').
  */
 @Mapper
@@ -41,7 +42,8 @@ public interface SongMetaTodoMapper {
                 OR (#{filter} = 'ARTIST' AND (s.artist IS NULL OR TRIM(s.artist) = ''))
                 OR (#{filter} = 'KEYWORD' AND NOT EXISTS (SELECT 1 FROM song_titles t WHERE t.song_id = s.song_id))
                 OR (#{filter} = 'BOTH' AND (s.artist IS NULL OR TRIM(s.artist) = '')
-                                       AND NOT EXISTS (SELECT 1 FROM song_titles t WHERE t.song_id = s.song_id)))
+                                       AND NOT EXISTS (SELECT 1 FROM song_titles t WHERE t.song_id = s.song_id))
+                OR (#{filter} = 'BPM' AND s.bpm_min IS NULL AND s.bpm_max IS NULL))
               AND (#{pattern} IS NULL OR s.title LIKE #{pattern} ESCAPE '!')
             """;
 
@@ -50,6 +52,8 @@ public interface SongMetaTodoMapper {
             SELECT s.song_id AS songId,
                    s.title AS title,
                    s.artist AS artist,
+                   s.bpm_min AS bpmMin,
+                   s.bpm_max AS bpmMax,
                    (SELECT COUNT(*) FROM song_titles c WHERE c.song_id = s.song_id) AS titleCount,
                    tc.instrument_part AS topPart,
                    tc.difficulty_type AS topDifficulty,
@@ -70,7 +74,8 @@ public interface SongMetaTodoMapper {
                    COALESCE(SUM(s.artist IS NULL OR TRIM(s.artist) = ''), 0) AS noArtist,
                    COALESCE(SUM(NOT EXISTS (SELECT 1 FROM song_titles t WHERE t.song_id = s.song_id)), 0) AS noKeyword,
                    COALESCE(SUM((s.artist IS NULL OR TRIM(s.artist) = '')
-                                AND NOT EXISTS (SELECT 1 FROM song_titles t WHERE t.song_id = s.song_id)), 0) AS bothMissing
+                                AND NOT EXISTS (SELECT 1 FROM song_titles t WHERE t.song_id = s.song_id)), 0) AS bothMissing,
+                   COALESCE(SUM(s.bpm_min IS NULL AND s.bpm_max IS NULL), 0) AS noBpm
             FROM songs s
             WHERE s.is_deleted = FALSE
             """)

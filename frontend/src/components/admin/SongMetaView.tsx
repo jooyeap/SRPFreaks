@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { AdminBackLink } from "@/components/admin/AdminBackLink";
@@ -8,18 +9,21 @@ import { Pager } from "@/components/Pager";
 import { ApiError } from "@/lib/api";
 import type { TitleKind } from "@/lib/api-types";
 import { difficultyLabel, formatLevel, partLabel } from "@/lib/format";
+import { formatBpm } from "@/lib/songs";
 import {
   addKeyword,
   canSaveMeta,
   fetchSongMetaTodo,
   KEYWORD_KINDS,
   missingOf,
+  readBpmDraft,
   restoreSongMeta,
   saveSongMeta,
   SONG_META_AFFECTED_KEYS,
   SONG_META_FILTERS,
   songMetaKeys,
   type MetaSaved,
+  type NewBpm,
   type NewKeyword,
   type SongMetaFilter,
   type SongMetaRow,
@@ -39,6 +43,7 @@ const CHIP_LABELS: Record<SongMetaFilter, MessageKey> = {
   ARTIST: "SongMeta.chipArtist",
   KEYWORD: "SongMeta.chipKeyword",
   BOTH: "SongMeta.chipBoth",
+  BPM: "SongMeta.chipBpm",
 };
 
 const KIND_LABELS: Record<TitleKind, MessageKey> = {
@@ -60,6 +65,8 @@ function messageOf(error: unknown, t: Translator): string | null {
  *  - 데스크톱(1024px 이상): 줄에서 바로 입력(인라인). 모바일: 줄을 누르면 펼쳐서 입력한다(한 번에 하나).
  *  - 저장은 기존 곡 수정 API(PUT /songs/{id}, D22)를 그대로 쓴다(최신 상세를 읽고 그 위에 얹어 보낸다). 감사 로그는 서버가 남긴다.
  *  - 저장하면 조건이 풀린 곡은 목록에서 사라지고, 맨 위에 `되돌리기` 안내가 뜬다. 이번 저장 한 건만 되돌린다.
+ *  - BPM(D105): 최소·최대가 모두 비어 있는 곡은 `BPM 없음` 칩으로 모아 보고, 줄에서 최소(고정이면 이것만)·최대를 직접 입력해 저장한다.
+ *    줄마다 곡 상세로 가는 링크가 있다(곡 정보 수정 창에서도 BPM을 고칠 수 있다).
  *  - 곡 삭제·신규 등록·자동 등록은 없다. 권한은 서버가 다시 검사한다(403).
  * 같은 줄을 CSS로 두 번 그리지 않고 훅(useMediaQuery)으로 한쪽만 그린다(같은 입력칸이 DOM에 두 번 생기지 않게).
  */
@@ -97,8 +104,8 @@ export function SongMetaView({ viewerId }: { viewerId: number }) {
   }
 
   const save = useMutation({
-    mutationFn: ({ row, artist, keywords }: { row: SongMetaRow; artist: string; keywords: readonly NewKeyword[] }) =>
-      saveSongMeta(row.songId, artist, keywords),
+    mutationFn: ({ row, artist, keywords, bpm }: { row: SongMetaRow; artist: string; keywords: readonly NewKeyword[]; bpm: NewBpm | null }) =>
+      saveSongMeta(row.songId, artist, keywords, bpm),
     onSuccess: async (saved) => {
       setNotice(saved);
       setOpenId(null);
@@ -126,17 +133,18 @@ export function SongMetaView({ viewerId }: { viewerId: number }) {
     ARTIST: summary?.noArtist,
     KEYWORD: summary?.noKeyword,
     BOTH: summary?.bothMissing,
+    BPM: summary?.noBpm,
   };
   const rows = data?.page.content ?? [];
 
   const renderRow = (row: SongMetaRow) => {
     // 저장 뒤 값(아티스트·표기 개수)이 바뀌면 줄을 새로 만든다 -> 쓰다 만 입력이 남지 않는다
-    const key = `${row.songId}-${row.artist ?? ""}-${row.titleCount}`;
+    const key = `${row.songId}-${row.artist ?? ""}-${row.titleCount}-${row.bpmMin ?? ""}-${row.bpmMax ?? ""}`;
     const common = {
       row,
       pending: save.isPending && save.variables?.row.songId === row.songId,
       error: save.variables?.row.songId === row.songId ? messageOf(save.error, t) : null,
-      onSave: (artist: string, keywords: readonly NewKeyword[]) => save.mutate({ row, artist, keywords }),
+      onSave: (artist: string, keywords: readonly NewKeyword[], bpm: NewBpm | null) => save.mutate({ row, artist, keywords, bpm }),
     };
     return desktop ? (
       <DesktopRow key={key} {...common} />
@@ -156,13 +164,14 @@ export function SongMetaView({ viewerId }: { viewerId: number }) {
       </div>
 
       {summary ? (
-        <dl aria-label={t("SongMeta.summaryAria")} className="hidden grid-cols-4 gap-3 lg:grid">
+        <dl aria-label={t("SongMeta.summaryAria")} className="hidden grid-cols-5 gap-3 lg:grid">
           {(
             [
               ["SongMeta.summaryTotal", summary.totalSongs],
               ["SongMeta.summaryNoArtist", summary.noArtist],
               ["SongMeta.summaryNoKeyword", summary.noKeyword],
               ["SongMeta.summaryBoth", summary.bothMissing],
+              ["SongMeta.summaryNoBpm", summary.noBpm],
             ] as const
           ).map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-line bg-card px-4 py-3">
@@ -201,9 +210,15 @@ export function SongMetaView({ viewerId }: { viewerId: number }) {
         />
       </div>
 
+      {summary && filter === "BPM" ? (
+        <p data-testid="song-meta-bpm-count" className="text-sm text-fg-sub">
+          {t("SongMeta.bpmCountLine", { missing: summary.noBpm, total: summary.totalSongs })}
+        </p>
+      ) : null}
+
       {notice ? (
         <div role="status" data-testid="song-meta-notice" className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-card px-4 py-3 text-sm text-fg">
-          <span className="min-w-0 break-keep break-words">{t("SongMeta.savedNotice", { title: notice.title, count: summary?.anyMissing ?? 0 })}</span>
+          <span className="min-w-0 break-keep break-words">{t("SongMeta.savedNotice", { title: notice.title, count: (filter === "BPM" ? summary?.noBpm : summary?.anyMissing) ?? 0 })}</span>
           <button type="button" className={BTN} disabled={undo.isPending} aria-label={t("SongMeta.undoAria", { title: notice.title })} onClick={() => undo.mutate(notice)}>
             {t("SongMeta.undo")}
           </button>
@@ -232,6 +247,7 @@ export function SongMetaView({ viewerId }: { viewerId: number }) {
               <span>{t("SongMeta.colSong")}</span>
               <span>{t("SongMeta.colArtist")}</span>
               <span>{t("SongMeta.colKeyword")}</span>
+              <span>{t("SongMeta.colBpm")}</span>
               <span />
             </div>
           ) : null}
@@ -252,7 +268,7 @@ export function SongMetaView({ viewerId }: { viewerId: number }) {
   );
 }
 
-const DESKTOP_GRID = "grid grid-cols-[minmax(0,16rem)_minmax(0,14rem)_minmax(0,1fr)_auto] items-center gap-3";
+const DESKTOP_GRID = "grid grid-cols-[minmax(0,14rem)_minmax(0,12rem)_minmax(0,1fr)_minmax(0,11rem)_auto] items-center gap-3";
 
 /** 곡 이름과 대표 채보(`Guitar | MAS 9.80`). 재킷 칸은 없다. */
 function SongCell({ row }: { row: SongMetaRow }) {
@@ -277,6 +293,23 @@ function useDraft(row: SongMetaRow) {
   const [kind, setKind] = useState<TitleKind>("ROMAJI");
   const [text, setText] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
+  const [bpmMin, setBpmMin] = useState("");
+  const [bpmMax, setBpmMax] = useState("");
+  const [bpmProblem, setBpmProblem] = useState<string | null>(null);
+
+  /** 저장 직전 BPM 검사. 통과하면 저장할 값(입력 없음이면 null)을 돌려주고, 아니면 안내를 보이고 undefined를 돌려준다. */
+  function checkBpm(): NewBpm | null | undefined {
+    if (!missingOf(row).bpm) {
+      return null;
+    }
+    const result = readBpmDraft(bpmMin, bpmMax, t);
+    if (!result.ok) {
+      setBpmProblem(result.message);
+      return undefined;
+    }
+    setBpmProblem(null);
+    return result.bpm;
+  }
 
   function add() {
     const result = addKeyword(keywords, kind, text, t);
@@ -293,6 +326,9 @@ function useDraft(row: SongMetaRow) {
     setKeywords([]);
     setText("");
     setProblem(null);
+    setBpmMin("");
+    setBpmMax("");
+    setBpmProblem(null);
   }
   return {
     artist,
@@ -306,7 +342,19 @@ function useDraft(row: SongMetaRow) {
     problem,
     add,
     reset,
-    canSave: canSaveMeta(row, artist, keywords),
+    bpmMin,
+    bpmMax,
+    setBpmMin: (value: string) => {
+      setBpmMin(value);
+      setBpmProblem(null);
+    },
+    setBpmMax: (value: string) => {
+      setBpmMax(value);
+      setBpmProblem(null);
+    },
+    bpmProblem,
+    checkBpm,
+    canSave: canSaveMeta(row, artist, keywords, bpmMin, bpmMax),
   };
 }
 type Draft = ReturnType<typeof useDraft>;
@@ -325,6 +373,50 @@ function ArtistField({ row, draft }: { row: SongMetaRow; draft: Draft }) {
       maxLength={255}
       className={FIELD}
     />
+  );
+}
+
+/** BPM 칸(D105): 최소만 쓰면 고정 BPM, 둘 다 쓰면 범위. 이미 값이 있으면 그 값을 보여 주기만 한다. */
+function BpmField({ row, draft }: { row: SongMetaRow; draft: Draft }) {
+  const t = useTranslations();
+  if (!missingOf(row).bpm) {
+    return <span className="text-xs text-fg-sub font-num">{formatBpm(row.bpmMin, row.bpmMax)}</span>;
+  }
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <div role="group" aria-label={t("SongMeta.bpmGroupAria", { title: row.title })} className="flex items-center gap-1.5">
+        <input
+          value={draft.bpmMin}
+          onChange={(event) => draft.setBpmMin(event.target.value)}
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={4}
+          aria-label={t("SongMeta.bpmMinAria", { title: row.title })}
+          aria-invalid={draft.bpmProblem ? true : undefined}
+          placeholder={t("SongMeta.bpmMinPlaceholder")}
+          className={`${FIELD} font-num`}
+        />
+        <span aria-hidden="true" className="text-fg-sub">
+          ~
+        </span>
+        <input
+          value={draft.bpmMax}
+          onChange={(event) => draft.setBpmMax(event.target.value)}
+          inputMode="numeric"
+          autoComplete="off"
+          maxLength={4}
+          aria-label={t("SongMeta.bpmMaxAria", { title: row.title })}
+          aria-invalid={draft.bpmProblem ? true : undefined}
+          placeholder={t("SongMeta.bpmMaxPlaceholder")}
+          className={`${FIELD} font-num`}
+        />
+      </div>
+      {draft.bpmProblem ? (
+        <p role="alert" className="break-keep text-xs text-danger">
+          {draft.bpmProblem}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -402,7 +494,7 @@ interface RowProps {
   row: SongMetaRow;
   pending: boolean;
   error: string | null;
-  onSave: (artist: string, keywords: readonly NewKeyword[]) => void;
+  onSave: (artist: string, keywords: readonly NewKeyword[], bpm: NewBpm | null) => void;
 }
 
 /** 데스크톱: 줄에서 바로 입력하는 네 칸(곡 / 아티스트 / 검색 키워드 / 저장). */
@@ -415,15 +507,19 @@ function DesktopRow({ row, pending, error, onSave }: RowProps) {
         <SongCell row={row} />
         <ArtistField row={row} draft={draft} />
         <KeywordField row={row} draft={draft} />
-        <button
-          type="button"
-          className={BTN_PRIMARY}
-          disabled={!draft.canSave || pending}
-          aria-label={t("SongMeta.saveAria", { title: row.title })}
-          onClick={() => onSave(draft.artist, draft.keywords)}
-        >
-          {pending ? t("SongMeta.saving") : t("SongMeta.save")}
-        </button>
+        <BpmField row={row} draft={draft} />
+        <div className="flex flex-col items-stretch gap-1.5">
+          <button
+            type="button"
+            className={BTN_PRIMARY}
+            disabled={!draft.canSave || pending}
+            aria-label={t("SongMeta.saveAria", { title: row.title })}
+            onClick={() => submit(draft, onSave)}
+          >
+            {pending ? t("SongMeta.saving") : t("SongMeta.save")}
+          </button>
+          <SongLink row={row} />
+        </div>
       </div>
       {error ? (
         <p role="alert" className="mt-2 break-keep text-sm text-fg">
@@ -459,6 +555,7 @@ function MobileRow({ row, pending, error, onSave, open, onToggle }: RowProps & {
           <span className="flex flex-wrap gap-1.5">
             {missing.artist ? <Tag>{t("SongMeta.tagNoArtist")}</Tag> : null}
             {missing.keyword ? <Tag>{t("SongMeta.tagNoKeyword")}</Tag> : null}
+            {missing.bpm ? <Tag>{t("SongMeta.tagNoBpm")}</Tag> : null}
           </span>
         </span>
         <span aria-hidden="true" className="text-fg-sub">
@@ -479,11 +576,19 @@ function MobileRow({ row, pending, error, onSave, open, onToggle }: RowProps & {
               <KeywordField row={row} draft={draft} />
             </div>
           ) : null}
+          {missing.bpm ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-fg-sub">{t("SongMeta.colBpm")}</span>
+              <BpmField row={row} draft={draft} />
+              <p className="break-keep text-xs text-fg-dim">{t("SongMeta.bpmHelp")}</p>
+            </div>
+          ) : null}
           {error ? (
             <p role="alert" className="break-keep text-sm text-fg">
               {error}
             </p>
           ) : null}
+          <SongLink row={row} />
           <div className="flex gap-2">
             <button type="button" className={`${BTN} flex-1`} onClick={close}>
               {t("SongMeta.cancel")}
@@ -493,7 +598,7 @@ function MobileRow({ row, pending, error, onSave, open, onToggle }: RowProps & {
               className={`${BTN_PRIMARY} flex-1`}
               disabled={!draft.canSave || pending}
               aria-label={t("SongMeta.saveAria", { title: row.title })}
-              onClick={() => onSave(draft.artist, draft.keywords)}
+              onClick={() => submit(draft, onSave)}
             >
               {pending ? t("SongMeta.saving") : t("SongMeta.save")}
             </button>
@@ -501,6 +606,28 @@ function MobileRow({ row, pending, error, onSave, open, onToggle }: RowProps & {
         </div>
       ) : null}
     </li>
+  );
+}
+
+/** 저장 누름: BPM 검사를 먼저 하고(오류면 안내만 보이고 서버에 보내지 않는다) 통과하면 줄 저장을 부른다. */
+function submit(draft: Draft, onSave: RowProps["onSave"]) {
+  const bpm = draft.checkBpm();
+  if (bpm !== undefined) {
+    onSave(draft.artist, draft.keywords, bpm);
+  }
+}
+
+/** 이 곡의 상세 화면으로 가는 링크. 곡 정보 수정 창(아티스트·BPM·버전)과 채보 관리는 거기서 연다. */
+function SongLink({ row }: { row: SongMetaRow }) {
+  const t = useTranslations();
+  return (
+    <Link
+      href={`/songs/${row.songId}`}
+      aria-label={t("SongMeta.openSongAria", { title: row.title })}
+      className="flex min-h-11 items-center justify-center rounded-lg border border-ctl px-3 text-sm font-bold text-fg hover:bg-table-head compact:min-h-9"
+    >
+      {t("SongMeta.openSong")}
+    </Link>
   );
 }
 

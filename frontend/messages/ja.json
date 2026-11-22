@@ -337,7 +337,13 @@
     "editJacket": "ジャケット変更",
     "arriveChanged": "変更",
     "arriveBefore": "変更前 {value}",
-    "arriveScore": "自分のスコア"
+    "arriveScore": "自分のスコア",
+    "fieldBpm": "BPM",
+    "bpmMinAria": "最小BPM",
+    "bpmMaxAria": "最大BPM",
+    "bpmMinPlaceholder": "最小",
+    "bpmMaxPlaceholder": "最大",
+    "bpmHelp": "固定BPMは最小だけの入力でかまいません。空欄のままならBPMなしとして保存されます。"
   },
   "Table": {
     "recentChanges": "最近の変更 {count}",
@@ -1018,7 +1024,11 @@
     "aliasLimit": "キーワードは{limit}個まで登録できます。",
     "goalRequired": "目標レーティングを入力してください。",
     "goalFormat": "数字で入力してください。小数は第2位まで入力できます。",
-    "goalPositive": "0より大きい値を入力してください。"
+    "goalPositive": "0より大きい値を入力してください。",
+    "bpmNumber": "BPMは整数で入力してください。",
+    "bpmRange": "BPMは{min}以上{max}以下にしてください。",
+    "bpmMinRequired": "最小BPMを入力してください。",
+    "bpmOrder": "最小BPMは最大BPMより大きくできません。"
   },
   "Notices": {
     "tabsAria": "お知らせの種類",
@@ -1535,7 +1545,7 @@
     "menuChartStats": "難易度表の分析",
     "menuChartStatsDesc": "公開ユーザーの記録を曲ごとに集計して数字で表示します。",
     "menuSongMeta": "曲情報の整理",
-    "menuSongMetaDesc": "アーティスト・検索キーワードが未入力の曲だけを集めて埋めます。",
+    "menuSongMetaDesc": "アーティスト・検索キーワード・BPMが未入力の曲だけを集めて埋めます。",
     "menuDashboard": "ダッシュボード",
     "menuDashboardDesc": "登録ユーザー・記録・ティア・ご意見の状況を数字で表示します。",
     "groupContent": "コンテンツ",
@@ -2155,7 +2165,7 @@
   },
   "SongMeta": {
     "title": "曲情報の整理",
-    "lead": "アーティストや検索キーワードが未入力の曲だけを表示します。保存すると一覧から消えます。",
+    "lead": "アーティスト・検索キーワード・BPMが未入力の曲だけを表示します。保存すると一覧から消えます。",
     "summaryAria": "未登録の状況",
     "summaryTotal": "全曲",
     "summaryNoArtist": "アーティストなし",
@@ -2200,6 +2210,19 @@
     "loadFailed": "曲の一覧を読み込めませんでした。しばらくしてからもう一度お試しください。",
     "empty": "整理する曲はありません。",
     "emptyFiltered": "条件に合う曲がありません。",
-    "noChart": "譜面なし"
+    "noChart": "譜面なし",
+    "summaryNoBpm": "BPMなし",
+    "chipBpm": "BPMなし",
+    "colBpm": "BPM",
+    "tagNoBpm": "BPMなし",
+    "bpmCountLine": "全{total}曲中 BPMなし {missing}曲",
+    "bpmGroupAria": "{title} BPM",
+    "bpmMinAria": "{title} 最小BPM",
+    "bpmMaxAria": "{title} 最大BPM",
+    "bpmMinPlaceholder": "最小",
+    "bpmMaxPlaceholder": "最大",
+    "bpmHelp": "固定BPMは最小だけの入力でかまいません。範囲は最小と最大の両方を入力してください。",
+    "openSong": "曲の詳細",
+    "openSongAria": "{title} の曲詳細を開く"
   }
 }

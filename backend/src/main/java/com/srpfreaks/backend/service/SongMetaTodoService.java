@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 곡 정보 정리(D91): 아티스트나 검색 키워드(song_titles)가 비어 있는 곡만 모아 보는 읽기 전용 목록.
+ * 곡 정보 정리(D91): 아티스트·검색 키워드(song_titles)·BPM(D105)이 비어 있는 곡만 모아 보는 읽기 전용 목록.
  * 저장은 이 서비스가 하지 않는다 - 화면이 기존 곡 수정 API(PUT /songs/{id}, D22)를 그대로 부르고, 감사 로그도 거기서 남는다.
  * 권한은 컨트롤러 경계(@PreAuthorize + /api/v1/admin/** 주소 규칙)에서 막는다.
  *
@@ -35,8 +35,8 @@ public class SongMetaTodoService {
     /** 곡명 검색어 최대 길이. 곡명 최대(255자)보다 짧게 둬서 터무니없이 긴 글자로 DB를 부르지 않게 한다. */
     public static final int MAX_QUERY_LENGTH = 100;
 
-    /** 화면 칩과 1:1: ANY = 전체 미등록, ARTIST = 아티스트 없음, KEYWORD = 검색 키워드 없음, BOTH = 둘 다. */
-    static final Set<String> FILTERS = Set.of("ANY", "ARTIST", "KEYWORD", "BOTH");
+    /** 화면 칩과 1:1: ANY = 전체 미등록, ARTIST = 아티스트 없음, KEYWORD = 검색 키워드 없음, BOTH = 둘 다, BPM = BPM 없음(D105). */
+    static final Set<String> FILTERS = Set.of("ANY", "ARTIST", "KEYWORD", "BOTH", "BPM");
     static final Set<String> SORTS = Set.of("title", "level");
 
     private final SongMetaTodoMapper mapper;
@@ -67,11 +67,11 @@ public class SongMetaTodoService {
     private Summary summary() {
         SongMetaTodoSummaryRow row = mapper.summary();
         return new Summary(row.totalSongs(), row.noArtist(), row.noKeyword(), row.bothMissing(),
-                row.noArtist() + row.noKeyword() - row.bothMissing());
+                row.noArtist() + row.noKeyword() - row.bothMissing(), row.noBpm());
     }
 
     private static Row toRow(SongMetaTodoRow r) {
-        return new Row(r.songId(), r.title(), r.artist(), r.titleCount(),
+        return new Row(r.songId(), r.title(), r.artist(), r.bpmMin(), r.bpmMax(), r.titleCount(),
                 r.topPart() == null ? null : InstrumentPart.valueOf(r.topPart()),
                 r.topDifficulty() == null ? null : DifficultyType.valueOf(r.topDifficulty()),
                 r.topLevel());

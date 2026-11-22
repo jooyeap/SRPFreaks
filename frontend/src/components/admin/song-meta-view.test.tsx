@@ -13,12 +13,12 @@ function json(body: unknown, status = 200): Response {
 }
 
 const row = (songId: number, title: string, over: Partial<SongMetaRow> = {}): SongMetaRow => ({
-  songId, title, artist: null, titleCount: 0, topPart: "GUITAR", topDifficulty: "MASTER", topLevel: 9.8, ...over,
+  songId, title, artist: null, bpmMin: 150, bpmMax: 150, titleCount: 0, topPart: "GUITAR", topDifficulty: "MASTER", topLevel: 9.8, ...over,
 });
 
-function todo(rows: SongMetaRow[], anyMissing = rows.length): SongMetaTodoResponse {
+function todo(rows: SongMetaRow[], anyMissing = rows.length, noBpm = 64): SongMetaTodoResponse {
   return {
-    summary: { totalSongs: 519, noArtist: 37, noKeyword: 112, bothMissing: 21, anyMissing },
+    summary: { totalSongs: 519, noArtist: 37, noKeyword: 112, bothMissing: 21, anyMissing, noBpm },
     page: { content: rows, page: 0, size: 20, totalElements: rows.length, totalPages: 1 },
   };
 }
@@ -166,5 +166,107 @@ describe("곡 정보 정리 화면 (D91)", () => {
     fetchMock.mockResolvedValue(json(todo([], 0)));
     renderView();
     expect(await screen.findByText("정리할 곡이 없습니다.")).toBeInTheDocument();
+  });
+
+  describe("BPM 없음 (D105)", () => {
+    const noBpmRow = (id: number, title: string, over: Partial<SongMetaRow> = {}) =>
+      row(id, title, { artist: "Artist", titleCount: 1, bpmMin: null, bpmMax: null, ...over });
+
+    it("BPM 없음 칩은 건수와 함께 보이고, 누르면 filter=BPM으로 요청하며 `전체 N곡 중 BPM 없음 M곡`을 보인다", async () => {
+      stubViewport(true);
+      fetchMock.mockImplementation((input) => {
+        const url = String(input);
+        return Promise.resolve(json(url.includes("filter=BPM") ? todo([noBpmRow(1, "Peyotl")], 128, 64) : todo([row(2, "x")], 128, 64)));
+      });
+      renderView();
+      const group = within(await screen.findByRole("group", { name: "미등록 종류" }));
+      const chip = await group.findByRole("button", { name: /BPM 없음\s*64/ });
+      expect(screen.queryByTestId("song-meta-bpm-count")).toBeNull();
+
+      fireEvent.click(chip);
+      await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("filter=BPM"))).toBe(true));
+      expect(await screen.findByTestId("song-meta-bpm-count")).toHaveTextContent("전체 519곡 중 BPM 없음 64곡");
+      expect(await screen.findByLabelText("Peyotl 최소 BPM")).toBeInTheDocument();
+    });
+
+    it("페이지네이션: 여러 쪽이면 쪽 이동 버튼이 보이고 page를 바꿔 요청한다", async () => {
+      stubViewport(true);
+      const rows = Array.from({ length: 20 }, (_, i) => noBpmRow(i + 1, `곡${i + 1}`));
+      fetchMock.mockResolvedValue(json({ ...todo(rows, 0, 45), page: { content: rows, page: 0, size: 20, totalElements: 45, totalPages: 3 } }));
+      renderView();
+      await screen.findByLabelText("곡1 최소 BPM");
+      const next = screen.getAllByRole("button").find((b) => /다음|next|>|›/.test(`${b.getAttribute("aria-label") ?? ""}${b.textContent ?? ""}`));
+      expect(next).toBeDefined();
+      fireEvent.click(next as HTMLElement);
+      await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => String(url).includes("page=1"))).toBe(true));
+    });
+
+    it("곡 상세로 가는 링크가 줄마다 있다", async () => {
+      stubViewport(true);
+      fetchMock.mockResolvedValue(json(todo([noBpmRow(7, "Peyotl")], 1, 1)));
+      renderView();
+      expect(await screen.findByRole("link", { name: "Peyotl 곡 상세 열기" })).toHaveAttribute("href", "/songs/7");
+    });
+
+    it("최소만 입력해 저장하면 고정 BPM으로 PUT 한다(최신 상세 위에 BPM만 얹는다)", async () => {
+      stubViewport(true);
+      fetchMock.mockImplementation((input) => {
+        const url = String(input);
+        if (url.includes("/admin/song-meta/todo")) return Promise.resolve(json(todo([noBpmRow(1, "Peyotl")], 1, 1)));
+        if (url.endsWith("/songs/1")) return Promise.resolve(json({ ...detailOf(1, "Peyotl"), artist: "Artist" }));
+        return Promise.resolve(json({}, 404));
+      });
+      renderView();
+      const save = await screen.findByRole("button", { name: "Peyotl 저장" });
+      expect(save).toBeDisabled();
+      fireEvent.change(screen.getByLabelText("Peyotl 최소 BPM"), { target: { value: "172" } });
+      fireEvent.click(save);
+
+      expect(await screen.findByTestId("song-meta-notice")).toBeInTheDocument();
+      expect(JSON.parse(String(calls("PUT")[0][1]?.body))).toMatchObject({ title: "Peyotl", artist: "Artist", bpmMin: 172, bpmMax: 172 });
+    });
+
+    it("범위로 저장할 수 있고, 잘못된 값은 안내만 보이고 서버에 보내지 않는다", async () => {
+      stubViewport(true);
+      fetchMock.mockImplementation((input) => {
+        const url = String(input);
+        if (url.includes("/admin/song-meta/todo")) return Promise.resolve(json(todo([noBpmRow(1, "Peyotl")], 1, 1)));
+        return Promise.resolve(json({ ...detailOf(1, "Peyotl"), artist: "Artist" }));
+      });
+      renderView();
+      const min = await screen.findByLabelText("Peyotl 최소 BPM");
+      const max = screen.getByLabelText("Peyotl 최대 BPM");
+      const save = screen.getByRole("button", { name: "Peyotl 저장" });
+
+      fireEvent.change(min, { target: { value: "200" } });
+      fireEvent.change(max, { target: { value: "100" } });
+      fireEvent.click(save);
+      expect(await screen.findByRole("alert")).toHaveTextContent("최소 BPM은 최대 BPM보다 클 수 없습니다.");
+      fireEvent.change(min, { target: { value: "abc" } });
+      fireEvent.click(save);
+      expect(await screen.findByText("BPM은 숫자(정수)로 입력해 주세요.")).toBeInTheDocument();
+      fireEvent.change(min, { target: { value: "" } });
+      fireEvent.change(max, { target: { value: "180" } });
+      fireEvent.click(save);
+      expect(await screen.findByText("최소 BPM을 입력해 주세요.")).toBeInTheDocument();
+      expect(calls("PUT")).toHaveLength(0);
+
+      fireEvent.change(min, { target: { value: "120" } });
+      fireEvent.change(max, { target: { value: "180" } });
+      fireEvent.click(save);
+      await waitFor(() => expect(calls("PUT")).toHaveLength(1));
+      expect(JSON.parse(String(calls("PUT")[0][1]?.body))).toMatchObject({ bpmMin: 120, bpmMax: 180 });
+    });
+
+    it("모바일: 펼치면 BPM 입력과 곡 상세 링크가 나오고, BPM이 이미 있는 줄에는 BPM 입력이 없다", async () => {
+      stubViewport(false);
+      fetchMock.mockResolvedValue(json(todo([noBpmRow(1, "Peyotl"), row(2, "blue moon", { titleCount: 1 })], 2, 1)));
+      renderView();
+      fireEvent.click(await screen.findByRole("button", { name: "Peyotl 펼치기" }));
+      expect(screen.getByLabelText("Peyotl 최소 BPM")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Peyotl 곡 상세 열기" })).toHaveAttribute("href", "/songs/1");
+      fireEvent.click(screen.getByRole("button", { name: "blue moon 펼치기" }));
+      expect(screen.queryByLabelText("blue moon 최소 BPM")).toBeNull();
+    });
   });
 });

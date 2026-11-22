@@ -24,7 +24,7 @@ public class SongMetaAdminController {
     private final SongMetaTodoService songMetaTodoService;
 
     /**
-     * filter = ANY(전체 미등록, 기본) / ARTIST / KEYWORD / BOTH, q = 곡명 검색어, sort = title(기본) / level(레벨 높은 순).
+     * filter = ANY(전체 미등록, 기본) / ARTIST / KEYWORD / BOTH / BPM(D105), q = 곡명 검색어, sort = title(기본) / level(레벨 높은 순).
      * 허용 밖 값은 400이다.
      */
     @GetMapping("/todo")

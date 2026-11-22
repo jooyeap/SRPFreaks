@@ -11,12 +11,12 @@ import java.math.BigDecimal;
  */
 public record SongMetaTodoResponse(Summary summary, PageResponse<Row> page) {
 
-    /** 건수는 모두 검색어·필터와 무관한 전체 기준. anyMissing = 아티스트 없음 + 키워드 없음 - 둘 다 없음(중복 없이 센 전체 미등록). */
-    public record Summary(long totalSongs, long noArtist, long noKeyword, long bothMissing, long anyMissing) {
+    /** 건수는 모두 검색어·필터와 무관한 전체 기준. anyMissing = 아티스트 없음 + 키워드 없음 - 둘 다 없음(중복 없이 센 전체 미등록). noBpm(D105) = BPM이 둘 다 비어 있는 곡 수(anyMissing에 넣지 않는다). */
+    public record Summary(long totalSongs, long noArtist, long noKeyword, long bothMissing, long anyMissing, long noBpm) {
     }
 
     /** topPart·topDifficulty·topLevel은 그 곡에서 레벨이 가장 높은 채보(채보가 없으면 null). */
-    public record Row(Long songId, String title, String artist, long titleCount,
+    public record Row(Long songId, String title, String artist, Integer bpmMin, Integer bpmMax, long titleCount,
                       InstrumentPart topPart, DifficultyType topDifficulty, BigDecimal topLevel) {
     }
 }
