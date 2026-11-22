@@ -235,8 +235,65 @@ export const SONG_DELETE_AFFECTED_KEYS = [
 
 // ---- 수정 (PUT /songs/{id}, PUT /difficulties/{id}) ------------------------------------------------
 
+/** BPM 한 칸의 허용 범위. 서버(SongRequest, D105)와 같다. */
+export const BPM_MIN = 1;
+export const BPM_MAX = 2000;
+
+export type BpmField = "bpmMin" | "bpmMax";
+export type BpmParse =
+  | { ok: true; min: number | null; max: number | null }
+  | { ok: false; field: BpmField; message: string };
+
+/**
+ * BPM 입력(D105) 검사: 둘 다 비우면 BPM 없음, 최소만 쓰면 고정 BPM(최대 = 최소), 둘 다 쓰면 범위.
+ * 정수 1~2000만 받고(소수·글자·음수는 거절), 최대만 쓰거나 최소 > 최대면 거절한다. 서버가 같은 규칙으로 다시 검사한다.
+ * 곡 수정 창(Zod)과 곡 정보 정리 줄이 이 함수를 같이 쓴다. ok일 때 max는 최소만 썼다면 min과 같은 값으로 채워서 돌려준다.
+ */
+export function parseBpmInput(minText: string, maxText: string, t: Translator): BpmParse {
+  const minRaw = minText.trim();
+  const maxRaw = maxText.trim();
+  const numberOf = (raw: string, field: BpmField): BpmParse | number => {
+    if (!/^\d+$/.test(raw)) {
+      return { ok: false, field, message: t("Validation.bpmNumber") };
+    }
+    const value = Number(raw);
+    if (value < BPM_MIN || value > BPM_MAX) {
+      return { ok: false, field, message: t("Validation.bpmRange", { min: BPM_MIN, max: BPM_MAX }) };
+    }
+    return value;
+  };
+  if (minRaw === "" && maxRaw === "") {
+    return { ok: true, min: null, max: null };
+  }
+  if (minRaw === "") {
+    return { ok: false, field: "bpmMin", message: t("Validation.bpmMinRequired") };
+  }
+  const min = numberOf(minRaw, "bpmMin");
+  if (typeof min !== "number") {
+    return min;
+  }
+  if (maxRaw === "") {
+    return { ok: true, min, max: min };
+  }
+  const max = numberOf(maxRaw, "bpmMax");
+  if (typeof max !== "number") {
+    return max;
+  }
+  if (min > max) {
+    return { ok: false, field: "bpmMax", message: t("Validation.bpmOrder") };
+  }
+  return { ok: true, min, max };
+}
+
 export function makeSongEditSchema(t: Translator) {
-  return z.object(makeSongFields(t));
+  return z
+    .object({ ...makeSongFields(t), bpmMin: z.string(), bpmMax: z.string() })
+    .superRefine((value, ctx) => {
+      const result = parseBpmInput(value.bpmMin, value.bpmMax, t);
+      if (!result.ok) {
+        ctx.addIssue({ code: "custom", path: [result.field], message: result.message });
+      }
+    });
 }
 export type SongEditValues = z.infer<ReturnType<typeof makeSongEditSchema>>;
 
@@ -246,7 +303,13 @@ export function makeChartEditSchema(t: Translator) {
 export type ChartEditValues = z.infer<ReturnType<typeof makeChartEditSchema>>;
 
 export function songToEditValues(song: SongDetailResponse): SongEditValues {
-  return { title: song.title, artist: song.artist ?? "", addedVersion: song.addedVersion ?? "" };
+  return {
+    title: song.title,
+    artist: song.artist ?? "",
+    addedVersion: song.addedVersion ?? "",
+    bpmMin: song.bpmMin === null ? "" : String(song.bpmMin),
+    bpmMax: song.bpmMax === null ? "" : String(song.bpmMax),
+  };
 }
 
 /** 한 곡에 등록할 수 있는 곡명 표기(로마자·가타카나·한국어·별칭)의 총 개수. 서버(SongRequest.titles)와 같다. */
@@ -290,7 +353,7 @@ export function addAlias(current: readonly string[], text: string, limit: number
 }
 
 /**
- * PUT /songs/{id} 본문. 서버 수정은 "보낸 값으로 교체"라서 화면에 없는 값(타이틀 폴더, BPM)은 지금 값을 그대로 보내야 지워지지 않는다.
+ * PUT /songs/{id} 본문. 서버 수정은 "보낸 값으로 교체"라서 화면에 없는 값(타이틀 폴더)은 지금 값을 그대로 보내야 지워지지 않는다.
  * titles(곡명 표기)는 기본적으로 보내지 않는다(생략 = 서버가 기존 표기를 그대로 둔다). 검색 키워드(aliases)를 넘겼고 지금과 다를 때만
  * titles를 보내는데, 서버는 titles를 "통째로 교체"하므로 별칭이 아닌 기존 표기(로마자 등)를 그대로 함께 보낸다. 출처(source)는 서버가 수정 때 바꾸지 않는다.
  */
@@ -311,8 +374,9 @@ export function toSongUpdateBody(song: SongDetailResponse, values: SongEditValue
     artist: blankToNull(values.artist),
     addedVersion: blankToNull(values.addedVersion),
     titleFolder: song.titleFolder,
-    bpmMin: song.bpmMin,
-    bpmMax: song.bpmMax,
+    // 화면 폼 값을 숫자로. 검사(makeSongEditSchema)를 통과한 값이라 숫자 또는 빈 칸이다. 최대를 비우면 서버가 최소와 같게 채운다
+    bpmMin: values.bpmMin.trim() === "" ? null : Number(values.bpmMin),
+    bpmMax: values.bpmMax.trim() === "" ? null : Number(values.bpmMax),
   };
   const before = aliasesOf(song);
   const changed = aliases !== undefined && (aliases.length !== before.length || aliases.some((a, i) => a !== before[i]));

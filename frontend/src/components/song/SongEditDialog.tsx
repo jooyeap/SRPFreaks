@@ -214,6 +214,51 @@ function SongForm({ song, onDone }: { song: SongDetailResponse; onDone: () => vo
           </p>
         ) : null}
       </div>
+      <div className="flex flex-col gap-1">
+        <span id="edit-bpm-label" className="text-sm text-fg-sub">
+          {t("Song.fieldBpm")}
+        </span>
+        <div role="group" aria-labelledby="edit-bpm-label" aria-describedby="edit-bpm-help" className="flex items-center gap-2">
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={4}
+            aria-label={t("Song.bpmMinAria")}
+            placeholder={t("Song.bpmMinPlaceholder")}
+            aria-invalid={errors.bpmMin ? true : undefined}
+            className={`${FIELD} w-24 font-num`}
+            {...register("bpmMin")}
+          />
+          <span aria-hidden="true" className="text-fg-sub">
+            ~
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={4}
+            aria-label={t("Song.bpmMaxAria")}
+            placeholder={t("Song.bpmMaxPlaceholder")}
+            aria-invalid={errors.bpmMax ? true : undefined}
+            className={`${FIELD} w-24 font-num`}
+            {...register("bpmMax")}
+          />
+        </div>
+        {errors.bpmMin ? (
+          <p role="alert" className="text-sm text-fg">
+            {errors.bpmMin.message}
+          </p>
+        ) : null}
+        {errors.bpmMax ? (
+          <p role="alert" className="text-sm text-fg">
+            {errors.bpmMax.message}
+          </p>
+        ) : null}
+        <p id="edit-bpm-help" className="break-keep text-xs text-fg-dim">
+          {t("Song.bpmHelp")}
+        </p>
+      </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="edit-alias" className="text-sm text-fg-sub">
           {t("Song.searchKeywords")}
