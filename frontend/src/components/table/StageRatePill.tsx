@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
  * 기록이 없을 때 `[– | –]`의 두 하이픈 위치가 어긋나 보였다. 두 칸 사이에는 얇은 구분선을 둔다.
  * 랭크 칸 색은 StageBadge와 같은 .stage-chip, 달성률 색은 .stage-text. 글자를 항상 적어 색만으로 전달하지 않는다.
  * `align="end"`(레이팅 카드만, 2026-11-02): 달성률을 오른쪽 끝에 맞추고 안쪽 여백을 4px로 둬서 위 점수 숫자(같은 4px 여백)와 오른쪽 끝이 한 선에 온다.
+ * 세로 맞춤(D104): 알약은 `leading-[18px]`인데 달성률 칸은 `text-xs`(줄 높이 16px)라 숫자가 위로 쏠렸다. 두 칸 모두 줄 높이를 18px로 명시해 숫자·랭크 글자의 위아래 여백을 같게 한다.
  * 숫자 폭은 tabular-nums로 고정한다. 기본(center)은 다른 화면 그대로다.
  */
 export function StageRatePill({ stage, rate, align = "center" }: { stage: AchievementStage | null; rate: number | null | undefined; align?: "center" | "end" }) {
@@ -15,14 +16,14 @@ export function StageRatePill({ stage, rate, align = "center" }: { stage: Achiev
   return (
     <span className="inline-flex w-[72px] shrink-0 overflow-hidden rounded font-num text-[11px] font-bold leading-[18px]">
       {stage ? (
-        <span data-stage={stage} aria-label={t("Chart.stage", { stage })} className="stage-chip w-7 shrink-0 text-center">
+        <span data-stage={stage} aria-label={t("Chart.stage", { stage })} className="stage-chip w-7 shrink-0 text-center leading-[18px]">
           {stage}
         </span>
       ) : (
-        <span className="w-7 shrink-0 bg-table-head text-center text-fg-faint">{EMPTY_MARK}</span>
+        <span className="w-7 shrink-0 bg-table-head text-center leading-[18px] text-fg-faint">{EMPTY_MARK}</span>
       )}
       <span className="w-px shrink-0 bg-row-line" aria-hidden="true" />
-      <span className={`flex-1 bg-table-head text-xs tabular-nums ${align === "end" ? "pr-1 text-right" : "text-center"} ${stage ? "stage-text" : "text-fg-faint"}`}>
+      <span className={`flex-1 bg-table-head text-xs leading-[18px] tabular-nums ${align === "end" ? "pr-1 text-right" : "text-center"} ${stage ? "stage-text" : "text-fg-faint"}`}>
         {stage ? formatRate(rate) : EMPTY_MARK}
       </span>
     </span>
