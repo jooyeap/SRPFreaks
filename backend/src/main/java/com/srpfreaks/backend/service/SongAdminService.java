@@ -54,7 +54,6 @@ public class SongAdminService {
         rejectDuplicateTitle(request.title(), null);
         Song song = Song.create(request.title().strip(), blankToNull(request.artist()),
                 blankToNull(request.source()), userRepository.getReferenceById(actorId));
-        Integer[] bpm = normalizeBpm(request.bpmMin(), request.bpmMax());
         song.changeMeta(blankToNull(request.addedVersion()), blankToNull(request.titleFolder()), bpm[0], bpm[1]);
         songRepository.save(song);
         saveTitles(song, request.titles());
