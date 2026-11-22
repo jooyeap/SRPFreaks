@@ -375,6 +375,8 @@
     "searchNone": "難易度表で見つかりませんでした。",
     "searchInSongs": "曲リストで検索",
     "searchResults": "検索結果",
+    "rowTier": "難易度 {tier}",
+    "rowConstant": "定数 {value}",
     "searchTooMany": "結果が多いため一部のみ表示しています。検索語をより詳しく入力してください。",
     "neighborTiers": "隣接難易度",
     "folderLoginHint": "ログインすると、自分の達成率がここに表示されます",
