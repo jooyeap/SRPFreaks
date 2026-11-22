@@ -190,13 +190,14 @@ class SongMetaTodoMapperTest {
 
     @Test
     void BPM_없음_요약은_삭제된_곡과_채워진_곡을_세지_않는다() {
-        long before = mapper.summary().noBpm();
-        em.find(Song.class, complete.getId()).changeMeta(null, null, 150, null);
+        em.find(Song.class, complete.getId()).changeMeta(null, null, 150, null); // 최소만 있어도 채워진 곡이다
         em.find(Song.class, both.getId()).delete();
         em.flush();
         em.clear();
 
-        assertThat(mapper.summary().noBpm()).isEqualTo(before - 2);
-        assertThat(mapper.count("BPM", null)).isEqualTo(mapper.summary().noBpm());
+        // 우리 곡 중 BPM이 비어 있는 것은 아티스트없음(B)·키워드없음(C) 둘뿐이다
+        assertThat(mapper.count("BPM", "%정리테스트%")).isEqualTo(2);
+        // 요약(summary)과 목록 건수(count)는 같은 조건이라 같은 값이다. (같은 SQL을 두 번 부르면 MyBatis 1차 캐시가 먼저 값을 돌려주므로 각각 한 번만 부른다)
+        assertThat(mapper.summary().noBpm()).isEqualTo(mapper.count("BPM", null));
     }
 }
