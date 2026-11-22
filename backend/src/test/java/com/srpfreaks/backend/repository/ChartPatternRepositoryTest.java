@@ -50,8 +50,15 @@ class ChartPatternRepositoryTest {
     }
 
     private void entry(DifficultyTable table, SongDifficulty chart, PatternType pattern) {
+        entry(table, chart, pattern, null);
+    }
+
+    private void entry(DifficultyTable table, SongDifficulty chart, PatternType pattern, String tier) {
         DifficultyTableEntry e = DifficultyTableEntry.create(table, chart);
         e.changePattern(pattern, false);
+        if (tier != null) {
+            e.changeTier(new java.math.BigDecimal(tier), false, null);
+        }
         em.persist(e);
     }
 
@@ -68,7 +75,7 @@ class ChartPatternRepositoryTest {
         SongDifficulty excluded = chart(owner, "excluded", "9.20");
         SongDifficulty none = chart(owner, "none", "9.30");
         SongDifficulty elsewhere = chart(owner, "elsewhere", "9.40");
-        entry(table, single, PatternType.SINGLE);
+        entry(table, single, PatternType.SINGLE, "7.0");
         entry(table, compound, PatternType.COMPOUND);
         entry(table, excluded, PatternType.EXCLUDED);
         entry(table, none, null);
@@ -83,5 +90,10 @@ class ChartPatternRepositoryTest {
                 org.assertj.core.groups.Tuple.tuple(compound.getId(), PatternType.COMPOUND),
                 org.assertj.core.groups.Tuple.tuple(excluded.getId(), PatternType.EXCLUDED),
                 org.assertj.core.groups.Tuple.tuple(none.getId(), null));
+        // 기준 난이도(D106): 값이 있는 채보만 값이 있고 미정은 null
+        assertThat(rows).filteredOn(r -> r.songDifficultyId().equals(single.getId()))
+                .singleElement().satisfies(r -> assertThat(r.tier()).isEqualByComparingTo("7.0"));
+        assertThat(rows).filteredOn(r -> r.songDifficultyId().equals(compound.getId()))
+                .singleElement().satisfies(r -> assertThat(r.tier()).isNull());
     }
 }

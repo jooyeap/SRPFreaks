@@ -33,9 +33,9 @@ public interface DifficultyTableEntryRepository extends JpaRepository<Difficulty
     List<DifficultyTableEntry> findByDifficultyTableIdAndSongDifficultyIdIn(Long difficultyTableId,
                                                                           java.util.Collection<Long> songDifficultyIds);
 
-    /** 곡 목록의 속성 필터·칩 개수용: 채보 id와 속성만 가볍게 읽는다(fetch join 없음). */
+    /** 곡 목록의 속성 필터·칩 개수·검색 결과 줄용: 채보 id·속성·기준 난이도만 가볍게 읽는다(fetch join 없음). */
     @Query("""
-            select new com.srpfreaks.backend.repository.ChartPattern(e.songDifficulty.id, e.patternType)
+            select new com.srpfreaks.backend.repository.ChartPattern(e.songDifficulty.id, e.patternType, e.tierLabel)
             from DifficultyTableEntry e
             where e.difficultyTable.id = :tableId
             """)

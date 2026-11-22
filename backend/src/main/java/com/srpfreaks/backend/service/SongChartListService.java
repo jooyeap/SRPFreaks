@@ -18,6 +18,7 @@ import com.srpfreaks.backend.entity.TableStatus;
 import com.srpfreaks.backend.entity.RateBucket;
 import com.srpfreaks.backend.entity.SongDifficulty;
 import com.srpfreaks.backend.entity.SongTitle;
+import com.srpfreaks.backend.repository.ChartPattern;
 import com.srpfreaks.backend.repository.DifficultyTableEntryRepository;
 import com.srpfreaks.backend.repository.DifficultyTableRepository;
 import com.srpfreaks.backend.repository.OptionRecordRepository;
@@ -72,6 +73,8 @@ public class SongChartListService {
     private final SongRepository songRepository;
     private final DifficultyTableRepository difficultyTableRepository;
     private final DifficultyTableEntryRepository difficultyTableEntryRepository;
+    /** 레이팅상수는 설정(rating.*)을 읽는 계산기로만 구한다. 수식을 여기서 다시 쓰지 않는다. */
+    private final SkillService skillService;
 
     /** 레벨 폴더 목록(필터 없음). */
     public ChartFolderListResponse folders(Long userId) {
@@ -194,8 +197,18 @@ public class SongChartListService {
         int to = Math.min(from + pageSize, filtered.size());
         int totalPages = (filtered.size() + pageSize - 1) / pageSize;
 
+        // 서열표 값(기준 난이도·속성)은 이 페이지의 줄에만 필요하지만 표 전체를 한 번 읽는 쿼리 1개라 N+1이 아니다.
+        // 서열표가 없으면(빈 맵) 세 값이 모두 null이다.
+        Map<Long, ChartPattern> info = chartInfoOf();
+        RatingCalculator calculator = info.values().stream().anyMatch(c -> c.tier() != null)
+                ? skillService.calculator() : null;
         List<ChartRowResponse> rows = filtered.subList(from, to).stream()
-                .map(d -> ChartRowResponse.of(d, myRecord(bests.get(d.getId()))))
+                .map(d -> {
+                    ChartPattern c = info.get(d.getId());
+                    BigDecimal tier = c == null ? null : c.tier();
+                    BigDecimal constant = tier == null || calculator == null ? null : calculator.constant(tier);
+                    return ChartRowResponse.of(d, myRecord(bests.get(d.getId())), tier, constant, c == null ? null : c.patternType());
+                })
                 .toList();
         return new PageResponse<>(rows, pageIndex, pageSize, filtered.size(), totalPages);
     }
@@ -222,10 +235,18 @@ public class SongChartListService {
     /** 레이팅이 쓰는 서열표(SRN+ 활성 표 중 id가 가장 작은 것)의 채보별 속성. 표가 없으면 빈 맵. */
     private Map<Long, PatternType> patternsOf() {
         Map<Long, PatternType> result = new HashMap<>();
+        chartInfoOf().values().stream()
+                .filter(row -> row.patternType() != null)
+                .forEach(row -> result.put(row.songDifficultyId(), row.patternType()));
+        return result;
+    }
+
+    /** 같은 서열표의 채보별 속성·기준 난이도(행 그대로). 표가 없으면 빈 맵. 속성 필터와 검색 결과 줄이 한 쿼리를 같이 쓴다. */
+    private Map<Long, ChartPattern> chartInfoOf() {
+        Map<Long, ChartPattern> result = new HashMap<>();
         difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(RECORD_OPTION, TableStatus.ACTIVE)
-                .ifPresent(table -> difficultyTableEntryRepository.findChartPatterns(table.getId()).stream()
-                        .filter(row -> row.patternType() != null)
-                        .forEach(row -> result.put(row.songDifficultyId(), row.patternType())));
+                .ifPresent(table -> difficultyTableEntryRepository.findChartPatterns(table.getId())
+                        .forEach(row -> result.put(row.songDifficultyId(), row)));
         return result;
     }
 

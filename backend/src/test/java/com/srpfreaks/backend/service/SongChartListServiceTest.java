@@ -53,6 +53,7 @@ class SongChartListServiceTest {
     @Mock SongRepository songRepository;
     @Mock DifficultyTableRepository difficultyTableRepository;
     @Mock DifficultyTableEntryRepository difficultyTableEntryRepository;
+    @Mock SkillService skillService;
 
     SongChartListService service;
     final List<SongDifficulty> charts = new ArrayList<>();
@@ -61,7 +62,7 @@ class SongChartListServiceTest {
     @BeforeEach
     void setUp() {
         service = new SongChartListService(songDifficultyRepository, optionRecordRepository, songRepository,
-                difficultyTableRepository, difficultyTableEntryRepository);
+                difficultyTableRepository, difficultyTableEntryRepository, skillService);
     }
 
     private SongDifficulty chart(String title, String version, InstrumentPart part, DifficultyType type, String level) {
@@ -565,6 +566,64 @@ class SongChartListServiceTest {
             rows.add(new ChartPattern((Long) idAndPattern[i], (PatternType) idAndPattern[i + 1]));
         }
         when(difficultyTableEntryRepository.findChartPatterns(3L)).thenReturn(rows);
+    }
+
+    // ---- 검색 결과 줄 정보(D106): 아티스트·BPM·기준 난이도·레이팅상수·속성 ----
+
+    @Test
+    void 줄에_아티스트_BPM과_서열표의_기준_난이도_레이팅상수_속성이_담긴다() {
+        SongDifficulty d = guitar("song", "9.00");
+        ReflectionTestUtils.setField(d.getSong(), "artist", "artist-a");
+        d.getSong().changeMeta("v1", null, 165, 172);
+        stubCharts();
+        stubBests(7L);
+        stubPatternsWithTier(new ChartPattern(d.getId(), PatternType.SINGLE, new BigDecimal("7.0")));
+        when(skillService.calculator()).thenReturn(new RatingCalculator(RatingCalculatorTest.defaults()));
+
+        ChartRowResponse row = call(null, null, null, null, null, 0, 20).content().get(0);
+
+        assertThat(row.artist()).isEqualTo("artist-a");
+        assertThat(row.bpmMin()).isEqualTo(165);
+        assertThat(row.bpmMax()).isEqualTo(172);
+        assertThat(row.tier()).isEqualByComparingTo("7.0");
+        assertThat(row.ratingConstant()).isEqualByComparingTo("20");   // T=7.0 > 6.0 -> 5*7.0-15
+        assertThat(row.patternType()).isEqualTo("단일");
+        assertThat(row.mine()).isNull();
+    }
+
+    @Test
+    void 기준_난이도가_미정이면_상수는_null이고_속성은_그대로다() {
+        SongDifficulty d = guitar("song", "9.00");
+        stubCharts();
+        stubBests(7L);
+        stubPatternsWithTier(new ChartPattern(d.getId(), PatternType.COMPOUND, null));
+
+        ChartRowResponse row = call(null, null, null, null, null, 0, 20).content().get(0);
+
+        assertThat(row.tier()).isNull();
+        assertThat(row.ratingConstant()).isNull();
+        assertThat(row.patternType()).isEqualTo("복합");
+    }
+
+    @Test
+    void 서열표에_없는_채보는_서열표_값이_모두_null이다() {
+        guitar("song", "9.00");
+        stubCharts();
+        stubBests(7L);
+
+        ChartRowResponse row = call(null, null, null, null, null, 0, 20).content().get(0);
+
+        assertThat(row.tier()).isNull();
+        assertThat(row.ratingConstant()).isNull();
+        assertThat(row.patternType()).isNull();
+    }
+
+    private void stubPatternsWithTier(ChartPattern... rows) {
+        DifficultyTable table = DifficultyTable.create("SRN+", null, NoteOption.SUPER_RANDOM_PLUS);
+        ReflectionTestUtils.setField(table, "id", 3L);
+        when(difficultyTableRepository.findFirstByNoteOptionAndStatusOrderByIdAsc(NoteOption.SUPER_RANDOM_PLUS, TableStatus.ACTIVE))
+                .thenReturn(Optional.of(table));
+        when(difficultyTableEntryRepository.findChartPatterns(3L)).thenReturn(List.of(rows));
     }
 
     private ChartFolderListResponse foldersByPattern(String pattern) {
