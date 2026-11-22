@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ChartBadge } from "@/components/table/Badges";
 import { StageRatePill } from "@/components/table/StageRatePill";
 import { patternLabel } from "@/lib/chart-labels";
-import { formatTier } from "@/lib/format";
+import { EMPTY_MARK, formatTier } from "@/lib/format";
 import { formatBpm } from "@/lib/songs";
 import { fetchChartCandidates, songListDetailHref } from "@/lib/song-list";
 import { useTranslations } from "next-intl";
@@ -34,32 +34,58 @@ export function SongJumpCandidates({ userId, query, className = "" }: { userId: 
     <ul aria-label={t("Table.searchResults")} className={`flex flex-col gap-2 rounded-2xl border border-line bg-card p-3 ${className}`}>
       {rows.map((row) => {
         const hasBpm = row.bpmMin != null || row.bpmMax != null;
-        const sub = [row.artist ?? null, hasBpm ? `BPM ${formatBpm(row.bpmMin ?? null, row.bpmMax ?? null)}` : null].filter(
-          (v): v is string => v !== null && v !== "",
-        );
+        const bpm = hasBpm ? formatBpm(row.bpmMin ?? null, row.bpmMax ?? null) : t("Table.rowBpmNone");
         return (
           <li key={row.songDifficultyId}>
             <Link
               href={songListDetailHref(row)}
-              className="motion-press flex items-center justify-between gap-3 rounded-xl border border-line bg-page px-3 py-2.5 hover:border-ctl"
+              className="motion-press block rounded-xl border border-line bg-page px-3 py-2.5 hover:border-ctl"
             >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm text-fg">{row.title}</span>
-                {sub.length > 0 && <span className="mt-0.5 block truncate text-xs text-fg-sub">{sub.join(" · ")}</span>}
-                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} />
-                  {row.tier != null && <span className="font-num text-xs text-fg-sub">{t("Table.rowTier", { tier: formatTier(row.tier, t) })}</span>}
-                  {row.patternType && <span className="text-xs text-fg-sub">{patternLabel(row.patternType, t)}</span>}
-                  {row.ratingConstant != null && (
-                    <span className="font-num text-xs text-fg-sub">{t("Table.rowConstant", { value: row.ratingConstant.toFixed(1) })}</span>
+              <span className="flex items-center gap-2.5">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm text-fg">{row.title}</span>
+                  {row.artist && <span className="mt-px block truncate text-xs text-fg-dim">{row.artist}</span>}
+                </span>
+                <StageRatePill stage={row.mine?.stage ?? null} rate={row.mine?.rate} />
+              </span>
+              <span className="mt-1.5 flex min-w-0 items-center gap-2 text-[11.5px] text-fg-sub">
+                <ChartBadge part={row.part} difficulty={row.difficulty} level={row.level} />
+                {row.addedVersion && (
+                  <>
+                    <span aria-hidden="true" className="h-2.5 w-px shrink-0 bg-line" />
+                    <span className="min-w-0 truncate">{row.addedVersion}</span>
+                  </>
+                )}
+                <span aria-hidden="true" className="h-2.5 w-px shrink-0 bg-line" />
+                <span className="shrink-0 whitespace-nowrap">
+                  {hasBpm ? (
+                    <>
+                      BPM <span className="font-num font-semibold text-fg">{bpm}</span>
+                    </>
+                  ) : (
+                    bpm
                   )}
                 </span>
               </span>
-              <StageRatePill stage={row.mine?.stage ?? null} rate={row.mine?.rate} />
+              <span className="mt-2 grid grid-cols-3 gap-1.5">
+                <InfoCell label={t("Table.rowTier")} value={formatTier(row.tier, t)} text={row.tier == null} />
+                <InfoCell label={t("Table.rowConstant")} value={row.ratingConstant != null ? row.ratingConstant.toFixed(2) : EMPTY_MARK} />
+                <InfoCell label={t("Table.rowPattern")} value={row.patternType ? patternLabel(row.patternType, t) : EMPTY_MARK} text={!!row.patternType} />
+              </span>
             </Link>
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/** 서열표 정보 칸(기준 난이도·레이팅상수·속성). 값이 없어도 칸은 그대로 두고 `미정`/`–`로 채워 세 칸의 폭과 줄 맞춤을 지킨다. text = 글자 값(숫자 폰트 대신 본문 글꼴) */
+function InfoCell({ label, value, text = false }: { label: string; value: string; text?: boolean }) {
+  return (
+    <span className="min-w-0 rounded-lg border border-row-line bg-card px-2 py-1">
+      <span className="block text-[10.5px] leading-3.5 text-fg-faint">{label}</span>
+      <span className={`block truncate leading-5 text-fg ${text ? "text-[12.5px] font-semibold" : "font-num text-sm font-semibold tabular-nums"}`}>{value}</span>
+    </span>
   );
 }

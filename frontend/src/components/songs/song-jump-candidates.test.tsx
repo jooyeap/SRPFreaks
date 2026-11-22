@@ -34,48 +34,79 @@ async function renderRow(over: Partial<ChartRowResponse>) {
   return within(await screen.findByRole("link", { name: /Sample Song/ }));
 }
 
+/** 정보 칸(라벨 + 값). 라벨 글자로 칸을 찾고 값은 같은 칸 안에서 읽는다 */
+function cell(row: ReturnType<typeof within>, label: string): HTMLElement {
+  const box = row.getByText(label).parentElement;
+  if (!box) {
+    throw new Error("cell not found");
+  }
+  return box;
+}
+
 describe("검색 결과 줄 (D106, 카드 B)", () => {
   beforeEach(() => vi.unstubAllGlobals());
   afterEach(() => vi.unstubAllGlobals());
 
-  it("아티스트·BPM 범위, 채보 칩, 서열표 난이도·속성·레이팅상수를 모두 보인다", async () => {
-    const row = await renderRow({ artist: "Artist A", bpmMin: 165, bpmMax: 172, tier: 7, ratingConstant: 20, patternType: "복합" });
-    expect(row.getByText("Artist A · BPM 165~172")).toBeInTheDocument();
-    expect(row.getByText("난이도 7.0")).toBeInTheDocument();
-    expect(row.getByText("복합")).toBeInTheDocument();
-    expect(row.getByText("상수 20.0")).toBeInTheDocument();
-    expect(row.getByText(/MAS 9\.60/)).toBeInTheDocument();
-  });
-
-  it("BPM이 같은 값이면 하나만 보인다", async () => {
-    const row = await renderRow({ artist: "Artist A", bpmMin: 150, bpmMax: 150 });
-    expect(row.getByText("Artist A · BPM 150")).toBeInTheDocument();
-  });
-
-  it("아티스트만 있거나 BPM만 있어도 줄이 깨지지 않는다", async () => {
-    const onlyArtist = await renderRow({ artist: "Artist A" });
-    expect(onlyArtist.getByText("Artist A")).toBeInTheDocument();
-    expect(onlyArtist.queryByText(/BPM/)).toBeNull();
-  });
-
-  it("서열표에 없거나 미정인 채보는 난이도·속성·상수 칸이 빠지고 곡명·칩은 그대로다", async () => {
-    const row = await renderRow({ tier: null, ratingConstant: null, patternType: null });
+  it("전체 값: 곡명·아티스트, 칩 · 버전 · BPM, 정보 칸 3개(기준 난이도 소수 1자리 · 상수 소수 2자리 · 속성)", async () => {
+    const row = await renderRow({ artist: "Artist A", addedVersion: "HIGH-VOLTAGE", bpmMin: 165, bpmMax: 172, tier: 5.7, ratingConstant: 12, patternType: "단일" });
     expect(row.getByText("Sample Song")).toBeInTheDocument();
-    expect(row.queryByText(/난이도 /)).toBeNull();
-    expect(row.queryByText(/상수 /)).toBeNull();
-    expect(row.queryByText("단일")).toBeNull();
+    expect(row.getByText("Artist A")).toBeInTheDocument();
     expect(row.getByText(/MAS 9\.60/)).toBeInTheDocument();
+    expect(row.getByText("HIGH-VOLTAGE")).toBeInTheDocument();
+    expect(row.getByText("165~172")).toBeInTheDocument();
+    expect(within(cell(row, "기준 난이도")).getByText("5.7")).toBeInTheDocument();
+    expect(within(cell(row, "레이팅상수")).getByText("12.00")).toBeInTheDocument();
+    expect(within(cell(row, "속성")).getByText("단일")).toBeInTheDocument();
   });
 
-  it("옛 응답(새 필드 없음)도 그대로 그려진다", async () => {
+  it("정보 칸은 같은 폭 3열 grid(gap 6px)이고 값이 달라도 항상 3칸이다", async () => {
     const row = await renderRow({});
+    const grid = cell(row, "기준 난이도").parentElement;
+    expect(grid?.className).toContain("grid-cols-3");
+    expect(grid?.className).toContain("gap-1.5");
+    expect(grid?.children.length).toBe(3);
+  });
+
+  it("기준 난이도 미정: 칸은 남고 `미정`, 상수·속성은 `–`", async () => {
+    const row = await renderRow({ tier: null, ratingConstant: null, patternType: null });
+    expect(within(cell(row, "기준 난이도")).getByText("미정")).toBeInTheDocument();
+    expect(within(cell(row, "레이팅상수")).getByText("–")).toBeInTheDocument();
+    expect(within(cell(row, "속성")).getByText("–")).toBeInTheDocument();
+  });
+
+  it("BPM이 없으면 `BPM 미기입`", async () => {
+    const none = await renderRow({ bpmMin: null, bpmMax: null });
+    expect(none.getByText("BPM 미기입")).toBeInTheDocument();
+  });
+
+  it("BPM 최소=최대면 한 값만 보인다", async () => {
+    const row = await renderRow({ bpmMin: 150, bpmMax: 150 });
+    expect(row.getByText("150")).toBeInTheDocument();
+    expect(row.queryByText(/미기입/)).toBeNull();
+  });
+
+  it("속성이 `레이팅 제외`이면 그대로 적는다", async () => {
+    const row = await renderRow({ tier: 4.8, ratingConstant: 3, patternType: "레이팅 제외" });
+    expect(within(cell(row, "속성")).getByText("레이팅 제외")).toBeInTheDocument();
+    expect(within(cell(row, "레이팅상수")).getByText("3.00")).toBeInTheDocument();
+  });
+
+  it("속성이 null이면 속성 칸이 `–`이고 다른 칸은 그대로다", async () => {
+    const row = await renderRow({ tier: 5.7, ratingConstant: 12, patternType: null });
+    expect(within(cell(row, "속성")).getByText("–")).toBeInTheDocument();
+    expect(within(cell(row, "기준 난이도")).getByText("5.7")).toBeInTheDocument();
+  });
+
+  it("아티스트·버전이 없으면 그 줄·칸만 빠진다 (옛 응답도 그려진다)", async () => {
+    const row = await renderRow({ addedVersion: null });
     expect(row.getByText("Sample Song")).toBeInTheDocument();
-    expect(row.queryByText(/BPM/)).toBeNull();
+    expect(row.getByText("BPM 미기입")).toBeInTheDocument();
   });
 
   it("기록이 없으면 단계·달성률 알약이 `–`로 비어 있다", async () => {
-    const row = await renderRow({ mine: null });
-    expect(row.getAllByText("–").length).toBe(2);
+    const row = await renderRow({ mine: null, tier: null });
+    // 알약의 `–` 2개 + 상수·속성 칸의 `–` 2개
+    expect(row.getAllByText("–").length).toBe(4);
   });
 
   it("내 기록이 있으면 단계 글자와 달성률을 알약에 보인다 (색만으로 전달하지 않는다)", async () => {
