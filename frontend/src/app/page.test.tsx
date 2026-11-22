@@ -1,9 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@/app/page";
 import type { UserResponse } from "@/lib/api-types";
-import { HEADER_HOME_SEARCH_SLOT_ID } from "@/lib/header-slots";
 
 // 로그인 상태만 바꿔 가며 홈의 분기를 확인한다 (AuthProvider의 실제 네트워크 복구는 쓰지 않는다)
 const auth: { status: "loading" | "authenticated" | "anonymous"; user: UserResponse | null } = {
@@ -93,31 +92,13 @@ describe("홈", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  // 헤더 자리(SiteHeader가 그린다)까지 같이 그려서, 곡 검색 돋보기가 헤더에 들어가는지 본다 (D100)
-  function renderHomeWithHeader() {
-    return render(
-      <QueryClientProvider client={new QueryClient()}>
-        <header>
-          <span id={HEADER_HOME_SEARCH_SLOT_ID} data-testid="slot" />
-        </header>
-        <Home />
-      </QueryClientProvider>,
-    );
-  }
-
-  it("로그인 전에도 헤더에 곡 검색 돋보기가 있다 (곡 검색은 공개 읽기)", async () => {
-    renderHomeWithHeader();
-    expect(await within(screen.getByTestId("slot")).findByRole("button", { name: "곡 검색" })).toBeInTheDocument();
-  });
-
-  it("로그인 후에도 헤더에 곡 검색 돋보기가 있고, 불러오는 동안에는 없다", async () => {
-    auth.status = "loading";
-    const { unmount } = renderHomeWithHeader();
-    expect(within(screen.getByTestId("slot")).queryByRole("button", { name: "곡 검색" })).toBeNull();
-    unmount();
+  // 곡 검색은 헤더(GlobalSongSearch, D107)가 모든 화면에서 맡으므로 홈 화면 안에는 검색 버튼이 없다
+  it("홈 화면 자체에는 곡 검색 버튼이 없다 (로그인 전·후 모두, 헤더가 맡는다)", () => {
+    renderHome();
+    expect(screen.queryByRole("button", { name: "곡 검색" })).toBeNull();
     auth.status = "authenticated";
     auth.user = { id: 1, email: "a@b.c", nickname: "홍길동", role: "USER" } as UserResponse;
-    renderHomeWithHeader();
-    expect(await within(screen.getByTestId("slot")).findByRole("button", { name: "곡 검색" })).toBeInTheDocument();
+    renderHome();
+    expect(screen.queryByRole("button", { name: "곡 검색" })).toBeNull();
   });
 });

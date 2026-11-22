@@ -3,32 +3,30 @@ import { AuthControls } from "@/components/AuthControls";
 import { DesktopNav } from "@/components/DesktopNav";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { NotificationBell } from "@/components/NotificationBell";
+import { GlobalSongSearch } from "@/components/search/GlobalSongSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { HEADER_HOME_SEARCH_SLOT_ID, HEADER_SEARCH_SLOT_ID } from "@/lib/header-slots";
 
 /**
  * 모든 화면 상단: 서비스 이름 + 메뉴 + 테마 스위치. "비공식 팬 프로젝트" 고지는 하단 SiteFooter로 옮겼다 (DESIGN-UI 1장).
  * - lg(1024px) 이상: `이름 · 가로 메뉴(DesktopNav) · 로그인 상태 · 테마 스위치`.
  * - lg 미만: `이름 ... (로그인 상태, sm 이상만) 검색 · 알림`만 두고 메뉴와 언어·테마 스위치는 하단 탭바(MobileTabBar)의 `더보기`가 맡는다(2026-10-20에 ☰ 슬라이드 메뉴를 없앴고, 2026-11-02에 언어·테마도 옮겼다).
  * - 로그인했으면 언어 버튼 왼쪽에 알림 종(D56)이 있다.
- * - 홈에서는 모든 너비에서 곡 검색 돋보기가 알림 종 왼쪽에 들어간다(HomeSongSearch가 포털로 넣는다, D100).
- * - 검색이 있는 화면(서열표·곡 목록)에서는 lg 미만일 때 언어 버튼 왼쪽에 곡 검색 아이콘이 들어간다(빈 자리에 SearchFocusButton이 포털로 넣는다, 2026-10-27).
+ * - 곡 검색(GlobalSongSearch, D107)은 로그인 전을 포함한 모든 화면에서 알림 종 왼쪽에 있다. lg 미만은 돋보기 아이콘, lg 이상은 검색창 모양 버튼이고 누르면 같은 검색 오버레이가 열린다.
  */
 export function SiteHeader() {
   return (
     <header className="border-b border-line bg-card pt-[env(safe-area-inset-top)]">
       <div className="mx-auto flex w-full max-w-[1200px] items-center gap-x-4 px-4 py-2.5">
         {/* min-w-0 truncate: 폭이 모자랄 때(접힌 폴더블 280~344px + 큰 글꼴) 이름이 줄어들어야 한다. 줄지 못하면 헤더가 화면보다 넓어져 페이지 전체가 오른쪽으로 밀린다(D101) */}
-        <Link href="/" className="min-w-0 truncate font-num text-lg font-semibold tracking-wide text-fg">
+        <Link href="/" className="min-w-0 truncate font-num text-lg font-semibold tracking-wide text-fg lg:shrink-0">
           SRPFreaks
         </Link>
         <DesktopNav />
-        <div className="ml-auto flex shrink-0 items-center gap-2 whitespace-nowrap">
-          <div className="hidden sm:block">
+        <div className="ml-auto flex shrink-0 items-center gap-2 whitespace-nowrap lg:min-w-0 lg:shrink">
+          <div className="hidden min-w-0 sm:block">
             <AuthControls />
           </div>
-          <span id={HEADER_HOME_SEARCH_SLOT_ID} className="contents" />
-          <span id={HEADER_SEARCH_SLOT_ID} className="contents lg:hidden" />
+          <GlobalSongSearch />
           <NotificationBell />
           {/* 언어·테마 스위치는 lg 이상에서만 헤더에 둔다. lg 미만(360px 등)에서는 한 줄에 겨우 들어가 큰 글꼴·일본어에서 줄바꿈이 생길 수 있어 하단 `더보기` 시트로 옮겼다(2026-11-02) */}
           <div className="hidden items-center gap-2 lg:flex">
