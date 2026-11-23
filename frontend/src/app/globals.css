@@ -321,7 +321,7 @@ body {
 
 /*
  * 총점 글자에 티어 색 (레이팅 카드, 유저 목록). --tier-fill을 글자 모양으로 오려 쓴다.
- * 빛(drop-shadow)과 반짝임(shimmer)은 없다(D95, 사용자 요청: 칩 밖에 따로 달린 효과는 쓰지 않는다).
+ * 칩·카드 테두리·막대·서열표 칸에는 빛과 반짝임이 없다(D95). 점수 글자만 예외로 Gold 이상 8티어에 움직임을 되살렸다(D108, 아래 tier-shimmer).
  * 라이트 테마는 밝은 티어 색(White, Silver 등)이 흰 배경에서 안 보이지 않게 글자를 어둡게 누른다(brightness).
  */
 .tier-score {
@@ -333,6 +333,29 @@ body {
 :root[data-theme="light"] .tier-score { filter: brightness(0.6) saturate(1.5); }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) .tier-score { filter: brightness(0.6) saturate(1.5); }
+}
+/*
+ * 점수 글자의 반짝임(D108, 사용자 확정 ③ "현재 색 + 움직임"). 색은 D96 그대로(--tier-fill)이고 움직임만 더한다.
+ * Gold 이상 8티어만(Bronze·Silver는 정지). 배경을 200%로 늘려 3.5초 주기로 좌우를 왕복시키고, 글자 빛(drop-shadow, --tier-glow)을 붙인다.
+ * 빛은 다크 테마에서만 쓴다(라이트 테마 규칙이 아래에서 filter: none으로 덮는다). 칩·막대·카드·서열표 칸에는 쓰지 않는다.
+ * 움직임 줄이기(prefers-reduced-motion)에서는 정지하고 배경 크기도 되돌려 그라데이션 전체 색이 보이게 한다.
+ */
+@keyframes tier-shimmer {
+  from { background-position: 0% 0; }
+  to { background-position: 100% 0; }
+}
+:is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,
+:is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score {
+  background-size: 200% 100%;
+  filter: drop-shadow(var(--tier-glow));
+  animation: tier-shimmer 3.5s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,
+  :is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score {
+    animation: none;
+    background-size: auto;
+  }
 }
 /* Bronze 이상 10티어의 라이트 테마(D96): 밝은 금속·파스텔·네온은 흰 배경에서 대비 4.5 미만이라 진한 그라데이션(--tier-fill-light)으로 바꾼다(밝기 누름은 끈다) */
 :root[data-theme="light"] :is([data-tier="BRONZE"], [data-tier="SILVER"], [data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,

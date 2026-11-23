@@ -140,11 +140,9 @@ describe("rating-card 색 표", () => {
     expect(css).not.toContain(".tier-chip");
     expect(css).not.toContain("--tier-metal");
     expect(css).not.toContain("--tier-text");
-    // 점수 글자·카드에 빛(drop-shadow, box-shadow: var(--tier-glow))과 반짝임이 없다. 서열표 칸만 --tier-glow를 쓴다
-    expect(css).not.toContain("tier-shimmer");
-    expect(css).not.toMatch(/drop-shadow\(var\(--tier-glow\)\)/);
+    // 카드·칩·막대에 box-shadow 빛이 없다. --tier-glow는 서열표 칸과 점수 글자(D108, Gold 이상 drop-shadow)만 쓴다
     const users = css.split("\n").filter((l) => l.includes("var(--tier-glow)"));
-    expect(users.every((l) => l.includes(".chart-cell") || l.includes(".chart-swatch")), users.join("\n")).toBe(true);
+    expect(users.every((l) => l.includes(".chart-cell") || l.includes(".chart-swatch") || l.includes("drop-shadow(var(--tier-glow))") || l.startsWith(" * ")), users.join("\n")).toBe(true);
   });
 
   it("Bronze 이상 10티어의 라이트 테마 글자·테두리 그라데이션은 흰 배경과 페이지 배경에서 모든 색이 대비 4.5:1 이상이다", () => {
