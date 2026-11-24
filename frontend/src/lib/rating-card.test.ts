@@ -140,7 +140,7 @@ describe("rating-card 색 표", () => {
     expect(css).not.toContain(".tier-chip");
     expect(css).not.toContain("--tier-metal");
     expect(css).not.toContain("--tier-text");
-    // 카드·칩·막대에 box-shadow 빛이 없다. --tier-glow는 서열표 칸과 점수 글자(D108, Gold 이상 drop-shadow)만 쓴다
+    // 카드·칩·막대에 box-shadow 빛이 없다(세로 띠는 D109 움직임만 있고 빛은 없다). --tier-glow는 서열표 칸과 점수 글자(D108, Gold 이상 drop-shadow)만 쓴다
     const users = css.split("\n").filter((l) => l.includes("var(--tier-glow)"));
     expect(users.every((l) => l.includes(".chart-cell") || l.includes(".chart-swatch") || l.includes("drop-shadow(var(--tier-glow))") || l.startsWith(" * ")), users.join("\n")).toBe(true);
   });

@@ -321,7 +321,7 @@ body {
 
 /*
  * 총점 글자에 티어 색 (레이팅 카드, 유저 목록). --tier-fill을 글자 모양으로 오려 쓴다.
- * 칩·카드 테두리·막대·서열표 칸에는 빛과 반짝임이 없다(D95). 점수 글자만 예외로 Gold 이상 8티어에 움직임을 되살렸다(D108, 아래 tier-shimmer).
+ * 칩·카드 테두리·서열표 칸·진행 막대에는 빛과 반짝임이 없다(D95). 점수 글자(D108)와 레이팅 카드의 왼쪽 세로 띠(D109)만 예외로 Gold 이상 8티어에 움직임을 되살렸다(아래 tier-shimmer, tier-shimmer-v).
  * 라이트 테마는 밝은 티어 색(White, Silver 등)이 흰 배경에서 안 보이지 않게 글자를 어둡게 누른다(brightness).
  */
 .tier-score {
@@ -353,6 +353,27 @@ body {
 @media (prefers-reduced-motion: reduce) {
   :is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-score,
   :is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-score {
+    animation: none;
+    background-size: auto;
+  }
+}
+/*
+ * 레이팅 카드 왼쪽 세로 띠(.tier-bar-v)의 반짝임(D109). 점수 글자와 같은 8티어·같은 3.5초 주기·같은 색(--tier-fill)이다.
+ * 띠 그라데이션은 위→아래(--tier-dir: 180deg)로 흐르므로 배경을 세로로 200% 늘려 위아래로 왕복시킨다(tier-shimmer-v).
+ * 띠 폭이 6px라 빛(drop-shadow)은 붙이지 않는다. 라이트 테마도 --tier-fill 그대로다(띠는 두 테마 같은 색). 진행 막대(.tier-bar 단독)는 해당 없다.
+ */
+@keyframes tier-shimmer-v {
+  from { background-position: 0% 0%; }
+  to { background-position: 0% 100%; }
+}
+:is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-bar-v,
+:is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-bar-v {
+  background-size: 100% 200%;
+  animation: tier-shimmer-v 3.5s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]).tier-bar-v,
+  :is([data-tier="GOLD"], [data-tier="RAINBOW"], [data-tier="RAINBOW_GRADIENT"], [data-tier="IRIDESCENT"], [data-tier="SIX_FINGERS"], [data-tier="MUTANT"], [data-tier="ALIEN"], [data-tier="HSB"]) .tier-bar-v {
     animation: none;
     background-size: auto;
   }
