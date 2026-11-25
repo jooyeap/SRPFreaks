@@ -50,3 +50,42 @@ describe("티어 점수 글자 반짝임 (D108)", () => {
     expect(css).toMatch(/\.tier-score \{[^}]*background: var\(--tier-fill\)/);
   });
 });
+
+/** `tier-shimmer-v` 애니메이션 선언이 들어 있는 규칙 블록의 선택자 부분 */
+function barMotionSelector(): string {
+  const m = css.match(/([^{}]*)\{[^}]*animation: tier-shimmer-v 3\.5s ease-in-out infinite alternate;[^}]*\}/);
+  expect(m, "tier-shimmer-v 애니메이션 규칙").not.toBeNull();
+  return m![1];
+}
+
+describe("레이팅 카드 세로 띠 반짝임 (D109)", () => {
+  it("keyframes가 배경 위치를 세로로 0%에서 100%로 옮긴다", () => {
+    expect(css).toMatch(/@keyframes tier-shimmer-v \{\s*from \{ background-position: 0% 0%; \}\s*to \{ background-position: 0% 100%; \}\s*\}/);
+  });
+
+  it("Gold 이상 8티어의 .tier-bar-v에만 걸리고 Bronze·Silver·진행 막대(.tier-bar 단독)는 정지다", () => {
+    const sel = barMotionSelector();
+    for (const k of MOVING) expect(sel, k).toContain(`[data-tier="${k}"]`);
+    for (const k of STATIC) expect(sel, k).not.toContain(`[data-tier="${k}"]`);
+    expect(sel).toContain(".tier-bar-v");
+    expect(sel).not.toMatch(/tier-score|tier-card|chart-cell|chart-swatch|chart-dot/);
+    // 세로 띠가 아닌 .tier-bar(진행 막대)만 고르는 선택자는 없다
+    expect(sel.replace(/\.tier-bar-v/g, "")).not.toMatch(/\.tier-bar/);
+  });
+
+  it("배경을 세로로 200% 늘리고 글자 빛 같은 drop-shadow는 쓰지 않는다", () => {
+    expect(css).toMatch(/background-size: 100% 200%;\s*animation: tier-shimmer-v/);
+    const block = css.match(/[^{}]*\{[^}]*animation: tier-shimmer-v[^}]*\}/)![0];
+    expect(block).not.toContain("drop-shadow");
+  });
+
+  it("움직임 줄이기에서는 애니메이션을 끄고 배경 크기를 되돌린다", () => {
+    const m = css.match(/@media \(prefers-reduced-motion: reduce\) \{\s*:is\(\[data-tier="GOLD"\][^{}]*\.tier-bar-v[^{}]*\{\s*animation: none;\s*background-size: auto;/);
+    expect(m, "reduced-motion 규칙").not.toBeNull();
+  });
+
+  it("색과 방향은 그대로다: .tier-bar는 --tier-fill, 세로 띠는 180deg", () => {
+    expect(css).toMatch(/\.tier-bar \{ background: var\(--tier-fill\); \}/);
+    expect(css).toMatch(/\.tier-bar-v \{ --tier-dir: 180deg; \}/);
+  });
+});
